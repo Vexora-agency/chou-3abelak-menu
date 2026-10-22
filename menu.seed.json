@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-22T12:00:00.000Z",
+  "settings": {
+    "name": {
+      "en": "Chou 3abelak",
+      "ar": "شو عبالك"
+    },
+    "tagline": {
+      "en": "Fresh · Fast · Delicious",
+      "ar": "طازج · سريع · شهي"
+    },
+    "logoText": "R",
+    "phone": "+201000000000",
+    "whatsapp": "201000000000",
+    "mapUrl": "https://maps.google.com/?q=Chou+3abelak",
+    "address": {
+      "en": "Downtown Culinary Street, Cairo",
+      "ar": "شارع النصر، وسط البلد، القاهرة"
+    },
+    "hoursText": {
+      "en": "Daily · 12:00 PM – 12:00 AM",
+      "ar": "يومياً · من 12:00 ظهراً إلى 12:00 منتصف الليل"
+    },
+    "statusMode": "auto",
+    "openTime": "12:00",
+    "closeTime": "00:00",
+    "timezone": "Africa/Cairo",
+    "social": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "tiktok": "https://tiktok.com"
+    },
+    "currency": {
+      "en": "EGP",
+      "ar": "ج.م"
+    },
+    "ordering": {
+      "enabled": true,
+      "types": ["delivery", "pickup", "dinein"],
+      "minOrder": 50,
+      "deliveryFee": 20,
+      "note": {
+        "en": "Prices include all taxes. Delivery takes 30-45 mins.",
+        "ar": "الأسعار شاملة الضريبة. التوصيل خلال 30-45 دقيقة."
+      }
+    }
+  },
+  "categories": [
+    {
+      "id": "burgers",
+      "name": {
+        "en": "Burgers",
+        "ar": "برجر"
+      },
+      "visible": true
+    },
+    {
+      "id": "sides",
+      "name": {
+        "en": "Sides",
+        "ar": "أطباق جانبية"
+      },
+      "visible": true
+    },
+    {
+      "id": "drinks",
+      "name": {
+        "en": "Drinks",
+        "ar": "مشروبات"
+      },
+      "visible": true
+    }
+  ],
+  "items": [
+    {
+      "id": "i_classic_burger",
+      "categoryId": "burgers",
+      "name": {
+        "en": "Classic Burger",
+        "ar": "كلاسيك برجر"
+      },
+      "description": {
+        "en": "Juicy 150g beef patty, crisp lettuce, ripe tomato, pickles, and our signature house sauce.",
+        "ar": "شريحة لحم بقري 150 جم مشوية مع خس طازج، طماطم، مخلل وصلصة المحل الخاصة."
+      },
+      "price": 95,
+      "badges": [],
+      "featured": false,
+      "available": true
+    },
+    {
+      "id": "i_double_smash",
+      "categoryId": "burgers",
+      "name": {
+        "en": "Double Smash Burger",
+        "ar": "دبل سماش برجر"
+      },
+      "description": {
+        "en": "Two smashed beef patties with crispy edges, double melted sharp cheddar, caramelized onions, and secret relish.",
+        "ar": "شريحتان من اللحم البقري المحمر المقرمش الأطراف، جبنة شيدر مضاعفة وبصل مكرمل."
+      },
+      "price": 130,
+      "badges": ["top"],
+      "featured": true,
+      "available": true
+    },
+    {
+      "id": "i_spicy_crunch",
+      "categoryId": "burgers",
+      "name": {
+        "en": "Spicy Crunch Chicken",
+        "ar": "سبايسي كرانش تشيكن"
+      },
+      "description": {
+        "en": "Crispy golden fried chicken breast dipped in ghost-pepper glaze, pickled jalapeños, and purple slaw.",
+        "ar": "صدر دجاج مقرمش متبل ومغموس في صلصة حارة مع هالبينو مخلل وسلطة كولسلو."
+      },
+      "price": 115,
+      "badges": ["spicy"],
+      "featured": true,
+      "available": true
+    },
+    {
+      "id": "i_truffle_mushroom",
+      "categoryId": "burgers",
+      "name": {
+        "en": "Truffle Swiss Mushroom",
+        "ar": "ماشروم ترافل سويس"
+      },
+      "description": {
+        "en": "Grilled angus beef, sautéed portobello mushrooms, Swiss cheese, and aromatic black truffle aioli.",
+        "ar": "لحم أنجوس مشوي مع فطر بورتوبيللو سوتيه، جبنة سويسرية وصلصة مايونيز الكمأة السوداء."
+      },
+      "price": 145,
+      "badges": ["new"],
+      "featured": false,
+      "available": true
+    },
+    {
+      "id": "i_golden_fries",
+      "categoryId": "sides",
+      "name": {
+        "en": "Signature Skin-On Fries",
+        "ar": "بطاطس مقلية مميزة"
+      },
+      "description": {
+        "en": "Hand-cut Idaho potatoes fried golden and seasoned with rosemary sea salt.",
+        "ar": "بطاطس مقلية ذهبية مقرمشة متبلة بملح البحر وإكليل الجبل."
+      },
+      "price": 40,
+      "badges": [],
+      "featured": false,
+      "available": true
+    },
+    {
+      "id": "i_onion_rings",
+      "categoryId": "sides",
+      "name": {
+        "en": "Crispy Onion Rings",
+        "ar": "حلقات بصل مقرمشة"
+      },
+      "description": {
+        "en": "Eight thick-cut sweet Spanish onion rings in crunchy panko batter with honey mustard dip.",
+        "ar": "8 حلقات بصل مقرمشة بتتبيلة البانكو مع صلصة الخردل والعسل."
+      },
+      "price": 50,
+      "badges": [],
+      "featured": false,
+      "available": true
+    },
+    {
+      "id": "i_fresh_lemonade",
+      "categoryId": "drinks",
+      "name": {
+        "en": "Mint Lime Lemonade",
+        "ar": "ليموناضة نعناع طازجة"
+      },
+      "description": {
+        "en": "Freshly squeezed lemon and lime juice crushed with garden spearmint leaves over ice.",
+        "ar": "عصير ليمون طبيعي طازج مع أوراق النعناع المنعشة والثلج المجروش."
+      },
+      "price": 45,
+      "badges": [],
+      "featured": false,
+      "available": true
+    },
+    {
+      "id": "i_nitro_coldbrew",
+      "categoryId": "drinks",
+      "name": {
+        "en": "Nitro Iced Cold Brew",
+        "ar": "كولد برو مثلج"
+      },
+      "description": {
+        "en": "Slow-steeped 16-hour single-origin Ethiopian cold brew coffee served silky over ice.",
+        "ar": "قهوة إثيوبية باردة ومقطرة ببطء لمدة 16 ساعة مع رغوة حريرية."
+      },
+      "price": 60,
+      "badges": ["new"],
+      "featured": true,
+      "available": true
+    }
+  ]
+}

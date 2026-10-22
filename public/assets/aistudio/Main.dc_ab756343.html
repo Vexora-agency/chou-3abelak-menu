@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Menu</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0A}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus{outline:3px solid #FFC400;outline-offset:2px}
+.btn{transition:transform .15s ease,filter .2s ease}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:scale(.94)}
+.chip{transition:background .25s ease,color .25s ease,transform .15s ease}
+.chip:active{transform:scale(.93)}
+.lift{transition:transform .25s ease}
+.lift:hover{transform:translateY(-4px)}
+.lift:active{transform:scale(.97)}
+.nm{display:inline-block;transition:transform .2s ease}
+.pr{display:inline-block;transition:transform .2s ease}
+.row:hover .nm{transform:translateX(4px)}
+.row:hover .pr{transform:scale(1.1)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes fadeUp2{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
+@keyframes breathe{from{transform:scale(1)}to{transform:scale(1.14)}}
+@keyframes glow{from{opacity:.07}to{opacity:.22}}
+@keyframes ringPulse{0%{box-shadow:0 0 0 5px #0A0A0A,0 0 0 7px #FFC400}100%{box-shadow:0 0 0 5px #0A0A0A,0 0 0 22px rgba(255,196,0,0)}}
+@keyframes dot{0%,100%{transform:scale(.8);opacity:.6}50%{transform:scale(1.35);opacity:1}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+@supports (animation-timeline:view()){.sv{animation:fadeUp linear both;animation-timeline:view();animation-range:entry 0% entry 45%}}
+.ls{display:none}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.lv{display:none!important}.ls{display:block!important}}
+</style>
+</helmet>
+<div id="top" style="width:100%;max-width:480px;margin:0 auto;background:{{t.bg}};color:{{t.fg}};font-family:'Poppins',sans-serif;display:flex;flex-direction:column;overflow-x:clip;transition:background .35s ease,color .35s ease">
+
+<header style="position:relative;overflow:hidden;background:#0A0A0A;color:#FFFFFF;border-radius:0 0 28px 28px;border-bottom:5px solid #FFC400;padding:16px 20px 28px">
+<div style="position:absolute;right:-70px;top:-70px;width:210px;height:210px;border-radius:50%;border:30px solid #FFC400;opacity:.16;animation:breathe 6s ease-in-out infinite alternate"></div>
+<div style="position:absolute;left:-10px;bottom:70px;width:130px;height:90px;background:repeating-linear-gradient(135deg,#FFC400 0 2px,transparent 2px 12px);animation:glow 3.5s ease-in-out infinite alternate"></div>
+<div style="position:relative;display:flex;justify-content:space-between;align-items:center;animation:fadeUp .5s both">
+<div style="display:flex;background:#1C1C1C;border-radius:999px;padding:3px">
+<a href="#top" class="btn" style="min-width:44px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:#FFC400;color:#0A0A0A;font-size:13px;font-weight:700">EN</a>
+<a href="#top" class="btn" style="min-width:44px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:999px;color:#FFFFFF;font-size:13px;font-weight:600">AR</a>
+</div>
+<button type="button" class="btn" onClick="{{toggleDark}}" aria-label="Toggle dark mode" style="width:44px;height:44px;border-radius:50%;border:1.5px solid #FFC400;background:transparent;color:#FFC400;display:flex;align-items:center;justify-content:center;padding:0">
+<sc-if value="{{light}}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></sc-if>
+<sc-if value="{{dark}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+</button>
+</div>
+<div style="position:relative;text-align:center;margin-top:14px">
+<div style="position:relative;width:330px;max-width:92%;margin:0 auto;aspect-ratio:720/266">
+<img class="lv" src="./assets/bca9d0550c8b986c0889edd5a68eea8a.webp" alt="" style="display:block;width:100%;height:100%;object-fit:contain;mix-blend-mode:lighten">
+<img class="ls" src="./assets/17faad7dce5d20712a87d8509c52dd31.png" alt="" style="width:100%;height:100%;object-fit:contain;mix-blend-mode:lighten">
+</div>
+<h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">Chou 3abelak</h1>
+<div style="font-size:13px;font-weight:500;letter-spacing:3px;text-transform:uppercase;color:#FFC400;margin-top:2px;animation:fadeUp .6s 1.8s both">Fresh · Fast · Delicious</div>
+<div style="display:inline-flex;align-items:center;gap:8px;margin-top:16px;background:#1C1C1C;border-radius:999px;padding:8px 16px;font-size:13px;font-weight:500;animation:fadeUp .6s 2.1s both"><span style="width:8px;height:8px;border-radius:50%;background:#FFC400;animation:dot 1.6s ease-in-out infinite"></span>Open now · until 12:00 AM</div>
+</div>
+<div style="position:relative;display:flex;gap:10px;margin-top:20px">
+<a href="#top" class="btn" style="flex:1;height:48px;border-radius:999px;background:#FFC400;color:#0A0A0A;display:flex;align-items:center;justify-content:center;gap:7px;font-size:14px;font-weight:700;animation:fadeUp .5s 2.3s both"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>Call</a>
+<a href="#top" class="btn" style="flex:1;height:48px;border-radius:999px;background:#FFC400;color:#0A0A0A;display:flex;align-items:center;justify-content:center;gap:7px;font-size:14px;font-weight:700;animation:fadeUp .5s 2.4s both"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>WhatsApp</a>
+<a href="#top" class="btn" style="flex:1;height:48px;border-radius:999px;background:#FFC400;color:#0A0A0A;display:flex;align-items:center;justify-content:center;gap:7px;font-size:14px;font-weight:700;animation:fadeUp .5s 2.5s both"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>Map</a>
+</div>
+</header>
+
+<main style="padding:0 20px">
+<div style="position:relative;margin-top:-22px;animation:fadeUp .6s 2.4s both">
+<label for="q" style="position:absolute;left:-9999px">Search the menu</label>
+<input id="q" type="text" value="{{q}}" onInput="{{onSearch}}" placeholder="Search the menu" style="width:100%;box-sizing:border-box;height:48px;border-radius:999px;border:1.5px solid {{t.inb}};background:{{t.bg}};color:{{t.fg}};padding:0 20px 0 48px;font-family:inherit;font-size:14px;box-shadow:0 8px 20px rgba(0,0,0,.18)">
+<svg style="position:absolute;left:18px;top:14px" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFC400" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+</div>
+
+<nav aria-label="Categories" style="position:sticky;top:0;z-index:5;display:flex;gap:8px;margin:6px -20px 0;padding:12px 20px;overflow-x:auto;scrollbar-width:none;background:{{t.bg}};transition:background .35s ease">
+<sc-for list="{{chips}}" as="c" hint-placeholder-count="4">
+<button type="button" class="chip" onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="flex:0 0 auto;height:44px;padding:0 20px;border-radius:999px;border:1.5px solid {{c.bd}};background:{{c.bg}};color:{{c.fg}};font-size:14px;font-weight:{{c.w}}">{{c.label}}</button>
+</sc-for>
+</nav>
+
+<sc-if value="{{showFeatured}}" hint-placeholder-val="{{ true }}">
+<div class="sv" style="display:flex;align-items:center;gap:10px;margin:20px 0 14px"><span style="width:6px;height:24px;background:#FFC400;border-radius:3px"></span><h2 style="margin:0;font-size:22px;font-weight:800">Featured</h2></div>
+<div style="display:flex;gap:12px;margin:0 -20px;padding:4px 20px 10px;overflow-x:auto;scrollbar-width:none">
+<sc-for list="{{featured}}" as="f" hint-placeholder-count="3">
+<button type="button" class="lift" onClick="{{f.open}}" style="flex:0 0 230px;height:150px;box-sizing:border-box;border-radius:22px;border:0;background:{{f.bg}};color:{{f.fg}};padding:16px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;text-align:left;animation:{{f.a}}">
+<span style="position:absolute;right:-40px;top:-40px;width:120px;height:120px;border-radius:50%;border:16px solid {{f.ring}};opacity:.2"></span>
+<span style="position:relative;align-self:flex-start;background:{{f.tagBg}};color:{{f.tagFg}};border-radius:999px;padding:3px 12px;font-size:11px;font-weight:700;letter-spacing:1px">{{f.tag}}</span>
+<span style="position:relative;display:flex;justify-content:space-between;align-items:flex-end;width:100%"><span style="display:block"><span style="display:block;font-size:18px;font-weight:700">{{f.name}}</span><span style="display:block;font-size:12px;color:{{f.sub}}">{{f.short}}</span></span><span style="background:{{f.tagBg}};color:{{f.tagFg}};border-radius:999px;padding:4px 12px;font-size:15px;font-weight:800">{{f.price}}</span></span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{showBurgers}}" hint-placeholder-val="{{ true }}">
+<div class="sv" style="display:flex;align-items:center;gap:10px;margin:26px 0 4px"><span style="width:6px;height:24px;background:#FFC400;border-radius:3px"></span><h2 style="margin:0;font-size:22px;font-weight:800">Burgers</h2></div>
+<sc-for list="{{burgers}}" as="b" hint-placeholder-count="3">
+<button type="button" class="row" onClick="{{b.open}}" style="display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid {{t.line}};padding:14px 0;animation:{{b.a}}">
+<span style="display:flex;align-items:baseline;gap:8px"><span class="nm" style="font-weight:700;font-size:16px">{{b.name}}</span>
+<sc-if value="{{b.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="background:#0A0A0A;color:#FFC400;border:1px solid #FFC400;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700">{{b.badge}}</span></sc-if>
+<span style="flex:1;border-bottom:2px dotted {{t.lead}}"></span><span class="pr" style="background:#FFC400;color:#0A0A0A;border-radius:999px;padding:2px 12px;font-weight:800;font-size:15px">{{b.price}}</span></span>
+<span style="display:block;margin-top:5px;font-size:13px;line-height:1.5;color:{{t.mut}}">{{b.desc}}</span>
+</button>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{showGrid}}" hint-placeholder-val="{{ true }}">
+<div class="sv" style="display:flex;align-items:center;gap:10px;margin:26px 0 16px"><span style="width:6px;height:24px;background:#FFC400;border-radius:3px"></span><h2 style="margin:0;font-size:22px;font-weight:800">{{gridTitle}}</h2></div>
+<div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px">
+<sc-for list="{{grid}}" as="g" hint-placeholder-count="4">
+<button type="button" class="lift" onClick="{{g.open}}" style="display:block;text-align:left;border:2px solid {{t.cb}};background:{{t.card}};border-radius:16px;padding:14px;box-shadow:4px 4px 0 {{t.cs}};animation:{{g.a}}">
+<span style="display:block;font-weight:700;font-size:15px">{{g.name}}</span>
+<span style="display:block;font-size:12px;color:{{t.mut}};margin:2px 0 10px">{{g.short}}</span>
+<span style="display:block;font-weight:800;font-size:16px">{{g.price}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}">
+<p style="text-align:center;margin:48px 0;font-size:15px;color:{{t.mut}}">Nothing matches your search yet.</p>
+</sc-if>
+</main>
+
+<footer style="position:relative;margin-top:40px;background:#0A0A0A;color:#FFFFFF;border-radius:28px 28px 0 0;border-top:5px solid #FFC400;padding:32px 20px 24px">
+<a href="#top" class="btn" aria-label="Back to top" style="position:absolute;right:20px;top:-26px;width:48px;height:48px;border-radius:50%;background:#FFC400;color:#0A0A0A;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 4px {{t.bg}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></a>
+<div class="sv"><img src="./assets/17faad7dce5d20712a87d8509c52dd31.png" alt="Chou 3abelak" style="display:block;width:230px;height:auto;mix-blend-mode:lighten"></div>
+<div class="sv" style="display:flex;flex-direction:column;gap:14px;margin-top:22px;font-size:14px;color:#D6D6D6">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;border-radius:50%;background:#1C1C1C;color:#FFC400;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span>Daily · 12:00 PM – 12:00 AM</div>
+<div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;border-radius:50%;background:#1C1C1C;color:#FFC400;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>[Street address, City]</div>
+<div style="display:flex;align-items:center;gap:12px"><span style="width:36px;height:36px;border-radius:50%;background:#1C1C1C;color:#FFC400;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></span>[Phone number]</div>
+</div>
+<div style="display:flex;gap:12px;margin-top:22px">
+<a href="#top" class="btn" aria-label="Instagram" style="width:44px;height:44px;border-radius:50%;background:#FFC400;color:#0A0A0A;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>
+<a href="#top" class="btn" aria-label="Facebook" style="width:44px;height:44px;border-radius:50%;background:#FFC400;color:#0A0A0A;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg></a>
+<a href="#top" class="btn" aria-label="WhatsApp" style="width:44px;height:44px;border-radius:50%;background:#FFC400;color:#0A0A0A;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg></a>
+</div>
+<a href="#top" class="btn" style="margin-top:22px;height:48px;border-radius:999px;background:#FFC400;color:#0A0A0A;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700">Get Directions</a>
+<div style="height:1px;background:#2E2E2E;margin:22px 0 14px"></div>
+<div style="text-align:center;font-size:12px;color:#A8A8A8">© 2026 Chou 3abelak · Powered by [Your Brand]</div>
+</footer>
+
+<sc-if value="{{sheetOpen}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{closeSheet}}" aria-label="Close details" style="position:fixed;top:0;right:0;bottom:0;left:0;border:0;background:rgba(0,0,0,.6);z-index:20;animation:fadeIn .25s both"></button>
+<div role="dialog" aria-modal="true" aria-label="{{sheet.name}}" style="position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:480px;box-sizing:border-box;background:{{t.bg}};color:{{t.fg}};border-radius:28px 28px 0 0;border-top:5px solid #FFC400;padding:14px 24px 28px;z-index:21;animation:sheetUp .38s cubic-bezier(.2,.9,.3,1) both">
+<div style="width:44px;height:5px;border-radius:3px;background:#8A8A8A;margin:0 auto 18px"></div>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px"><h3 style="margin:0;font-size:24px;font-weight:800">{{sheet.name}}</h3><span style="background:#FFC400;color:#0A0A0A;border-radius:999px;padding:4px 14px;font-size:18px;font-weight:800">{{sheet.price}}</span></div>
+<sc-if value="{{sheet.hasBadge}}" hint-placeholder-val="{{ false }}"><span style="display:inline-block;margin-top:8px;background:#0A0A0A;color:#FFC400;border:1px solid #FFC400;border-radius:999px;padding:1px 10px;font-size:11px;font-weight:700">{{sheet.badge}}</span></sc-if>
+<p style="margin:12px 0 22px;font-size:14px;line-height:1.6;color:{{t.mut}}">{{sheet.desc}}</p>
+<a href="#top" class="btn" style="height:48px;border-radius:999px;background:#FFC400;color:#0A0A0A;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700">Order on WhatsApp</a>
+<button type="button" class="btn" onClick="{{closeSheet}}" style="width:100%;height:48px;margin-top:10px;border-radius:999px;border:1.5px solid {{t.fg}};background:transparent;font-size:14px;font-weight:600">Close</button>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1800}}'>
+class Component extends DCLogic {
+constructor(p) {
+super(p);
+this.state = { cat: 'all', q: '', dark: false, sheet: null, tick: 0 };
+}
+renderVals() {
+const s = this.state, d = s.dark, q = s.q.trim().toLowerCase();
+const t = d
+? { bg: '#0A0A0A', fg: '#FFFFFF', mut: '#BDBDBD', line: '#262626', lead: '#666666', card: '#141414', cb: '#FFC400', cs: '#2A2A2A', inb: '#3A3A3A', black: '#1A1A1A' }
+: { bg: '#FFFFFF', fg: '#0A0A0A', mut: '#5A5A5A', line: '#EDEDED', lead: '#A8A8A8', card: '#FFFFFF', cb: '#0A0A0A', cs: '#FFC400', inb: '#E3E3E3', black: '#0A0A0A' };
+const A = [
+{ id: 'i1', cat: 'burgers', name: 'Classic Burger', short: 'Beef, lettuce, house sauce', desc: 'Beef patty, lettuce, tomato, house sauce.', price: 95, badge: '' },
+{ id: 'i2', cat: 'burgers', name: 'Double Smash', short: 'Two patties, cheddar', desc: 'Two smashed patties, melted cheddar, pickles.', price: 120, badge: 'TOP' },
+{ id: 'i3', cat: 'burgers', name: 'Spicy Crunch', short: 'Hot sauce, jalapeño', desc: 'Crispy chicken, hot sauce, jalapeño, slaw.', price: 110, badge: 'SPICY' },
+{ id: 'i4', cat: 'sides', name: 'Fries', short: 'Salted, crispy', desc: 'Golden fries with sea salt.', price: 35, badge: '' },
+{ id: 'i5', cat: 'sides', name: 'Onion Rings', short: 'Golden, 8 pcs', desc: 'Eight crunchy onion rings with dip.', price: 45, badge: '' },
+{ id: 'i6', cat: 'drinks', name: 'Lemonade', short: 'Fresh, mint', desc: 'Fresh lemonade with mint.', price: 40, badge: '' },
+{ id: 'i7', cat: 'drinks', name: 'Iced Coffee', short: 'Cold brew', desc: 'Slow cold brew over ice.', price: 55, badge: 'NEW' }
+];
+const an = (i) => (s.tick % 2 ? 'fadeUp2' : 'fadeUp') + ' .5s ' + (i * 0.07).toFixed(2) + 's both';
+const mk = (x, i) => ({ ...x, hasBadge: !!x.badge, a: an(i), open: () => this.setState({ sheet: x.id }) });
+const shown = A.filter((x) => (s.cat === 'all' || s.cat === x.cat) && (!q || (x.name + ' ' + x.desc).toLowerCase().includes(q)));
+const burgers = shown.filter((x) => x.cat === 'burgers').map(mk);
+const grid = shown.filter((x) => x.cat !== 'burgers').map(mk);
+const FE = [{ id: 'i2', tag: 'BEST SELLER', y: false }, { id: 'i3', tag: 'HOT', y: true }, { id: 'i7', tag: 'NEW', y: false }];
+const featured = FE.map((f, i) => ({
+...mk(A.find((x) => x.id === f.id), i),
+tag: f.tag,
+bg: f.y ? '#FFC400' : t.black,
+fg: f.y ? '#0A0A0A' : '#FFFFFF',
+sub: f.y ? '#2B2B2B' : '#BDBDBD',
+ring: f.y ? '#0A0A0A' : '#FFC400',
+tagBg: f.y ? '#0A0A0A' : '#FFC400',
+tagFg: f.y ? '#FFC400' : '#0A0A0A'
+}));
+const chips = [['all', 'All'], ['burgers', 'Burgers'], ['sides', 'Sides'], ['drinks', 'Drinks']].map(([id, label]) => {
+const on = s.cat === id;
+return { label, on, bg: on ? '#FFC400' : 'transparent', fg: on ? '#0A0A0A' : t.fg, bd: on ? '#FFC400' : t.fg, w: on ? 700 : 600, pick: () => this.setState({ cat: id, tick: s.tick + 1 }) };
+});
+const sh = A.find((x) => x.id === s.sheet);
+return {
+t, chips, featured, burgers, grid,
+showFeatured: s.cat === 'all' && !q,
+showBurgers: burgers.length > 0,
+showGrid: grid.length > 0,
+noResults: shown.length === 0,
+gridTitle: s.cat === 'sides' ? 'Sides' : s.cat === 'drinks' ? 'Drinks' : 'Sides & Drinks',
+sheetOpen: !!sh,
+sheet: sh ? { ...sh, hasBadge: !!sh.badge } : { name: '', desc: '', price: '', badge: '', hasBadge: false },
+closeSheet: () => this.setState({ sheet: null }),
+toggleDark: () => this.setState({ dark: !d }),
+dark: d, light: !d, q: s.q,
+onSearch: (e) => this.setState({ q: e.target.value })
+};
+}
+}
+</script>
+</body>
+</html>

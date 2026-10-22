@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --black: #0A0A0A;
+  --yellow: #FFC400;
+  --white: #FFFFFF;
+  --gray-card: #141414;
+  --gray-border: #262626;
+  --gray-muted: #8A8A8A;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+}
+
+html[dir="rtl"], [dir="rtl"] {
+  font-family: 'Cairo', 'Poppins', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #0A0A0A;
+  color: #0A0A0A;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Animations matching approved design spec */
+@keyframes breathe {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.14); }
+}
+
+@keyframes glow {
+  0% { opacity: 0.07; }
+  100% { opacity: 0.22; }
+}
+
+@keyframes dotPulse {
+  0%, 100% { transform: scale(0.85); opacity: 0.6; }
+  50% { transform: scale(1.3); opacity: 1; }
+}
+
+@keyframes bounceCart {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-8px) scale(1.02); }
+  70% { transform: translateY(-2px); }
+}
+
+@keyframes slideUpDrawer {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fadeInBackdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.anim-breathe {
+  animation: breathe 6s ease-in-out infinite alternate;
+}
+
+.anim-glow {
+  animation: glow 3.5s ease-in-out infinite alternate;
+}
+
+.anim-dot {
+  animation: dotPulse 1.6s ease-in-out infinite;
+}
+
+.anim-bounce-cart {
+  animation: bounceCart 0.45s ease-out;
+}
+
+.anim-slide-up {
+  animation: slideUpDrawer 0.38s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+.anim-fade-in {
+  animation: fadeInBackdrop 0.25s both;
+}
+
+/* Focus visible styles */
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 3px solid #FFC400;
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar hiding for horizontal chip nav */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom offset shadow for neo-brutalist cards */
+.offset-shadow-yellow {
+  box-shadow: 4px 4px 0px #FFC400;
+}
+
+.offset-shadow-dark {
+  box-shadow: 4px 4px 0px #2A2A2A;
+}
+
+/* Interactive touch scaling */
+.btn-tactile {
+  transition: transform 0.15s ease, filter 0.2s ease;
+}
+.btn-tactile:hover {
+  filter: brightness(1.06);
+}
+.btn-tactile:active {
+  transform: scale(0.95);
+}
+
+.card-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-lift:hover {
+  transform: translateY(-4px);
+}
+.card-lift:active {
+  transform: scale(0.97);
+}

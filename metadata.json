@@ -1,0 +1,6 @@
+{
+  "name": "Chou 3abelak - Restaurant Menu",
+  "description": "Modern bilingual restaurant menu and WhatsApp ordering with animated hero and admin controls.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

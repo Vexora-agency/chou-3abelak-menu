@@ -352,6 +352,7 @@ export default function App() {
           totalPrice={totalCartPrice}
           currency={currency}
           onOpenCart={() => setIsCartOpen(true)}
+          onClearCart={handleClearCart}
           lang={lang}
         />
 

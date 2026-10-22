@@ -37,7 +37,7 @@
     },
     "ordering": {
       "enabled": true,
-      "types": ["delivery", "pickup", "dinein"],
+      "types": ["delivery"],
       "minOrder": 350000,
       "deliveryFee": 100000,
       "note": {

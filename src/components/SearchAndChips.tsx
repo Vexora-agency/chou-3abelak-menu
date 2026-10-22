@@ -68,20 +68,20 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
       {/* Sticky Horizontal Categories Navigation */}
       <nav
         aria-label={isAr ? 'تصنيفات القائمة' : 'Menu categories'}
-        className={`sticky top-0 z-20 -mx-5 sm:-mx-8 px-5 sm:px-8 py-3.5 mt-2 flex gap-2 sm:gap-2.5 md:gap-3 overflow-x-auto no-scrollbar md:justify-center transition-colors ${
-          darkMode ? 'bg-[#0A0A0A]/90 border-b border-white/5' : 'bg-white/95 border-b border-black/5'
+          className={`sticky top-0 z-20 -mx-5 sm:-mx-8 px-5 sm:px-8 py-3 mt-1.5 flex gap-2 sm:gap-2.5 md:gap-3 overflow-x-auto no-scrollbar md:justify-center transition-[background-color] duration-300 ${
+          darkMode ? 'bg-[#0A0A0A] border-b border-white/5' : 'bg-white border-b border-black/5'
         }`}
       >
         {/* "All" Chip */}
         <button
           type="button"
           onClick={() => onSelectCategory('all')}
-          className={`flex-shrink-0 h-11 px-5 rounded-full text-sm font-semibold transition-all btn-tactile ${
+          className={`flex-shrink-0 h-11 px-5 rounded-full text-sm transition-all btn-tactile ${
             selectedCategory === 'all'
-              ? 'bg-[#FFC400] text-[#0A0A0A] shadow-md border-2 border-[#FFC400]'
+              ? 'bg-[#FFC400] text-[#0A0A0A] font-bold border-[1.5px] border-[#FFC400]'
               : darkMode
-              ? 'bg-[#181818] text-white/90 border border-white/10 hover:border-[#FFC400]/50'
-              : 'bg-neutral-100 text-[#0A0A0A] border border-neutral-300 hover:border-[#0A0A0A]'
+              ? 'bg-transparent text-white/90 font-semibold border-[1.5px] border-white hover:border-[#FFC400]'
+              : 'bg-transparent text-[#0A0A0A] font-semibold border-[1.5px] border-[#0A0A0A]'
           }`}
           aria-pressed={selectedCategory === 'all'}
         >
@@ -96,13 +96,13 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className={`flex-shrink-0 h-11 px-5 rounded-full text-sm font-semibold transition-all btn-tactile ${
-                isSelected
-                  ? 'bg-[#FFC400] text-[#0A0A0A] shadow-md border-2 border-[#FFC400]'
-                  : darkMode
-                  ? 'bg-[#181818] text-white/90 border border-white/10 hover:border-[#FFC400]/50'
-                  : 'bg-neutral-100 text-[#0A0A0A] border border-neutral-300 hover:border-[#0A0A0A]'
-              }`}
+            className={`flex-shrink-0 h-11 px-5 rounded-full text-sm transition-all btn-tactile ${
+              isSelected
+                ? 'bg-[#FFC400] text-[#0A0A0A] font-bold border-[1.5px] border-[#FFC400]'
+                : darkMode
+                ? 'bg-transparent text-white/90 font-semibold border-[1.5px] border-white hover:border-[#FFC400]'
+                : 'bg-transparent text-[#0A0A0A] font-semibold border-[1.5px] border-[#0A0A0A]'
+            }`}
               aria-pressed={isSelected}
             >
               {isAr ? cat.name.ar : cat.name.en}

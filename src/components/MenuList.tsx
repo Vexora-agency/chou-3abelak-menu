@@ -209,7 +209,7 @@ export const MenuList: React.FC<MenuListProps> = ({
                     <div
                       key={item.id}
                       onClick={() => !isSoldOut && onOpenItem(item)}
-                      className={`relative flex flex-col justify-between p-3.5 rounded-2xl border-2 transition-all ${
+                      className={`relative flex flex-col justify-between p-3.5 rounded-2xl border-2 transition-all hover:border-[#FFC400] hover:shadow-[0_10px_36px_rgba(255,196,0,0.28)] ${
                         darkMode
                           ? 'bg-[#141414] border-[#FFC400] offset-shadow-dark'
                           : 'bg-white border-[#0A0A0A] offset-shadow-yellow'

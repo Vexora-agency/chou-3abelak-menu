@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MenuData, MenuItem, CustomerDetails, OrderType } from '../types/menu';
+import { MenuData, MenuItem, CustomerDetails } from '../types/menu';
 import { buildWhatsAppMessage, formatPrice } from '../utils/menuHelpers';
 import { X, Plus, Minus, Trash2, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 
@@ -31,11 +31,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const isAr = lang === 'ar';
   const ordering = menu.settings.ordering;
 
-  // Retrieve remembered customer details if available
+  // Retrieve remembered customer details if available (delivery only)
   const [customer, setCustomer] = useState<CustomerDetails>(() => {
     try {
       const saved = localStorage.getItem('customer_details_v1');
-      if (saved) return JSON.parse(saved);
+      if (saved) return { ...JSON.parse(saved), orderType: 'delivery' };
     } catch {}
     return {
       name: '',
@@ -43,7 +43,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       address: '',
       tableNumber: '',
       notes: '',
-      orderType: ordering.types[0] || 'delivery',
+      orderType: 'delivery',
       remember: false,
     };
   });
@@ -68,7 +68,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   if (!isOpen) return null;
 
   const subtotal = cartItems.reduce((acc, curr) => acc + curr.item.price * curr.quantity, 0);
-  const deliveryFee = customer.orderType === 'delivery' ? ordering.deliveryFee || 0 : 0;
+  const deliveryFee = ordering.deliveryFee || 0;
   const grandTotal = subtotal + deliveryFee;
   const isBelowMin = ordering.minOrder > 0 && subtotal < ordering.minOrder;
 
@@ -84,12 +84,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       setErrorMsg(isAr ? 'يرجى إدخال رقم هاتفك للتواصل' : 'Please enter your phone number');
       return;
     }
-    if (customer.orderType === 'delivery' && !customer.address.trim()) {
+    if (!customer.address.trim()) {
       setErrorMsg(isAr ? 'يرجى إدخال عنوان التوصيل بالتفصيل' : 'Please enter delivery address');
-      return;
-    }
-    if (customer.orderType === 'dinein' && !customer.tableNumber.trim()) {
-      setErrorMsg(isAr ? 'يرجى إدخال رقم الطاولة' : 'Please enter table number');
       return;
     }
     if (isBelowMin) {
@@ -137,7 +133,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={isAr ? 'سلة الطلبات وإتمام الشراء' : 'Order Checkout'}
-        className={`relative z-10 w-full max-w-[540px] max-h-[90vh] overflow-y-auto rounded-t-[28px] md:rounded-[28px] border-t-[5px] md:border-2 md:border-[#FFC400] px-6 sm:px-8 pt-4 sm:pt-6 pb-8 anim-slide-up shadow-2xl transition-colors duration-200 ${
+        className={`relative z-10 w-full max-w-[540px] max-h-[92vh] overflow-y-auto overscroll-contain no-scrollbar rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[#FFC400] md:border-2 md:border-[#FFC400] px-6 sm:px-8 pt-4 sm:pt-6 pb-8 anim-drawer-in shadow-2xl transition-colors duration-200 ${
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
       >
@@ -223,8 +219,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           </div>
         ) : (
           <div className="space-y-5 mt-4">
-            {/* Cart Items List */}
-            <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+            {/* Cart Items List (no inner scroller: the list grows naturally) */}
+            <div className="space-y-2.5">
               {cartItems.map(({ item, quantity }) => (
                 <div
                   key={item.id}
@@ -295,44 +291,6 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               ))}
             </div>
 
-            {/* Order Type Segmented Control */}
-            {ordering.types.length > 1 && (
-              <div>
-                <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${
-                  darkMode ? 'text-neutral-300' : 'text-neutral-700'
-                }`}>
-                  {isAr ? 'نوع الطلب' : 'Order Type'}
-                </label>
-                <div
-                  className={`grid grid-cols-3 gap-1.5 p-1 rounded-xl border ${
-                    darkMode ? 'bg-[#1c1c1c] border-neutral-800' : 'bg-neutral-100 border-neutral-200'
-                  }`}
-                >
-                  {ordering.types.map((t) => {
-                    const isSelected = customer.orderType === t;
-                    return (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => setCustomer({ ...customer, orderType: t })}
-                        className={`h-9 rounded-lg text-xs font-bold transition-all ${
-                          isSelected
-                            ? 'bg-[#FFC400] text-[#0A0A0A] shadow-sm'
-                            : darkMode
-                            ? 'text-neutral-400 hover:text-white'
-                            : 'text-neutral-700 hover:text-black'
-                        }`}
-                      >
-                        {t === 'delivery' && (isAr ? 'توصيل' : 'Delivery')}
-                        {t === 'pickup' && (isAr ? 'استلام' : 'Pickup')}
-                        {t === 'dinein' && (isAr ? 'طاولة' : 'Dine-in')}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {/* Customer Inputs Form */}
             <div className="space-y-3">
               <div>
@@ -375,49 +333,25 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 />
               </div>
 
-              {customer.orderType === 'delivery' && (
-                <div>
-                  <label className={`block text-xs font-bold mb-1 ${
-                    darkMode ? 'text-neutral-200' : 'text-neutral-800'
-                  }`}>
-                    {isAr ? 'عنوان التوصيل بالتفصيل *' : 'Delivery Address *'}
-                  </label>
-                  <input
-                    type="text"
-                    value={customer.address}
-                    onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
-                    placeholder={isAr ? 'المنطقة، الشارع، رقم العمارة والشقة' : 'Area, street, bldg & apt number'}
-                    maxLength={200}
-                    className={`w-full h-11 px-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#FFC400] transition-colors ${
-                      darkMode
-                        ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-500'
-                        : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400 shadow-xs'
-                    }`}
-                  />
-                </div>
-              )}
-
-              {customer.orderType === 'dinein' && (
-                <div>
-                  <label className={`block text-xs font-bold mb-1 ${
-                    darkMode ? 'text-neutral-200' : 'text-neutral-800'
-                  }`}>
-                    {isAr ? 'رقم الطاولة *' : 'Table Number *'}
-                  </label>
-                  <input
-                    type="text"
-                    value={customer.tableNumber}
-                    onChange={(e) => setCustomer({ ...customer, tableNumber: e.target.value })}
-                    placeholder={isAr ? 'مثال: طاولة 5' : 'e.g. Table 5'}
-                    maxLength={10}
-                    className={`w-full h-11 px-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#FFC400] transition-colors ${
-                      darkMode
-                        ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-500'
-                        : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400 shadow-xs'
-                    }`}
-                  />
-                </div>
-              )}
+              <div>
+                <label className={`block text-xs font-bold mb-1 ${
+                  darkMode ? 'text-neutral-200' : 'text-neutral-800'
+                }`}>
+                  {isAr ? 'عنوان التوصيل بالتفصيل *' : 'Delivery Address *'}
+                </label>
+                <input
+                  type="text"
+                  value={customer.address}
+                  onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
+                  placeholder={isAr ? 'المنطقة، الشارع، رقم العمارة والشقة' : 'Area, street, bldg & apt number'}
+                  maxLength={200}
+                  className={`w-full h-11 px-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#FFC400] transition-colors ${
+                    darkMode
+                      ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-500'
+                      : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400 shadow-xs'
+                  }`}
+                />
+              </div>
 
               <div>
                 <label className={`block text-xs font-bold mb-1 ${
@@ -483,16 +417,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </span>
               </div>
 
-              {customer.orderType === 'delivery' && (
-                <div className="flex justify-between items-center">
-                  <span className={darkMode ? 'text-neutral-400' : 'text-neutral-600'}>
-                    {isAr ? 'رسوم التوصيل:' : 'Delivery Fee:'}
-                  </span>
-                  <span className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-                    {formatPrice(deliveryFee, currency)}
-                  </span>
-                </div>
-              )}
+              <div className="flex justify-between items-center">
+                <span className={darkMode ? 'text-neutral-400' : 'text-neutral-600'}>
+                  {isAr ? 'رسوم التوصيل:' : 'Delivery Fee:'}
+                </span>
+                <span className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+                  {formatPrice(deliveryFee, currency)}
+                </span>
+              </div>
 
               {isBelowMin && (
                 <div className="text-amber-600 font-bold text-[11px] pt-1">

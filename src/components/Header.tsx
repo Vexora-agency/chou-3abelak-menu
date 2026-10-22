@@ -53,7 +53,11 @@ export const Header: React.FC<HeaderProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const smokeCanvasRef = useRef<HTMLCanvasElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
   const [hasEnded, setHasEnded] = useState(false);
+  // True once the intro engine has fully stopped: canvases are unmounted so
+  // they cost zero compositing / main-thread time during scroll.
+  const [engineDone, setEngineDone] = useState(false);
 
   const status = isOpenNow(menu.settings);
 
@@ -74,8 +78,9 @@ export const Header: React.FC<HeaderProps> = ({
     sCtx.imageSmoothingEnabled = true;
     sCtx.imageSmoothingQuality = 'high';
 
-    let animId: number;
+    let animId = 0;
     let isRunning = true;
+    let finished = false;
 
     // Particle pools
     const smokeParticles: SmokeParticle[] = [];
@@ -88,7 +93,15 @@ export const Header: React.FC<HeaderProps> = ({
     let tick = 0;
 
     const renderLoop = () => {
-      if (!isRunning) return;
+      if (!isRunning) {
+        animId = 0;
+        return;
+      }
+      // Skip all canvas work while the tab is hidden.
+      if (document.hidden) {
+        animId = requestAnimationFrame(renderLoop);
+        return;
+      }
       tick++;
 
       const w = canvas.width;
@@ -140,44 +153,45 @@ export const Header: React.FC<HeaderProps> = ({
           // Fallback if cross-origin restricts
         }
 
-        // 2. Spawn Dynamic Gourmet Smoke & Sizzle Sparks in 1440x532 coordinate space
+        // 2. Spawn Dynamic Gourmet Smoke & Sizzle Sparks in 720x266 coordinate
+        // space (buffers run at half resolution for performance; CSS upscales).
         const curTime = video.currentTime;
         if (curTime > 0.3 && curTime < 4.8) {
-          // Coordinate tracking scaled to 1440x532
-          let spawnXMin = 200;
-          let spawnXMax = 480;
-          let spawnY = 280;
+          // Coordinate tracking scaled to 720x266
+          let spawnXMin = 100;
+          let spawnXMax = 240;
+          let spawnY = 140;
 
           if (curTime < 1.6) {
             // Pan handle drawing on left
-            spawnXMin = 180;
-            spawnXMax = 460;
-            spawnY = 270;
+            spawnXMin = 90;
+            spawnXMax = 230;
+            spawnY = 135;
           } else if (curTime < 3.4) {
             // "CHOU" and lower numbers forming
-            spawnXMin = 420;
-            spawnXMax = 960;
-            spawnY = 280;
+            spawnXMin = 210;
+            spawnXMax = 480;
+            spawnY = 140;
           } else {
             // Full letters & Arabic "شو" top-right accent
-            spawnXMin = 520;
-            spawnXMax = 1240;
-            spawnY = 240;
+            spawnXMin = 260;
+            spawnXMax = 620;
+            spawnY = 120;
           }
 
           // Spawn smoke puff every 2-3 frames
           if (tick % 3 === 0 && smokeParticles.length < 35) {
             smokeParticles.push({
               x: spawnXMin + Math.random() * (spawnXMax - spawnXMin),
-              y: spawnY + (Math.random() * 40 - 20),
-              vx: (Math.random() - 0.5) * 0.9,
-              vy: -1.4 - Math.random() * 1.8, // rising up
-              radius: 20 + Math.random() * 18,
-              maxRadius: 75 + Math.random() * 40,
+              y: spawnY + (Math.random() * 20 - 10),
+              vx: (Math.random() - 0.5) * 0.45,
+              vy: -0.7 - Math.random() * 0.9, // rising up
+              radius: 10 + Math.random() * 9,
+              maxRadius: 37 + Math.random() * 20,
               alpha: 0.24 + Math.random() * 0.12,
               decay: 0.0035 + Math.random() * 0.003,
               wobbleSpeed: 0.03 + Math.random() * 0.03,
-              wobbleAmount: 1.2 + Math.random() * 1.5,
+              wobbleAmount: 0.6 + Math.random() * 0.75,
               seed: Math.random() * 100,
             });
           }
@@ -186,10 +200,10 @@ export const Header: React.FC<HeaderProps> = ({
           if (tick % 4 === 0 && sparkParticles.length < 25) {
             sparkParticles.push({
               x: spawnXMin + Math.random() * (spawnXMax - spawnXMin),
-              y: spawnY + (Math.random() * 30 - 15),
-              vx: (Math.random() - 0.5) * 2.2,
-              vy: -2.2 - Math.random() * 2.6,
-              size: 2 + Math.random() * 3.2,
+              y: spawnY + (Math.random() * 15 - 7),
+              vx: (Math.random() - 0.5) * 1.1,
+              vy: -1.1 - Math.random() * 1.3,
+              size: 1 + Math.random() * 1.6,
               alpha: 0.85 + Math.random() * 0.15,
               decay: 0.015 + Math.random() * 0.015,
               color: Math.random() > 0.3 ? '#FFC400' : '#FFFFFF',
@@ -209,7 +223,7 @@ export const Header: React.FC<HeaderProps> = ({
         p.radius += (p.maxRadius - p.radius) * 0.03;
         p.alpha -= p.decay;
 
-        if (p.alpha <= 0.01 || p.y < -80) {
+        if (p.alpha <= 0.01 || p.y < -40) {
           smokeParticles.splice(i, 1);
           continue;
         }
@@ -227,30 +241,49 @@ export const Header: React.FC<HeaderProps> = ({
         sCtx.fill();
       }
 
-      // Render spark embers
+      // Render spark embers (two-pass plain fill glow: same look as shadowBlur
+      // at a fraction of the cost - shadowBlur re-blurs the layer per spark)
       for (let i = sparkParticles.length - 1; i >= 0; i--) {
         const sp = sparkParticles[i];
         sp.x += sp.vx;
         sp.y += sp.vy;
         sp.alpha -= sp.decay;
 
-        if (sp.alpha <= 0.02 || sp.y < -30) {
+        if (sp.alpha <= 0.02 || sp.y < -15) {
           sparkParticles.splice(i, 1);
           continue;
         }
 
-        sCtx.save();
-        sCtx.globalAlpha = sp.alpha;
+        sCtx.globalAlpha = sp.alpha * 0.35;
         sCtx.fillStyle = sp.color;
-        sCtx.shadowColor = sp.color;
-        sCtx.shadowBlur = 10;
+        sCtx.beginPath();
+        sCtx.arc(sp.x, sp.y, sp.size * 2.2, 0, Math.PI * 2);
+        sCtx.fill();
+        sCtx.globalAlpha = sp.alpha;
         sCtx.beginPath();
         sCtx.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
         sCtx.fill();
-        sCtx.restore();
+        sCtx.globalAlpha = 1;
+      }
+
+      // The intro is over and every particle has faded: stop the loop for good
+      // and unmount the canvases (they are already invisible via opacity-0).
+      // This frees the main thread for scroll / hover for the rest of the visit.
+      if (video.ended && smokeParticles.length === 0 && sparkParticles.length === 0) {
+        finished = true;
+        animId = 0;
+        setEngineDone(true);
+        return;
       }
 
       animId = requestAnimationFrame(renderLoop);
+    };
+
+    // (Re)starts the loop only if it is not already running or finished.
+    const kick = () => {
+      if (animId === 0 && !finished && isRunning) {
+        animId = requestAnimationFrame(renderLoop);
+      }
     };
 
     const startPlayback = () => {
@@ -260,14 +293,14 @@ export const Header: React.FC<HeaderProps> = ({
       if (promise !== undefined) {
         promise
           .then(() => {
-            animId = requestAnimationFrame(renderLoop);
+            kick();
           })
           .catch(() => {
             const resumeOnInteraction = () => {
               video.defaultMuted = true;
               video.muted = true;
               video.play().then(() => {
-                animId = requestAnimationFrame(renderLoop);
+                kick();
               }).catch(() => {});
               window.removeEventListener('click', resumeOnInteraction);
               window.removeEventListener('touchstart', resumeOnInteraction);
@@ -293,9 +326,23 @@ export const Header: React.FC<HeaderProps> = ({
     };
     video.addEventListener('timeupdate', handleTimeUpdate);
 
+    // Pause the whole engine while the header is scrolled out of view and
+    // resume when it comes back: zero canvas cost during menu scrolling,
+    // with visuals identical whenever the header is visible.
+    const io = new IntersectionObserver(
+      (entries) => {
+        isRunning = entries[0]?.isIntersecting ?? true;
+        if (isRunning) kick();
+      },
+      { threshold: 0 }
+    );
+    if (headerRef.current) io.observe(headerRef.current);
+
     return () => {
       isRunning = false;
+      io.disconnect();
       cancelAnimationFrame(animId);
+      animId = 0;
       video.removeEventListener('timeupdate', handleTimeUpdate);
     };
   }, []);
@@ -314,16 +361,18 @@ export const Header: React.FC<HeaderProps> = ({
   const mapLink = sanitizeUrl(menu.settings.mapUrl || 'https://maps.google.com');
 
   return (
-    <header className="relative overflow-hidden bg-[#0A0A0A] text-[#FFFFFF] rounded-b-[28px] md:rounded-b-[36px] border-b-[5px] border-[#FFC400] pt-4 sm:pt-6 px-5 sm:px-8 md:px-12 pb-7 sm:pb-9 shadow-2xl">
+    <header
+      ref={headerRef}
+      className="relative overflow-hidden bg-[#0A0A0A] text-[#FFFFFF] rounded-b-[28px] md:rounded-b-[36px] border-b-[5px] border-[#FFC400] pt-4 sm:pt-6 px-5 sm:px-8 md:px-12 pb-7 sm:pb-9 shadow-2xl">
       {/* Decorative ambient breathing ring */}
       <div
-        className="absolute -right-16 -top-16 sm:-right-10 sm:-top-10 w-52 sm:w-64 md:w-80 h-52 sm:h-64 md:h-80 rounded-full border-[28px] sm:border-[36px] border-[#FFC400] opacity-15 anim-breathe pointer-events-none"
+        className="absolute -right-16 -top-16 sm:-right-10 sm:-top-10 w-52 sm:w-64 md:w-80 h-52 sm:h-64 md:h-80 rounded-full border-[28px] sm:border-[36px] border-[#FFC400] opacity-15 pointer-events-none"
         aria-hidden="true"
       />
 
       {/* Decorative ambient hatch pattern */}
       <div
-        className="absolute -left-3 bottom-16 sm:bottom-20 w-32 sm:w-44 h-24 sm:h-32 opacity-15 anim-glow pointer-events-none"
+        className="absolute -left-3 bottom-16 sm:bottom-20 w-32 sm:w-44 h-24 sm:h-32 opacity-15 pointer-events-none"
         style={{
           background: 'repeating-linear-gradient(135deg, #FFC400 0, #FFC400 2px, transparent 2px, transparent 12px)'
         }}
@@ -331,7 +380,7 @@ export const Header: React.FC<HeaderProps> = ({
       />
 
       {/* Top Utility Row */}
-      <div className="relative flex justify-between items-center z-10 max-w-5xl mx-auto w-full">
+      <div className="relative flex justify-between items-center z-10 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
         {/* Language Switcher Pill */}
         <div className="flex bg-[#1C1C1C] rounded-full p-1 border border-white/10 shadow-inner">
           <button
@@ -385,7 +434,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Center Brand Identity Container */}
-      <div className="relative text-center mt-3 sm:mt-5 z-10 flex flex-col items-center max-w-5xl mx-auto w-full">
+      <div className="relative text-center mt-3 sm:mt-5 z-10 flex flex-col items-center max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
         {/* Logo Container with Transparent Video & Atmospheric Sizzle Smoke */}
         <div
           className="relative w-full max-w-[320px] sm:max-w-[380px] md:max-w-[440px] aspect-[1440/532] mx-auto overflow-hidden rounded-xl"
@@ -400,38 +449,36 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
             style={{
               backgroundColor: 'transparent',
-              imageRendering: '-webkit-optimize-contrast',
             }}
             width={1440}
             height={532}
+            decoding="async"
           />
 
-          {/* Real-time Alpha-Keyed Video Canvas (1440x532 HD Buffer) */}
+          {/* Real-time Alpha-Keyed Video Canvas (720x266 buffer, CSS-upscaled) */}
           <canvas
             ref={canvasRef}
-            width={1440}
-            height={532}
+            width={720}
+            height={266}
             className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-700 pointer-events-none ${
               hasEnded ? 'opacity-0' : 'opacity-100'
-            }`}
+            } ${engineDone ? 'hidden' : ''}`}
             style={{
               backgroundColor: 'transparent',
-              imageRendering: '-webkit-optimize-contrast',
             }}
           />
 
-          {/* Cinematic Gourmet Smoke & Sizzle Sparks Overlay Canvas (1440x532 HD Buffer) */}
+          {/* Cinematic Gourmet Smoke & Sizzle Sparks Overlay Canvas (720x266 buffer) */}
           <canvas
             ref={smokeCanvasRef}
-            width={1440}
-            height={532}
+            width={720}
+            height={266}
             className={`absolute inset-0 w-full h-full object-contain pointer-events-none transition-opacity duration-1000 ${
               hasEnded ? 'opacity-0' : 'opacity-100'
-            }`}
+            } ${engineDone ? 'hidden' : ''}`}
             style={{
               backgroundColor: 'transparent',
               mixBlendMode: 'screen',
-              imageRendering: '-webkit-optimize-contrast',
             }}
           />
 
@@ -475,10 +522,10 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Action Buttons Trio: Call, WhatsApp, Map */}
-      <div className="relative flex justify-center gap-2.5 sm:gap-4 mt-6 z-10 w-full max-w-sm sm:max-w-md mx-auto">
+      <div className="relative flex flex-col min-[360px]:flex-row justify-center gap-2.5 sm:gap-4 mt-6 z-10 w-full max-w-sm sm:max-w-md mx-auto">
         <a
           href={phoneLink}
-          className="btn-tactile flex-1 h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center gap-1.5 text-sm font-bold shadow-md hover:bg-[#ffd033]"
+          className="btn-tactile w-full min-[360px]:w-auto min-[360px]:flex-1 h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center gap-1.5 text-sm font-bold shadow-md hover:bg-[#ffd033]"
         >
           <Phone size={17} className="stroke-[2.2]" />
           <span>{isAr ? 'اتصال' : 'Call'}</span>
@@ -488,7 +535,7 @@ export const Header: React.FC<HeaderProps> = ({
           href={whatsappLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-tactile flex-1 h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center gap-1.5 text-sm font-bold shadow-md hover:bg-[#ffd033]"
+          className="btn-tactile w-full min-[360px]:w-auto min-[360px]:flex-1 h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center gap-1.5 text-sm font-bold shadow-md hover:bg-[#ffd033]"
         >
           <MessageCircle size={17} className="stroke-[2.2]" />
           <span>{isAr ? 'واتساب' : 'WhatsApp'}</span>
@@ -498,7 +545,7 @@ export const Header: React.FC<HeaderProps> = ({
           href={mapLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-tactile flex-1 h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center gap-1.5 text-sm font-bold shadow-md hover:bg-[#ffd033]"
+          className="btn-tactile w-full min-[360px]:w-auto min-[360px]:flex-1 h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center gap-1.5 text-sm font-bold shadow-md hover:bg-[#ffd033]"
         >
           <MapPin size={17} className="stroke-[2.2]" />
           <span>{isAr ? 'الموقع' : 'Map'}</span>

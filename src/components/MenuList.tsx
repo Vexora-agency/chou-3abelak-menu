@@ -70,13 +70,13 @@ export const MenuList: React.FC<MenuListProps> = ({
   const visibleCats = categories.filter((c) => c.visible && activeCategoryIds.includes(c.id));
 
   return (
-    <div className="px-5 sm:px-8 pb-12 space-y-10 max-w-5xl mx-auto w-full">
+    <div className="px-5 sm:px-8 pb-12 space-y-10 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
       {visibleCats.map((cat) => {
         const catItems = filteredItems.filter((i) => i.categoryId === cat.id);
         const isBurgerSection = cat.id.toLowerCase().includes('burger');
 
         return (
-          <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-16">
+          <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-16 menu-section">
             {/* Category Header */}
             <div className="flex items-center gap-2.5 mb-4">
               <span className="w-1.5 h-6 bg-[#FFC400] rounded-sm" aria-hidden="true" />
@@ -87,7 +87,7 @@ export const MenuList: React.FC<MenuListProps> = ({
 
             {/* List View for Burgers: 1-col on mobile, 2-col on tablet/desktop */}
             {isBurgerSection ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-4">
                 {catItems.map((item) => {
                   const qty = cartQuantities[item.id] || 0;
                   const isSoldOut = !item.available;
@@ -200,7 +200,7 @@ export const MenuList: React.FC<MenuListProps> = ({
               </div>
             ) : (
               /* Grid View for Sides, Drinks, etc. (2-col mobile, 3-col tablet, 4-col desktop) */
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4 md:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5">
                 {catItems.map((item) => {
                   const qty = cartQuantities[item.id] || 0;
                   const isSoldOut = !item.available;

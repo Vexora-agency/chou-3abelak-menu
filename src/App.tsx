@@ -274,7 +274,7 @@ export default function App() {
     >
       {/* Responsive Luxury Canvas: fluid on mobile, expanding gracefully on tablet/desktop */}
       <div
-        className={`w-full max-w-full md:max-w-4xl lg:max-w-5xl xl:max-w-6xl min-h-screen mx-auto flex flex-col overflow-x-clip transition-colors duration-300 md:my-6 md:rounded-[36px] md:shadow-[0_25px_70px_rgba(0,0,0,0.7)] md:border md:border-neutral-800/80 relative ${
+        className={`w-full min-h-screen mx-auto flex flex-col overflow-x-clip transition-colors duration-300 relative ${
           darkMode ? 'bg-[#0A0A0A] text-white' : 'bg-[#FFFFFF] text-[#0A0A0A]'
         }`}
       >

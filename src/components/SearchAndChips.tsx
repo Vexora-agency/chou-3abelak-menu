@@ -25,7 +25,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
   const visibleCategories = categories.filter((c) => c.visible);
 
   return (
-    <div className="px-5 sm:px-8 max-w-5xl mx-auto w-full">
+    <div className="px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
       {/* Overlapping Floating Search Bar */}
       <div className="relative -mt-6 z-20 max-w-xl mx-auto">
         <label htmlFor="menu-search-input" className="sr-only">
@@ -68,7 +68,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
       {/* Sticky Horizontal Categories Navigation */}
       <nav
         aria-label={isAr ? 'تصنيفات القائمة' : 'Menu categories'}
-        className={`sticky top-0 z-20 -mx-5 sm:-mx-8 px-5 sm:px-8 py-3.5 mt-2 flex gap-2 sm:gap-2.5 md:gap-3 overflow-x-auto no-scrollbar md:justify-center backdrop-blur-md transition-colors ${
+        className={`sticky top-0 z-20 -mx-5 sm:-mx-8 px-5 sm:px-8 py-3.5 mt-2 flex gap-2 sm:gap-2.5 md:gap-3 overflow-x-auto no-scrollbar md:justify-center transition-colors ${
           darkMode ? 'bg-[#0A0A0A]/90 border-b border-white/5' : 'bg-white/95 border-b border-black/5'
         }`}
       >

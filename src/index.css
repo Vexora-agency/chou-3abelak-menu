@@ -84,6 +84,12 @@ body {
   animation: fadeInBackdrop 0.25s both;
 }
 
+/* Skip rendering off-screen menu sections until scrolled near (scroll perf) */
+.menu-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 700px;
+}
+
 /* Focus visible styles */
 button:focus-visible, a:focus-visible, input:focus-visible {
   outline: 3px solid #FFC400;
@@ -108,15 +114,26 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   box-shadow: 4px 4px 0px #2A2A2A;
 }
 
-/* Interactive touch scaling */
+/* Interactive touch scaling: smooth springy zoom on hover + press */
 .btn-tactile {
-  transition: transform 0.15s ease, filter 0.2s ease;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.3s ease;
 }
 .btn-tactile:hover {
-  filter: brightness(1.06);
+  transform: scale(1.045);
+  filter: brightness(1.07);
 }
 .btn-tactile:active {
-  transform: scale(0.95);
+  transform: scale(0.94);
+  filter: brightness(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-tactile {
+    transition: none;
+  }
+  .btn-tactile:hover,
+  .btn-tactile:active {
+    transform: none;
+  }
 }
 
 .card-lift {

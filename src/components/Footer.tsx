@@ -44,7 +44,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
         </button>
       )}
 
-      <div className="max-w-5xl mx-auto w-full">
+      <div className="max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
         {/* Responsive Grid: 1-col mobile, 3-col tablet & desktop */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start mb-6">
           {/* Col 1: Brand Logo & Tagline */}

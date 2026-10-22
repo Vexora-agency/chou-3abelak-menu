@@ -24,7 +24,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   if (items.length === 0) return null;
 
   return (
-    <div className="mt-6 mb-4 px-5 sm:px-8 max-w-5xl mx-auto w-full">
+    <div className="mt-6 mb-4 px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
       {/* Section Title with Yellow Bar */}
       <div className="flex items-center gap-2.5 mb-3.5">
         <span className="w-1.5 h-6 bg-[#FFC400] rounded-sm" aria-hidden="true" />

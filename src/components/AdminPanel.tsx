@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MenuData, MenuItem, Category, OrderType } from '../types/menu';
+import { formatPrice } from '../utils/menuHelpers';
 import {
   Save,
   ArrowLeft,
@@ -360,6 +361,46 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
               />
             </div>
+
+            {/* Currency Configuration */}
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'رمز العملة (إنجليزي)' : 'Currency Symbol (EN)'}</label>
+                <input
+                  type="text"
+                  value={menu.settings.currency.en}
+                  onChange={(e) =>
+                    updateMenu((m) => ({
+                      ...m,
+                      settings: {
+                        ...m.settings,
+                        currency: { ...m.settings.currency, en: e.target.value },
+                      },
+                    }))
+                  }
+                  placeholder="LBP"
+                  className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'رمز العملة (عربي)' : 'Currency Symbol (AR)'}</label>
+                <input
+                  type="text"
+                  value={menu.settings.currency.ar}
+                  onChange={(e) =>
+                    updateMenu((m) => ({
+                      ...m,
+                      settings: {
+                        ...m.settings,
+                        currency: { ...m.settings.currency, ar: e.target.value },
+                      },
+                    }))
+                  }
+                  placeholder="ل.ل"
+                  className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Operational Hours */}
@@ -697,8 +738,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       )}
                     </div>
                     <div className="text-xs text-neutral-400 mt-0.5">
-                      {item.price} {menu.settings.currency.en} ·{' '}
-                      {menu.categories.find((c) => c.id === item.categoryId)?.name.en || item.categoryId}
+                      {formatPrice(item.price, menu.settings.currency[lang] || menu.settings.currency.en)} ·{' '}
+                      {menu.categories.find((c) => c.id === item.categoryId)?.name[lang] || item.categoryId}
                     </div>
                   </div>
 

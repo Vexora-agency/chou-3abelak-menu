@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "updatedAt": "2026-10-22T12:00:00.000Z",
+  "version": 2,
+  "updatedAt": "2026-10-22T15:45:00.000Z",
   "settings": {
     "name": {
       "en": "Chou 3abelak",
@@ -11,12 +11,12 @@
       "ar": "طازج · سريع · شهي"
     },
     "logoText": "R",
-    "phone": "+201000000000",
-    "whatsapp": "201000000000",
-    "mapUrl": "https://maps.google.com/?q=Chou+3abelak",
+    "phone": "+96170123456",
+    "whatsapp": "96170123456",
+    "mapUrl": "https://maps.google.com/?q=Beirut+Lebanon",
     "address": {
-      "en": "Downtown Culinary Street, Cairo",
-      "ar": "شارع النصر، وسط البلد، القاهرة"
+      "en": "Mar Mikhael, Gouraud Street, Beirut, Lebanon",
+      "ar": "مار مخايل، شارع غورو، بيروت، لبنان"
     },
     "hoursText": {
       "en": "Daily · 12:00 PM – 12:00 AM",
@@ -25,24 +25,24 @@
     "statusMode": "auto",
     "openTime": "12:00",
     "closeTime": "00:00",
-    "timezone": "Africa/Cairo",
+    "timezone": "Asia/Beirut",
     "social": {
       "instagram": "https://instagram.com",
       "facebook": "https://facebook.com",
       "tiktok": "https://tiktok.com"
     },
     "currency": {
-      "en": "EGP",
-      "ar": "ج.م"
+      "en": "LBP",
+      "ar": "ل.ل"
     },
     "ordering": {
       "enabled": true,
       "types": ["delivery", "pickup", "dinein"],
-      "minOrder": 50,
-      "deliveryFee": 20,
+      "minOrder": 350000,
+      "deliveryFee": 100000,
       "note": {
-        "en": "Prices include all taxes. Delivery takes 30-45 mins.",
-        "ar": "الأسعار شاملة الضريبة. التوصيل خلال 30-45 دقيقة."
+        "en": "Prices are in LBP and include all taxes. Delivery in Beirut within 30-45 mins.",
+        "ar": "الأسعار بالليرة اللبنانية وتشمل الضريبة. التوصيل في بيروت خلال 30-45 دقيقة."
       }
     }
   },
@@ -84,7 +84,7 @@
         "en": "Juicy 150g beef patty, crisp lettuce, ripe tomato, pickles, and our signature house sauce.",
         "ar": "شريحة لحم بقري 150 جم مشوية مع خس طازج، طماطم، مخلل وصلصة المحل الخاصة."
       },
-      "price": 95,
+      "price": 450000,
       "badges": [],
       "featured": false,
       "available": true
@@ -100,7 +100,7 @@
         "en": "Two smashed beef patties with crispy edges, double melted sharp cheddar, caramelized onions, and secret relish.",
         "ar": "شريحتان من اللحم البقري المحمر المقرمش الأطراف، جبنة شيدر مضاعفة وبصل مكرمل."
       },
-      "price": 130,
+      "price": 580000,
       "badges": ["top"],
       "featured": true,
       "available": true
@@ -116,7 +116,7 @@
         "en": "Crispy golden fried chicken breast dipped in ghost-pepper glaze, pickled jalapeños, and purple slaw.",
         "ar": "صدر دجاج مقرمش متبل ومغموس في صلصة حارة مع هالبينو مخلل وسلطة كولسلو."
       },
-      "price": 115,
+      "price": 520000,
       "badges": ["spicy"],
       "featured": true,
       "available": true
@@ -132,7 +132,7 @@
         "en": "Grilled angus beef, sautéed portobello mushrooms, Swiss cheese, and aromatic black truffle aioli.",
         "ar": "لحم أنجوس مشوي مع فطر بورتوبيللو سوتيه، جبنة سويسرية وصلصة مايونيز الكمأة السوداء."
       },
-      "price": 145,
+      "price": 650000,
       "badges": ["new"],
       "featured": false,
       "available": true
@@ -148,7 +148,7 @@
         "en": "Hand-cut Idaho potatoes fried golden and seasoned with rosemary sea salt.",
         "ar": "بطاطس مقلية ذهبية مقرمشة متبلة بملح البحر وإكليل الجبل."
       },
-      "price": 40,
+      "price": 180000,
       "badges": [],
       "featured": false,
       "available": true
@@ -164,7 +164,7 @@
         "en": "Eight thick-cut sweet Spanish onion rings in crunchy panko batter with honey mustard dip.",
         "ar": "8 حلقات بصل مقرمشة بتتبيلة البانكو مع صلصة الخردل والعسل."
       },
-      "price": 50,
+      "price": 220000,
       "badges": [],
       "featured": false,
       "available": true
@@ -180,7 +180,7 @@
         "en": "Freshly squeezed lemon and lime juice crushed with garden spearmint leaves over ice.",
         "ar": "عصير ليمون طبيعي طازج مع أوراق النعناع المنعشة والثلج المجروش."
       },
-      "price": 45,
+      "price": 180000,
       "badges": [],
       "featured": false,
       "available": true
@@ -196,7 +196,7 @@
         "en": "Slow-steeped 16-hour single-origin Ethiopian cold brew coffee served silky over ice.",
         "ar": "قهوة إثيوبية باردة ومقطرة ببطء لمدة 16 ساعة مع رغوة حريرية."
       },
-      "price": 60,
+      "price": 240000,
       "badges": ["new"],
       "featured": true,
       "available": true

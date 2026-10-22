@@ -21,9 +21,9 @@ const DEFAULT_EMPTY_MENU = {
     statusMode: 'auto',
     openTime: '12:00',
     closeTime: '00:00',
-    timezone: 'Africa/Cairo',
+    timezone: 'Asia/Beirut',
     social: { instagram: '', facebook: '', tiktok: '' },
-    currency: { en: 'EGP', ar: 'ج.م' },
+    currency: { en: 'LBP', ar: 'ل.ل' },
     ordering: {
       enabled: false,
       types: ['delivery', 'pickup', 'dinein'],

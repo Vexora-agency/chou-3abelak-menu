@@ -82,12 +82,12 @@ export function validateMenu(doc) {
   const closeTime = typeof s.closeTime === 'string' && TIME_REGEX.test(s.closeTime) ? s.closeTime : '00:00';
 
   // Timezone check
-  let timezone = typeof s.timezone === 'string' ? s.timezone.trim() : 'Africa/Cairo';
+  let timezone = typeof s.timezone === 'string' ? s.timezone.trim() : 'Asia/Beirut';
   try {
     Intl.DateTimeFormat(undefined, { timeZone: timezone });
   } catch {
     errors.push(`Invalid timezone: ${timezone}`);
-    timezone = 'Africa/Cairo';
+    timezone = 'Asia/Beirut';
   }
 
   // Social
@@ -109,7 +109,7 @@ export function validateMenu(doc) {
   const ord = s.ordering || {};
   const orderingEnabled = Boolean(ord.enabled);
   if (orderingEnabled && !WHATSAPP_REGEX.test(whatsapp)) {
-    errors.push('settings.whatsapp must be an international phone number (e.g. 201000000000) when ordering is enabled');
+    errors.push('settings.whatsapp must be an international phone number (e.g. 96170123456) when ordering is enabled');
   }
 
   const validTypes = ['delivery', 'pickup', 'dinein'];
@@ -117,11 +117,11 @@ export function validateMenu(doc) {
     ? ord.types.filter((t) => validTypes.includes(t))
     : ['delivery', 'pickup', 'dinein'];
 
-  const minOrder = typeof ord.minOrder === 'number' && ord.minOrder >= 0 && ord.minOrder <= 100000
+  const minOrder = typeof ord.minOrder === 'number' && ord.minOrder >= 0 && ord.minOrder <= 100000000
     ? Math.round(ord.minOrder * 100) / 100
     : 0;
 
-  const deliveryFee = typeof ord.deliveryFee === 'number' && ord.deliveryFee >= 0 && ord.deliveryFee <= 10000
+  const deliveryFee = typeof ord.deliveryFee === 'number' && ord.deliveryFee >= 0 && ord.deliveryFee <= 50000000
     ? Math.round(ord.deliveryFee * 100) / 100
     : 0;
 
@@ -141,7 +141,7 @@ export function validateMenu(doc) {
     closeTime,
     timezone,
     social,
-    currency: currency.en ? currency : { en: 'EGP', ar: 'ج.م' },
+    currency: currency.en ? currency : { en: 'LBP', ar: 'ل.ل' },
     ordering: {
       enabled: orderingEnabled,
       types: types.length ? types : ['delivery', 'pickup', 'dinein'],
@@ -214,7 +214,7 @@ export function validateMenu(doc) {
       errors.push(`Item "${id}" has non-existent categoryId "${categoryId}"`);
     }
 
-    const price = typeof item.price === 'number' && Number.isFinite(item.price) && item.price >= 0 && item.price <= 100000
+    const price = typeof item.price === 'number' && Number.isFinite(item.price) && item.price >= 0 && item.price <= 100000000
       ? Math.round(item.price * 100) / 100
       : 0;
 

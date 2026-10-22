@@ -91,7 +91,14 @@ export default function App() {
       let cached: MenuData | null = null;
       try {
         const raw = localStorage.getItem('menu_cache_v1');
-        if (raw) cached = JSON.parse(raw);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.settings?.currency?.en === 'EGP' || (parsed?.version || 1) < 2) {
+            localStorage.removeItem('menu_cache_v1');
+          } else {
+            cached = parsed;
+          }
+        }
       } catch {}
 
       try {

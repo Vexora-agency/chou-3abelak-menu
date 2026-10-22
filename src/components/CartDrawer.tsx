@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MenuData, MenuItem, CustomerDetails, OrderType } from '../types/menu';
-import { buildWhatsAppMessage } from '../utils/menuHelpers';
+import { buildWhatsAppMessage, formatPrice } from '../utils/menuHelpers';
 import { X, Plus, Minus, Trash2, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface CartDrawerProps {
@@ -95,8 +95,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     if (isBelowMin) {
       setErrorMsg(
         isAr
-          ? `الحد الأدنى للطلب هو ${ordering.minOrder} ${currency}`
-          : `Minimum order is ${ordering.minOrder} ${currency}`
+          ? `الحد الأدنى للطلب هو ${formatPrice(ordering.minOrder, currency)}`
+          : `Minimum order is ${formatPrice(ordering.minOrder, currency)}`
       );
       return;
     }
@@ -248,10 +248,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                             : 'bg-[#0A0A0A] text-[#FFC400]'
                         }`}
                       >
-                        {item.price * quantity} {currency}
+                        {formatPrice(item.price * quantity, currency)}
                       </span>
                       <span className={`text-[11px] font-semibold ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                        ({item.price} {currency}/pc)
+                        ({formatPrice(item.price, currency)}/pc)
                       </span>
                     </div>
                   </div>
@@ -479,7 +479,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   {isAr ? 'المجموع الفرعي:' : 'Subtotal:'}
                 </span>
                 <span className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-                  {subtotal} {currency}
+                  {formatPrice(subtotal, currency)}
                 </span>
               </div>
 
@@ -489,14 +489,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     {isAr ? 'رسوم التوصيل:' : 'Delivery Fee:'}
                   </span>
                   <span className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-                    {deliveryFee} {currency}
+                    {formatPrice(deliveryFee, currency)}
                   </span>
                 </div>
               )}
 
               {isBelowMin && (
                 <div className="text-amber-600 font-bold text-[11px] pt-1">
-                  * {isAr ? `الحد الأدنى للطلب ${ordering.minOrder} ${currency}` : `Minimum order is ${ordering.minOrder} ${currency}`}
+                  * {isAr ? `الحد الأدنى للطلب ${formatPrice(ordering.minOrder, currency)}` : `Minimum order is ${formatPrice(ordering.minOrder, currency)}`}
                 </div>
               )}
 
@@ -509,7 +509,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   {isAr ? 'الإجمالي الكلي:' : 'Total:'}
                 </span>
                 <span className="text-base px-3.5 py-1 rounded-full bg-[#FFC400] text-[#0A0A0A] font-black shadow-xs">
-                  {grandTotal} {currency}
+                  {formatPrice(grandTotal, currency)}
                 </span>
               </div>
             </div>

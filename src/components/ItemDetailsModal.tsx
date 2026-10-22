@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { MenuItem } from '../types/menu';
 import { X, Plus, Minus, Flame, Sparkles, Award } from 'lucide-react';
+import { formatPrice } from '../utils/menuHelpers';
 
 interface ItemDetailsModalProps {
   item: MenuItem | null;
@@ -105,7 +106,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
           </div>
 
           <div className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-lg font-black bg-[#FFC400] text-[#0A0A0A] shadow-sm">
-            {item.price} {currency}
+            {formatPrice(item.price, currency)}
           </div>
         </div>
 

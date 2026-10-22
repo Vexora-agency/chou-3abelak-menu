@@ -1,6 +1,7 @@
 import React from 'react';
 import { MenuItem, Category } from '../types/menu';
 import { Plus, Minus, Flame, Sparkles, Award } from 'lucide-react';
+import { formatPrice } from '../utils/menuHelpers';
 
 interface MenuListProps {
   categories: Category[];
@@ -138,7 +139,7 @@ export const MenuList: React.FC<MenuListProps> = ({
 
                         {/* Price Pill */}
                         <span className="px-3 py-1 rounded-full text-sm font-extrabold bg-[#FFC400] text-[#0A0A0A] shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform">
-                          {item.price} {currency}
+                          {formatPrice(item.price, currency)}
                         </span>
                       </div>
 
@@ -252,7 +253,7 @@ export const MenuList: React.FC<MenuListProps> = ({
                         darkMode ? 'border-neutral-800' : 'border-neutral-200'
                       }`}>
                         <span className={`font-extrabold text-sm ${darkMode ? 'text-[#FFC400]' : 'text-[#0A0A0A]'}`}>
-                          {item.price} {currency}
+                          {formatPrice(item.price, currency)}
                         </span>
 
                         {!isSoldOut && (

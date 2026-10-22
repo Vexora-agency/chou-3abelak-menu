@@ -25,9 +25,9 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const phoneLink = `tel:${menu.settings.phone || '+201000000000'}`;
+  const phoneLink = `tel:${menu.settings.phone || '+96170123456'}`;
   const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
-  const whatsappLink = `https://wa.me/${whatsappNum || '201000000000'}`;
+  const whatsappLink = `https://wa.me/${whatsappNum || '96170123456'}`;
   const mapLink = sanitizeUrl(menu.settings.mapUrl || 'https://maps.google.com');
 
   return (

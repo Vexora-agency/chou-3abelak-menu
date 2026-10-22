@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShoppingBag, ArrowRight, ArrowLeft } from 'lucide-react';
+import { formatPrice } from '../utils/menuHelpers';
 
 interface CartBarProps {
   totalCount: number;
@@ -51,7 +52,7 @@ export const CartBar: React.FC<CartBarProps> = ({
               {isAr ? 'إجمالي الطلب' : 'Your Order'}
             </div>
             <div className="text-base font-extrabold text-[#FFC400]">
-              {totalPrice} {currency}
+              {formatPrice(totalPrice, currency)}
             </div>
           </div>
         </div>

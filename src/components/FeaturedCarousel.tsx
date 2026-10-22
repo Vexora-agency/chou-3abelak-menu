@@ -1,6 +1,7 @@
 import React from 'react';
 import { MenuItem } from '../types/menu';
 import { Plus } from 'lucide-react';
+import { formatPrice } from '../utils/menuHelpers';
 
 interface FeaturedCarouselProps {
   items: MenuItem[];
@@ -114,7 +115,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                       : 'bg-[#FFC400] text-[#0A0A0A]'
                   }`}
                 >
-                  {item.price} {currency}
+                  {formatPrice(item.price, currency)}
                 </div>
               </div>
             </div>

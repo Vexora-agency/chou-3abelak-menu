@@ -22,7 +22,7 @@ export function isOpenNow(settings: MenuData['settings']): { isOpen: boolean; la
 
   // Auto mode
   try {
-    const tz = settings.timezone || 'Africa/Cairo';
+    const tz = settings.timezone || 'Asia/Beirut';
     const now = new Date();
     // Get time in target timezone
     const formatter = new Intl.DateTimeFormat('en-US', {
@@ -69,6 +69,12 @@ export function isOpenNow(settings: MenuData['settings']): { isOpen: boolean; la
   }
 }
 
+export function formatPrice(amount: number, currency?: string): string {
+  if (isNaN(amount) || amount === undefined || amount === null) return currency ? `0 ${currency}` : '0';
+  const formatted = Math.round(amount).toLocaleString('en-US');
+  return currency ? `${formatted} ${currency}` : formatted;
+}
+
 export function buildWhatsAppMessage(
   menu: MenuData,
   cartItems: { item: MenuItem; quantity: number }[],
@@ -90,16 +96,16 @@ export function buildWhatsAppMessage(
     const itemTotal = item.price * quantity;
     subtotal += itemTotal;
     const name = isAr ? item.name.ar : item.name.en;
-    lines.push(`${quantity}x ${name} — ${itemTotal} ${currency}`);
+    lines.push(`${quantity}x ${name} — ${formatPrice(itemTotal, currency)}`);
   });
 
   lines.push('-------------------------');
-  lines.push(isAr ? `المجموع: ${subtotal} ${currency}` : `Subtotal: ${subtotal} ${currency}`);
+  lines.push(isAr ? `المجموع: ${formatPrice(subtotal, currency)}` : `Subtotal: ${formatPrice(subtotal, currency)}`);
 
   if (customer.orderType === 'delivery' && menu.settings.ordering.deliveryFee > 0) {
     const fee = menu.settings.ordering.deliveryFee;
-    lines.push(isAr ? `رسوم التوصيل: ${fee} ${currency}` : `Delivery Fee: ${fee} ${currency}`);
-    lines.push(isAr ? `الإجمالي النهائي: ${subtotal + fee} ${currency}` : `Total: ${subtotal + fee} ${currency}`);
+    lines.push(isAr ? `رسوم التوصيل: ${formatPrice(fee, currency)}` : `Delivery Fee: ${formatPrice(fee, currency)}`);
+    lines.push(isAr ? `الإجمالي النهائي: ${formatPrice(subtotal + fee, currency)}` : `Total: ${formatPrice(subtotal + fee, currency)}`);
   }
 
   lines.push('-------------------------');

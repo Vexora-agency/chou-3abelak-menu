@@ -98,13 +98,16 @@ export default function App() {
         // Try to fetch from /api/menu or fallback to /menu.seed.json
         const res = await fetch('/api/menu').catch(() => null);
         if (res && res.ok) {
-          const data: MenuData = await res.json();
-          setMenu(data);
-          try {
-            localStorage.setItem('menu_cache_v1', JSON.stringify(data));
-          } catch {}
-          setLoading(false);
-          return;
+          const contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const data: MenuData = await res.json();
+            setMenu(data);
+            try {
+              localStorage.setItem('menu_cache_v1', JSON.stringify(data));
+            } catch {}
+            setLoading(false);
+            return;
+          }
         }
       } catch {}
 

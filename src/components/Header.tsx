@@ -391,13 +391,11 @@ export const Header: React.FC<HeaderProps> = ({
           className="relative w-full max-w-[320px] sm:max-w-[380px] md:max-w-[440px] aspect-[1440/532] mx-auto overflow-hidden rounded-xl"
           style={{ isolation: 'isolate', backgroundColor: 'transparent' }}
         >
-          {/* Final 100% Transparent PNG shown once animation completes (1440x532 HD) */}
+          {/* Final 100% Transparent PNG in matching 1440x532 HD */}
           <img
             src="/assets/logo-final.png"
             alt={isAr ? menu.settings.name.ar : menu.settings.name.en}
-            className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-700 pointer-events-none ${
-              hasEnded ? 'opacity-100' : 'opacity-0'
-            }`}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
             style={{
               backgroundColor: 'transparent',
               imageRendering: '-webkit-optimize-contrast',
@@ -411,9 +409,7 @@ export const Header: React.FC<HeaderProps> = ({
             ref={canvasRef}
             width={1440}
             height={532}
-            className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-700 pointer-events-none ${
-              hasEnded ? 'opacity-0' : 'opacity-100'
-            }`}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
             style={{
               backgroundColor: 'transparent',
               imageRendering: '-webkit-optimize-contrast',

@@ -36,6 +36,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [dirty, setDirty] = useState(false);
   const [activeTab, setActiveTab] = useState<'settings' | 'categories' | 'items' | 'backup'>('settings');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [bannerNotice, setBannerNotice] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
+
+  const showNotice = (message: string, type: 'error' | 'success' = 'error') => {
+    setBannerNotice({ message, type });
+    setTimeout(() => {
+      setBannerNotice((curr) => (curr?.message === message ? null : curr));
+    }, 4500);
+  };
 
   // Item edit modal state
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -92,10 +100,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleDeleteCategory = (catId: string) => {
     const itemsCount = menu.items.filter((i) => i.categoryId === catId).length;
     if (itemsCount > 0) {
-      alert(
+      showNotice(
         isAr
           ? `لا يمكن حذف هذا القسم لأنه يحتوي على ${itemsCount} وجبات. انقلها أو احذفها أولاً.`
-          : `Cannot delete this category because it contains ${itemsCount} items. Move or delete them first.`
+          : `Cannot delete this category because it contains ${itemsCount} items. Move or delete them first.`,
+        'error'
       );
       return;
     }
@@ -109,7 +118,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleSaveItemModal = () => {
     if (!editingItem) return;
     if (!editingItem.name.en.trim() && !editingItem.name.ar.trim()) {
-      alert(isAr ? 'يرجى إدخال اسم الوجبة' : 'Item name is required');
+      showNotice(isAr ? 'يرجى إدخال اسم الوجبة' : 'Item name is required', 'error');
       return;
     }
 
@@ -180,12 +189,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         if (parsed.settings && Array.isArray(parsed.categories) && Array.isArray(parsed.items)) {
           setMenu(parsed);
           setDirty(true);
-          alert(isAr ? 'تم استيراد البيانات بنجاح! اضغط على زر الحفظ لتثبيتها.' : 'Menu imported successfully! Click Save to apply.');
+          showNotice(
+            isAr
+              ? 'تم استيراد البيانات بنجاح! اضغط على زر الحفظ لتثبيتها.'
+              : 'Menu imported successfully! Click Save to apply.',
+            'success'
+          );
         } else {
-          alert('Invalid menu JSON format');
+          showNotice('Invalid menu JSON format', 'error');
         }
       } catch {
-        alert('Failed to parse JSON file');
+        showNotice('Failed to parse JSON file', 'error');
       }
     };
     reader.readAsText(file);
@@ -215,6 +229,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           </span>
         </div>
       </div>
+
+      {bannerNotice && (
+        <div
+          role="alert"
+          className={`mt-4 p-3 rounded-xl border flex items-center justify-between text-xs font-semibold ${
+            bannerNotice.type === 'error'
+              ? 'bg-red-950/80 border-red-800 text-red-200'
+              : 'bg-green-950/80 border-green-800 text-green-200'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={15} />
+            <span>{bannerNotice.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBannerNotice(null)}
+            className="text-neutral-400 hover:text-white ml-2 text-sm font-bold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <h1 className="text-2xl font-black mt-4 mb-2 flex items-center gap-2">
         <span>🍔</span> {isAr ? 'إدارة قائمة الطعام' : 'Menu Management'}

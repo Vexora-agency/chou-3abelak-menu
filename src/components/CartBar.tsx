@@ -53,11 +53,11 @@ export const CartBar: React.FC<CartBarProps> = ({
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') onOpenCart();
         }}
-        className="pointer-events-auto w-full max-w-[480px] sm:max-w-lg md:max-w-xl h-14 bg-[#0A0A0A] border-2 border-[#FFC400] text-white rounded-full px-5 sm:px-6 flex items-center justify-between gap-2 shadow-2xl cursor-pointer hover:scale-[1.01] active:scale-[0.98] transition-transform anim-bounce-cart"
+        className="pointer-events-auto w-full max-w-[480px] sm:max-w-lg md:max-w-xl h-14 bg-[#0A0A0A] border-2 border-[#FFC400] text-white rounded-full px-5 sm:px-6 flex items-center justify-between gap-2 shadow-2xl cursor-pointer hover:scale-[1.01] active:scale-[0.98] transition-transform anim-cart-bar"
         aria-live="polite"
       >
         {/* Left: Bag Icon & Item Count */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <div className="relative">
             <div className="w-8 h-8 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center font-black">
               <ShoppingBag size={17} className="stroke-[2.5]" />
@@ -68,10 +68,10 @@ export const CartBar: React.FC<CartBarProps> = ({
           </div>
 
           <div>
-            <div className="text-xs text-neutral-400 font-medium">
+            <div className="text-xs text-neutral-400 font-medium leading-tight">
               {isAr ? 'إجمالي الطلب' : 'Your Order'}
             </div>
-            <div className="text-base font-extrabold text-[#FFC400]">
+            <div className="text-base font-extrabold text-[#FFC400] whitespace-nowrap leading-tight">
               {formatPrice(totalPrice, currency)}
             </div>
           </div>
@@ -87,11 +87,11 @@ export const CartBar: React.FC<CartBarProps> = ({
             }}
             aria-label={isAr ? 'إفراغ السلة' : 'Clear cart'}
             title={isAr ? 'حذف السلة' : 'Clear cart'}
-            className="w-9 h-9 flex-shrink-0 rounded-full text-red-500/70 hover:text-red-500 hover:bg-red-500/10 flex items-center justify-center transition-all active:scale-90"
+            className="max-[379px]:hidden w-9 h-9 flex-shrink-0 rounded-full text-red-500/70 hover:text-red-500 hover:bg-red-500/10 flex items-center justify-center transition-all active:scale-90"
           >
             <Trash2 size={15} />
           </button>
-          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider bg-[#FFC400] text-[#0A0A0A] px-4 py-2 rounded-full shadow-sm">
+          <div className="flex items-center gap-1.5 whitespace-nowrap text-[11px] sm:text-xs font-bold uppercase tracking-wide bg-[#FFC400] text-[#0A0A0A] px-3.5 sm:px-4 py-2 rounded-full shadow-sm">
             <span>{isAr ? 'معاينة الطلب' : 'View Order'}</span>
             {isAr ? <ArrowLeft size={14} className="stroke-[3]" /> : <ArrowRight size={14} className="stroke-[3]" />}
           </div>

@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Phone, MessageCircle, MapPin, Moon, Sun, Settings } from 'lucide-react';
+import { motion, useScroll, useTransform } from 'motion/react';
 import { MenuData } from '../types/menu';
 import { isOpenNow, sanitizeUrl } from '../utils/menuHelpers';
 
@@ -9,7 +10,7 @@ interface HeaderProps {
   onToggleLang: () => void;
   darkMode: boolean;
   onToggleDarkMode: () => void;
-  onOpenAdmin: () => void;
+  onOpenAdmin?: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
 }
@@ -50,6 +51,11 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
 }) => {
   const isAr = lang === 'ar';
+  const { scrollY } = useScroll();
+  // Gentle depth on scroll: brand block drifts down a touch, the glow drifts up
+  // (always on - site owner decision).
+  const parY = useTransform(scrollY, [0, 320], [0, 46]);
+  const glowY = useTransform(scrollY, [0, 320], [0, -30]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const smokeCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -71,6 +77,10 @@ export const Header: React.FC<HeaderProps> = ({
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const sCtx = smokeCanvas.getContext('2d');
     if (!ctx || !sCtx) return;
+
+    // The intro always plays for everyone (site owner decision): no reduced-motion
+    // skip here. If playback is truly blocked, the catch/stall fallbacks below
+    // still show the final logo so the header never stays blank.
 
     // Enable high-definition image smoothing
     ctx.imageSmoothingEnabled = true;
@@ -296,19 +306,11 @@ export const Header: React.FC<HeaderProps> = ({
             kick();
           })
           .catch(() => {
-            const resumeOnInteraction = () => {
-              video.defaultMuted = true;
-              video.muted = true;
-              video.play().then(() => {
-                kick();
-              }).catch(() => {});
-              window.removeEventListener('click', resumeOnInteraction);
-              window.removeEventListener('touchstart', resumeOnInteraction);
-              window.removeEventListener('scroll', resumeOnInteraction);
-            };
-            window.addEventListener('click', resumeOnInteraction, { once: true });
-            window.addEventListener('touchstart', resumeOnInteraction, { once: true });
-            window.addEventListener('scroll', resumeOnInteraction, { once: true });
+            // Autoplay blocked (e.g. iOS Low Power Mode): show the final logo right away
+            isRunning = false;
+            finished = true;
+            setHasEnded(true);
+            setEngineDone(true);
           });
       }
     };
@@ -326,12 +328,23 @@ export const Header: React.FC<HeaderProps> = ({
     };
     video.addEventListener('timeupdate', handleTimeUpdate);
 
+    // Safety net: if the video never starts moving, show the final logo
+    const stallTimer = window.setTimeout(() => {
+      if (video.currentTime === 0 && !finished) {
+        isRunning = false;
+        finished = true;
+        setHasEnded(true);
+        setEngineDone(true);
+      }
+    }, 3500);
+
     // Pause the whole engine while the header is scrolled out of view and
     // resume when it comes back: zero canvas cost during menu scrolling,
     // with visuals identical whenever the header is visible.
     const io = new IntersectionObserver(
       (entries) => {
         isRunning = entries[0]?.isIntersecting ?? true;
+        headerRef.current?.setAttribute('data-paused', isRunning ? 'false' : 'true');
         if (isRunning) kick();
       },
       { threshold: 0 }
@@ -340,6 +353,7 @@ export const Header: React.FC<HeaderProps> = ({
 
     return () => {
       isRunning = false;
+      window.clearTimeout(stallTimer);
       io.disconnect();
       cancelAnimationFrame(animId);
       animId = 0;
@@ -360,81 +374,97 @@ export const Header: React.FC<HeaderProps> = ({
   const whatsappLink = `https://wa.me/${whatsappNum || '96170123456'}`;
   const mapLink = sanitizeUrl(menu.settings.mapUrl || 'https://maps.google.com');
 
+  // Entrance choreography: content rises in while the logo video draws itself
+  // (always on - site owner decision).
+  const intro = 1.5;
+  const rise = (delay: number) => ({
+    initial: { opacity: 0, y: 14 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] as const },
+  });
+
   return (
     <header
       ref={headerRef}
-      className="relative overflow-hidden bg-[#0A0A0A] text-[#FFFFFF] rounded-b-[28px] md:rounded-b-[36px] border-b-[5px] border-[#FFC400] pt-4 sm:pt-6 px-5 sm:px-8 md:px-12 pb-7 sm:pb-9 shadow-2xl">
-      {/* Decorative ambient breathing ring */}
-      <div
-        className="absolute -right-16 -top-16 sm:-right-10 sm:-top-10 w-52 sm:w-64 md:w-80 h-52 sm:h-64 md:h-80 rounded-full border-[28px] sm:border-[36px] border-[#FFC400] opacity-15 pointer-events-none"
-        aria-hidden="true"
-      />
-
-      {/* Decorative ambient hatch pattern */}
-      <div
-        className="absolute -left-3 bottom-16 sm:bottom-20 w-32 sm:w-44 h-24 sm:h-32 opacity-15 pointer-events-none"
-        style={{
-          background: 'repeating-linear-gradient(135deg, #FFC400 0, #FFC400 2px, transparent 2px, transparent 12px)'
-        }}
-        aria-hidden="true"
-      />
+      className="header-shell relative isolate overflow-hidden bg-[#0A0A0A] text-white rounded-b-[32px] md:rounded-b-[44px] pt-4 sm:pt-6 px-5 sm:px-8 md:px-12 pb-10 sm:pb-12 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.6)]"
+    >
+      {/* Warm spotlight behind the logo (replaces the old ring + hatch pattern) */}
+      <motion.div style={{ y: glowY }} className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <div className="header-spot" />
+      </motion.div>
+      <div className="header-grain" aria-hidden="true" />
+      <div className="edge-line edge-line-b" aria-hidden="true" />
 
       {/* Top Utility Row */}
-      <div className="relative flex justify-between items-center z-10 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
-        {/* Language Switcher Pill */}
-        <div className="flex bg-[#1C1C1C] rounded-full p-1 border border-white/10 shadow-inner">
-          <button
-            type="button"
-            onClick={lang === 'en' ? undefined : onToggleLang}
-            className={`min-w-[44px] h-9 flex items-center justify-center rounded-full text-xs font-bold transition-all ${
-              lang === 'en'
-                ? 'bg-[#FFC400] text-[#0A0A0A] shadow-md'
-                : 'text-white/80 hover:text-white'
-            }`}
-            aria-label="Switch to English"
-          >
-            EN
-          </button>
-          <button
-            type="button"
-            onClick={lang === 'ar' ? undefined : onToggleLang}
-            className={`min-w-[44px] h-9 flex items-center justify-center rounded-full text-xs font-bold transition-all ${
-              lang === 'ar'
-                ? 'bg-[#FFC400] text-[#0A0A0A] shadow-md'
-                : 'text-white/80 hover:text-white'
-            }`}
-            aria-label="التبديل إلى العربية"
-          >
-            عربي
-          </button>
+      <motion.div
+        {...rise(0.1)}
+        className="relative z-10 flex justify-between items-center max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full"
+      >
+        <div className="glass-pill flex p-1 rounded-full">
+          {(['en', 'ar'] as const).map((code) => {
+            const active = lang === code;
+            return (
+              <button
+                key={code}
+                type="button"
+                onClick={active ? undefined : onToggleLang}
+                className={`relative min-w-[48px] h-9 px-3 rounded-full text-xs font-bold transition-colors ${
+                  active ? 'text-[#0A0A0A]' : 'text-white/75 hover:text-white'
+                }`}
+                aria-label={code === 'en' ? 'Switch to English' : 'التبديل إلى العربية'}
+                aria-pressed={active}
+              >
+                {active && (
+                  <motion.span
+                    layoutId="lang-pill"
+                    className="absolute inset-0 rounded-full bg-[#FFC400] shadow-[0_4px_14px_-2px_rgba(255,196,0,0.6)]"
+                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                  />
+                )}
+                <span className="relative z-10">{code === 'en' ? 'EN' : 'عربي'}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Action Controls: Theme & Admin */}
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onToggleDarkMode}
-            className="w-11 h-11 rounded-full border border-[#FFC400] bg-[#1C1C1C]/60 text-[#FFC400] flex items-center justify-center transition-transform active:scale-95 hover:bg-[#FFC400]/10"
+            className="glass-pill btn-tactile w-11 h-11 rounded-full text-[#FFC400] flex items-center justify-center"
             aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             title={darkMode ? (isAr ? 'الوضع النهاري' : 'Light Mode') : (isAr ? 'الوضع الليلي' : 'Dark Mode')}
           >
-            {darkMode ? <Sun size={19} /> : <Moon size={19} />}
+            <motion.span
+              key={darkMode ? 'sun' : 'moon'}
+              initial={{ rotate: -80, opacity: 0, scale: 0.6 }}
+              animate={{ rotate: 0, opacity: 1, scale: 1 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="flex"
+            >
+              {darkMode ? <Sun size={19} /> : <Moon size={19} />}
+            </motion.span>
           </button>
 
-          <button
-            type="button"
-            onClick={onOpenAdmin}
-            className="w-11 h-11 rounded-full border border-white/20 bg-[#1C1C1C]/60 text-white/80 hover:text-[#FFC400] hover:border-[#FFC400] flex items-center justify-center transition-transform active:scale-95"
-            aria-label="Admin Control Panel"
-            title={isAr ? 'لوحة التحكم الإدارية' : 'Admin Management'}
-          >
-            <Settings size={19} />
-          </button>
+          {onOpenAdmin && (
+            <button
+              type="button"
+              onClick={onOpenAdmin}
+              className="glass-pill btn-tactile w-11 h-11 rounded-full text-white/80 hover:text-[#FFC400] flex items-center justify-center"
+              aria-label="Admin Control Panel"
+              title={isAr ? 'لوحة التحكم الإدارية' : 'Admin Management'}
+            >
+              <Settings size={19} />
+            </button>
+          )}
         </div>
-      </div>
+      </motion.div>
 
-      {/* Center Brand Identity Container */}
-      <div className="relative text-center mt-3 sm:mt-5 z-10 flex flex-col items-center max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
+      {/* Center Brand Identity */}
+      <motion.div
+        style={{ y: parY }}
+        className="relative z-10 text-center mt-3 sm:mt-5 flex flex-col items-center max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full"
+      >
         {/* Logo Container with Transparent Video & Atmospheric Sizzle Smoke */}
         <div
           className="relative w-full max-w-[320px] sm:max-w-[380px] md:max-w-[440px] aspect-[1440/532] mx-auto overflow-hidden rounded-xl"
@@ -447,9 +477,7 @@ export const Header: React.FC<HeaderProps> = ({
             className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-700 pointer-events-none ${
               hasEnded ? 'opacity-100' : 'opacity-0'
             }`}
-            style={{
-              backgroundColor: 'transparent',
-            }}
+            style={{ backgroundColor: 'transparent' }}
             width={1440}
             height={532}
             decoding="async"
@@ -463,12 +491,10 @@ export const Header: React.FC<HeaderProps> = ({
             className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-700 pointer-events-none ${
               hasEnded ? 'opacity-0' : 'opacity-100'
             } ${engineDone ? 'hidden' : ''}`}
-            style={{
-              backgroundColor: 'transparent',
-            }}
+            style={{ backgroundColor: 'transparent' }}
           />
 
-          {/* Cinematic Gourmet Smoke & Sizzle Sparks Overlay Canvas (720x266 buffer) */}
+          {/* Smoke & Sizzle Sparks Overlay Canvas (720x266 buffer) */}
           <canvas
             ref={smokeCanvasRef}
             width={720}
@@ -476,10 +502,7 @@ export const Header: React.FC<HeaderProps> = ({
             className={`absolute inset-0 w-full h-full object-contain pointer-events-none transition-opacity duration-1000 ${
               hasEnded ? 'opacity-0' : 'opacity-100'
             } ${engineDone ? 'hidden' : ''}`}
-            style={{
-              backgroundColor: 'transparent',
-              mixBlendMode: 'screen',
-            }}
+            style={{ backgroundColor: 'transparent', mixBlendMode: 'screen' }}
           />
 
           {/* Hidden Source Video Engine */}
@@ -500,56 +523,68 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Visually Hidden Semantic H1 for SEO / Screen Readers */}
-        <h1 className="sr-only">
-          {isAr ? menu.settings.name.ar : menu.settings.name.en}
-        </h1>
+        <h1 className="sr-only">{isAr ? menu.settings.name.ar : menu.settings.name.en}</h1>
 
-        {/* Tagline */}
-        <p className="text-[13px] font-medium tracking-[3px] uppercase text-[#FFC400] mt-1.5">
-          {isAr ? menu.settings.tagline.ar : menu.settings.tagline.en}
-        </p>
+        {/* Tagline flanked by hairlines */}
+        <motion.div {...rise(intro)} className="mt-2 flex items-center justify-center gap-3">
+          <span className="h-px w-8 sm:w-12 bg-gradient-to-r from-transparent to-[#FFC400]/70" aria-hidden="true" />
+          <p
+            className={`font-semibold text-[#FFC400] ${
+              isAr ? 'text-[14px] sm:text-[15px] tracking-normal' : 'text-[12px] sm:text-[13px] tracking-[3px] uppercase'
+            }`}
+          >
+            {isAr ? menu.settings.tagline.ar : menu.settings.tagline.en}
+          </p>
+          <span className="h-px w-8 sm:w-12 bg-gradient-to-l from-transparent to-[#FFC400]/70" aria-hidden="true" />
+        </motion.div>
 
         {/* Live Operational Status Pill */}
-        <div className="inline-flex items-center gap-2 mt-3 bg-[#1C1C1C] border border-white/10 rounded-full py-1.5 px-4 text-xs font-medium text-white shadow-sm">
-          <span
-            className={`w-2 h-2 rounded-full ${
-              status.isOpen ? 'bg-[#FFC400] anim-dot shadow-[0_0_8px_#FFC400]' : 'bg-red-500'
-            }`}
-            aria-hidden="true"
-          />
+        <motion.div
+          {...rise(intro + 0.2)}
+          className="glass-pill inline-flex items-center gap-2.5 mt-4 rounded-full py-1.5 px-4 text-xs font-medium text-white"
+        >
+          <span className="relative flex h-2 w-2" aria-hidden="true">
+            {status.isOpen && (
+              <span className="absolute inline-flex h-full w-full rounded-full bg-[#FFC400] opacity-70 animate-ping" />
+            )}
+            <span className={`relative inline-flex h-2 w-2 rounded-full ${status.isOpen ? 'bg-[#FFC400]' : 'bg-red-500'}`} />
+          </span>
           <span>{isAr ? status.label.ar : status.label.en}</span>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
-      {/* Action Buttons Trio: Call, WhatsApp, Map */}
-      <div className="relative flex flex-col min-[360px]:flex-row justify-center gap-2.5 sm:gap-4 mt-6 z-10 w-full max-w-sm sm:max-w-md mx-auto">
-        <a
+      {/* Actions: WhatsApp is the primary call to action, Call and Map are secondary */}
+      <div className="relative z-10 flex flex-col min-[360px]:flex-row justify-center gap-2.5 sm:gap-3.5 mt-7 w-full max-w-sm sm:max-w-md mx-auto">
+        <motion.a
+          {...rise(intro + 0.35)}
           href={phoneLink}
-          className="btn-tactile w-full min-[360px]:w-auto min-[360px]:flex-1 h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center gap-1.5 text-sm font-bold shadow-md hover:bg-[#ffd033]"
+          className="btn-tactile btn-glass w-full min-[360px]:w-auto min-[360px]:flex-1 h-12 rounded-full flex items-center justify-center gap-1.5 text-sm font-bold"
         >
           <Phone size={17} className="stroke-[2.2]" />
           <span>{isAr ? 'اتصال' : 'Call'}</span>
-        </a>
+        </motion.a>
 
-        <a
+        <motion.a
+          {...rise(intro + 0.45)}
           href={whatsappLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-tactile w-full min-[360px]:w-auto min-[360px]:flex-1 h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center gap-1.5 text-sm font-bold shadow-md hover:bg-[#ffd033]"
+          className="btn-tactile btn-primary-shine w-full min-[360px]:w-auto min-[360px]:flex-[1.35] h-12 rounded-full flex items-center justify-center gap-1.5 text-sm font-extrabold"
         >
-          <MessageCircle size={17} className="stroke-[2.2]" />
+          <MessageCircle size={17} className="stroke-[2.4]" />
           <span>{isAr ? 'واتساب' : 'WhatsApp'}</span>
-        </a>
+        </motion.a>
 
-        <a
+        <motion.a
+          {...rise(intro + 0.55)}
           href={mapLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-tactile w-full min-[360px]:w-auto min-[360px]:flex-1 h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center gap-1.5 text-sm font-bold shadow-md hover:bg-[#ffd033]"
+          className="btn-tactile btn-glass w-full min-[360px]:w-auto min-[360px]:flex-1 h-12 rounded-full flex items-center justify-center gap-1.5 text-sm font-bold"
         >
           <MapPin size={17} className="stroke-[2.2]" />
           <span>{isAr ? 'الموقع' : 'Map'}</span>
-        </a>
+        </motion.a>
       </div>
     </header>
   );

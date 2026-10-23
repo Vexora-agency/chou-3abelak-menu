@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { Search, X } from 'lucide-react';
 import { Category } from '../types/menu';
 
@@ -23,6 +24,10 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
 }) => {
   const isAr = lang === 'ar';
   const visibleCategories = categories.filter((c) => c.visible);
+  const chips = [
+    { id: 'all', label: isAr ? 'الكل' : 'All' },
+    ...visibleCategories.map((c) => ({ id: c.id, label: isAr ? c.name.ar : c.name.en })),
+  ];
 
   return (
     <div className="px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
@@ -72,40 +77,30 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
           darkMode ? 'bg-[#0A0A0A] border-b border-white/5' : 'bg-white border-b border-black/5'
         }`}
       >
-        {/* "All" Chip */}
-        <button
-          type="button"
-          onClick={() => onSelectCategory('all')}
-          className={`flex-shrink-0 h-11 px-5 rounded-full text-sm transition-all btn-tactile ${
-            selectedCategory === 'all'
-              ? 'bg-[#FFC400] text-[#0A0A0A] font-bold border-[1.5px] border-[#FFC400]'
-              : darkMode
-              ? 'bg-transparent text-white/90 font-semibold border-[1.5px] border-white hover:border-[#FFC400]'
-              : 'bg-transparent text-[#0A0A0A] font-semibold border-[1.5px] border-[#0A0A0A]'
-          }`}
-          aria-pressed={selectedCategory === 'all'}
-        >
-          {isAr ? 'الكل' : 'All'}
-        </button>
-
-        {/* Dynamic Category Chips */}
-        {visibleCategories.map((cat) => {
-          const isSelected = selectedCategory === cat.id;
+        {chips.map((chip) => {
+          const isSelected = selectedCategory === chip.id;
           return (
             <button
-              key={cat.id}
+              key={chip.id}
               type="button"
-              onClick={() => onSelectCategory(cat.id)}
-            className={`flex-shrink-0 h-11 px-5 rounded-full text-sm transition-all btn-tactile ${
-              isSelected
-                ? 'bg-[#FFC400] text-[#0A0A0A] font-bold border-[1.5px] border-[#FFC400]'
-                : darkMode
-                ? 'bg-transparent text-white/90 font-semibold border-[1.5px] border-white hover:border-[#FFC400]'
-                : 'bg-transparent text-[#0A0A0A] font-semibold border-[1.5px] border-[#0A0A0A]'
-            }`}
+              onClick={() => onSelectCategory(chip.id)}
+              className={`relative flex-shrink-0 h-11 px-5 rounded-full text-sm transition-colors btn-tactile border-[1.5px] ${
+                isSelected
+                  ? 'text-[#0A0A0A] font-bold border-[#FFC400]'
+                  : darkMode
+                  ? 'text-white/90 font-semibold border-white hover:border-[#FFC400]'
+                  : 'text-[#0A0A0A] font-semibold border-[#0A0A0A]'
+              }`}
               aria-pressed={isSelected}
             >
-              {isAr ? cat.name.ar : cat.name.en}
+              {isSelected && (
+                <motion.span
+                  layoutId="chip-pill"
+                  className="absolute -inset-[1.5px] rounded-full bg-[#FFC400]"
+                  transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                />
+              )}
+              <span className="relative z-10">{chip.label}</span>
             </button>
           );
         })}

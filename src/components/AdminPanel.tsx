@@ -872,7 +872,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             onClick={() => setEditingItem(null)}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/70"
           />
           <div className="relative z-10 w-full max-w-[480px] bg-[#141414] border-2 border-[#FFC400] rounded-2xl p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
             <h3 className="text-lg font-black">

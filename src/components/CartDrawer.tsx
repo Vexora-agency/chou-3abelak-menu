@@ -124,7 +124,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-black/60 anim-fade-in backdrop-blur-sm"
+        className="fixed inset-0 bg-black/60 anim-fade-in"
         aria-hidden="true"
       />
 

@@ -5,7 +5,7 @@ import { sanitizeUrl } from '../utils/menuHelpers';
 
 interface FooterProps {
   menu: MenuData;
-  onOpenAdmin: () => void;
+  onOpenAdmin?: () => void;
   lang: 'en' | 'ar';
 }
 
@@ -31,7 +31,9 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
   const mapLink = sanitizeUrl(menu.settings.mapUrl || 'https://maps.google.com');
 
   return (
-    <footer className="relative mt-12 bg-[#0A0A0A] text-white rounded-t-[28px] md:rounded-t-[36px] border-t-[5px] border-[#FFC400] pt-10 px-5 sm:px-8 md:px-12 pb-8 shadow-2xl">
+    <footer className="relative isolate mt-12 bg-[#0A0A0A] text-white rounded-t-[32px] md:rounded-t-[44px] pt-11 px-5 sm:px-8 md:px-12 pb-8 shadow-[0_-24px_60px_-24px_rgba(0,0,0,0.6)]">
+      <div className="header-grain" aria-hidden="true" />
+      <div className="edge-line edge-line-t" aria-hidden="true" />
       {/* Floating Back to Top Button */}
       {showBackToTop && (
         <button
@@ -44,7 +46,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
         </button>
       )}
 
-      <div className="max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
+      <div className="relative z-10 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
         {/* Responsive Grid: 1-col mobile, 3-col tablet & desktop */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start mb-6">
           {/* Col 1: Brand Logo & Tagline */}
@@ -54,7 +56,6 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
                 src="/assets/logo-final.png"
                 alt={isAr ? menu.settings.name.ar : menu.settings.name.en}
                 className="w-full h-auto object-contain"
-                style={{ mixBlendMode: 'lighten' }}
               />
             </div>
             <p className="text-xs text-neutral-400 font-medium leading-relaxed max-w-xs">
@@ -157,14 +158,16 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
           <div>
             © 2026 {isAr ? menu.settings.name.ar : menu.settings.name.en} · All Rights Reserved
           </div>
-          <button
-            type="button"
-            onClick={onOpenAdmin}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-[#FFC400] hover:border-[#FFC400] transition-colors"
-          >
-            <Shield size={12} />
-            <span>{isAr ? 'لوحة التحكم للمطعم' : 'Admin Portal'}</span>
-          </button>
+          {onOpenAdmin && (
+            <button
+              type="button"
+              onClick={onOpenAdmin}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-[#FFC400] hover:border-[#FFC400] transition-colors"
+            >
+              <Shield size={12} />
+              <span>{isAr ? 'لوحة التحكم للمطعم' : 'Admin Portal'}</span>
+            </button>
+          )}
         </div>
       </div>
     </footer>

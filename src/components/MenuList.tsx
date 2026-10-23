@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { MenuItem, Category } from '../types/menu';
 import { Plus, Minus, Flame, Sparkles, Award } from 'lucide-react';
 import { formatPrice } from '../utils/menuHelpers';
@@ -70,7 +71,7 @@ export const MenuList: React.FC<MenuListProps> = ({
   const visibleCats = categories.filter((c) => c.visible && activeCategoryIds.includes(c.id));
 
   return (
-    <div className="px-5 sm:px-8 pb-12 space-y-10 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
+    <div className="px-5 sm:px-8 pb-12 space-y-7 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
       {visibleCats.map((cat) => {
         const catItems = filteredItems.filter((i) => i.categoryId === cat.id);
         const isBurgerSection = cat.id.toLowerCase().includes('burger');
@@ -79,7 +80,14 @@ export const MenuList: React.FC<MenuListProps> = ({
           <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-16 menu-section">
             {/* Category Header */}
             <div className="flex items-center gap-2.5 mb-4">
-              <span className="w-1.5 h-6 bg-[#FFC400] rounded-sm" aria-hidden="true" />
+              <motion.span
+                className="w-1.5 h-6 bg-[#FFC400] rounded-sm origin-center"
+                initial={{ scaleY: 0 }}
+                whileInView={{ scaleY: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                aria-hidden="true"
+              />
               <h2 className={`text-xl sm:text-2xl font-extrabold ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
                 {isAr ? cat.name.ar : cat.name.en}
               </h2>
@@ -88,15 +96,19 @@ export const MenuList: React.FC<MenuListProps> = ({
             {/* List View for Burgers: 1-col on mobile, 2-col on tablet/desktop */}
             {isBurgerSection ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-4">
-                {catItems.map((item) => {
+                {catItems.map((item, idx) => {
                   const qty = cartQuantities[item.id] || 0;
                   const isSoldOut = !item.available;
 
                   return (
-                    <div
+                    <motion.div
                       key={item.id}
+                      initial={{ opacity: 0, y: 18 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: '-40px' }}
+                      transition={{ duration: 0.5, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
                       onClick={() => !isSoldOut && onOpenItem(item)}
-                      className={`group relative pb-4 border-b transition-all ${
+                      className={`group relative pb-4 border-b transition-colors ${
                         darkMode ? 'border-neutral-800' : 'border-neutral-200'
                       } ${isSoldOut ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
                     >
@@ -194,22 +206,26 @@ export const MenuList: React.FC<MenuListProps> = ({
                           </div>
                         )}
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
             ) : (
               /* Grid View for Sides, Drinks, etc. (2-col mobile, 3-col tablet, 4-col desktop) */
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5">
-                {catItems.map((item) => {
+                {catItems.map((item, idx) => {
                   const qty = cartQuantities[item.id] || 0;
                   const isSoldOut = !item.available;
 
                   return (
-                    <div
+                    <motion.div
                       key={item.id}
+                      initial={{ opacity: 0, y: 18 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: '-40px' }}
+                      transition={{ duration: 0.5, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
                       onClick={() => !isSoldOut && onOpenItem(item)}
-                      className={`relative flex flex-col justify-between p-3.5 rounded-2xl border-2 transition-all hover:border-[#FFC400] hover:shadow-[0_10px_36px_rgba(255,196,0,0.28)] ${
+                      className={`grid-card relative flex flex-col justify-between p-3.5 rounded-2xl border-2 ${
                         darkMode
                           ? 'bg-[#141414] border-[#FFC400] offset-shadow-dark'
                           : 'bg-white border-[#0A0A0A] offset-shadow-yellow'
@@ -293,7 +309,7 @@ export const MenuList: React.FC<MenuListProps> = ({
                           </div>
                         )}
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>

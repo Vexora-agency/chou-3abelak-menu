@@ -10,6 +10,7 @@ import { CartDrawer } from './components/CartDrawer';
 import { Footer } from './components/Footer';
 import { AdminPanel } from './components/AdminPanel';
 import { WifiOff } from 'lucide-react';
+import { MotionConfig, motion, useScroll, useSpring, useTransform } from 'motion/react';
 
 export default function App() {
   const [menu, setMenu] = useState<MenuData | null>(null);
@@ -34,8 +35,34 @@ export default function App() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
-  // Admin view toggle
+  // Admin view toggle. The admin entry points are hidden from customers:
+  // the owner opens the site with #admin at the end of the address.
   const [showAdmin, setShowAdmin] = useState(false);
+  const [adminUnlocked, setAdminUnlocked] = useState(() => window.location.hash === '#admin');
+
+  useEffect(() => {
+    const syncAdminHash = () => {
+      const unlocked = window.location.hash === '#admin';
+      setAdminUnlocked(unlocked);
+      if (unlocked) setShowAdmin(true);
+    };
+    syncAdminHash();
+    window.addEventListener('hashchange', syncAdminHash);
+    return () => window.removeEventListener('hashchange', syncAdminHash);
+  }, []);
+
+  const closeAdmin = () => {
+    setShowAdmin(false);
+    setAdminUnlocked(false);
+    if (window.location.hash === '#admin') {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  };
+
+  // Thin reading-progress line at the top of the page
+  const { scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4 });
+  const progressOpacity = useTransform(scrollYProgress, [0, 0.01], [0, 1]);
 
   // Search & Category Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -209,7 +236,7 @@ export default function App() {
     try {
       localStorage.setItem('menu_cache_v1', JSON.stringify(newMenu));
     } catch {}
-    // Also try to send to backend if available
+    // Send to the backend and surface any failure instead of hiding it
     fetch('/api/admin/menu', {
       method: 'PUT',
       headers: {
@@ -217,7 +244,29 @@ export default function App() {
         'X-Requested-With': 'menu-admin',
       },
       body: JSON.stringify(newMenu),
-    }).catch(() => {});
+    })
+      .then(async (res) => {
+        if (res.ok) {
+          // Adopt the server copy so the next save carries the right version number
+          const saved: MenuData | null = await res.json().catch(() => null);
+          if (saved && saved.settings && Array.isArray(saved.items)) {
+            setMenu(saved);
+            try {
+              localStorage.setItem('menu_cache_v1', JSON.stringify(saved));
+            } catch {}
+          }
+          return;
+        }
+        const detail = await res.text().catch(() => '');
+        window.alert(
+          res.status === 409
+            ? 'The menu was changed somewhere else. Reload the page and try again.'
+            : `Save failed (${res.status}). The change is visible only on this device.\n${detail.slice(0, 160)}`
+        );
+      })
+      .catch(() => {
+        window.alert('Network error: the change was NOT saved to the server.');
+      });
   };
 
   // Cart Totals and items list
@@ -256,7 +305,7 @@ export default function App() {
       <AdminPanel
         initialMenu={menu}
         onSaveMenu={handleSaveMenuFromAdmin}
-        onClose={() => setShowAdmin(false)}
+        onClose={closeAdmin}
         lang={lang}
       />
     );
@@ -267,6 +316,12 @@ export default function App() {
   const featuredItems = menu.items.filter((i) => i.featured && i.available);
 
   return (
+    <MotionConfig reducedMotion="user">
+    <motion.div
+      style={{ scaleX: progress, opacity: progressOpacity }}
+      className="fixed top-0 inset-x-0 h-[3px] bg-[#FFC400] origin-left rtl:origin-right z-[60] pointer-events-none"
+      aria-hidden="true"
+    />
     <div
       className={`min-h-screen transition-colors duration-300 font-sans ${
         darkMode ? 'bg-[#0A0A0A] text-white' : 'bg-[#0A0A0A]'
@@ -293,7 +348,7 @@ export default function App() {
           onToggleLang={() => setLang(lang === 'en' ? 'ar' : 'en')}
           darkMode={darkMode}
           onToggleDarkMode={() => setDarkMode(!darkMode)}
-          onOpenAdmin={() => setShowAdmin(true)}
+          onOpenAdmin={adminUnlocked ? () => setShowAdmin(true) : undefined}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
         />
@@ -342,7 +397,7 @@ export default function App() {
         {/* Footer */}
         <Footer
           menu={menu}
-          onOpenAdmin={() => setShowAdmin(true)}
+          onOpenAdmin={adminUnlocked ? () => setShowAdmin(true) : undefined}
           lang={lang}
         />
 
@@ -383,5 +438,6 @@ export default function App() {
         />
       </div>
     </div>
+    </MotionConfig>
   );
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Search, X } from 'lucide-react';
+import { Search, X, Sparkles, Flame, Award } from 'lucide-react';
 import { Category } from '../types/menu';
 
 interface SearchAndChipsProps {
@@ -9,6 +9,8 @@ interface SearchAndChipsProps {
   categories: Category[];
   selectedCategory: string;
   onSelectCategory: (id: string) => void;
+  selectedBadge: string | null;
+  onToggleBadge: (badge: string) => void;
   lang: 'en' | 'ar';
   darkMode: boolean;
 }
@@ -19,6 +21,8 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
   categories,
   selectedCategory,
   onSelectCategory,
+  selectedBadge,
+  onToggleBadge,
   lang,
   darkMode,
 }) => {
@@ -27,6 +31,11 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
   const chips = [
     { id: 'all', label: isAr ? 'الكل' : 'All' },
     ...visibleCategories.map((c) => ({ id: c.id, label: isAr ? c.name.ar : c.name.en })),
+  ];
+  const badgeChips = [
+    { id: 'new', label: isAr ? 'جديد' : 'New', Icon: Sparkles },
+    { id: 'spicy', label: isAr ? 'حار' : 'Spicy', Icon: Flame },
+    { id: 'top', label: isAr ? 'الأكثر طلباً' : 'Top', Icon: Award },
   ];
 
   return (
@@ -101,6 +110,36 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
                 />
               )}
               <span className="relative z-10">{chip.label}</span>
+            </button>
+          );
+        })}
+
+        {/* Divider + badge quick-filters (new / spicy / top) */}
+        <span
+          className={`flex-shrink-0 self-center w-px h-6 ${darkMode ? 'bg-white/15' : 'bg-black/15'}`}
+          aria-hidden="true"
+        />
+        {badgeChips.map(({ id, label, Icon }) => {
+          const isSelected = selectedBadge === id;
+          return (
+            <button
+              key={`badge-${id}`}
+              type="button"
+              onClick={() => onToggleBadge(id)}
+              className={`relative flex-shrink-0 h-11 px-4 rounded-full text-[13px] transition-colors btn-tactile border-[1.5px] flex items-center gap-1.5 ${
+                isSelected
+                  ? 'bg-[#FFC400] text-[#0A0A0A] font-bold border-[#FFC400]'
+                  : darkMode
+                  ? 'text-white/90 font-semibold border-white hover:border-[#FFC400]'
+                  : 'text-[#0A0A0A] font-semibold border-[#0A0A0A]'
+              }`}
+              aria-pressed={isSelected}
+              title={label}
+            >
+              <span className="relative z-10 flex items-center gap-1.5">
+                <Icon size={14} className={isSelected ? '' : 'text-[#FFC400]'} />
+                {label}
+              </span>
             </button>
           );
         })}

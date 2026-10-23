@@ -1,7 +1,14 @@
 /**
- * Cloudflare Access JWT Authentication Middleware
+ * Admin API Authentication Middleware
  * Runs for all /api/admin/* requests.
+ *
+ * Two accepted mechanisms (in order):
+ *  1. Cookie session from the /api/auth/login screen (HMAC-signed token).
+ *  2. Cloudflare Access JWT assertion (existing behavior).
+ * Fails closed with 403 when neither mechanism is configured or valid.
  */
+
+import { getSessionCookie, getSessionSecret, verifySessionToken } from '../../_shared/session.js';
 
 let cachedJwks = null;
 let jwksCachedAt = 0;
@@ -26,6 +33,23 @@ export async function onRequest(context) {
     const res = await next();
     res.headers.set('Cache-Control', 'no-store');
     return res;
+  }
+
+  // 1) Cookie session from the login screen (preferred when configured)
+  const sessionSecret = getSessionSecret(env);
+  if (sessionSecret) {
+    const token = getSessionCookie(request);
+    if (token) {
+      try {
+        const payload = await verifySessionToken(sessionSecret, token);
+        if (payload) {
+          const res = await next();
+          res.headers.set('Cache-Control', 'no-store');
+          return res;
+        }
+      } catch {}
+      // Invalid/expired token: fall through to Access check, then 403.
+    }
   }
 
   // Check required environment configuration

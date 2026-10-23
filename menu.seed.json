@@ -10,6 +10,10 @@
       "en": "Fresh · Fast · Delicious",
       "ar": "طازج · سريع · شهي"
     },
+    "about": {
+      "en": "Fresh artisanal smash burgers, crispy golden sides, and chilled specialty drinks delivered right to your door.",
+      "ar": "أشهى ساندوتشات البرجر الطازجة والمشروبات الحرفية مع التوصيل السريع إلى باب منزلك."
+    },
     "logoText": "R",
     "phone": "+96170123456",
     "whatsapp": "96170123456",
@@ -25,7 +29,13 @@
     "statusMode": "auto",
     "openTime": "12:00",
     "closeTime": "00:00",
+    "workingDays": ["sat", "sun", "mon", "tue", "wed", "thu", "fri"],
     "timezone": "Asia/Beirut",
+    "socialEnabled": {
+      "instagram": true,
+      "facebook": true,
+      "tiktok": true
+    },
     "social": {
       "instagram": "https://instagram.com",
       "facebook": "https://facebook.com",
@@ -35,16 +45,22 @@
       "en": "LBP",
       "ar": "ل.ل"
     },
+    "defaultTheme": "dark",
+    "defaultLang": "en",
     "ordering": {
       "enabled": true,
       "types": ["delivery"],
+      "minOrderEnabled": false,
+      "deliveryFeeEnabled": false,
       "minOrder": 350000,
       "deliveryFee": 100000,
       "note": {
         "en": "Prices are in LBP and include all taxes. Delivery in Beirut within 30-45 mins.",
         "ar": "الأسعار بالليرة اللبنانية وتشمل الضريبة. التوصيل في بيروت خلال 30-45 دقيقة."
       }
-    }
+    },
+    "featuredAutoplay": true,
+    "featuredAutoplayInterval": 4
   },
   "categories": [
     {

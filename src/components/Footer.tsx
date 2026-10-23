@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MenuData } from '../types/menu';
 import { Clock, MapPin, Phone, ArrowUp, Instagram, Facebook, MessageCircle, Shield } from 'lucide-react';
-import { sanitizeUrl } from '../utils/menuHelpers';
+import { sanitizeUrl, buildMapUrl, pickLangText } from '../utils/menuHelpers';
 
 interface FooterProps {
   menu: MenuData;
@@ -28,7 +28,8 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
   const phoneLink = `tel:${menu.settings.phone || '+96170123456'}`;
   const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
   const whatsappLink = `https://wa.me/${whatsappNum || '96170123456'}`;
-  const mapLink = sanitizeUrl(menu.settings.mapUrl || 'https://maps.google.com');
+  const mapLink = buildMapUrl(menu.settings);
+  const socialOn = menu.settings.socialEnabled || { instagram: true, facebook: true, tiktok: true };
 
   return (
     <footer className="relative isolate mt-12 bg-[#0A0A0A] text-white rounded-t-[32px] md:rounded-t-[44px] pt-11 px-5 sm:px-8 md:px-12 pb-8 shadow-[0_-24px_60px_-24px_rgba(0,0,0,0.6)]">
@@ -59,9 +60,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
               />
             </div>
             <p className="text-xs text-neutral-400 font-medium leading-relaxed max-w-xs">
-              {isAr
-                ? 'أشهى ساندوتشات البرجر الطازجة والمشروبات الحرفية مع التوصيل السريع إلى باب منزلك.'
-                : 'Fresh artisanal smash burgers, crispy golden sides, and chilled specialty drinks delivered right to your door.'}
+              {pickLangText(menu.settings.about, lang)}
             </p>
           </div>
 
@@ -103,7 +102,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
 
             {/* Social Media Links */}
             <div className="flex gap-2.5">
-              {menu.settings.social.instagram && (
+              {socialOn.instagram && menu.settings.social.instagram && (
                 <a
                   href={sanitizeUrl(menu.settings.social.instagram)}
                   target="_blank"
@@ -115,7 +114,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
                 </a>
               )}
 
-              {menu.settings.social.facebook && (
+              {socialOn.facebook && menu.settings.social.facebook && (
                 <a
                   href={sanitizeUrl(menu.settings.social.facebook)}
                   target="_blank"

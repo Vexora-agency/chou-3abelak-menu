@@ -103,4 +103,61 @@ npx wrangler pages dev . --kv MENU_KV --binding ALLOW_LOCAL_DEV=1
 ## ⚠️ Remaining Operational Considerations
 
 - **WhatsApp Destination:** In `/public/menu.seed.json` and admin settings, replace the placeholder phone number (`+201000000000` / `201000000000`) with your restaurant's active WhatsApp business number.
-- **Cloudflare Access Configuration:** The `/api/admin/*` endpoints strictly fail closed (403 Forbidden) in production unless behind an active Cloudflare Access Application policy.
+
+---
+
+## 🔐 Admin Login (cookie session)
+
+Opening `/#admin` shows a sign-in screen. Sessions are HMAC-SHA256 cookies (`__Host-admin-session`, HttpOnly + Secure + SameSite=Strict, 12h default / 30 days with "remember me").
+
+### 1. Generate credentials (run locally, never commit real values)
+
+```bash
+# 1) Password hash for ADMIN_PASSWORD_HASH
+node scripts/hash-password.mjs "YourStrongPasswordHere"
+# 2) Session secret for SESSION_SECRET (at least 32 random bytes, base64)
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+### 2. Local testing with Wrangler
+
+Create an untracked `.dev.vars` file next to `package.json` (see `.env.example`):
+
+```
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD_HASH=pbkdf2$260000$...   # output of the hash script
+SESSION_SECRET=<base64 output>
+ALLOW_LOCAL_DEV=1
+```
+
+Then run (in two terminals — the site itself still runs on Vite `:3000`):
+
+```bash
+npx wrangler pages dev . --kv MENU_KV --binding ALLOW_LOCAL_DEV=1
+```
+
+> The dev server above serves the **built** site + Functions on `http://localhost:8788`. Test the login flow there (Vite `:3000` does not run Functions, so `/api/auth/*` only works on `:8788`).
+
+Test matrix:
+
+| #   | Action                                   | Expected                                              |
+| --- | ---------------------------------------- | ----------------------------------------------------- |
+| 1   | Open `http://localhost:8788/#admin`     | Sign-in screen (no panel)                             |
+| 2   | Wrong password × 5                       | Each → `invalid` (401, same message every time)       |
+| 3   | 6th attempt (right or wrong password)    | `locked` (429) with retry minutes                     |
+| 4   | Wait 15 min (or clear KV) + right login  | Panel opens, counter reset                            |
+| 5   | Reload the page                          | Still logged in (session cookie)                      |
+| 6   | Sign out (top-right of the panel)        | Back to sign-in screen, cookie cleared                |
+| 7   | `GET /api/menu` while logged out         | Public menu still works (no auth required)            |
+
+> Tip: to clear the test lockout without waiting, delete the `login:fail:<ip>` key from the local KV (or restart `wrangler pages dev`, which uses a fresh local KV).
+
+### 3. Production env vars (Cloudflare dashboard → Pages → Settings → Environment variables)
+
+Set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET` (mark all as **Secrets**), keep the existing `MENU_KV` binding and `ALLOW_LOCAL_DEV` **unset** (or `0`).
+
+### 4. Cloudflare Access changes
+
+- The Access application **must no longer** cover `/api/auth/*` — the login screen calls these endpoints **before** any login exists, so an Access wall there would lock everyone out (including you).
+- Do **not** put `/admin` (a frontend hash route, there is no such file path) behind Access either — use the login screen as the entry instead.
+- `/api/admin/*` may stay behind your existing Access application as a second layer, but it is **not required**: the cookie session already gates it, and keeping Access means every admin API call must pass **both** checks. Recommended: remove the Access application from `/api/*` entirely and rely on the login screen — or keep it only if you want belt-and-braces and understand both checks must pass.

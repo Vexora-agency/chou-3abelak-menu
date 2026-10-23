@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { MenuItem } from '../types/menu';
 import { Plus } from 'lucide-react';
-import { formatPrice } from '../utils/menuHelpers';
+import { formatPrice, pickLangText } from '../utils/menuHelpers';
 
 interface FeaturedCarouselProps {
   items: MenuItem[];
@@ -11,6 +11,8 @@ interface FeaturedCarouselProps {
   currency: string;
   lang: 'en' | 'ar';
   darkMode: boolean;
+  autoplay: boolean;
+  autoplayInterval: number;
 }
 
 export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
@@ -20,9 +22,189 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   currency,
   lang,
   darkMode,
+  autoplay,
+  autoplayInterval,
 }) => {
   const isAr = lang === 'ar';
+
+  // One-card-at-a-time slider on mobile: smooth transform slide with dots,
+  // wraps instantly at the end. Desktop shows a static grid instead.
+  const marqueeOn = autoplay && items.length > 1;
+  const perCard = Math.min(10, Math.max(2, autoplayInterval || 4));
+  const [index, setIndex] = useState(0);
+  const [instant, setInstant] = useState(false);
+  const indexRef = useRef(0);
+  const pausedRef = useRef(false);
+  const resumeTimer = useRef<number | null>(null);
+  const touchX = useRef<number | null>(null);
+  const count = items.length;
+
+  useEffect(() => {
+    indexRef.current = 0;
+    setIndex(0);
+  }, [count]);
+
+  useEffect(() => {
+    if (!marqueeOn || count <= 1) return;
+    const id = window.setInterval(() => {
+      if (document.hidden || pausedRef.current) return;
+      const next = indexRef.current + 1;
+      if (next >= count) {
+        // Instant wrap (no visible rewind), then re-enable animation
+        setInstant(true);
+        indexRef.current = 0;
+        setIndex(0);
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => setInstant(false))
+        );
+      } else {
+        indexRef.current = next;
+        setIndex(next);
+      }
+    }, perCard * 1000);
+    return () => window.clearInterval(id);
+  }, [marqueeOn, count, perCard]);
+
+  useEffect(() => {
+    return () => {
+      if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
+    };
+  }, []);
+
+  const pause = () => {
+    pausedRef.current = true;
+    if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
+    resumeTimer.current = null;
+  };
+  const resumeSoon = () => {
+    if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
+    resumeTimer.current = window.setTimeout(() => {
+      pausedRef.current = false;
+      resumeTimer.current = null;
+    }, 3000);
+  };
+  const goTo = (i: number) => {
+    pause();
+    const n = ((i % count) + count) % count;
+    indexRef.current = n;
+    setIndex(n);
+    resumeSoon();
+  };
+  const onTouchStart = (e: React.TouchEvent) => {
+    pause();
+    touchX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchX.current !== null) {
+      const dx = e.changedTouches[0].clientX - touchX.current;
+      if (Math.abs(dx) > 40) {
+        const n = indexRef.current + (dx < 0 ? 1 : -1);
+        indexRef.current = ((n % count) + count) % count;
+        setIndex(indexRef.current);
+      }
+    }
+    touchX.current = null;
+    resumeSoon();
+  };
+
   if (items.length === 0) return null;
+
+  const renderCard = (item: MenuItem, idx: number) => {
+    const isYellowCard = idx % 2 === 1; // Alternating cards
+    const badgeText = item.badges.includes('top')
+      ? (isAr ? 'الأكثر طلباً' : 'BEST SELLER')
+      : item.badges.includes('spicy')
+      ? (isAr ? 'حار و مقرمش' : 'HOT & SPICY')
+      : (isAr ? 'جديد' : 'NEW');
+
+    return (
+      <motion.div
+        key={item.id}
+        onClick={() => onOpenItem(item)}
+        initial={{ opacity: 0, y: 22 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-40px' }}
+        transition={{ duration: 0.55, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
+        className={`group relative flex-shrink-0 w-full md:w-auto h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden cursor-pointer card-lift shadow-md border ${
+          isYellowCard
+            ? 'bg-[#FFC400] text-[#0A0A0A] border-[#FFC400]'
+            : darkMode
+            ? 'bg-[#181818] text-white border-white/10'
+            : 'bg-[#0A0A0A] text-white border-[#0A0A0A]'
+        }`}
+      >
+        {/* Brand mark from the logo (pan + handle) as a quiet watermark */}
+        <img
+          src="/assets/pan-icon-yellow.png"
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className={`absolute -right-3 -top-2 w-24 pointer-events-none select-none -rotate-12 transition-transform duration-500 group-hover:-rotate-3 group-hover:scale-110 ${
+            isYellowCard ? 'opacity-[0.16]' : 'opacity-[0.20]'
+          }`}
+          style={isYellowCard ? { filter: 'brightness(0)' } : undefined}
+        />
+
+        {/* Top Tag Badge */}
+        <div className="relative flex justify-between items-start">
+          <span
+            className={`inline-block px-3 py-1 rounded-full text-[11px] font-extrabold tracking-wider uppercase ${
+              isYellowCard
+                ? 'bg-[#0A0A0A] text-[#FFC400]'
+                : 'bg-[#FFC400] text-[#0A0A0A]'
+            }`}
+          >
+            {badgeText}
+          </span>
+
+          <button
+            type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddToCart(item);
+          }}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90 shadow-sm ${
+              isYellowCard
+                ? 'bg-[#0A0A0A] text-[#FFC400] hover:bg-black/80'
+                : 'bg-[#FFC400] text-[#0A0A0A] hover:bg-[#ffd033]'
+            }`}
+            aria-label={isAr ? `أضف ${item.name.ar} إلى السلة` : `Add ${item.name.en} to cart`}
+            title={isAr ? 'أضف للطلب' : 'Add to cart'}
+          >
+            <Plus size={16} className="stroke-[3]" />
+          </button>
+        </div>
+
+        {/* Bottom Info: Name & Price */}
+        <div className="relative flex justify-between items-end gap-2">
+          <div className="flex-1 min-w-0 pe-2">
+                    <h3 className="font-bold text-base leading-tight line-clamp-2">
+                      {pickLangText(item.name, lang)}
+                    </h3>
+                            {pickLangText(item.description, lang).trim() ? (
+                              <p
+                                className={`text-xs mt-0.5 line-clamp-1 ${
+                                  isYellowCard ? 'text-black/75' : 'text-neutral-400'
+                                }`}
+                              >
+                                {pickLangText(item.description, lang)}
+                              </p>
+                            ) : null}
+          </div>
+
+          <div
+            className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-black shadow-sm ${
+              isYellowCard
+                ? 'bg-[#0A0A0A] text-[#FFC400]'
+                : 'bg-[#FFC400] text-[#0A0A0A]'
+            }`}
+          >
+            {formatPrice(item.price, currency)}
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
 
   return (
     <div className="mt-6 mb-4 px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
@@ -41,103 +223,40 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         </h2>
       </div>
 
-      {/* Responsive Track / Grid */}
-      <div className="flex md:grid md:grid-cols-3 gap-3.5 sm:gap-4 overflow-x-auto md:overflow-visible no-scrollbar pb-2">
-        {items.map((item, idx) => {
-          const isYellowCard = idx % 2 === 1; // Alternating cards
-          const badgeText = item.badges.includes('top')
-            ? (isAr ? 'الأكثر طلباً' : 'BEST SELLER')
-            : item.badges.includes('spicy')
-            ? (isAr ? 'حار و مقرمش' : 'HOT & SPICY')
-            : (isAr ? 'جديد' : 'NEW');
-
-          return (
-            <motion.div
-              key={item.id}
-              onClick={() => onOpenItem(item)}
-              initial={{ opacity: 0, y: 22 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ duration: 0.55, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
-              className={`group relative flex-shrink-0 w-60 md:w-auto h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden cursor-pointer card-lift shadow-md border ${
-                isYellowCard
-                  ? 'bg-[#FFC400] text-[#0A0A0A] border-[#FFC400]'
-                  : darkMode
-                  ? 'bg-[#181818] text-white border-white/10'
-                  : 'bg-[#0A0A0A] text-white border-[#0A0A0A]'
-              }`}
-            >
-              {/* Brand mark from the logo (pan + handle) as a quiet watermark */}
-              <img
-                src="/assets/pan-icon-yellow.png"
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                className={`absolute -right-3 -top-2 w-24 pointer-events-none select-none -rotate-12 transition-transform duration-500 group-hover:-rotate-3 group-hover:scale-110 ${
-                  isYellowCard ? 'opacity-[0.16]' : 'opacity-[0.20]'
-                }`}
-                style={isYellowCard ? { filter: 'brightness(0)' } : undefined}
-              />
-
-              {/* Top Tag Badge */}
-              <div className="relative flex justify-between items-start">
-                <span
-                  className={`inline-block px-3 py-1 rounded-full text-[11px] font-extrabold tracking-wider uppercase ${
-                    isYellowCard
-                      ? 'bg-[#0A0A0A] text-[#FFC400]'
-                      : 'bg-[#FFC400] text-[#0A0A0A]'
-                  }`}
-                >
-                  {badgeText}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddToCart(item);
-                  }}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90 shadow-sm ${
-                    isYellowCard
-                      ? 'bg-[#0A0A0A] text-[#FFC400] hover:bg-black/80'
-                      : 'bg-[#FFC400] text-[#0A0A0A] hover:bg-[#ffd033]'
-                  }`}
-                  aria-label={isAr ? `أضف ${item.name.ar} إلى السلة` : `Add ${item.name.en} to cart`}
-                  title={isAr ? 'أضف للطلب' : 'Add to cart'}
-                >
-                  <Plus size={16} className="stroke-[3]" />
-                </button>
-              </div>
-
-              {/* Bottom Info: Name & Price */}
-              <div className="relative flex justify-between items-end gap-2">
-                <div className="flex-1 min-w-0 pe-2">
-                  <h3 className="font-bold text-base leading-tight line-clamp-2">
-                    {isAr ? item.name.ar : item.name.en}
-                  </h3>
-                  <p
-                    className={`text-xs mt-0.5 line-clamp-1 ${
-                      isYellowCard ? 'text-black/75' : 'text-neutral-400'
-                    }`}
-                  >
-                    {isAr ? item.description.ar : item.description.en}
-                  </p>
-                </div>
-
-                <div
-                  className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-black shadow-sm ${
-                    isYellowCard
-                      ? 'bg-[#0A0A0A] text-[#FFC400]'
-                      : 'bg-[#FFC400] text-[#0A0A0A]'
-                  }`}
-                >
-                  {formatPrice(item.price, currency)}
-                </div>
-              </div>
-            </motion.div>
-          );
-        })}
+      {/* One-card slider on mobile (smooth transform slide + dots), static grid on desktop */}
+      <div className="overflow-hidden md:overflow-visible">
+        <div
+          onMouseEnter={pause}
+          onMouseLeave={resumeSoon}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+          onPointerDown={pause}
+          className={`slider-track flex md:grid md:grid-cols-3 gap-0 md:gap-4 ${
+            instant ? 'slider-track-instant' : ''
+          }`}
+          style={{ '--sx': isAr ? `${index * 100}%` : `-${index * 100}%` } as React.CSSProperties}
+        >
+          {items.map((item, idx) => renderCard(item, idx))}
+        </div>
       </div>
+      {/* Dots */}
+      {marqueeOn && items.length > 1 && (
+        <div className="flex md:hidden justify-center items-center gap-1.5 mt-1" role="tablist" aria-label={isAr ? 'شرائح المميز' : 'Featured slides'}>
+          {items.map((item, idx) => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={idx === index}
+              aria-label={`${isAr ? 'شريحة' : 'Slide'} ${idx + 1}`}
+              onClick={() => goTo(idx)}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                idx === index ? 'w-6 bg-[#FFC400]' : 'w-1.5 bg-white/25 hover:bg-white/40'
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

@@ -6,5 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+# Local Cloudflare Pages dev secrets (real ADMIN_PASSWORD_HASH etc. live here only)
+.dev.vars
+# Wrangler local state (emulators, KV persistence)
+.wrangler/
+.wrangler-test/
 .aistudio/
 bun.lock

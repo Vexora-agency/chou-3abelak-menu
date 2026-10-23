@@ -9,6 +9,7 @@ import { CartBar } from './components/CartBar';
 import { CartDrawer } from './components/CartDrawer';
 import { Footer } from './components/Footer';
 import { AdminPanel } from './components/AdminPanel';
+import AdminLogin, { type LoginResult } from './components/AdminLogin';
 import { WifiOff } from 'lucide-react';
 import { MotionConfig, motion, useScroll, useSpring, useTransform } from 'motion/react';
 
@@ -17,7 +18,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
-  // Language state: 'en' | 'ar'
+  // Language state: 'en' | 'ar' (first visit falls back to the admin default)
   const [lang, setLang] = useState<'en' | 'ar'>(() => {
     try {
       const saved = localStorage.getItem('menu_lang_v1');
@@ -26,19 +27,101 @@ export default function App() {
     return 'en';
   });
 
-  // Dark mode state
+  // Dark mode state (first visit falls back to the admin default: dark)
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('menu_theme_v1');
       if (saved !== null) return saved === 'dark';
     } catch {}
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return true;
   });
+
+  // Apply the admin-configured defaults for first-time visitors only:
+  // anyone who already picked a theme/language keeps their own choice.
+  useEffect(() => {
+    if (!menu) return;
+    try {
+      if (!localStorage.getItem('menu_lang_v1')) {
+        setLang(menu.settings.defaultLang === 'ar' ? 'ar' : 'en');
+      }
+      if (!localStorage.getItem('menu_theme_v1')) {
+        setDarkMode(menu.settings.defaultTheme !== 'light');
+      }
+    } catch {
+      setLang(menu.settings.defaultLang === 'ar' ? 'ar' : 'en');
+      setDarkMode(menu.settings.defaultTheme !== 'light');
+    }
+  }, [menu]);
 
   // Admin view toggle. The admin entry points are hidden from customers:
   // the owner opens the site with #admin at the end of the address.
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminUnlocked, setAdminUnlocked] = useState(() => window.location.hash === '#admin');
+  // Cookie-session auth state for the admin area
+  const [authStatus, setAuthStatus] = useState<'checking' | 'authed' | 'guest'>('checking');
+
+  useEffect(() => {
+    let cancelled = false;
+    const checkSession = async () => {
+      if (!adminUnlocked) {
+        setAuthStatus('guest');
+        return;
+      }
+      setAuthStatus('checking');
+      try {
+        const res = await fetch('/api/auth/session', {
+          headers: { 'X-Requested-With': 'menu-admin' },
+          credentials: 'same-origin',
+        });
+        // Require the exact shape, not just HTTP 200 (dev servers may
+        // answer unknown /api routes with HTML and a 200 status).
+        const data = await res.json().catch(() => null);
+        if (!cancelled) setAuthStatus(res.ok && data && data.authenticated === true ? 'authed' : 'guest');
+      } catch {
+        if (!cancelled) setAuthStatus('guest');
+      }
+    };
+    checkSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [adminUnlocked]);
+
+  const handleLoginSubmit = async (values: { username: string; password: string; remember: boolean }): Promise<LoginResult> => {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'menu-admin' },
+        credentials: 'same-origin',
+        body: JSON.stringify(values).slice(0, 4096),
+      });
+      if (res.ok) return { ok: true };
+      if (res.status === 429) {
+        let minutes = 10;
+        try {
+          const data = await res.json();
+          if (typeof data.retryAfter === 'number' && data.retryAfter > 0) minutes = Math.ceil(data.retryAfter);
+        } catch {}
+        return { ok: false, error: 'locked', retryAfter: minutes };
+      }
+      if (res.status === 401) return { ok: false, error: 'invalid' };
+      return { ok: false, error: 'network' };
+    } catch {
+      return { ok: false, error: 'network' };
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'menu-admin' },
+        credentials: 'same-origin',
+      });
+    } catch {}
+    setAuthStatus('guest');
+    closeAdmin();
+  };
 
   useEffect(() => {
     const syncAdminHash = () => {
@@ -67,6 +150,17 @@ export default function App() {
   // Search & Category Filter
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  // Badge quick-filter (new / spicy / top) — single-select, mutually exclusive
+  // with categories: picking a badge resets the category to All and vice versa
+  const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
+  const toggleBadge = (b: string) => {
+    setSelectedBadge((prev) => (prev === b ? null : b));
+    setSelectedCategory('all');
+  };
+  const selectCategory = (id: string) => {
+    setSelectedCategory(id);
+    setSelectedBadge(null);
+  };
 
   // Modal Item Details
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
@@ -243,6 +337,7 @@ export default function App() {
         'Content-Type': 'application/json',
         'X-Requested-With': 'menu-admin',
       },
+      credentials: 'same-origin',
       body: JSON.stringify(newMenu),
     })
       .then(async (res) => {
@@ -299,14 +394,39 @@ export default function App() {
     );
   }
 
-  // Admin View
+  // Admin View (gated by #admin + cookie session)
   if (showAdmin) {
+    if (authStatus === 'checking') {
+      return (
+        <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white">
+          <img
+            src="/assets/logo-final.png"
+            alt="Chou 3abelak"
+            width={1440}
+            height={532}
+            className="w-48 h-auto animate-pulse"
+          />
+        </div>
+      );
+    }
+    if (authStatus === 'authed') {
+      return (
+        <AdminPanel
+          initialMenu={menu}
+          onSaveMenu={handleSaveMenuFromAdmin}
+          onClose={closeAdmin}
+          onSignOut={handleLogout}
+          lang={lang}
+        />
+      );
+    }
     return (
-      <AdminPanel
-        initialMenu={menu}
-        onSaveMenu={handleSaveMenuFromAdmin}
-        onClose={closeAdmin}
+      <AdminLogin
         lang={lang}
+        onToggleLang={() => setLang(lang === 'en' ? 'ar' : 'en')}
+        onSubmit={handleLoginSubmit}
+        onSuccess={() => setAuthStatus('authed')}
+        onBack={closeAdmin}
       />
     );
   }
@@ -361,13 +481,15 @@ export default function App() {
             onSearchChange={setSearchQuery}
             categories={menu.categories}
             selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
+            onSelectCategory={selectCategory}
+            selectedBadge={selectedBadge}
+            onToggleBadge={toggleBadge}
             lang={lang}
             darkMode={darkMode}
           />
 
           {/* Featured Horizontal Carousel (visible when 'all' is selected and no search) */}
-          {selectedCategory === 'all' && !searchQuery.trim() && (
+          {selectedCategory === 'all' && !searchQuery.trim() && !selectedBadge && (
             <FeaturedCarousel
               items={featuredItems}
               onOpenItem={setActiveItem}
@@ -375,6 +497,8 @@ export default function App() {
               currency={currency}
               lang={lang}
               darkMode={darkMode}
+              autoplay={menu.settings.featuredAutoplay !== false}
+              autoplayInterval={menu.settings.featuredAutoplayInterval || 4}
             />
           )}
 
@@ -384,6 +508,7 @@ export default function App() {
             items={menu.items}
             selectedCategory={selectedCategory}
             searchQuery={searchQuery}
+            selectedBadge={selectedBadge}
             cartQuantities={cart}
             onAddToCart={handleAddToCart}
             onUpdateQuantity={handleUpdateQuantity}

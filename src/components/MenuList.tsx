@@ -2,13 +2,14 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { MenuItem, Category } from '../types/menu';
 import { Plus, Minus, Flame, Sparkles, Award } from 'lucide-react';
-import { formatPrice } from '../utils/menuHelpers';
+import { formatPrice, pickLangText } from '../utils/menuHelpers';
 
 interface MenuListProps {
   categories: Category[];
   items: MenuItem[];
   selectedCategory: string;
   searchQuery: string;
+  selectedBadge: string | null;
   cartQuantities: Record<string, number>;
   onAddToCart: (item: MenuItem) => void;
   onUpdateQuantity: (itemId: string, delta: number) => void;
@@ -23,6 +24,7 @@ export const MenuList: React.FC<MenuListProps> = ({
   items,
   selectedCategory,
   searchQuery,
+  selectedBadge,
   cartQuantities,
   onAddToCart,
   onUpdateQuantity,
@@ -38,6 +40,9 @@ export const MenuList: React.FC<MenuListProps> = ({
   const filteredItems = items.filter((item) => {
     const matchesCategory = selectedCategory === 'all' || item.categoryId === selectedCategory;
     if (!matchesCategory) return false;
+
+    // Badge quick-filter (single-select)
+    if (selectedBadge && !item.badges.includes(selectedBadge as 'new' | 'spicy' | 'top')) return false;
 
     if (!cleanQ) return true;
     const nameMatch =
@@ -119,7 +124,7 @@ export const MenuList: React.FC<MenuListProps> = ({
                             darkMode ? 'text-white' : 'text-[#0A0A0A]'
                           }`}
                         >
-                          {isAr ? item.name.ar : item.name.en}
+                          {pickLangText(item.name, lang)}
                         </span>
 
                         {/* Badges */}
@@ -157,13 +162,17 @@ export const MenuList: React.FC<MenuListProps> = ({
 
                       {/* Description & Add/Stepper Row */}
                       <div className="flex justify-between items-start gap-4 mt-2">
-                        <p
-                          className={`text-xs leading-relaxed flex-1 ${
-                            darkMode ? 'text-neutral-400' : 'text-neutral-600'
-                          }`}
-                        >
-                          {isAr ? item.description.ar : item.description.en}
-                        </p>
+                        {pickLangText(item.description, lang).trim() ? (
+                          <p
+                            className={`text-xs leading-relaxed flex-1 ${
+                              darkMode ? 'text-neutral-400' : 'text-neutral-600'
+                            }`}
+                          >
+                            {pickLangText(item.description, lang)}
+                          </p>
+                        ) : (
+                          <span className="flex-1" />
+                        )}
 
                         {/* Action Control: Add Button or Stepper */}
                         {!isSoldOut && (
@@ -252,16 +261,18 @@ export const MenuList: React.FC<MenuListProps> = ({
                             darkMode ? 'text-white' : 'text-[#0A0A0A]'
                           }`}
                         >
-                          {isAr ? item.name.ar : item.name.en}
+                          {pickLangText(item.name, lang)}
                         </h3>
 
-                        <p
-                          className={`text-[11px] mt-1 line-clamp-2 ${
-                            darkMode ? 'text-neutral-400' : 'text-neutral-600'
-                          }`}
-                        >
-                          {isAr ? item.description.ar : item.description.en}
-                        </p>
+                        {pickLangText(item.description, lang).trim() ? (
+                          <p
+                            className={`text-[11px] mt-1 line-clamp-2 ${
+                              darkMode ? 'text-neutral-400' : 'text-neutral-600'
+                            }`}
+                          >
+                            {pickLangText(item.description, lang)}
+                          </p>
+                        ) : null}
                       </div>
 
                       {/* Price and Cart Action */}

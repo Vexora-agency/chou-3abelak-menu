@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MenuData, MenuItem, CustomerDetails } from '../types/menu';
-import { buildWhatsAppMessage, formatPrice } from '../utils/menuHelpers';
+import { buildWhatsAppMessage, formatPrice, pickLangText } from '../utils/menuHelpers';
 import { X, Plus, Minus, Trash2, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface CartDrawerProps {
@@ -68,9 +68,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   if (!isOpen) return null;
 
   const subtotal = cartItems.reduce((acc, curr) => acc + curr.item.price * curr.quantity, 0);
-  const deliveryFee = ordering.deliveryFee || 0;
+  const minActive = !!ordering.minOrderEnabled;
+  const feeActive = !!ordering.deliveryFeeEnabled;
+  const deliveryFee = feeActive ? ordering.deliveryFee || 0 : 0;
   const grandTotal = subtotal + deliveryFee;
-  const isBelowMin = ordering.minOrder > 0 && subtotal < ordering.minOrder;
+  const isBelowMin = minActive && ordering.minOrder > 0 && subtotal < ordering.minOrder;
 
   const handleSendOrder = () => {
     setErrorMsg('');
@@ -232,7 +234,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 >
                   <div className="flex-1 min-w-0">
                     <h4 className={`font-bold text-sm truncate ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-                      {isAr ? item.name.ar : item.name.en}
+                      {pickLangText(item.name, lang)}
                     </h4>
 
                     {/* Highly Visible Price Pill & Unit Details */}
@@ -301,7 +303,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </label>
                 <input
                   type="text"
-                  value={customer.name}
+                  value={customer.name} dir={isAr ? 'rtl' : 'ltr'}
                   onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
                   placeholder={isAr ? 'مثال: أحمد محمد' : 'e.g. John Doe'}
                   maxLength={40}
@@ -321,7 +323,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </label>
                 <input
                   type="tel"
-                  value={customer.phone}
+                  value={customer.phone} dir={isAr ? 'rtl' : 'ltr'}
                   onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
                   placeholder={isAr ? 'مثال: 01012345678' : '+20 10 1234 5678'}
                   maxLength={20}
@@ -341,7 +343,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </label>
                 <input
                   type="text"
-                  value={customer.address}
+                  value={customer.address} dir={isAr ? 'rtl' : 'ltr'}
                   onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
                   placeholder={isAr ? 'المنطقة، الشارع، رقم العمارة والشقة' : 'Area, street, bldg & apt number'}
                   maxLength={200}
@@ -361,7 +363,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </label>
                 <input
                   type="text"
-                  value={customer.notes}
+                  value={customer.notes} dir={isAr ? 'rtl' : 'ltr'}
                   onChange={(e) => setCustomer({ ...customer, notes: e.target.value })}
                   placeholder={isAr ? 'بدون بصل، صوص إضافي...' : 'No onions, extra sauce...'}
                   maxLength={200}
@@ -417,14 +419,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </span>
               </div>
 
-              <div className="flex justify-between items-center">
-                <span className={darkMode ? 'text-neutral-400' : 'text-neutral-600'}>
-                  {isAr ? 'رسوم التوصيل:' : 'Delivery Fee:'}
-                </span>
-                <span className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-                  {formatPrice(deliveryFee, currency)}
-                </span>
-              </div>
+              {feeActive && (
+                <div className="flex justify-between items-center">
+                  <span className={darkMode ? 'text-neutral-400' : 'text-neutral-600'}>
+                    {isAr ? 'رسوم التوصيل:' : 'Delivery Fee:'}
+                  </span>
+                  <span className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+                    {formatPrice(deliveryFee, currency)}
+                  </span>
+                </div>
+              )}
 
               {isBelowMin && (
                 <div className="text-amber-600 font-bold text-[11px] pt-1">

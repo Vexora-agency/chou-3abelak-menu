@@ -81,6 +81,13 @@ export function validateMenu(doc) {
   const openTime = typeof s.openTime === 'string' && TIME_REGEX.test(s.openTime) ? s.openTime : '12:00';
   const closeTime = typeof s.closeTime === 'string' && TIME_REGEX.test(s.closeTime) ? s.closeTime : '00:00';
 
+  // Working days (sat..fri); unknown values dropped, empty means every day
+  const validDays = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
+  const workingDays = Array.isArray(s.workingDays)
+    ? [...new Set(s.workingDays.filter((d) => validDays.includes(d)))]
+    : [...validDays];
+  const workingDaysFinal = workingDays.length ? workingDays : [...validDays];
+
   // Timezone check
   let timezone = typeof s.timezone === 'string' ? s.timezone.trim() : 'Asia/Beirut';
   try {
@@ -105,6 +112,20 @@ export function validateMenu(doc) {
     });
   }
 
+  // Social visibility flags
+  const socialEnabledRaw = (s.socialEnabled && typeof s.socialEnabled === 'object') ? s.socialEnabled : {};
+  const socialEnabled = {
+    instagram: socialEnabledRaw.instagram !== false,
+    facebook: socialEnabledRaw.facebook !== false,
+    tiktok: socialEnabledRaw.tiktok !== false,
+  };
+
+  const about = validateBilingual(s.about, 'about', 300);
+
+  // Defaults for first-time visitors (applied only when the visitor has no saved choice)
+  const defaultTheme = s.defaultTheme === 'light' ? 'light' : 'dark';
+  const defaultLang = s.defaultLang === 'ar' ? 'ar' : 'en';
+
   // Ordering settings
   const ord = s.ordering || {};
   const orderingEnabled = Boolean(ord.enabled);
@@ -125,7 +146,17 @@ export function validateMenu(doc) {
     ? Math.round(ord.deliveryFee * 100) / 100
     : 0;
 
+  // Feature flags (default OFF when missing)
+  const minOrderEnabled = Boolean(ord.minOrderEnabled);
+  const deliveryFeeEnabled = Boolean(ord.deliveryFeeEnabled);
+
   const note = validateBilingual(ord.note, 'ordering.note', 120);
+
+  // Featured carousel autoplay (settings level)
+  const featuredAutoplay = s.featuredAutoplay !== undefined ? Boolean(s.featuredAutoplay) : true;
+  const featuredAutoplayInterval = (typeof s.featuredAutoplayInterval === 'number' && s.featuredAutoplayInterval >= 2 && s.featuredAutoplayInterval <= 10)
+    ? Math.round(s.featuredAutoplayInterval)
+    : 4;
 
   const cleanSettings = {
     name,
@@ -139,14 +170,23 @@ export function validateMenu(doc) {
     statusMode,
     openTime,
     closeTime,
+    workingDays: workingDaysFinal,
     timezone,
     social,
+    socialEnabled,
+    about,
     currency: currency.en ? currency : { en: 'LBP', ar: 'ل.ل' },
+    defaultTheme,
+    defaultLang,
+    featuredAutoplay,
+    featuredAutoplayInterval,
     ordering: {
       enabled: orderingEnabled,
       types: types.length ? types : ['delivery', 'pickup', 'dinein'],
       minOrder,
+      minOrderEnabled,
       deliveryFee,
+      deliveryFeeEnabled,
       note,
     },
   };

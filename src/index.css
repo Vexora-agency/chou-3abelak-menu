@@ -131,6 +131,26 @@ body {
   margin-inline: -10px;
 }
 
+/* Featured one-card slider (mobile only; desktop shows the grid).
+   The track shifts via a --sx variable so the desktop grid is untouched. */
+.slider-track {
+  transform: translateX(var(--sx, 0));
+}
+@media (max-width: 767.98px) {
+  .slider-track {
+    transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+  .slider-track-instant {
+    transition: none;
+  }
+}
+@media (min-width: 768px) {
+  .slider-track {
+    transform: none;
+  }
+}
+
 /* Focus visible styles */
 button:focus-visible, a:focus-visible, input:focus-visible {
   outline: 3px solid #FFC400;
@@ -307,3 +327,19 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 /* NOTE (owner decision): header animations (edge sweep, button shine, spotlight)
    always run for every visitor. The prefers-reduced-motion kill-switch that used
    to disable them was removed on purpose. Off-screen pausing above still applies. */
+
+/* --- Admin login form (appended as provided) --- */
+/* The login fields draw their own focus ring; avoid doubling the global outline */
+.login-field:focus-visible {
+  outline: none;
+}
+
+/* Keep browser autofill from painting white boxes on the dark login form */
+.login-field:-webkit-autofill,
+.login-field:-webkit-autofill:hover,
+.login-field:-webkit-autofill:focus {
+  -webkit-text-fill-color: #FFFFFF;
+  caret-color: #FFFFFF;
+  box-shadow: 0 0 0 1000px #121212 inset;
+  transition: background-color 9999s ease-out 0s;
+}

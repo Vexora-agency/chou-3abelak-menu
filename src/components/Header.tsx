@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Phone, MessageCircle, MapPin, Moon, Sun, Settings } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import { MenuData } from '../types/menu';
-import { isOpenNow, sanitizeUrl } from '../utils/menuHelpers';
+import { isOpenNow, buildMapUrl, pickLangText } from '../utils/menuHelpers';
 
 interface HeaderProps {
   menu: MenuData;
@@ -372,7 +372,7 @@ export const Header: React.FC<HeaderProps> = ({
   const phoneLink = `tel:${menu.settings.phone || '+96170123456'}`;
   const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
   const whatsappLink = `https://wa.me/${whatsappNum || '96170123456'}`;
-  const mapLink = sanitizeUrl(menu.settings.mapUrl || 'https://maps.google.com');
+  const mapLink = buildMapUrl(menu.settings);
 
   // Entrance choreography: content rises in while the logo video draws itself
   // (always on - site owner decision).
@@ -473,7 +473,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Final 100% Transparent PNG shown once animation completes (1440x532 HD) */}
           <img
             src="/assets/logo-final.png"
-            alt={isAr ? menu.settings.name.ar : menu.settings.name.en}
+            alt={pickLangText(menu.settings.name, lang)}
             className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-700 pointer-events-none ${
               hasEnded ? 'opacity-100' : 'opacity-0'
             }`}
@@ -523,7 +523,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Visually Hidden Semantic H1 for SEO / Screen Readers */}
-        <h1 className="sr-only">{isAr ? menu.settings.name.ar : menu.settings.name.en}</h1>
+        <h1 className="sr-only">{pickLangText(menu.settings.name, lang)}</h1>
 
         {/* Tagline flanked by hairlines */}
         <motion.div {...rise(intro)} className="mt-2 flex items-center justify-center gap-3">
@@ -533,7 +533,7 @@ export const Header: React.FC<HeaderProps> = ({
               isAr ? 'text-[14px] sm:text-[15px] tracking-normal' : 'text-[12px] sm:text-[13px] tracking-[3px] uppercase'
             }`}
           >
-            {isAr ? menu.settings.tagline.ar : menu.settings.tagline.en}
+            {pickLangText(menu.settings.tagline, lang)}
           </p>
           <span className="h-px w-8 sm:w-12 bg-gradient-to-l from-transparent to-[#FFC400]/70" aria-hidden="true" />
         </motion.div>

@@ -29,20 +29,33 @@ export interface MenuSettings {
   statusMode: 'auto' | 'open' | 'closed';
   openTime: string;
   closeTime: string;
+  workingDays: string[];
   timezone: string;
   social: {
     instagram?: string;
     facebook?: string;
     tiktok?: string;
   };
+  socialEnabled: {
+    instagram: boolean;
+    facebook: boolean;
+    tiktok: boolean;
+  };
   currency: { en: string; ar: string };
+  about: { en: string; ar: string };
+  defaultTheme: 'dark' | 'light';
+  defaultLang: 'en' | 'ar';
   ordering: {
     enabled: boolean;
     types: OrderType[];
     minOrder: number;
+    minOrderEnabled: boolean;
     deliveryFee: number;
+    deliveryFeeEnabled: boolean;
     note: { en: string; ar: string };
   };
+  featuredAutoplay: boolean;
+  featuredAutoplayInterval: number;
 }
 
 export interface MenuData {

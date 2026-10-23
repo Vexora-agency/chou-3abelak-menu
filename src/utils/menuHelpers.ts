@@ -24,6 +24,25 @@ export function isOpenNow(settings: MenuData['settings']): { isOpen: boolean; la
   try {
     const tz = settings.timezone || 'Asia/Beirut';
     const now = new Date();
+    // Current weekday in the restaurant timezone (sat..fri keys)
+    let dayKey = '';
+    try {
+      const weekday = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(now).toLowerCase().slice(0, 3);
+      const dayMap: Record<string, string> = { sat: 'sat', sun: 'sun', mon: 'mon', tue: 'tue', wed: 'wed', thu: 'thu', fri: 'fri' };
+      dayKey = dayMap[weekday] || '';
+    } catch {}
+    const workingDays = Array.isArray(settings.workingDays) && settings.workingDays.length
+      ? settings.workingDays
+      : ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
+    if (dayKey && !workingDays.includes(dayKey)) {
+      return {
+        isOpen: false,
+        label: {
+          en: `Closed today · Opens ${settings.openTime || '12:00'}`,
+          ar: `مغلق اليوم · يفتح ${settings.openTime || '12:00'}`,
+        },
+      };
+    }
     // Get time in target timezone
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: tz,
@@ -69,8 +88,21 @@ export function isOpenNow(settings: MenuData['settings']): { isOpen: boolean; la
   }
 }
 
-export function formatPrice(amount: number, currency?: string): string {
-  if (isNaN(amount) || amount === undefined || amount === null) return currency ? `0 ${currency}` : '0';
+/**
+ * Bilingual text picker with automatic fallback: if the requested language
+ * is empty (admin left it blank), the other language is used instead.
+ */
+export function pickLangText(
+  v: { en: string; ar: string } | undefined | null,
+  lang: 'en' | 'ar'
+): string {
+  if (!v) return '';
+  const primary = (lang === 'ar' ? v.ar : v.en) || '';
+  if (primary.trim()) return primary;
+  return (lang === 'ar' ? v.en : v.ar) || '';
+}
+
+export function formatPrice(amount: number, currency?: string): string {  if (isNaN(amount) || amount === undefined || amount === null) return currency ? `0 ${currency}` : '0';
   const formatted = Math.round(amount).toLocaleString('en-US');
   return currency ? `${formatted} ${currency}` : formatted;
 }
@@ -83,7 +115,7 @@ export function buildWhatsAppMessage(
 ): string {
   const isAr = lang === 'ar';
   const currency = isAr ? menu.settings.currency.ar : menu.settings.currency.en;
-  const storeName = isAr ? menu.settings.name.ar : menu.settings.name.en;
+  const storeName = pickLangText(menu.settings.name, lang);
 
   const header = isAr
     ? `🍔 طلب جديد من ${storeName}`
@@ -95,7 +127,7 @@ export function buildWhatsAppMessage(
   cartItems.forEach(({ item, quantity }) => {
     const itemTotal = item.price * quantity;
     subtotal += itemTotal;
-    const name = isAr ? item.name.ar : item.name.en;
+    const name = pickLangText(item.name, lang);
     lines.push(`${quantity}x ${name} — ${formatPrice(itemTotal, currency)}`);
   });
 
@@ -150,5 +182,15 @@ export function sanitizeUrl(url: string | undefined): string {
   if (clean.startsWith('https://') || clean.startsWith('http://') || clean.startsWith('tel:') || clean.startsWith('mailto:')) {
     return clean;
   }
+  return '#';
+}
+
+// Get Directions link: uses the saved Google Maps URL when valid,
+// otherwise falls back to a Maps search for the written address.
+export function buildMapUrl(settings: MenuData['settings']): string {
+  const direct = (settings.mapUrl || '').trim();
+  if (direct.startsWith('https://')) return direct;
+  const query = (settings.address?.en || '').trim() || (settings.name?.en || '').trim();
+  if (query) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   return '#';
 }

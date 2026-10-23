@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { MenuItem } from '../types/menu';
 import { X, Plus, Minus, Flame, Sparkles, Award } from 'lucide-react';
-import { formatPrice } from '../utils/menuHelpers';
+import { formatPrice, pickLangText } from '../utils/menuHelpers';
 
 interface ItemDetailsModalProps {
   item: MenuItem | null;
@@ -56,7 +56,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={isAr ? item.name.ar : item.name.en}
+        aria-label={pickLangText(item.name, lang)}
         className={`relative z-10 w-full max-w-[520px] rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[#FFC400] md:border-2 md:border-[#FFC400] px-6 sm:px-8 pt-4 sm:pt-6 pb-8 anim-slide-up shadow-2xl transition-colors duration-200 ${
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
@@ -82,7 +82,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         <div className="flex justify-between items-start gap-4 pr-6">
           <div>
             <h3 className={`text-2xl font-black leading-tight ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-              {isAr ? item.name.ar : item.name.en}
+              {pickLangText(item.name, lang)}
             </h3>
             {/* Badges */}
             <div className="flex items-center gap-1.5 mt-2">
@@ -110,14 +110,16 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
           </div>
         </div>
 
-        {/* Description */}
-        <p
-          className={`mt-4 text-sm leading-relaxed ${
-            darkMode ? 'text-neutral-300' : 'text-neutral-700 font-medium'
-          }`}
-        >
-          {isAr ? item.description.ar : item.description.en}
-        </p>
+        {/* Description (hidden when the admin leaves it empty) */}
+        {pickLangText(item.description, lang).trim() ? (
+          <p
+            className={`mt-4 text-sm leading-relaxed ${
+              darkMode ? 'text-neutral-300' : 'text-neutral-700 font-medium'
+            }`}
+          >
+            {pickLangText(item.description, lang)}
+          </p>
+        ) : null}
 
         {/* Ordering Actions */}
         <div className={`mt-8 pt-4 border-t space-y-3 ${darkMode ? 'border-neutral-800' : 'border-neutral-200'}`}>

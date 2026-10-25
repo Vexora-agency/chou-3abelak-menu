@@ -1,12 +1,76 @@
 export type OrderType = 'delivery' | 'pickup' | 'dinein';
 
+export type PricingUnit = 'pc' | 'portion' | 'dozen' | 'box' | 'bottle' | 'glass' | 'kg';
+
+export interface ItemPricing {
+  unit: PricingUnit;
+  /** Base price per unit. Absent when the item is sold by variants only. */
+  price?: number;
+  minQty: number;
+  step: number;
+  maxQty: number;
+  showUnit: boolean;
+}
+
+/** A section in the Features library (e.g. Sizes, Add-ons).
+ *  Sections are pure folders — whether a feature is used as a size or an
+ *  add-on is decided per item in the item editor. */
+export interface FeatureGroup {
+  id: string;
+  name: { en: string; ar: string };
+}
+
+/**
+ * Feature library (menu level, names only — prices live per item).
+ * Sections are pure folders; each item row decides size vs add-on.
+ */
+export interface FeatureDef {
+  id: string;
+  /** Section this feature lives in. */
+  groupId: string;
+  name: { en: string; ar: string };
+}
+
+/** A size enabled on one item (name from the library, price here). First = default. */
+export interface ItemVariant {
+  featureId: string;
+  price: number;
+}
+
+/** An add-on enabled on one item (0 = free). */
+export interface ItemAddon {
+  featureId: string;
+  price: number;
+}
+
+export type BadgeId = 'new' | 'spicy' | 'top';
+
+export interface BadgeSettings {
+  /** Days a new item keeps the NEW badge. */
+  newDays: number;
+  /** Sales window (days) for the top-sellers rank. */
+  topDays: number;
+  /** How many top sellers the Apply button flags. */
+  topCount: number;
+}
+
 export interface MenuItem {
   id: string;
   categoryId: string;
   name: { en: string; ar: string };
   description: { en: string; ar: string };
-  price: number;
-  badges: ('new' | 'spicy' | 'top')[];
+  /** Legacy numeric price (pre-schemaVersion-2 menus and caches). Use pricing instead. */
+  price?: number;
+  pricing: ItemPricing;
+  /** Sizes enabled on this item (prices here). When present, customer must pick one. */
+  variants?: ItemVariant[];
+  /** featureId of the default size. Missing/invalid → first variant. Never reorders. */
+  defaultVariant?: string;
+  /** Add-ons enabled on this item (prices here, 0 = free). */
+  addons?: ItemAddon[];
+  badges: BadgeId[];
+  /** ISO date the item was added. Drives the automatic NEW badge. Missing = not new. */
+  addedAt?: string;
   featured: boolean;
   available: boolean;
 }
@@ -56,16 +120,51 @@ export interface MenuSettings {
   };
   featuredAutoplay: boolean;
   featuredAutoplayInterval: number;
+  badges: BadgeSettings;
+  /** Feature library (names only — prices live per item). */
+  featureDefs: FeatureDef[];
+  /** Library sections. Missing in old docs → default Sizes/Add-ons groups. */
+  featureGroups: FeatureGroup[];
 }
 
 export interface MenuData {
+  /** Optimistic-concurrency counter for PUT /api/admin/menu. Never repurposed. */
   version: number;
+  /** Data-model schema version (2 = variants / add-ons / per-unit pricing). */
+  schemaVersion?: number;
   updatedAt: string;
   settings: MenuSettings;
   categories: Category[];
   items: MenuItem[];
 }
 
+/** One configured cart line. Key = id + variantId + sorted addonIds. */
+export interface CartLine {
+  id: string;
+  variantId?: string;
+  addonIds?: string[];
+  quantity: number;
+}
+
+/** Result of an admin save: the authoritative doc (for version adoption)
+ *  plus whether the server actually stored our content. */
+export interface AdminSaveResult {
+  doc: MenuData;
+  saved: boolean;
+}
+
+/** A cart line resolved against the live menu, with real money. */
+export interface ResolvedCartLine {
+  key: string;
+  item: MenuItem;
+  variantId?: string;
+  addonIds: string[];
+  quantity: number;
+  unit: number;
+  total: number;
+}
+
+/** @deprecated Old cart shape (item id -> quantity). Migrated on load. */
 export interface CartItem {
   id: string;
   quantity: number;

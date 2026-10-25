@@ -31,6 +31,7 @@ const DEFAULT_EMPTY_MENU = {
     defaultLang: 'en',
     featuredAutoplay: true,
     featuredAutoplayInterval: 4,
+    badges: { newDays: 14, topDays: 30, topCount: 6 },
     ordering: {
       enabled: false,
       types: ['delivery'],
@@ -42,7 +43,8 @@ const DEFAULT_EMPTY_MENU = {
     }
   },
   categories: [],
-  items: []
+  items: [],
+  addonGroups: []
 };
 
 export async function onRequest(context) {

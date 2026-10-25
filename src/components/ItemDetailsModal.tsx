@@ -1,14 +1,20 @@
-import React, { useEffect } from 'react';
-import { MenuItem } from '../types/menu';
-import { X, Plus, Minus, Flame, Sparkles, Award } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { MenuData, MenuItem, CartLine } from '../types/menu';
+import { X, Plus, Minus, Flame, Sparkles, Award, Check } from 'lucide-react';
 import { formatPrice, pickLangText } from '../utils/menuHelpers';
+import {
+  itemAddons, cartLineKey, hasOptions, hasVariants, featureName, getVariant,
+  lineTotal, normalizePricing, priceLabel,
+} from '../utils/pricing';
 
 interface ItemDetailsModalProps {
   item: MenuItem | null;
+  menu: MenuData;
   onClose: () => void;
-  cartQuantity: number;
-  onAddToCart: (item: MenuItem) => void;
-  onUpdateQuantity: (itemId: string, delta: number) => void;
+  cart: Record<string, CartLine>;
+  onAddItem: (item: MenuItem) => void;
+  onAddConfigured: (item: MenuItem, variantId: string | undefined, addonIds: string[], qty: number) => void;
+  onUpdateLine: (key: string, dir: 1 | -1) => void;
   currency: string;
   lang: 'en' | 'ar';
   darkMode: boolean;
@@ -16,15 +22,28 @@ interface ItemDetailsModalProps {
 
 export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
   item,
+  menu,
   onClose,
-  cartQuantity,
-  onAddToCart,
-  onUpdateQuantity,
+  cart,
+  onAddItem,
+  onAddConfigured,
+  onUpdateLine,
   currency,
   lang,
   darkMode,
 }) => {
   const isAr = lang === 'ar';
+
+  // Configurator state (reset whenever a different item opens)
+  const [variantId, setVariantId] = useState<string | undefined>(undefined);
+  const [addonIds, setAddonIds] = useState<string[]>([]);
+  const [qty, setQty] = useState(1);
+  useEffect(() => {
+    if (!item) return;
+    setVariantId(getVariant(item)?.featureId);
+    setAddonIds([]);
+    setQty(normalizePricing(item).minQty);
+  }, [item]);
 
   // Handle escape key
   useEffect(() => {
@@ -43,6 +62,31 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
 
   if (!item) return null;
 
+  const pricing = normalizePricing(item);
+  const options = hasOptions(item);
+  const variants = hasVariants(item) ? item.variants || [] : [];
+  const addons = itemAddons(item);
+  const singleKey = cartLineKey(item.id);
+  const singleQty = cart[singleKey]?.quantity || 0;
+
+  // Live total for the configured selection
+  let liveTotal: number | null = null;
+  try {
+    liveTotal = lineTotal(item, { variantId, addonIds, qty });
+  } catch {
+    liveTotal = null;
+  }
+
+  const toggleAddon = (id: string) => {
+    setAddonIds((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
+  };
+
+  const stepQty = (dir: 1 | -1) => {
+    setQty((q) => Math.max(pricing.minQty, Math.min(pricing.maxQty, q + dir * pricing.step)));
+  };
+
+  const chipBase = 'px-3.5 h-10 rounded-full text-xs font-bold border transition-colors btn-tactile inline-flex items-center gap-1.5';
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-6">
       {/* Backdrop */}
@@ -57,7 +101,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={pickLangText(item.name, lang)}
-        className={`relative z-10 w-full max-w-[520px] rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[#FFC400] md:border-2 md:border-[#FFC400] px-6 sm:px-8 pt-4 sm:pt-6 pb-8 anim-slide-up shadow-2xl transition-colors duration-200 ${
+        className={`relative z-10 w-full max-w-[520px] max-h-[92vh] overflow-y-auto overscroll-contain no-scrollbar rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[#FFC400] md:border-2 md:border-[#FFC400] px-6 sm:px-8 pt-4 sm:pt-6 pb-8 anim-slide-up shadow-2xl transition-colors duration-200 ${
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
       >
@@ -105,8 +149,8 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             </div>
           </div>
 
-          <div className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-lg font-black bg-[#FFC400] text-[#0A0A0A] shadow-sm">
-            {formatPrice(item.price, currency)}
+          <div className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-lg font-black bg-[#FFC400] text-[#0A0A0A] shadow-sm whitespace-nowrap">
+            {priceLabel(item, lang, currency)}
           </div>
         </div>
 
@@ -122,12 +166,125 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         ) : null}
 
         {/* Ordering Actions */}
-        <div className={`mt-8 pt-4 border-t space-y-3 ${darkMode ? 'border-neutral-800' : 'border-neutral-200'}`}>
+        <div className={`mt-6 pt-4 border-t space-y-4 ${darkMode ? 'border-neutral-800' : 'border-neutral-200'}`}>
           {item.available ? (
-            cartQuantity === 0 ? (
+            options ? (
+              <>
+                {/* Variants (required — first is the default) */}
+                {variants.length > 0 && (
+                  <div>
+                    <p className={`text-xs font-extrabold mb-2 ${darkMode ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                      {isAr ? 'اختر الحجم *' : 'Choose a size *'}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {variants.map((v) => {
+                        const active = variantId === v.featureId;
+                        return (
+                          <button
+                            key={v.featureId}
+                            type="button"
+                            onClick={() => setVariantId(v.featureId)}
+                            aria-pressed={active}
+                            className={`${chipBase} ${
+                              active
+                                ? 'bg-[#FFC400] text-[#0A0A0A] border-[#FFC400]'
+                                : darkMode
+                                ? 'border-neutral-700 text-neutral-200 hover:border-[#FFC400]'
+                                : 'border-neutral-300 text-neutral-800 hover:border-[#0A0A0A]'
+                            }`}
+                          >
+                            {active && <Check size={13} strokeWidth={3} />}
+                            <span>{featureName(menu, v.featureId, lang)}</span>
+                            <span className="tabular-nums opacity-80">+{formatPrice(v.price, currency)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Add-ons */}
+                {addons.length > 0 && (
+                  <div>
+                    <p className={`text-xs font-extrabold mb-2 ${darkMode ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                      {isAr ? 'إضافات (اختياري)' : 'Add-ons (optional)'}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {addons.map((a) => {
+                        const active = addonIds.includes(a.featureId);
+                        const free = a.price === 0;
+                        return (
+                          <button
+                            key={a.featureId}
+                            type="button"
+                            onClick={() => toggleAddon(a.featureId)}
+                            aria-pressed={active}
+                            className={`${chipBase} ${
+                              active
+                                ? 'bg-[#FFC400] text-[#0A0A0A] border-[#FFC400]'
+                                : darkMode
+                                ? 'border-neutral-700 text-neutral-200 hover:border-[#FFC400]'
+                                : 'border-neutral-300 text-neutral-800 hover:border-[#0A0A0A]'
+                            }`}
+                          >
+                            {active && <Check size={13} strokeWidth={3} />}
+                            <span>{featureName(menu, a.featureId, lang)}</span>
+                            <span className="tabular-nums opacity-80">
+                              {free ? (isAr ? 'مجاناً' : 'Free') : `+${formatPrice(a.price, currency)}`}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quantity stepper */}
+                <div className="flex items-center justify-between gap-4">
+                  <span className={`font-bold text-sm ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
+                    {isAr ? 'الكمية:' : 'Quantity:'}
+                  </span>
+                  <div className="flex items-center gap-2 bg-[#FFC400] text-[#0A0A0A] rounded-full p-1 shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => stepQty(-1)}
+                      className="w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center font-bold text-[#0A0A0A]"
+                      aria-label={isAr ? 'إنقاص' : 'Decrease'}
+                    >
+                      <Minus size={16} className="stroke-[3]" />
+                    </button>
+                    <span className="font-black text-base px-2 min-w-[24px] text-center text-[#0A0A0A] tabular-nums">
+                      {qty}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => stepQty(1)}
+                      className="w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center font-bold text-[#0A0A0A]"
+                      aria-label={isAr ? 'زيادة' : 'Increase'}
+                    >
+                      <Plus size={16} className="stroke-[3]" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Add button with live total */}
+                <button
+                  type="button"
+                  disabled={liveTotal === null}
+                  onClick={() => onAddConfigured(item, variantId, addonIds, qty)}
+                  className="btn-tactile w-full h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] font-extrabold text-base flex items-center justify-center gap-2 shadow-lg hover:bg-[#ffd033] disabled:opacity-50"
+                >
+                  <Plus size={20} className="stroke-[3]" />
+                  <span>{isAr ? 'إضافة إلى الطلب' : 'Add to Order'}</span>
+                  {liveTotal !== null && (
+                    <span className="tabular-nums" dir="ltr">· {formatPrice(liveTotal, currency)}</span>
+                  )}
+                </button>
+              </>
+            ) : singleQty === 0 ? (
               <button
                 type="button"
-                onClick={() => onAddToCart(item)}
+                onClick={() => onAddItem(item)}
                 className="btn-tactile w-full h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] font-extrabold text-base flex items-center justify-center gap-2 shadow-lg hover:bg-[#ffd033]"
               >
                 <Plus size={20} className="stroke-[3]" />
@@ -143,17 +300,17 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                 <div className="flex items-center gap-2 bg-[#FFC400] text-[#0A0A0A] rounded-full p-1 shadow-sm">
                   <button
                     type="button"
-                    onClick={() => onUpdateQuantity(item.id, -1)}
+                    onClick={() => onUpdateLine(singleKey, -1)}
                     className="w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center font-bold text-[#0A0A0A]"
                   >
                     <Minus size={16} className="stroke-[3]" />
                   </button>
                   <span className="font-black text-base px-2 min-w-[24px] text-center text-[#0A0A0A]">
-                    {cartQuantity}
+                    {singleQty}
                   </span>
                   <button
                     type="button"
-                    onClick={() => onUpdateQuantity(item.id, 1)}
+                    onClick={() => onUpdateLine(singleKey, 1)}
                     className="w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center font-bold text-[#0A0A0A]"
                   >
                     <Plus size={16} className="stroke-[3]" />

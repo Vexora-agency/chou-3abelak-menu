@@ -1,0 +1,20 @@
+# Local tooling only: lets `wrangler d1 ... --local` resolve the ORDERS_DB
+# binding and `wrangler pages dev` resolve local bindings for migrations.
+# Production Pages deploys are configured in the Cloudflare dashboard
+# (git integration ignores this file), so this file never affects
+# production. Do NOT put secrets here.
+compatibility_date = "2025-06-01"
+
+[[d1_databases]]
+binding = "ORDERS_DB"
+database_name = "chou-3abelak-orders"
+# Placeholder: only used for --remote runs against a real database created
+# with `wrangler d1 create`. Local runs (--local) ignore this id.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[kv_namespaces]]
+binding = "MENU_KV"
+# Placeholder id for local runs only (--local / pages dev). Production uses
+# the real namespace bound in the Cloudflare dashboard.
+id = "00000000000000000000000000000000"

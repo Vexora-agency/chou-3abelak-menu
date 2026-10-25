@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { MenuData, MenuItem, CartItem } from './types/menu';
+import { MenuData, MenuItem, CartItem, CartLine, ResolvedCartLine, AdminSaveResult } from './types/menu';
+import {
+  normalizeMenu, cartLineKey, clampQty, isValidQty, lineTotal,
+  perUnitPrice, hasOptions, normalizePricing,
+} from './utils/pricing';
 import { Header } from './components/Header';
 import { SearchAndChips } from './components/SearchAndChips';
 import { FeaturedCarousel } from './components/FeaturedCarousel';
@@ -11,6 +15,47 @@ import { Footer } from './components/Footer';
 import { AdminPanel } from './components/AdminPanel';
 import AdminLogin, { type LoginResult } from './components/AdminLogin';
 import { WifiOff } from 'lucide-react';
+
+/** Resolve one persisted line against the live menu (null when broken). */
+function resolveLine(menu: MenuData, key: string, line: CartLine): ResolvedCartLine | null {
+  const item = menu.items.find((i) => i.id === line.id);
+  if (!item || !item.available) return null;
+  try {
+    const addonIds = Array.isArray(line.addonIds) ? line.addonIds : [];
+    const unit = perUnitPrice(item, { variantId: line.variantId, addonIds });
+    const total = lineTotal(item, { variantId: line.variantId, addonIds, qty: line.quantity });
+    return { key, item, variantId: line.variantId, addonIds, quantity: line.quantity, unit, total };
+  } catch {
+    return null;
+  }
+}
+
+/** Load the persisted cart, migrating the legacy id->qty shape. */
+function loadCart(): Record<string, CartLine> {
+  try {
+    const saved = localStorage.getItem('cart_v1');
+    if (!saved) return {};
+    const parsed = JSON.parse(saved);
+    if (!parsed || typeof parsed !== 'object') return {};
+    const out: Record<string, CartLine> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (typeof v === 'number') {
+        if (Number.isInteger(v) && (v as number) > 0) out[cartLineKey(k)] = { id: k, quantity: v as number };
+      } else if (v && typeof v === 'object') {
+        const l = v as Partial<CartLine>;
+        if (typeof l.id === 'string' && Number.isInteger(l.quantity) && (l.quantity as number) > 0) {
+          const line: CartLine = { id: l.id, quantity: l.quantity as number };
+          if (typeof l.variantId === 'string' && l.variantId) line.variantId = l.variantId;
+          if (Array.isArray(l.addonIds) && l.addonIds.length) line.addonIds = [...l.addonIds];
+          out[cartLineKey(line.id, line.variantId, line.addonIds)] = line;
+        }
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
 import { MotionConfig, motion, useScroll, useSpring, useTransform } from 'motion/react';
 
 export default function App() {
@@ -168,14 +213,9 @@ export default function App() {
   // Cart Drawer
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Cart Items State (id -> quantity)
-  const [cart, setCart] = useState<Record<string, number>>(() => {
-    try {
-      const saved = localStorage.getItem('cart_v1');
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return {};
-  });
+  // Cart lines keyed by id + variantId + sorted addonIds (legacy id->qty
+  // carts migrate on load).
+  const [cart, setCart] = useState<Record<string, CartLine>>(loadCart);
 
   // Sync HTML lang, dir, and dark classes
   useEffect(() => {
@@ -227,9 +267,10 @@ export default function App() {
         const res = await fetch('/api/menu').catch(() => null);
         if (res && res.ok) {
           const data: MenuData = await res.json();
-          setMenu(data);
+          const normalized = normalizeMenu(data);
+          setMenu(normalized);
           try {
-            localStorage.setItem('menu_cache_v1', JSON.stringify(data));
+            localStorage.setItem('menu_cache_v1', JSON.stringify(normalized));
           } catch {}
           setLoading(false);
           return;
@@ -238,7 +279,7 @@ export default function App() {
 
       // Fallback to cache if available
       if (cached) {
-        setMenu(cached);
+        setMenu(normalizeMenu(cached));
         setLoading(false);
         return;
       }
@@ -248,9 +289,10 @@ export default function App() {
         const seedRes = await fetch('/menu.seed.json');
         if (seedRes.ok) {
           const seedData: MenuData = await seedRes.json();
-          setMenu(seedData);
+          const normalized = normalizeMenu(seedData);
+          setMenu(normalized);
           try {
-            localStorage.setItem('menu_cache_v1', JSON.stringify(seedData));
+            localStorage.setItem('menu_cache_v1', JSON.stringify(normalized));
           } catch {}
         }
       } catch (err) {
@@ -270,53 +312,104 @@ export default function App() {
     } catch {}
   }, [cart]);
 
-  // Clean invalid items if menu loaded
+  // Clean lines that no longer resolve (item removed/unavailable, variant or
+  // add-on gone) and snap quantities back onto the item's min/step/max grid.
   useEffect(() => {
     if (!menu) return;
     setCart((prev) => {
-      const cleaned: Record<string, number> = {};
+      const entries = Object.entries(prev);
+      if (entries.length === 0) return prev;
       let changed = false;
-      Object.entries(prev).forEach(([id, qty]) => {
-        const exists = menu.items.find((i) => i.id === id && i.available);
-        if (exists && qty > 0) {
-          cleaned[id] = Math.min(qty, 20);
-        } else {
+      const out: Record<string, CartLine> = {};
+      for (const [, line] of entries) {
+        const item = menu.items.find((i) => i.id === line.id);
+        if (!item || !item.available) {
           changed = true;
+          continue;
         }
-      });
-      return changed ? cleaned : prev;
+        try {
+          perUnitPrice(item, { variantId: line.variantId, addonIds: line.addonIds });
+        } catch {
+          changed = true;
+          continue;
+        }
+        if (!isValidQty(item, line.quantity)) {
+          const fixed = clampQty(item, line.quantity);
+          if (fixed !== line.quantity) {
+            changed = true;
+            out[cartLineKey(line.id, line.variantId, line.addonIds)] = { ...line, quantity: fixed };
+            continue;
+          }
+        }
+        out[cartLineKey(line.id, line.variantId, line.addonIds)] = line;
+      }
+      return changed ? out : prev;
     });
   }, [menu]);
 
-  // Cart operations
-  const handleAddToCart = (item: MenuItem) => {
-    if (!item.available) return;
-    setCart((prev) => ({
-      ...prev,
-      [item.id]: Math.min((prev[item.id] || 0) + 1, 20),
-    }));
-  };
-
-  const handleUpdateQuantity = (itemId: string, delta: number) => {
+  // Cart operations (quantity grid: minQty start, step increments,
+  // dropping below minQty removes the line).
+  const handleAddItem = (item: MenuItem) => {
+    if (!item.available || !menu) return;
+    if (hasOptions(item)) {
+      setActiveItem(item);
+      return;
+    }
+    const p = normalizePricing(item);
+    const key = cartLineKey(item.id);
     setCart((prev) => {
-      const current = prev[itemId] || 0;
-      const next = current + delta;
-      if (next <= 0) {
-        const copy = { ...prev };
-        delete copy[itemId];
-        return copy;
-      }
-      return {
-        ...prev,
-        [itemId]: Math.min(next, 20),
-      };
+      const ex = prev[key];
+      const next = ex ? Math.min(ex.quantity + p.step, p.maxQty) : p.minQty;
+      return { ...prev, [key]: { id: item.id, quantity: next } };
     });
   };
 
-  const handleRemoveFromCart = (itemId: string) => {
+  const snapDown = (item: MenuItem, qty: number) => {
+    const p = normalizePricing(item);
+    const capped = Math.min(qty, p.maxQty);
+    return p.minQty + Math.floor((capped - p.minQty) / p.step) * p.step;
+  };
+
+  const handleAddConfigured = (item: MenuItem, variantId: string | undefined, addonIds: string[], qty: number) => {
+    if (!item.available) return;
+    const key = cartLineKey(item.id, variantId, addonIds);
     setCart((prev) => {
+      const ex = prev[key];
+      const quantity = ex ? snapDown(item, ex.quantity + qty) : qty;
+      const line: CartLine = { id: item.id, quantity };
+      if (variantId) line.variantId = variantId;
+      if (addonIds.length) line.addonIds = [...addonIds];
+      return { ...prev, [key]: line };
+    });
+  };
+
+  const handleUpdateLine = (key: string, dir: 1 | -1) => {
+    setCart((prev) => {
+      const line = prev[key];
+      if (!line) return prev;
+      const item = menu?.items.find((i) => i.id === line.id);
+      if (!item) {
+        const copy = { ...prev };
+        delete copy[key];
+        return copy;
+      }
+      const p = normalizePricing(item);
+      const next = line.quantity + dir * p.step;
+      if (next < p.minQty) {
+        const copy = { ...prev };
+        delete copy[key];
+        return copy;
+      }
+      if (next > p.maxQty) return prev;
+      return { ...prev, [key]: { ...line, quantity: next } };
+    });
+  };
+
+  const handleRemoveLine = (key: string) => {
+    setCart((prev) => {
+      if (!prev[key]) return prev;
       const copy = { ...prev };
-      delete copy[itemId];
+      delete copy[key];
       return copy;
     });
   };
@@ -325,13 +418,12 @@ export default function App() {
     setCart({});
   };
 
-  const handleSaveMenuFromAdmin = (newMenu: MenuData) => {
-    setMenu(newMenu);
-    try {
-      localStorage.setItem('menu_cache_v1', JSON.stringify(newMenu));
-    } catch {}
+  // Sends the admin's filled copy to the server and resolves with the
+  // authoritative doc. The admin screen keeps its raw text on screen
+  // (autofill appears after reload); only the version is adopted there.
+  const handleSaveMenuFromAdmin = (newMenu: MenuData): Promise<AdminSaveResult | null> => {
     // Send to the backend and surface any failure instead of hiding it
-    fetch('/api/admin/menu', {
+    return fetch('/api/admin/menu', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -340,48 +432,60 @@ export default function App() {
       credentials: 'same-origin',
       body: JSON.stringify(newMenu),
     })
-      .then(async (res) => {
+      .then(async (res): Promise<AdminSaveResult | null> => {
         if (res.ok) {
-          // Adopt the server copy so the next save carries the right version number
+          // Adopt the server copy so the customer view is current
           const saved: MenuData | null = await res.json().catch(() => null);
           if (saved && saved.settings && Array.isArray(saved.items)) {
             setMenu(saved);
             try {
               localStorage.setItem('menu_cache_v1', JSON.stringify(saved));
             } catch {}
+            return { doc: saved, saved: true };
           }
-          return;
+          return null;
         }
         const detail = await res.text().catch(() => '');
+        if (res.status === 409) {
+          let latest: MenuData | null = null;
+          try {
+            const data = JSON.parse(detail);
+            if (data && data.latest && data.latest.settings && Array.isArray(data.latest.items)) {
+              latest = data.latest;
+            }
+          } catch {}
+          window.alert('The menu was changed somewhere else. Reload the page and try again.');
+          return latest ? { doc: latest, saved: false } : null;
+        }
         window.alert(
-          res.status === 409
-            ? 'The menu was changed somewhere else. Reload the page and try again.'
-            : `Save failed (${res.status}). The change is visible only on this device.\n${detail.slice(0, 160)}`
+          `Save failed (${res.status}). The change is visible only on this device.\n${detail.slice(0, 160)}`
         );
+        return null;
       })
-      .catch(() => {
+      .catch((): AdminSaveResult | null => {
         window.alert('Network error: the change was NOT saved to the server.');
+        return null;
       });
   };
 
-  // Cart Totals and items list
-  const cartItemsList = useMemo(() => {
+  // Cart lines with real money, and totals
+  const cartLines = useMemo(() => {
     if (!menu) return [];
-    return Object.entries(cart)
-      .map(([id, quantity]) => {
-        const item = menu.items.find((i) => i.id === id);
-        return item ? { item, quantity } : null;
-      })
-      .filter((entry): entry is { item: MenuItem; quantity: number } => entry !== null);
+    const out: ResolvedCartLine[] = [];
+    for (const [key, line] of Object.entries(cart)) {
+      const r = resolveLine(menu, key, line);
+      if (r) out.push(r);
+    }
+    return out;
   }, [menu, cart]);
 
   const totalCartCount = useMemo(() => {
-    return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-  }, [cart]);
+    return cartLines.reduce((sum, l) => sum + l.quantity, 0);
+  }, [cartLines]);
 
   const totalCartPrice = useMemo(() => {
-    return cartItemsList.reduce((sum, entry) => sum + entry.item.price * entry.quantity, 0);
-  }, [cartItemsList]);
+    return cartLines.reduce((sum, l) => sum + l.total, 0);
+  }, [cartLines]);
 
   // Skeleton Loader while menu initial fetch happens
   if (loading || !menu) {
@@ -416,6 +520,7 @@ export default function App() {
           onSaveMenu={handleSaveMenuFromAdmin}
           onClose={closeAdmin}
           onSignOut={handleLogout}
+          onToggleLang={() => setLang(lang === 'en' ? 'ar' : 'en')}
           lang={lang}
         />
       );
@@ -492,8 +597,9 @@ export default function App() {
           {selectedCategory === 'all' && !searchQuery.trim() && !selectedBadge && (
             <FeaturedCarousel
               items={featuredItems}
+              menu={menu}
               onOpenItem={setActiveItem}
-              onAddToCart={handleAddToCart}
+              onAddToCart={handleAddItem}
               currency={currency}
               lang={lang}
               darkMode={darkMode}
@@ -506,12 +612,13 @@ export default function App() {
           <MenuList
             categories={menu.categories}
             items={menu.items}
+            menu={menu}
             selectedCategory={selectedCategory}
             searchQuery={searchQuery}
             selectedBadge={selectedBadge}
-            cartQuantities={cart}
-            onAddToCart={handleAddToCart}
-            onUpdateQuantity={handleUpdateQuantity}
+            cart={cart}
+            onAddItem={handleAddItem}
+            onUpdateLine={handleUpdateLine}
             onOpenItem={setActiveItem}
             currency={currency}
             lang={lang}
@@ -539,10 +646,12 @@ export default function App() {
         {/* Item Details Bottom Sheet Modal */}
         <ItemDetailsModal
           item={activeItem}
+          menu={menu}
           onClose={() => setActiveItem(null)}
-          cartQuantity={activeItem ? cart[activeItem.id] || 0 : 0}
-          onAddToCart={handleAddToCart}
-          onUpdateQuantity={handleUpdateQuantity}
+          cart={cart}
+          onAddItem={handleAddItem}
+          onAddConfigured={handleAddConfigured}
+          onUpdateLine={handleUpdateLine}
           currency={currency}
           lang={lang}
           darkMode={darkMode}
@@ -553,9 +662,9 @@ export default function App() {
           isOpen={isCartOpen}
           onClose={() => setIsCartOpen(false)}
           menu={menu}
-          cartItems={cartItemsList}
-          onUpdateQuantity={handleUpdateQuantity}
-          onRemoveItem={handleRemoveFromCart}
+          lines={cartLines}
+          onUpdateLine={handleUpdateLine}
+          onRemoveLine={handleRemoveLine}
           onClearCart={handleClearCart}
           currency={currency}
           lang={lang}

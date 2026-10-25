@@ -227,8 +227,12 @@ export function checkApiHeaders(request) {
   const method = (request.method || 'GET').toUpperCase();
   const origin = request.headers.get('Origin');
   let reqOrigin;
+  let originHost = '';
+  let reqHost = '';
   try {
     reqOrigin = new URL(request.url).origin;
+    reqHost = new URL(request.url).hostname;
+    if (origin) originHost = new URL(origin).hostname;
   } catch {
     return { ok: false, status: 400, error: 'bad_request', message: 'Bad request URL' };
   }
@@ -236,7 +240,8 @@ export function checkApiHeaders(request) {
     if (method === 'GET' || method === 'HEAD') return { ok: true };
     return { ok: false, status: 400, error: 'bad_request', message: 'Missing Origin header' };
   }
-  const localhost = origin.includes('localhost') && reqOrigin.includes('localhost');
+  const sameHost = (h) => h === 'localhost' || h === '127.0.0.1';
+  const localhost = sameHost(originHost) && sameHost(reqHost);
   if (origin !== reqOrigin && !localhost) {
     return { ok: false, status: 403, error: 'forbidden', message: 'Cross-origin request rejected' };
   }

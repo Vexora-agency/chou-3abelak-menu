@@ -55,7 +55,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder={isAr ? 'ابحث عن وجبتك المفضلة...' : 'Search delicious burgers, sides, drinks...'}
+            placeholder={isAr ? 'ابحث في المنيو...' : 'Search the menu...'}
             className={`w-full h-12 rounded-full border-[1.5px] text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#FFC400] ${
               isAr ? 'pr-11 pl-10' : 'pl-11 pr-10'
             } ${

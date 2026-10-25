@@ -1,18 +1,20 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { MenuItem, Category } from '../types/menu';
+import { MenuData, MenuItem, Category, CartLine } from '../types/menu';
 import { Plus, Minus, Flame, Sparkles, Award } from 'lucide-react';
-import { formatPrice, pickLangText } from '../utils/menuHelpers';
+import { pickLangText } from '../utils/menuHelpers';
+import { cartLineKey, hasOptions, priceLabel, effectiveBadges } from '../utils/pricing';
 
 interface MenuListProps {
   categories: Category[];
   items: MenuItem[];
+  menu: MenuData;
   selectedCategory: string;
   searchQuery: string;
   selectedBadge: string | null;
-  cartQuantities: Record<string, number>;
-  onAddToCart: (item: MenuItem) => void;
-  onUpdateQuantity: (itemId: string, delta: number) => void;
+  cart: Record<string, CartLine>;
+  onAddItem: (item: MenuItem) => void;
+  onUpdateLine: (key: string, dir: 1 | -1) => void;
   onOpenItem: (item: MenuItem) => void;
   currency: string;
   lang: 'en' | 'ar';
@@ -22,12 +24,13 @@ interface MenuListProps {
 export const MenuList: React.FC<MenuListProps> = ({
   categories,
   items,
+  menu,
   selectedCategory,
   searchQuery,
   selectedBadge,
-  cartQuantities,
-  onAddToCart,
-  onUpdateQuantity,
+  cart,
+  onAddItem,
+  onUpdateLine,
   onOpenItem,
   currency,
   lang,
@@ -41,8 +44,8 @@ export const MenuList: React.FC<MenuListProps> = ({
     const matchesCategory = selectedCategory === 'all' || item.categoryId === selectedCategory;
     if (!matchesCategory) return false;
 
-    // Badge quick-filter (single-select)
-    if (selectedBadge && !item.badges.includes(selectedBadge as 'new' | 'spicy' | 'top')) return false;
+    // Badge quick-filter (single-select) — uses effective badges (auto NEW included)
+    if (selectedBadge && !effectiveBadges(menu, item).includes(selectedBadge)) return false;
 
     if (!cleanQ) return true;
     const nameMatch =
@@ -65,11 +68,85 @@ export const MenuList: React.FC<MenuListProps> = ({
           {isAr ? 'لم يتم العثور على وجبات مطابقة لبحثك' : 'Nothing matches your search yet.'}
         </p>
         <p className="text-xs text-neutral-500 mt-1">
-          {isAr ? 'جرب البحث بكلمات أخرى أو اختر قسماً آخر' : 'Try searching for burgers, fries, or drinks.'}
+          {isAr ? 'جرب كلمات أخرى أو اختر قسماً آخر' : 'Try different words or pick another category.'}
         </p>
       </div>
     );
   }
+
+  // Lines of one item + helpers (option items route through the details sheet)
+  const linesOf = (item: MenuItem) =>
+    Object.entries(cart).filter(([, l]) => l.id === item.id);
+  const totalQtyOf = (item: MenuItem) =>
+    linesOf(item).reduce((s, [, l]) => s + l.quantity, 0);
+
+  const renderStepper = (item: MenuItem, lineKey: string, qty: number, small: boolean) => (
+    <div className={`flex items-center ${small ? 'gap-1 p-0.5' : 'gap-1.5 p-1'} bg-[#FFC400] text-[#0A0A0A] rounded-full ${small ? 'shadow-sm' : 'shadow-md'}`}>
+      <button
+        type="button"
+        onClick={() => onUpdateLine(lineKey, -1)}
+        className={`${small ? 'w-6 h-6' : 'w-7 h-7'} rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center font-bold transition-all`}
+        aria-label={isAr ? 'إنقاص' : 'Decrease'}
+      >
+        <Minus size={small ? 12 : 14} className="stroke-[3]" />
+      </button>
+      <span className={`font-extrabold ${small ? 'text-xs px-1' : 'text-sm px-1.5'} min-w-[20px] text-center`}>
+        {qty}
+      </span>
+      <button
+        type="button"
+        onClick={() => onUpdateLine(lineKey, 1)}
+        className={`${small ? 'w-6 h-6' : 'w-7 h-7'} rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center font-bold transition-all`}
+        aria-label={isAr ? 'زيادة' : 'Increase'}
+      >
+        <Plus size={small ? 12 : 14} className="stroke-[3]" />
+      </button>
+    </div>
+  );
+
+  // Action control for a card/row: option items always open the sheet,
+  // simple items add minQty directly then step.
+  const renderAction = (item: MenuItem, small: boolean) => {
+    const options = hasOptions(item);
+    const qty = totalQtyOf(item);
+    if (options) {
+      if (qty === 0) {
+        return (
+          <button
+            type="button"
+            onClick={() => onAddItem(item)}
+            className={`${small ? 'w-8 h-8' : 'w-10 h-10'} rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center font-bold shadow-md hover:bg-[#ffd033] active:scale-95 transition-all`}
+            aria-label={isAr ? `إضافة ${item.name.ar}` : `Add ${item.name.en}`}
+          >
+            <Plus size={small ? 16 : 18} className="stroke-[2.5]" />
+          </button>
+        );
+      }
+      return (
+        <button
+          type="button"
+          onClick={() => onOpenItem(item)}
+          className={`rounded-full bg-[#FFC400] text-[#0A0A0A] font-extrabold shadow-md hover:bg-[#ffd033] active:scale-95 transition-all ${small ? 'h-8 px-3 text-xs' : 'h-10 px-4 text-sm'}`}
+          aria-label={isAr ? `تعديل ${item.name.ar}` : `Customize ${item.name.en}`}
+        >
+          <span className="tabular-nums">{qty}</span>
+        </button>
+      );
+    }
+    if (qty === 0) {
+      return (
+        <button
+          type="button"
+          onClick={() => onAddItem(item)}
+          className={`${small ? 'w-8 h-8' : 'w-10 h-10'} rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center font-bold shadow-md hover:bg-[#ffd033] active:scale-95 transition-all`}
+          aria-label={isAr ? `إضافة ${item.name.ar}` : `Add ${item.name.en}`}
+        >
+          <Plus size={small ? 16 : 18} className="stroke-[2.5]" />
+        </button>
+      );
+    }
+    return renderStepper(item, cartLineKey(item.id), qty, small);
+  };
 
   // Get visible categories that have items in filtered list
   const activeCategoryIds = Array.from(new Set(filteredItems.map((i) => i.categoryId)));
@@ -79,7 +156,7 @@ export const MenuList: React.FC<MenuListProps> = ({
     <div className="px-5 sm:px-8 pb-12 space-y-7 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
       {visibleCats.map((cat) => {
         const catItems = filteredItems.filter((i) => i.categoryId === cat.id);
-        const isBurgerSection = cat.id.toLowerCase().includes('burger');
+        const isListSection = cat.id === 'manakish';
 
         return (
           <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-16 menu-section">
@@ -98,11 +175,10 @@ export const MenuList: React.FC<MenuListProps> = ({
               </h2>
             </div>
 
-            {/* List View for Burgers: 1-col on mobile, 2-col on tablet/desktop */}
-            {isBurgerSection ? (
+            {/* List View for text-first sections: 1-col on mobile, 2-col on tablet/desktop */}
+            {isListSection ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-4">
                 {catItems.map((item, idx) => {
-                  const qty = cartQuantities[item.id] || 0;
                   const isSoldOut = !item.available;
 
                   return (
@@ -127,8 +203,8 @@ export const MenuList: React.FC<MenuListProps> = ({
                           {pickLangText(item.name, lang)}
                         </span>
 
-                        {/* Badges */}
-                        {item.badges.map((b) => (
+                        {/* Badges (effective: stored + automatic NEW) */}
+                        {effectiveBadges(menu, item).map((b) => (
                           <span
                             key={b}
                             className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#0A0A0A] text-[#FFC400] border border-[#FFC400]"
@@ -146,17 +222,9 @@ export const MenuList: React.FC<MenuListProps> = ({
                           </span>
                         )}
 
-                        {/* Dotted Leader Line */}
-                        <span
-                          className={`flex-1 border-b-2 border-dotted mx-1 ${
-                            darkMode ? 'border-neutral-700' : 'border-neutral-300'
-                          }`}
-                          aria-hidden="true"
-                        />
-
                         {/* Price Pill */}
-                        <span className="px-3 py-1 rounded-full text-sm font-extrabold bg-[#FFC400] text-[#0A0A0A] shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform">
-                          {formatPrice(item.price, currency)}
+                        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[#FFC400] text-[#0A0A0A] shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform">
+                          {priceLabel(item, lang, currency)}
                         </span>
                       </div>
 
@@ -180,38 +248,7 @@ export const MenuList: React.FC<MenuListProps> = ({
                             onClick={(e) => e.stopPropagation()}
                             className="flex-shrink-0"
                           >
-                            {qty === 0 ? (
-                              <button
-                                type="button"
-                                onClick={() => onAddToCart(item)}
-                                className="w-10 h-10 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center font-bold shadow-md hover:bg-[#ffd033] active:scale-95 transition-all"
-                                aria-label={isAr ? `إضافة ${item.name.ar}` : `Add ${item.name.en}`}
-                              >
-                                <Plus size={18} className="stroke-[2.5]" />
-                              </button>
-                            ) : (
-                              <div className="flex items-center gap-1.5 bg-[#FFC400] text-[#0A0A0A] rounded-full p-1 shadow-md">
-                                <button
-                                  type="button"
-                                  onClick={() => onUpdateQuantity(item.id, -1)}
-                                  className="w-7 h-7 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center font-bold transition-all"
-                                  aria-label={isAr ? 'إنقاص' : 'Decrease'}
-                                >
-                                  <Minus size={14} className="stroke-[3]" />
-                                </button>
-                                <span className="font-extrabold text-sm px-1.5 min-w-[20px] text-center">
-                                  {qty}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => onUpdateQuantity(item.id, 1)}
-                                  className="w-7 h-7 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center font-bold transition-all"
-                                  aria-label={isAr ? 'زيادة' : 'Increase'}
-                                >
-                                  <Plus size={14} className="stroke-[3]" />
-                                </button>
-                              </div>
-                            )}
+                            {renderAction(item, false)}
                           </div>
                         )}
                       </div>
@@ -223,7 +260,6 @@ export const MenuList: React.FC<MenuListProps> = ({
               /* Grid View for Sides, Drinks, etc. (2-col mobile, 3-col tablet, 4-col desktop) */
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5">
                 {catItems.map((item, idx) => {
-                  const qty = cartQuantities[item.id] || 0;
                   const isSoldOut = !item.available;
 
                   return (
@@ -241,11 +277,11 @@ export const MenuList: React.FC<MenuListProps> = ({
                       } ${isSoldOut ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer card-lift'}`}
                     >
                       <div>
-                        {/* Badges */}
+                        {/* Badges (effective: stored + automatic NEW) */}
                         <div className="flex items-center justify-between mb-2">
-                          {item.badges.length > 0 ? (
+                          {effectiveBadges(menu, item).length > 0 ? (
                             <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-[#0A0A0A] text-[#FFC400] border border-[#FFC400]">
-                              {item.badges[0].toUpperCase()}
+                              {effectiveBadges(menu, item)[0].toUpperCase()}
                             </span>
                           ) : <span />}
 
@@ -280,43 +316,12 @@ export const MenuList: React.FC<MenuListProps> = ({
                         darkMode ? 'border-neutral-800' : 'border-neutral-200'
                       }`}>
                         <span className={`font-extrabold text-sm ${darkMode ? 'text-[#FFC400]' : 'text-[#0A0A0A]'}`}>
-                          {formatPrice(item.price, currency)}
+                          {priceLabel(item, lang, currency)}
                         </span>
 
                         {!isSoldOut && (
                           <div onClick={(e) => e.stopPropagation()}>
-                            {qty === 0 ? (
-                              <button
-                                type="button"
-                                onClick={() => onAddToCart(item)}
-                                className="w-8 h-8 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center font-bold shadow-sm hover:bg-[#ffd033] active:scale-90 transition-all"
-                                aria-label={isAr ? `إضافة ${item.name.ar}` : `Add ${item.name.en}`}
-                              >
-                                <Plus size={16} className="stroke-[2.5]" />
-                              </button>
-                            ) : (
-                              <div className="flex items-center gap-1 bg-[#FFC400] text-[#0A0A0A] rounded-full p-0.5 shadow-sm">
-                                <button
-                                  type="button"
-                                  onClick={() => onUpdateQuantity(item.id, -1)}
-                                  className="w-6 h-6 rounded-full bg-black/10 flex items-center justify-center font-bold"
-                                  aria-label={isAr ? 'إنقاص' : 'Decrease'}
-                                >
-                                  <Minus size={12} className="stroke-[3]" />
-                                </button>
-                                <span className="font-bold text-xs px-1">
-                                  {qty}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => onUpdateQuantity(item.id, 1)}
-                                  className="w-6 h-6 rounded-full bg-black/10 flex items-center justify-center font-bold"
-                                  aria-label={isAr ? 'زيادة' : 'Increase'}
-                                >
-                                  <Plus size={12} className="stroke-[3]" />
-                                </button>
-                              </div>
-                            )}
+                            {renderAction(item, true)}
                           </div>
                         )}
                       </div>

@@ -1,4 +1,5 @@
 import { CustomerDetails, MenuData, MenuItem } from '../types/menu';
+import { formatPrice as sharedFormatPrice, perUnitPrice, getVariant, featureName, lineMathText, round2 } from './pricing';
 
 export function isOpenNow(settings: MenuData['settings']): { isOpen: boolean; label: { en: string; ar: string } } {
   if (settings.statusMode === 'open') {
@@ -102,16 +103,23 @@ export function pickLangText(
   return (lang === 'ar' ? v.en : v.ar) || '';
 }
 
-export function formatPrice(amount: number, currency?: string): string {  if (isNaN(amount) || amount === undefined || amount === null) return currency ? `0 ${currency}` : '0';
-  const formatted = Math.round(amount).toLocaleString('en-US');
-  return currency ? `${formatted} ${currency}` : formatted;
+export function formatPrice(amount: number, currency?: string | { code?: string; decimals?: number }): string {
+  return sharedFormatPrice(typeof amount === 'number' && !isNaN(amount) ? amount : 0, currency);
+}
+
+export interface WhatsAppLine {
+  item: MenuItem;
+  variantId?: string;
+  addonIds?: string[];
+  quantity: number;
 }
 
 export function buildWhatsAppMessage(
   menu: MenuData,
-  cartItems: { item: MenuItem; quantity: number }[],
+  lines: WhatsAppLine[],
   customer: CustomerDetails,
-  lang: 'en' | 'ar'
+  lang: 'en' | 'ar',
+  orderNumber?: number | null
 ): string {
   const isAr = lang === 'ar';
   const currency = isAr ? menu.settings.currency.ar : menu.settings.currency.en;
@@ -120,59 +128,84 @@ export function buildWhatsAppMessage(
   const header = isAr
     ? `🍔 طلب جديد من ${storeName}`
     : `🍔 New Order from ${storeName}`;
+  const numberedHeader =
+    typeof orderNumber === 'number'
+      ? isAr
+        ? `🍔 طلب #${orderNumber} — ${storeName}`
+        : `🍔 Order #${orderNumber} — ${storeName}`
+      : header;
 
-  const lines: string[] = [header, '-------------------------'];
+  const linesOut: string[] = [numberedHeader, '-------------------------'];
 
+  // Same per-line format as the cart: title (name + variant + add-ons),
+  // then the math ("3 × 120,000 = 360,000").
   let subtotal = 0;
-  cartItems.forEach(({ item, quantity }) => {
-    const itemTotal = item.price * quantity;
-    subtotal += itemTotal;
+  for (const line of lines) {
+    const { item, quantity } = line;
+    if (!item || !Number.isInteger(quantity) || quantity <= 0) continue;
+    let unit: number;
+    try {
+      unit = perUnitPrice(item, { variantId: line.variantId, addonIds: line.addonIds });
+    } catch {
+      continue;
+    }
+    const lineTotalValue = quantity * unit;
+    subtotal += lineTotalValue;
     const name = pickLangText(item.name, lang);
-    lines.push(`${quantity}x ${name} — ${formatPrice(itemTotal, currency)}`);
-  });
-
-  lines.push('-------------------------');
-  lines.push(isAr ? `المجموع: ${formatPrice(subtotal, currency)}` : `Subtotal: ${formatPrice(subtotal, currency)}`);
-
-  if (customer.orderType === 'delivery' && menu.settings.ordering.deliveryFee > 0) {
-    const fee = menu.settings.ordering.deliveryFee;
-    lines.push(isAr ? `رسوم التوصيل: ${formatPrice(fee, currency)}` : `Delivery Fee: ${formatPrice(fee, currency)}`);
-    lines.push(isAr ? `الإجمالي النهائي: ${formatPrice(subtotal + fee, currency)}` : `Total: ${formatPrice(subtotal + fee, currency)}`);
+    const variant = getVariant(item, line.variantId);
+    const title = variant ? `${name} (${featureName(menu, line.variantId as string, lang)})` : name;
+    const addonNames = (Array.isArray(line.addonIds) ? line.addonIds : [])
+      .map((id) => featureName(menu, id, lang));
+    const fullTitle = addonNames.length ? `${title} + ${addonNames.join(' + ')}` : title;
+    linesOut.push(`${quantity}x ${fullTitle}`);
+    linesOut.push(`   ${lineMathText(item, quantity, unit, lang)} ${currency}`);
   }
 
-  lines.push('-------------------------');
+  linesOut.push('-------------------------');
+  linesOut.push(isAr ? `المجموع: ${formatPrice(subtotal, currency)}` : `Subtotal: ${formatPrice(subtotal, currency)}`);
+
+  // Must mirror the server (validateOrderInput) and the cart drawer exactly:
+  // the fee applies only when it is enabled AND greater than zero.
+  const feeEnabled = !!menu.settings.ordering.deliveryFeeEnabled;
+  const fee = feeEnabled ? round2(Number(menu.settings.ordering.deliveryFee) || 0) : 0;
+  if (customer.orderType === 'delivery' && fee > 0) {
+    linesOut.push(isAr ? `رسوم التوصيل: ${formatPrice(fee, currency)}` : `Delivery Fee: ${formatPrice(fee, currency)}`);
+    linesOut.push(isAr ? `الإجمالي النهائي: ${formatPrice(subtotal + fee, currency)}` : `Total: ${formatPrice(subtotal + fee, currency)}`);
+  }
+
+  linesOut.push('-------------------------');
   const typeMap = {
     delivery: isAr ? '🛵 توصيل إلى المنزل' : '🛵 Delivery',
     pickup: isAr ? '🛍️ استلام من الفرع' : '🛍️ Takeaway / Pickup',
     dinein: isAr ? '🍽️ تناول في المطعم' : '🍽️ Dine-in'
   };
 
-  lines.push(isAr ? `نوع الطلب: ${typeMap[customer.orderType]}` : `Order Type: ${typeMap[customer.orderType]}`);
+  linesOut.push(isAr ? `نوع الطلب: ${typeMap[customer.orderType]}` : `Order Type: ${typeMap[customer.orderType]}`);
   if (customer.name.trim()) {
-    lines.push(isAr ? `الاسم: ${customer.name.trim()}` : `Name: ${customer.name.trim()}`);
+    linesOut.push(isAr ? `الاسم: ${customer.name.trim()}` : `Name: ${customer.name.trim()}`);
   }
   if (customer.phone.trim()) {
-    lines.push(isAr ? `الهاتف: ${customer.phone.trim()}` : `Phone: ${customer.phone.trim()}`);
+    linesOut.push(isAr ? `الهاتف: ${customer.phone.trim()}` : `Phone: ${customer.phone.trim()}`);
   }
 
   if (customer.orderType === 'delivery' && customer.address.trim()) {
-    lines.push(isAr ? `العنوان: ${customer.address.trim()}` : `Address: ${customer.address.trim()}`);
+    linesOut.push(isAr ? `العنوان: ${customer.address.trim()}` : `Address: ${customer.address.trim()}`);
   }
 
   if (customer.orderType === 'dinein' && customer.tableNumber.trim()) {
-    lines.push(isAr ? `رقم الطاولة: ${customer.tableNumber.trim()}` : `Table #: ${customer.tableNumber.trim()}`);
+    linesOut.push(isAr ? `رقم الطاولة: ${customer.tableNumber.trim()}` : `Table #: ${customer.tableNumber.trim()}`);
   }
 
   if (customer.notes.trim()) {
-    lines.push(isAr ? `ملاحظات: ${customer.notes.trim()}` : `Notes: ${customer.notes.trim()}`);
+    linesOut.push(isAr ? `ملاحظات: ${customer.notes.trim()}` : `Notes: ${customer.notes.trim()}`);
   }
 
   const orderNote = isAr ? menu.settings.ordering.note?.ar : menu.settings.ordering.note?.en;
   if (orderNote && orderNote.trim()) {
-    lines.push(`\n📌 ${orderNote.trim()}`);
+    linesOut.push(`\n📌 ${orderNote.trim()}`);
   }
 
-  const fullMsg = lines.join('\n');
+  const fullMsg = linesOut.join('\n');
   return fullMsg.length > 1400 ? fullMsg.slice(0, 1400) + '...' : fullMsg;
 }
 

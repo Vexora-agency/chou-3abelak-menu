@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { MenuItem } from '../types/menu';
+import { MenuData, MenuItem } from '../types/menu';
 import { Plus } from 'lucide-react';
-import { formatPrice, pickLangText } from '../utils/menuHelpers';
+import { pickLangText } from '../utils/menuHelpers';
+import { priceLabel, effectiveBadges } from '../utils/pricing';
 
 interface FeaturedCarouselProps {
   items: MenuItem[];
+  menu: MenuData;
   onOpenItem: (item: MenuItem) => void;
   onAddToCart: (item: MenuItem) => void;
   currency: string;
@@ -17,6 +19,7 @@ interface FeaturedCarouselProps {
 
 export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   items,
+  menu,
   onOpenItem,
   onAddToCart,
   currency,
@@ -111,9 +114,10 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
 
   const renderCard = (item: MenuItem, idx: number) => {
     const isYellowCard = idx % 2 === 1; // Alternating cards
-    const badgeText = item.badges.includes('top')
+    const eff = effectiveBadges(menu, item);
+    const badgeText = eff.includes('top')
       ? (isAr ? 'الأكثر طلباً' : 'BEST SELLER')
-      : item.badges.includes('spicy')
+      : eff.includes('spicy')
       ? (isAr ? 'حار و مقرمش' : 'HOT & SPICY')
       : (isAr ? 'جديد' : 'NEW');
 
@@ -199,7 +203,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                 : 'bg-[#FFC400] text-[#0A0A0A]'
             }`}
           >
-            {formatPrice(item.price, currency)}
+            {priceLabel(item, lang, currency)}
           </div>
         </div>
       </motion.div>

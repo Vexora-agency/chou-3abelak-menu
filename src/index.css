@@ -343,3 +343,14 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   box-shadow: 0 0 0 1000px #121212 inset;
   transition: background-color 9999s ease-out 0s;
 }
+
+/* --- Orders dashboard (appended as provided) --- */
+/* Bell wiggle used by the orders dashboard "awaiting you" card */
+@keyframes wiggle {
+  0%, 60%, 100% { transform: rotate(0); }
+  66% { transform: rotate(14deg); }
+  72% { transform: rotate(-12deg); }
+  78% { transform: rotate(8deg); }
+  84% { transform: rotate(-6deg); }
+  90% { transform: rotate(0); }
+}

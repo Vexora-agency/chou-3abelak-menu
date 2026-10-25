@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { MenuData, MenuItem, CustomerDetails } from '../types/menu';
+import React, { useState, useEffect, useRef } from 'react';
+import { MenuData, CustomerDetails, ResolvedCartLine } from '../types/menu';
 import { buildWhatsAppMessage, formatPrice, pickLangText } from '../utils/menuHelpers';
+import { getVariant, lineMathText, featureName, round2 } from '../utils/pricing';
 import { X, Plus, Minus, Trash2, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   menu: MenuData;
-  cartItems: { item: MenuItem; quantity: number }[];
-  onUpdateQuantity: (itemId: string, delta: number) => void;
-  onRemoveItem: (itemId: string) => void;
+  lines: ResolvedCartLine[];
+  onUpdateLine: (key: string, dir: 1 | -1) => void;
+  onRemoveLine: (key: string) => void;
   onClearCart: () => void;
   currency: string;
   lang: 'en' | 'ar';
@@ -20,9 +21,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   isOpen,
   onClose,
   menu,
-  cartItems,
-  onUpdateQuantity,
-  onRemoveItem,
+  lines,
+  onUpdateLine,
+  onRemoveLine,
   onClearCart,
   currency,
   lang,
@@ -50,6 +51,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
   const [orderPrepared, setOrderPrepared] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  // Honeypot state (always empty for real users; bots fill it).
+  // NOTE: must stay above the `if (!isOpen)` early return — hooks order
+  // must never change between renders or the drawer crashes open.
+  const [honeypot, setHoneypot] = useState('');
+
+  // Stable idempotency key for this drawer session: retries ("Re-open
+  // WhatsApp") reuse it so they never create a duplicate order; it resets
+  // when the drawer closes so the next checkout is a new order.
+  const idemKeyRef = useRef<string | null>(null);
 
   // Lock body scroll when open
   useEffect(() => {
@@ -59,6 +69,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       document.body.style.overflow = '';
       setOrderPrepared(false);
       setErrorMsg('');
+      idemKeyRef.current = null;
     }
     return () => {
       document.body.style.overflow = '';
@@ -67,14 +78,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
   if (!isOpen) return null;
 
-  const subtotal = cartItems.reduce((acc, curr) => acc + curr.item.price * curr.quantity, 0);
+  const subtotal = lines.reduce((acc, l) => acc + l.total, 0);
   const minActive = !!ordering.minOrderEnabled;
   const feeActive = !!ordering.deliveryFeeEnabled;
-  const deliveryFee = feeActive ? ordering.deliveryFee || 0 : 0;
+  const deliveryFee = feeActive ? round2(Number(ordering.deliveryFee) || 0) : 0;
   const grandTotal = subtotal + deliveryFee;
   const isBelowMin = minActive && ordering.minOrder > 0 && subtotal < ordering.minOrder;
 
-  const handleSendOrder = () => {
+  const handleSendOrder = async () => {
     setErrorMsg('');
 
     // Validation
@@ -108,7 +119,58 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       }
     } catch {}
 
-    const message = buildWhatsAppMessage(menu, cartItems, customer, lang);
+    // Record the order on the server BEFORE opening WhatsApp. Never blocks
+    // the WhatsApp flow: any failure still opens WhatsApp immediately.
+    let orderNumber: number | null = null;
+    try {
+      if (!idemKeyRef.current) {
+        idemKeyRef.current =
+          typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      }
+      const idemKey = idemKeyRef.current;
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 4000);
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idemKey,
+          type: 'delivery',
+          customer: {
+            name: customer.name.trim(),
+            phone: customer.phone.trim(),
+            address: customer.address.trim(),
+          },
+          notes: customer.notes.trim(),
+          items: lines.map((l) => ({
+            id: l.item.id,
+            ...(l.variantId ? { variantId: l.variantId } : {}),
+            ...(l.addonIds.length ? { addonIds: l.addonIds } : {}),
+            qty: l.quantity,
+          })),
+          lang,
+          website: honeypot,
+        }),
+        signal: controller.signal,
+      }).catch(() => null);
+      window.clearTimeout(timer);
+      if (res && res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && typeof data.orderNumber === 'number') orderNumber = data.orderNumber;
+      }
+    } catch {
+      orderNumber = null;
+    }
+
+    const message = buildWhatsAppMessage(
+      menu,
+      lines.map((l) => ({ item: l.item, variantId: l.variantId, addonIds: l.addonIds, quantity: l.quantity })),
+      customer,
+      lang,
+      orderNumber
+    );
     const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
     const url = `https://wa.me/${whatsappNum}?text=${encodeURIComponent(message)}`;
 
@@ -157,7 +219,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               {isAr ? 'سلة طلبك' : 'Your Order'}
             </h2>
             <p className={`text-xs mt-0.5 font-medium ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-              {cartItems.length} {isAr ? 'أصناف مختارة' : 'items selected'}
+              {lines.length} {isAr ? 'أصناف مختارة' : 'items selected'}
             </p>
           </div>
           <button
@@ -213,7 +275,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               </button>
             </div>
           </div>
-        ) : cartItems.length === 0 ? (
+        ) : lines.length === 0 ? (
           <div className="py-12 text-center">
             <p className={`text-sm font-semibold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
               {isAr ? 'سلتك فارغة حالياً' : 'Your cart is empty'}
@@ -223,74 +285,86 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           <div className="space-y-5 mt-4">
             {/* Cart Items List (no inner scroller: the list grows naturally) */}
             <div className="space-y-2.5">
-              {cartItems.map(({ item, quantity }) => (
-                <div
-                  key={item.id}
-                  className={`flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-colors ${
-                    darkMode
-                      ? 'bg-[#1c1c1c] border-neutral-800 text-white'
-                      : 'bg-neutral-100 border-neutral-200 text-[#0A0A0A]'
-                  }`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <h4 className={`font-bold text-sm truncate ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-                      {pickLangText(item.name, lang)}
-                    </h4>
+              {lines.map((l) => {
+                const variant = getVariant(l.item, l.variantId);
+                const addonNames = l.addonIds.map((id) => featureName(menu, id, lang));
+                return (
+                  <div
+                    key={l.key}
+                    className={`flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-colors ${
+                      darkMode
+                        ? 'bg-[#1c1c1c] border-neutral-800 text-white'
+                        : 'bg-neutral-100 border-neutral-200 text-[#0A0A0A]'
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <h4 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+                        {pickLangText(l.item.name, lang)}
+                        {variant && (
+                          <span className={`font-semibold ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>
+                            {' '}({featureName(menu, l.variantId as string, lang)})
+                          </span>
+                        )}
+                      </h4>
+                      {addonNames.length > 0 && (
+                        <p className={`text-[11px] mt-0.5 ${darkMode ? 'text-[#FFC400]' : 'text-[#8a6d00]'}`}>
+                          + {addonNames.join(' + ')}
+                        </p>
+                      )}
 
-                    {/* Highly Visible Price Pill & Unit Details */}
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span
-                        className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-xs ${
-                          darkMode
-                            ? 'bg-[#FFC400] text-[#0A0A0A]'
-                            : 'bg-[#0A0A0A] text-[#FFC400]'
+                      {/* Line math: 3 × 120,000 = 360,000 */}
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span
+                          className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-xs tabular-nums ${
+                            darkMode
+                              ? 'bg-[#FFC400] text-[#0A0A0A]'
+                              : 'bg-[#0A0A0A] text-[#FFC400]'
+                          }`}
+                          dir="ltr"
+                        >
+                          {lineMathText(l.item, l.quantity, l.unit, lang)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Quantity Stepper & Remove */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 bg-[#FFC400] text-[#0A0A0A] rounded-full p-1 shadow-sm">
+                        <button
+                          type="button"
+                          onClick={() => onUpdateLine(l.key, -1)}
+                          className="w-6 h-6 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors text-[#0A0A0A]"
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus size={12} className="stroke-[3]" />
+                        </button>
+                        <span className="font-black text-xs px-1 min-w-[18px] text-center text-[#0A0A0A] tabular-nums">
+                          {l.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => onUpdateLine(l.key, 1)}
+                          className="w-6 h-6 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors text-[#0A0A0A]"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus size={12} className="stroke-[3]" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => onRemoveLine(l.key)}
+                        className={`p-1.5 transition-colors ${
+                          darkMode ? 'text-neutral-400 hover:text-red-400' : 'text-neutral-500 hover:text-red-600'
                         }`}
+                        aria-label="Remove item"
                       >
-                        {formatPrice(item.price * quantity, currency)}
-                      </span>
-                      <span className={`text-[11px] font-semibold ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                        ({formatPrice(item.price, currency)}/pc)
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Quantity Stepper & Remove */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 bg-[#FFC400] text-[#0A0A0A] rounded-full p-1 shadow-sm">
-                      <button
-                        type="button"
-                        onClick={() => onUpdateQuantity(item.id, -1)}
-                        className="w-6 h-6 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors text-[#0A0A0A]"
-                        aria-label="Decrease quantity"
-                      >
-                        <Minus size={12} className="stroke-[3]" />
-                      </button>
-                      <span className="font-black text-xs px-1 min-w-[18px] text-center text-[#0A0A0A]">
-                        {quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => onUpdateQuantity(item.id, 1)}
-                        className="w-6 h-6 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center transition-colors text-[#0A0A0A]"
-                        aria-label="Increase quantity"
-                      >
-                        <Plus size={12} className="stroke-[3]" />
+                        <Trash2 size={16} />
                       </button>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() => onRemoveItem(item.id)}
-                      className={`p-1.5 transition-colors ${
-                        darkMode ? 'text-neutral-400 hover:text-red-400' : 'text-neutral-500 hover:text-red-600'
-                      }`}
-                      aria-label="Remove item"
-                    >
-                      <Trash2 size={16} />
-                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Customer Inputs Form */}
@@ -375,6 +449,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 />
               </div>
 
+              {/* Honeypot: invisible to real users, bots fill it and get a fake success */}
+              <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }}>
+                <label>
+                  Website
+                  <input
+                    type="text"
+                    name="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                  />
+                </label>
+              </div>
+
               <div className="flex items-center gap-2 pt-1">
                 <input
                   id="remember-details"
@@ -410,14 +499,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   : 'bg-neutral-100 border-neutral-200 text-neutral-700'
               }`}
             >
-              <div className="flex justify-between items-center">
-                <span className={darkMode ? 'text-neutral-400' : 'text-neutral-600'}>
-                  {isAr ? 'المجموع الفرعي:' : 'Subtotal:'}
-                </span>
-                <span className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-                  {formatPrice(subtotal, currency)}
-                </span>
-              </div>
+              {feeActive && (
+                <div className="flex justify-between items-center">
+                  <span className={darkMode ? 'text-neutral-400' : 'text-neutral-600'}>
+                    {isAr ? 'المجموع الفرعي:' : 'Subtotal:'}
+                  </span>
+                  <span className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+                    {formatPrice(subtotal, currency)}
+                  </span>
+                </div>
+              )}
 
               {feeActive && (
                 <div className="flex justify-between items-center">
@@ -442,7 +533,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 }`}
               >
                 <span className={darkMode ? 'text-white' : 'text-[#0A0A0A]'}>
-                  {isAr ? 'الإجمالي الكلي:' : 'Total:'}
+                  {feeActive
+                    ? (isAr ? 'الإجمالي الكلي:' : 'Total:')
+                    : (isAr ? 'المجموع الفرعي:' : 'Subtotal:')}
                 </span>
                 <span className="text-base px-3.5 py-1 rounded-full bg-[#FFC400] text-[#0A0A0A] font-black shadow-xs">
                   {formatPrice(grandTotal, currency)}

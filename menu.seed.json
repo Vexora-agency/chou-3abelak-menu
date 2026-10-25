@@ -1,6 +1,7 @@
 {
   "version": 2,
-  "updatedAt": "2026-10-22T15:45:00.000Z",
+  "schemaVersion": 2,
+  "updatedAt": "2026-10-24T17:31:03Z",
   "settings": {
     "name": {
       "en": "Chou 3abelak",
@@ -9,10 +10,6 @@
     "tagline": {
       "en": "Fresh · Fast · Delicious",
       "ar": "طازج · سريع · شهي"
-    },
-    "about": {
-      "en": "Fresh artisanal smash burgers, crispy golden sides, and chilled specialty drinks delivered right to your door.",
-      "ar": "أشهى ساندوتشات البرجر الطازجة والمشروبات الحرفية مع التوصيل السريع إلى باب منزلك."
     },
     "logoText": "R",
     "phone": "+96170123456",
@@ -29,13 +26,7 @@
     "statusMode": "auto",
     "openTime": "12:00",
     "closeTime": "00:00",
-    "workingDays": ["sat", "sun", "mon", "tue", "wed", "thu", "fri"],
     "timezone": "Asia/Beirut",
-    "socialEnabled": {
-      "instagram": true,
-      "facebook": true,
-      "tiktok": true
-    },
     "social": {
       "instagram": "https://instagram.com",
       "facebook": "https://facebook.com",
@@ -45,37 +36,120 @@
       "en": "LBP",
       "ar": "ل.ل"
     },
-    "defaultTheme": "dark",
-    "defaultLang": "en",
+    "badges": {
+      "newDays": 14,
+      "topDays": 30,
+      "topCount": 6
+    },
+    "featureGroups": [
+      {
+        "id": "sizes",
+        "name": {
+          "en": "Sizes",
+          "ar": "أحجام"
+        }
+      },
+      {
+        "id": "addons",
+        "name": {
+          "en": "Add-ons",
+          "ar": "إضافات"
+        }
+      }
+    ],
+    "featureDefs": [
+      {
+        "id": "regular",
+        "name": {
+          "en": "Regular",
+          "ar": "عادي"
+        },
+        "groupId": "sizes"
+      },
+      {
+        "id": "mashrouha",
+        "name": {
+          "en": "Mashrouha (large & thin)",
+          "ar": "مشروحة"
+        },
+        "groupId": "sizes"
+      },
+      {
+        "id": "medium",
+        "name": {
+          "en": "Medium 25 cm",
+          "ar": "وسط 25 سم"
+        },
+        "groupId": "sizes"
+      },
+      {
+        "id": "large",
+        "name": {
+          "en": "Large 30 cm",
+          "ar": "كبير 30 سم"
+        },
+        "groupId": "sizes"
+      },
+      {
+        "id": "diet",
+        "name": {
+          "en": "Diet",
+          "ar": "دايت"
+        },
+        "groupId": "sizes"
+      },
+      {
+        "id": "extra-veg",
+        "name": {
+          "en": "Extra vegetables",
+          "ar": "إضافة خضرة"
+        },
+        "groupId": "addons"
+      }
+    ],
     "ordering": {
       "enabled": true,
-      "types": ["delivery"],
-      "minOrderEnabled": false,
-      "deliveryFeeEnabled": false,
+      "types": [
+        "delivery"
+      ],
       "minOrder": 350000,
       "deliveryFee": 100000,
       "note": {
         "en": "Prices are in LBP and include all taxes. Delivery in Beirut within 30-45 mins.",
         "ar": "الأسعار بالليرة اللبنانية وتشمل الضريبة. التوصيل في بيروت خلال 30-45 دقيقة."
       }
-    },
-    "featuredAutoplay": true,
-    "featuredAutoplayInterval": 4
+    }
   },
   "categories": [
     {
-      "id": "burgers",
+      "id": "manakish",
       "name": {
-        "en": "Burgers",
-        "ar": "برجر"
+        "en": "Manakish",
+        "ar": "مناقيش"
       },
       "visible": true
     },
     {
-      "id": "sides",
+      "id": "pastries",
       "name": {
-        "en": "Sides",
-        "ar": "أطباق جانبية"
+        "en": "Pastries (by the dozen)",
+        "ar": "معجنات"
+      },
+      "visible": true
+    },
+    {
+      "id": "pizza",
+      "name": {
+        "en": "Pizza",
+        "ar": "بيتزا"
+      },
+      "visible": true
+    },
+    {
+      "id": "fatayer",
+      "name": {
+        "en": "Pies",
+        "ar": "فطيرة"
       },
       "visible": true
     },
@@ -83,138 +157,1778 @@
       "id": "drinks",
       "name": {
         "en": "Drinks",
-        "ar": "مشروبات"
+        "ar": "مرطبات"
       },
       "visible": true
     }
   ],
   "items": [
     {
-      "id": "i_classic_burger",
-      "categoryId": "burgers",
+      "id": "manakish-zaatar-plain",
+      "categoryId": "manakish",
       "name": {
-        "en": "Classic Burger",
-        "ar": "كلاسيك برجر"
+        "en": "Plain Zaatar",
+        "ar": "زعتر سادة"
       },
       "description": {
-        "en": "Juicy 150g beef patty, crisp lettuce, ripe tomato, pickles, and our signature house sauce.",
-        "ar": "شريحة لحم بقري 150 جم مشوية مع خس طازج، طماطم، مخلل وصلصة المحل الخاصة."
+        "en": "",
+        "ar": ""
       },
-      "price": 450000,
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [
+        "top"
+      ],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 80000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 120000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-zaatar-labneh",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Zaatar & Labneh",
+        "ar": "زعتر ولبنة"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 200000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 300000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-zaatar-muhammara",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Zaatar & Muhammara",
+        "ar": "زعتر ومحمرة"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 200000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 300000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-zaatar-fresh-veg",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Zaatar & Fresh Vegetables",
+        "ar": "زعتر وخضار حرة"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 200000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 300000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-cheese-plain",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Plain Cheese",
+        "ar": "جبنة سادة"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 250000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 400000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-cheese-akkawi-mozzarella",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Akkawi & Mozzarella Cheese",
+        "ar": "جبنة عكاوي وموزاريلا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [
+        "top"
+      ],
+      "featured": true,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 350000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 450000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-cheese-zaatar-cocktail",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Cheese & Zaatar Cocktail",
+        "ar": "كوكتيل جبنة وزعتر"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [
+        "top"
+      ],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 200000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 300000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-labneh-plain",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Plain Labneh",
+        "ar": "لبنة سادة"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 200000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 300000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-meat-plain",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Plain Meat",
+        "ar": "لحمة سادة"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 250000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 400000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-meat-akkawi",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Meat & Akkawi Cheese",
+        "ar": "لحمة وجبنة عكاوي"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 250000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 400000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-meat-mozzarella",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Meat & Mozzarella",
+        "ar": "لحمة وموزاريلا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 350000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 450000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-kafta-plain",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Plain Kafta",
+        "ar": "كفتة سادة"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 350000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 450000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-kafta-mozzarella",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Kafta & Mozzarella",
+        "ar": "كفتة وموزاريلا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": true,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 450000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 550000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-kishk-plain",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Plain Kishk",
+        "ar": "كشك سادة"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 200000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 300000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-kishk-akkawi",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Kishk & Akkawi Cheese",
+        "ar": "كشك وجبنة عكاوي"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 250000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 400000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-kishk-mozzarella",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Kishk & Mozzarella Cheese",
+        "ar": "كشك وجبنة موزاريلا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 300000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 450000
+        }
+      ],
+      "addedAt": "2026-10-24T17:31:03Z",
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-fresh-veg",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Fresh Vegetables",
+        "ar": "خضرة حرة"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 200000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 300000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-fresh-veg-akkawi",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Fresh Vegetables & Akkawi",
+        "ar": "خضرة حرة وعكاوي"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 250000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 400000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-fresh-veg-mozzarella",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Fresh Vegetables & Mozzarella",
+        "ar": "خضرة حرة وموزاريلا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 300000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 450000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-fresh-veg-sujuk",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Fresh Vegetables & Sujuk",
+        "ar": "خضرة حرة وسجق"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 350000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 500000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-fresh-veg-sujuk-mozzarella",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Fresh Vegetables, Sujuk & Mozzarella",
+        "ar": "خضرة حرة وسجق وموزاريلا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 450000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 650000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-sujuk-plain",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Plain Sujuk",
+        "ar": "سجق سادة"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [
+        "spicy"
+      ],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 250000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 400000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-sujuk-mozzarella",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Sujuk & Mozzarella",
+        "ar": "سجق وموزاريلا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [
+        "spicy"
+      ],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 400000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 550000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-turkey-mozzarella",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Turkey & Mozzarella",
+        "ar": "حبش وموزاريلا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 400000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 550000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-pepperoni-mozzarella",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Pepperoni & Mozzarella",
+        "ar": "بيبيروني وموزاريلا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 400000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 550000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-mortadella-mozzarella",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Mortadella & Mozzarella",
+        "ar": "مرتديلا وموزاريلا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 400000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 550000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-muhammara-plain",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Plain Muhammara",
+        "ar": "محمرة سادة"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [
+        "spicy"
+      ],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 200000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 300000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-muhammara-akkawi",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Muhammara & Akkawi Cheese",
+        "ar": "محمرة وجبنة عكاوي"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [
+        "spicy"
+      ],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 250000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 400000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-muhammara-mozzarella",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Muhammara & Mozzarella Cheese",
+        "ar": "محمرة وجبنة موزاريلا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [
+        "spicy"
+      ],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 300000
+        },
+        {
+          "featureId": "mashrouha",
+          "price": 400000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-sujuk-eggs",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Sujuk & Eggs (Large 27 cm)",
+        "ar": "سجق وبيض (حجم كبير 27 سم)"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false,
+        "price": 500000
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "manakish-qawarma-eggs",
+      "categoryId": "manakish",
+      "name": {
+        "en": "Qawarma & Eggs (Large 27 cm)",
+        "ar": "قورما وبيض (حجم كبير 27 سم)"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false,
+        "price": 500000
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "addedAt": "2026-10-24T17:31:03Z",
+      "addons": [
+        {
+          "featureId": "extra-veg",
+          "price": 30000
+        }
+      ]
+    },
+    {
+      "id": "pastry-pizza",
+      "categoryId": "pastries",
+      "name": {
+        "en": "Pizza",
+        "ar": "بيتزا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "dozen",
+        "price": 600000,
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 20,
+        "showUnit": true
+      },
       "badges": [],
       "featured": false,
       "available": true
     },
     {
-      "id": "i_double_smash",
-      "categoryId": "burgers",
+      "id": "pastry-sfiha",
+      "categoryId": "pastries",
       "name": {
-        "en": "Double Smash Burger",
-        "ar": "دبل سماش برجر"
+        "en": "Sfiha",
+        "ar": "صفيحة"
       },
       "description": {
-        "en": "Two smashed beef patties with crispy edges, double melted sharp cheddar, caramelized onions, and secret relish.",
-        "ar": "شريحتان من اللحم البقري المحمر المقرمش الأطراف، جبنة شيدر مضاعفة وبصل مكرمل."
+        "en": "",
+        "ar": ""
       },
-      "price": 580000,
-      "badges": ["top"],
+      "pricing": {
+        "unit": "dozen",
+        "price": 500000,
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 20,
+        "showUnit": true
+      },
+      "badges": [
+        "top"
+      ],
       "featured": true,
       "available": true
     },
     {
-      "id": "i_spicy_crunch",
-      "categoryId": "burgers",
+      "id": "pastry-spinach",
+      "categoryId": "pastries",
       "name": {
-        "en": "Spicy Crunch Chicken",
-        "ar": "سبايسي كرانش تشيكن"
+        "en": "Spinach",
+        "ar": "سبانخ"
       },
       "description": {
-        "en": "Crispy golden fried chicken breast dipped in ghost-pepper glaze, pickled jalapeños, and purple slaw.",
-        "ar": "صدر دجاج مقرمش متبل ومغموس في صلصة حارة مع هالبينو مخلل وسلطة كولسلو."
+        "en": "",
+        "ar": ""
       },
-      "price": 520000,
-      "badges": ["spicy"],
+      "pricing": {
+        "unit": "dozen",
+        "price": 450000,
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 20,
+        "showUnit": true
+      },
+      "badges": [],
+      "featured": false,
+      "available": true
+    },
+    {
+      "id": "pastry-cheese",
+      "categoryId": "pastries",
+      "name": {
+        "en": "Cheese",
+        "ar": "جبنة"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "dozen",
+        "price": 500000,
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 20,
+        "showUnit": true
+      },
+      "badges": [],
+      "featured": false,
+      "available": true
+    },
+    {
+      "id": "pastry-zaatar",
+      "categoryId": "pastries",
+      "name": {
+        "en": "Zaatar",
+        "ar": "زعتر"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "dozen",
+        "price": 400000,
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 20,
+        "showUnit": true
+      },
+      "badges": [],
+      "featured": false,
+      "available": true
+    },
+    {
+      "id": "pastry-kishk",
+      "categoryId": "pastries",
+      "name": {
+        "en": "Kishk",
+        "ar": "كشك"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "dozen",
+        "price": 450000,
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 20,
+        "showUnit": true
+      },
+      "badges": [],
+      "featured": false,
+      "available": true
+    },
+    {
+      "id": "pizza-veggie",
+      "categoryId": "pizza",
+      "name": {
+        "en": "Veggie Pizza",
+        "ar": "بيتزا خضرة"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "medium",
+          "price": 500000
+        },
+        {
+          "featureId": "large",
+          "price": 700000
+        }
+      ]
+    },
+    {
+      "id": "pizza-veggie-sujuk",
+      "categoryId": "pizza",
+      "name": {
+        "en": "Veggie & Sujuk Pizza",
+        "ar": "بيتزا خضرة وسجق"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": true,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "medium",
+          "price": 600000
+        },
+        {
+          "featureId": "large",
+          "price": 800000
+        }
+      ]
+    },
+    {
+      "id": "pizza-veggie-mortadella",
+      "categoryId": "pizza",
+      "name": {
+        "en": "Veggie & Mortadella Pizza",
+        "ar": "بيتزا خضرة ومرتديلا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "medium",
+          "price": 600000
+        },
+        {
+          "featureId": "large",
+          "price": 800000
+        }
+      ]
+    },
+    {
+      "id": "pizza-veggie-pepperoni",
+      "categoryId": "pizza",
+      "name": {
+        "en": "Veggie & Pepperoni Pizza",
+        "ar": "بيتزا خضرة وبيبيروني"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "medium",
+          "price": 600000
+        },
+        {
+          "featureId": "large",
+          "price": 800000
+        }
+      ]
+    },
+    {
+      "id": "pizza-veggie-turkey",
+      "categoryId": "pizza",
+      "name": {
+        "en": "Veggie & Turkey Pizza",
+        "ar": "بيتزا خضرة وحبش"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "medium",
+          "price": 600000
+        },
+        {
+          "featureId": "large",
+          "price": 800000
+        }
+      ]
+    },
+    {
+      "id": "pizza-margherita",
+      "categoryId": "pizza",
+      "name": {
+        "en": "Margherita Pizza",
+        "ar": "بيتزا مارغريتا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [
+        "top"
+      ],
+      "featured": true,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "medium",
+          "price": 500000
+        },
+        {
+          "featureId": "large",
+          "price": 700000
+        }
+      ]
+    },
+    {
+      "id": "pizza-tuna",
+      "categoryId": "pizza",
+      "name": {
+        "en": "Tuna Pizza",
+        "ar": "بيتزا تونا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "medium",
+          "price": 600000
+        },
+        {
+          "featureId": "large",
+          "price": 800000
+        }
+      ]
+    },
+    {
+      "id": "pizza-hotdog",
+      "categoryId": "pizza",
+      "name": {
+        "en": "Hot Dog Pizza",
+        "ar": "بيتزا هوتدوغ"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "medium",
+          "price": 600000
+        },
+        {
+          "featureId": "large",
+          "price": 800000
+        }
+      ],
+      "addedAt": "2026-10-24T17:31:03Z"
+    },
+    {
+      "id": "fatayer-spinach",
+      "categoryId": "fatayer",
+      "name": {
+        "en": "Spinach Pie",
+        "ar": "فطيرة سبانخ"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false,
+        "price": 200000
+      },
+      "badges": [],
       "featured": true,
       "available": true
     },
     {
-      "id": "i_truffle_mushroom",
-      "categoryId": "burgers",
-      "name": {
-        "en": "Truffle Swiss Mushroom",
-        "ar": "ماشروم ترافل سويس"
-      },
-      "description": {
-        "en": "Grilled angus beef, sautéed portobello mushrooms, Swiss cheese, and aromatic black truffle aioli.",
-        "ar": "لحم أنجوس مشوي مع فطر بورتوبيللو سوتيه، جبنة سويسرية وصلصة مايونيز الكمأة السوداء."
-      },
-      "price": 650000,
-      "badges": ["new"],
-      "featured": false,
-      "available": true
-    },
-    {
-      "id": "i_golden_fries",
-      "categoryId": "sides",
-      "name": {
-        "en": "Signature Skin-On Fries",
-        "ar": "بطاطس مقلية مميزة"
-      },
-      "description": {
-        "en": "Hand-cut Idaho potatoes fried golden and seasoned with rosemary sea salt.",
-        "ar": "بطاطس مقلية ذهبية مقرمشة متبلة بملح البحر وإكليل الجبل."
-      },
-      "price": 180000,
-      "badges": [],
-      "featured": false,
-      "available": true
-    },
-    {
-      "id": "i_onion_rings",
-      "categoryId": "sides",
-      "name": {
-        "en": "Crispy Onion Rings",
-        "ar": "حلقات بصل مقرمشة"
-      },
-      "description": {
-        "en": "Eight thick-cut sweet Spanish onion rings in crunchy panko batter with honey mustard dip.",
-        "ar": "8 حلقات بصل مقرمشة بتتبيلة البانكو مع صلصة الخردل والعسل."
-      },
-      "price": 220000,
-      "badges": [],
-      "featured": false,
-      "available": true
-    },
-    {
-      "id": "i_fresh_lemonade",
+      "id": "drink-pepsi",
       "categoryId": "drinks",
       "name": {
-        "en": "Mint Lime Lemonade",
-        "ar": "ليموناضة نعناع طازجة"
+        "en": "Pepsi",
+        "ar": "بيبسي"
       },
       "description": {
-        "en": "Freshly squeezed lemon and lime juice crushed with garden spearmint leaves over ice.",
-        "ar": "عصير ليمون طبيعي طازج مع أوراق النعناع المنعشة والثلج المجروش."
+        "en": "",
+        "ar": ""
       },
-      "price": 180000,
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [
+        "top"
+      ],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 100000
+        },
+        {
+          "featureId": "diet",
+          "price": 100000
+        }
+      ]
+    },
+    {
+      "id": "drink-mirinda",
+      "categoryId": "drinks",
+      "name": {
+        "en": "Mirinda",
+        "ar": "ميرندا"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 100000
+        },
+        {
+          "featureId": "diet",
+          "price": 100000
+        }
+      ]
+    },
+    {
+      "id": "drink-7up",
+      "categoryId": "drinks",
+      "name": {
+        "en": "7UP",
+        "ar": "سفن اب"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "variants": [
+        {
+          "featureId": "regular",
+          "price": 100000
+        },
+        {
+          "featureId": "diet",
+          "price": 100000
+        }
+      ]
+    },
+    {
+      "id": "drink-juice",
+      "categoryId": "drinks",
+      "name": {
+        "en": "Juice",
+        "ar": "عصير"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false,
+        "price": 50000
+      },
       "badges": [],
       "featured": false,
       "available": true
     },
     {
-      "id": "i_nitro_coldbrew",
+      "id": "drink-ayran",
       "categoryId": "drinks",
       "name": {
-        "en": "Nitro Iced Cold Brew",
-        "ar": "كولد برو مثلج"
+        "en": "Ayran (Laban)",
+        "ar": "لبن عيران"
       },
       "description": {
-        "en": "Slow-steeped 16-hour single-origin Ethiopian cold brew coffee served silky over ice.",
-        "ar": "قهوة إثيوبية باردة ومقطرة ببطء لمدة 16 ساعة مع رغوة حريرية."
+        "en": "",
+        "ar": ""
       },
-      "price": 240000,
-      "badges": ["new"],
-      "featured": true,
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false,
+        "price": 100000
+      },
+      "badges": [],
+      "featured": false,
+      "available": true,
+      "addedAt": "2026-10-24T17:31:03Z"
+    },
+    {
+      "id": "drink-water",
+      "categoryId": "drinks",
+      "name": {
+        "en": "Water",
+        "ar": "مياه"
+      },
+      "description": {
+        "en": "",
+        "ar": ""
+      },
+      "pricing": {
+        "unit": "pc",
+        "minQty": 1,
+        "step": 1,
+        "maxQty": 50,
+        "showUnit": false,
+        "price": 30000
+      },
+      "badges": [],
+      "featured": false,
       "available": true
     }
   ]

@@ -29,7 +29,7 @@ export async function onRequest(context) {
   const url = new URL(request.url);
 
   // Local development bypass
-  if (env.ALLOW_LOCAL_DEV === '1' && url.hostname === 'localhost') {
+  if (env.ALLOW_LOCAL_DEV === '1' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1')) {
     const res = await next();
     res.headers.set('Cache-Control', 'no-store');
     return res;

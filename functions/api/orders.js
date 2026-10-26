@@ -7,12 +7,12 @@
 
 import { jsonNoStore, readJsonBody } from '../_shared/session.js';
 import { mapOrderRow, newOrderId, validateOrderInput } from '../_shared/orders.js';
+import { getOrderingState } from '../_shared/status.js';
 
 const MAX_BODY_BYTES = 8 * 1024;
 const RATE_PREFIX = 'order:ip:';
 const RATE_TTL_SEC = 10 * 60;
 const RATE_MAX = 5;
-const RETENTION_DAYS = 180;
 
 function clientIp(request) {
   return request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -83,10 +83,20 @@ export async function onRequest(context) {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
 
+  // Availability is evaluated FIRST from the live menu at submit time, so
+  // the answer is always 403 {error:'paused'|'closed'|'disabled', message}.
+  // Client-sent state is ignored. Not open -> no order is recorded.
+  let orderingState = { state: 'open' };
+  try {
+    orderingState = getOrderingState((menu && menu.settings) || {}, Date.now());
+  } catch {}
+  if (orderingState.state !== 'open') {
+    return jsonNoStore({ error: orderingState.state, message: orderingState.message || { en: '', ar: '' } }, 403);
+  }
+
   const checked = validateOrderInput(body, menu);
   if (!checked.ok) {
     const code = (checked.errors && checked.errors[0]) || 'invalid';
-    if (code === 'ordering_disabled') return jsonNoStore({ error: code }, 403);
     if (code === 'min_order') {
       const out = { error: code };
       if (typeof checked.minOrder === 'number') out.minOrder = checked.minOrder;
@@ -139,7 +149,7 @@ export async function onRequest(context) {
     await db.batch([
       db
         .prepare(
-          'INSERT INTO orders (id, number, idem_key, created_at, updated_at, status, type, customer_name, customer_phone, customer_address, customer_table, notes, items_json, subtotal, delivery_fee, total, lang) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17)'
+          'INSERT INTO orders (id, number, idem_key, created_at, updated_at, status, type, customer_name, customer_phone, phone_norm, customer_address, customer_table, notes, location_lat, location_lng, items_json, subtotal, delivery_fee, total, lang) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20)'
         )
         .bind(
           id,
@@ -151,9 +161,12 @@ export async function onRequest(context) {
           c.type,
           c.name,
           c.phone,
+          c.phoneNorm,
           c.address,
           c.table,
           c.notes,
+          c.location ? c.location.lat : null,
+          c.location ? c.location.lng : null,
           JSON.stringify(c.items),
           c.subtotal,
           c.deliveryFee,
@@ -194,7 +207,8 @@ export async function onRequest(context) {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
 
-  // Bookkeeping (never blocks the response)
+  // Bookkeeping (never blocks the response). Retention lives in the daily
+  // /api/internal/run-reports job now — never here.
   const after = (async () => {
     try {
       await kv.put(
@@ -202,12 +216,6 @@ export async function onRequest(context) {
         JSON.stringify({ n: used + 1, reset: windowReset }),
         { expirationTtl: RATE_TTL_SEC }
       );
-    } catch {}
-    try {
-      if (Math.random() < 0.01) {
-        const cutoff = new Date(Date.now() - RETENTION_DAYS * 86400000).toISOString();
-        await db.prepare('DELETE FROM orders WHERE created_at < ?1').bind(cutoff).run();
-      }
     } catch {}
   })();
   if (context.waitUntil) {

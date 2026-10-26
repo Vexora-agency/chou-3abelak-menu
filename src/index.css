@@ -346,11 +346,29 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 
 /* --- Orders dashboard (appended as provided) --- */
 /* Bell wiggle used by the orders dashboard "awaiting you" card */
-@keyframes wiggle {
-  0%, 60%, 100% { transform: rotate(0); }
+@keyframes wiggle {  0%, 60%, 100% { transform: rotate(0); }
   66% { transform: rotate(14deg); }
   72% { transform: rotate(-12deg); }
   78% { transform: rotate(8deg); }
   84% { transform: rotate(-6deg); }
   90% { transform: rotate(0); }
+}
+
+/* --- Admin tab entrance: direct children rise with a stagger,
+   same timing/feel as the dashboard cards (0.5s, y14, ease-out-expo) --- */
+@keyframes adminRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.stagger > * { animation: adminRise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.stagger > *:nth-child(2) { animation-delay: 0.05s; }
+.stagger > *:nth-child(3) { animation-delay: 0.1s; }
+.stagger > *:nth-child(4) { animation-delay: 0.15s; }
+.stagger > *:nth-child(5) { animation-delay: 0.2s; }
+.stagger > *:nth-child(6) { animation-delay: 0.25s; }
+.stagger > *:nth-child(7) { animation-delay: 0.3s; }
+.stagger > *:nth-child(8) { animation-delay: 0.35s; }
+.stagger > *:nth-child(n+9) { animation-delay: 0.4s; }
+@media (prefers-reduced-motion: reduce) {
+  .stagger > * { animation: none; }
 }

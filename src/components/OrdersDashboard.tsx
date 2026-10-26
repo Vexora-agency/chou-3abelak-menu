@@ -27,6 +27,7 @@ export interface Order {
   status: OrderStatus;
   type: OrderType;
   customer: { name: string; phone: string; address?: string; table?: string };
+  location?: { lat: number; lng: number };
   notes?: string;
   items: OrderItem[];
   subtotal: number;
@@ -43,11 +44,11 @@ interface OrdersDashboardProps {
   onRefresh?: () => void;
 }
 
-type Period = 'today' | '7d' | '30d';
+type Period = 'today' | '7d' | 'month' | 'lastMonth';
 
 const STR = {
   en: {
-    today: 'Today', d7: '7 days', d30: '30 days', refresh: 'Refresh', live: 'Live',
+    today: 'Today', d7: '7 days', thisMonth: 'This month', lastMonth: 'Last month', refresh: 'Refresh', live: 'Live', liveTip: 'Auto-refresh on: new orders appear here by themselves',
     orders: 'Orders', revenue: 'Revenue', avg: 'Avg. order', pending: 'Awaiting you',
     vsPrev: 'vs previous', over: 'Orders over time', peak: 'Peak', ordersWord: 'orders',
     top: 'Top sellers', sold: 'sold',
@@ -55,14 +56,14 @@ const STR = {
     new: 'New', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled',
     emptyTitle: 'No orders yet', emptyDesc: 'Orders placed from your menu will appear here instantly.',
     emptyView: 'No orders in this view.', noData: 'No data for this period.',
-    itemsLabel: 'Items', phone: 'Phone', address: 'Address', table: 'Table', notes: 'Notes',
+    itemsLabel: 'Items', phone: 'Phone', address: 'Address', table: 'Table', notes: 'Notes', openMaps: 'Open in Maps',
     subtotal: 'Subtotal', fee: 'Delivery fee', total: 'Total',
     complete: 'Mark completed', cancel: 'Cancel order', reopen: 'Reopen',
     wa: 'WhatsApp', call: 'Call', now: 'Just now',
     min: (n: number) => `${n} min ago`, hr: (n: number) => `${n}h ago`,
   },
   ar: {
-    today: 'اليوم', d7: '7 أيام', d30: '30 يوماً', refresh: 'تحديث', live: 'مباشر',
+    today: 'اليوم', d7: '7 أيام', thisMonth: 'هذا الشهر', lastMonth: 'الشهر الماضي', refresh: 'تحديث', live: 'مباشر', liveTip: 'التحديث التلقائي يعمل: الطلبات الجديدة تظهر هنا وحدها',
     orders: 'الطلبات', revenue: 'الإيرادات', avg: 'متوسط الطلب', pending: 'بانتظارك',
     vsPrev: 'عن السابقة', over: 'الطلبات عبر الوقت', peak: 'الذروة', ordersWord: 'طلب',
     top: 'الأكثر مبيعاً', sold: 'مباع',
@@ -70,7 +71,7 @@ const STR = {
     new: 'جديد', confirmed: 'مؤكد', completed: 'مكتمل', cancelled: 'ملغي',
     emptyTitle: 'لا توجد طلبات بعد', emptyDesc: 'الطلبات القادمة من المنيو ستظهر هنا فوراً.',
     emptyView: 'لا توجد طلبات في هذا العرض.', noData: 'لا توجد بيانات لهذه الفترة.',
-    itemsLabel: 'الأصناف', phone: 'الهاتف', address: 'العنوان', table: 'الطاولة', notes: 'ملاحظات',
+    itemsLabel: 'الأصناف', phone: 'الهاتف', address: 'العنوان', table: 'الطاولة', notes: 'ملاحظات', openMaps: 'فتح في الخرائط',
     subtotal: 'المجموع الفرعي', fee: 'رسوم التوصيل', total: 'الإجمالي',
     complete: 'تم التسليم', cancel: 'إلغاء الطلب', reopen: 'إعادة فتح',
     wa: 'واتساب', call: 'اتصال', now: 'الآن',
@@ -104,13 +105,28 @@ const STATUS_STYLE: Record<OrderStatus, string> = {
 
 const TYPE_ICON = { delivery: Truck, pickup: Store, dinein: UtensilsCrossed } as const;
 
+const DAY_MS = 86400000;
+const addDays = (d: Date, n: number) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+
+/** Calendar-based windows. "month" is month-to-date and is compared with the same number of days of the previous month. */
 function windowFor(period: Period, now: Date) {
-  const days = period === 'today' ? 1 : period === '7d' ? 7 : 30;
-  const start = startOfDay(now);
-  start.setDate(start.getDate() - (days - 1));
-  const prevStart = new Date(start);
-  prevStart.setDate(prevStart.getDate() - days);
-  return { days, start, prevStart };
+  const today = startOfDay(now);
+  const y = today.getFullYear(), m = today.getMonth();
+  let start: Date, end: Date, prevStart: Date, prevEnd: Date, buckets: number;
+  if (period === 'today') {
+    start = today; end = addDays(today, 1); prevStart = addDays(today, -1); prevEnd = today; buckets = 24;
+  } else if (period === '7d') {
+    start = addDays(today, -6); end = addDays(today, 1); prevStart = addDays(start, -7); prevEnd = start; buckets = 7;
+  } else if (period === 'month') {
+    start = new Date(y, m, 1); end = addDays(today, 1); prevStart = new Date(y, m - 1, 1);
+    const elapsed = Math.round((end.getTime() - start.getTime()) / DAY_MS);
+    prevEnd = new Date(Math.min(addDays(prevStart, elapsed).getTime(), start.getTime()));
+    buckets = new Date(y, m + 1, 0).getDate();
+  } else {
+    start = new Date(y, m - 1, 1); end = new Date(y, m, 1); prevStart = new Date(y, m - 2, 1); prevEnd = start;
+    buckets = new Date(y, m, 0).getDate();
+  }
+  return { start, end, prevStart, prevEnd, buckets };
 }
 
 function relTime(iso: string, lang: 'en' | 'ar', now: Date) {  const t = STR[lang];
@@ -207,16 +223,15 @@ const OrdersDashboard: React.FC<OrdersDashboardProps> = ({ lang, orders, currenc
   }, [topId]);
 
   const stats = useMemo(() => {
-    const { days, start, prevStart } = windowFor(period, now);
+    const { start, end, prevStart, prevEnd, buckets: bucketCount } = windowFor(period, now);
     const live = (o: Order) => o.status !== 'cancelled';
-    // Upper bound (<= now): a future-dated row must never inflate the KPIs
-    // while being invisible in the chart buckets.
-    const inWin = sorted.filter((o) => { const d = new Date(o.createdAt); return d >= start && d <= now && live(o); });
-    const inPrev = sorted.filter((o) => { const d = new Date(o.createdAt); return d >= prevStart && d < start && live(o); });
+    const inPeriod = sorted.filter((o) => { const d = new Date(o.createdAt); return d >= start && d < end && d <= now; });
+    const inWin = inPeriod.filter(live);
+    const inPrev = sorted.filter((o) => { const d = new Date(o.createdAt); return d >= prevStart && d < prevEnd && live(o); });
     const sum = (a: Order[]) => a.reduce((s, o) => s + o.total, 0);
     const revenue = sum(inWin), prevRevenue = sum(inPrev);
 
-    const n = period === 'today' ? 24 : days;
+    const n = bucketCount;
     const buckets = Array.from({ length: n }, (_, i) => ({ count: 0, revenue: 0, label: '', full: '' }));
     buckets.forEach((b, i) => {
       if (period === 'today') {
@@ -230,7 +245,7 @@ const OrdersDashboard: React.FC<OrdersDashboardProps> = ({ lang, orders, currenc
     });
     inWin.forEach((o) => {
       const d = new Date(o.createdAt);
-      const i = period === 'today' ? d.getHours() : Math.round((startOfDay(d).getTime() - start.getTime()) / 86400000);
+      const i = period === 'today' ? d.getHours() : Math.round((startOfDay(d).getTime() - start.getTime()) / DAY_MS);
       if (buckets[i]) { buckets[i].count += 1; buckets[i].revenue += o.total; }
     });
     const max = Math.max(1, ...buckets.map((b) => b.count));
@@ -243,14 +258,14 @@ const OrdersDashboard: React.FC<OrdersDashboardProps> = ({ lang, orders, currenc
     }));
     const top = [...itemMap.values()].sort((a, b) => b.qty - a.qty).slice(0, 5);
 
-    return { count: inWin.length, prevCount: inPrev.length, revenue, prevRevenue, avg: inWin.length ? revenue / inWin.length : 0,
+    return { inPeriod, count: inWin.length, prevCount: inPrev.length, revenue, prevRevenue, avg: inWin.length ? revenue / inWin.length : 0,
       prevAvg: inPrev.length ? prevRevenue / inPrev.length : 0, buckets, max, peak, top };
   }, [sorted, period, lang, nowMs]);
 
   const pendingCount = sorted.filter((o) => o.status === 'new').length;
-  const counts: Record<string, number> = { all: sorted.length, new: 0, completed: 0, cancelled: 0 };
-  sorted.forEach((o) => { if (counts[o.status] !== undefined) counts[o.status] += 1; });
-  const list = sorted.filter((o) => filter === 'all' || o.status === filter);
+  const counts: Record<string, number> = { all: stats.inPeriod.length, new: 0, completed: 0, cancelled: 0 };
+  stats.inPeriod.forEach((o) => { if (counts[o.status] !== undefined) counts[o.status] += 1; });
+  const list = stats.inPeriod.filter((o) => filter === 'all' || o.status === filter);
   const shownIdx = sel ?? stats.peak;
   const sb = stats.buckets[shownIdx];
 
@@ -270,21 +285,21 @@ const OrdersDashboard: React.FC<OrdersDashboardProps> = ({ lang, orders, currenc
     <div className="space-y-4" dir={isAr ? 'rtl' : 'ltr'}>
       {/* Period + refresh */}
       <motion.div {...rise(0)} className="flex items-center justify-between gap-3">
-        <div className="flex gap-1.5 p-1 bg-neutral-900 rounded-full border border-neutral-800" role="tablist" aria-label="Period">
-          {(['today', '7d', '30d'] as const).map((p) => {
+        <div className="flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800 max-w-full overflow-x-auto" style={{ scrollbarWidth: 'none' }} role="tablist" aria-label="Period">
+          {(['today', '7d', 'month', 'lastMonth'] as const).map((p) => {
             const active = period === p;
             return (
               <button key={p} type="button" role="tab" aria-selected={active}
                 onClick={() => { setPeriod(p); setSel(null); }}
-                className={`relative px-3.5 h-8 rounded-full text-xs font-bold transition-colors ${active ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}>
+                className={`relative shrink-0 px-3 h-8 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${active ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}>
                 {active && <motion.span layoutId="dash-period" className="absolute inset-0 rounded-full bg-[#FFC400] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
-                <span className="relative z-10">{p === 'today' ? t.today : p === '7d' ? t.d7 : t.d30}</span>
+                <span className="relative z-10">{p === 'today' ? t.today : p === '7d' ? t.d7 : p === 'month' ? t.thisMonth : t.lastMonth}</span>
               </button>
             );
           })}
         </div>
         <div className="flex items-center gap-2">
-          <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-neutral-400">
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-neutral-400" title={t.liveTip}>
             <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60 animate-ping" /><span className="relative inline-flex h-2 w-2 rounded-full bg-green-400" /></span>
             {t.live}
           </span>
@@ -454,6 +469,16 @@ const OrdersDashboard: React.FC<OrdersDashboardProps> = ({ lang, orders, currenc
                             <div className="flex items-center gap-2 text-neutral-300"><Phone size={14} className="text-[#FFC400] shrink-0" /><span dir="ltr">{o.customer.phone}</span></div>
                             {(o.customer.address || o.customer.table) && (
                               <div className="flex items-center gap-2 text-neutral-300"><MapPin size={14} className="text-[#FFC400] shrink-0" /><span>{o.customer.address ?? `${t.table} ${o.customer.table}`}</span></div>
+                            )}
+                            {o.location && Number.isFinite(o.location.lat) && Number.isFinite(o.location.lng) && (
+                              <a
+                                href={`https://www.google.com/maps?q=${o.location.lat},${o.location.lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-tactile h-10 px-4 rounded-full border border-[#FFC400]/50 text-[#FFC400] text-xs font-bold inline-flex items-center gap-1.5"
+                              >
+                                <MapPin size={14} />{t.openMaps}
+                              </a>
                             )}
                           </div>
                           {o.notes && <p className="text-xs text-neutral-300 bg-black/50 rounded-xl border border-neutral-800 px-3 py-2"><b className="text-neutral-500">{t.notes}: </b>{o.notes}</p>}

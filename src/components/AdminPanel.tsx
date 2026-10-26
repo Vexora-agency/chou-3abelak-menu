@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion } from 'motion/react';
 import { MenuData, MenuItem, Category, OrderType, FeatureDef, AdminSaveResult, ItemVariant, ItemAddon } from '../types/menu';
 import { validateMenu } from '../../functions/_shared/validate.js';
 import OrdersDashboard, { type Order, type OrderStatus } from './OrdersDashboard';
+import ReportsPanel, { type ReportSettings, type MonthlyReportRow } from './ReportsPanel';
+import BackupPanel, { type Change, type VersionEntry, type TrashEntry, type ImportAnalysis } from './BackupPanel';
+import CustomerData from './CustomerData';
+import { prevMonthStartISO, toDatetimeLocalValue, parseDatetimeLocal, zonedTimeToUTC } from '../utils/tz';
 import { formatPrice } from '../utils/menuHelpers';
 import { normalizePricing, priceLabel, isNewItem as isItemNew, featuresByGroup, unitLabel, featureName } from '../utils/pricing';
 import {
@@ -28,7 +33,7 @@ import {
 
 interface AdminPanelProps {
   initialMenu: MenuData;
-  onSaveMenu: (newMenu: MenuData) => Promise<AdminSaveResult | null>;
+  onSaveMenu: (newMenu: MenuData, source?: 'manual' | 'autosave') => Promise<AdminSaveResult | null>;
   onClose: () => void;
   onSignOut?: () => void;
   onToggleLang?: () => void;
@@ -171,7 +176,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     action?: () => void;
   } | null>(null);
   useEffect(() => {
-    setCalcQty(7);
+    setCalcQty(1);
   }, [editingItem?.id]);
   // Sections that actually hold features (choices of the add-flow picker)
   const nonEmptySections = (menu.settings.featureGroups || []).filter((g) =>
@@ -210,9 +215,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       setOrdersError(false);
     }
     try {
-      // days=65: the 30-day view compares against the previous 30 days, so it
-      // needs up to 60 days of history (today + 7d/30d views fit inside it).
-      const res = await fetch('/api/admin/orders?days=65&limit=2000', {
+      // from = first day of the previous month (business timezone) so the
+      // Today / 7 days / This month / Last month views all work; the
+      // limit=2000 cap bounds the payload.
+      const tz = menu.settings.timezone || 'Asia/Beirut';
+      const res = await fetch(`/api/admin/orders?from=${encodeURIComponent(prevMonthStartISO(tz))}&limit=2000`, {
         headers: { 'X-Requested-With': 'menu-admin' },
         credentials: 'same-origin',
       });
@@ -234,7 +241,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         setOrdersError(true);
       }
     }
-  }, [isAr]);
+  }, [isAr, menu.settings.timezone]);
 
   // Initial load + 30s poll while the tab is visible
   useEffect(() => {
@@ -269,6 +276,152 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
+  // Monthly reports (plan-gated: a 404 from report-settings means the
+  // feature is off and the Reports view stays hidden).
+  const [dashView, setDashView] = useState<'overview' | 'reports' | 'customers'>('overview');
+  const [customersOn, setCustomersOn] = useState(false);
+  const [pauseMenuOpen, setPauseMenuOpen] = useState(false);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    if (activeTab !== 'dashboard') return;
+    const id = window.setInterval(() => setNowTick(Date.now()), 30000);
+    return () => window.clearInterval(id);
+  }, [activeTab]);
+  const [reportsOn, setReportsOn] = useState(false);
+  const [reportSettings, setReportSettings] = useState<ReportSettings | null>(null);
+  const [reportRows, setReportRows] = useState<MonthlyReportRow[]>([]);
+  const [retentionCfg, setRetentionCfg] = useState({ piiDays: 90, orderMonths: 13, reportMonths: 36 });
+  const [reportSched, setReportSched] = useState({ sendTime: '05:00', timezone: 'UTC' });
+  const [bizTz, setBizTz] = useState('Asia/Beirut');
+
+  const fetchReportData = useCallback(async () => {
+    try {
+      const r = await fetch('/api/admin/report-settings', {
+        headers: { 'X-Requested-With': 'menu-admin' },
+        credentials: 'same-origin',
+      });
+      if (r.status === 404) {
+        setReportsOn(false);
+        return;
+      }
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const s = await r.json();
+      setReportSettings({
+        enabled: !!s.enabled,
+        email: typeof s.email === 'string' ? s.email : '',
+        verified: !!s.verified,
+        language: s.language === 'ar' ? 'ar' : 'en',
+      });
+      if (s.retention) {
+        setRetentionCfg({
+          piiDays: Number(s.retention.piiDays) || 90,
+          orderMonths: Number(s.retention.orderMonths) || 13,
+          reportMonths: Number(s.retention.reportMonths) || 36,
+        });
+      }
+      if (s.schedule) {
+        setReportSched({
+          sendTime: typeof s.schedule.sendTime === 'string' ? s.schedule.sendTime : '05:00',
+          timezone: typeof s.schedule.timezone === 'string' ? s.schedule.timezone : 'UTC',
+        });
+      }
+      if (typeof s.businessTimezone === 'string' && s.businessTimezone) setBizTz(s.businessTimezone);
+      setReportsOn(true);
+      const rl = await fetch('/api/admin/reports', {
+        headers: { 'X-Requested-With': 'menu-admin' },
+        credentials: 'same-origin',
+      });
+      if (!rl.ok) throw new Error(`HTTP ${rl.status}`);
+      const d = await rl.json();
+      setReportRows(Array.isArray(d.reports) ? d.reports : []);
+    } catch {
+      // Stay on Overview; the error banner covers order loading.
+    }
+  }, []);
+
+  // Load reports data when the dashboard tab opens.
+  useEffect(() => {
+    if (activeTab === 'dashboard') fetchReportData();
+  }, [activeTab, fetchReportData]);
+
+  // Customer-data tool visibility (orderLogging feature probe).
+  useEffect(() => {
+    if (activeTab !== 'dashboard') return;
+    (async () => {
+      try {
+        const r = await adminFetch('/api/admin/customer-data/status');
+        setCustomersOn(r.ok);
+        if (!r.ok && dashView === 'customers') setDashView('overview');
+      } catch {
+        setCustomersOn(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  const handleSaveReportSettings = async (s: { enabled: boolean; email: string; language: 'en' | 'ar' }) => {
+    try {
+      const res = await fetch('/api/admin/report-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'menu-admin' },
+        credentials: 'same-origin',
+        body: JSON.stringify(s),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) return { ok: false as const };
+      await fetchReportData();
+      return { ok: true as const, verificationSent: !!data.verificationSent };
+    } catch {
+      return { ok: false as const };
+    }
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      await fetch('/api/admin/report-settings/resend', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'menu-admin' },
+        credentials: 'same-origin',
+      });
+      await fetchReportData();
+    } catch {}
+  };
+
+  const handleSendTestReport = async () => {
+    try {
+      const res = await fetch('/api/admin/report-settings/test', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'menu-admin' },
+        credentials: 'same-origin',
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: !!(res.ok && data.ok) };
+    } catch {
+      return { ok: false as const };
+    }
+  };
+
+  const handleDownloadReport = async (month: string) => {
+    try {
+      const res = await fetch(`/api/admin/reports/${encodeURIComponent(month)}.csv`, {
+        headers: { 'X-Requested-With': 'menu-admin' },
+        credentials: 'same-origin',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `chou3abelak-${month}-orders.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert(isAr ? 'تعذر تنزيل الملف. حاول مجدداً.' : 'Could not download the file. Please try again.');
+    }
+  };
+
   // Update helper
   const updateMenu = (updater: (prev: MenuData) => MenuData) => {
     setMenu((prev) => {
@@ -278,13 +431,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
   };
 
-  const handleSave = async () => {
+  const handleSave = async (source: 'manual' | 'autosave' = 'manual'): Promise<number | null> => {
     // Client-side validations below return early on problems
     const seenGrp = new Set<string>();
     for (const g of menu.settings.featureGroups || []) {
       if (!g.id.trim() || seenGrp.has(g.id.trim())) {
         alert(isAr ? 'معرّفات الأقسام يجب أن تكون فريدة وغير فارغة' : 'Section ids must be unique and non-empty');
-        return;
+        return null;
       }
       seenGrp.add(g.id.trim());
     }
@@ -292,12 +445,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     for (const f of menu.settings.featureDefs || []) {
       if (!f.id.trim() || seenFeat.has(f.id.trim())) {
         alert(isAr ? 'معرّفات الميزات يجب أن تكون فريدة وغير فارغة' : 'Feature ids must be unique and non-empty');
-        return;
+        return null;
       }
       seenFeat.add(f.id.trim());
       if (!(menu.settings.featureGroups || []).some((g) => g.id === f.groupId)) {
         alert(isAr ? `الميزة "${f.name.en || f.id}" بدون قسم صالح` : `Feature "${f.name.en || f.id}" has no valid section`);
-        return;
+        return null;
       }
     }
     // Send the CURRENT version; the server assigns version+1 on success.
@@ -334,15 +487,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     // Autofill is send-only: the server stores the filled copy, but the
     // screen keeps the admin's raw text (filled values appear after reload).
     // Adopt the authoritative version so the next save never 409s.
-    const result = await onSaveMenu(updated);
+    const result = await onSaveMenu(updated, source);
     if (result) {
       setMenu((prev) => ({ ...prev, version: result.doc.version, updatedAt: result.doc.updatedAt }));
       if (result.saved) {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2500);
       }
+      setDirty(false);
+      return result.doc.version;
     }
     setDirty(false);
+    return null;
   };
 
   // Keep a ref to the latest save so the auto-save timer never uses stale state
@@ -355,12 +511,89 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     } catch {}
   }, [autoSave]);
 
-  // Auto-save shortly after any change while enabled
+  // Auto-save shortly after any change while enabled (paused during
+  // restore/import/trash refreshes so they never race the refresh).
+  const savePaused = useRef(false);
   useEffect(() => {
-    if (!autoSave || !dirty) return;
-    const t = window.setTimeout(() => handleSaveRef.current(), 1200);
+    if (!autoSave || !dirty || savePaused.current) return;
+    const t = window.setTimeout(() => handleSaveRef.current('autosave'), 1200);
     return () => window.clearTimeout(t);
   }, [autoSave, dirty, menu]);
+
+  // ---- Backup & history state ----
+  const [versions, setVersions] = useState<VersionEntry[]>([]);
+  const [trash, setTrash] = useState<TrashEntry[]>([]);
+  const [backupStatus, setBackupStatus] = useState<{ lastBackupAt?: string; autoWeekly: boolean; destination?: string }>({ autoWeekly: false });
+  const [undoToast, setUndoToast] = useState<{ label: string; undo: () => void } | null>(null);
+  const undoTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(undoTimer.current), []);
+
+  const showUndoToast = useCallback((label: string, undo: () => void) => {
+    setUndoToast({ label, undo });
+    window.clearTimeout(undoTimer.current);
+    undoTimer.current = window.setTimeout(() => setUndoToast(null), 8000);
+  }, []);
+
+  const adminFetch = useCallback(async (url: string, init?: RequestInit) => {
+    return fetch(url, {
+      credentials: 'same-origin',
+      ...(init || {}),
+      headers: { 'X-Requested-With': 'menu-admin', ...((init && init.headers) || {}) },
+    });
+  }, []);
+
+  const fetchBackupData = useCallback(async () => {
+    try {
+      const r = await adminFetch('/api/admin/versions');
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const d = await r.json();
+      setVersions(Array.isArray(d.versions) ? d.versions : []);
+      if (d.status) {
+        setBackupStatus({
+          autoWeekly: !!d.status.autoWeekly,
+          lastBackupAt: typeof d.status.lastBackupAt === 'string' ? d.status.lastBackupAt : undefined,
+          destination: typeof d.status.destination === 'string' ? d.status.destination : undefined,
+        });
+      }
+      const t = await adminFetch('/api/admin/trash');
+      if (t.ok) {
+        const td = await t.json();
+        setTrash(Array.isArray(td.trash) ? td.trash : []);
+      }
+    } catch {}
+  }, [adminFetch]);
+
+  useEffect(() => {
+    if (activeTab === 'backup') fetchBackupData();
+  }, [activeTab, fetchBackupData]);
+
+  // Adopt the authoritative menu after restore/import/trash ops (auto-save
+  // stays paused until the refresh completes).
+  const refreshMenuFromServer = useCallback(async (): Promise<boolean> => {
+    savePaused.current = true;
+    try {
+      const res = await adminFetch('/api/admin/menu');
+      if (!res.ok) return false;
+      const doc = await res.json();
+      if (!doc || !doc.settings || !Array.isArray(doc.items)) return false;
+      setMenu(doc as MenuData);
+      setDirty(false);
+      await fetchBackupData();
+      return true;
+    } catch {
+      return false;
+    } finally {
+      savePaused.current = false;
+    }
+  }, [adminFetch, fetchBackupData]);
+
+  // Flush unsaved edits first so server-side ops never discard them.
+  // Returns the current server version, or null when saving failed.
+  const flushDirty = useCallback(async (): Promise<number | null> => {
+    if (!dirty) return menu.version;
+    return handleSave();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty, menu.version]);
 
   // Category Actions
   const handleAddCategory = () => {
@@ -386,20 +619,56 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
   };
 
-  const handleDeleteCategory = (catId: string) => {
-    const itemsCount = menu.items.filter((i) => i.categoryId === catId).length;
-    if (itemsCount > 0) {
-      alert(
-        isAr
-          ? `لا يمكن حذف هذا القسم لأنه يحتوي على ${itemsCount} وجبات. انقلها أو احذفها أولاً.`
-          : `Cannot delete this category because it contains ${itemsCount} items. Move or delete them first.`
-      );
-      return;
+  const handleRestoreTrashById = useCallback(async (trashId: string): Promise<boolean> => {
+    try {
+      const res = await adminFetch(`/api/admin/trash/${encodeURIComponent(trashId)}/restore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseVersion: menu.version }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        if (res.status === 409) await refreshMenuFromServer();
+        return false;
+      }
+      setUndoToast(null);
+      window.clearTimeout(undoTimer.current);
+      await refreshMenuFromServer();
+      return true;
+    } catch {
+      return false;
     }
-    updateMenu((prev) => ({
-      ...prev,
-      categories: prev.categories.filter((c) => c.id !== catId),
-    }));
+  }, [adminFetch, menu.version, refreshMenuFromServer]);
+
+  const handleDeleteCategory = async (catId: string) => {
+    const cat = menu.categories.find((c) => c.id === catId);
+    const v = await flushDirty();
+    if (v === null) return;
+    try {
+      const res = await adminFetch('/api/admin/trash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'category', id: catId, baseVersion: v }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        if (res.status === 409) {
+          await refreshMenuFromServer();
+          alert(isAr ? 'تغيّرت القائمة أثناء الحذف. أُعيد التحميل — حاول مجدداً.' : 'The menu changed during delete. Reloaded — please retry.');
+        } else {
+          alert(isAr ? 'تعذر الحذف. حاول مجدداً.' : 'Could not delete. Please try again.');
+        }
+        return;
+      }
+      await refreshMenuFromServer();
+      const label = cat ? (isAr ? cat.name.ar : cat.name.en) : catId;
+      showUndoToast(
+        isAr ? `حُذف القسم "${label}"` : `Deleted category "${label}"`,
+        () => { void handleRestoreTrashById(data.trashId); }
+      );
+    } catch {
+      alert(isAr ? 'تعذر الحذف. حاول مجدداً.' : 'Could not delete. Please try again.');
+    }
   };
 
   // Item Actions
@@ -508,12 +777,34 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     updateMenu((prev) => ({ ...prev, items: [...prev.items, duplicated] }));
   };
 
-  const handleDeleteItem = (itemId: string) => {
-    if (confirm(isAr ? 'هل أنت متأكد من حذف هذا العنصر؟' : 'Are you sure you want to delete this item?')) {
-      updateMenu((prev) => ({
-        ...prev,
-        items: prev.items.filter((i) => i.id !== itemId),
-      }));
+  const handleDeleteItem = async (itemId: string) => {
+    const it = menu.items.find((i) => i.id === itemId);
+    const v = await flushDirty();
+    if (v === null) return;
+    try {
+      const res = await adminFetch('/api/admin/trash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'item', id: itemId, baseVersion: v }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        if (res.status === 409) {
+          await refreshMenuFromServer();
+          alert(isAr ? 'تغيّرت القائمة أثناء الحذف. أُعيد التحميل — حاول مجدداً.' : 'The menu changed during delete. Reloaded — please retry.');
+        } else {
+          alert(isAr ? 'تعذر الحذف. حاول مجدداً.' : 'Could not delete. Please try again.');
+        }
+        return;
+      }
+      await refreshMenuFromServer();
+      const label = it ? (isAr ? it.name.ar : it.name.en) : itemId;
+      showUndoToast(
+        isAr ? `حُذف "${label}"` : `Deleted "${label}"`,
+        () => { void handleRestoreTrashById(data.trashId); }
+      );
+    } catch {
+      alert(isAr ? 'تعذر الحذف. حاول مجدداً.' : 'Could not delete. Please try again.');
     }
   };
 
@@ -529,65 +820,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       items[targetIdx] = temp;
       return { ...prev, items };
     });
-  };
-
-  // Export / Import
-  const handleExportJSON = () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(menu, null, 2));
-    const a = document.createElement('a');
-    a.href = dataStr;
-    a.download = `menu_backup_${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-  };
-
-  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    // Allow the same file input to pick the same file twice in a row
-    e.target.value = '';
-    if (file.size > 256 * 1024) {
-      alert(isAr ? 'الملف أكبر من 256KB' : 'File exceeds the 256 KB limit');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
-        // Early warning: UTF-8 Arabic misread as Latin-1 looks like Ø´Ùˆ…
-        // (happens when the file was saved/opened with the wrong encoding).
-        if (/[ØÙ][\u0080-\u00BF]/.test(text)) {
-          alert(
-            isAr
-              ? 'تحذير: يبدو أن ترميز الملف ليس UTF-8 (الحروف العربية ستظهر برموز غريبة). أعد حفظ الملف بترميز UTF-8 ثم حاول مجدداً.'
-              : 'Warning: this file does not look like UTF-8 (Arabic will show as garbled symbols). Re-save it as UTF-8 and try again.'
-          );
-          return;
-        }
-        const parsed = JSON.parse(text);
-        // Strict shared validation: unknown/invalid fields are cleaned,
-        // missing optional fields get safe defaults — so varied files import cleanly.
-        const checked = validateMenu(parsed as never);
-        if (!checked.ok || !checked.value) {
-          const details = checked.errors.slice(0, 3).join('\n');
-          alert(
-            (isAr ? 'ملف غير صالح:\n' : 'Invalid menu file:\n') + details ||
-              (isAr ? 'صيغة غير مدعومة' : 'Unsupported format')
-          );
-          return;
-        }
-        setMenu(checked.value as unknown as MenuData);
-        setDirty(true);
-        const n = checked.value.items.length;
-        alert(
-          isAr
-            ? `تم استيراد ${n} صنف بنجاح! اضغط حفظ (أو انتظر الحفظ التلقائي).`
-            : `Imported ${n} items successfully! Click Save (or wait for auto-save).`
-        );
-      } catch {
-        alert(isAr ? 'تعذر قراءة ملف JSON' : 'Failed to parse JSON file');
-      }
-    };
-    reader.readAsText(file);
   };
 
   return (
@@ -674,17 +906,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             setCatPage(0);
             setItemPage(0);
           }}
-            className={`flex-1 whitespace-nowrap px-3 py-2 rounded-xl text-xs font-bold capitalize transition-all ${
+            className={`relative flex-1 whitespace-nowrap px-3 py-2 rounded-xl text-xs font-bold capitalize transition-colors ${
               activeTab === tab
-                ? 'bg-[#FFC400] text-[#0A0A0A] shadow-md'
+                ? 'text-[#0A0A0A]'
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
+            {activeTab === tab && <motion.span layoutId="admin-tab" className="absolute inset-0 rounded-xl bg-[#FFC400] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+            <span className="relative z-10">
             {tab === 'dashboard' && (isAr ? 'الطلبات' : 'Dashboard')}
             {tab === 'settings' && (isAr ? 'الإعدادات' : 'Settings')}
             {tab === 'categories' && (isAr ? 'الأقسام' : 'Categories')}
             {tab === 'items' && (isAr ? 'الوجبات' : 'Items')}
             {tab === 'backup' && (isAr ? 'النسخ الاحتياطي' : 'Backup')}
+            </span>
           </button>
         ))}
       </div>
@@ -692,6 +927,102 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {/* TAB 0: ORDERS DASHBOARD */}
       {activeTab === 'dashboard' && (
         <>
+          {/* One-tap pause control (quick-toggle endpoint + menu refresh) */}
+          {(() => {
+            const paused = !!menu.settings.ordering.paused;
+            const until = menu.settings.ordering.pausedUntil ? Date.parse(menu.settings.ordering.pausedUntil) : NaN;
+            const minsLeft = Number.isFinite(until) ? Math.max(0, Math.round((until - nowTick) / 60000)) : null;
+            const countdown = minsLeft !== null
+              ? (isAr ? `يستأنف بعد ${minsLeft} دقيقة` : `Resumes in ${minsLeft} min`)
+              : (isAr ? 'متوقف حتى الاستئناف' : 'Paused until resumed');
+            const sendPause = async (body: object) => {
+              setPauseMenuOpen(false);
+              try {
+                const r = await adminFetch('/api/admin/ordering/pause', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(body),
+                });
+                if (!r.ok) throw new Error();
+                await refreshMenuFromServer();
+              } catch {
+                alert(isAr ? 'تعذر تحديث الحالة. حاول مجدداً.' : 'Could not update the status. Please try again.');
+              }
+            };
+            return (
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <div className="flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800" role="group" aria-label={isAr ? 'حالة استقبال الطلبات' : 'Order acceptance'}>
+                  <button
+                    type="button"
+                    aria-pressed={!paused}
+                    onClick={() => { if (paused) void sendPause({ resume: true }); }}
+                    className={`relative px-4 h-8 rounded-full text-xs font-bold transition-colors ${!paused ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
+                  >
+                    {!paused && <motion.span layoutId="pause-seg" className="absolute inset-0 rounded-full bg-[#FFC400] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+                    <span className="relative z-10 inline-flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" aria-hidden="true" />
+                      {isAr ? 'يستقبل' : 'Accepting'}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={paused}
+                    onClick={() => { if (!paused) setPauseMenuOpen((v) => !v); }}
+                    className={`relative px-4 h-8 rounded-full text-xs font-bold transition-colors ${paused ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
+                  >
+                    {paused && <motion.span layoutId="pause-seg" className="absolute inset-0 rounded-full bg-[#FFC400] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+                    <span className="relative z-10 inline-flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500" aria-hidden="true" />
+                      {isAr ? 'متوقف' : 'Paused'}
+                    </span>
+                  </button>
+                </div>
+                {paused ? (
+                  <span className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-orange-300 tabular-nums">{countdown}</span>
+                    <button
+                      type="button"
+                      onClick={() => void sendPause({ resume: true })}
+                      className="btn-tactile h-8 px-4 rounded-full bg-[#FFC400] text-[#0A0A0A] text-xs font-bold"
+                    >
+                      {isAr ? 'استئناف' : 'Resume'}
+                    </button>
+                  </span>
+                ) : (
+                  <span className="relative">
+                    {pauseMenuOpen && (
+                      <span className="absolute z-30 mt-1 flex flex-col gap-1 p-1.5 rounded-xl bg-neutral-900 border border-neutral-700 shadow-2xl min-w-[160px]">
+                        {([30, 60, 120] as const).map((m) => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => void sendPause({ minutes: m })}
+                            className="text-start px-3 h-9 rounded-lg text-xs font-bold text-neutral-200 hover:bg-white/5"
+                          >
+                            {isAr ? `إيقاف ${m === 30 ? '30 دقيقة' : m === 60 ? 'ساعة' : 'ساعتين'}` : `Pause ${m === 30 ? '30 min' : m === 60 ? '1 hour' : '2 hours'}`}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => void sendPause({ minutes: null })}
+                          className="text-start px-3 h-9 rounded-lg text-xs font-bold text-neutral-200 hover:bg-white/5"
+                        >
+                          {isAr ? 'حتى الاستئناف' : 'Until I resume'}
+                        </button>
+                      </span>
+                    )}
+                  </span>
+                )}
+                <span className="basis-full text-[11px] leading-relaxed text-neutral-500">
+                  {paused
+                    ? (minsLeft !== null
+                      ? (isAr ? 'الطلبات الجديدة متوقفة الآن — ستُستأنف تلقائياً عند انتهاء المدة.' : 'New orders are stopped — they resume automatically when the timer ends.')
+                      : (isAr ? 'الطلبات الجديدة متوقفة الآن — لن تُستأنف إلا عندما تدوس استئناف.' : 'New orders are stopped — they resume only when you tap Resume.'))
+                    : (isAr ? 'الإيقاف يمنع أي طلب جديد فوراً — والزبائن يرون رسالتك بدل زر الإرسال.' : 'Pausing instantly blocks new orders — customers see your message instead of Send.')}
+                </span>
+              </div>
+            );
+          })()}
           {ordersError && (
             <div className="mb-3 flex items-center justify-between gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-bold">
               <span>{isAr ? 'تعذر تحميل الطلبات.' : 'Could not load orders.'}</span>
@@ -704,6 +1035,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </button>
             </div>
           )}
+          {(reportsOn || customersOn) && (
+            <div className="mb-4 flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800 w-fit max-w-full overflow-x-auto" role="tablist" aria-label={isAr ? 'الداشبورد' : 'Dashboard'}>
+              {(['overview', ...(reportsOn ? ['reports'] as const : []), ...(customersOn ? ['customers'] as const : [])] as const).map((v) => {
+                const active = dashView === v;
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setDashView(v)}
+                    className={`relative shrink-0 px-4 h-8 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${active ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
+                  >
+                    {active && <motion.span layoutId="dash-view" className="absolute inset-0 rounded-full bg-[#FFC400] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+                    <span className="relative z-10">
+                      {v === 'overview' ? (isAr ? 'نظرة عامة' : 'Overview') : v === 'reports' ? (isAr ? 'التقارير' : 'Reports') : (isAr ? 'العملاء' : 'Customers')}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {dashView === 'overview' && (
           <OrdersDashboard
             lang={lang}
             orders={orders}
@@ -712,12 +1066,63 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             onStatusChange={handleOrderStatusChange}
             onRefresh={() => fetchOrders(false)}
           />
+          )}
+          {dashView === 'reports' && reportsOn && reportSettings && (
+            <ReportsPanel
+              lang={lang}
+              currency={menu.settings.currency[lang] || menu.settings.currency.en}
+              settings={reportSettings}
+              reports={reportRows}
+              retention={retentionCfg}
+              sendTime={reportSched.sendTime}
+              timezone={reportSched.timezone}
+              onSaveSettings={handleSaveReportSettings}
+              onResendVerification={handleResendVerification}
+              onSendTest={handleSendTestReport}
+              onDownload={handleDownloadReport}
+            />
+          )}
+          {dashView === 'customers' && customersOn && (
+            <CustomerData
+              lang={lang}
+              currency={menu.settings.currency[lang] || menu.settings.currency.en}
+              onSearch={async (phone) => {
+                const r = await adminFetch(`/api/admin/customer-data/search?phone=${encodeURIComponent(phone)}`);
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const d = await r.json();
+                return { results: Array.isArray(d.results) ? d.results : [], count: d.count || 0 };
+              }}
+              onAction={async ({ phone, mode, password, confirm }) => {
+                const r = await adminFetch('/api/admin/customer-data/action', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ phone, mode, password, confirm }),
+                });
+                const ct = r.headers.get('Content-Type') || '';
+                if (mode === 'export' && r.ok && ct.includes('text/csv')) {
+                  const blob = await r.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'customer-data-export.csv';
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                  window.URL.revokeObjectURL(url);
+                  return { ok: true, mode, count: undefined };
+                }
+                const d = await r.json().catch(() => ({}));
+                if (!r.ok || !d.ok) return { ok: false, error: typeof d.error === 'string' ? d.error : 'error' };
+                return { ok: true, mode: d.mode, count: d.count };
+              }}
+            />
+          )}
         </>
       )}
 
       {/* TAB 1: SETTINGS */}
       {activeTab === 'settings' && (
-        <div className="space-y-6">
+        <div className="space-y-6 stagger">
           {/* Restaurant Identity */}
           <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
             <h2 className="text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
@@ -1285,6 +1690,348 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Pause orders switch */}
+            <div className="rounded-xl border border-neutral-800 bg-black/40 p-3 space-y-3">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={!!menu.settings.ordering.paused}
+                onClick={() =>
+                  updateMenu((m) => ({
+                    ...m,
+                    settings: {
+                      ...m.settings,
+                      ordering: { ...m.settings.ordering, paused: !m.settings.ordering.paused },
+                    },
+                  }))
+                }
+                className="w-full flex items-center justify-between gap-3 text-start"
+              >
+                <span>
+                  <span className="block text-xs font-bold">
+                    {isAr ? 'إيقاف استقبال الطلبات' : 'Pause orders'}
+                  </span>
+                  <span className="block text-[11px] text-neutral-500 mt-0.5">
+                    {menu.settings.ordering.paused
+                      ? (isAr ? 'متوقف — لن تصل طلبات جديدة' : 'Paused — no new orders')
+                      : (isAr ? 'يستقبل الطلبات' : 'Accepting orders')}
+                  </span>
+                </span>
+                <span
+                  className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${
+                    menu.settings.ordering.paused ? 'bg-orange-500' : 'bg-neutral-700'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${
+                      menu.settings.ordering.paused
+                        ? (isAr ? 'left-0.5' : 'left-5')
+                        : (isAr ? 'left-5' : 'left-0.5')
+                    }`}
+                  />
+                </span>
+              </button>
+              {menu.settings.ordering.paused && (
+                <div className="anim-fade-in space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'رسالة الإيقاف (EN)' : 'Pause message (EN)'}</label>
+                      <input
+                        type="text"
+                        value={menu.settings.ordering.pausedMessage.en}
+                        maxLength={160}
+                        onChange={(e) =>
+                          updateMenu((m) => ({
+                            ...m,
+                            settings: {
+                              ...m.settings,
+                              ordering: { ...m.settings.ordering, pausedMessage: { ...m.settings.ordering.pausedMessage, en: e.target.value } },
+                            },
+                          }))
+                        }
+                        placeholder="We are not taking orders right now…"
+                        className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'رسالة الإيقاف (AR)' : 'Pause message (AR)'}</label>
+                      <input
+                        type="text"
+                        dir="rtl"
+                        value={menu.settings.ordering.pausedMessage.ar}
+                        maxLength={160}
+                        onChange={(e) =>
+                          updateMenu((m) => ({
+                            ...m,
+                            settings: {
+                              ...m.settings,
+                              ordering: { ...m.settings.ordering, pausedMessage: { ...m.settings.ordering.pausedMessage, ar: e.target.value } },
+                            },
+                          }))
+                        }
+                        placeholder="لا نستقبل الطلبات حالياً…"
+                        className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Accept orders when closed */}
+            <div className="rounded-xl border border-neutral-800 bg-black/40 p-3">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={!!menu.settings.ordering.acceptWhenClosed}
+                onClick={() =>
+                  updateMenu((m) => ({
+                    ...m,
+                    settings: {
+                      ...m.settings,
+                      ordering: { ...m.settings.ordering, acceptWhenClosed: !m.settings.ordering.acceptWhenClosed },
+                    },
+                  }))
+                }
+                className="w-full flex items-center justify-between gap-3 text-start"
+              >
+                <span>
+                  <span className="block text-xs font-bold">
+                    {isAr ? 'قبول الطلبات خارج الدوام' : 'Accept orders when closed'}
+                  </span>
+                  <span className="block text-[11px] text-neutral-500 mt-0.5">
+                    {isAr ? 'يسمح بالطلب أثناء الإغلاق (الحالة تظهر مغلق)' : 'Allows ordering outside hours (still shown as closed)'}
+                  </span>
+                </span>
+                <span
+                  className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${
+                    menu.settings.ordering.acceptWhenClosed ? 'bg-[#FFC400]' : 'bg-neutral-700'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${
+                      menu.settings.ordering.acceptWhenClosed
+                        ? (isAr ? 'left-0.5' : 'left-5')
+                        : (isAr ? 'left-5' : 'left-0.5')
+                    }`}
+                  />
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Announcement banner */}
+          <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
+            <div>
+              <h2 className="text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
+                {isAr ? 'شريط الإعلان' : 'Announcement banner'}
+              </h2>
+              <p className="text-[11px] text-neutral-500 mt-0.5">
+                {isAr ? 'شريط أصفر رفيع أعلى الموقع (140 حرفاً كحد أقصى)' : 'A slim yellow strip above the site (140 chars max)'}
+              </p>
+            </div>
+            <div className="rounded-xl border border-neutral-800 bg-black/40 p-3 space-y-3">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={!!menu.settings.announcement.enabled}
+                onClick={() =>
+                  updateMenu((m) => ({
+                    ...m,
+                    settings: {
+                      ...m.settings,
+                      announcement: { ...m.settings.announcement, enabled: !m.settings.announcement.enabled },
+                    },
+                  }))
+                }
+                className="w-full flex items-center justify-between gap-3 text-start"
+              >
+                <span className="block text-xs font-bold">{isAr ? 'إظهار الشريط' : 'Show banner'}</span>
+                <span className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${menu.settings.announcement.enabled ? 'bg-[#FFC400]' : 'bg-neutral-700'}`}>
+                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${menu.settings.announcement.enabled ? (isAr ? 'left-0.5' : 'left-5') : (isAr ? 'left-5' : 'left-0.5')}`} />
+                </span>
+              </button>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs text-neutral-400">{isAr ? 'النص (EN)' : 'Text (EN)'}</label>
+                    <span className="text-[10px] text-neutral-500 tabular-nums">{(menu.settings.announcement.text.en || '').length}/140</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={menu.settings.announcement.text.en}
+                    maxLength={140}
+                    onChange={(e) =>
+                      updateMenu((m) => ({
+                        ...m,
+                        settings: { ...m.settings, announcement: { ...m.settings.announcement, text: { ...m.settings.announcement.text, en: e.target.value } } },
+                      }))
+                    }
+                    className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs text-neutral-400">{isAr ? 'النص (AR)' : 'Text (AR)'}</label>
+                    <span className="text-[10px] text-neutral-500 tabular-nums">{(menu.settings.announcement.text.ar || '').length}/140</span>
+                  </div>
+                  <input
+                    type="text"
+                    dir="rtl"
+                    value={menu.settings.announcement.text.ar}
+                    maxLength={140}
+                    onChange={(e) =>
+                      updateMenu((m) => ({
+                        ...m,
+                        settings: { ...m.settings, announcement: { ...m.settings.announcement, text: { ...m.settings.announcement.text, ar: e.target.value } } },
+                      }))
+                    }
+                    className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'يبدأ (بتوقيت المطعم)' : 'Starts (business time)'}</label>
+                  <input
+                    type="datetime-local"
+                    value={toDatetimeLocalValue(menu.settings.timezone || 'Asia/Beirut', menu.settings.announcement.startsAt || '')}
+                    onChange={(e) => {
+                      const p = parseDatetimeLocal(e.target.value);
+                      updateMenu((m) => ({
+                        ...m,
+                        settings: {
+                          ...m.settings,
+                          announcement: {
+                            ...m.settings.announcement,
+                            startsAt: p ? zonedTimeToUTC(m.settings.timezone || 'Asia/Beirut', p.y, p.mo - 1, p.d, p.h, p.mi) : null,
+                          },
+                        },
+                      }));
+                    }}
+                    className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'ينتهي (بتوقيت المطعم)' : 'Ends (business time)'}</label>
+                  <input
+                    type="datetime-local"
+                    value={toDatetimeLocalValue(menu.settings.timezone || 'Asia/Beirut', menu.settings.announcement.expiresAt || '')}
+                    onChange={(e) => {
+                      const p = parseDatetimeLocal(e.target.value);
+                      updateMenu((m) => ({
+                        ...m,
+                        settings: {
+                          ...m.settings,
+                          announcement: {
+                            ...m.settings.announcement,
+                            expiresAt: p ? zonedTimeToUTC(m.settings.timezone || 'Asia/Beirut', p.y, p.mo - 1, p.d, p.h, p.mi) : null,
+                          },
+                        },
+                      }));
+                    }}
+                    className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+                  />
+                </div>
+              </div>
+              {menu.settings.announcement.expiresAt && (
+                <p className="text-[11px] text-neutral-500">
+                  {(() => {
+                    const ms = Date.parse(menu.settings.announcement.expiresAt) - Date.now();
+                    if (!Number.isFinite(ms) || ms <= 0) return isAr ? 'انتهى' : 'Ended';
+                    const days = Math.floor(ms / 86400000);
+                    return days >= 1
+                      ? (isAr ? `ينتهي بعد ${days} ${days === 1 ? 'يوم' : 'أيام'}` : `Ends in ${days} day${days === 1 ? '' : 's'}`)
+                      : (isAr ? 'ينتهي اليوم' : 'Ends today');
+                  })()}
+                  {' · '}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateMenu((m) => ({
+                        ...m,
+                        settings: { ...m.settings, announcement: { ...m.settings.announcement, startsAt: null, expiresAt: null } },
+                      }))
+                    }
+                    className="font-bold text-[#FFC400] hover:underline"
+                  >
+                    {isAr ? 'مسح التواريخ' : 'Clear dates'}
+                  </button>
+                </p>
+              )}
+              {(menu.settings.announcement.text.en || menu.settings.announcement.text.ar) && (
+                <div className="rounded-full bg-[#FFC400] text-[#0A0A0A] px-4 py-2">
+                  <p className="text-xs font-bold leading-snug line-clamp-2" dir={isAr ? 'rtl' : 'ltr'}>
+                    {(isAr ? menu.settings.announcement.text.ar : menu.settings.announcement.text.en) || (isAr ? menu.settings.announcement.text.en : menu.settings.announcement.text.ar)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Privacy settings */}
+          <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
+            <div>
+              <h2 className="text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
+                {isAr ? 'الخصوصية' : 'Privacy'}
+              </h2>
+              <p className="text-[11px] text-neutral-500 mt-0.5">
+                {isAr ? 'صفحة عامة على /privacy — راجع النص قانونياً قبل الإطلاق' : 'Public page at /privacy — have the text reviewed for local law before launch'}
+              </p>
+            </div>
+            {!menu.settings.privacy.reviewed && (
+              <p className="text-xs font-bold text-amber-300 bg-amber-500/10 border border-amber-400/30 rounded-xl p-3">
+                {isAr ? 'راجع نص الخصوصية وفق قانون بلدك قبل الإطلاق.' : 'Have this text reviewed for your country\u2019s law before launch.'}
+              </p>
+            )}
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!!menu.settings.privacy.reviewed}
+                onChange={(e) =>
+                  updateMenu((m) => ({
+                    ...m,
+                    settings: { ...m.settings, privacy: { ...m.settings.privacy, reviewed: e.target.checked } },
+                  }))
+                }
+                className="w-4 h-4 rounded text-[#FFC400]"
+              />
+              <span className="font-bold">{isAr ? 'راجعت صفحة الخصوصية' : 'I reviewed the privacy page'}</span>
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'ملاحظات إضافية (EN)' : 'Extra notes (EN)'}</label>
+                <textarea
+                  value={menu.settings.privacy.extra.en}
+                  maxLength={1000}
+                  rows={3}
+                  onChange={(e) =>
+                    updateMenu((m) => ({
+                      ...m,
+                      settings: { ...m.settings, privacy: { ...m.settings.privacy, extra: { ...m.settings.privacy.extra, en: e.target.value } } },
+                    }))
+                  }
+                  className="w-full px-3 py-2 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'ملاحظات إضافية (AR)' : 'Extra notes (AR)'}</label>
+                <textarea
+                  value={menu.settings.privacy.extra.ar}
+                  maxLength={1000}
+                  rows={3}
+                  dir="rtl"
+                  onChange={(e) =>
+                    updateMenu((m) => ({
+                      ...m,
+                      settings: { ...m.settings, privacy: { ...m.settings.privacy, extra: { ...m.settings.privacy.extra, ar: e.target.value } } },
+                    }))
+                  }
+                  className="w-full px-3 py-2 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Features Library (names only — prices are set per item) */}
@@ -1693,7 +2440,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {/* TAB 2: CATEGORIES */}
       {activeTab === 'categories' && (
-        <div className="space-y-4">
+        <div className="space-y-4 stagger">
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
               {menu.categories.length} {isAr ? 'أقسام مضافة' : 'Categories'}
@@ -1720,8 +2467,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     return (
               <div
                 key={cat.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-neutral-900 border border-neutral-800"
+                className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 space-y-2.5"
               >
+              <div className="flex items-center gap-3">
                 {/* Reorder Buttons */}
                 <div className="flex flex-col gap-1">
                   <button
@@ -1803,6 +2551,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <Trash2 size={16} />
                 </button>
               </div>
+
+              {/* Display layout: cards grid or text-first list rows */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-neutral-500 font-bold">{isAr ? 'طريقة العرض:' : 'Display:'}</span>
+                <div className="flex gap-1 p-0.5 bg-black rounded-full border border-neutral-800" role="group" aria-label={isAr ? 'طريقة عرض القسم' : 'Section display'}>
+                  {(['cards', 'list', 'compact'] as const).map((l) => {
+                    const active = (cat.layout || (cat.id === 'manakish' ? 'list' : 'cards')) === l;
+                    return (
+                      <button
+                        key={l}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() =>
+                          updateMenu((m) => ({
+                            ...m,
+                            categories: m.categories.map((c) =>
+                              c.id === cat.id ? { ...c, layout: l } : c
+                            ),
+                          }))
+                        }
+                        className={`px-3 h-7 rounded-full text-[11px] font-bold transition-colors ${active ? 'bg-[#FFC400] text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
+                      >
+                        {l === 'cards' ? (isAr ? 'بطاقات' : 'Cards') : l === 'list' ? (isAr ? 'قائمة' : 'List') : (isAr ? 'مدمج' : 'Compact')}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              </div>
                     );
                   })}
                   <Pager
@@ -1823,7 +2600,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {/* TAB 3: ITEMS */}
       {activeTab === 'items' && (
-        <div className="space-y-4">
+        <div className="space-y-4 stagger">
           <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
             <div className="flex items-center gap-2 flex-1 min-w-[200px]">
                 <input
@@ -2034,42 +2811,126 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
-      {/* TAB 4: BACKUP & RESTORE */}
+      {/* TAB 4: BACKUP & HISTORY */}
       {activeTab === 'backup' && (
-        <div className="space-y-6">
-          <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-            <h2 className="text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
-              {isAr ? 'تصدير واستيراد البيانات' : 'Export & Import Menu Data'}
-            </h2>
-            <p className="text-xs text-neutral-400 leading-relaxed">
-              {isAr
-                ? 'يمكنك تنزيل ملف JSON كامل لقائمة الطعام للاحتفاظ بنسخة احتياطية، أو رفع ملف محفوظ مسبقاً.'
-                : 'Download a full JSON document of the menu for backups, or import an existing configuration file.'}
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleExportJSON}
-                className="btn-tactile flex-1 h-11 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs font-bold flex items-center justify-center gap-2 border border-neutral-700"
-              >
-                <Download size={16} />
-                <span>{isAr ? 'تنزيل ملف JSON' : 'Export JSON'}</span>
-              </button>
-
-              <label className="btn-tactile flex-1 h-11 rounded-xl bg-[#FFC400] text-[#0A0A0A] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md">
-                <Upload size={16} />
-                <span>{isAr ? 'استيراد ملف JSON' : 'Import JSON'}</span>
-                <input
-                  type="file"
-                  accept=".json,application/json"
-                  onChange={handleImportJSON}
-                  className="hidden"
-                />
-              </label>
-            </div>
-          </div>
-        </div>
+        <BackupPanel
+          lang={lang}
+          versions={versions}
+          trash={trash}
+          status={backupStatus}
+          onLoadChanges={async (versionId) => {
+            const r = await adminFetch(`/api/admin/versions/${encodeURIComponent(versionId)}/changes?lang=${lang}`);
+            if (!r.ok) return [];
+            const d = await r.json().catch(() => ({}));
+            return Array.isArray(d.changes) ? (d.changes as Change[]) : [];
+          }}
+          onRestoreVersion={async (versionId) => {
+            try {
+              const r = await adminFetch(`/api/admin/versions/${encodeURIComponent(versionId)}/restore`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: '{}',
+              });
+              const d = await r.json().catch(() => ({}));
+              if (!r.ok || !d.ok) {
+                if (r.status === 409) await refreshMenuFromServer();
+                return { ok: false };
+              }
+              await refreshMenuFromServer();
+              return { ok: true };
+            } catch {
+              return { ok: false };
+            }
+          }}
+          onExport={async (kind) => {
+            try {
+              if (kind === 'print') {
+                const r = await adminFetch(`/api/admin/backup/print?lang=${lang}`);
+                if (!r.ok) throw new Error();
+                const blob = await r.blob();
+                const url = window.URL.createObjectURL(new Blob([blob], { type: 'text/html' }));
+                window.open(url, '_blank', 'noopener');
+                window.setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+                return;
+              }
+              const path = kind === 'json' ? '/api/admin/backup/export' : '/api/admin/backup/csv';
+              const r = await adminFetch(path);
+              if (!r.ok) throw new Error();
+              const blob = await r.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              const cd = r.headers.get('Content-Disposition') || '';
+              const m = /filename="([^"]+)"/.exec(cd);
+              a.download = m ? m[1] : kind === 'json' ? 'chou3abelak-backup.json' : 'chou3abelak-menu.csv';
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(url);
+            } catch {
+              alert(isAr ? 'تعذر التنزيل. حاول مجدداً.' : 'Could not download. Please try again.');
+            }
+          }}
+          onAnalyzeImport={async (file) => {
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            const contentType = file.type.includes('csv') || ext === 'csv' ? 'text/csv' : 'application/json';
+            try {
+              const r = await adminFetch(`/api/admin/import/analyze?lang=${lang}`, {
+                method: 'POST',
+                headers: { 'Content-Type': contentType },
+                body: file,
+              });
+              const d = await r.json().catch(() => ({}));
+              if (!r.ok) {
+                alert(isAr ? 'تعذر فحص الملف. تحقق من الصيغة وحاول مجدداً.' : 'Could not analyze the file. Check the format and try again.');
+                throw new Error('analyze_failed');
+              }
+              return d as ImportAnalysis;
+            } catch (e) {
+              if (e instanceof Error && e.message === 'analyze_failed') throw e;
+              alert(isAr ? 'تعذر فحص الملف. تحقق من الصيغة وحاول مجدداً.' : 'Could not analyze the file. Check the format and try again.');
+              throw new Error('analyze_failed');
+            }
+          }}
+          onApplyImport={async (token, opts) => {
+            try {
+              const r = await adminFetch('/api/admin/import/apply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, includeSettings: !!opts.includeSettings }),
+              });
+              const d = await r.json().catch(() => ({}));
+              if (!r.ok || !d.ok) return { ok: false };
+              await refreshMenuFromServer();
+              return { ok: true };
+            } catch {
+              return { ok: false };
+            }
+          }}
+          onRestoreTrash={async (id) => {
+            const ok = await handleRestoreTrashById(id);
+            if (!ok) alert(isAr ? 'تعذر الاسترجاع. حاول مجدداً.' : 'Could not restore. Please try again.');
+          }}
+          onDeleteForever={async (id) => {
+            try {
+              const r = await adminFetch(`/api/admin/trash/${encodeURIComponent(id)}`, { method: 'DELETE' });
+              if (!r.ok) throw new Error();
+              await fetchBackupData();
+            } catch {
+              alert(isAr ? 'تعذر الحذف النهائي. حاول مجدداً.' : 'Could not delete. Please try again.');
+            }
+          }}
+          onToggleAuto={async (on) => {
+            try {
+              await adminFetch('/api/admin/backup/auto', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: on }),
+              });
+              await fetchBackupData();
+            } catch {}
+          }}
+        />
       )}
 
       {/* STICKY BOTTOM SAVE BAR (hidden while auto-save is on) */}
@@ -2083,11 +2944,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             <button
               type="button"
-              onClick={handleSave}
+              onClick={() => handleSave()}
               className="btn-tactile px-5 py-2 rounded-full bg-[#FFC400] text-[#0A0A0A] font-black text-xs flex items-center gap-1.5 shadow-md"
             >
               <Save size={15} />
               <span>{isAr ? 'حفظ التعديلات' : 'Save Changes'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* UNDO TOAST (8s after a trash delete) */}
+      {undoToast && (
+        <div className="fixed bottom-4 left-0 right-0 z-40 px-4 flex justify-center" role="status">
+          <div className="w-full max-w-[500px] bg-[#141414] border border-neutral-700 rounded-full p-2 ps-5 flex items-center justify-between gap-3 shadow-2xl">
+            <span className="text-xs font-bold text-neutral-200 truncate">{undoToast.label}</span>
+            <button
+              type="button"
+              onClick={() => { const u = undoToast.undo; setUndoToast(null); window.clearTimeout(undoTimer.current); u(); }}
+              className="btn-tactile shrink-0 px-5 py-2 rounded-full bg-[#FFC400] text-[#0A0A0A] font-black text-xs"
+            >
+              {isAr ? 'تراجع' : 'Undo'}
             </button>
           </div>
         </div>
@@ -2100,7 +2977,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             onClick={() => setEditingItem(null)}
             className="fixed inset-0 bg-black/70"
           />
-          <div className="relative z-10 w-full max-w-[480px] bg-[#141414] border-2 border-[#FFC400] rounded-2xl p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl">
+          <div className="relative z-10 w-full max-w-[480px] bg-[#141414] border-2 border-[#FFC400] rounded-2xl p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl stagger">
             <h3 className="text-lg font-black">
               {isNewItem ? (isAr ? 'إضافة وجبة جديدة' : 'Add New Item') : (isAr ? 'تعديل الوجبة' : 'Edit Item')}
             </h3>
@@ -2234,11 +3111,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </p>
             )}
 
-            {/* Min / Step / Max + show unit */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* Min / Max + show unit (step is fixed at 1) */}
+            <div className="grid grid-cols-2 gap-3">
               {([
                 { k: 'minQty', label: isAr ? 'أقل كمية' : 'Min qty' },
-                { k: 'step', label: isAr ? 'الخطوة' : 'Step' },
                 { k: 'maxQty', label: isAr ? 'أقصى كمية' : 'Max qty' },
               ] as const).map((f) => (
                 <div key={f.k}>
@@ -2270,7 +3146,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 }
                 className="w-4 h-4 rounded text-[#FFC400]"
               />
-              <span className="font-bold">{isAr ? 'إظهار الوحدة بجانب السعر (مثال: / دزينة)' : 'Show unit next to price (e.g. / dozen)'}</span>
+              <span className="font-bold">{isAr ? `إظهار الوحدة بجانب السعر (مثال: / ${unitLabel(normalizePricing(editingItem).unit, 1, lang)})` : `Show unit next to price (e.g. / ${unitLabel(normalizePricing(editingItem).unit, 1, lang)})`}</span>
             </label>
 
             {/* Sizes on this item (★ = default) */}

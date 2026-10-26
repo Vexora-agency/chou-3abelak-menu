@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, ArrowRight, ArrowLeft, Trash2 } from 'lucide-react';
+import { ShoppingBag, ArrowRight, ArrowLeft, Trash2, PauseCircle, MoonStar } from 'lucide-react';
 import { formatPrice } from '../utils/menuHelpers';
+import type { OrderingStatus } from '../utils/status';
 
 interface CartBarProps {
   totalCount: number;
@@ -9,6 +10,7 @@ interface CartBarProps {
   onOpenCart: () => void;
   onClearCart: () => void;
   lang: 'en' | 'ar';
+  orderingState?: OrderingStatus | null;
 }
 
 export const CartBar: React.FC<CartBarProps> = ({
@@ -18,6 +20,7 @@ export const CartBar: React.FC<CartBarProps> = ({
   onOpenCart,
   onClearCart,
   lang,
+  orderingState,
 }) => {
   const isAr = lang === 'ar';
 
@@ -41,11 +44,26 @@ export const CartBar: React.FC<CartBarProps> = ({
 
   if (totalCount === 0) return null;
 
+  const blocked = orderingState && orderingState.state !== 'open';
+  const statusText = !orderingState || orderingState.state === 'open'
+    ? ''
+    : orderingState.state === 'paused'
+      ? (isAr ? 'الطلبات متوقفة مؤقتاً' : 'Orders paused')
+      : orderingState.state === 'closed'
+        ? (orderingState.message[lang] || (isAr ? 'مغلق حالياً' : 'Currently closed'))
+        : (isAr ? 'الطلب غير متاح حالياً' : 'Ordering unavailable');
+
   return (
     <aside
       aria-label={isAr ? 'شريط سلة الطلبات' : 'Cart overview bar'}
-      className="fixed bottom-4 left-0 right-0 z-30 px-4 flex justify-center pointer-events-none"
+      className="fixed bottom-4 left-0 right-0 z-30 px-4 flex flex-col items-center gap-1.5 pointer-events-none"
     >
+      {blocked && statusText ? (
+        <div role="status" className="pointer-events-auto flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/80 border border-neutral-700 text-[11px] font-bold text-neutral-200">
+          {orderingState?.state === 'paused' ? <PauseCircle size={13} className="text-orange-400" /> : <MoonStar size={13} className="text-neutral-400" />}
+          <span>{statusText}</span>
+        </div>
+      ) : null}
       <div
         onClick={onOpenCart}
         role="button"

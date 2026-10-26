@@ -18,3 +18,10 @@ binding = "MENU_KV"
 # Placeholder id for local runs only (--local / pages dev). Production uses
 # the real namespace bound in the Cloudflare dashboard.
 id = "00000000000000000000000000000000"
+
+[[r2_buckets]]
+binding = "REPORTS"
+# Monthly report CSVs live under reports/<YYYY-MM>.csv. Local runs use a
+# throwaway bucket; production binds the real bucket (created once with
+# `wrangler r2 bucket create chou-3abelak-reports`) in the dashboard.
+bucket_name = "chou-3abelak-reports"

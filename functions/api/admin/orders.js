@@ -1,10 +1,17 @@
 /**
  * Admin Orders Endpoint: GET /api/admin/orders?days=35&limit=1000
+ * or GET /api/admin/orders?from=<ISO>&to=<ISO>&limit=2000
  * Behind the admin middleware (session or Cloudflare Access). Newest first.
  */
 
 import { jsonNoStore } from '../../_shared/session.js';
 import { mapOrderRow } from '../../_shared/orders.js';
+
+function parseISO(v) {
+  if (typeof v !== 'string' || !v) return null;
+  const t = Date.parse(v);
+  return Number.isFinite(t) ? new Date(t).toISOString() : null;
+}
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -19,18 +26,36 @@ export async function onRequest(context) {
   }
 
   const url = new URL(request.url);
-  const daysRaw = parseInt(url.searchParams.get('days') || '35', 10);
-  const days = Number.isInteger(daysRaw) ? Math.min(365, Math.max(1, daysRaw)) : 35;
   const limitRaw = parseInt(url.searchParams.get('limit') || '1000', 10);
   const limit = Number.isInteger(limitRaw) ? Math.min(2000, Math.max(1, limitRaw)) : 1000;
 
-  const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+  // Explicit window (used by the dashboard: from = first day of the
+  // previous month in the business timezone so Today / 7 days / This month
+  // / Last month all work). Falls back to the legacy days= window.
+  const fromParam = url.searchParams.get('from');
+  const toParam = url.searchParams.get('to');
+  let where = '';
+  let args = [];
+  if (fromParam !== null || toParam !== null) {
+    const from = parseISO(fromParam);
+    const to = toParam === null ? new Date().toISOString() : parseISO(toParam);
+    if (!from || !to || from >= to) {
+      return jsonNoStore({ error: 'bad_request', message: 'Invalid from/to window' }, 400);
+    }
+    where = 'WHERE created_at >= ?1 AND created_at < ?2';
+    args = [from, to];
+  } else {
+    const daysRaw = parseInt(url.searchParams.get('days') || '35', 10);
+    const days = Number.isInteger(daysRaw) ? Math.min(365, Math.max(1, daysRaw)) : 35;
+    where = 'WHERE created_at >= ?1';
+    args = [new Date(Date.now() - days * 86400000).toISOString()];
+  }
 
   let rows = [];
   try {
     const res = await db
-      .prepare('SELECT * FROM orders WHERE created_at >= ?1 ORDER BY created_at DESC LIMIT ?2')
-      .bind(cutoff, limit)
+      .prepare(`SELECT * FROM orders ${where} ORDER BY created_at DESC LIMIT ?${args.length + 1}`)
+      .bind(...args, limit)
       .all();
     rows = (res && res.results) || [];
   } catch {

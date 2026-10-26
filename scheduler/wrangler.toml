@@ -1,0 +1,11 @@
+# Standalone scheduler Worker (Cloudflare free plan: ONE cron trigger per account
+# is used here, shared by every site via CLIENT_ENDPOINTS).
+# This file is for the Worker project in scheduler/ — NOT for the Pages site
+# (production Pages config lives in the Cloudflare dashboard).
+
+name = "chou3abelak-report-scheduler"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+[triggers]
+crons = ["0 5 * * *"]

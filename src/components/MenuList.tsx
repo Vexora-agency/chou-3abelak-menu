@@ -156,7 +156,9 @@ export const MenuList: React.FC<MenuListProps> = ({
     <div className="px-5 sm:px-8 pb-12 space-y-7 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
       {visibleCats.map((cat) => {
         const catItems = filteredItems.filter((i) => i.categoryId === cat.id);
-        const isListSection = cat.id === 'manakish';
+        const layout = cat.layout || (cat.id === 'manakish' ? 'list' : 'cards');
+        const isListSection = layout === 'list';
+        const isCompactSection = layout === 'compact';
 
         return (
           <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-16 menu-section">
@@ -174,9 +176,74 @@ export const MenuList: React.FC<MenuListProps> = ({
                 {isAr ? cat.name.ar : cat.name.en}
               </h2>
             </div>
-
-            {/* List View for text-first sections: 1-col on mobile, 2-col on tablet/desktop */}
-            {isListSection ? (
+            {/* Compact rows: dense single-line rows with smooth reflow on filter */}
+            {isCompactSection ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10">
+                {catItems.map((item, idx) => {
+                  const isSoldOut = !item.available;
+                  return (
+                    <motion.div
+                      key={item.id}
+                      layout
+                      initial={{ opacity: 0, y: 14 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: '-40px' }}
+                      transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.05, ease: [0.22, 1, 0.36, 1] }}
+                      onClick={() => !isSoldOut && onOpenItem(item)}
+                      className={`group relative flex items-center gap-3 py-3 px-2 -mx-2 rounded-xl border-b transition-colors ${
+                        darkMode ? 'border-neutral-800 hover:bg-white/[0.04]' : 'border-neutral-200 hover:bg-black/[0.04]'
+                      } ${isSoldOut ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className={`font-bold text-[15px] truncate transition-transform group-hover:translate-x-0.5 ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+                            {pickLangText(item.name, lang)}
+                          </span>
+                          {effectiveBadges(menu, item).map((b) => (
+                            <span
+                              key={b}
+                              className="inline-flex shrink-0 items-center gap-0.5 px-1.5 py-px rounded-full text-[9px] font-extrabold bg-[#0A0A0A] text-[#FFC400] border border-[#FFC400]"
+                            >
+                              {b === 'spicy' && <Flame size={9} className="fill-[#FFC400]" />}
+                              {b === 'top' && <Award size={9} className="fill-[#FFC400]" />}
+                              {b === 'new' && <Sparkles size={9} />}
+                              {b.toUpperCase()}
+                            </span>
+                          ))}
+                          {isSoldOut && (
+                            <span className="shrink-0 px-2 py-px rounded-full text-[10px] font-bold bg-neutral-600 text-white">
+                              {isAr ? 'نفذت الكمية' : 'Sold out'}
+                            </span>
+                          )}
+                        </div>
+                        {pickLangText(item.description, lang).trim() ? (
+                          <p
+                            title={pickLangText(item.description, lang)}
+                            className={`text-xs truncate mt-0.5 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}
+                          >
+                            {pickLangText(item.description, lang)}
+                          </p>
+                        ) : null}
+                      </div>
+                      <span className={`shrink-0 text-sm font-extrabold tabular-nums ${darkMode ? 'text-[#FFC400]' : 'text-[#0A0A0A]'}`} dir="ltr">
+                        {priceLabel(item, lang, currency)}
+                      </span>
+                      {!isSoldOut && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex-shrink-0"
+                        >
+                          {renderAction(item, true)}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ) : (
+            /* List View for text-first sections: 1-col on mobile, 2-col on
+               tablet/desktop */
+            isListSection ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-4">
                 {catItems.map((item, idx) => {
                   const isSoldOut = !item.available;
@@ -278,6 +345,7 @@ export const MenuList: React.FC<MenuListProps> = ({
                     >
                       <div>
                         {/* Badges (effective: stored + automatic NEW) */}
+                        {(effectiveBadges(menu, item).length > 0 || isSoldOut) && (
                         <div className="flex items-center justify-between mb-2">
                           {effectiveBadges(menu, item).length > 0 ? (
                             <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-[#0A0A0A] text-[#FFC400] border border-[#FFC400]">
@@ -291,6 +359,7 @@ export const MenuList: React.FC<MenuListProps> = ({
                             </span>
                           )}
                         </div>
+                        )}
 
                         <h3
                           className={`font-bold text-sm leading-snug line-clamp-1 ${
@@ -329,7 +398,7 @@ export const MenuList: React.FC<MenuListProps> = ({
                   );
                 })}
               </div>
-            )}
+            ))}
           </section>
         );
       })}

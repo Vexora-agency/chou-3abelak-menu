@@ -119,7 +119,8 @@ export function buildWhatsAppMessage(
   lines: WhatsAppLine[],
   customer: CustomerDetails,
   lang: 'en' | 'ar',
-  orderNumber?: number | null
+  orderNumber?: number | null,
+  location?: { lat: number; lng: number } | null
 ): string {
   const isAr = lang === 'ar';
   const currency = isAr ? menu.settings.currency.ar : menu.settings.currency.en;
@@ -192,6 +193,12 @@ export function buildWhatsAppMessage(
     linesOut.push(isAr ? `العنوان: ${customer.address.trim()}` : `Address: ${customer.address.trim()}`);
   }
 
+  // Shared delivery point: link built ONLY from validated rounded numbers.
+  if (customer.orderType === 'delivery' && location && Number.isFinite(location.lat) && Number.isFinite(location.lng)) {
+    const link = `https://www.google.com/maps?q=${location.lat},${location.lng}`;
+    linesOut.push(isAr ? `الموقع: ${link}` : `Location: ${link}`);
+  }
+
   if (customer.orderType === 'dinein' && customer.tableNumber.trim()) {
     linesOut.push(isAr ? `رقم الطاولة: ${customer.tableNumber.trim()}` : `Table #: ${customer.tableNumber.trim()}`);
   }
@@ -216,6 +223,40 @@ export function sanitizeUrl(url: string | undefined): string {
     return clean;
   }
   return '#';
+}
+
+// ---- Customer ↔ restaurant distance (a clear customer-facing answer:
+// "≈ 569.5 km from restaurant" instead of a confusing ±accuracy number) ----
+export function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371e3;
+  const t = Math.PI / 180;
+  const dLat = (bLat - aLat) * t;
+  const dLng = (bLng - aLng) * t;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(aLat * t) * Math.cos(bLat * t) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+/** Extract `lat,lng` from a Google Maps URL (?q= / ?query=). Null when absent/invalid. */
+export function parseMapUrlCoords(url: string | undefined): { lat: number; lng: number } | null {
+  if (!url) return null;
+  const m = url.match(/[?&](?:q|query)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  const lat = Number(m[1]);
+  const lng = Number(m[2]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { lat, lng };
+}
+
+/** Customer-facing distance: whole meters below 1 km, 1-decimal km above. */
+export function formatDistance(meters: number, lang: 'en' | 'ar'): string {
+  const m = Math.max(0, meters);
+  if (m < 1000) {
+    const v = Math.round(m);
+    return lang === 'ar' ? `≈ ${v} م` : `≈ ${v} m`;
+  }
+  const v = (Math.round((m / 1000) * 10) / 10).toFixed(1);
+  return lang === 'ar' ? `≈ ${v} كم` : `≈ ${v} km`;
 }
 
 // Get Directions link: uses the saved Google Maps URL when valid,

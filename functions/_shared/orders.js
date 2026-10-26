@@ -63,6 +63,19 @@ export function validateOrderInput(body, menu) {
 
   const notes = cleanStr(body.notes, 200);
 
+  // Optional delivery coordinates: finite numbers in range, rounded to
+  // 5 decimals. Only for delivery; ignored for other types.
+  let location = null;
+  if (type === 'delivery' && body.location && typeof body.location === 'object') {
+    const lat = typeof body.location.lat === 'number' ? body.location.lat : NaN;
+    const lng = typeof body.location.lng === 'number' ? body.location.lng : NaN;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      errors.push('invalid_location');
+    } else {
+      location = { lat: Math.round(lat * 1e5) / 1e5, lng: Math.round(lng * 1e5) / 1e5 };
+    }
+  }
+
   const lines = Array.isArray(body.items) ? body.items : [];
   if (lines.length < 1 || lines.length > 30) errors.push('invalid_items');
 
@@ -200,9 +213,11 @@ export function validateOrderInput(body, menu) {
       type,
       name,
       phone: phoneDigits,
+      phoneNorm: phoneDigits,
       address: address || null,
       table: table || null,
       notes: notes || null,
+      location,
       items: resolved,
       subtotal,
       deliveryFee,
@@ -233,6 +248,9 @@ export function mapOrderRow(row) {
       ...(row.customer_table ? { table: row.customer_table } : {}),
     },
     ...(row.notes ? { notes: row.notes } : {}),
+    ...(row.location_lat !== null && row.location_lat !== undefined && row.location_lng !== null && row.location_lng !== undefined
+      ? { location: { lat: row.location_lat, lng: row.location_lng } }
+      : {}),
     items,
     subtotal: row.subtotal,
     deliveryFee: row.delivery_fee,

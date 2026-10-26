@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy</title>
+<link rel="stylesheet" href="privacy.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow" data-i18n="eyebrow">Privacy</p>
+      <h1 data-restaurant>Restaurant</h1>
+    </div>
+    <div class="top-actions">
+      <button type="button" id="langToggle" class="pill" aria-label="Language">العربية</button>
+      <a id="backLink" class="pill solid" href="/">Back to menu</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2 data-i18n="collectT">What we collect</h2>
+      <ul id="collectList"></ul>
+    </section>
+
+    <section class="card">
+      <h2 data-i18n="whyT">Why we collect it</h2>
+      <ul id="whyList"></ul>
+    </section>
+
+    <section class="card">
+      <h2 data-i18n="howT">How it is sent and stored</h2>
+      <p id="howText"></p>
+      <p id="recordsText" class="muted"></p>
+    </section>
+
+    <section class="card">
+      <h2 data-i18n="keepT">How long we keep it</h2>
+      <p id="keepText"></p>
+    </section>
+
+    <section class="card">
+      <h2 data-i18n="deviceT">On your device</h2>
+      <p data-i18n="deviceText">We store your cart and your language/theme choices on your own device only. There are no advertising or tracking cookies.</p>
+    </section>
+
+    <section class="card">
+      <h2 data-i18n="thirdT">Third parties</h2>
+      <ul id="thirdList"></ul>
+    </section>
+
+    <section class="card" id="extraCard" hidden>
+      <h2 data-i18n="extraT">Additional notes from the restaurant</h2>
+      <p id="extraText"></p>
+    </section>
+
+    <section class="card">
+      <h2 data-i18n="rightsT">Your rights</h2>
+      <p id="rightsText"></p>
+      <p class="contact">
+        <a id="phoneLink" href="#">Phone</a>
+        <a id="waLink" href="#" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <a id="backLink2" href="/">Back to menu</a>
+  </footer>
+</div>
+<script src="privacy.js" defer></script>
+</body>
+</html>

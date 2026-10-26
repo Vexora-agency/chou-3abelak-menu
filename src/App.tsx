@@ -5,6 +5,9 @@ import {
   perUnitPrice, hasOptions, normalizePricing,
 } from './utils/pricing';
 import { Header } from './components/Header';
+import { AnnouncementBanner } from './components/AnnouncementBanner';
+import { getOrderingState, type OrderingStatus } from './utils/status';
+import { serverNow, setServerOffsetFromDateHeader } from './utils/serverTime';
 import { SearchAndChips } from './components/SearchAndChips';
 import { FeaturedCarousel } from './components/FeaturedCarousel';
 import { MenuList } from './components/MenuList';
@@ -62,6 +65,33 @@ export default function App() {
   const [menu, setMenu] = useState<MenuData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [orderingState, setOrderingState] = useState<OrderingStatus | null>(null);
+
+  const fetchOrderingState = async () => {
+    try {
+      const res = await fetch('/api/ordering-state').catch(() => null);
+      if (!res || !res.ok) return;
+      setServerOffsetFromDateHeader(res.headers.get('Date'));
+      const data = await res.json().catch(() => null);
+      if (data && (data.state === 'open' || data.state === 'paused' || data.state === 'closed' || data.state === 'disabled')) {
+        setOrderingState({
+          state: data.state,
+          message: data.message && typeof data.message === 'object' ? { en: data.message.en || '', ar: data.message.ar || '' } : { en: '', ar: '' },
+          ...(typeof data.reopensAt === 'string' ? { reopensAt: data.reopensAt } : {}),
+        });
+      }
+    } catch {}
+  };
+
+  // Ordering availability refreshes with the menu and every minute after.
+  useEffect(() => {
+    fetchOrderingState();
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'visible') fetchOrderingState();
+    }, 60000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Language state: 'en' | 'ar' (first visit falls back to the admin default)
   const [lang, setLang] = useState<'en' | 'ar'>(() => {
@@ -266,6 +296,7 @@ export default function App() {
         // Try to fetch from /api/menu or fallback to /menu.seed.json
         const res = await fetch('/api/menu').catch(() => null);
         if (res && res.ok) {
+          setServerOffsetFromDateHeader(res.headers.get('Date'));
           const data: MenuData = await res.json();
           const normalized = normalizeMenu(data);
           setMenu(normalized);
@@ -421,9 +452,9 @@ export default function App() {
   // Sends the admin's filled copy to the server and resolves with the
   // authoritative doc. The admin screen keeps its raw text on screen
   // (autofill appears after reload); only the version is adopted there.
-  const handleSaveMenuFromAdmin = (newMenu: MenuData): Promise<AdminSaveResult | null> => {
+  const handleSaveMenuFromAdmin = (newMenu: MenuData, source?: 'manual' | 'autosave'): Promise<AdminSaveResult | null> => {
     // Send to the backend and surface any failure instead of hiding it
-    return fetch('/api/admin/menu', {
+    return fetch(`/api/admin/menu${source === 'autosave' ? '?source=autosave' : ''}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -539,6 +570,9 @@ export default function App() {
   const isAr = lang === 'ar';
   const currency = isAr ? menu.settings.currency.ar : menu.settings.currency.en;
   const featuredItems = menu.items.filter((i) => i.featured && i.available);
+  // Live endpoint state wins; the menu-derived state is the fail-open
+  // fallback when the endpoint is unreachable (an outage never stops orders).
+  const liveOrderingState: OrderingStatus | null = orderingState ?? getOrderingState(menu.settings, serverNow());
 
   return (
     <MotionConfig reducedMotion="user">
@@ -566,6 +600,11 @@ export default function App() {
           </div>
         )}
 
+        {/* Announcement strip (menu-loaded only, no layout flicker) */}
+        {menu && (
+          <AnnouncementBanner settings={menu.settings} lang={lang} />
+        )}
+
         {/* Hero Header */}
         <Header
           menu={menu}
@@ -576,6 +615,7 @@ export default function App() {
           onOpenAdmin={adminUnlocked ? () => setShowAdmin(true) : undefined}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          orderingState={liveOrderingState}
         />
 
         {/* Main Content Area */}
@@ -641,6 +681,7 @@ export default function App() {
           onOpenCart={() => setIsCartOpen(true)}
           onClearCart={handleClearCart}
           lang={lang}
+          orderingState={liveOrderingState}
         />
 
         {/* Item Details Bottom Sheet Modal */}
@@ -669,6 +710,7 @@ export default function App() {
           currency={currency}
           lang={lang}
           darkMode={darkMode}
+          orderingState={liveOrderingState}
         />
       </div>
     </div>

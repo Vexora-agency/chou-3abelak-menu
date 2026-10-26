@@ -5,6 +5,7 @@
  */
 
 import { validateMenu } from '../../_shared/validate.js';
+import { getActor, migrateLegacyBackup, snapshotMenu } from '../../_shared/versions.js';
 
 const DEFAULT_EMPTY_MENU = {
   version: 1,
@@ -157,10 +158,17 @@ export async function onRequest(context) {
       });
     }
 
-    // 6. Save backup before overwrite
+    // 6. Version history: snapshot the PREVIOUS document before overwrite.
+    // source comes from ?source= (autosave coalesces to one per 5 minutes;
+    // manual/import/restore always snapshot). The old single menu:backup key
+    // is migrated once as an oldest version and then never used again.
     if (env.MENU_KV && currentStored) {
       try {
-        await env.MENU_KV.put('menu:backup', JSON.stringify(currentStored));
+        const url = new URL(request.url);
+        const source = url.searchParams.get('source') === 'autosave' ? 'autosave' : 'manual';
+        const actor = await getActor(request, env);
+        await migrateLegacyBackup(env, currentStored);
+        await snapshotMenu(env, { prevDoc: currentStored, incomingDoc: validatedDoc, source, actor });
       } catch {}
     }
 

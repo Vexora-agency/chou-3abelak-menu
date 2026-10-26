@@ -137,10 +137,12 @@ ALLOW_LOCAL_DEV=1
 Then run (single port for everything — or double-click `serve-local.bat`):
 
 ```bash
-# One-time: create the local orders table
+# After pulling new migrations (0003_reports, 0004_orders_nullable_pii, ...):
 npx wrangler d1 migrations apply ORDERS_DB --local
 # Every run: serves the built site + Functions on http://localhost:3000
-npx wrangler pages dev ./dist --port 3000 --kv MENU_KV --d1 ORDERS_DB --binding ALLOW_LOCAL_DEV=1
+# (bindings come from wrangler.toml — do NOT add --kv/--d1 flags, they shadow
+# the configured bindings with empty ones: blank menu + 503s on D1 routes)
+npx wrangler pages dev ./dist --port 3000
 ```
 
 > The dev server above serves the **built** site + Functions on `http://localhost:3000`.
@@ -157,7 +159,7 @@ Test matrix:
 | 6   | Sign out (top-right of the panel)        | Back to sign-in screen, cookie cleared                |
 | 7   | `GET /api/menu` while logged out         | Public menu still works (no auth required)            |
 | 8   | Place a test order, open the `Dashboard` tab | Order appears with the exact server total; KPIs, chart, top items and type split match it |
-| 9   | Switch period Today / 7 days / 30 days   | Counts, revenue, avg and deltas recompute for the selected window |
+| 9   | Switch period Today / 7 days / This month / Last month | Counts, revenue, avg and deltas recompute for the selected window |
 | 10  | Change an order status, then refresh     | Status persists (server round-trip), no duplicates after re-sending from the cart |
 | 11  | Add a size/add-on in Settings → Features, enable it on an item with a price | Appears in the details sheet; totals match server recomputation |
 | 12  | Run `node scripts/test-pricing.mjs`      | All pricing checks pass (variants, add-ons, qty grids, migration, seed totals) |
@@ -173,3 +175,171 @@ Set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET` (mark all as **Sec
 - The Access application **must no longer** cover `/api/auth/*` — the login screen calls these endpoints **before** any login exists, so an Access wall there would lock everyone out (including you).
 - Do **not** put `/admin` (a frontend hash route, there is no such file path) behind Access either — use the login screen as the entry instead.
 - `/api/admin/*` may stay behind your existing Access application as a second layer, but it is **not required**: the cookie session already gates it, and keeping Access means every admin API call must pass **both** checks. Recommended: remove the Access application from `/api/*` entirely and rely on the login screen — or keep it only if you want belt-and-braces and understand both checks must pass.
+
+---
+
+## 📊 Monthly reports (plan-gated: pro / signature)
+
+Dashboard → **Reports** tab (Overview | Reports switch) shows one card per month
+plus the current month live, a CSV download per month, the report-email
+settings (address + confirmation, language), a test mail button, and the data
+retention summary. Everything below is gated behind the `monthlyReports`
+feature: on any other plan every new route answers **404**. Set the plan with
+the `SITE_PLAN` env var (`starter` when unset).
+
+### 1. How it runs
+
+- On the 1st of each month (and retried daily, up to 5 attempts) the previous
+  complete month is generated (SQL aggregates, no row loops for totals) and
+  emailed once to the **verified** address. Re-runs are no-ops once
+  `emailed_at` is set.
+- The scheduler is a tiny separate Worker in `scheduler/` with **one** cron
+  trigger (`0 5 * * *`, 05:00 UTC daily) so the free-plan 5-cron budget is
+  safe. It POSTs `POST /api/internal/run-reports` (bearer `CRON_SECRET`,
+  constant-time compare, 404 without it) to every site in its
+  `CLIENT_ENDPOINTS` secret; a failing site never blocks the others.
+- `node scripts/preview-report-email.mjs` renders sample EN+AR emails to
+  `./tmp-email/` for visual checks. `node scripts/test-reports.mjs` runs the
+  reporting unit tests (DST bounds, aggregation, CSV, retention guard,
+  tokens, plan gating).
+
+### 2. Env vars (Pages → Settings → Environment variables, all Secrets)
+
+| Var | Purpose |
+| --- | ------- |
+| `SITE_PLAN` | `pro` or `signature` to unlock reports (`starter`/unset hides them) |
+| `RESEND_API_KEY` | Resend API key (free plan is enough) |
+| `MAIL_FROM_DOMAIN_EMAIL` | Full sender address, e.g. `reports@your-domain.com` |
+| `REPLY_TO` | Owner's Zoho address (replies go here, never to the sender) |
+| `SITE_URL` | `https://your-domain.com` (logo + dashboard + confirm links) |
+| `CRON_SECRET` | Random 32-byte hex for the scheduler → site calls |
+
+For local dev add the same keys to untracked `.dev.vars` (see `.env.example`).
+
+### 3. DNS notes (Resend + Zoho side by side)
+
+- Verify the **sending domain** in Resend (Domain → DNS records): add
+  **exactly** the records Resend shows (they live on Resend subdomains/DKIM
+  selector names — they do not clash with mail receiving).
+- **Do not touch** the Zoho MX or SPF records — receiving (Zoho) and sending
+  (Resend) coexist.
+- Add a DMARC record, starting permissive: host `_dmarc`, value
+  `v=DMARC1; p=none; rua=mailto:owner@your-domain.com` (tighten to
+  `quarantine`/`reject` later once mail flows cleanly).
+
+### 4. R2 (report CSVs at `reports/<YYYY-MM>.csv`)
+
+- Create once: `wrangler r2 bucket create chou-3abelak-reports`, then bind it
+  as `REPORTS` in the Pages dashboard (local dev already binds it via
+  `wrangler.toml`).
+- Recommended backstop lifecycle rule on the bucket: delete objects under
+  `reports/` older than ~37 months (the app deletes at 36).
+
+### 5. Retention (env-overridable, enforced by the daily job)
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `PII_RETENTION_DAYS` | `90` | Customer name/phone/address/notes NULLed, `pii_purged_at` set |
+| `ORDER_RETENTION_MONTHS` | `13` | Anonymized order rows deleted past this age |
+| `REPORT_RETENTION_MONTHS` | `36` | Old report rows + their R2 CSVs deleted |
+
+**Hard rule:** a month's orders are never purged or deleted until its
+`monthly_reports` row exists. The old 1%-per-order lazy cleanup is gone;
+retention only runs in the daily job.
+
+### 6. Local verify checklist
+
+| # | Action | Expected |
+| --- | --- | --- |
+| 1 | Unset `SITE_PLAN`, restart dev | All `/api/admin/report-*`, `/api/admin/reports*`, `/api/internal/run-reports` → 404; Reports switch hidden |
+| 2 | `SITE_PLAN=signature`, change email, save | `verificationSent:false` without Resend key; DB holds only a 64-hex token hash, `verified=0`, expiry ~48 h |
+| 3 | `GET /api/reports/confirm?token=…` | 200 generic page, no address shown; second use → invalid page; `verified=1`, hash cleared |
+| 4 | Test mail before/after verifying | 400 `not_verified`, then graceful `mail_unconfigured` without a key; 4th call in an hour → 429 |
+| 5 | `POST /api/internal/run-reports` twice | First generates + attempts=1; second attempts=2 (mail fails without key); wrong secret → 404 |
+| 6 | Set `emailed_at`, run again | Attempts unchanged (exactly-once skip), retention still runs |
+| 7 | Old orders in unreported vs reported months | Unreported keep PII; reported get NULLed (needs migration `0004`) |
+| 8 | `node scripts/test-reports.mjs` | All checks pass (DST bounds incl. Beirut Mar/Oct transitions, CSV BOM/Arabic/PII-free) |
+
+Remaining risk: actual Resend delivery needs a real `RESEND_API_KEY` + verified
+sending domain — use the in-panel **test mail** button once DNS is live.
+
+---
+
+## 🛟 Backup & History (works on every plan)
+
+The Backup tab is now a full safety system (same look, no visual redesign):
+**History** (every save kept, restore with preview + safety copy),
+**Export** (signed JSON / CSV / printable A4 page), **Import** (JSON or CSV
+with a two-step analyze → type-APPLY review), **Trash** (30-day soft delete
+with Undo), plus a weekly automatic email backup.
+
+- Version snapshots live in KV (`menu:ver:<ISO>-<rand>`, metadata-only
+  listing). Every `PUT /api/admin/menu` snapshots the previous document
+  (`?source=autosave` coalesces to one per 5 min; manual/import/restore
+  always snapshot). Retention: latest 50 + one per day for 60 days.
+- Deleting an item/category moves it to `menu:trash` (server-side, with an
+  8-second Undo toast) — restores recreate missing categories. Purged after
+  30 days.
+- Export envelope `{format:'chou-backup', schemaVersion, exportedAt, siteId,
+  menu, sig}` with `sig` = HMAC-SHA256 (`BACKUP_SECRET`) over canonical
+  JSON. CSV has BOM; print page is escaped A4 with no admin controls.
+- Import: `POST /api/admin/import/analyze` (raw body ≤ 2 MB, strict
+  `validateMenu`, proto-pollution + depth guards, HMAC check, CSV parser)
+  stages to KV `import:<token>` (15-min TTL, single use, session-bound);
+  `POST /api/admin/import/apply` snapshots first, then writes. Unsigned
+  files can only change items/categories/addonGroups — settings, ordering
+  and WhatsApp are never touched. Rate limit: 5 applies/hour.
+- Weekly backup: enable it in Backup → Export; every Monday the daily job
+  emails the signed JSON to the verified report address and keeps 12 copies
+  in R2 (`backups/`).
+- Local verify: `node scripts/test-backup.mjs` (70 checks: diffs, tampered
+  signatures, CSV round trip in Arabic, token single-use/expiry, restore
+  safety copy, trash, autosave coalescing, unsigned-can-never-touch-WhatsApp).
+
+Production env (in addition to the report vars): `BACKUP_SECRET` (Secret,
+32 random hex bytes — generate with
+`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`).
+
+---
+
+## ⏸️ Pause, location, banner & privacy
+
+- **Pause / closed hours:** `GET /api/ordering-state` (public, no-store)
+  drives the header pill, cart status lines and the Send-button gate. The
+  customer check runs at tap time (2.5 s timeout, fail-open to the
+  menu-derived state); `POST /api/orders` enforces the same rule server-side
+  (403 `paused`/`closed`/`disabled`). Admin: Settings > Ordering (pause
+  switch + message, accept-when-closed) plus the one-tap pause bar on the
+  Dashboard (`POST /api/admin/ordering/pause`, 30/60/120 min or indefinite,
+  read-modify-write with retries). Note: KV caching means a change may take
+  up to about a minute to reach every region — that is why the submit-time
+  check exists.
+- **Share location (delivery only):** tap-to-run geolocation (never on page
+  load, state only, cleared after send/close), link built only from rounded
+  numbers, one line in the WhatsApp message + stored columns
+  (`location_lat/lng`, NULLed by retention, never in the monthly CSV, Maps
+  button in order details). Requires `Permissions-Policy: geolocation=(self)`
+  in `public/_headers` (camera/mic stay disabled); no CSP change needed.
+- **In-cart map picker (Leaflet + OpenStreetMap, no key):** the pin opens an
+  interactive sheet — auto-detect, draggable pin, tap-to-move, Confirm fills
+  the address field (Nominatim reverse lookup, empty field only) and saves
+  coords. Tiles + lookup load ONLY while the sheet is open. CSP allows
+  `tile.openstreetmap.org` (img) + `nominatim.openstreetmap.org` (connect);
+  disclosed on the privacy page. Trade-off accepted by owner: map usage
+  contacts OSM servers (see privacy page).
+- **Announcement banner:** `settings.announcement` (140 chars, optional
+  business-timezone window, max 365 days). Dismissal remembered per text in
+  sessionStorage; motion height/opacity, reduced-motion respected.
+- **Privacy:** public page at `/privacy` (`public/privacy.html`, EN/AR
+  toggle, textContent only) fed by `/api/menu` + `/api/privacy-info`
+  (retention numbers never hardcoded). Owner extras + review tick in
+  Settings > Privacy. Footer link + cart notice included.
+- **Customer data tool** (Dashboard > Customers, needs the `orderLogging`
+  plan feature): phone-digit search (masked results, LIMIT 50), actions
+  anonymize/delete/export-CSV guarded by admin password + typed word
+  (DELETE/حذف) + 10/hour limit, HMAC audit entries (`AUDIT_SECRET`, phone
+  never stored). Migration `0005` adds `location_lat/lng` + `phone_norm`.
+  Tests: `node scripts/test-status.mjs`, `node scripts/test-features.mjs`.
+- README note: rows deleted via the tool may still exist inside D1's
+  point-in-time recovery history for a limited period, and backups or
+  exports the owner already downloaded are outside the system.

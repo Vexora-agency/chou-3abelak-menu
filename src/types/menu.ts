@@ -79,6 +79,8 @@ export interface Category {
   id: string;
   name: { en: string; ar: string };
   visible: boolean;
+  /** How its items render in the menu: cards grid, text-first list or compact rows. */
+  layout?: 'cards' | 'list' | 'compact';
 }
 
 export interface MenuSettings {
@@ -117,6 +119,26 @@ export interface MenuSettings {
     deliveryFee: number;
     deliveryFeeEnabled: boolean;
     note: { en: string; ar: string };
+    /** Manual pause switch (pausedUntil null = until resumed). */
+    paused: boolean;
+    /** Auto-resume instant (ISO) or null. Expired values count as resumed. */
+    pausedUntil: string | null;
+    /** Owner message shown while paused (empty = default message). */
+    pausedMessage: { en: string; ar: string };
+    /** When true, orders are accepted outside business hours. */
+    acceptWhenClosed: boolean;
+  };
+  announcement: {
+    enabled: boolean;
+    text: { en: string; ar: string };
+    startsAt: string | null;
+    expiresAt: string | null;
+  };
+  privacy: {
+    /** Owner-written extra notes shown on the privacy page. */
+    extra: { en: string; ar: string };
+    /** Owner confirms the privacy text was reviewed for local law. */
+    reviewed: boolean;
   };
   featuredAutoplay: boolean;
   featuredAutoplayInterval: number;

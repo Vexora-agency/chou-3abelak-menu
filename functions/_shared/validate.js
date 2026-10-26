@@ -50,8 +50,8 @@ export function validateMenu(doc) {
       errors.push(`settings.${name} must be an object with en and ar strings`);
       return { en: '', ar: '' };
     }
-    const en = typeof field.en === 'string' ? field.en.slice(0, max) : '';
-    const ar = typeof field.ar === 'string' ? field.ar.slice(0, max) : '';
+    const en = typeof field.en === 'string' ? stripControls(field.en).slice(0, max) : '';
+    const ar = typeof field.ar === 'string' ? stripControls(field.ar).slice(0, max) : '';
     return { en, ar };
   };
 
@@ -59,10 +59,16 @@ export function validateMenu(doc) {
   // (real menus ship without them).
   const validateBilingualOpt = (field, max = 80) => {
     if (!field || typeof field !== 'object') return { en: '', ar: '' };
-    const en = typeof field.en === 'string' ? field.en.slice(0, max) : '';
-    const ar = typeof field.ar === 'string' ? field.ar.slice(0, max) : '';
+    const en = typeof field.en === 'string' ? stripControls(field.en).slice(0, max) : '';
+    const ar = typeof field.ar === 'string' ? stripControls(field.ar).slice(0, max) : '';
     return { en, ar };
   };
+
+  // Control characters (including newlines/tabs) are stripped from every
+  // validated string so stored text can never break layouts or logs.
+  function stripControls(v) {
+    return String(v ?? '').replace(/[\x00-\x1F\x7F]/g, '');
+  }
 
   const name = validateBilingual(s.name, 'name', 80);
   const tagline = validateBilingual(s.tagline, 'tagline', 80);
@@ -165,6 +171,69 @@ export function validateMenu(doc) {
   const deliveryFeeEnabled = typeof ord.deliveryFeeEnabled === 'boolean' ? ord.deliveryFeeEnabled : deliveryFee > 0;
 
   const note = validateBilingualOpt(ord.note, 120);
+
+  // Pause / closed-hours controls (all optional, safe defaults).
+  const paused = ord.paused === true;
+  let pausedUntil = null;
+  if (ord.pausedUntil !== undefined && ord.pausedUntil !== null && ord.pausedUntil !== '') {
+    const t = typeof ord.pausedUntil === 'string' ? Date.parse(ord.pausedUntil) : NaN;
+    if (!Number.isFinite(t)) {
+      errors.push('settings.ordering.pausedUntil must be a valid ISO date or null');
+    } else {
+      pausedUntil = new Date(t).toISOString();
+    }
+  }
+  const pausedMessage = { en: '', ar: '' };
+  if (ord.pausedMessage && typeof ord.pausedMessage === 'object') {
+    pausedMessage.en = stripControls(ord.pausedMessage.en).trim().slice(0, 160);
+    pausedMessage.ar = stripControls(ord.pausedMessage.ar).trim().slice(0, 160);
+  }
+  const acceptWhenClosed = ord.acceptWhenClosed === true;
+
+  // Announcement banner (plain text only, optional scheduling).
+  const ann = s.announcement && typeof s.announcement === 'object' ? s.announcement : {};
+  const announcementEnabled = ann.enabled === true;
+  const announcementText = {
+    en: stripControls(ann.text && ann.text.en).trim().slice(0, 140),
+    ar: stripControls(ann.text && ann.text.ar).trim().slice(0, 140),
+  };
+  let announcementStartsAt = null;
+  let announcementExpiresAt = null;
+  if (ann.startsAt !== undefined && ann.startsAt !== null && ann.startsAt !== '') {
+    const t = typeof ann.startsAt === 'string' ? Date.parse(ann.startsAt) : NaN;
+    if (!Number.isFinite(t)) {
+      errors.push('settings.announcement.startsAt must be a valid ISO date or null');
+    } else {
+      announcementStartsAt = new Date(t).toISOString();
+    }
+  }
+  if (ann.expiresAt !== undefined && ann.expiresAt !== null && ann.expiresAt !== '') {
+    const t = typeof ann.expiresAt === 'string' ? Date.parse(ann.expiresAt) : NaN;
+    if (!Number.isFinite(t)) {
+      errors.push('settings.announcement.expiresAt must be a valid ISO date or null');
+    } else {
+      announcementExpiresAt = new Date(t).toISOString();
+    }
+  }
+  if (announcementStartsAt && announcementExpiresAt && announcementExpiresAt <= announcementStartsAt) {
+    errors.push('settings.announcement.expiresAt must be after startsAt');
+  }
+  if (announcementExpiresAt && Date.parse(announcementExpiresAt) > Date.now() + 365 * 86400000) {
+    errors.push('settings.announcement.expiresAt must be within 365 days');
+  }
+  if (announcementEnabled && !announcementText.en && !announcementText.ar) {
+    errors.push('settings.announcement needs text in at least one language when enabled');
+  }
+
+  // Privacy page extras (owner-editable plain text) + review flag.
+  const priv = s.privacy && typeof s.privacy === 'object' ? s.privacy : {};
+  const privacy = {
+    extra: {
+      en: stripControls(priv.extra && priv.extra.en).trim().slice(0, 1000),
+      ar: stripControls(priv.extra && priv.extra.ar).trim().slice(0, 1000),
+    },
+    reviewed: priv.reviewed === true,
+  };
 
   // Featured carousel autoplay (settings level)
   const featuredAutoplay = s.featuredAutoplay !== undefined ? Boolean(s.featuredAutoplay) : true;
@@ -297,7 +366,18 @@ export function validateMenu(doc) {
       deliveryFee,
       deliveryFeeEnabled,
       note,
+      paused,
+      pausedUntil,
+      pausedMessage,
+      acceptWhenClosed,
     },
+    announcement: {
+      enabled: announcementEnabled,
+      text: announcementText,
+      startsAt: announcementStartsAt,
+      expiresAt: announcementExpiresAt,
+    },
+    privacy,
   };
 
   // Categories validation
@@ -325,10 +405,17 @@ export function validateMenu(doc) {
     }
     categoryIds.add(id);
 
+    // Display layout: cards grid, text-first list or compact rows.
+    // Historical menus rendered the 'manakish' section as a list, so it
+    // keeps that default.
+    const layout = cat.layout === 'list' || cat.layout === 'compact' || cat.layout === 'cards'
+      ? cat.layout
+      : (id === 'manakish' ? 'list' : 'cards');
     cleanCategories.push({
       id,
       name: validateBilingual(cat.name, `category[${id}].name`, 80),
       visible: Boolean(cat.visible),
+      layout,
     });
   }
 

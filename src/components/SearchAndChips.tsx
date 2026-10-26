@@ -48,7 +48,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
         <div className="relative flex items-center">
           <Search
             size={19}
-            className={`absolute ${isAr ? 'right-4' : 'left-4'} text-[#FFC400] stroke-[2.5] pointer-events-none`}
+            className={`absolute ${isAr ? 'right-4' : 'left-4'} stroke-[2.5] pointer-events-none ${darkMode ? 'text-[#FFC400]' : 'text-[#8a6d00]'}`}
           />
           <input
             id="menu-search-input"
@@ -137,7 +137,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
               title={label}
             >
               <span className="relative z-10 flex items-center gap-1.5">
-                <Icon size={14} className={isSelected ? '' : 'text-[#FFC400]'} />
+                <Icon size={14} className={isSelected ? '' : darkMode ? 'text-[#FFC400]' : 'text-[#8a6d00]'} />
                 {label}
               </span>
             </button>

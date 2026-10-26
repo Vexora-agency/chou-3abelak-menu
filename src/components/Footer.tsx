@@ -157,6 +157,14 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
           <div>
             © 2026 {isAr ? menu.settings.name.ar : menu.settings.name.en} · All Rights Reserved
           </div>
+          <div className="flex items-center gap-2">
+            <a
+              href="privacy"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-[#FFC400] hover:border-[#FFC400] transition-colors"
+            >
+              <Shield size={12} />
+              <span>{isAr ? 'الخصوصية' : 'Privacy'}</span>
+            </a>
           {onOpenAdmin && (
             <button
               type="button"
@@ -167,6 +175,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
               <span>{isAr ? 'لوحة التحكم للمطعم' : 'Admin Portal'}</span>
             </button>
           )}
+          </div>
         </div>
       </div>
     </footer>

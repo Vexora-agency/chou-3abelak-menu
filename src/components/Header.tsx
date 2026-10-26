@@ -3,6 +3,7 @@ import { Phone, MessageCircle, MapPin, Moon, Sun, Settings } from 'lucide-react'
 import { motion, useScroll, useTransform } from 'motion/react';
 import { MenuData } from '../types/menu';
 import { isOpenNow, buildMapUrl, pickLangText } from '../utils/menuHelpers';
+import type { OrderingStatus } from '../utils/status';
 
 interface HeaderProps {
   menu: MenuData;
@@ -13,6 +14,7 @@ interface HeaderProps {
   onOpenAdmin?: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  orderingState?: OrderingStatus | null;
 }
 
 interface SmokeParticle {
@@ -49,6 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAdmin,
   searchQuery,
   onSearchChange,
+  orderingState,
 }) => {
   const isAr = lang === 'ar';
   const { scrollY } = useScroll();
@@ -543,13 +546,24 @@ export const Header: React.FC<HeaderProps> = ({
           {...rise(intro + 0.2)}
           className="glass-pill inline-flex items-center gap-2.5 mt-4 rounded-full py-1.5 px-4 text-xs font-medium text-white"
         >
-          <span className="relative flex h-2 w-2" aria-hidden="true">
-            {status.isOpen && (
-              <span className="absolute inline-flex h-full w-full rounded-full bg-[#FFC400] opacity-70 animate-ping" />
-            )}
-            <span className={`relative inline-flex h-2 w-2 rounded-full ${status.isOpen ? 'bg-[#FFC400]' : 'bg-red-500'}`} />
-          </span>
-          <span>{isAr ? status.label.ar : status.label.en}</span>
+          {orderingState && orderingState.state === 'paused' ? (
+            <>
+              <span className="relative flex h-2 w-2" aria-hidden="true">
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-orange-400" />
+              </span>
+              <span>{isAr ? 'الطلبات متوقفة مؤقتاً' : 'Orders paused'}</span>
+            </>
+          ) : (
+            <>
+              <span className="relative flex h-2 w-2" aria-hidden="true">
+                {status.isOpen && (
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#FFC400] opacity-70 animate-ping" />
+                )}
+                <span className={`relative inline-flex h-2 w-2 rounded-full ${status.isOpen ? 'bg-[#FFC400]' : 'bg-red-500'}`} />
+              </span>
+              <span>{isAr ? status.label.ar : status.label.en}</span>
+            </>
+          )}
         </motion.div>
       </motion.div>
 

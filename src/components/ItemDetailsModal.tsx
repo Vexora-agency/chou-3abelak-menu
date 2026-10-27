@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { MenuData, MenuItem, CartLine } from '../types/menu';
-import { X, Plus, Minus, Flame, Sparkles, Award, Check } from 'lucide-react';
-import { formatPrice, pickLangText } from '../utils/menuHelpers';
+import { MenuData, MenuItem, CartLine } from '@/src/types/menu';
+import { X, Plus, Minus, Flame, Sparkles, Award } from 'lucide-react';
+import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import {
-  itemAddons, cartLineKey, hasOptions, hasVariants, featureName, getVariant,
-  lineTotal, normalizePricing, priceLabel,
-} from '../utils/pricing';
+  itemAddons, cartLineKey, hasOptions, hasVariants, getVariant,
+  lineTotal, normalizePricing, priceLabel, formatPrice,
+} from '@/src/utils/pricing';
+import { VariantPicker } from '@/src/components/item-view/VariantPicker';
+import { AddonPicker } from '@/src/components/item-view/AddonPicker';
 
 interface ItemDetailsModalProps {
   item: MenuItem | null;
@@ -34,16 +36,22 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
 }) => {
   const isAr = lang === 'ar';
 
-  // Configurator state (reset whenever a different item opens)
+  // Configurator state (reset whenever a different item opens).
+  // Render-phase adjustment (blessed pattern): applies before paint, so the
+  // sheet never flashes the previous item's selection.
   const [variantId, setVariantId] = useState<string | undefined>(undefined);
   const [addonIds, setAddonIds] = useState<string[]>([]);
   const [qty, setQty] = useState(1);
-  useEffect(() => {
-    if (!item) return;
-    setVariantId(getVariant(item)?.featureId);
-    setAddonIds([]);
-    setQty(normalizePricing(item).minQty);
-  }, [item]);
+  const [lastItemId, setLastItemId] = useState<string | null>(null);
+  const openItemId = item?.id ?? null;
+  if (openItemId !== lastItemId) {
+    setLastItemId(openItemId);
+    if (item) {
+      setVariantId(getVariant(item)?.featureId);
+      setAddonIds([]);
+      setQty(normalizePricing(item).minQty);
+    }
+  }
 
   // Handle escape key
   useEffect(() => {
@@ -70,7 +78,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
   const singleQty = cart[singleKey]?.quantity || 0;
 
   // Live total for the configured selection
-  let liveTotal: number | null = null;
+  let liveTotal: number | null;
   try {
     liveTotal = lineTotal(item, { variantId, addonIds, qty });
   } catch {
@@ -135,10 +143,10 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   key={b}
                   className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0A0A0A] text-[#FFC400] border border-[#FFC400]"
                 >
-                  {b === 'spicy' && <Flame size={12} className="fill-[#FFC400]" />}
-                  {b === 'top' && <Award size={12} className="fill-[#FFC400]" />}
-                  {b === 'new' && <Sparkles size={12} />}
-                  {b.toUpperCase()}
+                    {b === 'spicy' && <Flame size={12} className="fill-[#FFC400]" />}
+                    {b === 'top' && <Award size={12} className="fill-[#FFC400]" />}
+                    {b === 'new' && <Sparkles size={12} />}
+                    {badgeLabel(b, lang)}
                 </span>
               ))}
               {!item.available && (
@@ -171,73 +179,10 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             options ? (
               <>
                 {/* Variants (required — first is the default) */}
-                {variants.length > 0 && (
-                  <div>
-                    <p className={`text-xs font-extrabold mb-2 ${darkMode ? 'text-neutral-300' : 'text-neutral-700'}`}>
-                      {isAr ? 'اختر الحجم *' : 'Choose a size *'}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {variants.map((v) => {
-                        const active = variantId === v.featureId;
-                        return (
-                          <button
-                            key={v.featureId}
-                            type="button"
-                            onClick={() => setVariantId(v.featureId)}
-                            aria-pressed={active}
-                            className={`${chipBase} ${
-                              active
-                                ? 'bg-[#FFC400] text-[#0A0A0A] border-[#FFC400]'
-                                : darkMode
-                                ? 'border-neutral-700 text-neutral-200 hover:border-[#FFC400]'
-                                : 'border-neutral-300 text-neutral-800 hover:border-[#0A0A0A]'
-                            }`}
-                          >
-                            {active && <Check size={13} strokeWidth={3} />}
-                            <span>{featureName(menu, v.featureId, lang)}</span>
-                            <span className="tabular-nums opacity-80">+{formatPrice(v.price, currency)}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                <VariantPicker variants={variants} variantId={variantId} onSelect={setVariantId} menu={menu} lang={lang} currency={currency} darkMode={darkMode} isAr={isAr} chipBase={chipBase} />
 
                 {/* Add-ons */}
-                {addons.length > 0 && (
-                  <div>
-                    <p className={`text-xs font-extrabold mb-2 ${darkMode ? 'text-neutral-300' : 'text-neutral-700'}`}>
-                      {isAr ? 'إضافات (اختياري)' : 'Add-ons (optional)'}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {addons.map((a) => {
-                        const active = addonIds.includes(a.featureId);
-                        const free = a.price === 0;
-                        return (
-                          <button
-                            key={a.featureId}
-                            type="button"
-                            onClick={() => toggleAddon(a.featureId)}
-                            aria-pressed={active}
-                            className={`${chipBase} ${
-                              active
-                                ? 'bg-[#FFC400] text-[#0A0A0A] border-[#FFC400]'
-                                : darkMode
-                                ? 'border-neutral-700 text-neutral-200 hover:border-[#FFC400]'
-                                : 'border-neutral-300 text-neutral-800 hover:border-[#0A0A0A]'
-                            }`}
-                          >
-                            {active && <Check size={13} strokeWidth={3} />}
-                            <span>{featureName(menu, a.featureId, lang)}</span>
-                            <span className="tabular-nums opacity-80">
-                              {free ? (isAr ? 'مجاناً' : 'Free') : `+${formatPrice(a.price, currency)}`}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                <AddonPicker addons={addons} addonIds={addonIds} onToggle={toggleAddon} menu={menu} lang={lang} currency={currency} darkMode={darkMode} isAr={isAr} chipBase={chipBase} />
 
                 {/* Quantity stepper */}
                 <div className="flex items-center justify-between gap-4">

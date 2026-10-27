@@ -5,6 +5,7 @@
 
 import { checkApiHeaders, jsonNoStore } from '../../../_shared/session.js';
 import { buildPrintHTML } from '../../../_shared/versions.js';
+import { readLiveMenu } from '../../../_shared/reports.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -12,10 +13,7 @@ export async function onRequest(context) {
   if (!gate.ok) return jsonNoStore({ error: gate.error }, gate.status);
   if (request.method !== 'GET') return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'GET' });
   if (!env.MENU_KV) return jsonNoStore({ error: 'unavailable' }, 503);
-  let menu = null;
-  try {
-    menu = await env.MENU_KV.get('menu', { type: 'json' });
-  } catch {}
+  const menu = await readLiveMenu(env);
   if (!menu) return jsonNoStore({ error: 'unavailable' }, 503);
   const url = new URL(request.url);
   const lang = url.searchParams.get('lang') === 'en' ? 'en' : 'ar';

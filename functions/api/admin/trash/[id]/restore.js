@@ -4,13 +4,10 @@
  */
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../../_shared/session.js';
-import { validateMenu } from '../../../../_shared/validate.js';
 import {
-  getActor,
   readTrash,
   removeTrashEntry,
-  snapshotMenu,
-  writeMenuVersioned,
+  restoreValidatedMenu,
 } from '../../../../_shared/versions.js';
 
 export async function onRequest(context) {
@@ -21,7 +18,7 @@ export async function onRequest(context) {
   if (!env.MENU_KV) return jsonNoStore({ error: 'unavailable' }, 503);
 
   const id = typeof params?.id === 'string' ? params.id : '';
-  let body = {};
+  let body;
   try {
     body = await readJsonBody(request, 1024);
   } catch {
@@ -86,20 +83,10 @@ export async function onRequest(context) {
     return jsonNoStore({ ok: false, error: 'invalid_entry' }, 400);
   }
 
-  const validation = validateMenu(next);
-  if (!validation.ok) return jsonNoStore({ ok: false, error: 'invalid_menu' }, 400);
-
-  const actor = await getActor(request, env);
-  try {
-    await snapshotMenu(env, { prevDoc: menu, incomingDoc: validation.value, source: 'manual', actor });
-  } catch {}
-  let written;
-  try {
-    written = await writeMenuVersioned(env, validation.value, baseVersion);
-  } catch {
-    return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
-  }
-  if (!written.ok) return jsonNoStore({ ok: false, error: 'conflict', version: written.current ? written.current.version : null }, 409);
+  const restored = await restoreValidatedMenu(env, request, {
+    doc: next, prevDoc: menu, source: 'manual', expectedVersion: baseVersion,
+  });
+  if (restored.res) return restored.res;
   await removeTrashEntry(env, id);
-  return jsonNoStore({ ok: true, version: written.doc.version });
+  return jsonNoStore({ ok: true, version: restored.doc.version });
 }

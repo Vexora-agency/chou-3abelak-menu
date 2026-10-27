@@ -115,6 +115,20 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
     else flash({ kind: 'ok', text: r.verificationSent ? t.sentConfirm(email.trim()) : t.saved });
   };
 
+  const resend = async () => {
+    setBusy('resend');
+    await onResendVerification();
+    setBusy(null);
+    flash({ kind: 'ok', text: t.sentConfirm(settings.email) });
+  };
+
+  const sendTest = async () => {
+    setBusy('test');
+    const r = await onSendTest();
+    setBusy(null);
+    flash(r.ok ? { kind: 'ok', text: t.testSent } : { kind: 'err', text: 'Error' });
+  };
+
   const status = !settings.email ? 'none' : settings.verified ? 'verified' : 'pending';
   const shown = reports.slice(0, limit);
 
@@ -150,7 +164,7 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
             </div>
             {showErr ? <p className="mt-1.5 text-xs text-red-400">{t.invalid}</p> : <p className="mt-1.5 text-[11px] text-neutral-500">{t.emailHint}</p>}
             {status === 'pending' && !dirty && (
-              <button type="button" disabled={busy === 'resend'} onClick={async () => { setBusy('resend'); await onResendVerification(); setBusy(null); flash({ kind: 'ok', text: t.sentConfirm(settings.email) }); }}
+              <button type="button" disabled={busy === 'resend'} onClick={() => void resend()}
                 className="mt-2 text-xs font-bold text-[#FFC400] hover:underline underline-offset-4">{t.resend}</button>
             )}
           </div>
@@ -171,12 +185,12 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
           <p className="flex items-start gap-2 text-xs text-neutral-400"><CalendarClock size={15} className="mt-px shrink-0 text-[#FFC400]" />{nextInfo}</p>
 
           <div className="flex flex-wrap gap-2.5">
-            <button type="button" onClick={save} disabled={!dirty || busy === 'save'}
+            <button type="button" onClick={() => void save()} disabled={!dirty || busy === 'save'}
               className="btn-tactile h-11 px-5 rounded-full bg-[#FFC400] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
               {busy === 'save' ? <><Loader2 size={16} className="animate-spin" />{t.saving}</> : <><Check size={16} strokeWidth={3} />{t.save}</>}
             </button>
             <button type="button" disabled={status !== 'verified' || dirty || busy === 'test'}
-              onClick={async () => { setBusy('test'); const r = await onSendTest(); setBusy(null); flash(r.ok ? { kind: 'ok', text: t.testSent } : { kind: 'err', text: 'Error' }); }}
+              onClick={() => void sendTest()}
               className="btn-tactile h-11 px-5 rounded-full border border-neutral-700 text-neutral-200 text-sm font-bold inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
               {busy === 'test' ? <><Loader2 size={16} className="animate-spin" />{t.testing}</> : <><Send size={15} className="text-[#FFC400]" />{t.test}</>}
             </button>

@@ -81,10 +81,34 @@ export interface Category {
   visible: boolean;
   /** How its items render in the menu: cards grid, text-first list or compact rows. */
   layout?: 'cards' | 'list' | 'compact';
+  /** Watermark for cards: 'brand' (pan mark), a glyph key
+      (pizza/cup/coffee/cake/croissant/salad/sandwich/utensils),
+      'custom' (uses iconUrl), or 'none'. Undefined = none (clean default,
+      same as the original cards). */
+  icon?: string;
+  /** Custom PNG watermark (data URL, ≤ ~40 KB after 256px resize).
+      Used only when icon === 'custom'. */
+  iconUrl?: string;
+  /** Watermark style for description-less cards: single 'corner' mark
+      (default), centered 'center' emblem, tiled 'pattern', or full-bleed
+      'cover'. */
+  iconStyle?: 'corner' | 'center' | 'pattern' | 'cover';
+  /** Watermark opacity percent (5..60, default 18). */
+  iconOpacity?: number;
+  /** Watermark size percent (25..200, default 100). */
+  iconScale?: number;
+  /** Watermark rotation degrees (-180..180, default -12). */
+  iconRotate?: number;
+  /** Watermark anchor for single-mark styles, 0..100 percent. */
+  iconX?: number;
+  /** Watermark anchor for single-mark styles, 0..100 percent. */
+  iconY?: number;
 }
 
-export interface MenuSettings {
-  name: { en: string; ar: string };
+/** Social platforms shown in "Connect with Us" (admin-reorderable). */
+export type SocialPlatform = 'instagram' | 'facebook' | 'whatsapp';
+
+export interface MenuSettings {  name: { en: string; ar: string };
   tagline: { en: string; ar: string };
   logoText: string;
   phone: string;
@@ -100,13 +124,15 @@ export interface MenuSettings {
   social: {
     instagram?: string;
     facebook?: string;
-    tiktok?: string;
+    whatsapp?: string;
   };
   socialEnabled: {
     instagram: boolean;
     facebook: boolean;
-    tiktok: boolean;
+    whatsapp: boolean;
   };
+  /** Display order of the social platforms (admin-reorderable). */
+  socialOrder: SocialPlatform[];
   currency: { en: string; ar: string };
   about: { en: string; ar: string };
   defaultTheme: 'dark' | 'light';
@@ -133,6 +159,10 @@ export interface MenuSettings {
     text: { en: string; ar: string };
     startsAt: string | null;
     expiresAt: string | null;
+    /** Ticker motion: true = scrolling marquee (default), false = static centered text. */
+    scroll?: boolean;
+    /** Marquee speed 1 (slow) .. 10 (fast). Default 5. */
+    speed?: number;
   };
   privacy: {
     /** Owner-written extra notes shown on the privacy page. */
@@ -184,12 +214,6 @@ export interface ResolvedCartLine {
   quantity: number;
   unit: number;
   total: number;
-}
-
-/** @deprecated Old cart shape (item id -> quantity). Migrated on load. */
-export interface CartItem {
-  id: string;
-  quantity: number;
 }
 
 export interface CustomerDetails {

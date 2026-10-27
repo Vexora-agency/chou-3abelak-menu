@@ -32,7 +32,7 @@ export async function onRequest(context) {
   const token = url.searchParams.get('token') || '';
   if (!/^[0-9a-fA-F]{32,128}$/.test(token) || !env.ORDERS_DB) return page(false);
 
-  let row = null;
+  let row;
   try {
     row = await env.ORDERS_DB.prepare('SELECT * FROM report_settings WHERE id = 1').first();
   } catch {
@@ -41,7 +41,7 @@ export async function onRequest(context) {
   if (!row || !row.verify_token_hash) return page(false);
   if (row.verify_expires_at && String(row.verify_expires_at) < new Date().toISOString()) return page(false);
 
-  let presented = '';
+  let presented;
   try {
     presented = await sha256Hex(token.toLowerCase());
   } catch {

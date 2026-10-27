@@ -28,8 +28,8 @@ function checkOrigin(request) {
   }
   if (!origin) return false;
   const sameHost = (h) => h === 'localhost' || h === '127.0.0.1';
-  let originHost = '';
-  let reqHost = '';
+  let originHost;
+  let reqHost;
   try {
     originHost = new URL(origin).hostname;
     reqHost = new URL(reqOrigin).hostname;

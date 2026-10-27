@@ -24,8 +24,9 @@ const DEFAULT_EMPTY_MENU = {
     closeTime: '00:00',
     workingDays: ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'],
     timezone: 'Asia/Beirut',
-    social: { instagram: '', facebook: '', tiktok: '' },
-    socialEnabled: { instagram: true, facebook: true, tiktok: true },
+    social: { instagram: '', facebook: '', whatsapp: '' },
+    socialEnabled: { instagram: true, facebook: true, whatsapp: true },
+    socialOrder: ['instagram', 'facebook', 'whatsapp'],
     about: { en: '', ar: '' },
     currency: { en: 'LBP', ar: 'ل.ل' },
     defaultTheme: 'dark',
@@ -97,7 +98,7 @@ export async function onRequest(context) {
       });
     }
 
-    let rawBody = '';
+    let rawBody;
     try {
       rawBody = await request.text();
     } catch {
@@ -114,7 +115,7 @@ export async function onRequest(context) {
       });
     }
 
-    let parsed = null;
+    let parsed;
     try {
       parsed = JSON.parse(rawBody);
     } catch {

@@ -72,6 +72,28 @@ export function zonedTimeToUTC(
   return new Date(guess).toISOString();
 }
 
+/**
+ * Format a UTC ISO instant as "YYYY-MM-DDTHH:mm" wall time in the DEVICE
+ * timezone. Used for admin schedule pickers so the admin always sees and
+ * edits in their own clock. Storage stays UTC (server-compatible).
+ */
+export function toDatetimeLocalDeviceValue(iso: string): string {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return '';
+  const d = new Date(t);
+  const p = (n: number): string => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/**
+ * "YYYY-MM-DDTHH:mm" device-wall parts -> UTC ISO instant. The engine
+ * resolves the parts in the device timezone (same behavior as every
+ * native date picker on the web).
+ */
+export function deviceWallPartsToUTC(p: { y: number; mo: number; d: number; h: number; mi: number }): string {
+  return new Date(p.y, p.mo - 1, p.d, p.h, p.mi, 0).toISOString();
+}
+
 /** Parse a "YYYY-MM-DDTHH:mm" datetime-local value into parts (or null). */
 export function parseDatetimeLocal(v: string): { y: number; mo: number; d: number; h: number; mi: number } | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(typeof v === 'string' ? v : '');

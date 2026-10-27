@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, ArrowRight, ArrowLeft, Trash2, PauseCircle, MoonStar } from 'lucide-react';
-import { formatPrice } from '../utils/menuHelpers';
-import type { OrderingStatus } from '../utils/status';
+import { formatPrice } from '@/src/utils/pricing';
+import type { OrderingStatus } from '@/src/utils/status';
 
 interface CartBarProps {
   totalCount: number;

@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { MenuData, MenuItem } from '../types/menu';
+import { MenuData, MenuItem } from '@/src/types/menu';
 import { Plus } from 'lucide-react';
-import { pickLangText } from '../utils/menuHelpers';
-import { priceLabel, effectiveBadges } from '../utils/pricing';
+import { pickLangText } from '@/src/utils/menuHelpers';
+import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
 
 interface FeaturedCarouselProps {
   items: MenuItem[];
@@ -15,6 +15,8 @@ interface FeaturedCarouselProps {
   darkMode: boolean;
   autoplay: boolean;
   autoplayInterval: number;
+  /** Force the mobile slider layout even on wide screens (admin live preview). */
+  forceSlider?: boolean;
 }
 
 export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
@@ -27,6 +29,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   darkMode,
   autoplay,
   autoplayInterval,
+  forceSlider = false,
 }) => {
   const isAr = lang === 'ar';
 
@@ -42,11 +45,8 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   const touchX = useRef<number | null>(null);
   const count = items.length;
 
-  useEffect(() => {
-    indexRef.current = 0;
-    setIndex(0);
-  }, [count]);
-
+  // Fresh mount per item list (parent keys by item ids), so index/ref
+  // always start at 0 — no reset effect needed.
   useEffect(() => {
     if (!marqueeOn || count <= 1) return;
     const id = window.setInterval(() => {
@@ -129,7 +129,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-40px' }}
         transition={{ duration: 0.55, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
-        className={`group relative flex-shrink-0 w-full md:w-auto h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden cursor-pointer card-lift shadow-md border ${
+        className={`group relative flex-shrink-0 w-full ${forceSlider ? '' : 'md:w-auto'} h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden cursor-pointer card-lift shadow-md border ${
           isYellowCard
             ? 'bg-[#FFC400] text-[#0A0A0A] border-[#FFC400]'
             : darkMode
@@ -228,14 +228,14 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
       </div>
 
       {/* One-card slider on mobile (smooth transform slide + dots), static grid on desktop */}
-      <div className="overflow-hidden md:overflow-visible">
+      <div className={`overflow-hidden ${forceSlider ? '' : 'md:overflow-visible'}`}>
         <div
           onMouseEnter={pause}
           onMouseLeave={resumeSoon}
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
           onPointerDown={pause}
-          className={`slider-track flex md:grid md:grid-cols-3 gap-0 md:gap-4 ${
+          className={`slider-track flex gap-0 ${forceSlider ? '' : 'md:grid md:grid-cols-3 md:gap-4'} ${
             instant ? 'slider-track-instant' : ''
           }`}
           style={{ '--sx': isAr ? `${index * 100}%` : `-${index * 100}%` } as React.CSSProperties}
@@ -245,7 +245,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
       </div>
       {/* Dots */}
       {marqueeOn && items.length > 1 && (
-        <div className="flex md:hidden justify-center items-center gap-1.5 mt-1" role="tablist" aria-label={isAr ? 'شرائح المميز' : 'Featured slides'}>
+        <div className={`flex justify-center items-center gap-1.5 mt-1 ${forceSlider ? '' : 'md:hidden'}`} role="tablist" aria-label={isAr ? 'شرائح المميز' : 'Featured slides'}>
           {items.map((item, idx) => (
             <button
               key={item.id}

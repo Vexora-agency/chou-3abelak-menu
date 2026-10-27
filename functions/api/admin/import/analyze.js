@@ -16,7 +16,6 @@ import {
   IMPORT_KEY,
   applyCSVToMenu,
   assertSafeJSON,
-  parseCSV,
   verifyPayload,
 } from '../../../_shared/versions.js';
 
@@ -76,7 +75,7 @@ export async function onRequest(context) {
   const wantCsv = contentType.includes('text/csv');
   if (!wantJson && !wantCsv) return jsonNoStore({ error: 'bad_request', message: 'Content-Type must be application/json or text/csv' }, 400);
 
-  let raw = '';
+  let raw;
   try {
     raw = await request.text();
   } catch {
@@ -91,10 +90,10 @@ export async function onRequest(context) {
   if (!current) return jsonNoStore({ error: 'unavailable' }, 503);
 
   let kind;
-  let doc = null;
+  let doc;
   let csvText = null;
   let csvStats = null;
-  let signed = false;
+  let signed;
   let fileName = url.searchParams.get('name') || (wantJson ? 'backup.json' : 'menu.csv');
   fileName = fileName.slice(0, 120);
   const warnings = [];

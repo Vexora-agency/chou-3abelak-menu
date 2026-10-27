@@ -1,41 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { motion, useReducedMotion, AnimatePresence } from 'motion/react';
-import { X, Megaphone } from 'lucide-react';
-import type { MenuSettings } from '../types/menu';
-import { serverNow } from '../utils/serverTime';
+import type { MenuSettings } from '@/src/types/menu';
+import { serverNow } from '@/src/utils/serverTime';
+import { annScroll, annSpeed, announcementStatus } from '@/src/utils/announcement';
+import { useTickerLoop } from '@/src/hooks/useTickerLoop';
 
 interface AnnouncementBannerProps {
   settings: MenuSettings;
   lang: 'en' | 'ar';
 }
 
-/** djb2 hash for the dismissal key (text + expiry => changed text reappears). */
-function hashKey(s: string): string {
-  let h = 5381;
-  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
-  return `ann-dismiss-${(h >>> 0).toString(36)}`;
-}
-
-function isVisible(ann: MenuSettings['announcement'], lang: 'en' | 'ar', now: number): string {
-  if (!ann || !ann.enabled) return '';
-  const text = (lang === 'ar' ? ann.text.ar : ann.text.en) || (lang === 'ar' ? ann.text.en : ann.text.ar) || '';
-  if (!text.trim()) return '';
-  if (ann.startsAt) {
-    const t = Date.parse(ann.startsAt);
-    if (!Number.isFinite(t) || now < t) return '';
-  }
-  if (ann.expiresAt) {
-    const t = Date.parse(ann.expiresAt);
-    if (!Number.isFinite(t) || now >= t) return '';
-  }
-  return text;
-}
-
 export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings, lang }) => {
   const isAr = lang === 'ar';
   const reduce = useReducedMotion();
   const [, setTick] = useState(0);
-  const [dismissed, setDismissed] = useState<string | null>(null);
 
   // Re-evaluate every 60 s so the strip disappears by itself at expiry.
   useEffect(() => {
@@ -43,21 +21,39 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
     return () => window.clearInterval(id);
   }, []);
 
-  const text = isVisible(settings.announcement, lang, serverNow());
-  const key = text ? hashKey(`${text}|${settings.announcement.expiresAt || ''}`) : '';
-  let stored = false;
-  try {
-    stored = !!key && window.sessionStorage.getItem(key) === '1';
-  } catch {}
-  const show = !!text && !stored && dismissed !== key;
+  // NOTE: the banner used to hide on scroll-down via a height animation.
+  // Collapsing a sticky bar changes the document height, which moves the
+  // scroll position, which re-triggered the listener — a show/hide feedback
+  // loop (visible flicker). The bar now stays sticky-visible whenever the
+  // announcement is live: no scroll listener, no layout shift, no flicker.
+  const { status, text } = announcementStatus(settings.announcement, lang, serverNow());
+  const show = status === 'visible';
   const label = isAr ? 'إعلان' : 'Announcement';
+  // Owner decision: the ticker ALWAYS scrolls when enabled — even when the
+  // device requests reduced motion. (Hovering pauses it.) Entrance height
+  // animation below still respects the OS setting.
+  const marquee = show && annScroll(settings.announcement);
+  const speed = annSpeed(settings.announcement);
 
-  const dismiss = () => {
-    try {
-      if (key) window.sessionStorage.setItem(key, '1');
-    } catch {}
-    setDismissed(key);
-  };
+  // Copies per half + loop duration, measured so the reading speed stays
+  // constant: each half holds ≥1 viewport width, the track holds 2 halves
+  // and loops 0 → -50% seamlessly.
+  const { boxRef, half, duration } = useTickerLoop(marquee, text, speed);
+
+  const renderUnit = (key: number, hidden?: boolean) => (
+    <span
+      key={key}
+      aria-hidden={hidden || undefined}
+      className="ann-unit flex shrink-0 items-center"
+    >
+      <span dir={isAr ? 'rtl' : 'ltr'} className="text-[13px] font-extrabold tracking-wide leading-snug whitespace-nowrap">
+        {text}
+      </span>
+      <span aria-hidden="true" className="mx-6 text-[10px] opacity-50 select-none">
+        ✦
+      </span>
+    </span>
+  );
 
   return (
     <AnimatePresence initial={false}>
@@ -69,20 +65,33 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
           animate={{ height: 'auto', opacity: 1 }}
           exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="overflow-hidden bg-[#FFC400] text-[#0A0A0A] sticky top-0 z-50"
+          className="overflow-hidden bg-[#FFC400] text-[#0A0A0A] sticky top-0 z-50 shadow-[0_1px_0_rgba(0,0,0,0.12)]"
         >
-          <div className="flex items-center gap-2 px-3 py-2 max-w-5xl mx-auto">
-            <Megaphone size={15} className="shrink-0" aria-hidden="true" />
-            <p className="flex-1 min-w-0 text-xs font-bold leading-snug line-clamp-2">{text}</p>
-            <button
-              type="button"
-              onClick={dismiss}
-              aria-label={isAr ? 'إغلاق الإعلان' : 'Dismiss announcement'}
-              className="shrink-0 w-11 h-11 -my-2 flex items-center justify-center rounded-full hover:bg-black/10 active:bg-black/20 transition-colors"
+          {marquee ? (
+            <div
+              ref={boxRef}
+              className="ann-mask overflow-hidden py-1.5 [mask-image:linear-gradient(to_right,transparent,black_28px,black_calc(100%-28px),transparent)]"
             >
-              <X size={16} strokeWidth={2.5} />
-            </button>
-          </div>
+              {/* Single readable copy for assistive tech; the loop is decorative. */}
+              <p className="sr-only">{text}</p>
+              <div
+                aria-hidden="true"
+                dir="ltr"
+                className="ann-track"
+                style={{ ['--ann-duration' as string]: `${Math.max(3, duration)}s` }}
+              >
+                {Array.from({ length: half * 2 }, (_, i) =>
+                  renderUnit(i, true)
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="px-3 py-1.5 max-w-5xl mx-auto">
+              <p dir={isAr ? 'rtl' : 'ltr'} className="text-center text-[13px] font-extrabold tracking-wide leading-snug line-clamp-2">
+                {text}
+              </p>
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

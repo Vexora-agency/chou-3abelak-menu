@@ -71,7 +71,7 @@ export async function onRequest(context) {
   } catch {}
   if (!current) return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
 
-  let merged = null;
+  let merged;
   try {
     if (staged.kind === 'csv') {
       const applied = applyCSVToMenu(current, staged.csvText || '');

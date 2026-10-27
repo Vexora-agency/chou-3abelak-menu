@@ -328,8 +328,10 @@ Production env (in addition to the report vars): `BACKUP_SECRET` (Secret,
   disclosed on the privacy page. Trade-off accepted by owner: map usage
   contacts OSM servers (see privacy page).
 - **Announcement banner:** `settings.announcement` (140 chars, optional
-  business-timezone window, max 365 days). Dismissal remembered per text in
-  sessionStorage; motion height/opacity, reduced-motion respected.
+  business-timezone window, max 365 days). Scrolling ticker with owner
+  speed (1–10) + static mode; constant reading speed, pause on hover,
+  hide-on-scroll. Ticker loop runs even under reduced motion (owner
+  decision); entrance motion still respects it.
 - **Privacy:** public page at `/privacy` (`public/privacy.html`, EN/AR
   toggle, textContent only) fed by `/api/menu` + `/api/privacy-info`
   (retention numbers never hardcoded). Owner extras + review tick in

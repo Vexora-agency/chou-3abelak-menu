@@ -149,7 +149,7 @@ export function getOrderingState(settings, nowMs = Date.now()) {
   const openHM = parseHM(settings.openTime, { h: 12, mi: 0 });
   const closeHM = parseHM(settings.closeTime, { h: 0, mi: 0 });
 
-  let openNow = true;
+  let openNow;
   try {
     if (mode === 'open') {
       openNow = true;

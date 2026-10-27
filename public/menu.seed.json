@@ -1,7 +1,7 @@
 {
   "version": 2,
   "schemaVersion": 2,
-  "updatedAt": "2026-10-24T17:31:03Z",
+  "updatedAt": "2026-10-27T11:09:43.602Z",
   "settings": {
     "name": {
       "en": "Chou 3abelak",
@@ -114,11 +114,60 @@
       ],
       "minOrder": 350000,
       "deliveryFee": 100000,
+      "minOrderEnabled": true,
+      "deliveryFeeEnabled": true,
       "note": {
         "en": "Prices are in LBP and include all taxes. Delivery in Beirut within 30-45 mins.",
         "ar": "الأسعار بالليرة اللبنانية وتشمل الضريبة. التوصيل في بيروت خلال 30-45 دقيقة."
-      }
-    }
+      },
+      "paused": false,
+      "pausedUntil": null,
+      "pausedMessage": {
+        "en": "",
+        "ar": ""
+      },
+      "acceptWhenClosed": false
+    },
+    "announcement": {
+      "enabled": false,
+      "text": {
+        "en": "",
+        "ar": ""
+      },
+      "startsAt": null,
+      "expiresAt": null,
+      "scroll": true,
+      "speed": 5
+    },
+    "privacy": {
+      "extra": {
+        "en": "",
+        "ar": ""
+      },
+      "reviewed": false
+    },
+    "workingDays": [
+      "sat",
+      "sun",
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri"
+    ],
+    "socialEnabled": {
+      "instagram": true,
+      "facebook": true,
+      "tiktok": true
+    },
+    "about": {
+      "en": "",
+      "ar": ""
+    },
+    "defaultTheme": "dark",
+    "defaultLang": "en",
+    "featuredAutoplay": true,
+    "featuredAutoplayInterval": 4
   },
   "categories": [
     {
@@ -127,7 +176,8 @@
         "en": "Manakish",
         "ar": "مناقيش"
       },
-      "visible": true
+      "visible": true,
+      "layout": "list"
     },
     {
       "id": "pastries",
@@ -135,7 +185,8 @@
         "en": "Pastries (by the dozen)",
         "ar": "معجنات"
       },
-      "visible": true
+      "visible": true,
+      "layout": "cards"
     },
     {
       "id": "pizza",
@@ -143,7 +194,8 @@
         "en": "Pizza",
         "ar": "بيتزا"
       },
-      "visible": true
+      "visible": true,
+      "layout": "list"
     },
     {
       "id": "fatayer",
@@ -151,7 +203,8 @@
         "en": "Pies",
         "ar": "فطيرة"
       },
-      "visible": true
+      "visible": true,
+      "layout": "compact"
     },
     {
       "id": "drinks",
@@ -159,7 +212,8 @@
         "en": "Drinks",
         "ar": "مرطبات"
       },
-      "visible": true
+      "visible": true,
+      "layout": "compact"
     }
   ],
   "items": [

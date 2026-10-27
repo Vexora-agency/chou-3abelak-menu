@@ -1,0 +1,23 @@
+{
+  "$schema": "https://dependency-cruiser.js.org/schema.json",
+  "forbidden": [
+    {
+      "name": "no-circular",
+      "severity": "error",
+      "comment": "Circular dependencies are forbidden (project CODE LAW: no circular dependencies).",
+      "from": {},
+      "to": {
+        "circular": true
+      }
+    }
+  ],
+  "options": {
+    "tsConfig": {
+      "fileName": "tsconfig.json"
+    },
+    "enhancedResolveOptions": {
+      "exportsFields": ["exports"],
+      "conditionNames": ["import", "require", "node", "default"]
+    }
+  }
+}

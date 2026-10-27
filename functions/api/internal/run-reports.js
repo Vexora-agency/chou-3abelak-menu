@@ -191,7 +191,7 @@ export async function onRequest(context) {
   }
 
   // ---- (c) retention + history housekeeping ----
-  let retention = null;
+  let retention;
   try {
     retention = await runRetention(env);
   } catch {

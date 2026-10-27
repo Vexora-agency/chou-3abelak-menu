@@ -1,0 +1,54 @@
+export type LoginLang = 'en' | 'ar';
+
+export type ErrorKey = 'required' | 'invalid' | 'locked' | 'network';
+
+export const STR = {
+  en: {
+    back: 'Back to menu',
+    console: 'Admin console',
+    title: 'Welcome back',
+    subtitle: 'Sign in to manage your menu, prices and ordering settings.',
+    username: 'Email or username',
+    password: 'Password',
+    remember: 'Keep me signed in',
+    forgot: 'Forgot password?',
+    signIn: 'Sign in',
+    signingIn: 'Signing in…',
+    welcome: 'Welcome back',
+    opening: 'Opening your dashboard…',
+    secure: 'Protected area. Authorized staff only.',
+    caps: 'Caps Lock is on',
+    show: 'Show password',
+    hide: 'Hide password',
+    required: 'Please enter your email and password.',
+    invalid: 'Incorrect email or password. Please try again.',
+    locked: 'Too many attempts. Try again in {n} min.',
+    network: 'Connection problem. Check your internet and try again.',
+    switchTo: 'Switch to English',
+  },
+  ar: {
+    back: 'العودة إلى المنيو',
+    console: 'لوحة التحكم',
+    title: 'أهلاً بعودتك',
+    subtitle: 'سجّل الدخول لإدارة المنيو والأسعار وإعدادات الطلب.',
+    username: 'البريد الإلكتروني أو اسم المستخدم',
+    password: 'كلمة المرور',
+    remember: 'ابقني مسجّلاً',
+    forgot: 'نسيت كلمة المرور؟',
+    signIn: 'تسجيل الدخول',
+    signingIn: 'جارٍ تسجيل الدخول…',
+    welcome: 'أهلاً بعودتك',
+    opening: 'جارٍ فتح لوحة التحكم…',
+    secure: 'منطقة محمية. للموظفين المصرّح لهم فقط.',
+    caps: 'زر Caps Lock مفعّل',
+    show: 'إظهار كلمة المرور',
+    hide: 'إخفاء كلمة المرور',
+    required: 'يرجى إدخال البريد وكلمة المرور.',
+    invalid: 'البريد أو كلمة المرور غير صحيحة. حاول مرة أخرى.',
+    locked: 'محاولات كثيرة. حاول بعد {n} دقيقة.',
+    network: 'مشكلة في الاتصال. تحقق من الإنترنت وحاول مجدداً.',
+    switchTo: 'التبديل إلى العربية',
+  },
+} as const;
+
+export type LoginStrings = (typeof STR)[keyof typeof STR];

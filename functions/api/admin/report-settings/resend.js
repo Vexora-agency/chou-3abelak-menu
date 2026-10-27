@@ -3,7 +3,7 @@
  * to the currently saved (unverified) address. Rate limited: 5 per hour.
  */
 
-import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
+import { checkApiHeaders, jsonNoStore } from '../../../_shared/session.js';
 import { featureOffResponse, hasFeature } from '../../../_shared/plan.js';
 import {
   getReportSettings,

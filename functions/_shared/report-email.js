@@ -1,5 +1,6 @@
-// Monthly report email: pure function, no dependencies (works in Workers and Node).
+// Monthly report email: pure function, npm-dependency-free (works in Workers and Node).
 // renderMonthlyReportEmail(data, 'en' | 'ar') -> { subject, html, text }
+import { prevMonth } from './reports.js';
 
 const BLACK = '#0A0A0A', YELLOW = '#FFC400', GREY = '#5A5A5A', LIGHT = '#F6F6F6', LINE = '#E8E8E8', GREEN = '#1E9E52', RED = '#D93636';
 
@@ -40,7 +41,6 @@ const money = (n) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(n >= 10_000_00
 const locale = (l) => (l === 'ar' ? 'ar-u-nu-latn' : 'en-US');
 const monthLabel = (ym, l) => { const [y, m] = ym.split('-').map(Number); return new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString(locale(l), { month: 'long', year: 'numeric', timeZone: 'UTC' }); };
 const monthOnly = (ym, l) => { const [y, m] = ym.split('-').map(Number); return new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString(locale(l), { month: 'long', timeZone: 'UTC' }); };
-const prevMonth = (ym) => { const [y, m] = ym.split('-').map(Number); const d = new Date(Date.UTC(y, m - 2, 15)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
 const pct = (cur, prev) => (prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null);
 
 function delta(cur, prev, l, prevName) {

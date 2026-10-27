@@ -20,7 +20,7 @@ export async function onRequest(context) {
   if (month.toLowerCase().endsWith('.csv')) month = month.slice(0, -4);
   if (!isValidMonth(month)) return jsonNoStore({ error: 'bad_month' }, 400);
 
-  let got = null;
+  let got;
   try {
     got = await getMonthCSV(env, month);
   } catch {

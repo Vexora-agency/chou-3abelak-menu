@@ -82,7 +82,7 @@
   stores location (delivery only, 5-decimal) + phone_norm. Retention NULLs
   location too; report CSV never selects it.
 - Client: App holds ordering state (60 s refresh, menu fallback);
-  AnnouncementBanner (serverNow, sessionStorage dismiss); Header paused
+  AnnouncementBanner (serverNow, scrolling ticker + owner speed); Header paused
   pill; CartBar/cart status lines; Send gate (2.5 s check, fail-open) +
   403 handling; **in-cart map picker (Leaflet 1.9.4 + OSM tiles, lazy
   chunk, draggable pin, Nominatim reverse-fill on Confirm, empty address
@@ -90,11 +90,20 @@
   privacy page + README); pinned chip shows **haversine distance from the
   restaurant** (`menuHelpers`: haversineMeters/parseMapUrlCoords/
   formatDistance; "≈ X m/km from restaurant", fallback center =
-  restaurant coords) instead of ±accuracy; privacy notice + Footer link; `/privacy` via
+  restaurant coords) instead of ±accuracy; MenuList layouts (category.layout
+  cards/list/compact; manakish defaults list; list no-desc = single line;
+  cards = equal heights + watermark on ALL cards (frozen per-category
+  settings: icon/style/opacity/size/rotation/position, validated; adaptive
+  artwork gold-on-dark / black-on-light); per-section Display — manakish
+  list, pastries cards, pizza list, fatayer + drinks compact (long names
+  stay in list, short names in cards/compact so nothing truncates);
+  admin has Display pills only
+  (watermark studio + custom colors + undo/redo removed per owner);
+  admin upload ≤256px/≤~40KB); privacy notice + Footer link; `/privacy` via
   pretty URL (dev serves privacy.html at /privacy; `_redirects` rule kept
   for production safety).
 - Admin: ordering pause/message/acceptWhenClosed, announcement card (live
-  preview, TZ datetimes), privacy card (review tick), dashboard pause bar
+  ticker preview, motion + speed 1-10, TZ datetimes), privacy card (review tick), dashboard pause bar
   with countdown, Customers screen (password-gated actions).
 - Migration 0005 (location_lat/lng, phone_norm + index + backfill).
   Permissions-Policy geolocation=(self); CSP untouched.

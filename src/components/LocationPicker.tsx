@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type * as Leaflet from 'leaflet';
 import { Loader2, Navigation } from 'lucide-react';
+import { reverseGeocode, round5, useMidSplitLocationMap } from '@/src/hooks/useMidSplitLocationMap';
+import { LocationAddressPreview } from '@/src/components/location/LocationAddressPreview';
 
 interface LocationPickerProps {
   lang: 'en' | 'ar';
@@ -30,44 +32,6 @@ const STR = {
   },
 } as const;
 
-const round5 = (v: number) => Math.round(v * 1e5) / 1e5;
-
-/** Reverse-geocode via OpenStreetMap Nominatim (called only on Confirm). */
-async function reverseGeocode(lat: number, lng: number, lang: 'en' | 'ar'): Promise<string | null> {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 8000);
-  try {
-    // zoom=18 = building level (not street level).
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&accept-language=${lang === 'ar' ? 'ar' : 'en'}`;
-    const res = await fetch(url, { signal: ctrl.signal, headers: { Accept: 'application/json' } });
-    if (!res.ok) return null;
-    const data = await res.json().catch(() => null);
-    return formatNominatim(data);
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/** House number + road + district + city — the deliverable address. */
-function formatNominatim(data: unknown): string | null {
-  if (!data || typeof data !== 'object') return null;
-  const d = data as { address?: Record<string, string>; display_name?: string; name?: string };
-  const addr = d.address && typeof d.address === 'object' ? d.address : null;
-  if (addr) {
-    const road = [addr.house_number, addr.road || addr.street || addr.pedestrian].filter((p) => typeof p === 'string' && p.trim()).join(' ');
-    const district = addr.suburb || addr.neighbourhood || addr.quarter || addr.city_district || '';
-    const city = addr.city || addr.town || addr.village || addr.state || '';
-    const full = [road, district, city].filter((p) => p && p.trim()).join(', ');
-    if (full) return full;
-  }
-  if (typeof d.display_name === 'string' && d.display_name.trim()) {
-    return d.display_name.split(',').slice(0, 4).join(',').trim() || null;
-  }
-  return null;
-}
-
 export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, initial, fallback, onPick, onClose }) => {
   const t = STR[lang];
   const isAr = lang === 'ar';
@@ -84,43 +48,12 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   const [point, setPoint] = useState<{ lat: number; lng: number; accuracy: number } | null>(
     initial ? { ...initial, accuracy: 100 } : null
   );
-  // Live address preview: re-looked-up (debounced) on every pin move so the
-  // customer verifies the exact text BEFORE confirming.
-  const [addrPreview, setAddrPreview] = useState<string | null>(null);
-  const [addrLoading, setAddrLoading] = useState(false);
-  const previewKey = useRef('');
-  useEffect(() => {
-    if (!point || !ready) {
-      return;
-    }
-    const key = `${point.lat},${point.lng}`;
-    setAddrLoading(true);
-    let alive = true;
-    const timer = window.setTimeout(async () => {
-      try {
-        const addr = await reverseGeocode(point.lat, point.lng, lang);
-        if (!alive) return;
-        previewKey.current = key;
-        setAddrPreview(addr);
-      } catch {
-        if (!alive) return;
-        previewKey.current = key;
-        setAddrPreview(null);
-      } finally {
-        if (alive) setAddrLoading(false);
-      }
-    }, 700);
-    return () => {
-      alive = false;
-      window.clearTimeout(timer);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [point, ready]);
+  const { addrPreview, addrLoading, previewKey } = useMidSplitLocationMap(point, ready, lang);
 
   // Load Leaflet lazily (only when the picker opens) and build the map.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const [L] = await Promise.all([import('leaflet'), import('leaflet/dist/leaflet.css')]);
         if (cancelled || !mapRef.current) return;
@@ -195,8 +128,9 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     );
   };
 
-  // Auto-detect once when the picker opens.
+  // Auto-detect once when the picker opens (fetch trigger).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch trigger, see above
     detect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -259,33 +193,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         <p className="text-[11px] font-bold text-amber-500">{t.mapFail}</p>
       )}
 
-      {/* Live address preview: exactly what Confirm will write. Move the
-          pin until this reads correctly — this is a real order. */}
-      <div className={`rounded-xl border p-3 min-h-[58px] ${darkMode ? 'border-neutral-700 bg-black/40' : 'border-neutral-300 bg-neutral-100'}`}>
-        {!point ? (
-          <p className={`text-xs ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
-            {isAr ? 'حرّك الدبوس أو اضغط على الخريطة…' : 'Move the pin or tap the map…'}
-          </p>
-        ) : addrLoading ? (
-          <p className={`text-xs font-bold animate-pulse ${darkMode ? 'text-neutral-300' : 'text-neutral-700'}`}>
-            {isAr ? 'جارٍ جلب العنوان…' : 'Fetching address…'}
-          </p>
-        ) : addrPreview ? (
-          <>
-            <p className={`text-[13px] font-black leading-snug ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`} dir="auto">{addrPreview}</p>
-            <p className="text-[11px] tabular-nums text-neutral-500 mt-0.5" dir="ltr">
-              {point.lat}, {point.lng} · ±{Math.round(point.accuracy)}m
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="text-[13px] font-black tabular-nums" dir="ltr">{point.lat}, {point.lng}</p>
-            <p className="text-[11px] font-bold text-amber-500 mt-0.5">
-              {isAr ? 'لا يوجد عنوان مسجل هنا — حرّك الدبوس لأقرب شارع أو أكّد بالإحداثيات.' : 'No registered address here — move the pin to the nearest street or confirm with coordinates.'}
-            </p>
-          </>
-        )}
-      </div>
+      <LocationAddressPreview point={point} addrLoading={addrLoading} addrPreview={addrPreview} darkMode={darkMode} isAr={isAr} />
       {addrWarn && (
         <p className="text-[11px] font-bold text-amber-500">{t.addrFail}</p>
       )}

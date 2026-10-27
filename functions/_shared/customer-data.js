@@ -80,11 +80,6 @@ export async function auditCustomerAction(env, { who, action, mode, count, phone
   }
 }
 
-export function escapeCSV(v) {
-  const s = v === null || v === undefined ? '' : String(v);
-  return /["\n\r,]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-
 export const CONFIRM_WORDS = ['DELETE', 'حذف'];
 
 export function confirmWordOk(s) {

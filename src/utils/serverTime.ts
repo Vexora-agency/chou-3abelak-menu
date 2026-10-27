@@ -6,7 +6,6 @@
  */
 
 let offsetMs = 0;
-let learned = false;
 
 /** Feed a Date response header value (or null when absent/unparseable). */
 export function setServerOffsetFromDateHeader(dateHeader: string | null): void {
@@ -17,14 +16,9 @@ export function setServerOffsetFromDateHeader(dateHeader: string | null): void {
   const off = t - Date.now();
   if (Math.abs(off) > 86400000) return;
   offsetMs = off;
-  learned = true;
 }
 
 /** Now, corrected to server time when a header was seen. */
 export function serverNow(): number {
   return Date.now() + offsetMs;
-}
-
-export function hasServerTime(): boolean {
-  return learned;
 }

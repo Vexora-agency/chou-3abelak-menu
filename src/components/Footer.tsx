@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { MenuData } from '../types/menu';
+import { MenuData } from '@/src/types/menu';
 import { Clock, MapPin, Phone, ArrowUp, Instagram, Facebook, MessageCircle, Shield } from 'lucide-react';
-import { sanitizeUrl, buildMapUrl, pickLangText } from '../utils/menuHelpers';
+import { sanitizeUrl, buildMapUrl } from '@/src/utils/menuHelpers';
+import { aboutOrDefault, socialOrderOrDefault } from '@/src/utils/settingsDefaults';
+import type { SocialPlatform } from '@/src/types/menu';
 
 interface FooterProps {
   menu: MenuData;
@@ -25,11 +27,31 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const phoneLink = `tel:${menu.settings.phone || '+96170123456'}`;
-  const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
-  const whatsappLink = `https://wa.me/${whatsappNum || '96170123456'}`;
+  const phoneDigits = (menu.settings.phone || '').replace(/[^0-9]/g, '');
+  const phoneLink = phoneDigits ? `tel:+${phoneDigits}` : 'tel:+96170123456';
   const mapLink = buildMapUrl(menu.settings);
-  const socialOn = menu.settings.socialEnabled || { instagram: true, facebook: true, tiktok: true };
+  const socialOn = menu.settings.socialEnabled || { instagram: true, facebook: true, whatsapp: true };
+  const socialOrder = socialOrderOrDefault(menu.settings.socialOrder);
+  const waDigits = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
+
+  const platformMeta: Record<SocialPlatform, { label: string; Icon: typeof Instagram }> = {
+    instagram: { label: 'Instagram', Icon: Instagram },
+    facebook: { label: 'Facebook', Icon: Facebook },
+    whatsapp: { label: 'WhatsApp', Icon: MessageCircle },
+  };
+
+  /** Resolved link for a platform, or null when nothing to show. */
+  const socialUrl = (key: SocialPlatform): string | null => {
+    if (key === 'whatsapp') {
+      const custom = (menu.settings.social?.whatsapp || '').trim();
+      if (custom) return sanitizeUrl(custom) === '#' ? null : sanitizeUrl(custom);
+      return waDigits ? `https://wa.me/${waDigits}` : null;
+    }
+    const raw = (menu.settings.social?.[key] || '').trim();
+    if (!raw) return null;
+    const url = sanitizeUrl(raw);
+    return url === '#' ? null : url;
+  };
 
   return (
     <footer className="relative isolate mt-12 bg-[#0A0A0A] text-white rounded-t-[32px] md:rounded-t-[44px] pt-11 px-5 sm:px-8 md:px-12 pb-8 shadow-[0_-24px_60px_-24px_rgba(0,0,0,0.6)]">
@@ -60,7 +82,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
               />
             </div>
             <p className="text-xs text-neutral-400 font-medium leading-relaxed max-w-xs">
-              {pickLangText(menu.settings.about, lang)}
+              {aboutOrDefault(menu.settings.about, lang)}
             </p>
           </div>
 
@@ -100,41 +122,27 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
               {isAr ? 'تواصل معنا' : 'Connect with Us'}
             </h3>
 
-            {/* Social Media Links */}
+            {/* Social Media Links (admin-ordered) */}
             <div className="flex gap-2.5">
-              {socialOn.instagram && menu.settings.social.instagram && (
-                <a
-                  href={sanitizeUrl(menu.settings.social.instagram)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center hover:scale-105 transition-transform"
-                  aria-label="Instagram"
-                >
-                  <Instagram size={18} />
-                </a>
-              )}
-
-              {socialOn.facebook && menu.settings.social.facebook && (
-                <a
-                  href={sanitizeUrl(menu.settings.social.facebook)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center hover:scale-105 transition-transform"
-                  aria-label="Facebook"
-                >
-                  <Facebook size={18} />
-                </a>
-              )}
-
-              <a
-                href={whatsappLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center hover:scale-105 transition-transform"
-                aria-label="WhatsApp"
-              >
-                <MessageCircle size={18} />
-              </a>
+              {socialOrder.map((key) => {
+                const meta = platformMeta[key];
+                if (!meta || !socialOn[key]) return null;
+                const url = socialUrl(key);
+                if (!url) return null;
+                const { label, Icon } = meta;
+                return (
+                  <a
+                    key={key}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center hover:scale-105 transition-transform"
+                    aria-label={label}
+                  >
+                    <Icon size={18} />
+                  </a>
+                );
+              })}
             </div>
 
             {/* Get Directions Button */}

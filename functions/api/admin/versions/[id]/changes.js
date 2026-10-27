@@ -25,7 +25,7 @@ export async function onRequest(context) {
 
   const url = new URL(request.url);
   const lang = url.searchParams.get('lang') === 'ar' ? 'ar' : 'en';
-  let changes = [];
+  let changes;
   try {
     changes = diffMenus(stored.menu, current, lang);
   } catch {

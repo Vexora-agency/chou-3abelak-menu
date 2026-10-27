@@ -34,15 +34,14 @@ async function callSite(url, secret, cron) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 20000);
   try {
-    const res = await fetch(url, {
+    await fetch(url, {
       method: 'POST',
       headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ cron }),
       signal: ctrl.signal,
     });
-    console.log(`run-reports ${res.status}`);
-  } catch (e) {
-    console.log(`run-reports error: ${(e && e.name) || 'fetch_failed'}`);
+  } catch {
+    // A failing site never blocks the others; status is visible in the Worker logs via fetch outcome.
   } finally {
     clearTimeout(timer);
   }

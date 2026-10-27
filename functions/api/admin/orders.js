@@ -34,8 +34,8 @@ export async function onRequest(context) {
   // / Last month all work). Falls back to the legacy days= window.
   const fromParam = url.searchParams.get('from');
   const toParam = url.searchParams.get('to');
-  let where = '';
-  let args = [];
+  let where;
+  let args;
   if (fromParam !== null || toParam !== null) {
     const from = parseISO(fromParam);
     const to = toParam === null ? new Date().toISOString() : parseISO(toParam);
@@ -51,7 +51,7 @@ export async function onRequest(context) {
     args = [new Date(Date.now() - days * 86400000).toISOString()];
   }
 
-  let rows = [];
+  let rows;
   try {
     const res = await db
       .prepare(`SELECT * FROM orders ${where} ORDER BY created_at DESC LIMIT ?${args.length + 1}`)

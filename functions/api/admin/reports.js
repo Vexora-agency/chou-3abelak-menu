@@ -33,7 +33,7 @@ export async function onRequest(context) {
   if (request.method !== 'GET') return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'GET' });
   if (!env.ORDERS_DB) return jsonNoStore({ error: 'unavailable' }, 503);
 
-  let stored = [];
+  let stored;
   try {
     const res = await env.ORDERS_DB.prepare(
       'SELECT month, summary_json, emailed_at, email_status FROM monthly_reports ORDER BY month DESC'

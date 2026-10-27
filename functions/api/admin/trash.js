@@ -52,7 +52,7 @@ export async function onRequest(context) {
   }
 
   const next = JSON.parse(JSON.stringify(menu));
-  let entry = null;
+  let entry;
   if (kind === 'item') {
     const idx = next.items.findIndex((it) => it && it.id === id);
     if (idx < 0) return jsonNoStore({ ok: false, error: 'not_found' }, 404);

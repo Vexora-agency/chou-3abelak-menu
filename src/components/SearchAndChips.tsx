@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Search, X, Sparkles, Flame, Award } from 'lucide-react';
-import { Category } from '../types/menu';
+import { Category } from '@/src/types/menu';
 
 interface SearchAndChipsProps {
   searchQuery: string;

@@ -13,9 +13,9 @@ import {
   checkAdminPassword,
   confirmWordOk,
   digitsOnly,
-  escapeCSV,
   findMatches,
 } from '../../../_shared/customer-data.js';
+import { escapeCSV } from '../../../_shared/reports.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -41,7 +41,7 @@ export async function onRequest(context) {
   if (!(await checkAdminPassword(env, body.password))) return jsonNoStore({ ok: false, error: 'invalid_password' }, 403);
   if (!confirmWordOk(body.confirm)) return jsonNoStore({ ok: false, error: 'confirmation_required' }, 400);
 
-  let rows = [];
+  let rows;
   try {
     rows = await findMatches(env.ORDERS_DB, q);
   } catch {

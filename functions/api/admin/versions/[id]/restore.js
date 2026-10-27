@@ -4,9 +4,8 @@
  * document with version+1. Optional { expectedVersion } for concurrency.
  */
 
-import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../../_shared/session.js';
-import { validateMenu } from '../../../../_shared/validate.js';
-import { getActor, getVersionDoc, snapshotMenu, writeMenuVersioned } from '../../../../_shared/versions.js';
+import { checkApiHeaders, jsonNoStore } from '../../../../_shared/session.js';
+import { getVersionDoc, restoreValidatedMenu } from '../../../../_shared/versions.js';
 
 export async function onRequest(context) {
   const { request, env, params } = context;
@@ -31,25 +30,15 @@ export async function onRequest(context) {
   }
   const expectedVersion = typeof body.expectedVersion === 'number' ? body.expectedVersion : undefined;
 
-  const validation = validateMenu(stored.menu);
-  if (!validation.ok) return jsonNoStore({ ok: false, error: 'invalid_version' }, 400);
-
   let current = null;
   try {
     current = await env.MENU_KV.get('menu', { type: 'json' });
   } catch {}
   if (!current) return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
 
-  const actor = await getActor(request, env);
-  try {
-    await snapshotMenu(env, { prevDoc: current, incomingDoc: validation.value, source: 'restore', actor });
-  } catch {}
-  let written;
-  try {
-    written = await writeMenuVersioned(env, validation.value, expectedVersion);
-  } catch {
-    return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
-  }
-  if (!written.ok) return jsonNoStore({ ok: false, error: 'conflict', version: written.current ? written.current.version : null }, 409);
-  return jsonNoStore({ ok: true, version: written.doc.version });
+  const restored = await restoreValidatedMenu(env, request, {
+    doc: stored.menu, prevDoc: current, source: 'restore', expectedVersion, invalidError: 'invalid_version',
+  });
+  if (restored.res) return restored.res;
+  return jsonNoStore({ ok: true, version: restored.doc.version });
 }

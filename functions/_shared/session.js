@@ -95,7 +95,7 @@ async function derivePasswordKey(password, salt, iterations, hashLen) {
 export async function verifyLogin(username, password, expectedUsername, storedHash) {
   const userOk = safeCompareStrings(username, expectedUsername);
   const parsed = parsePasswordHash(storedHash);
-  let passOk = false;
+  let passOk;
   try {
     if (parsed) {
       const derived = await derivePasswordKey(password, parsed.salt, parsed.iterations, parsed.hash.length);
@@ -135,7 +135,7 @@ export async function createSessionToken(secretBytes, sub, maxAgeSec) {
   const now = Math.floor(Date.now() / 1000);
   const body = b64urlEncodeText(JSON.stringify({ sub, iat: now, exp: now + maxAgeSec }));
   const sigBytes = await hmacSha256(secretBytes, body);
-  let sig = '';
+  let sig;
   {
     let binary = '';
     for (let i = 0; i < sigBytes.length; i++) binary += String.fromCharCode(sigBytes[i]);
@@ -228,7 +228,7 @@ export function checkApiHeaders(request) {
   const origin = request.headers.get('Origin');
   let reqOrigin;
   let originHost = '';
-  let reqHost = '';
+  let reqHost;
   try {
     reqOrigin = new URL(request.url).origin;
     reqHost = new URL(request.url).hostname;
@@ -249,7 +249,7 @@ export function checkApiHeaders(request) {
 }
 
 export async function readJsonBody(request, maxBytes = MAX_BODY_BYTES) {
-  let raw = '';
+  let raw;
   try {
     raw = await request.text();
   } catch {

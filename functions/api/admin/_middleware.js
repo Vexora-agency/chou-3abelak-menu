@@ -125,7 +125,7 @@ export async function onRequest(context) {
     const res = await next();
     res.headers.set('Cache-Control', 'no-store');
     return res;
-  } catch (err) {
+  } catch {
     return new Response(JSON.stringify({ error: 'forbidden', message: 'Forbidden' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }

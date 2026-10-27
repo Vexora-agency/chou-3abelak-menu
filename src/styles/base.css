@@ -1,0 +1,40 @@
+:root {
+  --black: #0A0A0A;
+  --yellow: #FFC400;
+  --white: #FFFFFF;
+  --gray-card: #141414;
+  --gray-border: #262626;
+  --gray-muted: #8A8A8A;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+}
+
+html[dir="rtl"], [dir="rtl"] {
+  font-family: 'Cairo', 'Poppins', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #0A0A0A;
+  color: #0A0A0A;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus visible styles */
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 3px solid #FFC400;
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar hiding for horizontal chip nav */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

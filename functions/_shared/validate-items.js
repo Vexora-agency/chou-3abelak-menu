@@ -1,0 +1,211 @@
+/**
+ * Item validation for restaurant menu documents (pricing, variants, add-ons, legacy migration).
+ * Single consumer: the validate.js orchestrator (via validate-catalog re-export).
+ */
+import { validateBilingual, ID_REGEX } from './validate-core.js';
+
+/**
+ * Validates the items array (pricing, variants, add-ons, legacy migration).
+ * Needs the validated category ids, the collected legacy groups, and the
+ * feature library lookup/mutator. Returns the cleaned items. Appends to
+ * `errors` in document order.
+ */
+function validateItems(items, errors, categoryIds, legacyGroups, featureById, ensureFeature) {
+  if (items.length > 500) {
+    errors.push('Maximum 500 items allowed');
+  }
+  const itemIds = new Set();
+  const cleanItems = [];
+  const allowedBadges = ['new', 'spicy', 'top'];
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue;
+    const id = typeof item.id === 'string' ? item.id.trim() : '';
+    if (!ID_REGEX.test(id)) {
+      errors.push(`Invalid item ID: "${id}"`);
+      continue;
+    }
+    if (itemIds.has(id)) {
+      errors.push(`Duplicate item ID: "${id}"`);
+      continue;
+    }
+    itemIds.add(id);
+    const categoryId = typeof item.categoryId === 'string' ? item.categoryId.trim() : '';
+    if (!categoryIds.has(categoryId)) {
+      errors.push(`Item "${id}" has non-existent categoryId "${categoryId}"`);
+    }
+    // Pricing block (new model). A legacy numeric `price` converts to
+    // pricing { unit:'portion', price, ...defaults }.
+    const validUnits = ['pc', 'portion', 'dozen', 'box', 'bottle', 'glass', 'kg'];
+    const hasPricing = item.pricing && typeof item.pricing === 'object';
+    const praw = hasPricing ? item.pricing : {};
+    const legacyPrice = typeof item.price === 'number' && Number.isFinite(item.price) ? Math.max(0, Math.round((item.price + Number.EPSILON) * 100) / 100) : null;
+    const unit = validUnits.includes(praw.unit) ? praw.unit : (!hasPricing ? 'portion' : null);
+    if (unit === null) {
+      errors.push(`Item "${id}" pricing.unit must be one of ${validUnits.join(', ')}`);
+      continue;
+    }
+    let basePrice;
+    if (praw.price !== undefined) {
+      if (typeof praw.price !== 'number' || !Number.isFinite(praw.price) || praw.price < 0 || praw.price > 100000000) {
+        errors.push(`Item "${id}" pricing.price must be a number >= 0 (decimals allowed)`);
+        continue;
+      }
+      basePrice = Math.round((praw.price + Number.EPSILON) * 100) / 100;
+    } else if (legacyPrice !== null) {
+      basePrice = legacyPrice;
+    }
+    const minQty = praw.minQty === undefined ? 1 : praw.minQty;
+    const step = praw.step === undefined ? 1 : praw.step;
+    const maxQty = praw.maxQty === undefined ? 50 : praw.maxQty;
+    if (!Number.isInteger(minQty) || minQty < 1) {
+      errors.push(`Item "${id}" pricing.minQty must be an integer >= 1`);
+      continue;
+    }
+    if (!Number.isInteger(step) || step < 1) {
+      errors.push(`Item "${id}" pricing.step must be an integer >= 1`);
+      continue;
+    }
+    if (!Number.isInteger(maxQty) || maxQty < minQty) {
+      errors.push(`Item "${id}" pricing.maxQty must be an integer >= minQty`);
+      continue;
+    }
+    // Sizes (optional; names come from the feature library, prices live here).
+    // Legacy inline {id, name, price} variants migrate into the library.
+    let variants;
+    if (item.variants !== undefined) {
+      if (!Array.isArray(item.variants) || item.variants.length === 0) {
+        errors.push(`Item "${id}" must have at least one variant when "variants" is present`);
+        continue;
+      }
+      if (item.variants.length > 20) {
+        errors.push(`Item "${id}" allows at most 20 variants`);
+        continue;
+      }
+      const seenV = new Set();
+      variants = [];
+      let vOk = true;
+      for (const v of item.variants) {
+        if (!v || typeof v !== 'object') { vOk = false; break; }
+        // New shape {featureId, price} or legacy {id, name?, price}
+        const rawId = typeof v.featureId === 'string' && v.featureId ? v.featureId : (typeof v.id === 'string' ? v.id : '');
+        const vid = rawId.trim();
+        if (!ID_REGEX.test(vid) || seenV.has(vid)) {
+          errors.push(`Item "${id}" has an invalid or duplicate variant: "${vid}"`);
+          vOk = false;
+          break;
+        }
+        seenV.add(vid);
+        if (typeof v.price !== 'number' || !Number.isFinite(v.price) || v.price <= 0 || v.price > 100000000) {
+          errors.push(`Item "${id}" variant "${vid}" price must be a number > 0 (decimals allowed)`);
+          vOk = false;
+          break;
+        }
+        if (v.featureId) {
+          if (!featureById.has(vid)) {
+            errors.push(`Item "${id}" variant "${vid}" is not a known feature`);
+            vOk = false;
+            break;
+          }
+        } else {
+          // Legacy inline name migrates into the library (first wins)
+          ensureFeature(vid, 'size', v.name);
+        }
+        variants.push({ featureId: vid, price: Math.round((v.price + Number.EPSILON) * 100) / 100 });
+      }
+      if (!vOk) continue;
+    }
+    // Add-ons enabled on this item (prices here, 0 = free)
+    let addons;
+    if (item.addons !== undefined) {
+      if (!Array.isArray(item.addons)) {
+        errors.push(`Item "${id}" addons must be an array`);
+        continue;
+      }
+      if (item.addons.length > 20) {
+        errors.push(`Item "${id}" allows at most 20 add-ons`);
+        continue;
+      }
+      const seenA = new Set();
+      addons = [];
+      let aOk = true;
+      for (const a of item.addons) {
+        if (!a || typeof a !== 'object') { aOk = false; break; }
+        const aid = typeof a.featureId === 'string' ? a.featureId.trim() : '';
+        if (!ID_REGEX.test(aid) || seenA.has(aid)) {
+          errors.push(`Item "${id}" has an invalid or duplicate add-on: "${aid}"`);
+          aOk = false;
+          break;
+        }
+        seenA.add(aid);
+        if (!featureById.has(aid)) {
+          errors.push(`Item "${id}" add-on "${aid}" is not a known feature`);
+          aOk = false;
+          break;
+        }
+        if (typeof a.price !== 'number' || !Number.isFinite(a.price) || a.price < 0 || a.price > 100000000) {
+          errors.push(`Item "${id}" add-on "${aid}" price must be a number >= 0 (decimals allowed)`);
+          aOk = false;
+          break;
+        }
+        addons.push({ featureId: aid, price: Math.round((a.price + Number.EPSILON) * 100) / 100 });
+      }
+      if (!aOk) continue;
+    }
+    // Every item needs a price path: variants or a base price.
+    if (!variants && basePrice === undefined) {
+      errors.push(`Item "${id}" needs pricing.price or at least one variant`);
+      continue;
+    }
+    const badges = Array.isArray(item.badges)
+      ? item.badges.filter((b) => allowedBadges.includes(b))
+      : [];
+    const pricing = { unit, minQty, step, maxQty, showUnit: praw.showUnit === true };
+    // With variants the variant price rules; a base price is dropped to
+    // avoid two competing sources of truth.
+    if (!variants && basePrice !== undefined) pricing.price = basePrice;
+    const cleanItem = {
+      id,
+      categoryId,
+      name: validateBilingual(errors, item.name, `item[${id}].name`, 80),
+      description: validateBilingual(errors, item.description, `item[${id}].description`, 300),
+      pricing,
+      badges,
+      featured: Boolean(item.featured),
+      available: item.available !== false,
+    };
+    if (variants) cleanItem.variants = variants;
+    // Explicit default (★ marks in place, order untouched): must point at a size
+    if (item.defaultVariant !== undefined) {
+      const dvd = typeof item.defaultVariant === 'string' ? item.defaultVariant.trim() : '';
+      if (!dvd || !variants || !variants.some((v) => v.featureId === dvd)) {
+        errors.push(`Item "${id}" defaultVariant must match one of its variants`);
+        continue;
+      }
+      cleanItem.defaultVariant = dvd;
+    }
+    if (addons && addons.length) cleanItem.addons = addons;
+    // Legacy groups expand: every item of a listed category offers the
+    // add-on at the group price (explicit per-item entries win).
+    for (const g of legacyGroups) {
+      if (!g.categoryIds.includes(categoryId)) continue;
+      cleanItem.addons = cleanItem.addons || [];
+      if (!cleanItem.addons.some((a) => a.featureId === g.id)) {
+        cleanItem.addons.push({ featureId: g.id, price: g.price });
+      }
+    }
+    if (cleanItem.addons && cleanItem.addons.length === 0) delete cleanItem.addons;
+    // addedAt drives the automatic NEW badge (missing/invalid clears it)
+    if (typeof item.addedAt === 'string' && item.addedAt) {
+      const t = Date.parse(item.addedAt);
+      if (!Number.isFinite(t)) {
+        errors.push(`Item "${id}" addedAt must be a valid date or empty`);
+        continue;
+      }
+      cleanItem.addedAt = new Date(t).toISOString();
+    }
+    cleanItems.push(cleanItem);
+  }
+  return cleanItems;
+}
+
+export { validateItems };

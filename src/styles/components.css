@@ -1,0 +1,192 @@
+/* Skip rendering off-screen menu sections until scrolled near (scroll perf) */
+.menu-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 700px;
+  /* content-visibility applies paint containment, which clips anything drawn
+     outside the section box (the offset shadows of the grid cards). Give the
+     section a little room on the sides and bottom and pull it back with a
+     negative inline margin so the layout does not move. */
+  padding-inline: 10px;
+  padding-block-end: 14px;
+  margin-inline: -10px;
+}
+
+/* Featured one-card slider (mobile only; desktop shows the grid).
+   The track shifts via a --sx variable so the desktop grid is untouched. */
+.slider-track {
+  transform: translateX(var(--sx, 0));
+}
+@media (max-width: 767.98px) {
+  .slider-track {
+    transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+  .slider-track-instant {
+    transition: none;
+  }
+}
+@media (min-width: 768px) {
+  .slider-track {
+    transform: none;
+  }
+}
+
+/* Custom offset shadow for neo-brutalist cards */
+.offset-shadow-yellow {
+  --sh: #FFC400;
+}
+
+.offset-shadow-dark {
+  --sh: #2A2A2A;
+}
+
+/* Interactive touch scaling: smooth springy zoom on hover + press */
+.btn-tactile {
+  transition: scale 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.3s ease;
+}
+.btn-tactile:hover {
+  scale: 1.045;
+  filter: brightness(1.07);
+}
+.btn-tactile:active {
+  scale: 0.94;
+  filter: brightness(0.97);
+}
+
+/* Uses the individual translate/scale properties so it never fights with
+   the inline transform that motion (entrance animations) writes. */
+.card-lift {
+  transition: translate 0.25s ease, scale 0.25s ease, box-shadow 0.25s ease;
+}
+.card-lift:hover {
+  translate: 0 -4px;
+}
+.card-lift:active {
+  scale: 0.97;
+}
+
+/* Grid cards (Sides, Drinks): offset shadow that grows on hover and mirrors in RTL */
+.grid-card {
+  box-shadow: 4px 4px 0 var(--sh, #FFC400);
+  transition: translate 0.25s ease, scale 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.grid-card:hover {
+  box-shadow: 7px 7px 0 var(--sh, #FFC400);
+}
+[dir="rtl"] .grid-card {
+  box-shadow: -4px 4px 0 var(--sh, #FFC400);
+}
+[dir="rtl"] .grid-card:hover {
+  box-shadow: -7px 7px 0 var(--sh, #FFC400);
+}
+
+/* ---------- Premium header / footer surface ---------- */
+.header-spot {
+  position: absolute;
+  inset: -12% -10% 0;
+  pointer-events: none;
+  background:
+    radial-gradient(52% 58% at 50% 36%, rgba(255, 196, 0, 0.20) 0%, rgba(255, 196, 0, 0.07) 46%, transparent 74%),
+    radial-gradient(90% 46% at 50% 108%, rgba(255, 196, 0, 0.10) 0%, transparent 70%);
+  /* NOTE (perf): the breathing animation was removed - scaling this giant
+     gradient layer every frame dragged idle FPS to ~30. The spotlight look
+     is identical, frozen at its final state. */
+  opacity: 1;
+}
+
+.header-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  border-radius: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.edge-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 0%, #FFC400 18%, #FFE07A 50%, #FFC400 82%, transparent 100%);
+}
+.edge-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+  animation: edgeSweep 4.8s ease-in-out infinite;
+}
+.edge-line-b { bottom: 0; }
+.edge-line-t { top: 0; }
+
+/* NOTE (perf): no backdrop-filter here on purpose. The header runs infinite
+   animations (edge sweep, spotlight, button shine) and any backdrop blur would
+   be re-computed every frame, dragging idle/scroll FPS down. Solid translucent
+   backgrounds give the same glass feel for free. */
+.glass-pill {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.btn-glass {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid rgba(255, 196, 0, 0.55);
+  color: #FFC400;
+}
+.btn-glass:hover {
+  background: rgba(255, 196, 0, 0.12);
+  border-color: #FFC400;
+}
+
+.btn-primary-shine {
+  position: relative;
+  overflow: hidden;
+  background: #FFC400;
+  color: #0A0A0A;
+  box-shadow: 0 10px 28px -8px rgba(255, 196, 0, 0.6);
+}
+.btn-primary-shine > * {
+  position: relative;
+  z-index: 1;
+}
+.btn-primary-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
+  transform: translateX(-130%);
+  animation: btnShine 5s ease-in-out 3.5s infinite;
+}
+
+/* Pause every header animation while the header is scrolled out of view */
+.header-shell[data-paused="true"] *,
+.header-shell[data-paused="true"] *::after,
+.header-shell[data-paused="true"] .header-spot {
+  animation-play-state: paused !important;
+}
+
+/* NOTE (owner decision): header animations (edge sweep, button shine, spotlight)
+   always run for every visitor. The prefers-reduced-motion kill-switch that used
+   to disable them was removed on purpose. Off-screen pausing above still applies. */
+
+/* --- Admin login form (appended as provided) --- */
+/* The login fields draw their own focus ring; avoid doubling the global outline */
+.login-field:focus-visible {
+  outline: none;
+}
+
+/* Keep browser autofill from painting white boxes on the dark login form */
+.login-field:-webkit-autofill,
+.login-field:-webkit-autofill:hover,
+.login-field:-webkit-autofill:focus {
+  -webkit-text-fill-color: #FFFFFF;
+  caret-color: #FFFFFF;
+  box-shadow: 0 0 0 1000px #121212 inset;
+  transition: background-color 9999s ease-out 0s;
+}

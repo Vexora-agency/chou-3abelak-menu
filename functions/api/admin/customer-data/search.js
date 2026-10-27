@@ -17,7 +17,7 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const q = digitsOnly(url.searchParams.get('phone'));
   if (q.length < 6) return jsonNoStore({ error: 'bad_request', message: 'Enter at least 6 digits' }, 400);
-  let rows = [];
+  let rows;
   try {
     rows = await findMatches(env.ORDERS_DB, q);
   } catch {

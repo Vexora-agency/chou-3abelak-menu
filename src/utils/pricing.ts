@@ -107,7 +107,7 @@ export function unitPrice(item: MenuItem, variantId?: string): number {
   if (hasVariants(item)) {
     const v = getVariant(item, variantId);
     if (!v) throw new Error('unknown_variant');
-    if (!isMoney(v.price) || v.price <= 0) throw new Error('unknown_variant');
+    if (!isMoney(v.price) || v.price < 0) throw new Error('unknown_variant');
     return v.price;
   }
   const p = normalizePricing(item);
@@ -120,7 +120,7 @@ export function minVariantPrice(item: MenuItem): number {
   if (!hasVariants(item)) return unitPrice(item);
   let min = Infinity;
   for (const v of item.variants || []) {
-    if (v && isMoney(v.price) && v.price > 0 && v.price < min) min = v.price;
+    if (v && isMoney(v.price) && v.price >= 0 && v.price < min) min = v.price;
   }
   if (!Number.isFinite(min)) throw new Error('no_price');
   return min;
@@ -239,14 +239,17 @@ export function unitLabel(unit: string, qty: number, lang: 'en' | 'ar'): string 
   }
 }
 
-/** Card price label: "From 80,000 LBP" for variants, unit suffix only when showUnit. */
+/** Card price label: "From 80,000 LBP" for variants, "FREE"/"مجاناً" when 0. */
 export function priceLabel(item: MenuItem, lang: 'en' | 'ar', currency: string): string {
+  const free = lang === 'ar' ? 'مجاناً' : 'FREE';
   const p = normalizePricing(item);
   if (hasVariants(item)) {
+    if (minVariantPrice(item) === 0) return free;
     const from = lang === 'ar' ? 'من' : 'From';
     return `${from} ${formatPrice(minVariantPrice(item), currency)}`;
   }
   if (!isMoney(p.price)) return '—';
+  if (p.price === 0) return free;
   const base = formatPrice(p.price, currency);
   if (p.showUnit) return `${base} / ${unitLabel(p.unit, 1, lang)}`;
   return base;

@@ -1,8 +1,8 @@
 import React from 'react';
 import { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { pickLangText } from '@/src/utils/menuHelpers';
-import { getVariant, lineMathText, featureName } from '@/src/utils/pricing';
-import { Plus, Minus, Trash2 } from 'lucide-react';
+import { getVariant, lineMathText, featureName, unitPrice, formatPrice } from '@/src/utils/pricing';
+import { Plus, Minus, Trash2, X } from 'lucide-react';
 
 interface CartLinesListProps {
   menu: MenuData;
@@ -11,6 +11,7 @@ interface CartLinesListProps {
   darkMode: boolean;
   onUpdateLine: (key: string, dir: 1 | -1) => void;
   onRemoveLine: (key: string) => void;
+  onRemoveAddon: (lineKey: string, featureId: string) => void;
 }
 
 export const CartLinesList: React.FC<CartLinesListProps> = ({
@@ -20,12 +21,16 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
   darkMode,
   onUpdateLine,
   onRemoveLine,
+  onRemoveAddon,
 }) => {
+  const isAr = lang === 'ar';
   return (
     <div className="space-y-2.5">
       {lines.map((l) => {
         const variant = getVariant(l.item, l.variantId);
-        const addonNames = l.addonIds.map((id) => featureName(menu, id, lang));
+        // Base (size or fixed price) — shown next to the name so the full
+        // math reads: small pizza 450,000 + cheese 30,000.
+        const baseUnit = unitPrice(l.item, l.variantId);
         return (
           <div
             key={l.key}
@@ -38,16 +43,47 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
             <div className="flex-1 min-w-0">
               <h4 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
                 {pickLangText(l.item.name, lang)}
-                {variant && (
-                  <span className={`font-semibold ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>
-                    {' '}({featureName(menu, l.variantId as string, lang)})
+                {variant ? (
+                  <span className={`font-semibold tabular-nums ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>
+                    {' '}({featureName(menu, l.variantId as string, lang)} · {formatPrice(baseUnit)})
                   </span>
-                )}
+                ) : l.addonIds.length > 0 ? (
+                  <span className={`font-semibold tabular-nums ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>
+                    {' '}· {formatPrice(baseUnit)}
+                  </span>
+                ) : null}
               </h4>
-              {addonNames.length > 0 && (
-                <p className={`text-[11px] mt-0.5 ${darkMode ? 'text-[#FFC400]' : 'text-[#8a6d00]'}`}>
-                  + {addonNames.join(' + ')}
-                </p>
+              {l.addonIds.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {l.addonIds.map((id) => (
+                    <span
+                      key={id}
+                      className={`inline-flex items-center gap-1 ps-2 pe-1 py-0.5 rounded-full text-[11px] font-bold border ${
+                        darkMode
+                          ? 'border-[#FFC400]/30 bg-[#FFC400]/5 text-[#FFC400]'
+                          : 'border-[#8a6d00]/30 bg-[#8a6d00]/5 text-[#8a6d00]'
+                      }`}
+                    >
+                      <span>+ {featureName(menu, id, lang)}</span>
+                      <span className="tabular-nums opacity-80">
+                        {formatPrice((l.item.addons || []).find((a) => a && a.featureId === id)?.price ?? 0)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onRemoveAddon(l.key, id)}
+                        className={`flex items-center justify-center w-3.5 h-3.5 rounded-full transition-colors ${
+                          darkMode
+                            ? 'hover:bg-red-500/20 hover:text-red-400'
+                            : 'hover:bg-red-500/10 hover:text-red-600'
+                        }`}
+                        title={isAr ? 'إزالة الإضافة من السطر' : 'Remove add-on from this line'}
+                        aria-label={`${isAr ? 'إزالة الإضافة' : 'Remove add-on'} ${featureName(menu, id, lang)}`}
+                      >
+                        <X size={11} strokeWidth={3} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
               )}
 
               {/* Line math: 3 × 120,000 = 360,000 */}

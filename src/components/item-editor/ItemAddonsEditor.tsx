@@ -1,6 +1,6 @@
 import React from 'react';
-import { Plus, Trash2, X } from 'lucide-react';
-import type { FeatureGroup, MenuData, MenuItem } from '@/src/types/menu';
+import { Plus, Trash2, X, Star } from 'lucide-react';
+import type { FeatureGroup, ItemAddon, MenuData, MenuItem } from '@/src/types/menu';
 import { featuresByGroup } from '@/src/utils/pricing';
 
 interface ItemAddonsEditorProps {
@@ -47,7 +47,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
           if (sizesSection && def.groupId === sizesSection.id) return '';
           return (menu.settings.featureGroups || []).some((g) => g.id === def.groupId) ? def.groupId : '';
         };
-        const box = (a: { featureId: string; price: number }, ai: number, gid: string, showPrice: boolean) => {
+        const box = (a: ItemAddon, ai: number, gid: string, showPrice: boolean) => {
           const ownGroup = gid ? (menu.settings.featureGroups || []).find((g) => g.id === gid) : undefined;
           // A feature already used in another box can't be picked again — no duplicates
           const takenElsewhere = new Set(
@@ -99,6 +99,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
               <input
                 type="number"
                 step="any"
+                min={0}
                 value={a.price}
                 aria-label={isAr ? 'سعر الإضافة' : 'Add-on price'}
                 title={isAr ? 'سعر هذه الإضافة لهذا الصنف (0 = مجاناً)' : 'This add-on’s price on this item (0 = free)'}
@@ -110,6 +111,23 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                 className="w-16 sm:w-20 h-9 px-1.5 sm:px-2 rounded-lg bg-black border border-neutral-700 text-xs text-center tabular-nums"
               />
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                const list = [...(item.addons || [])];
+                const next = { ...list[ai] };
+                if (next.default) delete next.default;
+                else next.default = true;
+                list[ai] = next;
+                onChange({ ...item, addons: list });
+              }}
+              className={`p-1 self-center transition-colors ${a.default ? 'text-[#FFC400]' : 'text-neutral-600 hover:text-[#FFC400]'}`}
+              title={isAr ? 'مضمّنة افتراضياً — تظهر مختارة للزبون ويقدر يشيلها' : 'Included by default — pre-selected for the customer, who can remove it'}
+              aria-pressed={!!a.default}
+              aria-label={isAr ? 'تضمين افتراضي' : 'Include by default'}
+            >
+              <Star size={14} fill={a.default ? 'currentColor' : 'none'} />
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -256,8 +274,8 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
       })()}
       <p className="text-[11px] text-neutral-500 mt-1.5">
         {isAr
-          ? 'السعر يُكتب هنا لكل صنف — وهو الذي يظهر للزبون محسوباً مع الكمية. لو الميزة ناقصة أنشئها من مكتبة الميزات.'
-          : 'The price is written here per item — it is what the customer sees, multiplied by quantity. If a feature is missing, create it in the Features library.'}
+          ? 'السعر يُكتب هنا لكل صنف — وهو الذي يظهر للزبون محسوباً مع الكمية. النجمة ★ تعني أن الإضافة مختارة مسبقاً للزبون (ويقدر يشيلها). لو الميزة ناقصة أنشئها من مكتبة الميزات.'
+          : 'The price is written here per item — it is what the customer sees, multiplied by quantity. The star ★ means the add-on is pre-selected for the customer (who can still remove it). If a feature is missing, create it in the Features library.'}
       </p>
     </div>
   );

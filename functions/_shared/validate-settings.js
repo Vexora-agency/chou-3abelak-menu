@@ -136,6 +136,15 @@ function validateSettings(s, errors) {
       pausedUntil = new Date(t).toISOString();
     }
   }
+  let pausedAt = null;
+  if (ord.pausedAt !== undefined && ord.pausedAt !== null && ord.pausedAt !== '') {
+    const t = typeof ord.pausedAt === 'string' ? Date.parse(ord.pausedAt) : NaN;
+    if (!Number.isFinite(t)) {
+      errors.push('settings.ordering.pausedAt must be a valid ISO date or null');
+    } else {
+      pausedAt = new Date(t).toISOString();
+    }
+  }
   const pausedMessage = { en: '', ar: '' };
   if (ord.pausedMessage && typeof ord.pausedMessage === 'object') {
     pausedMessage.en = stripControls(ord.pausedMessage.en).trim().slice(0, 160);
@@ -252,6 +261,7 @@ function validateSettings(s, errors) {
       note,
       paused,
       pausedUntil,
+      pausedAt,
       pausedMessage,
       acceptWhenClosed,
     },

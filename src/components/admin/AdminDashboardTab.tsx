@@ -7,6 +7,21 @@ import CustomerData, { type CustomerResult } from '@/src/components/CustomerData
 
 export type DashView = 'overview' | 'reports' | 'customers';
 
+/** Live "paused for HH:MM:SS" ticker — its own 1s clock so the dashboard
+ *  doesn't re-render every second, and no refresh is needed to see time pass. */
+function PausedElapsed({ since, isAr }: { since: number; isAr: boolean }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const s = Math.max(0, Math.floor((now - since) / 1000));
+  const hh = String(Math.floor(s / 3600)).padStart(2, '0');
+  const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  return <span>{isAr ? `منذ ${hh}:${mm}:${ss}` : `for ${hh}:${mm}:${ss}`}</span>;
+}
+
 interface AdminDashboardTabProps {
   lang: 'en' | 'ar';
   menu: MenuData;
@@ -57,6 +72,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
       {(() => {
         const paused = !!menu.settings.ordering.paused;
         const until = menu.settings.ordering.pausedUntil ? Date.parse(menu.settings.ordering.pausedUntil) : NaN;
+        const pausedAtMs = menu.settings.ordering.pausedAt ? Date.parse(menu.settings.ordering.pausedAt) : NaN;
         const minsLeft = Number.isFinite(until) ? Math.max(0, Math.round((until - nowTick) / 60000)) : null;
         const countdown = minsLeft !== null
           ? (isAr ? `يستأنف بعد ${minsLeft} دقيقة` : `Resumes in ${minsLeft} min`)
@@ -106,6 +122,12 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
             {paused ? (
               <span className="flex items-center gap-2">
                 <span className="text-[11px] font-bold text-orange-300 tabular-nums">{countdown}</span>
+                {Number.isFinite(pausedAtMs) && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-300/80 tabular-nums">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" aria-hidden="true" />
+                    <PausedElapsed since={pausedAtMs} isAr={isAr} />
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={() => void sendPause({ resume: true })}
@@ -117,7 +139,16 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
             ) : (
               <span className="relative">
                 {pauseMenuOpen && (
-                  <span className="absolute z-30 mt-1 flex flex-col gap-1 p-1.5 rounded-xl bg-neutral-900 border border-neutral-700 shadow-2xl min-w-[160px]">
+                  <>
+                    {/* Clicking anywhere outside closes the duration menu */}
+                    <button
+                      type="button"
+                      aria-hidden="true"
+                      tabIndex={-1}
+                      onClick={() => setPauseMenuOpen(false)}
+                      className="fixed inset-0 z-20 cursor-default bg-transparent"
+                    />
+                    <span className="absolute z-30 mt-1 flex flex-col gap-1 p-1.5 rounded-xl bg-neutral-900 border border-neutral-700 shadow-2xl min-w-[160px]">
                     {([30, 60, 120] as const).map((m) => (
                       <button
                         key={m}
@@ -135,7 +166,8 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
                     >
                       {isAr ? 'حتى الاستئناف' : 'Until I resume'}
                     </button>
-                  </span>
+                    </span>
+                  </>
                 )}
               </span>
             )}

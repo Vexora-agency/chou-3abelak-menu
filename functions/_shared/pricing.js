@@ -91,7 +91,7 @@ export function unitPrice(item, variantId) {
   if (hasVariants(item)) {
     const v = getVariant(item, variantId);
     if (!v) throw new Error('unknown_variant');
-    if (!isMoney(v.price) || v.price <= 0) throw new Error('unknown_variant');
+    if (!isMoney(v.price) || v.price < 0) throw new Error('unknown_variant');
     return v.price;
   }
   const p = item && item.pricing ? normalizePricing(item) : normalizePricing(item);
@@ -104,7 +104,7 @@ export function minVariantPrice(item) {
   if (!hasVariants(item)) return unitPrice(item);
   let min = Infinity;
   for (const v of item.variants) {
-    if (v && isMoney(v.price) && v.price > 0 && v.price < min) min = v.price;
+    if (v && isMoney(v.price) && v.price >= 0 && v.price < min) min = v.price;
   }
   if (!Number.isFinite(min)) throw new Error('no_price');
   return min;

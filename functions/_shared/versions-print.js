@@ -23,6 +23,8 @@ export function buildPrintHTML(menu, lang = 'ar') {
   const tagline = (s.tagline && (s.tagline[l] || s.tagline.en)) || '';
   const phone = s.phone || '';
   const cur = (s.currency && (s.currency[l] || s.currency.en)) || '';
+  const freeWord = l === 'ar' ? 'مجاناً' : 'FREE';
+  const money = (n) => (n === 0 ? freeWord : escHtml(fmtPrice(n)));
   const cats = (Array.isArray(m.categories) ? m.categories : []).filter((c) => c && c.visible !== false);
   const items = Array.isArray(m.items) ? m.items : [];
   const sections = cats
@@ -36,7 +38,7 @@ export function buildPrintHTML(menu, lang = 'ar') {
           let priceLine;
           if (vs.length === 0) {
             const p = it.pricing && typeof it.pricing.price === 'number' ? it.pricing.price : null;
-            priceLine = `<span class="price">${escHtml(fmtPrice(p))} ${escHtml(cur)}</span>`;
+            priceLine = `<span class="price">${money(p)} ${escHtml(cur)}</span>`;
           } else {
             const vrows = vs
               .map((v) => {
@@ -46,7 +48,7 @@ export function buildPrintHTML(menu, lang = 'ar') {
                   const d = defs.find((x) => x && x.id === v.featureId);
                   vn = (d && d.name && (d.name[l] || d.name.en)) || '';
                 } catch {}
-                return `<div class="variant"><span>${escHtml(vn)}</span><span class="price">${escHtml(fmtPrice(v.price))} ${escHtml(cur)}</span></div>`;
+                return `<div class="variant"><span>${escHtml(vn)}</span><span class="price">${money(typeof v.price === 'number' ? v.price : null)} ${escHtml(cur)}</span></div>`;
               })
               .join('');
             priceLine = `<div class="variants">${vrows}</div>`;

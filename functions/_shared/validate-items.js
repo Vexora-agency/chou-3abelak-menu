@@ -2,7 +2,7 @@
  * Item validation for restaurant menu documents (pricing, variants, add-ons, legacy migration).
  * Single consumer: the validate.js orchestrator (via validate-catalog re-export).
  */
-import { validateBilingual, ID_REGEX } from './validate-core.js';
+import { validateBilingual, ID_REGEX, stripControls } from './validate-core.js';
 
 /**
  * Validates the items array (pricing, variants, add-ons, legacy migration).
@@ -39,9 +39,15 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
     const hasPricing = item.pricing && typeof item.pricing === 'object';
     const praw = hasPricing ? item.pricing : {};
     const legacyPrice = typeof item.price === 'number' && Number.isFinite(item.price) ? Math.max(0, Math.round((item.price + Number.EPSILON) * 100) / 100) : null;
-    const unit = validUnits.includes(praw.unit) ? praw.unit : (!hasPricing ? 'portion' : null);
+    // Known units pass; a short custom label (max 24 chars) too — controls
+    // stripped like every other free-text field.
+    // Items with no pricing block at all keep the legacy 'portion' default.
+    const rawUnit = typeof praw.unit === 'string' ? stripControls(praw.unit).trim() : '';
+    const unit = validUnits.includes(rawUnit)
+      ? rawUnit
+      : (!hasPricing ? 'portion' : (rawUnit && rawUnit.length <= 24 ? rawUnit : null));
     if (unit === null) {
-      errors.push(`Item "${id}" pricing.unit must be one of ${validUnits.join(', ')}`);
+      errors.push(`Item "${id}" pricing.unit must be one of ${validUnits.join(', ')} or a custom label (max 24 chars)`);
       continue;
     }
     let basePrice;
@@ -95,8 +101,8 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
           break;
         }
         seenV.add(vid);
-        if (typeof v.price !== 'number' || !Number.isFinite(v.price) || v.price <= 0 || v.price > 100000000) {
-          errors.push(`Item "${id}" variant "${vid}" price must be a number > 0 (decimals allowed)`);
+        if (typeof v.price !== 'number' || !Number.isFinite(v.price) || v.price < 0 || v.price > 100000000) {
+          errors.push(`Item "${id}" variant "${vid}" price must be a number >= 0 (decimals allowed, 0 = free)`);
           vOk = false;
           break;
         }
@@ -147,7 +153,9 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
           aOk = false;
           break;
         }
-        addons.push({ featureId: aid, price: Math.round((a.price + Number.EPSILON) * 100) / 100 });
+        const cleanAddon = { featureId: aid, price: Math.round((a.price + Number.EPSILON) * 100) / 100 };
+        if (a.default === true) cleanAddon.default = true;
+        addons.push(cleanAddon);
       }
       if (!aOk) continue;
     }

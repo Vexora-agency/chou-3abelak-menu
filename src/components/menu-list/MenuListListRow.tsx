@@ -112,7 +112,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
          price + action right, no empty second row. */
       <div className="flex items-center gap-2">
         <span
-          className={`font-bold text-base min-w-0 flex-1 truncate ${
+          className={`font-bold text-base min-w-0 flex-1 truncate transition-transform group-hover:translate-x-1 ${
             darkMode ? 'text-white' : 'text-[#0A0A0A]'
           }`}
         >
@@ -137,7 +137,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
           </span>
         )}
 
-        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[#FFC400] text-[#0A0A0A] shadow-sm flex-shrink-0">
+        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[#FFC400] text-[#0A0A0A] shadow-sm flex-shrink-0 transition-transform group-hover:scale-105">
           {priceLabel(item, lang, currency)}
         </span>
 

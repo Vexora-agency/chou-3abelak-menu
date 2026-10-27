@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { MenuData, MenuItem } from '@/src/types/menu';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { pickLangText } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
 
@@ -17,6 +17,8 @@ interface FeaturedCarouselProps {
   autoplayInterval: number;
   /** Force the mobile slider layout even on wide screens (admin live preview). */
   forceSlider?: boolean;
+  /** Preview-only manual arrows: step through cards with the same slide motion. */
+  showArrows?: boolean;
 }
 
 export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
@@ -30,6 +32,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   autoplay,
   autoplayInterval,
   forceSlider = false,
+  showArrows = false,
 }) => {
   const isAr = lang === 'ar';
 
@@ -228,7 +231,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
       </div>
 
       {/* One-card slider on mobile (smooth transform slide + dots), static grid on desktop */}
-      <div className={`overflow-hidden ${forceSlider ? '' : 'md:overflow-visible'}`}>
+      <div className={`relative overflow-hidden ${forceSlider ? '' : 'md:overflow-visible'}`}>
         <div
           onMouseEnter={pause}
           onMouseLeave={resumeSoon}
@@ -242,6 +245,27 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         >
           {items.map((item, idx) => renderCard(item, idx))}
         </div>
+        {/* Preview-only manual arrows: same slide motion, step gray ⇄ yellow */}
+        {showArrows && count > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={() => goTo(index - 1)}
+              className="absolute start-1.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/55 text-white backdrop-blur flex items-center justify-center hover:bg-black/75 transition-colors"
+              aria-label={isAr ? 'السابق' : 'Previous slide'}
+            >
+              <ChevronLeft size={16} className="rtl:rotate-180" />
+            </button>
+            <button
+              type="button"
+              onClick={() => goTo(index + 1)}
+              className="absolute end-1.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/55 text-white backdrop-blur flex items-center justify-center hover:bg-black/75 transition-colors"
+              aria-label={isAr ? 'التالي' : 'Next slide'}
+            >
+              <ChevronRight size={16} className="rtl:rotate-180" />
+            </button>
+          </>
+        )}
       </div>
       {/* Dots */}
       {marqueeOn && items.length > 1 && (

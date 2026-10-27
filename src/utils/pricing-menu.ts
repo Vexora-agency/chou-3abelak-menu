@@ -39,12 +39,22 @@ function cleanInt(v: unknown, fallback: number): number {
 }
 
 export interface NormalizedPricing {
-  unit: PricingUnit;
+  /** Known unit or a custom label (max 24 chars) — anything else falls back to 'portion'. */
+  unit: string;
   price?: number;
   minQty: number;
   step: number;
   maxQty: number;
   showUnit: boolean;
+}
+
+/** Control characters (would break CSV/WhatsApp lines) — a custom label containing any falls back. */
+function hasControlChars(s: string): boolean {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c <= 31 || c === 127) return true;
+  }
+  return false;
 }
 
 /** Normalize one item's pricing block (legacy numeric `price` converts). Never throws. */
@@ -55,7 +65,14 @@ export function normalizePricing(item: Pick<MenuItem, 'pricing'> & { price?: unk
       ? Math.max(0, round2((item as { price?: number }).price as number))
       : null;
   const base = raw && typeof raw === 'object' ? raw : {};
-  const unit: PricingUnit = UNITS.includes(base.unit as PricingUnit) ? (base.unit as PricingUnit) : 'portion';
+  // Known units pass through; a short custom label is kept as-is (shown
+  // verbatim by unitLabel); anything else falls back to 'portion'.
+  const rawUnit = typeof base.unit === 'string' ? base.unit.trim() : '';
+  const unit: string = UNITS.includes(rawUnit as PricingUnit)
+    ? rawUnit
+    : rawUnit && rawUnit.length <= 24 && !hasControlChars(rawUnit)
+      ? rawUnit
+      : 'portion';
   let price: number | undefined;
   if (isMoney(base.price) && (base.price) >= 0) price = round2(base.price);
   else if (legacyPrice !== null) price = legacyPrice;
@@ -257,6 +274,7 @@ export function normalizeMenu<T>(menu: T): T {
       note: bilingualBlock(Object.keys(ordNoteRaw).length ? ordNoteRaw : ordRaw.note, 120),
       paused: ordRaw.paused === true,
       pausedUntil: isoDateOrNull(ordRaw.pausedUntil),
+      pausedAt: isoDateOrNull(ordRaw.pausedAt),
       pausedMessage: bilingualBlock(ordPausedMsgRaw, 160),
       acceptWhenClosed: ordRaw.acceptWhenClosed === true,
     },

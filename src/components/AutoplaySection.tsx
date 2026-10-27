@@ -23,6 +23,14 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
   const on = featuredAutoplay !== false;
   const every = Math.min(10, Math.max(2, featuredAutoplayInterval || 4));
   const featured = menu.items.filter((i) => i.featured && i.available);
+  // With a single featured item the real slider can't move (same as the
+  // site) — duplicate it as a clearly-marked demo clone so the preview
+  // still shows the motion AND the alternating yellow card. The moment a
+  // second real item is starred, the demo clone disappears on its own.
+  const demoClone = featured.length === 1;
+  const previewItems = demoClone
+    ? [...featured, { ...featured[0], id: `${featured[0].id}__demo` }]
+    : featured;
   const currency = menu.settings.currency[lang] || menu.settings.currency.en;
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
@@ -96,8 +104,8 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
         {featured.length > 0 ? (
           <div className="rounded-2xl border border-neutral-800 bg-black/40 overflow-hidden">
             <FeaturedCarousel
-              key={featured.map((i) => i.id).join('|')}
-              items={featured}
+              key={previewItems.map((i) => i.id).join('|')}
+              items={previewItems}
               menu={menu}
               onOpenItem={() => {}}
               onAddToCart={() => {}}
@@ -107,7 +115,15 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
               autoplay={on}
               autoplayInterval={every}
               forceSlider
+              showArrows
             />
+            {demoClone && (
+              <p className="px-4 pb-3 -mt-1 text-center text-[10px] text-neutral-500">
+                {isAr
+                  ? 'عرض تجريبي لكرتين (منها الكارت الأصفر) — علّم وجبة ثانية كمميزة لرؤية الحركة الحقيقية'
+                  : 'Demoing two cards (incl. the yellow one) — star a second item as Featured for the real motion'}
+              </p>
+            )}
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-neutral-700 px-4 py-3 text-center">

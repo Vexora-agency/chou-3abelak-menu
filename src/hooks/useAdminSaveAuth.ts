@@ -5,8 +5,10 @@ import type { LoginResult } from '@/src/components/AdminLogin';
 export function useAdminSaveAuth() {
   // Admin view toggle. The admin entry points are hidden from customers:
   // the owner opens the site with #admin at the end of the address.
+  // A tab suffix (#admin/backup, ...) deep-links a tab and survives refresh.
+  const isAdminHash = (h: string) => h === '#admin' || h.startsWith('#admin/');
   const [showAdmin, setShowAdmin] = useState(false);
-  const [adminUnlocked, setAdminUnlocked] = useState(() => window.location.hash === '#admin');
+  const [adminUnlocked, setAdminUnlocked] = useState(() => isAdminHash(window.location.hash));
   // Cookie-session auth state for the admin area
   const [authStatus, setAuthStatus] = useState<'checking' | 'authed' | 'guest'>('checking');
 
@@ -75,7 +77,8 @@ export function useAdminSaveAuth() {
 
   useEffect(() => {
     const syncAdminHash = () => {
-      const unlocked = window.location.hash === '#admin';
+      const h = window.location.hash;
+      const unlocked = h === '#admin' || h.startsWith('#admin/');
       setAdminUnlocked(unlocked);
       if (unlocked) setShowAdmin(true);
     };
@@ -87,7 +90,8 @@ export function useAdminSaveAuth() {
   const closeAdmin = () => {
     setShowAdmin(false);
     setAdminUnlocked(false);
-    if (window.location.hash === '#admin') {
+    const h = window.location.hash;
+    if (h === '#admin' || h.startsWith('#admin/')) {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
   };

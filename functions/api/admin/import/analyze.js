@@ -81,7 +81,16 @@ export async function onRequest(context) {
   } catch {
     return jsonNoStore({ error: 'bad_request' }, 400);
   }
-  if (!raw || raw.length > MAX_BYTES) return jsonNoStore({ error: 'payload_too_large' }, 400);
+  if (!raw) return jsonNoStore({ error: 'bad_request' }, 400);
+  // Byte-accurate limit (the UI promises 2 MB): UTF-16 length understates
+  // Arabic-heavy files by ~2x.
+  let byteLen;
+  try {
+    byteLen = new TextEncoder().encode(raw).length;
+  } catch {
+    byteLen = raw.length;
+  }
+  if (byteLen > MAX_BYTES) return jsonNoStore({ error: 'payload_too_large' }, 400);
 
   let current = null;
   try {

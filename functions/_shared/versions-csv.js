@@ -6,6 +6,44 @@
 
 const MENU_CSV_HEADER = 'category,item_id,name_en,name_ar,variant_id,variant_en,variant_ar,price,unit,available';
 
+/** Known units plus short custom labels (mirrors the pricing normalizer). */
+const KNOWN_UNITS = ['pc', 'portion', 'dozen', 'box', 'bottle', 'glass', 'kg'];
+
+function hasControlChars(s) {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c <= 31 || c === 127) return true;
+  }
+  return false;
+}
+
+/** Validated unit string or null (unknown/invalid falls back at the call site). */
+function cleanUnit(raw) {
+  const s = String(raw ?? '').trim();
+  if (KNOWN_UNITS.includes(s)) return s;
+  if (s && s.length <= 24 && !hasControlChars(s)) return s;
+  return null;
+}
+
+/** Arabic-Indic / Extended Arabic-Indic digits → ASCII; Arabic decimal mark → '.'. */
+function latinDigits(s) {
+  return String(s ?? '')
+    .replace(/[٠-٩]/g, (d) => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)])
+    .replace(/[۰-۹]/g, (d) => '0123456789'['۰۱۲۳۴۵۶۷۸۹'.indexOf(d)])
+    .replace(/٫/g, '.');
+}
+
+/** Parse a price cell: tolerant of thousand separators ("1,000") and
+ *  Arabic-Indic digits, strict about everything else (NaN when unusable). */
+function parsePriceCell(raw) {
+  const s0 = String(raw ?? '').trim();
+  if (!s0) return null;
+  const s = latinDigits(s0).replace(/(\d),(?=\d{3}(?!\d))/g, '$1');
+  const n = Number(s);
+  if (!Number.isFinite(n) || n < 0 || n > 100000000) return NaN;
+  return n;
+}
+
 function csvCell(v) {
   const s = String(v ?? '');
   return /["\n\r,]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -149,9 +187,8 @@ export function applyCSVToMenu(current, csvText) {
     fileRows += 1;
     const catCell = cCat >= 0 ? (r[cCat] || '').trim() : '';
     if (catCell) fileCats.add(catCell.toLowerCase());
-    const priceRaw = cPrice >= 0 ? (r[cPrice] || '').trim() : '';
-    const price = priceRaw === '' ? null : Number(priceRaw);
-    if (priceRaw !== '' && (!Number.isFinite(price) || price < 0 || price > 100000000)) {
+    const price = cPrice >= 0 ? parsePriceCell(r[cPrice]) : null;
+    if (Number.isNaN(price)) {
       skipped += 1;
       continue;
     }
@@ -181,11 +218,33 @@ export function applyCSVToMenu(current, csvText) {
         existing.available = avail;
         updated += 1;
       }
+      // Unit edits apply too (validated; invalid values are ignored, not fatal).
+      if (cUnit >= 0) {
+        const u = cleanUnit(r[cUnit]);
+        if (u) {
+          if (!existing.pricing || typeof existing.pricing !== 'object') existing.pricing = {};
+          if (existing.pricing.unit !== u) {
+            existing.pricing.unit = u;
+            updated += 1;
+          }
+        }
+      }
       continue;
     }
     // New item: only when its category exists (matched by name).
+    // The exported sheet writes combined names ("Drinks / مشروبات") —
+    // match the whole cell first, then each '/'-separated part.
     const catNameRaw = cCat >= 0 ? (r[cCat] || '').trim().toLowerCase() : '';
-    const catId = catNameRaw ? catByName.get(catNameRaw) : null;
+    let catId = catNameRaw ? catByName.get(catNameRaw) : null;
+    if (!catId && catNameRaw.includes('/')) {
+      for (const part of catNameRaw.split('/')) {
+        const p = part.trim();
+        if (p && catByName.has(p)) {
+          catId = catByName.get(p);
+          break;
+        }
+      }
+    }
     if (!catId) {
       skipped += 1;
       continue;
@@ -195,7 +254,7 @@ export function applyCSVToMenu(current, csvText) {
       continue;
     }
     const unitRaw = cUnit >= 0 ? (r[cUnit] || '').trim() : '';
-    const unit = ['pc', 'dozen', 'kg', 'g', 'box', 'pack'].includes(unitRaw) ? unitRaw : 'pc';
+    const unit = cleanUnit(unitRaw) || 'pc';
     const item = {
       id,
       categoryId: catId,

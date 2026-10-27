@@ -77,6 +77,7 @@ export function ensureSettingsBlocks(menu: MenuData): MenuData {
         note: bilingualBlock((o as { note?: unknown }).note, 120),
         paused: (o as { paused?: unknown }).paused === true,
         pausedUntil: isoDateOrNull((o as { pausedUntil?: unknown }).pausedUntil),
+        pausedAt: isoDateOrNull((o as { pausedAt?: unknown }).pausedAt),
         pausedMessage: bilingualBlock((o as { pausedMessage?: unknown }).pausedMessage, 160),
         acceptWhenClosed: (o as { acceptWhenClosed?: unknown }).acceptWhenClosed === true,
       },

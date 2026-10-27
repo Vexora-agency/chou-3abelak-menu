@@ -3,7 +3,8 @@ export type OrderType = 'delivery' | 'pickup' | 'dinein';
 export type PricingUnit = 'pc' | 'portion' | 'dozen' | 'box' | 'bottle' | 'glass' | 'kg';
 
 export interface ItemPricing {
-  unit: PricingUnit;
+  /** Known unit (PricingUnit) or a free-text custom label (max 24 chars). */
+  unit: string;
   /** Base price per unit. Absent when the item is sold by variants only. */
   price?: number;
   minQty: number;
@@ -37,10 +38,11 @@ export interface ItemVariant {
   price: number;
 }
 
-/** An add-on enabled on one item (0 = free). */
+/** An add-on enabled on one item (0 = free). `default` = pre-selected in the order window; the customer can still remove it. */
 export interface ItemAddon {
   featureId: string;
   price: number;
+  default?: boolean;
 }
 
 export type BadgeId = 'new' | 'spicy' | 'top';
@@ -149,6 +151,8 @@ export interface MenuSettings {  name: { en: string; ar: string };
     paused: boolean;
     /** Auto-resume instant (ISO) or null. Expired values count as resumed. */
     pausedUntil: string | null;
+    /** When the current pause started (ISO) or null. Display-only live timer. */
+    pausedAt: string | null;
     /** Owner message shown while paused (empty = default message). */
     pausedMessage: { en: string; ar: string };
     /** When true, orders are accepted outside business hours. */

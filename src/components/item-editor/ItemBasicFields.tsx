@@ -1,6 +1,6 @@
 import React from 'react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
-import { normalizePricing, unitLabel } from '@/src/utils/pricing';
+import { normalizePricing, unitLabel, UNITS } from '@/src/utils/pricing';
 
 interface ItemBasicFieldsProps {
   item: MenuItem;
@@ -106,24 +106,65 @@ export const ItemBasicFields: React.FC<ItemBasicFieldsProps> = ({
         <div>
           <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'الوحدة' : 'Unit'}</label>
           <select
-            value={item.pricing.unit || 'pc'}
-            onChange={(e) =>
+            value={(UNITS as readonly string[]).includes(item.pricing.unit) ? item.pricing.unit : '__custom'}
+            onChange={(e) => {
+              const v = e.target.value;
               onChange({
                 ...item,
-                pricing: { ...normalizePricing(item), unit: e.target.value as MenuItem['pricing']['unit'] },
-              })
-            }
+                pricing: {
+                  ...normalizePricing(item),
+                  unit: v === '__custom'
+                    ? ((UNITS as readonly string[]).includes(item.pricing.unit) ? '' : item.pricing.unit)
+                    : v,
+                },
+              });
+            }}
             className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm"
           >
-            {/* All units, most common first, with localized names */}
-            {(['pc', 'dozen', 'portion', 'box', 'bottle', 'glass', 'kg'] as const).map((u) => (
-              <option key={u} value={u}>
-                {isAr ? unitLabel(u, 1, 'ar') : unitLabel(u, 1, 'en')} · {u}
-              </option>
-            ))}
+            {/* Known units with localized names (no duplication), then a free-text custom option */}
+            {UNITS.map((u) => {
+              const label = isAr ? unitLabel(u, 1, 'ar') : unitLabel(u, 1, 'en');
+              return (
+                <option key={u} value={u}>
+                  {label === u ? label : `${label} · ${u}`}
+                </option>
+              );
+            })}
+            <option value="__custom">{isAr ? '✎ وحدة مخصصة…' : '✎ Custom…'}</option>
           </select>
+          {!(UNITS as readonly string[]).includes(item.pricing.unit) && (
+            <input
+              type="text"
+              maxLength={24}
+              value={item.pricing.unit}
+              onChange={(e) =>
+                onChange({
+                  ...item,
+                  pricing: { ...normalizePricing(item), unit: e.target.value },
+                })
+              }
+              placeholder={isAr ? 'اكتب الوحدة (مثال: ربطة، كيس)' : 'Type the unit (e.g. pack, bag)'}
+              className="w-full h-10 px-3 mt-1.5 rounded-lg bg-black border border-[#FFC400]/60 text-sm"
+            />
+          )}
         </div>
       </div>
+
+      {/* Show-unit toggle lives right under Unit (live example included) */}
+      <label className="flex items-center gap-2 text-xs cursor-pointer">
+        <input
+          type="checkbox"
+          checked={!!item.pricing.showUnit}
+          onChange={(e) =>
+            onChange({
+              ...item,
+              pricing: { ...normalizePricing(item), showUnit: e.target.checked },
+            })
+          }
+          className="w-4 h-4 rounded text-[#FFC400]"
+        />
+        <span className="font-bold">{isAr ? `إظهار الوحدة بجانب السعر (مثال: / ${unitLabel(normalizePricing(item).unit, 1, lang)})` : `Show unit next to price (e.g. / ${unitLabel(normalizePricing(item).unit, 1, lang)})`}</span>
+      </label>
     </>
   );
 };

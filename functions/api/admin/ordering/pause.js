@@ -52,9 +52,11 @@ export async function onRequest(context) {
     if (resume) {
       next.settings.ordering.paused = false;
       next.settings.ordering.pausedUntil = null;
+      next.settings.ordering.pausedAt = null;
     } else {
       next.settings.ordering.paused = true;
       next.settings.ordering.pausedUntil = minutes === null ? null : new Date(Date.now() + minutes * 60000).toISOString();
+      next.settings.ordering.pausedAt = new Date().toISOString();
     }
     const validation = validateMenu(next);
     if (!validation.ok) return jsonNoStore({ ok: false, error: 'validation_error' }, 400);
@@ -73,7 +75,7 @@ export async function onRequest(context) {
       };
       await snapshotMenu(env, { prevDoc: current, incomingDoc: doc, source: 'manual', actor });
       await env.MENU_KV.put('menu', JSON.stringify(doc));
-      return jsonNoStore({ ok: true, paused: doc.settings.ordering.paused, pausedUntil: doc.settings.ordering.pausedUntil, version: doc.version });
+      return jsonNoStore({ ok: true, paused: doc.settings.ordering.paused, pausedUntil: doc.settings.ordering.pausedUntil, pausedAt: doc.settings.ordering.pausedAt, version: doc.version });
     } catch {
       return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
     }

@@ -61,7 +61,7 @@ export default function App() {
 
   const {
     cart, cartLines, totalCartCount, totalCartPrice,
-    handleAddItem, handleAddConfigured, handleUpdateLine, handleRemoveLine, handleClearCart,
+    handleAddItem, handleAddConfigured, handleUpdateLine, handleRemoveLine, handleRemoveAddon, handleClearCart,
   } = useShopCartState(menu, setActiveItem);
 
   // Online / Offline listener
@@ -278,6 +278,7 @@ export default function App() {
           lines={cartLines}
           onUpdateLine={handleUpdateLine}
           onRemoveLine={handleRemoveLine}
+          onRemoveAddon={handleRemoveAddon}
           onClearCart={handleClearCart}
           currency={currency}
           lang={lang}

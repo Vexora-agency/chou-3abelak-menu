@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';
 import type { MenuData, MenuSettings } from '@/src/types/menu';
-import { featuresByGroup } from '@/src/utils/pricing';
+import { featuresByGroup, normalizePricing } from '@/src/utils/pricing';
 import { FeatureRow } from '@/src/components/features/FeatureRow';
 import { FeatureSectionFooter } from '@/src/components/features/FeatureSectionFooter';
 
@@ -21,6 +21,9 @@ interface FeaturesSectionProps {
   lang: 'en' | 'ar';
   onToggleCollapse: (groupId: string) => void;
   onConfirm: (box: AdminConfirmBox) => void;
+  /** Delete features everywhere: strips them from all items, then removes
+   *  the defs (and the group when a section is deleted). */
+  onDeleteFeatures: (defIds: string[], groupId?: string) => void;
   onUpdate: (updater: (prev: LibraryValues) => LibraryValues) => void;
 }
 
@@ -31,6 +34,7 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
   lang,
   onToggleCollapse,
   onConfirm,
+  onDeleteFeatures,
   onUpdate,
 }) => {
   const isAr = lang === 'ar';
@@ -74,13 +78,35 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                       (it.addons || []).some((a) => (menu.settings.featureDefs || []).some((x) => x.id === a.featureId && x.groupId === group.id))
                   ).length;
                   if (inItems > 0) {
+                    // Free delete: features are stripped from the items too.
+                    const defIds = (menu.settings.featureDefs || [])
+                      .filter((x) => x.groupId === group.id)
+                      .map((x) => x.id);
+                    const doomed = menu.items.filter((it) => {
+                      const vs = it.variants || [];
+                      return (
+                        vs.length > 0 &&
+                        vs.every((v) =>
+                          (menu.settings.featureDefs || []).some((x) => x.id === v.featureId && x.groupId === group.id)
+                        ) &&
+                        normalizePricing(it).price === undefined
+                      );
+                    }).length;
                     onConfirm({
                       title: isAr ? `حذف قسم "${sectionName}"؟` : `Delete the "${sectionName}" section?`,
                       body: isAr
-                        ? `ميزاته مستخدمة في ${inItems === 1 ? 'صنف واحد' : `${inItems} أصناف`}. احذفها من الأصناف أولاً ثم احذف القسم.`
-                        : `Its features are used by ${inItems === 1 ? '1 item' : `${inItems} items`}. Remove them from the items first, then delete the section.`,
-                      confirmText: '',
-                      mode: 'info',
+                        ? `ميزاته مستخدمة في ${inItems === 1 ? 'صنف واحد' : `${inItems} أصناف`} — ستُحذف منها أيضاً.${
+                            doomed > 0
+                              ? ` ${doomed === 1 ? 'صنف واحد' : `${doomed} أصناف`} سيفقد مقاسه الوحيد ويتحول لسعر ثابت بنفس السعر.`
+                              : ''
+                          }`
+                        : `Its features are used by ${inItems === 1 ? '1 item' : `${inItems} items`} — they will also be removed from those items.${
+                            doomed > 0
+                              ? ` ${doomed === 1 ? '1 item' : `${doomed} items`} will lose their only size and switch to a fixed price instead.`
+                              : ''
+                          }`,
+                      confirmText: isAr ? 'حذف القسم' : 'Delete section',
+                      action: () => onDeleteFeatures(defIds, group.id),
                     });
                     return;
                   }
@@ -157,7 +183,7 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
               ) : (
                 <div className="rounded-xl border border-neutral-800 bg-black/40 divide-y divide-neutral-800 overflow-hidden">
                   {features.map((f) => (
-                    <FeatureRow key={f.id} f={f} menu={menu} isAr={isAr} onConfirm={onConfirm} onUpdate={onUpdate} />
+                    <FeatureRow key={f.id} f={f} menu={menu} isAr={isAr} onConfirm={onConfirm} onDeleteFeatures={onDeleteFeatures} onUpdate={onUpdate} />
                   ))}
                 </div>
               )}

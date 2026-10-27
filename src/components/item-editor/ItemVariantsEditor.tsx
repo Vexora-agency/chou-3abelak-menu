@@ -29,8 +29,8 @@ export const ItemVariantsEditor: React.FC<ItemVariantsEditorProps> = ({
       </div>
       <p className="text-[11px] text-neutral-500 mb-1.5">
         {isAr
-          ? 'اللي تحط عليه النجمة هو الافتراضي — والنجمة ثابتة مكانها مبتحركش الترتيب. بدون نجمة: الأول افتراضياً.'
-          : 'Whatever you star is the default — the star stays in place and never reorders. No star: the first is the default.'}
+          ? 'اللي تحط عليه النجمة هو الافتراضي — والنجمة ثابتة مكانها مبتحركش الترتيب. بدون نجمة: الأول افتراضياً. سعر فارغ أو 0 = مجاناً.'
+          : 'Whatever you star is the default — the star stays in place and never reorders. No star: the first is the default. Empty or 0 price = free.'}
       </p>
       {((item.variants || []).length === 0) && (
         <p className="text-[11px] text-neutral-500 mb-1.5">
@@ -124,9 +124,10 @@ export const ItemVariantsEditor: React.FC<ItemVariantsEditorProps> = ({
               <input
                 type="number"
                 step="any"
+                min={0}
                 value={v.price}
                 aria-label={isAr ? 'سعر الحجم' : 'Size price'}
-                title={isAr ? 'سعر هذا الحجم لهذا الصنف' : 'This size’s price on this item'}
+                title={isAr ? 'سعر هذا الحجم لهذا الصنف (فارغ أو 0 = مجاناً)' : 'This size’s price on this item (empty or 0 = free)'}
                 onChange={(e) => {
                   const vs = [...(item.variants || [])];
                   vs[vi] = { ...vs[vi], price: Number(e.target.value) };

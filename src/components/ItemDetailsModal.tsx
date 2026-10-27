@@ -48,7 +48,8 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
     setLastItemId(openItemId);
     if (item) {
       setVariantId(getVariant(item)?.featureId);
-      setAddonIds([]);
+      // Default-on add-ons open pre-selected — the customer can remove them.
+      setAddonIds(itemAddons(item).filter((a) => a.default).map((a) => a.featureId));
       setQty(normalizePricing(item).minQty);
     }
   }

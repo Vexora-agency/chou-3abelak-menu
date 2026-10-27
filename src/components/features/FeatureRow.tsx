@@ -1,6 +1,7 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
 import type { FeatureDef, MenuData, MenuSettings } from '@/src/types/menu';
+import { normalizePricing } from '@/src/utils/pricing';
 
 type LibraryValues = Pick<MenuSettings, 'featureGroups' | 'featureDefs'>;
 
@@ -15,6 +16,8 @@ interface FeatureRowProps {
     mode?: 'confirm' | 'info';
     action?: () => void;
   }) => void;
+  /** Delete this feature everywhere: stripped from all items, then removed. */
+  onDeleteFeatures: (defIds: string[]) => void;
   onUpdate: (updater: (prev: LibraryValues) => LibraryValues) => void;
 }
 
@@ -23,6 +26,7 @@ export const FeatureRow: React.FC<FeatureRowProps> = ({
   menu,
   isAr,
   onConfirm,
+  onDeleteFeatures,
   onUpdate,
 }) => {
   const usage = menu.items.filter(
@@ -82,14 +86,32 @@ export const FeatureRow: React.FC<FeatureRowProps> = ({
                 (it.addons || []).some((a) => a.featureId === f.id)
             ).length;
             if (n > 0) {
+              // Free delete: the feature is stripped from the items too.
+              // Items left with no sizes become fixed-price at the same amount.
+              const doomed = menu.items.filter((it) => {
+                const vs = it.variants || [];
+                return (
+                  vs.length === 1 &&
+                  vs[0].featureId === f.id &&
+                  normalizePricing(it).price === undefined
+                );
+              }).length;
               const featName = ((isAr ? f.name.ar : f.name.en) || f.id);
               onConfirm({
                 title: isAr ? `حذف "${featName}"؟` : `Delete "${featName}"?`,
                 body: isAr
-                  ? `مستخدمة في ${n === 1 ? 'صنف واحد' : `${n} أصناف`}. احذفها من الأصناف أولاً ثم احذفها من هنا.`
-                  : `Used by ${n === 1 ? '1 item' : `${n} items`}. Remove it from the items first, then delete it here.`,
-                confirmText: '',
-                mode: 'info',
+                  ? `مستخدمة في ${n === 1 ? 'صنف واحد' : `${n} أصناف`} — ستُحذف منها أيضاً.${
+                      doomed > 0
+                        ? ` ${doomed === 1 ? 'صنف واحد' : `${doomed} أصناف`} سيفقد مقاسه الوحيد ويتحول لسعر ثابت بنفس السعر.`
+                        : ''
+                    }`
+                  : `Used by ${n === 1 ? '1 item' : `${n} items`} — it will also be removed from those items.${
+                      doomed > 0
+                        ? ` ${doomed === 1 ? '1 item' : `${doomed} items`} will lose their only size and switch to a fixed price instead.`
+                        : ''
+                    }`,
+                confirmText: isAr ? 'حذف' : 'Delete',
+                action: () => onDeleteFeatures([f.id]),
               });
               return;
             }

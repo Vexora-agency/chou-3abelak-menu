@@ -16,6 +16,7 @@ interface CartDrawerProps {
   lines: ResolvedCartLine[];
   onUpdateLine: (key: string, dir: 1 | -1) => void;
   onRemoveLine: (key: string) => void;
+  onRemoveAddon: (lineKey: string, featureId: string) => void;
   onClearCart: () => void;
   currency: string;
   lang: 'en' | 'ar';
@@ -30,6 +31,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   lines,
   onUpdateLine,
   onRemoveLine,
+  onRemoveAddon,
   onClearCart,
   currency,
   lang,
@@ -196,6 +198,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               darkMode={darkMode}
               onUpdateLine={onUpdateLine}
               onRemoveLine={onRemoveLine}
+              onRemoveAddon={onRemoveAddon}
             />
 
             {/* Customer Inputs Form */}
@@ -215,6 +218,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
             {/* Error + Bill Summary */}
             <OrderSummaryLines
               errorMsg={errorMsg}
+              lines={lines}
+              menu={menu}
               subtotal={subtotal}
               deliveryFee={deliveryFee}
               grandTotal={grandTotal}

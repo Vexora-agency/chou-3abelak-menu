@@ -111,8 +111,9 @@ export function useAdminCatalog({
         return;
       }
       seenV.add(v.featureId);
-      if (typeof v.price !== 'number' || !Number.isFinite(v.price) || v.price <= 0) {
-        alert(isAr ? 'سعر الحجم يجب أن يكون رقماً > 0' : 'Size price must be a number > 0');
+      // Empty (cleared) or 0 = free; negative is rejected.
+      if (typeof v.price !== 'number' || !Number.isFinite(v.price) || v.price < 0) {
+        alert(isAr ? 'سعر الحجم يجب أن يكون رقماً ≥ 0 (فارغ أو 0 = مجاناً)' : 'Size price must be a number ≥ 0 (empty or 0 = free)');
         return;
       }
     }
@@ -130,19 +131,23 @@ export function useAdminCatalog({
       }
     }
     if (variants.length === 0) {
-      if (rawPricing.price === undefined || typeof rawPricing.price !== 'number' || !Number.isFinite(rawPricing.price) || rawPricing.price < 0) {
-        alert(isAr ? 'السعر يجب أن يكون رقماً ≥ 0 (أو أضف أحجاماً)' : 'Price must be a number ≥ 0 (or add sizes)');
+      // Empty = free (saved as 0 below); only negative/NaN is rejected.
+      const rp = rawPricing.price;
+      if (rp !== undefined && (typeof rp !== 'number' || !Number.isFinite(rp) || rp < 0)) {
+        alert(isAr ? 'السعر لا يمكن أن يكون سالباً (اتركه فارغاً للمجاني)' : 'Price can’t be negative (leave it empty for free)');
         return;
       }
     }
 
     // Auto-fill the blank language from the written one
     const pricing = normalizePricing(editingItem);
+    // No sizes + no price typed = free item.
+    if (variants.length === 0 && pricing.price === undefined) pricing.price = 0;
     const filled: MenuItem = {
       ...editingItem,
       pricing,
       ...(variants.length ? { variants: variants.map((v) => ({ featureId: v.featureId, price: v.price })) } : { variants: undefined }),
-      ...(addons.length ? { addons: addons.map((a) => ({ featureId: a.featureId, price: a.price })) } : { addons: undefined }),
+      ...(addons.length ? { addons: addons.map((a) => ({ featureId: a.featureId, price: a.price, ...(a.default ? { default: true as const } : {}) })) } : { addons: undefined }),
       // Keep an explicit default only when it still points at a size
       ...(editingItem.defaultVariant && variants.some((v) => v.featureId === editingItem.defaultVariant)
         ? { defaultVariant: editingItem.defaultVariant }

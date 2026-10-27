@@ -117,7 +117,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
   const visibleChanges = analysis ? analysis.changes.filter((c) => includeSettings || c.scope !== 'settings') : [];
   const needsWord = !!analysis && visibleChanges.length > 0;
   const okToApply = needsWord && typed.trim().toUpperCase() === t.confirmWord.toUpperCase() && !busy;
-  const apply = async () => { if (!analysis) return; setBusy(true); const r = await onApplyImport(analysis.token, { includeSettings: includeSettings && canSettings }); setBusy(false); if (r.ok) setApplied(true); };
+  const apply = async () => { if (!analysis) return; setBusy(true); const r = await onApplyImport(analysis.token, { includeSettings: includeSettings && canSettings }); setBusy(false); if (r.ok) setApplied(true); else flashErr(t.applyFailed); };
 
   const Tab = (id: typeof tab, label: string, icon: React.ReactNode, badge?: number) => (    <button key={id} type="button" onClick={() => setTab(id)} aria-pressed={tab === id}
       className={`relative shrink-0 px-3.5 h-9 rounded-full text-xs font-bold whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${tab === id ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}>

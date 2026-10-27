@@ -13,6 +13,26 @@ interface BackupHistoryOptions {
   replaceMenu: (doc: MenuData) => void;
 }
 
+/** Specific, actionable message per analyze failure (instead of one generic alert). */
+function analyzeErrorText(code: string, detail: string, isAr: boolean): string {
+  switch (code) {
+    case 'payload_too_large':
+      return isAr ? 'الملف أكبر من 2 ميغابايت. قسّمه أو قلّص حجمه وحاول مجدداً.' : 'The file is larger than 2 MB. Split it or shrink it and try again.';
+    case 'unsafe_json':
+      return isAr ? 'الملف مرفوض لأسباب أمنية (مفاتيح ممنوعة أو تداخل عميق جداً).' : 'File rejected for security reasons (forbidden keys or excessive nesting).';
+    case 'bad_csv':
+      return isAr ? 'ملف CSV غير صالح — تأكد أن أول سطر هو: category,item_id,name_en,name_ar,variant_id,variant_en,variant_ar,price,unit,available' : 'Invalid CSV file — the first row must be: category,item_id,name_en,name_ar,variant_id,variant_en,variant_ar,price,unit,available';
+    case 'bad_json':
+      return isAr ? 'ملف JSON غير صالح — تأكد من الصيغة (أقواس وفواصل سليمة).' : 'Invalid JSON file — check the syntax (balanced brackets and commas).';
+    case 'validation_error':
+      return detail || (isAr ? 'تعذر فحص الملف. تحقق من الصيغة وحاول مجدداً.' : 'Could not analyze the file. Check the format and try again.');
+    case 'rate_limited':
+      return isAr ? 'محاولات كثيرة — انتظر قليلاً وحاول مجدداً.' : 'Too many attempts — wait a while and try again.';
+    default:
+      return isAr ? 'تعذر فحص الملف. تحقق من الصيغة وحاول مجدداً.' : 'Could not analyze the file. Check the format and try again.';
+  }
+}
+
 /** Backup & history domain: versions, trash, import/export, undo toast. */
 export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused: savePausedRef, menuVersion, replaceMenu }: BackupHistoryOptions) {
   const [versions, setVersions] = useState<VersionEntry[]>([]);
@@ -169,20 +189,26 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
   }, [adminFetch, isAr, lang]);
 
   const onAnalyzeImport = useCallback(async (file: File) => {
+    // Client-side guard with a specific message (the server enforces the same 2 MB limit).
+    if (file.size > 2 * 1024 * 1024) {
+      alert(isAr ? 'الملف أكبر من 2 ميغابايت. قسّمه أو قلّص حجمه وحاول مجدداً.' : 'The file is larger than 2 MB. Split it or shrink it and try again.');
+      throw new Error('analyze_failed');
+    }
     const ext = (file.name.split('.').pop() || '').toLowerCase();
     const contentType = file.type.includes('csv') || ext === 'csv' ? 'text/csv' : 'application/json';
     try {
-      const r = await adminFetch(`/api/admin/import/analyze?lang=${lang}`, {
+      const r = await adminFetch(`/api/admin/import/analyze?lang=${lang}&name=${encodeURIComponent(file.name.slice(0, 120))}`, {
         method: 'POST',
         headers: { 'Content-Type': contentType },
         body: file,
       });
       const d: unknown = await readJson(r);
-      if (!r.ok) {
-        alert(isAr ? 'تعذر فحص الملف. تحقق من الصيغة وحاول مجدداً.' : 'Could not analyze the file. Check the format and try again.');
+      if (!r.ok || !isRecord(d)) {
+        const errStr = (v: unknown) => (typeof v === 'string' ? v : '');
+        alert(analyzeErrorText(errStr(d && isRecord(d) ? d.error : ''), errStr(d && isRecord(d) ? d.message : ''), isAr));
         throw new Error('analyze_failed');
       }
-      return (isRecord(d) ? d : {}) as unknown as ImportAnalysis;
+      return d as unknown as ImportAnalysis;
     } catch (e) {
       if (e instanceof Error && e.message === 'analyze_failed') throw e;
       alert(isAr ? 'تعذر فحص الملف. تحقق من الصيغة وحاول مجدداً.' : 'Could not analyze the file. Check the format and try again.');

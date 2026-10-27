@@ -1,9 +1,13 @@
 import React from 'react';
-import { formatPrice } from '@/src/utils/pricing';
+import type { MenuData, ResolvedCartLine } from '@/src/types/menu';
+import { formatPrice, unitPrice, featureName } from '@/src/utils/pricing';
+import { pickLangText } from '@/src/utils/menuHelpers';
 import { AlertCircle } from 'lucide-react';
 
 interface OrderSummaryLinesProps {
   errorMsg: string;
+  lines: ResolvedCartLine[];
+  menu: MenuData;
   subtotal: number;
   deliveryFee: number;
   grandTotal: number;
@@ -17,6 +21,8 @@ interface OrderSummaryLinesProps {
 
 export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
   errorMsg,
+  lines,
+  menu,
   subtotal,
   deliveryFee,
   grandTotal,
@@ -46,6 +52,37 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
             : 'bg-neutral-100 border-neutral-200 text-neutral-700'
         }`}
       >
+        {/* Itemized receipt: base + every add-on with its price */}
+        {lines.length > 0 && (
+          <div className={`space-y-1.5 pb-2 border-b ${darkMode ? 'border-neutral-800' : 'border-neutral-200'}`}>
+            {lines.map((l) => {
+              const base = unitPrice(l.item, l.variantId);
+              const parts = [
+                `${l.variantId ? featureName(menu, l.variantId, lang) : pickLangText(l.item.name, lang)} ${formatPrice(base, currency)}`,
+                ...l.addonIds.map((id) => {
+                  const price = (l.item.addons || []).find((a) => a && a.featureId === id)?.price ?? 0;
+                  return `${featureName(menu, id, lang)} ${formatPrice(price, currency)}`;
+                }),
+              ];
+              return (
+                <div key={l.key}>
+                  <div className="flex justify-between items-baseline gap-2">
+                    <span className={`font-bold ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
+                      {pickLangText(l.item.name, lang)}
+                      <span className="tabular-nums"> ×{l.quantity}</span>
+                    </span>
+                    <span className={`font-bold tabular-nums whitespace-nowrap ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+                      {formatPrice(l.total, currency)}
+                    </span>
+                  </div>
+                  <p className={`text-[11px] tabular-nums ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                    {parts.join(' + ')}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
         {feeActive && (
           <div className="flex justify-between items-center">
             <span className={darkMode ? 'text-neutral-400' : 'text-neutral-600'}>

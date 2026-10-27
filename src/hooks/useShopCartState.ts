@@ -167,6 +167,30 @@ export function useShopCartState(menu: MenuData | null, setActiveItem: (item: Me
     });
   };
 
+  // Remove ONE add-on from a line (re-keys the line; merges into the
+  // matching line when that config already sits in the cart).
+  const handleRemoveAddon = (key: string, featureId: string) => {
+    setCart((prev) => {
+      const line = prev[key];
+      if (!line || !line.addonIds || !line.addonIds.includes(featureId)) return prev;
+      const addonIds = line.addonIds.filter((a) => a !== featureId);
+      const nextKey = cartLineKey(line.id, line.variantId, addonIds.length ? addonIds : undefined);
+      if (nextKey === key) return prev;
+      const item = menu?.items.find((i) => i.id === line.id);
+      const copy = { ...prev };
+      delete copy[key];
+      const next: CartLine = { id: line.id, quantity: line.quantity };
+      if (line.variantId) next.variantId = line.variantId;
+      if (addonIds.length) next.addonIds = addonIds;
+      const ex = copy[nextKey];
+      if (ex && item) {
+        next.quantity = snapDown(item, ex.quantity + line.quantity);
+      }
+      copy[nextKey] = next;
+      return copy;
+    });
+  };
+
   const handleClearCart = () => {
     setCart({});
   };
@@ -199,6 +223,7 @@ export function useShopCartState(menu: MenuData | null, setActiveItem: (item: Me
     handleAddConfigured,
     handleUpdateLine,
     handleRemoveLine,
+    handleRemoveAddon,
     handleClearCart,
   };
 }

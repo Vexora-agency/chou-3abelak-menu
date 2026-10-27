@@ -39,7 +39,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setTimeout(() => setSaveSuccess(false), 2500);
   }, []);
 
-  const [activeTab, setActiveTab] = useState<AdminTab>('settings'); // TEMP-PROOF-ONLY
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => {
+    // Deep-link: #admin/backup (or any tab) survives refresh.
+    const m = /^#admin\/([a-z]+)$/.exec(window.location.hash);
+    const t = m ? (m[1] as AdminTab) : null;
+    return t === 'dashboard' || t === 'settings' || t === 'categories' || t === 'items' || t === 'backup'
+      ? t
+      : 'dashboard';
+  });
+  // Keep the tab in the address bar (replaceState: no history spam, refresh-safe).
+  useEffect(() => {
+    const want = `#admin/${activeTab}`;
+    if (window.location.hash !== want) {
+      window.history.replaceState(null, '', want);
+    }
+  }, [activeTab]);
 
   // Item edit modal state
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);

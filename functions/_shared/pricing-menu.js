@@ -30,11 +30,28 @@ function cleanInt(v, fallback) {
  * pricing { unit:'portion', price, minQty:1, step:1, maxQty:50, showUnit:false }.
  * Never throws — returns best-effort defaults for garbage input.
  */
+
+/** Control characters (would break CSV/WhatsApp lines) — a custom label containing any falls back. */
+function hasControlChars(s) {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c <= 31 || c === 127) return true;
+  }
+  return false;
+}
+
 export function normalizePricing(item) {
   const raw = item && typeof item === 'object' ? item.pricing : null;
   const legacy = item && typeof item.price === 'number' && Number.isFinite(item.price) ? Math.max(0, round2(item.price)) : null;
   const base = raw && typeof raw === 'object' ? raw : {};
-  const unit = UNITS.includes(base.unit) ? base.unit : 'portion';
+  // Mirror of the client copy: known units pass; a short custom label is
+  // kept as-is; anything else falls back to 'portion'.
+  const rawUnit = typeof base.unit === 'string' ? base.unit.trim() : '';
+  const unit = UNITS.includes(rawUnit)
+    ? rawUnit
+    : rawUnit && rawUnit.length <= 24 && !hasControlChars(rawUnit)
+      ? rawUnit
+      : 'portion';
   let price;
   if (isMoney(base.price) && base.price >= 0) price = round2(base.price);
   else if (legacy !== null) price = legacy;

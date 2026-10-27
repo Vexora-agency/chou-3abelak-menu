@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { MenuData } from '@/src/types/menu';
-import type { Change, VersionEntry, TrashEntry, ImportAnalysis } from '@/src/components/BackupPanel';
+import type { ActivityEntry, Change, VersionEntry, TrashEntry, ImportAnalysis } from '@/src/components/BackupPanel';
 import { isRecord, readJson } from '@/src/utils/safeJson';
 
 interface BackupHistoryOptions {
@@ -19,6 +19,7 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
   const [trash, setTrash] = useState<TrashEntry[]>([]);
   const [backupStatus, setBackupStatus] = useState<{ lastBackupAt?: string; autoWeekly: boolean; destination?: string }>({ autoWeekly: false });
   const [undoToast, setUndoToast] = useState<{ label: string; undo: () => void } | null>(null);
+  const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const undoTimer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(undoTimer.current), []);
 
@@ -54,11 +55,22 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
     } catch {}
   }, [adminFetch]);
 
-  // Load backup data when the backup tab opens (fetch trigger).
+  const fetchActivity = useCallback(async () => {
+    try {
+      const r = await adminFetch('/api/admin/activity');
+      if (!r.ok) return;
+      const d: unknown = await readJson(r);
+      if (isRecord(d) && Array.isArray(d.activity)) {
+        setActivity((d.activity as ActivityEntry[]).filter((a) => a && typeof a === 'object'));
+      }
+    } catch {}
+  }, [adminFetch]);
+
+  // Load backup data + activity when the backup tab opens (fetch triggers).
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch trigger, see above
-    if (activeTab === 'backup') void fetchBackupData();
-  }, [activeTab, fetchBackupData]);
+    if (activeTab === 'backup') { void fetchBackupData(); void fetchActivity(); }
+  }, [activeTab, fetchBackupData, fetchActivity]);
 
   // Adopt the authoritative menu after restore/import/trash ops (auto-save
   // stays paused until the refresh completes).
@@ -71,13 +83,14 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
       if (!isRecord(doc) || !isRecord(doc.settings) || !Array.isArray(doc.items)) return false;
       replaceMenu(doc as unknown as MenuData);
       await fetchBackupData();
+      await fetchActivity();
       return true;
     } catch {
       return false;
     } finally {
       savePausedRef.current = false;
     }
-  }, [adminFetch, fetchBackupData, replaceMenu, savePausedRef]);
+  }, [adminFetch, fetchBackupData, fetchActivity, replaceMenu, savePausedRef]);
 
   const handleRestoreTrashById = useCallback(async (trashId: string): Promise<boolean> => {
     try {
@@ -193,10 +206,9 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
     }
   }, [adminFetch, refreshMenuFromServer]);
 
-  const onRestoreTrash = useCallback(async (id: string) => {
-    const ok = await handleRestoreTrashById(id);
-    if (!ok) alert(isAr ? 'تعذر الاسترجاع. حاول مجدداً.' : 'Could not restore. Please try again.');
-  }, [handleRestoreTrashById, isAr]);
+  const onRestoreTrash = useCallback(async (id: string): Promise<boolean> => {
+    return handleRestoreTrashById(id);
+  }, [handleRestoreTrashById]);
 
   const onDeleteForever = useCallback(async (id: string) => {
     try {
@@ -221,7 +233,7 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
 
   return {
     versions, trash, backupStatus, undoToast, showUndoToast, clearUndoToast,
-    fetchBackupData, refreshMenuFromServer, handleRestoreTrashById,
+    activity, fetchActivity, fetchBackupData, refreshMenuFromServer, handleRestoreTrashById,
     onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport,
     onRestoreTrash, onDeleteForever, onToggleAuto,
   };

@@ -4,7 +4,9 @@
  */
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../../_shared/session.js';
+import { logActivity } from '../../../../_shared/activity.js';
 import {
+  getActor,
   readTrash,
   removeTrashEntry,
   restoreValidatedMenu,
@@ -17,7 +19,10 @@ export async function onRequest(context) {
   if (request.method !== 'POST') return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'POST' });
   if (!env.MENU_KV) return jsonNoStore({ error: 'unavailable' }, 503);
 
-  const id = typeof params?.id === 'string' ? params.id : '';
+  let id = typeof params?.id === 'string' ? params.id : '';
+  try {
+    id = decodeURIComponent(id);
+  } catch { /* keep raw; the lookup below simply misses */ }
   let body;
   try {
     body = await readJsonBody(request, 1024);
@@ -87,6 +92,20 @@ export async function onRequest(context) {
     doc: next, prevDoc: menu, source: 'manual', expectedVersion: baseVersion,
   });
   if (restored.res) return restored.res;
+  try {
+    const nm = (entry.data && entry.data.name) || {};
+    const name = nm.en || nm.ar || id;
+    const nameAr = nm.ar || nm.en || id;
+    const actor = await getActor(request, env);
+    await logActivity(env, {
+      actor,
+      action: 'trash.restore',
+      label: {
+        en: `Restored ${entry.kind} "${name}" from trash`,
+        ar: `استرجاع ${entry.kind === 'item' ? 'الصنف' : 'القسم'} "${nameAr}" من المحذوفات`,
+      },
+    });
+  } catch {}
   await removeTrashEntry(env, id);
   return jsonNoStore({ ok: true, version: restored.doc.version });
 }

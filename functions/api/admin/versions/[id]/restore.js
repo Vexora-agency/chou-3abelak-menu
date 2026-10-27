@@ -5,7 +5,8 @@
  */
 
 import { checkApiHeaders, jsonNoStore } from '../../../../_shared/session.js';
-import { getVersionDoc, restoreValidatedMenu } from '../../../../_shared/versions.js';
+import { getVersionDoc, getActor, restoreValidatedMenu } from '../../../../_shared/versions.js';
+import { logActivity } from '../../../../_shared/activity.js';
 
 export async function onRequest(context) {
   const { request, env, params } = context;
@@ -40,5 +41,16 @@ export async function onRequest(context) {
     doc: stored.menu, prevDoc: current, source: 'restore', expectedVersion, invalidError: 'invalid_version',
   });
   if (restored.res) return restored.res;
+  try {
+    const actor = await getActor(request, env);
+    await logActivity(env, {
+      actor,
+      action: 'version.restore',
+      label: {
+        en: `Restored backup version (now v${restored.doc.version})`,
+        ar: `استرجاع نسخة احتياطية (الآن الإصدار ${restored.doc.version})`,
+      },
+    });
+  } catch {}
   return jsonNoStore({ ok: true, version: restored.doc.version });
 }

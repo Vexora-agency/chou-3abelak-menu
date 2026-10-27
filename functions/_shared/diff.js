@@ -37,10 +37,12 @@ const L = {
     orderingTypes: 'Order types',
     minOrder: 'Minimum order',
     deliveryFee: 'Delivery fee',
-    on: 'on',
-    off: 'off',
-  },
-  ar: {
+  on: 'on',
+  off: 'off',
+  emptyCategory: 'Empty category',
+  itemsInCategory: (n) => (n === 1 ? '1 item' : `${n} items`),
+},
+ar: {
     price: 'السعر',
     name: 'الاسم',
     availability: 'التوفر',
@@ -66,6 +68,8 @@ const L = {
     deliveryFee: 'رسوم التوصيل',
     on: 'مفعّل',
     off: 'مغلق',
+    emptyCategory: 'قسم فارغ',
+    itemsInCategory: (n) => (n === 1 ? 'صنف واحد' : n === 2 ? 'صنفان' : `${n} أصناف`),
   },
 };
 
@@ -74,11 +78,19 @@ const SENSITIVE_RE = /whatsapp|phone|mapurl|ordering|currency|timezone|plan/i;
 const fmtMoney = (n) =>
   typeof n === 'number' && Number.isFinite(n) ? Math.round(n).toLocaleString('en-US') : '—';
 
-const itemName = (it, lang) =>
-  (it && it.name && (it.name[lang] || it.name.en)) || (it && it.id) || 'item';
+const itemName = (it, lang) => {
+  const nm = (it && it.name && (it.name[lang] || it.name.en)) || '';
+  if (typeof nm === 'string' && nm.trim()) return nm.trim();
+  const id = (it && it.id) || '';
+  return id ? `${id} (${lang === 'ar' ? 'بدون اسم' : 'unnamed'})` : lang === 'ar' ? 'صنف' : 'item';
+};
 
-const catName = (c, lang) =>
-  (c && c.name && (c.name[lang] || c.name.en)) || (c && c.id) || 'category';
+const catName = (c, lang) => {
+  const nm = (c && c.name && (c.name[lang] || c.name.en)) || '';
+  if (typeof nm === 'string' && nm.trim()) return nm.trim();
+  const id = (c && c.id) || '';
+  return id ? `${id} (${lang === 'ar' ? 'بدون اسم' : 'unnamed'})` : lang === 'ar' ? 'قسم' : 'category';
+};
 
 /** Comparable price signature: simple price, else sorted variant prices. */
 function priceSig(it) {
@@ -140,7 +152,9 @@ export function diffMenus(a, b, lang = 'en') {
     if (!id) continue;
     const ob = am.get(id);
     if (!ob) {
-      push({ kind: 'added', scope: 'item', label: itemName(nb, l), detail: `${t.category}: ${catName(catOf(B, nb.categoryId), l)}` });
+      const pb = simplePrice(nb);
+      const priceBit = pb !== null ? ` · ${t.price} ${fmtMoney(pb)}` : '';
+      push({ kind: 'added', scope: 'item', label: itemName(nb, l), detail: `${t.category}: ${catName(catOf(B, nb.categoryId), l)}${priceBit}` });
       continue;
     }
     if (itemName(ob, 'en') !== itemName(nb, 'en') || itemName(ob, 'ar') !== itemName(nb, 'ar')) {
@@ -173,7 +187,9 @@ export function diffMenus(a, b, lang = 'en') {
   }
   for (const [id, ob] of am) {
     if (!id || bm.has(id)) continue;
-    push({ kind: 'removed', scope: 'item', label: itemName(ob, l), detail: `${t.category}: ${catName(catOf(A, ob.categoryId), l)}` });
+    const pb = simplePrice(ob);
+    const priceBit = pb !== null ? ` · ${t.price} ${fmtMoney(pb)}` : '';
+    push({ kind: 'removed', scope: 'item', label: itemName(ob, l), detail: `${t.category}: ${catName(catOf(A, ob.categoryId), l)}${priceBit}` });
   }
 
   // ---- categories (by id) ----
@@ -182,7 +198,8 @@ export function diffMenus(a, b, lang = 'en') {
   for (const [id, nc] of bc) {
     if (!id) continue;
     if (!ac.has(id)) {
-      push({ kind: 'added', scope: 'category', label: catName(nc, l) });
+      const n = (Array.isArray(B.items) ? B.items : []).filter((it) => it && it.categoryId === id).length;
+      push({ kind: 'added', scope: 'category', label: catName(nc, l), detail: n > 0 ? t.itemsInCategory(n) : t.emptyCategory });
     } else {
       const oc = ac.get(id);
       if (catName(oc, 'en') !== catName(nc, 'en') || catName(oc, 'ar') !== catName(nc, 'ar')) {
@@ -192,7 +209,8 @@ export function diffMenus(a, b, lang = 'en') {
   }
   for (const [id, oc] of ac) {
     if (!id || bc.has(id)) continue;
-    push({ kind: 'removed', scope: 'category', label: catName(oc, l) });
+    const n = (Array.isArray(A.items) ? A.items : []).filter((it) => it && it.categoryId === id).length;
+    push({ kind: 'removed', scope: 'category', label: catName(oc, l), detail: n > 0 ? t.itemsInCategory(n) : t.emptyCategory });
   }
 
   // ---- addonGroups (legacy array) ----

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { MenuData, MenuItem, AdminSaveResult } from '@/src/types/menu';
 import BackupPanel from '@/src/components/BackupPanel';
 import { normalizePricing } from '@/src/utils/pricing';
@@ -89,6 +89,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     handleRestoreTrashById: backup.handleRestoreTrashById,
     editingItem, setEditingItem, isNewItem,
   });
+
+  // Refresh the activity feed after every successful save (manual or autosave).
+  const fetchActivityOnSave = backup.fetchActivity;
+  useEffect(() => {
+    if (saveSuccess) void fetchActivityOnSave();
+  }, [saveSuccess, fetchActivityOnSave]);
 
   const handleTabChange = (tab: AdminTab) => {
     setActiveTab(tab);
@@ -222,10 +228,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           onExport={backup.onExport}
           onAnalyzeImport={backup.onAnalyzeImport}
           onApplyImport={backup.onApplyImport}
-          onRestoreTrash={backup.onRestoreTrash}
-          onDeleteForever={backup.onDeleteForever}
-          onToggleAuto={backup.onToggleAuto}
-        />
+        onRestoreTrash={backup.onRestoreTrash}
+        onDeleteForever={backup.onDeleteForever}
+        onToggleAuto={backup.onToggleAuto}
+        activity={backup.activity}
+      />
       )}
 
       <AdminOverlays

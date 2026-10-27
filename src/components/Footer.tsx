@@ -110,7 +110,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
               <span className="w-8 h-8 rounded-full bg-[#1C1C1C] text-[#FFC400] flex items-center justify-center flex-shrink-0">
                 <Phone size={16} />
               </span>
-              <a href={phoneLink} className="hover:text-[#FFC400] transition-colors font-medium">
+                <a href={phoneLink} dir="ltr" className="hover:text-[#FFC400] transition-colors font-medium">
                 {menu.settings.phone}
               </a>
             </div>

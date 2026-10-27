@@ -7,6 +7,7 @@
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../_shared/session.js';
 import { validateMenu } from '../../_shared/validate.js';
+import { logActivity } from '../../_shared/activity.js';
 import {
   getActor,
   pushTrash,
@@ -84,5 +85,19 @@ export async function onRequest(context) {
   }
   if (!written.ok) return jsonNoStore({ ok: false, error: 'conflict', version: written.current ? written.current.version : null }, 409);
   const saved = await pushTrash(env, entry);
+  try {
+    const nm = (entry.data && entry.data.name) || {};
+    const name = nm.en || nm.ar || id;
+    const nameAr = nm.ar || nm.en || id;
+    await logActivity(env, {
+      actor,
+      action: kind === 'item' ? 'item.delete' : 'category.delete',
+      label: {
+        en: `Deleted ${kind} "${name}" (restorable from trash)`,
+        ar: `حذف ${kind === 'item' ? 'الصنف' : 'القسم'} "${nameAr}" (يمكن استرجاعه من المحذوفات)`,
+      },
+      ref: { kind: 'trash', id: saved.id },
+    });
+  } catch {}
   return jsonNoStore({ ok: true, trashId: saved.id, version: written.doc.version });
 }

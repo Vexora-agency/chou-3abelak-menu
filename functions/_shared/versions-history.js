@@ -130,9 +130,18 @@ export async function pruneVersions(env) {
 }
 
 export async function getVersionDoc(env, id) {
-  if (typeof id !== 'string' || !/^[A-Za-z0-9:._-]{1,128}$/.test(id)) return null;
+  if (typeof id !== 'string' || !id) return null;
+  // Route params may arrive percent-encoded (IDs contain ':' from ISO dates).
+  // Decode first so encoded and raw forms resolve to the same document.
+  let key = id;
   try {
-    const raw = await env.MENU_KV.get(VER_KEY(id));
+    key = decodeURIComponent(key);
+  } catch {
+    return null;
+  }
+  if (!/^[A-Za-z0-9:._-]{1,128}$/.test(key)) return null;
+  try {
+    const raw = await env.MENU_KV.get(VER_KEY(key));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object' || !parsed.menu) return null;

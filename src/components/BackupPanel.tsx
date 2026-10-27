@@ -1,8 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
-  AlertTriangle, Archive, Check, Clock, Download, FileJson, FileSpreadsheet, History, Loader2,
-  Printer, RotateCcw, ShieldAlert, ShieldCheck, Trash2, Upload, X,
+  Activity, AlertTriangle, Archive, Check, Clock, Download, FileJson, FileSpreadsheet, History, Loader2, Printer, RotateCcw, ShieldAlert, ShieldCheck, Trash2, Upload, Undo2, X,
 } from 'lucide-react';
 import { STR } from '@/src/components/backup/backupStrings';
 import { card, fmtDate, rel } from '@/src/components/backup/backupUtils';
@@ -26,6 +25,14 @@ export interface VersionEntry {
   current?: boolean;
 }
 export interface TrashEntry { id: string; kind: 'item' | 'category'; name: { en: string; ar: string }; deletedAt: string; purgeInDays: number }
+export interface ActivityEntry {
+  id: string;
+  t: string;
+  actor: string;
+  action: string;
+  label: { en: string; ar: string };
+  ref: { kind: 'trash' | 'version'; id: string } | null;
+}
 export interface ImportAnalysis {
   fileName: string; format: 'json' | 'csv';
   signed: boolean | null; // null for CSV
@@ -42,30 +49,65 @@ interface BackupPanelProps {
   onExport: (kind: 'json' | 'csv' | 'print') => void | Promise<void>;
   onAnalyzeImport: (file: File) => Promise<ImportAnalysis>;
   onApplyImport: (token: string, opts: { includeSettings: boolean }) => Promise<{ ok: boolean }>;
-  onRestoreTrash: (id: string) => Promise<void>;
+  onRestoreTrash: (id: string) => Promise<boolean>;
   onDeleteForever: (id: string) => Promise<void>;
   onToggleAuto: (on: boolean) => Promise<void>;
+  activity: ActivityEntry[];
 }
 
-const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status, onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport, onRestoreTrash, onDeleteForever, onToggleAuto }) => {
+const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status, onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport, onRestoreTrash, onDeleteForever, onToggleAuto, activity }) => {
   const t = STR[lang]; const isAr = lang === 'ar'; const reduce = useReducedMotion();
   const [tab, setTab] = useState<'history' | 'export' | 'import' | 'trash'>('history');
+  const [actFilter, setActFilter] = useState<'all' | 'saves' | 'deletes' | 'restores' | 'imports'>('all');
   const [limit, setLimit] = useState(6);
   const [modal, setModal] = useState<{ v: VersionEntry; changes: Change[] | null } | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [errNote, setErrNote] = useState<string | null>(null);
   const [drag, setDrag] = useState(false);
   const [analysis, setAnalysis] = useState<ImportAnalysis | null>(null);
   const [includeSettings, setIncludeSettings] = useState(false);
+  const [busyUndoId, setBusyUndoId] = useState<string | null>(null);
+  const doUndoTrash = async (trashId: string | null | undefined) => {
+    if (!trashId || busyUndoId) return;
+    setBusyUndoId(trashId);
+    try {
+      const ok = await onRestoreTrash(trashId);
+      if (!ok) flashErr(t.actUndoFail);
+    } finally {
+      setBusyUndoId(null);
+    }
+  };
   const [typed, setTyped] = useState('');
   const [applied, setApplied] = useState(false);
   const [sure, setSure] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const flash = (s: string) => { setNote(s); window.setTimeout(() => setNote(null), 4200); };
+  const flashErr = (s: string) => { setErrNote(s); window.setTimeout(() => setErrNote(null), 6000); };
   const rise = (d: number) => ({ initial: reduce ? (false as const) : { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.45, delay: d, ease: [0.22, 1, 0.36, 1] as const } });
 
   const openRestore = async (v: VersionEntry) => { setModal({ v, changes: null }); const c = await onLoadChanges(v.id); setModal({ v, changes: c }); };
-  const doRestore = async () => { if (!modal) return; setBusy(true); const r = await onRestoreVersion(modal.v.id); setBusy(false); if (r.ok) { setModal(null); flash(t.done); } };
+  const doRestore = async () => { if (!modal) return; setBusy(true); const r = await onRestoreVersion(modal.v.id); setBusy(false); if (r.ok) { setModal(null); flash(t.done); } else { flashErr(t.restoreFailed); } };
+
+  // One timeline: version snapshots + logged actions, newest first.
+  // 'save' actions are skipped — their version rows already represent them.
+  type FeedItem = { kind: 'version'; t: string; v: VersionEntry } | { kind: 'act'; t: string; a: ActivityEntry };
+  // Undo is offered only while the trash entry still exists — a second
+  // click (or an already-purged entry) surfaces a clear error instead.
+  const trashIds = new Set(trash.map((x) => x.id));
+  const feed: FeedItem[] = [
+    ...versions.map((v): FeedItem => ({ kind: 'version', t: v.createdAt || '', v })),
+    ...activity.filter((a) => a.action !== 'save').map((a): FeedItem => ({ kind: 'act', t: a.t || '', a })),
+  ]
+    .filter((f) => {
+      if (actFilter === 'all') return true;
+      if (f.kind === 'version') return actFilter === 'saves';
+      if (actFilter === 'deletes') return f.a.action === 'item.delete' || f.a.action === 'trash.delete';
+      if (actFilter === 'restores') return f.a.action === 'trash.restore' || f.a.action === 'version.restore';
+      if (actFilter === 'imports') return f.a.action === 'import.apply';
+      return false;
+    })
+    .sort((x, y) => (x.t < y.t ? 1 : x.t > y.t ? -1 : 0));
 
   const analyze = async (file: File | undefined) => {
     if (!file) return; setBusy(true); setApplied(false); setTyped(''); setIncludeSettings(false);
@@ -77,8 +119,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
   const okToApply = needsWord && typed.trim().toUpperCase() === t.confirmWord.toUpperCase() && !busy;
   const apply = async () => { if (!analysis) return; setBusy(true); const r = await onApplyImport(analysis.token, { includeSettings: includeSettings && canSettings }); setBusy(false); if (r.ok) setApplied(true); };
 
-  const Tab = (id: typeof tab, label: string, icon: React.ReactNode, badge?: number) => (
-    <button key={id} type="button" onClick={() => setTab(id)} aria-pressed={tab === id}
+  const Tab = (id: typeof tab, label: string, icon: React.ReactNode, badge?: number) => (    <button key={id} type="button" onClick={() => setTab(id)} aria-pressed={tab === id}
       className={`relative shrink-0 px-3.5 h-9 rounded-full text-xs font-bold whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${tab === id ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}>
       {tab === id && <motion.span layoutId="bk-tab" className="absolute inset-0 rounded-full bg-[#FFC400]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
       <span className="relative z-10 inline-flex items-center gap-1.5">{icon}{label}{badge ? <span className={`px-1.5 rounded-full text-[10px] ${tab === id ? 'bg-black/15' : 'bg-neutral-800'}`}>{badge}</span> : null}</span>
@@ -106,37 +147,74 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
       <AnimatePresence initial={false}>
         {note && (<motion.div role="status" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
           <div className="flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-500/10 px-3.5 py-3 text-xs text-green-300"><Check size={15} />{note}</div></motion.div>)}
+        {errNote && (<motion.div role="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+          <div className="flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-3.5 py-3 text-xs text-red-300"><AlertTriangle size={15} />{errNote}</div></motion.div>)}
       </AnimatePresence>
 
-      {/* HISTORY */}
+      {/* HISTORY — one timeline: snapshots + logged actions, newest first */}
       {tab === 'history' && (
         <motion.div key="h" {...rise(0)} className={card}>
           <p className="text-xs leading-relaxed text-neutral-400">{t.histIntro}</p>
-          <div className="mt-3 space-y-2">
-            {versions.slice(0, limit).map((v) => (
-              <div key={v.id} className={`rounded-xl border p-3 ${v.current ? 'border-[#FFC400]/40 bg-[#FFC400]/[0.05]' : 'border-neutral-800 bg-black/40'}`}>
-                <div className="flex items-center gap-3">
-                  <span className="w-9 h-9 shrink-0 rounded-xl bg-black border border-neutral-800 text-[#FFC400] flex items-center justify-center">{v.source === 'restore' ? <RotateCcw size={16} /> : v.source === 'import' ? <Upload size={16} /> : <Archive size={16} />}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2 flex-wrap"><b className="text-sm">{t.src[v.source]}</b>{v.current && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FFC400] text-[#0A0A0A]">{t.current}</span>}</span>
-                    <span className="block text-[11px] text-neutral-400 mt-0.5">{fmtDate(v.createdAt, lang)} · {t.by} {v.actor}</span>
-                  </span>
-                  {!v.current && (
-                    <span className="flex gap-1.5 shrink-0">
-                      <button type="button" onClick={() => void openRestore(v)} className="btn-tactile h-9 px-3 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold hover:border-[#FFC400] hover:text-[#FFC400]">{t.preview}</button>
-                    </span>
-                  )}
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-bold">
-                  {v.summary.added > 0 && <span className="px-2 py-0.5 rounded-full bg-green-500/15 text-green-400">+{v.summary.added} {t.added}</span>}
-                  {v.summary.removed > 0 && <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400">−{v.summary.removed} {t.removed}</span>}
-                  {v.summary.changed > 0 && <span className="px-2 py-0.5 rounded-full bg-[#FFC400]/15 text-[#FFC400]">~{v.summary.changed} {t.changed}</span>}
-                  {v.summary.prices > 0 && <span className="px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300">{v.summary.prices} {t.prices}</span>}
-                </div>
-              </div>
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {([
+              ['all', t.fAll],
+              ['saves', t.fSaves],
+              ['deletes', t.fDeletes],
+              ['restores', t.fRestores],
+              ['imports', t.fImports],
+            ] as const).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setActFilter(k)}
+                aria-pressed={actFilter === k}
+                className={`h-8 px-3.5 rounded-full text-[11px] font-bold border transition-colors ${actFilter === k ? 'bg-[#FFC400] border-[#FFC400] text-[#0A0A0A]' : 'bg-transparent border-neutral-700 text-neutral-400 hover:border-neutral-500 hover:text-white'}`}
+              >
+                {label}
+              </button>
             ))}
           </div>
-          {versions.length > limit && <button type="button" onClick={() => setLimit((l) => l + 6)} className="btn-tactile mt-3 w-full h-10 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold hover:bg-white/5">+{versions.length - limit}</button>}
+          <div className="mt-3 space-y-2">
+            {feed.length === 0 && <p className="py-8 text-center text-xs text-neutral-500">{t.actEmpty}</p>}
+            {feed.slice(0, limit).map((f) =>
+              f.kind === 'version' ? (
+                <div key={`v-${f.v.id}`} className={`rounded-xl border p-3 ${f.v.current ? 'border-[#FFC400]/40 bg-[#FFC400]/[0.05]' : 'border-neutral-800 bg-black/40'}`}>
+                  <div className="flex items-center gap-3">
+                    <span className="w-9 h-9 shrink-0 rounded-xl bg-black border border-neutral-800 text-[#FFC400] flex items-center justify-center">{f.v.source === 'restore' ? <RotateCcw size={16} /> : f.v.source === 'import' ? <Upload size={16} /> : <Archive size={16} />}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2 flex-wrap"><b className="text-sm">{t.src[f.v.source]}</b>{f.v.current && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FFC400] text-[#0A0A0A]">{t.current}</span>}</span>
+                      <span className="block text-[11px] text-neutral-400 mt-0.5">{fmtDate(f.v.createdAt, lang)} · {t.by} {f.v.actor}</span>
+                    </span>
+                    {!f.v.current && (
+                      <span className="flex gap-1.5 shrink-0">
+                        <button type="button" onClick={() => void openRestore(f.v)} className="btn-tactile h-9 px-3 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold hover:border-[#FFC400] hover:text-[#FFC400]">{t.preview}</button>
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-bold">
+                    {f.v.summary.added > 0 && <span className="px-2 py-0.5 rounded-full bg-green-500/15 text-green-400">+{f.v.summary.added} {t.added}</span>}
+                    {f.v.summary.removed > 0 && <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400">−{f.v.summary.removed} {t.removed}</span>}
+                    {f.v.summary.changed > 0 && <span className="px-2 py-0.5 rounded-full bg-[#FFC400]/15 text-[#FFC400]">~{f.v.summary.changed} {t.changed}</span>}
+                    {f.v.summary.prices > 0 && <span className="px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300">{f.v.summary.prices} {t.prices}</span>}
+                  </div>
+                </div>
+              ) : (
+                <div key={`a-${f.a.id || `${f.a.t}-${f.a.action}`}`} className="rounded-xl border border-neutral-800 bg-black/40 p-3 flex items-center gap-3">
+                  <span className="w-9 h-9 shrink-0 rounded-xl bg-black border border-neutral-800 text-[#FFC400] flex items-center justify-center"><Activity size={16} /></span>
+                  <span className="min-w-0 flex-1">
+                    <b className="block text-xs leading-snug">{isAr ? f.a.label.ar : f.a.label.en}</b>
+                    <span className="text-[11px] text-neutral-500">{rel(f.a.t, lang)} · {f.a.actor}</span>
+                  </span>
+                      {f.a.ref?.kind === 'trash' && trashIds.has(f.a.ref.id) && (
+                        <button type="button" onClick={() => void doUndoTrash(f.a.ref?.id)} disabled={busyUndoId === f.a.ref?.id} className="btn-tactile h-9 px-3 rounded-full border border-neutral-700 text-neutral-200 text-xs font-extrabold inline-flex items-center gap-1.5 shrink-0 hover:border-[#FFC400] hover:text-[#FFC400] disabled:opacity-50" title={t.actUndo}>
+                          {busyUndoId === f.a.ref?.id ? <Loader2 size={14} className="animate-spin" /> : <><Undo2 size={14} />{t.actUndo}</>}
+                        </button>
+                      )}
+                </div>
+              )
+            )}
+          </div>
+          {feed.length > limit && <button type="button" onClick={() => setLimit((l) => l + 10)} className="btn-tactile mt-3 w-full h-10 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold hover:bg-white/5">+{feed.length - limit}</button>}
         </motion.div>
       )}
 
@@ -238,8 +316,8 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
                   <span className="w-9 h-9 shrink-0 rounded-xl bg-black border border-neutral-800 text-neutral-400 flex items-center justify-center"><Trash2 size={16} /></span>
                   <span className="min-w-0 flex-1"><b className="block text-sm truncate">{isAr ? x.name.ar : x.name.en}</b>
                     <span className="text-[11px] text-neutral-500">{x.kind === 'item' ? t.item : t.category} · {rel(x.deletedAt, lang)} · {t.purge(x.purgeInDays)}</span></span>
-                  <span className="flex gap-1.5 shrink-0">
-                    <button type="button" onClick={() => void onRestoreTrash(x.id)} className="btn-tactile h-9 px-3 rounded-full bg-[#FFC400] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1"><RotateCcw size={13} />{t.restoreItem}</button>
+                    <span className="flex gap-1.5 shrink-0">
+                      <button type="button" onClick={() => void doUndoTrash(x.id)} disabled={busyUndoId === x.id} className="btn-tactile h-9 px-3 rounded-full bg-[#FFC400] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1 disabled:opacity-50">{busyUndoId === x.id ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}{t.restoreItem}</button>
                     <button type="button" onClick={() => { if (sure === x.id) { setSure(null); void onDeleteForever(x.id); } else setSure(x.id); }} onBlur={() => setSure(null)}
                       className={`btn-tactile h-9 px-3 rounded-full border text-xs font-bold ${sure === x.id ? 'border-red-400 bg-red-500/15 text-red-300' : 'border-neutral-700 text-neutral-400'}`}>{sure === x.id ? t.sure : <Trash2 size={13} aria-label={t.deleteForever} />}</button>
                   </span>

@@ -65,19 +65,57 @@ export async function sendEmail(env, { to, subject, html, text, attachments, ide
   return { id: data && typeof data.id === 'string' ? data.id : null };
 }
 
-/** Confirmation-link email (bilingual, link only — no account details). */
+/** Confirmation-link email: same brand shell as the monthly report email
+ *  (black logo band, gold accents, white card, black footer) so the two are
+ *  visibly from the same restaurant. Bilingual EN block + AR block, each with
+ *  its own button. Dark-mode force-light roles included like the report mail. */
 export function confirmEmailContent(confirmUrl, siteName) {
   const safe = String(confirmUrl || '');
   const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const name = String(siteName || 'our restaurant');
+  let logo = '';
+  try {
+    const origin = new URL(safe).origin;
+    if (origin.startsWith('https://')) logo = `${origin}/assets/email-logo.png`;
+  } catch {}
+  const btn = (label) => `<table role="presentation" cellpadding="0" cellspacing="0"><tr><td class="em-ylb" bgcolor="#FFC400" style="background:#FFC400;border-radius:999px;"><a href="${esc(safe)}" class="em-tink" style="display:inline-block;padding:15px 34px;font-size:15px;font-weight:bold;color:#0A0A0A;text-decoration:none;font-family:Arial,Tahoma,sans-serif;">${esc(label)}</a></td></tr></table>`;
   return {
     subject: `Confirm your report email / أكّد بريد التقارير`,
-    html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;">`
-      + `<p>Click the link below to confirm this address for monthly reports from ${esc(name)}.</p>`
-      + `<p><a href="${esc(safe)}">Confirm email address</a></p>`
-      + `<p dir="rtl">انقر الرابط أدناه لتأكيد هذا العنوان لاستلام التقارير الشهرية من ${esc(name)}.</p>`
-      + `<p dir="rtl"><a href="${esc(safe)}">تأكيد البريد الإلكتروني</a></p>`
-      + `<p style="color:#888;font-size:12px;">This link expires in 48 hours. / تنتهي صلاحية الرابط خلال 48 ساعة.</p></div>`,
+    html: `<!doctype html>
+<html lang="en" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark"><title>Confirm your report email</title>
+<style>@media (prefers-color-scheme: dark){
+.em-dark-keep{background-color:#0A0A0A!important;}
+.em-bgw{background-color:#FFFFFF!important;}
+.em-tink{color:#0A0A0A!important;}.em-tgrey{color:#5A5A5A!important;}.em-tmut{color:#8A8A8A!important;}
+.em-ylb{background-color:#FFC400!important;}.em-ylt{color:#FFC400!important;}
+}
+[data-ogsc] .em-dark-keep{background-color:#0A0A0A!important;}
+[data-ogsc] .em-bgw{background-color:#FFFFFF!important;}
+[data-ogsc] .em-tink{color:#0A0A0A!important;}[data-ogsc] .em-tgrey{color:#5A5A5A!important;}[data-ogsc] .em-tmut{color:#8A8A8A!important;}
+[data-ogsc] .em-ylb{background-color:#FFC400!important;}[data-ogsc] .em-ylt{color:#FFC400!important;}</style></head>
+<body style="margin:0;padding:0;background:#EDEDED;font-family:Arial,Tahoma,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#EDEDED"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;">
+  <tr><td class="em-dark-keep" bgcolor="#0A0A0A" align="center" style="background:#0A0A0A;border-radius:20px 20px 0 0;padding:30px 24px 24px;">
+    ${logo ? `<img src="${esc(logo)}" width="180" alt="${esc(name)}" style="display:block;margin:0 auto;border:0;max-width:180px;height:auto;font-size:18px;font-weight:bold;color:#FFC400;">` : ''}
+    <div class="em-ylt" style="margin-top:16px;font-size:12px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;color:#FFC400;">Email confirmation</div>
+  </td></tr>
+  <tr><td class="em-ylb" bgcolor="#FFC400" height="4" style="background:#FFC400;height:4px;font-size:0;line-height:0;">&nbsp;</td></tr>
+  <tr><td class="em-bgw" bgcolor="#FFFFFF" style="padding:30px 28px 6px;text-align:left;">
+    <div class="em-tink" style="font-size:22px;line-height:28px;font-weight:bold;color:#0A0A0A;">Confirm your email</div>
+    <div class="em-tgrey" style="font-size:15px;line-height:22px;color:#5A5A5A;margin-top:8px;">Click the button below to confirm this address for monthly reports from ${esc(name)}.</div>
+  </td></tr>
+  <tr><td class="em-bgw" bgcolor="#FFFFFF" align="center" style="padding:20px 28px 8px;">${btn('Confirm email address')}</td></tr>
+  <tr><td class="em-bgw" bgcolor="#FFFFFF" dir="rtl" style="padding:18px 28px 6px;text-align:right;">
+    <div class="em-tink" style="font-size:22px;line-height:28px;font-weight:bold;color:#0A0A0A;">أكّد بريدك</div>
+    <div class="em-tgrey" style="font-size:15px;line-height:22px;color:#5A5A5A;margin-top:8px;">انقر الزر أدناه لتأكيد هذا العنوان لاستلام التقارير الشهرية من ${esc(name)}.</div>
+  </td></tr>
+  <tr><td class="em-bgw" bgcolor="#FFFFFF" align="center" dir="rtl" style="padding:20px 28px 8px;">${btn('تأكيد البريد الإلكتروني')}</td></tr>
+  <tr><td class="em-bgw em-tmut" bgcolor="#FFFFFF" align="center" style="padding:14px 28px 28px;font-size:12px;color:#8A8A8A;">This link expires in 48 hours. / تنتهي صلاحية الرابط خلال 48 ساعة.</td></tr>
+  <tr><td class="em-dark-keep" bgcolor="#0A0A0A" align="center" style="background:#0A0A0A;border-radius:0 0 20px 20px;padding:22px 24px;font-size:12px;line-height:19px;color:#BDBDBD;">
+    Monthly reports from ${esc(name)} will reach this address once confirmed.
+  </td></tr>
+</table></td></tr></table></body></html>`,
     text: `Confirm your report email: ${safe}\n(This link expires in 48 hours.)\n\nتأكيد بريد التقارير: ${safe}\n(تنتهي صلاحية الرابط خلال 48 ساعة.)`,
   };
 }

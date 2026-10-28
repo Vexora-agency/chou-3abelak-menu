@@ -1,6 +1,7 @@
 // Renderer checks for the monthly report email: enabled-only order types
 // and dark-mode force-light roles. Run: node scripts/test-report-email.mjs
 import { renderMonthlyReportEmail } from '../functions/_shared/report-email.js';
+import { confirmEmailContent } from '../functions/_shared/mail.js';
 
 let passed = 0;
 let failed = 0;
@@ -49,6 +50,19 @@ const data = () => ({
   ok(html.includes('prefers-color-scheme'), 'media query present');
   ok(!/class="[^"]*"[^>]*class="/.test(html), 'no duplicate class attributes');
   ok(html.includes('https://example.com/#admin/reports'), 'manage link deep-links the reports view');
+}
+
+/* ---------------- confirmation email: same brand shell ---------------- */
+{
+  const c = confirmEmailContent('https://site.example/api/reports/confirm?token=abc', 'Chou 3abelak');
+  ok(c.subject === 'Confirm your report email / أكّد بريد التقارير', 'confirm subject unchanged');
+  ok(c.html.includes('https://site.example/assets/email-logo.png'), 'confirm logo derived from link origin');
+  ok(c.html.includes('Confirm email address') && c.html.includes('تأكيد البريد الإلكتروني'), 'confirm CTAs bilingual');
+  ok(c.html.includes('em-dark-keep') && c.html.includes('[data-ogsc]'), 'confirm dark roles present');
+  ok(!/class="[^"]*"[^>]*class="/.test(c.html), 'confirm: no duplicate class attributes');
+  ok(!c.html.includes('className='), 'confirm: no react-isms in raw html');
+  const noLogo = confirmEmailContent('not-a-url', 'X');
+  ok(!noLogo.html.includes('<img'), 'confirm omits logo when origin unknown');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

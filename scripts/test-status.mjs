@@ -1,9 +1,11 @@
 // Unit tests for the ordering state machine (DST-safe, business timezone)
 // and the new validator fields (pause, announcement, privacy).
-// Run: node scripts/test-status.mjs
+// Run: npx tsx scripts/test-status.mjs (tsx: src/utils imports use the @
+// alias, which plain node cannot resolve).
 import { getOrderingState } from '../functions/_shared/status.js';
 import { validateMenu } from '../functions/_shared/validate.js';
-import { applyDraftPause } from '../src/utils/ordering.ts';
+import { applyDraftPause, resolveLiveOrdering } from '../src/utils/ordering.ts';
+import { formatHMS, formatMMSS } from '../src/utils/countdown.ts';
 
 let passed = 0;
 let failed = 0;
@@ -113,6 +115,19 @@ const base = () => ({
   const aw = base();
   aw.ordering.acceptWhenClosed = true;
   ok(getOrderingState(aw, night).state === 'open', 'acceptWhenClosed bypasses closed');
+  // resolveLiveOrdering: poller wins unless provably stale (paused with a
+  // reached deadline — a state the server never returns, so it must be old).
+  const liveMenu = { settings: base() };
+  const fresh = { state: 'paused', message: { en: '', ar: '' }, reopensAt: new Date(monOpen + 60000).toISOString() };
+  ok(resolveLiveOrdering(fresh, liveMenu, monOpen) === fresh, 'fresh poller wins by identity');
+  const stale = { state: 'paused', message: { en: '', ar: '' }, reopensAt: new Date(monOpen - 1000).toISOString() };
+  ok(resolveLiveOrdering(stale, liveMenu, monOpen).state === 'open', 'stale paused poller recomputed to open');
+  ok(resolveLiveOrdering(null, liveMenu, monOpen).state === 'open', 'null poller falls back to machine');
+  ok(resolveLiveOrdering(undefined, liveMenu, night).state === 'closed', 'undefined poller falls back to machine');
+  // countdown formatting shared by admin panel and customer line
+  ok(formatMMSS(90000) === '1:30' && formatMMSS(61000) === '1:01' && formatMMSS(0) === '0:00', 'countdown mm:ss');
+  ok(formatMMSS(3661000) === '1:01:01' && formatMMSS(-500) === '0:00', 'countdown hours + clamp');
+  ok(formatHMS(3661000) === '01:01:01' && formatHMS(61000) === '00:01:01', 'countdown hh:mm:ss');
 }
 
 /* ---------------- validator additions ---------------- */

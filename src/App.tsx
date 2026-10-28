@@ -4,7 +4,8 @@ import { clientConfig } from '@/src/config/client.config';
 import { themeConfig } from '@/src/config/theme.config';
 import { Header } from '@/src/components/Header';
 import { AnnouncementBanner } from '@/src/components/AnnouncementBanner';
-import { getOrderingState, type OrderingStatus } from '@/src/utils/status';
+import { type OrderingStatus } from '@/src/utils/status';
+import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { serverNow } from '@/src/utils/serverTime';
 import { SearchAndChips, FeaturedCarousel, MenuList, ItemDetailsModal, useMenuLoader } from '@/src/features/menu';
 import { CartBar, CartDrawer } from '@/src/features/cart';
@@ -145,7 +146,9 @@ export default function App() {
   const featuredItems = menu.items.filter((i) => i.featured && i.available);
   // Live endpoint state wins; the menu-derived state is the fail-open
   // fallback when the endpoint is unreachable (an outage never stops orders).
-  const liveOrderingState: OrderingStatus | null = orderingState ?? getOrderingState(menu.settings, serverNow());
+  // resolveLiveOrdering additionally discards a provably-stale paused value
+  // so bar and drawer flip in the same second the deadline passes.
+  const liveOrderingState: OrderingStatus | null = resolveLiveOrdering(orderingState, menu, serverNow());
 
   return (
     <MotionConfig reducedMotion="never">

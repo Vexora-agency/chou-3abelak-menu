@@ -1,4 +1,5 @@
-import type { MenuSettings } from '@/src/types/menu';
+import type { MenuData, MenuSettings } from '@/src/types/menu';
+import { getOrderingState, type OrderingStatus } from '@/src/utils/status';
 
 type Ordering = MenuSettings['ordering'];
 
@@ -15,4 +16,29 @@ export function applyDraftPause(ordering: Ordering, paused: boolean, nowIso: str
     return { ...ordering, paused: true, pausedUntil: null, pausedAt: nowIso };
   }
   return { ...ordering, paused: false, pausedUntil: null, pausedAt: null };
+}
+
+/**
+ * Single display truth for availability: the live poller wins, EXCEPT a
+ * poller value the server could never have produced — paused with an already
+ * reached deadline (only possible when it went stale after expiry). That
+ * case recomputes locally so the UI flips to open in the same second instead
+ * of showing the previous pause's resume time for up to a poll interval.
+ * Used by the storefront shell and the cart alike, so admin countdown and
+ * customer line always converge on the same instant.
+ */
+export function resolveLiveOrdering(
+  polled: OrderingStatus | null | undefined,
+  menu: MenuData,
+  nowMs: number
+): OrderingStatus {
+  if (polled) {
+    const deadline = polled.state === 'paused' && typeof polled.reopensAt === 'string'
+      ? Date.parse(polled.reopensAt)
+      : NaN;
+    if (!(Number.isFinite(deadline) && deadline <= nowMs)) {
+      return polled;
+    }
+  }
+  return getOrderingState(menu.settings, nowMs);
 }

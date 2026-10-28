@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Loader2, Moon, PauseCircle, Play, PowerOff, X } from 'lucide-react';
+import { formatHMS, formatMMSS } from '@/src/utils/countdown';
 
 export type OrderingToggleState = 'open' | 'paused' | 'closed' | 'disabled';
 
@@ -31,9 +32,6 @@ const STR = {
 function formatTime(ms: number, timezone: string, lang: 'en' | 'ar'): string {
   return new Date(ms).toLocaleTimeString(lang === 'ar' ? 'ar-u-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit', timeZone: timezone });
 }
-
-const mmss = (ms: number) => { const s = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60; return `${h ? h + ':' : ''}${String(m).padStart(h ? 2 : 1, '0')}:${String(r).padStart(2, '0')}`; };
-const hhmmss = (ms: number) => { const s = Math.max(0, Math.floor(ms / 1000)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`; };
 
 /** Admin pause control: segmented Accepting/Paused switch, duration picker,
  *  live countdown with progress, and resume — same design as the storefront motion. */
@@ -122,9 +120,9 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
                 <span className="flex items-baseline justify-between gap-3 text-xs">
                   <span className="text-neutral-300">
                     {left !== null ? t.resumesIn : t.manual}
-                    {elapsed !== null && <span className="ms-2 text-neutral-500 tabular-nums">· {t.elapsed} {hhmmss(elapsed)}</span>}
+                    {elapsed !== null && <span className="ms-2 text-neutral-500 tabular-nums">· {t.elapsed} {formatHMS(elapsed)}</span>}
                   </span>
-                  {left !== null && <b className="text-lg font-black tabular-nums text-amber-300" dir="ltr">{mmss(left)}</b>}
+                  {left !== null && <b className="text-lg font-black tabular-nums text-amber-300" dir="ltr">{formatMMSS(left)}</b>}
                 </span>
                 {pct !== null && <span className="mt-2 block h-1.5 rounded-full bg-black overflow-hidden"><motion.span className="block h-full rounded-full bg-amber-300" animate={{ width: `${pct}%` }} transition={{ duration: 1, ease: 'linear' }} /></span>}
               </span>

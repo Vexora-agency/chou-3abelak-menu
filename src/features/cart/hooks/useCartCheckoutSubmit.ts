@@ -1,9 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MenuData, CustomerDetails, ResolvedCartLine } from '@/src/types/menu';
 import { buildWhatsAppMessage, haversineMeters, parseMapUrlCoords, formatDistance } from '@/src/utils/menuHelpers';
 import { formatPrice, round2 } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
-import { getOrderingState, fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
+import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
+import { resolveLiveOrdering } from '@/src/utils/ordering';
+import { formatMMSS } from '@/src/utils/countdown';
 import { clientConfig } from '@/src/config/client.config';
 import { submitOrder } from '../services/cart.api';
 
@@ -89,19 +91,30 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   const idemKeyRef = useRef<string | null>(null);
 
   const subtotal = lines.reduce((acc, l) => acc + l.total, 0);
-  const liveState = orderingState ?? getOrderingState(menu.settings, serverNow());
+  const liveState = resolveLiveOrdering(orderingState, menu, serverNow());
   const orderBlocked = liveState.state !== 'open';
   const blockedMsg = liveState.message[lang] || (isAr ? 'الطلب غير متاح حالياً' : 'Ordering is currently unavailable');
+  // Live resume countdown (same instant the admin panel counts to): ticks
+  // every second while paused so the customer view stays in lockstep, and
+  // flips to open in the same second the deadline passes.
+  const pausedDeadline = liveState.state === 'paused' && typeof liveState.reopensAt === 'string'
+    ? Date.parse(liveState.reopensAt)
+    : NaN;
+  const pausedLive = Number.isFinite(pausedDeadline) && pausedDeadline > serverNow();
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    if (!pausedLive) return;
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [pausedLive]);
   let reopenText = '';
-  // Paused messages carry no time, so append it. Closed defaults already
-  // include the opening time — appending it again would duplicate it.
-  if (liveState.state === 'paused' && liveState.reopensAt) {
-    try {
-      const tz = menu.settings.timezone || 'Asia/Beirut';
-      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(liveState.reopensAt));
-      const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
-      reopenText = isAr ? `· يستأنف ${get('hour')}:${get('minute')}` : `· resumes ${get('hour')}:${get('minute')}`;
-    } catch {}
+  // Paused messages carry no time, so append the live countdown. Closed
+  // defaults already include the opening time — appending it again would
+  // duplicate it.
+  if (pausedLive) {
+    reopenText = isAr
+      ? `· يستأنف بعد ${formatMMSS(pausedDeadline - nowMs)}`
+      : `· resumes in ${formatMMSS(pausedDeadline - nowMs)}`;
   }
   const minActive = !!ordering.minOrderEnabled;
   const feeActive = !!ordering.deliveryFeeEnabled;
@@ -128,7 +141,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
           return;
         }
       } else {
-        const known = orderingState ?? getOrderingState(menu.settings, serverNow());
+        const known = resolveLiveOrdering(orderingState, menu, serverNow());
         if (known.state !== 'open') {
           const msg = known.message[lang];
           setErrorMsg(msg || (isAr ? 'الطلب غير متاح حالياً' : 'Ordering is currently unavailable'));
@@ -136,7 +149,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         }
       }
     } catch {
-      const known = orderingState ?? getOrderingState(menu.settings, serverNow());
+      const known = resolveLiveOrdering(orderingState, menu, serverNow());
       if (known.state !== 'open') {
         const msg = known.message[lang];
         setErrorMsg(msg || (isAr ? 'الطلب غير متاح حالياً' : 'Ordering is currently unavailable'));

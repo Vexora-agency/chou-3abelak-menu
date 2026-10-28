@@ -1,5 +1,7 @@
 import React from 'react';
+import { ChevronDown } from 'lucide-react';
 import type { MenuSettings } from '@/src/types/menu';
+import { DIAL_CODES, OTHER_ISO, composeFull, flagEmoji, splitDialCode } from '@/src/config/dialCodes';
 
 type IdentityValues = Pick<
   MenuSettings,
@@ -24,6 +26,15 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
   onUpdate,
 }) => {
   const isAr = lang === 'ar';
+  // WhatsApp picker (Google-style): country combo + national number input.
+  // Stored value stays a single full-international digit string, so every
+  // consumer (validation, wa.me links, dashboard) works unchanged.
+  const waSplit = splitDialCode(whatsapp);
+  const setWa = (iso: string, national: string) => {
+    const entry = DIAL_CODES.find((c) => c.iso === iso);
+    onUpdate((prev) => ({ ...prev, whatsapp: composeFull(entry ? entry.code : '', national) }));
+  };
+  const waComposed = (whatsapp || '').replace(/\D/g, '');
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
@@ -112,15 +123,42 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
-        <div>
-          <label className="block text-xs text-neutral-400 mb-1">WhatsApp (digits, e.g. 96170123456)</label>
-          <input
-            type="text"
-            value={whatsapp}
-            onChange={(e) => onUpdate((prev) => ({ ...prev, whatsapp: e.target.value.replace(/[^0-9]/g, '') }))}
-            placeholder="96170123456"
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
-          />
+        <div className="col-span-2">
+          <label className="block text-xs text-neutral-400 mb-1">WhatsApp number</label>
+          <div className="flex gap-2" dir="ltr">
+            <div className="relative shrink-0">
+              <select
+                value={waSplit.iso}
+                onChange={(e) => setWa(e.target.value, waSplit.national)}
+                aria-label="Country code"
+                className="h-10 max-w-[150px] ps-2.5 pe-7 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] appearance-none cursor-pointer"
+              >
+                {DIAL_CODES.map((c) => (
+                  <option key={c.iso} value={c.iso}>
+                    {flagEmoji(c.iso)} {c.name} +{c.code}
+                  </option>
+                ))}
+                <option value={OTHER_ISO}>Other (full international)</option>
+              </select>
+              <ChevronDown size={14} className="absolute end-2 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+            </div>
+            <input
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={waSplit.national}
+              onChange={(e) => setWa(waSplit.iso, e.target.value)}
+              placeholder={waSplit.iso === OTHER_ISO ? '96170123456' : '70 123 456'}
+              aria-label="WhatsApp number without country code"
+              dir="ltr"
+              className="flex-1 min-w-0 h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
+            />
+          </div>
+          <p className="text-[11px] text-neutral-500 mt-1" dir="ltr">
+            {waComposed
+              ? <>Stored international: <b className="text-neutral-300 tabular-nums">+{waComposed}</b></>
+              : (isAr ? 'اختر الدولة ثم اكتب الرقم المحلي.' : 'Pick the country, then type the local number.')}
+          </p>
         </div>
       </div>
 

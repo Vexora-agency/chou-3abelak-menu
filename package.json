@@ -13,14 +13,16 @@
     "lint:circular": "depcruise src functions scheduler scripts",
     "lint:isolation": "depcruise src/features",
     "test:client": "tsx scripts/test-safe-json.ts",
+    "test:dial": "tsx scripts/test-dial-codes.ts",
     "test:parity": "tsx scripts/test-parity.mjs",
     "test:cart": "node scripts/test-cart-isolation.mjs",
-    "test:all": "npm run test:client && npm run test:parity && npm run test:cart"
+    "test:all": "npm run test:client && npm run test:dial && npm run test:parity && npm run test:cart"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.1",
+    "@workspace/boosthis-runtime-web": "file:./lib/boosthis-runtime-web",
     "dotenv": "^17.2.3",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.546.0",

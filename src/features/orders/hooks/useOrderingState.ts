@@ -8,6 +8,8 @@ export function useOrderingState() {
   const lastOkRef = useRef<number | null>(null);
   // Latest state mirror for the self-scheduling poller below.
   const stateRef = useRef<OrderingStatus | null>(null);
+  // Last mount/return instant: drives the fast window after opening.
+  const lastReturnRef = useRef<number>(Date.now());
 
   const fetchOrderingState = async () => {
     const state = await fetchOrderingStatus();
@@ -38,14 +40,20 @@ export function useOrderingState() {
       if (!alive) return;
       await fetchOrderingState();
       if (!alive) return;
-      timer = window.setTimeout(tick, pollIntervalMs(stateRef.current));
+      timer = window.setTimeout(tick, pollIntervalMs(stateRef.current, Date.now(), lastReturnRef.current));
     };
     void tick();
+    const markReturn = () => {
+      lastReturnRef.current = Date.now();
+    };
     const onReturn = () => {
+      markReturn();
       void fetchOrderingState();
     };
     const onPageShow = (e: PageTransitionEvent) => {
-      if (e.persisted) void fetchOrderingState();
+      if (!e.persisted) return;
+      markReturn();
+      void fetchOrderingState();
     };
     // Freshness checker: drop data older than two poll periods so a frozen
     // poller can never pin the UI (or a ticking countdown) on dead data.

@@ -139,6 +139,13 @@ const base = () => ({
   ok(pollIntervalMs({ state: 'closed' }) === 60000, 'closed polls slow');
   ok(pollIntervalMs({ state: 'disabled' }) === 60000, 'disabled polls slow');
   ok(pollIntervalMs(null) === 60000, 'unknown polls slow');
+  // fast window after opening/returning (fresh sessions decide fast)
+  const t0 = 2000000;
+  ok(pollIntervalMs({ state: 'open' }, t0, t0) === 10000, 'fresh open polls fast');
+  ok(pollIntervalMs({ state: 'open' }, t0 + 119999, t0) === 10000, 'fast window holds');
+  ok(pollIntervalMs({ state: 'open' }, t0 + 120000, t0) === 60000, 'fast window settles');
+  ok(pollIntervalMs({ state: 'paused' }, t0, t0) === 5000, 'paused beats fast window');
+  ok(pollIntervalMs(null, t0, t0) === 10000, 'unknown state still fast when fresh');
 }
 
 /* ---------------- validator additions ---------------- */

@@ -40,7 +40,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
   // Copies per half + loop duration, measured so the reading speed stays
   // constant: each half holds ≥1 viewport width, the track holds 2 halves
   // and loops 0 → -50% seamlessly.
-  const { boxRef, half, duration } = useTickerLoop(marquee, text, speed);
+  const { boxRef, half, duration, ready } = useTickerLoop(marquee, text, speed);
 
   const renderUnit = (key: number, hidden?: boolean) => (
     <span
@@ -80,7 +80,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
                 aria-hidden="true"
                 dir="ltr"
                 className="ann-track"
-                style={{ ['--ann-duration' as string]: `${Math.max(3, duration)}s` }}
+                style={{ ['--ann-duration' as string]: `${Math.max(3, duration)}s`, animationName: ready ? 'annMarquee' : 'none' }}
               >
                 {Array.from({ length: half * 2 }, (_, i) =>
                   renderUnit(i, true)

@@ -20,7 +20,7 @@ interface AnnouncementSectionProps {
  *  speed (px/s) matches the live banner exactly — same track math
  *  (2 halves, loop 0 → -50%), same pxPerSec curve. */
 function AnnouncementTickerPreview({ text, speed, isAr }: { text: string; speed: number; isAr: boolean }) {
-  const { boxRef, half, duration } = useTickerLoop(true, text, speed);
+  const { boxRef, half, duration, ready } = useTickerLoop(true, text, speed);
 
   return (
     <div
@@ -31,7 +31,7 @@ function AnnouncementTickerPreview({ text, speed, isAr }: { text: string; speed:
         aria-hidden="true"
         dir="ltr"
         className="ann-track"
-        style={{ ['--ann-duration' as string]: `${Math.max(3, duration)}s` }}
+        style={{ ['--ann-duration' as string]: `${Math.max(3, duration)}s`, animationName: ready ? 'annMarquee' : 'none' }}
       >
         {Array.from({ length: half * 2 }, (_, i) => (
           <span key={i} aria-hidden={i > 0 || undefined} className="ann-unit flex shrink-0 items-center">
@@ -154,7 +154,7 @@ function ScheduleField({
             const p = parseDatetimeLocal(e.target.value);
             onPick(p ? deviceWallPartsToUTC(p) : null);
           }}
-          className="w-full h-10 ps-3 pe-9 rounded-xl bg-black border border-neutral-700 text-sm tabular-nums text-neutral-100 focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/40 outline-none [color-scheme:dark] transition-colors"
+          className="w-full min-w-0 h-10 ps-3 pe-9 rounded-xl bg-black border border-neutral-700 text-sm tabular-nums text-neutral-100 focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/40 outline-none [color-scheme:dark] transition-colors"
         />
         {iso && (
           <button

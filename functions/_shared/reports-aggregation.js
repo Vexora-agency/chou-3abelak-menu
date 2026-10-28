@@ -106,8 +106,14 @@ export { itemDisplayName };
 const CSV_HEADER = 'order_number,date,time,type,status,items,subtotal,delivery_fee,total';
 
 export function escapeCSV(v) {
-  const s = String(v ?? '');
-  return /["\n\r,]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  if (v == null) return '';
+  let s = String(v);
+  // OWASP CSV injection (same guard as csvCell in versions-csv.js): report
+  // and customer exports embed attacker-influenced text (item/customer
+  // names, phones, notes). Prefix formula triggers so spreadsheets open
+  // the cell as text, never a formula.
+  if (/^[=+\-@|%]/.test(s) || /^[\t\r]/.test(s)) s = `'${s}`;
+  return /["\n\r,']/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 /** Rows: mapped orders. Customer columns are never read here by construction. */

@@ -13,9 +13,20 @@ export async function findOrderById(db, id) {
   return db.prepare('SELECT * FROM orders WHERE id = ?1').bind(id).first();
 }
 
-export async function getMaxOrderNumber(db) {
-  const row = await db.prepare('SELECT MAX(number) AS m FROM orders').first();
-  return row && typeof row.m === 'number' ? row.m : 1000;
+/**
+ * Atomic order-number allocation via the order_counter table
+ * (migrations/0006_order_counter.sql). UPDATE ... RETURNING is ONE
+ * statement, so concurrent inserts can never draw the same number —
+ * unlike the old MAX(number)+1 read-modify-write. Throws when the
+ * counter row is missing or unparsable (fail loud, never guess).
+ */
+export async function nextOrderNumber(db) {
+  const row = await db
+    .prepare('UPDATE order_counter SET last_number = last_number + 1 WHERE id = 1 RETURNING last_number')
+    .first();
+  const n = row && typeof row.last_number === 'number' ? row.last_number : NaN;
+  if (!Number.isInteger(n)) throw new Error('order_counter_unavailable');
+  return n;
 }
 
 export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
@@ -54,8 +65,22 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
   return { id, num };
 }
 
+/**
+ * Allowlist of window WHERE templates — the ONLY strings that may reach the
+ * SQL below. listOrders() throws on anything else, so a caller-supplied
+ * string can never become SQL (injection impossible by construction, not
+ * by convention). Add new entries here, never at call sites.
+ */
+const WINDOW_WHERE = {
+  explicit: 'WHERE created_at >= ?1 AND created_at < ?2',
+  days: 'WHERE created_at >= ?1',
+};
+
 export async function listOrders(db, where, args, limit) {
-  // Internal: where is one of the two fixed templates built by listOrdersByWindow below.
+  // Enforced allowlist: unknown clauses throw before any SQL is built.
+  if (!Object.values(WINDOW_WHERE).includes(where)) {
+    throw new Error(`Invalid where clause: ${where}`);
+  }
   const res = await db
     .prepare(`SELECT * FROM orders ${where} ORDER BY created_at DESC LIMIT ?${args.length + 1}`)
     .bind(...args, limit)
@@ -65,16 +90,17 @@ export async function listOrders(db, where, args, limit) {
 }
 
 /**
- * Windowed order list. The ONLY entry point routes use: where-clauses are
- * fixed templates chosen here (never raw SQL from the route), values are binds.
- * Shape mirrors the original admin route: explicit from/to window, else days window.
+ * Windowed order list. The ONLY entry point routes use: the template is
+ * picked from WINDOW_WHERE above (never raw SQL from the route), values
+ * are binds. Shape mirrors the original admin route: explicit from/to
+ * window, else days window.
  */
 export async function listOrdersByWindow(db, { from, to, days }, limit) {
   if (typeof from === 'string' && typeof to === 'string') {
-    return listOrders(db, 'WHERE created_at >= ?1 AND created_at < ?2', [from, to], limit);
+    return listOrders(db, WINDOW_WHERE.explicit, [from, to], limit);
   }
   const n = Number.isInteger(days) ? Math.min(365, Math.max(1, days)) : 35;
-  return listOrders(db, 'WHERE created_at >= ?1', [new Date(Date.now() - n * 86400000).toISOString()], limit);
+  return listOrders(db, WINDOW_WHERE.days, [new Date(Date.now() - n * 86400000).toISOString()], limit);
 }
 
 export async function updateOrderStatus(db, id, status) {

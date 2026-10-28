@@ -154,8 +154,8 @@ export async function summarizeCurrentMonth(env, ym) {
   if (!db || !isValidMonth(ym)) return null;
   const { timezone } = await loadMenuBasics(env);
   const { start, end } = monthBoundsUTC(timezone, ym);
-  const nowISO = new Date().toISOString();
-  const effEnd = end < nowISO ? end : nowISO;
+  const nowIso = new Date().toISOString();
+  const effEnd = end < nowIso ? end : nowIso;
   const a = await aggregateBounds(db, start, effEnd);
   const rows = await fetchMonthRows(db, start, effEnd);
   const prev = monthBoundsUTC(timezone, prevMonth(ym));
@@ -167,7 +167,7 @@ export async function summarizeCurrentMonth(env, ym) {
     month: ym,
     summary: {
       month: ym,
-      generatedAt: nowISO,
+      generatedAt: nowIso,
       totals: { ...partial.totals, completed, cancelled },
       prev: partial.prev,
       busiestDay: partial.busiestDay,

@@ -5,6 +5,7 @@
  */
 
 import { validateMenu } from '../../_shared/validate.js';
+import { jsonNoStore } from '../../_shared/session.js';
 import { getActor, migrateLegacyBackup, purgePublicMenu, snapshotMenu } from '../../_shared/versions.js';
 import { diffMenus, summarizeChanges } from '../../_shared/diff.js';
 import { logActivity } from '../../_shared/activity.js';
@@ -62,81 +63,54 @@ export async function onRequest(context) {
         current = await env.MENU_KV.get('menu', { type: 'json' });
       } catch {}
     }
-    return new Response(JSON.stringify(current || DEFAULT_EMPTY_MENU), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store'
-      }
-    });
+    return jsonNoStore(current || DEFAULT_EMPTY_MENU);
   }
 
   // PUT Handler
   if (request.method === 'PUT') {
     // 1. Require header "X-Requested-With: menu-admin"
     if (request.headers.get('X-Requested-With') !== 'menu-admin') {
-      return new Response(JSON.stringify({ error: 'bad_request', message: 'Missing custom request header' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
+      return jsonNoStore({ error: 'bad_request', message: 'Missing custom request header' }, 400);
     }
 
     // 2. Require Origin check
     const origin = request.headers.get('Origin');
     const reqUrl = new URL(request.url);
     if (origin && origin !== reqUrl.origin && !origin.includes('localhost')) {
-      return new Response(JSON.stringify({ error: 'bad_request', message: 'Cross-origin request rejected' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
+      return jsonNoStore({ error: 'bad_request', message: 'Cross-origin request rejected' }, 400);
     }
 
     // 3. Content-Type & Size limits
     const contentType = request.headers.get('Content-Type') || '';
     if (!contentType.includes('application/json')) {
-      return new Response(JSON.stringify({ error: 'bad_request', message: 'Content-Type must be application/json' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
+      return jsonNoStore({ error: 'bad_request', message: 'Content-Type must be application/json' }, 400);
     }
 
     let rawBody;
     try {
       rawBody = await request.text();
     } catch {
-      return new Response(JSON.stringify({ error: 'bad_request', message: 'Failed to read request body' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
+      return jsonNoStore({ error: 'bad_request', message: 'Failed to read request body' }, 400);
     }
 
     if (rawBody.length > 256 * 1024) {
-      return new Response(JSON.stringify({ error: 'payload_too_large', message: 'Payload exceeds 256 KB limit' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
+      return jsonNoStore({ error: 'payload_too_large', message: 'Payload exceeds 256 KB limit' }, 400);
     }
 
     let parsed;
     try {
       parsed = JSON.parse(rawBody);
     } catch {
-      return new Response(JSON.stringify({ error: 'bad_json', message: 'Malformed JSON payload' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
+      return jsonNoStore({ error: 'bad_json', message: 'Malformed JSON payload' }, 400);
     }
 
     // 4. Strict validation
     const validation = validateMenu(parsed);
     if (!validation.ok) {
-      return new Response(JSON.stringify({
+      return jsonNoStore({
         error: 'validation_error',
         message: validation.errors.join('; ')
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
+      }, 400);
     }
 
     const validatedDoc = validation.value;
@@ -151,14 +125,11 @@ export async function onRequest(context) {
 
     const storedVersion = currentStored ? currentStored.version : 1;
     if (currentStored && parsed.version !== storedVersion) {
-      return new Response(JSON.stringify({
+      return jsonNoStore({
         error: 'conflict',
         message: 'Conflict: Document version mismatch. Please reload the latest menu.',
         latest: currentStored
-      }), {
-        status: 409,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
+      }, 409);
     }
 
     // 6. Version history: snapshot the PREVIOUS document before overwrite.
@@ -203,17 +174,8 @@ export async function onRequest(context) {
       });
     } catch {}
 
-    return new Response(JSON.stringify(validatedDoc), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store'
-      }
-    });
+    return jsonNoStore(validatedDoc);
   }
 
-  return new Response(JSON.stringify({ error: 'method_not_allowed', message: 'Method Not Allowed' }), {
-    status: 405,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', Allow: 'GET, PUT' }
-  });
+  return jsonNoStore({ error: 'method_not_allowed', message: 'Method Not Allowed' }, 405, { Allow: 'GET, PUT' });
 }

@@ -10,5 +10,6 @@ Apply remote: `npx wrangler d1 migrations apply ORDERS_DB --remote` (needs the r
 | `0003_reports.sql` | `monthly_reports` + `report_settings` tables |
 | `0004_orders_nullable_pii.sql` | PII columns nullable (retention NULLs them — must stay nullable) |
 | `0005_location_phone_norm.sql` | `location_lat/lng` + `phone_norm` + index + backfill |
+| `0006_order_counter.sql` | `order_counter` table + seed 1000 + fast-forward to `MAX(number)` (atomic order numbers via `UPDATE ... RETURNING`) |
 
 Rules: additive only, never edit an applied migration — add a new `0006_*.sql` (see `docs/ADD_NEW_FEATURE.md` step 1).

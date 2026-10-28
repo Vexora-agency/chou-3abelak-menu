@@ -8,7 +8,7 @@
  * Fails closed with 403 when neither mechanism is configured or valid.
  */
 
-import { getSessionCookie, getSessionSecret, verifySessionToken } from '../../_shared/session.js';
+import { getSessionCookie, getSessionSecret, jsonNoStore, verifySessionToken } from '../../_shared/session.js';
 
 let cachedJwks = null;
 let jwksCachedAt = 0;
@@ -57,18 +57,12 @@ export async function onRequest(context) {
   const expectedAud = env.ACCESS_AUD;
 
   if (!teamDomain || !expectedAud) {
-    return new Response(JSON.stringify({ error: 'forbidden', message: 'Access credentials unconfigured' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-    });
+    return jsonNoStore({ error: 'forbidden', message: 'Access credentials unconfigured' }, 403);
   }
 
   const jwt = request.headers.get('Cf-Access-Jwt-Assertion');
   if (!jwt) {
-    return new Response(JSON.stringify({ error: 'forbidden', message: 'Missing Access assertion' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-    });
+    return jsonNoStore({ error: 'forbidden', message: 'Missing Access assertion' }, 403);
   }
 
   try {
@@ -126,9 +120,6 @@ export async function onRequest(context) {
     res.headers.set('Cache-Control', 'no-store');
     return res;
   } catch {
-    return new Response(JSON.stringify({ error: 'forbidden', message: 'Forbidden' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-    });
+    return jsonNoStore({ error: 'forbidden', message: 'Forbidden' }, 403);
   }
 }

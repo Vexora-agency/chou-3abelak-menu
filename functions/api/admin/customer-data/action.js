@@ -54,12 +54,12 @@ export async function onRequest(context) {
   }
   if (rows.length === 0) return jsonNoStore({ ok: false, error: 'not_found' }, 404);
 
-  const nowISO = new Date().toISOString();
+  const nowIso = new Date().toISOString();
   try {
     if (mode === 'delete') {
       await deleteByPhoneNorm(env.ORDERS_DB, q);
     } else if (mode === 'anonymize') {
-      await anonymizeByPhoneNorm(env.ORDERS_DB, nowISO, q);
+      await anonymizeByPhoneNorm(env.ORDERS_DB, nowIso, q);
     } else {
       const list = await exportByPhoneNorm(env.ORDERS_DB, q);
       const lines = ['order_id,order_number,created_at,updated_at,status,type,customer_name,customer_phone,phone_norm,customer_address,customer_table,notes,location_lat,location_lng,items_json,subtotal,delivery_fee,total,lang,pii_purged_at'];

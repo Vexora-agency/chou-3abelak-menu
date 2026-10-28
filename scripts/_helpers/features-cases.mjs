@@ -29,6 +29,12 @@ export function makeDB(orderRows) {
   const like = (v, pat) => String(v == null ? '' : v).includes(String(pat).replace(/%/g, ''));
   function qFirst(sql, a) {
     if (sql.includes('FROM monthly_reports WHERE month')) return null;
+    if (sql.includes('UPDATE order_counter')) {
+      // Mirrors nextOrderNumber(): atomic increment, sequential per DB.
+      const cur = db.orders.reduce((m, o) => Math.max(m, o.number || 0), 1000);
+      db.counter = Math.max(db.counter || 1000, cur) + 1;
+      return { last_number: db.counter };
+    }
     if (sql.includes('COALESCE(SUM(total)')) {
       const rows = db.orders.filter((o) => o.created_at >= a[0] && o.created_at < a[1] && o.status !== 'cancelled');
       return { c: rows.length, rev: rows.reduce((s, o) => s + o.total, 0) };

@@ -5,14 +5,12 @@
  */
 
 import { getOrderingState } from '../_shared/status.js';
+import { jsonNoStore } from '../_shared/session.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
   if (request.method !== 'GET') {
-    return new Response(JSON.stringify({ error: 'method_not_allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', Allow: 'GET' },
-    });
+    return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'GET' });
   }
   let settings = null;
   try {
@@ -20,10 +18,7 @@ export async function onRequest(context) {
     settings = (menu && menu.settings) || null;
   } catch {}
   if (!settings) {
-    return new Response(JSON.stringify({ error: 'unavailable' }), {
-      status: 503,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-    });
+    return jsonNoStore({ error: 'unavailable' }, 503);
   }
   let st;
   try {
@@ -31,8 +26,5 @@ export async function onRequest(context) {
   } catch {
     st = { state: 'open', message: { en: '', ar: '' } };
   }
-  return new Response(JSON.stringify({ ...st, serverTime: new Date().toISOString() }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-  });
+  return jsonNoStore({ ...st, serverTime: new Date().toISOString() });
 }

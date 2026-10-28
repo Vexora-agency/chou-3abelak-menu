@@ -45,8 +45,14 @@ function parsePriceCell(raw) {
 }
 
 function csvCell(v) {
-  const s = String(v ?? '');
-  return /["\n\r,]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  if (v == null) return '';
+  let s = String(v);
+  // OWASP CSV injection: cells starting with = + - @ (plus | % and tab/CR
+  // tricks) execute as formulas when opened in Excel/Sheets. A leading
+  // single quote forces text interpretation; quoting below keeps RFC-4180
+  // validity (parsers read the same value back).
+  if (/^[=+\-@|%]/.test(s) || /^[\t\r]/.test(s)) s = `'${s}`;
+  return /["\n\r,']/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 function featureNameOf(menu, fid, lang) {

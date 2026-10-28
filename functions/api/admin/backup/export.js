@@ -27,12 +27,9 @@ export async function onRequest(context) {
   } catch {
     return jsonNoStore({ error: 'backup_unconfigured', message: 'BACKUP_SECRET is not configured' }, 503);
   }
-  return new Response(JSON.stringify({ ...envelope, sig }), {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Content-Disposition': `attachment; filename="chou3abelak-backup-${fileDate(timezone)}.json"`,
-      'Cache-Control': 'no-store',
-    },
+  // JSON download: unified helper + attachment disposition via extraHeaders.
+  return jsonNoStore({ ...envelope, sig }, 200, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Content-Disposition': `attachment; filename="chou3abelak-backup-${fileDate(timezone)}.json"`,
   });
 }

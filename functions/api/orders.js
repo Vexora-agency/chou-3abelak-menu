@@ -7,7 +7,7 @@
 
 import { jsonNoStore, readJsonBody } from '../_shared/session.js';
 import { mapOrderRow, validateOrderInput } from '../_shared/orders.js';
-import { findOrderById, findOrderByIdemKey, getMaxOrderNumber, insertOrderWithNumber } from '../_shared/repositories/orders.repo.js';
+import { findOrderById, findOrderByIdemKey, insertOrderWithNumber, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
 import { getOrderingState } from '../_shared/status.js';
 
 const MAX_BODY_BYTES = 8 * 1024;
@@ -145,27 +145,26 @@ export async function onRequest(context) {
   const nowIso = new Date().toISOString();
   const insertWithNumber = async (num) => insertOrderWithNumber(db, c, num, nowIso);
 
-  // Order numbers start at 1001: MAX(number)+1 inside one batch, one retry on conflict
+  // Order numbers come from the atomic order_counter (UPDATE ... RETURNING):
+  // no read-modify-write, no conflict retry needed. Numbers stay sequential
+  // per DB (first order = 1001 via the migration seed).
   let created = null;
-  for (let attempt = 0; attempt < 2 && !created; attempt++) {
-    try {
-      const max = await getMaxOrderNumber(db);
-      const next = max + 1;
-      created = await insertWithNumber(next);
-    } catch {
-      created = null;
-      if (c.idemKey) {
-        try {
-          const existing = await findOrderByIdemKey(db, c.idemKey);
-          if (existing && typeof existing.number === 'number') {
-            return jsonNoStore({
-              ok: true,
-              orderNumber: existing.number,
-              total: typeof existing.total === 'number' ? existing.total : c.total,
-            });
-          }
-        } catch {}
-      }
+  try {
+    const next = await nextOrderNumber(db);
+    created = await insertWithNumber(next);
+  } catch {
+    created = null;
+    if (c.idemKey) {
+      try {
+        const existing = await findOrderByIdemKey(db, c.idemKey);
+        if (existing && typeof existing.number === 'number') {
+          return jsonNoStore({
+            ok: true,
+            orderNumber: existing.number,
+            total: typeof existing.total === 'number' ? existing.total : c.total,
+          });
+        }
+      } catch {}
     }
   }
   if (!created) {

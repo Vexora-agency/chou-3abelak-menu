@@ -102,7 +102,7 @@ export async function onRequest(context) {
       }
     }
 
-    const nowISO = new Date().toISOString();
+    const nowIso = new Date().toISOString();
     try {
       await upsertReportSettings(env.ORDERS_DB, {
         enabled: body.enabled,
@@ -111,7 +111,7 @@ export async function onRequest(context) {
         language: body.language,
         tokenHash,
         expiresAt,
-        nowISO,
+        nowIso,
       });
     } catch {
       return jsonNoStore({ ok: false, error: 'unavailable' }, 503);

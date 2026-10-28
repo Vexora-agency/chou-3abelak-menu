@@ -39,7 +39,8 @@ Summaries land in `scripts/load/results/k6-summary.json` (untracked artifact).
 
 4/4 writes accepted (`orderNumber` 1002–1005, sequential, no conflicts):
 avg 307 ms · med 249 ms · p90 459 ms · p95 496 ms · max 532 ms · 0 × 5xx.
-Each write = KV menu read + full validation + `MAX(number)+1` + batched
+Each write = KV menu read + full validation + atomic counter increment
+(`nextOrderNumber`, one `UPDATE ... RETURNING` statement) + batched
 INSERT + re-read + KV rate-bookkeeping (`functions/api/orders.js`).
 
 ## What the numbers mean (read carefully)
@@ -55,10 +56,12 @@ INSERT + re-read + KV rate-bookkeeping (`functions/api/orders.js`).
    1,000 ms budget only past ~50 concurrent readers *locally*.
 3. **D1 throttling was NOT observed and CANNOT be observed locally.**
    Local D1 is a SQLite file — no distributed contention, no 10 GB cap,
-   no per-DB write-rate governor. Real D1 write contention (the
-   `MAX(number)+1` read-modify-write in `orders.js:150-170` is the
-   hotspot: concurrent inserts serialize here and retry once) must be
-   tested on preview with 20–50 concurrent POSTs from distinct IPs.
+   no per-DB write-rate governor. The former `MAX(number)+1`
+   read-modify-write hotspot is GONE (replaced 2026-10-28 by the atomic
+   `order_counter`: 5 simultaneous POSTs → numbers 1007–1011 unique, plus
+   10 parallel raw increments → 1012–1021 unique, zero 503s). Preview
+   re-test with 20–50 concurrent POSTs from distinct IPs is still
+   worthwhile to confirm under real D1.
 4. **The rate limiter is the effective single-IP ceiling by design:**
    5 orders / 10 min / IP (`RATE_MAX`, KV-backed). A load test from one
    machine can never produce more than 5 writes per window — the 429s are
@@ -88,10 +91,10 @@ any traffic spike. Writes are the scarcer budget: each order costs
    exists in `versions.js`; verify it also purges the edge cache).
 2. **Keep the 5/10-min/IP limiter** — it is the abuse backstop; verify its
    KV key (`order:ip:*`) has TTL set (it does: `RATE_TTL_SEC`).
-3. **Watch the `MAX(number)+1` hotspot** (`orders.js:150-170`): under real
-   concurrent load expect `unavailable` 503s from exhausted retries. If
-   order volume grows, switch to an `AUTOINCREMENT` column or a
-   counter row with `UPDATE ... RETURNING`.
+3. **Order-number contention: FIXED** (2026-10-28) — atomic `order_counter`
+   (`UPDATE ... RETURNING`, migration `0006`). Verified: 5 simultaneous
+   POSTs → unique sequential numbers, 0 conflicts; 10 parallel raw
+   increments → 10/10 unique. No action unless preview shows otherwise.
 4. **No order queue needed yet.** Measured write p95 (496 ms local) is
    fine for restaurant volume; revisit only if preview POST p95 > 1 s.
 5. **Dashboard watch-list for preview runs:** Functions → CPU time

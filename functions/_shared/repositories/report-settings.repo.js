@@ -10,13 +10,13 @@ import { getReportSettingsRow } from './reports.repo.js';
 export { getReportSettingsRow };
 export { getReportSettings } from '../reports.js';
 
-export async function upsertReportSettings(db, { enabled, email, verified, language, tokenHash, expiresAt, nowISO }) {
+export async function upsertReportSettings(db, { enabled, email, verified, language, tokenHash, expiresAt, nowIso }) {
   await db
     .prepare(
       'INSERT INTO report_settings (id, enabled, email, verified, language, verify_token_hash, verify_expires_at, updated_at) VALUES (1, ?1, ?2, ?3, ?4, ?5, ?6, ?7) ' +
         'ON CONFLICT(id) DO UPDATE SET enabled = ?1, email = ?2, verified = ?3, language = ?4, verify_token_hash = ?5, verify_expires_at = ?6, updated_at = ?7'
     )
-    .bind(enabled ? 1 : 0, email, verified, language, tokenHash, expiresAt, nowISO)
+    .bind(enabled ? 1 : 0, email, verified, language, tokenHash, expiresAt, nowIso)
     .run();
 }
 

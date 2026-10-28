@@ -14,12 +14,12 @@ export async function deleteByPhoneNorm(db, phoneDigits) {
   await db.prepare('DELETE FROM orders WHERE phone_norm LIKE ?1').bind(likePhoneNorm(phoneDigits)).run();
 }
 
-export async function anonymizeByPhoneNorm(db, nowISO, phoneDigits) {
+export async function anonymizeByPhoneNorm(db, nowIso, phoneDigits) {
   await db
     .prepare(
       'UPDATE orders SET customer_name = NULL, customer_phone = NULL, phone_norm = NULL, customer_address = NULL, customer_table = NULL, notes = NULL, location_lat = NULL, location_lng = NULL, pii_purged_at = ?1 WHERE phone_norm LIKE ?2'
     )
-    .bind(nowISO, likePhoneNorm(phoneDigits))
+    .bind(nowIso, likePhoneNorm(phoneDigits))
     .run();
 }
 

@@ -1,7 +1,12 @@
 /**
  * Public Menu Endpoint: GET /api/menu
  * Cloudflare Pages Function
+ *
+ * Raw Response stays ONLY for the cache-designed paths below (public 200
+ * with ETag + Cache API, 304s). The JSON 405 uses jsonNoStore like the rest.
  */
+
+import { jsonNoStore } from '../_shared/session.js';
 
 const DEFAULT_EMPTY_MENU = {
   version: 1,
@@ -50,10 +55,7 @@ export async function onRequest(context) {
 
   // Only allow GET / HEAD
   if (request.method !== 'GET' && request.method !== 'HEAD') {
-    return new Response(JSON.stringify({ error: 'method_not_allowed', message: 'Method Not Allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json', Allow: 'GET, HEAD' }
-    });
+    return jsonNoStore({ error: 'method_not_allowed', message: 'Method Not Allowed' }, 405, { Allow: 'GET, HEAD' });
   }
 
   // Attempt to serve from Cache API first if present

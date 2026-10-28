@@ -53,7 +53,7 @@ export function LoginTopBar({ t, lang, onBack, onToggleLang, rise }: LoginTopBar
                   transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                 />
               )}
-              <span className="relative z-10">{code === 'en' ? 'EN' : '╪╣╪▒╪¿┘è'}</span>
+              <span className="relative z-10">{code === 'en' ? 'EN' : 'عربي'}</span>
             </button>
           );
         })}

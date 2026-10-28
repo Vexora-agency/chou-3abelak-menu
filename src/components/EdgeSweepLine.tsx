@@ -38,9 +38,9 @@ export const EdgeSweepLine: React.FC<EdgeSweepLineProps> = ({ position }) => {
           </filter>
         </defs>
         {/* Soft glow underlay (static: composited once) */}
-        <path d={CURVE_D} fill="none" stroke={`url(#${gid})`} strokeWidth="7" pathLength={100} filter={`url(#${gid}b)`} opacity="0.5" />
-        {/* Gold curve */}
-        <path d={CURVE_D} fill="none" stroke={`url(#${gid})`} strokeWidth="3" pathLength={100} />
+        <path d={CURVE_D} fill="none" stroke={`url(#${gid})`} strokeWidth="4" vectorEffect="non-scaling-stroke" pathLength={100} filter={`url(#${gid}b)`} opacity="0.45" />
+        {/* Gold curve: thin like an LED strip */}
+        <path d={CURVE_D} fill="none" stroke={`url(#${gid})`} strokeWidth="2" vectorEffect="non-scaling-stroke" pathLength={100} />
         {/* Traveling comet (dashoffset driven by rAF): thin yellow flash. */}
         <path
           ref={cometRef}
@@ -49,6 +49,7 @@ export const EdgeSweepLine: React.FC<EdgeSweepLineProps> = ({ position }) => {
           stroke="#FFE07A"
           strokeOpacity="1"
           strokeWidth="1.5"
+          vectorEffect="non-scaling-stroke"
           strokeLinecap="round"
           pathLength={100}
           strokeDasharray="16 84"

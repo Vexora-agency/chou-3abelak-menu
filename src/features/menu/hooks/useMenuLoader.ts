@@ -118,13 +118,15 @@ export function useMenuLoader() {
       if (e.persisted) void refresh();
     };
     document.addEventListener('visibilitychange', onVisible);
-    document.addEventListener('pageshow', onPageShow);
+    // pageshow fires on window (never on document) — document-level here
+    // would silently never run, verified live with a synthetic event.
+    window.addEventListener('pageshow', onPageShow);
     window.addEventListener('focus', onVisible);
     return () => {
       alive = false;
       window.clearInterval(id);
       document.removeEventListener('visibilitychange', onVisible);
-      document.removeEventListener('pageshow', onPageShow);
+      window.removeEventListener('pageshow', onPageShow);
       window.removeEventListener('focus', onVisible);
     };
   }, []);

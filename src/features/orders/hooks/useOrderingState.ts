@@ -28,12 +28,14 @@ export function useOrderingState() {
       if (document.visibilityState === 'visible') void fetchOrderingState();
     }, 60000);
     document.addEventListener('visibilitychange', onReturn);
-    document.addEventListener('pageshow', onPageShow);
+    // pageshow fires on window (never on document) — document-level here
+    // would silently never run, verified live with a synthetic event.
+    window.addEventListener('pageshow', onPageShow);
     window.addEventListener('focus', onReturn);
     return () => {
       window.clearInterval(id);
       document.removeEventListener('visibilitychange', onReturn);
-      document.removeEventListener('pageshow', onPageShow);
+      window.removeEventListener('pageshow', onPageShow);
       window.removeEventListener('focus', onReturn);
     };
   }, []);

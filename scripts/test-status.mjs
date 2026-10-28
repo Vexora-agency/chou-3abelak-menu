@@ -3,6 +3,7 @@
 // Run: node scripts/test-status.mjs
 import { getOrderingState } from '../functions/_shared/status.js';
 import { validateMenu } from '../functions/_shared/validate.js';
+import { applyDraftPause } from '../src/utils/ordering.ts';
 
 let passed = 0;
 let failed = 0;
@@ -98,6 +99,11 @@ const base = () => ({
   sh.ordering.paused = false;
   sh.ordering.pausedUntil = new Date(monOpen + 3600e3).toISOString();
   ok(getOrderingState(sh, monOpen).state === 'open', 'stale pausedUntil ignored when not paused');
+  // Settings-draft pause coherence: no stale or fake resume times.
+  const dp = applyDraftPause({ paused: false, pausedUntil: '2026-10-28T21:18:18.798Z', pausedAt: '2026-10-28T20:18:18.798Z' }, true, '2026-10-28T21:05:00.000Z');
+  ok(dp.paused === true && dp.pausedUntil === null && dp.pausedAt === '2026-10-28T21:05:00.000Z', 'draft pause stamps fresh start, no deadline');
+  const dr = applyDraftPause({ paused: true, pausedUntil: '2026-10-28T21:18:18.798Z', pausedAt: '2026-10-28T20:18:18.798Z' }, false, '2026-10-28T21:05:00.000Z');
+  ok(dr.paused === false && dr.pausedUntil === null && dr.pausedAt === null, 'draft resume clears stale stamps');
   const pc = base();
   pc.ordering.paused = true;
   pc.ordering.pausedMessage = { en: 'Back soon', ar: '' };

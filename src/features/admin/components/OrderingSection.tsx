@@ -1,5 +1,6 @@
 import React from 'react';
 import type { MenuSettings } from '@/src/types/menu';
+import { applyDraftPause } from '@/src/utils/ordering';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { OnlineOrderingSwitch } from './admin/OnlineOrderingSwitch';
 
@@ -146,7 +147,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
           type="button"
           role="switch"
           aria-checked={!!ordering.paused}
-          onClick={() => onUpdate((prev) => ({ ...prev, paused: !prev.paused }))}
+          onClick={() => onUpdate((prev) => applyDraftPause(prev, !prev.paused, new Date().toISOString()))}
           className="w-full flex items-center justify-between gap-3 text-start"
         >
           <span>

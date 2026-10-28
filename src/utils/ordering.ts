@@ -53,3 +53,12 @@ export function isPollStale(lastSuccessMs: number | null, nowMs: number, maxAgeM
   if (lastSuccessMs === null) return false;
   return nowMs - lastSuccessMs > maxAgeMs;
 }
+
+/**
+ * Adaptive poll cadence: every 5 s while paused (a resume must surface in
+ * seconds — this is the moment customers stare at the countdown), every
+ * 60 s otherwise (idle-open pages stay cheap on KV reads and phone battery).
+ */
+export function pollIntervalMs(state: OrderingStatus | null): number {
+  return state?.state === 'paused' ? 5000 : 60000;
+}

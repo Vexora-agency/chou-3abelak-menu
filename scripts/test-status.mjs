@@ -4,7 +4,7 @@
 // alias, which plain node cannot resolve).
 import { getOrderingState } from '../functions/_shared/status.js';
 import { validateMenu } from '../functions/_shared/validate.js';
-import { applyDraftPause, isPollStale, resolveLiveOrdering } from '../src/utils/ordering.ts';
+import { applyDraftPause, isPollStale, pollIntervalMs, resolveLiveOrdering } from '../src/utils/ordering.ts';
 import { formatHMS, formatMMSS } from '../src/utils/countdown.ts';
 
 let passed = 0;
@@ -133,6 +133,12 @@ const base = () => ({
   ok(isPollStale(1000000, 1000000 + 59000) === false, 'fresh poll trusted');
   ok(isPollStale(1000000, 1000000 + 120000) === false, 'two periods still trusted (boundary)');
   ok(isPollStale(1000000, 1000000 + 120001) === true, 'dead poll distrusted past boundary');
+  // adaptive cadence: fast while paused, cheap when open
+  ok(pollIntervalMs({ state: 'paused' }) === 5000, 'paused polls fast');
+  ok(pollIntervalMs({ state: 'open' }) === 60000, 'open polls slow');
+  ok(pollIntervalMs({ state: 'closed' }) === 60000, 'closed polls slow');
+  ok(pollIntervalMs({ state: 'disabled' }) === 60000, 'disabled polls slow');
+  ok(pollIntervalMs(null) === 60000, 'unknown polls slow');
 }
 
 /* ---------------- validator additions ---------------- */

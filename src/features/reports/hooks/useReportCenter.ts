@@ -108,11 +108,13 @@ export function useReportCenter({ isAr, activeTab, adminFetch }: ReportCenterOpt
     } catch {}
   };
 
-  const handleSendTestReport = async () => {
+  const handleSendTestReport = async (): Promise<{ ok: boolean; error?: string }> => {
     try {
       const res = await adminFetch('/api/admin/report-settings/test', { method: 'POST' });
       const data: unknown = await readJson(res);
-      return { ok: !!(res.ok && isRecord(data) && data.ok) };
+      const error = isRecord(data) && typeof data.error === 'string' ? data.error : undefined;
+      if (res.ok && isRecord(data) && data.ok) return { ok: true as const };
+      return { ok: false as const, error };
     } catch {
       return { ok: false as const };
     }

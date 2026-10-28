@@ -110,12 +110,19 @@
   display: flex;
   align-items: center;
   width: max-content;
-  animation: annMarquee var(--ann-duration, 20s) linear infinite;
+  animation: annMarquee var(--ann-duration, 20s) linear infinite alternate;
   will-change: transform;
 }
-/* Pause while the cursor rests on the bar — lets people finish reading. */
-.ann-mask:hover .ann-track {
-  animation-play-state: paused;
+/* Ping-pong (alternate) instead of a wrapping loop: there is no wrap point,
+   so no seam can ever show where a loop restarts — the shine travels right
+   and left forever. Same reading speed both ways. */
+/* Pause while the cursor rests on the bar — hover-capable devices ONLY. On
+   touch screens :hover sticks after the first tap and would freeze the
+   ticker until the next tap elsewhere. */
+@media (hover: hover) {
+  .ann-mask:hover .ann-track {
+    animation-play-state: paused;
+  }
 }
 @keyframes annMarquee {
   from { transform: translateX(0); }

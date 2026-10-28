@@ -56,7 +56,7 @@ export const WorkingHoursSection: React.FC<WorkingHoursSectionProps> = ({
             type="time"
             value={openTime}
             onChange={(e) => onUpdate((prev) => ({ ...prev, openTime: e.target.value }))}
-            className="w-full min-w-0 h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] [color-scheme:dark]"
+            className="w-full min-w-0 max-w-[280px] h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] [color-scheme:dark]"
           />
         </div>
 
@@ -66,7 +66,7 @@ export const WorkingHoursSection: React.FC<WorkingHoursSectionProps> = ({
             type="time"
             value={closeTime}
             onChange={(e) => onUpdate((prev) => ({ ...prev, closeTime: e.target.value }))}
-            className="w-full min-w-0 h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] [color-scheme:dark]"
+            className="w-full min-w-0 max-w-[280px] h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] [color-scheme:dark]"
           />
         </div>
       </div>

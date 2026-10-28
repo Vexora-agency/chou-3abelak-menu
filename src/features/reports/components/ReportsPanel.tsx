@@ -31,7 +31,7 @@ interface ReportsPanelProps {
   timezone: string; // 'Asia/Beirut'
   onSaveSettings: (s: { enabled: boolean; email: string; language: 'en' | 'ar' }) => Promise<{ ok: boolean; verificationSent?: boolean; error?: string }>;
   onResendVerification: () => Promise<void>;
-  onSendTest: () => Promise<{ ok: boolean }>;
+  onSendTest: () => Promise<{ ok: boolean; error?: string }>;
   onDownload: (month: string) => void;
 }
 
@@ -41,6 +41,11 @@ const STR = {
     emailHint: 'We send a confirmation link first. Reports go only to a confirmed address.',
     language: 'Email language', verified: 'Confirmed', pending: 'Waiting for confirmation', resend: 'Resend link', notSet: 'No email yet',
     save: 'Save', saving: 'Saving…', saved: 'Saved', test: 'Send test email', testing: 'Sending…', testSent: 'Test sent',
+    testErrRate: 'Too many test emails — wait up to an hour and try again.',
+    testErrNoEmail: 'Set a report email first.',
+    testErrNotVerified: 'Confirm your email first (open the link we sent).',
+    testErrMail: 'Email service failed — try again later.',
+    testErrGeneric: 'Sending failed — try again.',
     next: (d: string, m: string) => `Next report: ${d} at the scheduled time, covering ${m}.`,
     invalid: 'Please enter a valid email address.',
     sentConfirm: (e: string) => `Confirmation link sent to ${e}. Open it to start receiving reports.`,
@@ -56,6 +61,11 @@ const STR = {
     emailHint: 'نرسل رابط تأكيد أولاً. لا تصل التقارير إلا لعنوان مؤكد.',
     language: 'لغة الرسالة', verified: 'مؤكد', pending: 'بانتظار التأكيد', resend: 'إعادة إرسال الرابط', notSet: 'لا يوجد بريد بعد',
     save: 'حفظ', saving: 'جارٍ الحفظ…', saved: 'تم الحفظ', test: 'إرسال رسالة تجريبية', testing: 'جارٍ الإرسال…', testSent: 'تم الإرسال',
+    testErrRate: 'رسائل تجريبية كثيرة — انتظر حتى ساعة وحاول مجدداً.',
+    testErrNoEmail: 'ضع بريد التقرير أولاً.',
+    testErrNotVerified: 'أكّد بريدك أولاً (افتح الرابط المرسل).',
+    testErrMail: 'خدمة البريد فشلت — حاول لاحقاً.',
+    testErrGeneric: 'فشل الإرسال — حاول مجدداً.',
     next: (d: string, m: string) => `التقرير القادم: ${d} في الوقت المحدد، ويغطي ${m}.`,
     invalid: 'أدخل بريداً إلكترونياً صحيحاً.',
     sentConfirm: (e: string) => `أرسلنا رابط التأكيد إلى ${e}. افتحه لتبدأ باستلام التقارير.`,
@@ -127,7 +137,16 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
     setBusy('test');
     const r = await onSendTest();
     setBusy(null);
-    flash(r.ok ? { kind: 'ok', text: t.testSent } : { kind: 'err', text: 'Error' });
+    if (r.ok) {
+      flash({ kind: 'ok', text: t.testSent });
+      return;
+    }
+    const text = r.error === 'rate_limited' ? t.testErrRate
+      : r.error === 'no_email' ? t.testErrNoEmail
+      : r.error === 'not_verified' ? t.testErrNotVerified
+      : r.error === 'mail_unconfigured' || r.error === 'mail_failed' ? t.testErrMail
+      : t.testErrGeneric;
+    flash({ kind: 'err', text });
   };
 
   const status = !settings.email ? 'none' : settings.verified ? 'verified' : 'pending';

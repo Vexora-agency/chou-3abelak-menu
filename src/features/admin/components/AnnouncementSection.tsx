@@ -154,7 +154,7 @@ function ScheduleField({
             const p = parseDatetimeLocal(e.target.value);
             onPick(p ? deviceWallPartsToUTC(p) : null);
           }}
-          className="w-full min-w-0 h-10 ps-3 pe-9 rounded-xl bg-black border border-neutral-700 text-sm tabular-nums text-neutral-100 focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/40 outline-none [color-scheme:dark] transition-colors"
+          className="w-full min-w-0 max-w-[280px] h-10 ps-3 pe-9 rounded-xl bg-black border border-neutral-700 text-sm tabular-nums text-neutral-100 focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/40 outline-none [color-scheme:dark] transition-colors"
         />
         {iso && (
           <button

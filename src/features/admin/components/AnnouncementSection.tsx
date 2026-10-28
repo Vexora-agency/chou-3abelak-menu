@@ -269,7 +269,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
             <span>{isAr ? 'سريعة' : 'Fast'}</span>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs text-neutral-400">{isAr ? 'النص (EN)' : 'Text (EN)'}</label>
@@ -298,7 +298,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
             />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
           <ScheduleField
             label={isAr ? 'يبدأ (بتوقيت جهازك)' : 'Starts (your device time)'}
             iso={announcement.startsAt}

@@ -28,7 +28,7 @@ export const VisitorDefaultsSection: React.FC<VisitorDefaultsSectionProps> = ({
             : 'First visit only — a returning visitor keeps their own choice'}
         </p>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'المظهر الافتراضي' : 'Default theme'}</label>
           <select

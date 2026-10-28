@@ -80,7 +80,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
             </div>
 
             {/* Name inputs */}
-            <div className="flex-1 grid grid-cols-2 gap-2">
+            <div className="flex-1 grid grid-cols-1 min-[380px]:grid-cols-2 gap-2">
               <input
                 type="text"
                 value={cat.name.en}

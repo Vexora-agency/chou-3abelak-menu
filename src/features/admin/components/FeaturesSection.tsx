@@ -140,7 +140,7 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
           {!collapsed[group.id] && (
             <div className="px-3 pb-3 space-y-3">
               {group.id ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'اسم القسم (EN)' : 'Section name (EN)'}</label>
                     <input

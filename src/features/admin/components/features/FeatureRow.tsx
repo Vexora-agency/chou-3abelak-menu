@@ -36,7 +36,7 @@ export const FeatureRow: React.FC<FeatureRowProps> = ({
   ).length;
   return (
     <div key={f.id} className="p-3 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-neutral-400 mb-1">Name (EN)</label>
           <input

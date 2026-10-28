@@ -25,7 +25,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
   return (
     <>
       {/* Top Bar */}
-      <div className="flex items-center justify-between gap-2 pb-4 border-b border-neutral-800">
+      <div className="flex items-center justify-between gap-2 pb-4 border-b border-neutral-800 overflow-x-auto no-scrollbar">
         <button
           type="button"
           onClick={onClose}
@@ -79,9 +79,9 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
             onClick={onSignOut}
             className="text-xs px-2.5 py-1 rounded-full bg-neutral-800 border border-neutral-700 text-neutral-400 hover:text-red-400 hover:border-red-400/60 transition-colors font-bold whitespace-nowrap shrink-0"
           >
-            {isAr ? 'تسجيل الخروج' : 'Sign out'}
+            {isAr ? 'خروج' : 'Sign out'}
           </button>
-        )}
+          )}
         </div>
       </div>
 

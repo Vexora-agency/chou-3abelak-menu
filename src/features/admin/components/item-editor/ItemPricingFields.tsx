@@ -44,7 +44,7 @@ export const ItemPricingFields: React.FC<ItemPricingFieldsProps> = ({
       )}
 
       {/* Min / Max (step is fixed at 1). The show-unit toggle lives under Unit above. */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
         {([
           { k: 'minQty', label: isAr ? 'أقل كمية' : 'Min qty' },
           { k: 'maxQty', label: isAr ? 'أقصى كمية' : 'Max qty' },

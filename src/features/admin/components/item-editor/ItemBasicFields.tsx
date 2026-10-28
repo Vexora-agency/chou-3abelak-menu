@@ -19,7 +19,7 @@ export const ItemBasicFields: React.FC<ItemBasicFieldsProps> = ({
   const isAr = lang === 'ar';
   return (
     <>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-neutral-400 mb-1">Name (EN) *</label>
           <input
@@ -82,7 +82,7 @@ export const ItemBasicFields: React.FC<ItemBasicFieldsProps> = ({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'القسم' : 'Category'}</label>
           <select

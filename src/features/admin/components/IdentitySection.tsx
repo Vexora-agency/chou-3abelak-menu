@@ -41,7 +41,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
         {isAr ? 'بيانات المطعم' : 'Restaurant Identity'}
       </h2>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-neutral-400 mb-1">Name (EN)</label>
           <input
@@ -63,7 +63,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="block text-xs text-neutral-400">Tagline (EN)</label>
@@ -113,8 +113,9 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
+        {/* Phone takes the full row: side-by-side would squeeze the picker below. */}
+        <div className="col-span-2">
           <label className="block text-xs text-neutral-400 mb-1">Phone</label>
           <input
             type="text"

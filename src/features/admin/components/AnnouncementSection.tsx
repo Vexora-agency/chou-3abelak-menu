@@ -298,7 +298,9 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
             />
           </div>
         </div>
-        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
+        {/* Starts/Ends always stack: datetime-local inputs need ~200px and clip
+            below that, on phones and desktops alike. */}
+        <div className="grid grid-cols-1 gap-3">
           <ScheduleField
             label={isAr ? 'يبدأ (بتوقيت جهازك)' : 'Starts (your device time)'}
             iso={announcement.startsAt}

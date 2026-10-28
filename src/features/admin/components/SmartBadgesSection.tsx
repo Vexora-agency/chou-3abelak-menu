@@ -26,22 +26,28 @@ export const SmartBadgesSection: React.FC<SmartBadgesSectionProps> = ({
             : 'Automatic time-based NEW, sales-driven Top on your approval'}
         </p>
       </div>
-      <div className="grid grid-cols-3 gap-3">
+      {/* One row per number (label left, fixed-width input right): labels wrap
+          to different line counts per language, so side-by-side columns can
+          never stay aligned — rows always do, at any width. */}
+      <div className="space-y-2.5">
         {([
           { k: 'newDays', label: isAr ? 'مدة NEW (يوم)' : 'NEW days', hint: isAr ? 'تتشال لوحدها بعدها' : 'auto-removed after' },
           { k: 'topDays', label: isAr ? 'نافذة المبيعات (يوم)' : 'Sales window (days)', hint: isAr ? 'آخر كام يوم' : 'last N days' },
           { k: 'topCount', label: isAr ? 'عدد الـ Top' : 'Top count', hint: isAr ? 'أول كام صنف' : 'top N items' },
         ] as const).map((f) => (
-          <div key={f.k}>
-            <label className="block text-xs text-neutral-400 mb-1">{f.label}</label>
+          <div key={f.k} className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <label className="block text-xs text-neutral-400">{f.label}</label>
+              <p className="text-[10px] text-neutral-500 mt-0.5">{f.hint}</p>
+            </div>
             <input
               type="number"
               step={1}
               value={badges[f.k] ?? ''}
               onChange={(e) => onUpdate((prev) => ({ ...prev, [f.k]: Number(e.target.value) }))}
-              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm"
+              aria-label={f.label}
+              className="w-20 shrink-0 h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm text-center tabular-nums"
             />
-            <p className="text-[10px] text-neutral-500 mt-0.5">{f.hint}</p>
           </div>
         ))}
       </div>

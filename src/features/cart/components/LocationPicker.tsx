@@ -48,6 +48,16 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   const [point, setPoint] = useState<{ lat: number; lng: number; accuracy: number } | null>(
     initial ? { ...initial, accuracy: 100 } : null
   );
+  // Latest point for async callbacks (never read state inside them).
+  const pointRef = useRef<{ lat: number; lng: number; accuracy: number } | null>(null);
+  useEffect(() => {
+    pointRef.current = point;
+  }, [point]);
+  // Set once the customer drags/taps: background refinements must never yank
+  // a hand-placed pin. Reset when "My location" is explicitly tapped.
+  const manualRef = useRef(false);
+  // Guards overlapping detect() runs (open auto-fix vs. button taps).
+  const seqRef = useRef(0);
   const { addrPreview, addrLoading, previewKey } = useMidSplitLocationMap(point, ready, lang);
 
   // Load Leaflet lazily (only when the picker opens) and build the map.
@@ -76,10 +86,14 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         const marker = L.marker(start, { icon, draggable: true, autoPan: true }).addTo(map);
         marker.on('dragend', () => {
           const p = marker.getLatLng();
+          manualRef.current = true;
+          setDetecting(false);
           setPoint({ lat: round5(p.lat), lng: round5(p.lng), accuracy: 100 });
         });
         map.on('click', (e: Leaflet.LeafletMouseEvent) => {
           marker.setLatLng(e.latlng);
+          manualRef.current = true;
+          setDetecting(false);
           setPoint({ lat: round5(e.latlng.lat), lng: round5(e.latlng.lng), accuracy: 100 });
         });
         mapObj.current = map;
@@ -113,18 +127,52 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     } catch {}
   };
 
-  const detect = () => {
+  const detect = (userTap = false) => {
     if (!('geolocation' in navigator)) return;
+    const seq = ++seqRef.current;
+    if (userTap) manualRef.current = false;
     setDetecting(true);
+    // Phase 1 — fast: cached/cell fix lands in ~a second so the pin moves
+    // immediately. Good enough (WiFi-grade) ends here.
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (seq !== seqRef.current) return;
+        const { latitude, longitude, accuracy } = pos.coords;
+        if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+          const acc = typeof accuracy === 'number' ? accuracy : 100;
+          moveTo(latitude, longitude, acc);
+          if (acc <= 60) {
+            setDetecting(false);
+            return;
+          }
+        }
+        refine(seq);
+      },
+      () => {
+        if (seq !== seqRef.current) return;
+        refine(seq); // low-power fix failed → still try GPS
+      },
+      { enableHighAccuracy: false, timeout: 4000, maximumAge: 300000 }
+    );
+  };
+
+  // Phase 2 — refine silently with GPS; never moves a hand-placed pin and
+  // never replaces a better fix with a worse one.
+  const refine = (seq: number) => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setDetecting(false);
+        if (seq !== seqRef.current || manualRef.current) return;
         const { latitude, longitude, accuracy } = pos.coords;
         if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
-        moveTo(latitude, longitude, typeof accuracy === 'number' ? accuracy : 100);
+        const acc = typeof accuracy === 'number' ? accuracy : 100;
+        const prev = pointRef.current;
+        if (!prev || acc < prev.accuracy) {
+          moveTo(latitude, longitude, acc);
+        }
       },
       () => setDetecting(false),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
   };
 
@@ -160,7 +208,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         <p className={`text-xs font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>{t.dragHint}</p>
         <button
           type="button"
-          onClick={detect}
+          onClick={() => detect(true)}
           disabled={detecting}
           className={`shrink-0 h-9 px-3 rounded-full border text-[11px] font-bold inline-flex items-center gap-1.5 disabled:opacity-60 ${darkMode ? 'border-neutral-700 text-neutral-200' : 'border-neutral-300 text-neutral-700'}`}
         >
@@ -169,7 +217,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         </button>
       </div>
 
-      <div dir="ltr" className={`relative h-64 rounded-2xl overflow-hidden border ${darkMode ? 'border-neutral-700 bg-neutral-900' : 'border-neutral-300 bg-neutral-100'}`}>
+      <div dir="ltr" className={`relative h-52 min-[380px]:h-56 sm:h-64 rounded-2xl overflow-hidden border ${darkMode ? 'border-neutral-700 bg-neutral-900' : 'border-neutral-300 bg-neutral-100'}`}>
         <div ref={mapRef} className="absolute inset-0 z-0" />
         {!ready && !loadError && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2">
@@ -213,7 +261,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
       >
         {t.manual}
       </button>
-      <style>{`.loc-div-icon{background:none;border:none;}.leaflet-container{font:inherit;background:${darkMode ? '#141414' : '#f0ede6'};}.leaflet-control-attribution{font-size:9px;}`}</style>
+      <style>{`.loc-div-icon{background:none;border:none;}.leaflet-container{font:inherit;background:${darkMode ? '#141414' : '#f0ede6'};}.leaflet-control-attribution{font-size:9px;}.leaflet-touch .leaflet-bar a{width:38px;height:38px;line-height:38px;}.leaflet-touch .leaflet-control-zoom{margin-top:10px;margin-left:10px;}`}</style>
     </div>
   );
 };

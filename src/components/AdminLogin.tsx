@@ -11,7 +11,7 @@ import { LoginForm } from '@/src/components/admin-login/loginForm';
 
 export type LoginResult =
   | { ok: true }
-  | { ok: false; error: 'invalid' | 'locked' | 'network'; retryAfter?: number };
+  | { ok: false; error: 'invalid' | 'locked' | 'network' | 'unavailable'; retryAfter?: number };
 
 interface AdminLoginProps {
   lang: 'en' | 'ar';
@@ -51,6 +51,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({
   const [error, setError] = useState<{ key: ErrorKey; n?: number } | null>(null);
 
   const pwRef = useRef<HTMLInputElement>(null);
+  const userRef = useRef<HTMLInputElement>(null);
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
@@ -68,7 +69,14 @@ const AdminLogin: React.FC<AdminLoginProps> = ({
   const submit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (phase !== 'idle') return;
-    if (!username.trim() || !password) {
+    // Browser/password-manager autofill can fill the DOM without firing
+    // React's onChange — read the live fields as fallback so the first
+    // press submits what the user sees, then sync the state.
+    const liveUser = username.trim() || userRef.current?.value.trim() || '';
+    const livePass = password || pwRef.current?.value || '';
+    if (liveUser !== username) setUsername(liveUser);
+    if (livePass !== password) setPassword(livePass);
+    if (!liveUser || !livePass) {
       fail({ key: 'required' });
       return;
     }
@@ -76,7 +84,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({
     setPhase('loading');
     let res: LoginResult;
     try {
-      res = await onSubmit({ username: username.trim(), password, remember });
+      res = await onSubmit({ username: liveUser, password: livePass, remember });
     } catch {
       res = { ok: false, error: 'network' };
     }
@@ -164,6 +172,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({
                   hasError={!!error}
                   onForgot={onForgot}
                   pwRef={pwRef}
+                  userRef={userRef}
                   submit={submit}
                   rise={rise}
                 />

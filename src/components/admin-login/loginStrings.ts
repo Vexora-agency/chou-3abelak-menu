@@ -1,6 +1,6 @@
 export type LoginLang = 'en' | 'ar';
 
-export type ErrorKey = 'required' | 'invalid' | 'locked' | 'network';
+export type ErrorKey = 'required' | 'invalid' | 'locked' | 'network' | 'unavailable';
 
 export const STR = {
   en: {
@@ -24,6 +24,7 @@ export const STR = {
     invalid: 'Incorrect email or password. Please try again.',
     locked: 'Too many attempts. Try again in {n} min.',
     network: 'Connection problem. Check your internet and try again.',
+    unavailable: 'Login is not available right now (server not configured). Try again later.',
     switchTo: 'Switch to English',
   },
   ar: {
@@ -47,6 +48,7 @@ export const STR = {
     invalid: 'البريد أو كلمة المرور غير صحيحة. حاول مرة أخرى.',
     locked: 'محاولات كثيرة. حاول بعد {n} دقيقة.',
     network: 'مشكلة في الاتصال. تحقق من الإنترنت وحاول مجدداً.',
+    unavailable: 'تسجيل الدخول غير متاح حالياً (السيرفر غير مجهّز). حاول لاحقاً.',
     switchTo: 'التبديل إلى العربية',
   },
 } as const;

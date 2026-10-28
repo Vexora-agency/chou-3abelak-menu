@@ -11,7 +11,7 @@
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
 import { getSessionCookie, getSessionSecret, verifySessionToken } from '../../../_shared/session.js';
 import { validateMenu } from '../../../_shared/validate.js';
-import { IMPORT_KEY, applyCSVToMenu, getActor, snapshotMenu, writeMenuVersioned } from '../../../_shared/versions.js';
+import { IMPORT_KEY, applyCSVToMenu, getActor, purgePublicMenu, snapshotMenu, writeMenuVersioned } from '../../../_shared/versions.js';
 import { hitRateLimit } from '../../../_shared/ratelimit.js';
 import { logActivity } from '../../../_shared/activity.js';
 
@@ -109,6 +109,7 @@ export async function onRequest(context) {
     return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
   }
   if (!written.ok) return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
+  await purgePublicMenu(request);
   try {
     const ni = Array.isArray(merged.items) ? merged.items.length : 0;
     const nc = Array.isArray(merged.categories) ? merged.categories.length : 0;

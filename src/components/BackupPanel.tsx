@@ -44,6 +44,8 @@ interface BackupPanelProps {
   versions: VersionEntry[];
   trash: TrashEntry[];
   status: { lastBackupAt?: string; autoWeekly: boolean; destination?: string };
+  /** False when the Reports tab is plan-gated — the email can never be set then. */
+  reportsOn: boolean;
   onLoadChanges: (versionId: string) => Promise<Change[]>;
   onRestoreVersion: (versionId: string) => Promise<{ ok: boolean }>;
   onExport: (kind: 'json' | 'csv' | 'print') => void | Promise<void>;
@@ -55,7 +57,7 @@ interface BackupPanelProps {
   activity: ActivityEntry[];
 }
 
-const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status, onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport, onRestoreTrash, onDeleteForever, onToggleAuto, activity }) => {
+const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status, reportsOn, onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport, onRestoreTrash, onDeleteForever, onToggleAuto, activity }) => {
   const t = STR[lang]; const isAr = lang === 'ar'; const reduce = useReducedMotion();
   const [tab, setTab] = useState<'history' | 'export' | 'import' | 'trash'>('history');
   const [actFilter, setActFilter] = useState<'all' | 'saves' | 'deletes' | 'restores' | 'imports'>('all');
@@ -235,8 +237,8 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
           ))}
           <div className={`${card} flex items-center gap-3.5`}>
             <span className="w-11 h-11 shrink-0 rounded-2xl bg-[#FFC400]/10 text-[#FFC400] flex items-center justify-center"><Clock size={21} /></span>
-            <span className="min-w-0 flex-1"><b className="text-sm">{t.autoTitle}</b><span className="block text-xs leading-relaxed text-neutral-400 mt-1">{status.destination ? t.autoD(status.destination) : t.autoNoMail}</span></span>
-            <button type="button" role="switch" aria-checked={status.autoWeekly} aria-label={t.autoTitle} disabled={!status.destination} onClick={() => void onToggleAuto(!status.autoWeekly)}
+            <span className="min-w-0 flex-1"><b className="text-sm">{t.autoTitle}</b><span className="block text-xs leading-relaxed text-neutral-400 mt-1">{!reportsOn ? t.autoNeedsPro : status.destination ? t.autoD(status.destination) : t.autoNoMail}</span></span>
+            <button type="button" role="switch" aria-checked={status.autoWeekly} aria-label={t.autoTitle} disabled={!reportsOn || !status.destination} onClick={() => void onToggleAuto(!status.autoWeekly)}
               className={`relative w-12 h-7 rounded-full shrink-0 transition-colors disabled:opacity-40 ${status.autoWeekly ? 'bg-[#FFC400]' : 'bg-neutral-700'}`}>
               <motion.span layout={!reduce} transition={{ type: 'spring', stiffness: 500, damping: 32 }} className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow ${status.autoWeekly ? 'end-1' : 'start-1'}`} />
             </button>

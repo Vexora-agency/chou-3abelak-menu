@@ -25,6 +25,7 @@ interface LoginFormProps {
   hasError: boolean;
   onForgot?: () => void;
   pwRef: React.RefObject<HTMLInputElement | null>;
+  userRef: React.RefObject<HTMLInputElement | null>;
   submit: (ev: React.FormEvent) => Promise<void>;
   rise: RiseFn;
 }
@@ -50,6 +51,7 @@ export function LoginForm({
   hasError,
   onForgot,
   pwRef,
+  userRef,
   submit,
   rise,
 }: LoginFormProps): React.JSX.Element {
@@ -73,6 +75,7 @@ export function LoginForm({
 
       <motion.div {...rise(0.7)} className="relative mt-1">
         <input
+          ref={userRef}
           id="admin-username"
           name="username"
           type="text"

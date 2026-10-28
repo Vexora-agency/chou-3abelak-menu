@@ -5,7 +5,7 @@
  */
 
 import { validateMenu } from '../../_shared/validate.js';
-import { getActor, migrateLegacyBackup, snapshotMenu } from '../../_shared/versions.js';
+import { getActor, migrateLegacyBackup, purgePublicMenu, snapshotMenu } from '../../_shared/versions.js';
 import { diffMenus, summarizeChanges } from '../../_shared/diff.js';
 import { logActivity } from '../../_shared/activity.js';
 
@@ -183,13 +183,9 @@ export async function onRequest(context) {
       await env.MENU_KV.put('menu', JSON.stringify(validatedDoc));
     }
 
-    // 7. Invalidate caches.default for public menu
-    if (typeof caches !== 'undefined' && caches.default) {
-      try {
-        const publicMenuUrl = new URL('/api/menu', request.url).toString();
-        await caches.default.delete(new Request(publicMenuUrl));
-      } catch {}
-    }
+    // 7. Invalidate caches.default for public menu (shared helper — every
+    // menu write must do this or the storefront serves stale data).
+    await purgePublicMenu(request);
 
     // 8. Activity log (best-effort; never fails the save).
     try {

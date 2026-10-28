@@ -9,7 +9,7 @@
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
 import { validateMenu } from '../../../_shared/validate.js';
-import { getActor, snapshotMenu } from '../../../_shared/versions.js';
+import { getActor, purgePublicMenu, snapshotMenu } from '../../../_shared/versions.js';
 
 const ALLOWED_MINUTES = [30, 60, 120];
 
@@ -75,6 +75,7 @@ export async function onRequest(context) {
       };
       await snapshotMenu(env, { prevDoc: current, incomingDoc: doc, source: 'manual', actor });
       await env.MENU_KV.put('menu', JSON.stringify(doc));
+      await purgePublicMenu(request);
       return jsonNoStore({ ok: true, paused: doc.settings.ordering.paused, pausedUntil: doc.settings.ordering.pausedUntil, pausedAt: doc.settings.ordering.pausedAt, version: doc.version });
     } catch {
       return jsonNoStore({ ok: false, error: 'unavailable' }, 503);

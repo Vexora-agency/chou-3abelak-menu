@@ -119,8 +119,15 @@ async function hmacSha256(secretBytes, text) {
 }
 
 export function getSessionSecret(env) {
-  const s = ((env && env.SESSION_SECRET) || '').trim();
+  let s = ((env && env.SESSION_SECRET) || '').trim();
   if (!s) return null;
+  // Tolerate quoted or base64url-encoded secrets (dashboard pastes) —
+  // without this, one stray quote locks every admin out with a bare 503.
+  if (s.length >= 2 && ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'")))) {
+    s = s.slice(1, -1).trim();
+  }
+  s = s.replace(/-/g, '+').replace(/_/g, '/');
+  while (s.length % 4) s += '=';
   let bytes;
   try {
     bytes = b64decode(s);

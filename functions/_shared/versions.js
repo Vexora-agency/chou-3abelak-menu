@@ -159,6 +159,19 @@ export function weeklyBackupEmail(dateStr, siteName) {
   };
 }
 
+/** Drop the cached public menu (/api/menu) so the storefront sees every
+ *  write immediately. Every menu-mutating endpoint must call this after a
+ *  successful write — a stale cached menu would keep taking orders while
+ *  paused and hide price changes. Never throws. */
+export async function purgePublicMenu(request) {
+  try {
+    if (typeof caches === 'undefined' || !caches.default) return;
+    const url = new URL(request.url);
+    const publicMenuUrl = new URL('/api/menu', url.origin).toString();
+    await caches.default.delete(new Request(publicMenuUrl));
+  } catch {}
+}
+
 /* ---- Shared restore tail (versions/[id]/restore, trash/[id]/restore) ---- */
 
 /**
@@ -180,5 +193,6 @@ export async function restoreValidatedMenu(env, request, { doc, prevDoc, source,
     return { res: jsonNoStore({ ok: false, error: 'unavailable' }, 503) };
   }
   if (!written.ok) return { res: jsonNoStore({ ok: false, error: 'conflict', version: written.current ? written.current.version : null }, 409) };
+  await purgePublicMenu(request);
   return { doc: written.doc };
 }

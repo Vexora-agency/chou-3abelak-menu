@@ -57,6 +57,7 @@ export function useAdminSaveAuth() {
         return { ok: false, error: 'locked', retryAfter: minutes };
       }
       if (res.status === 401) return { ok: false, error: 'invalid' };
+      if (res.status === 503) return { ok: false, error: 'unavailable' };
       return { ok: false, error: 'network' };
     } catch {
       return { ok: false, error: 'network' };

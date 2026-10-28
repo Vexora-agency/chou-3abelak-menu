@@ -68,7 +68,7 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({ value, onC
         aria-expanded={open}
         aria-label={isAr ? 'رمز الدولة' : 'Country code'}
         title={selected ? `${selected.name} +${selected.code}` : isAr ? 'دولة أخرى' : 'Other'}
-        className="h-10 max-w-[132px] ps-2.5 pe-7 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] flex items-center gap-1.5 cursor-pointer"
+        className="h-10 max-w-[132px] ps-2.5 pe-7 rounded-lg bg-black border border-neutral-700 text-sm flex items-center gap-1.5 cursor-pointer"
       >
         <span aria-hidden="true" className="text-base leading-none">
           {selected ? flagEmoji(selected.iso) : '🌐'}

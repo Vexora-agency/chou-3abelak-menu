@@ -1,5 +1,7 @@
 import React from 'react';
 import type { MenuSettings } from '@/src/types/menu';
+import type { AdminFetch } from '@/src/lib/api-client';
+import { OnlineOrderingSwitch } from './admin/OnlineOrderingSwitch';
 
 type Ordering = MenuSettings['ordering'];
 
@@ -7,6 +9,9 @@ interface OrderingSectionProps {
   ordering: Ordering;
   currency: string;
   lang: 'en' | 'ar';
+  whatsapp: string;
+  adminFetch: AdminFetch;
+  onMenuRefreshed: () => Promise<boolean>;
   onUpdate: (updater: (prev: Ordering) => Ordering) => void;
 }
 
@@ -15,6 +20,9 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
   ordering,
   currency,
   lang,
+  whatsapp,
+  adminFetch,
+  onMenuRefreshed,
   onUpdate,
 }) => {
   const isAr = lang === 'ar';
@@ -28,6 +36,15 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
           {isAr ? 'التوصيل فقط — فعّل الحد الأدنى أو رسوم التوصيل أدناه' : 'Delivery only — enable a minimum order or a delivery fee below'}
         </p>
       </div>
+
+      {/* Master switch first: nothing below accepts orders while it is off */}
+      <OnlineOrderingSwitch
+        lang={lang}
+        enabled={ordering.enabled === true}
+        whatsapp={whatsapp}
+        adminFetch={adminFetch}
+        onMenuRefreshed={onMenuRefreshed}
+      />
 
       {/* Min Order toggle + value */}
       <div className="rounded-xl border border-neutral-800 bg-black/40 p-3 space-y-3">

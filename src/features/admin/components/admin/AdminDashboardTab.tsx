@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Power } from 'lucide-react';
 import type { MenuData } from '@/src/types/menu';
 import { OrdersDashboard, type Order, type OrderStatus } from '@/src/features/orders';
 import { ReportsPanel, type ReportSettings, type MonthlyReportRow, CustomerData, type CustomerResult } from '@/src/features/reports';
@@ -84,94 +83,12 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   };
   const handlePause = (minutes: number | null) => sendPause(minutes === null ? { minutes: null } : { minutes });
   const handleResume = () => sendPause({ resume: true });
-  // Master online-ordering switch (previously there was no UI for it at all —
-  // the toggle below cannot accept orders while this is off). Enabling
-  // requires a WhatsApp number; the server rejects otherwise.
-  const orderingEnabled = menu.settings.ordering.enabled === true;
-  const hasWhatsapp = (menu.settings.whatsapp || '').replace(/\D/g, '').length >= 8;
-  const [enableBusy, setEnableBusy] = useState(false);
-  const [enableErr, setEnableErr] = useState<string | null>(null);
-  const handleToggleEnabled = async () => {
-    setEnableErr(null);
-    if (enableBusy) return;
-    if (!orderingEnabled && !hasWhatsapp) {
-      setEnableErr(isAr
-        ? 'أضف رقم واتساب دولياً بدون صفر البداية (قسم الهوية، مثال: 96170123456) أولاً — لا يمكن التفعيل بدونه.'
-        : 'Add an international WhatsApp number with no leading zero (Identity section, e.g. 96170123456) first — ordering cannot be enabled without it.');
-      return;
-    }
-    setEnableBusy(true);
-    let kind = 'save';
-    try {
-      const r = await adminFetch('/api/admin/ordering/enabled', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: !orderingEnabled }),
-      });
-      if (!r.ok) {
-        let code = '';
-        try {
-          code = ((await r.json()) as { error?: string } | null)?.error || '';
-        } catch {}
-        if (r.status === 401 || r.status === 403) kind = 'session';
-        else if (code === 'validation_error') kind = 'whatsapp';
-        throw new Error(kind);
-      }
-      setEnableErr(null);
-      await onMenuRefreshed();
-    } catch {
-      setEnableErr(
-        kind === 'session'
-          ? (isAr ? 'انتهت الجلسة. سجل الدخول مجدداً ثم حاول.' : 'Session expired. Log in again, then retry.')
-          : kind === 'whatsapp'
-          ? (isAr ? 'تعذر التفعيل — الرقم يجب أن يكون دولياً بدون صفر البداية (مثال: 96170123456).' : 'Could not enable — the number must be international with no leading zero (e.g. 96170123456).')
-          : (isAr ? 'تعذر الحفظ. حاول مجدداً.' : 'Could not save. Please try again.')
-      );
-    } finally {
-      setEnableBusy(false);
-    }
-  };
   // Server-clock correction snapshot (initializer runs once: rule-clean,
   // strictly better than the old code which had no correction at all).
   const [clockOffsetMs] = useState(() => serverNow() - Date.now());
 
   return (
     <>
-      {/* Master switch first: pause control below is meaningless while off */}
-      <div className="mb-4 rounded-2xl border p-4 bg-neutral-900 border-neutral-800">
-        <div className="flex items-center gap-3">
-          <span className={`w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center ${orderingEnabled ? 'bg-green-500/15 text-green-400' : 'bg-neutral-800 text-neutral-400'}`}>
-            <Power size={20} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <b className="block text-sm font-extrabold">{isAr ? 'الطلب أونلاين' : 'Online ordering'}</b>
-            <span className="block text-xs text-neutral-400 mt-0.5">
-              {orderingEnabled
-                ? (isAr ? 'يستطيع العملاء إتمام الطلب.' : 'Customers can check out.')
-                : (isAr ? 'المفتاح الرئيسي — لا يستطيع العملاء الطلب وهو متوقف.' : 'Master switch — customers cannot order while it is off.')}
-            </span>
-          </span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={orderingEnabled}
-            disabled={enableBusy}
-            onClick={() => void handleToggleEnabled()}
-            aria-label={isAr ? 'تشغيل أو إيقاف الطلب أونلاين' : 'Turn online ordering on or off'}
-            className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${orderingEnabled ? 'bg-[var(--primary)]' : 'bg-neutral-700'} disabled:opacity-60`}
-          >
-            <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ${orderingEnabled ? 'end-1' : 'start-1'}`} />
-          </button>
-        </div>
-        {!orderingEnabled && !hasWhatsapp && (
-          <p className="mt-2.5 text-[11px] font-bold text-amber-300">
-            {isAr ? 'أضف رقم واتساب دولياً بدون صفر البداية (الهوية، مثال: 96170123456) — بدونه لا يمكن التفعيل.' : 'Add an international WhatsApp number with no leading zero (Identity, e.g. 96170123456) — enabling requires it.'}
-          </p>
-        )}
-        {enableErr && (
-          <p className="mt-2.5 text-[11px] font-bold text-red-400" role="alert">{enableErr}</p>
-        )}
-      </div>
       {/* Pause control — same design and motion as the launch spec */}
       <div className="mb-4">
         <OrderingToggle

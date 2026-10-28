@@ -164,6 +164,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         <AdminSettingsTab
           menu={menu}
           lang={lang}
+          adminFetch={adminFetch}
+          onMenuRefreshed={backup.refreshMenuFromServer}
           onUpdateMenu={updateMenu}
           collapsedGroups={collapsedGroups}
           onToggleCollapse={(gid) => setCollapsedGroups((prev) => ({ ...prev, [gid]: !prev[gid] }))}

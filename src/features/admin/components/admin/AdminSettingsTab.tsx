@@ -1,5 +1,6 @@
 import React from 'react';
 import type { MenuData } from '@/src/types/menu';
+import type { AdminFetch } from '@/src/lib/api-client';
 import { socialOrderOrDefault } from '@/src/utils/settingsDefaults';
 import { AnnouncementSection } from '../AnnouncementSection';
 import { WorkingHoursSection } from '../WorkingHoursSection';
@@ -14,6 +15,8 @@ import { FeaturesSection } from '../FeaturesSection';
 interface AdminSettingsTabProps {
   menu: MenuData;
   lang: 'en' | 'ar';
+  adminFetch: AdminFetch;
+  onMenuRefreshed: () => Promise<boolean>;
   onUpdateMenu: (updater: (prev: MenuData) => MenuData) => void;
   collapsedGroups: Record<string, boolean>;
   onToggleCollapse: (gid: string) => void;
@@ -28,7 +31,7 @@ interface AdminSettingsTabProps {
 
 /** TAB 1: SETTINGS — all storefront section editors. */
 export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
-  menu, lang, onUpdateMenu, collapsedGroups, onToggleCollapse, onConfirm,
+  menu, lang, adminFetch, onMenuRefreshed, onUpdateMenu, collapsedGroups, onToggleCollapse, onConfirm,
 }) => {
   return (
     <div className="space-y-6 stagger">
@@ -118,6 +121,9 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         ordering={menu.settings.ordering}
         currency={menu.settings.currency.en}
         lang={lang}
+        whatsapp={menu.settings.whatsapp || ''}
+        adminFetch={adminFetch}
+        onMenuRefreshed={onMenuRefreshed}
         onUpdate={(updater) =>
           onUpdateMenu((m) => ({
             ...m,

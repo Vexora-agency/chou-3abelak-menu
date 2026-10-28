@@ -112,11 +112,20 @@ export function useMenuLoader() {
     const onVisible = () => {
       if (document.visibilityState === 'visible') void refresh();
     };
+    // bfcache restore (back/forward on phones) reuses the old page without
+    // re-running effects — refresh explicitly so resume times never linger.
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) void refresh();
+    };
     document.addEventListener('visibilitychange', onVisible);
+    document.addEventListener('pageshow', onPageShow);
+    window.addEventListener('focus', onVisible);
     return () => {
       alive = false;
       window.clearInterval(id);
       document.removeEventListener('visibilitychange', onVisible);
+      document.removeEventListener('pageshow', onPageShow);
+      window.removeEventListener('focus', onVisible);
     };
   }, []);
 

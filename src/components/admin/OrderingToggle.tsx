@@ -44,9 +44,18 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(() => Date.now() + clockOffsetMs);
   const [totalMs, setTotalMs] = useState<number | null>(null);
-  // Tick every second while paused (countdown and/or elapsed timer need it).
+  // Tick every second while paused (the countdown and elapsed timer need fresh `now`).
   useEffect(() => { if (!paused) return; const id = window.setInterval(() => setNow(Date.now() + clockOffsetMs), 1000); return () => window.clearInterval(id); }, [paused, clockOffsetMs]);
-  useEffect(() => { if (!paused) { setTotalMs(null); setChoosing(false); } }, [paused]);
+  // Reset the panel when pausing ends (render-phase adjustment: applies
+  // before paint, so no extra render and no effect warning).
+  const [wasPaused, setWasPaused] = useState(paused);
+  if (wasPaused !== paused) {
+    setWasPaused(paused);
+    if (!paused) {
+      setTotalMs(null);
+      setChoosing(false);
+    }
+  }
 
   const until = resumesAt ? Date.parse(resumesAt) : null;
   const left = until !== null ? until - now : null;
@@ -76,7 +85,7 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
             const active = (k === 'off') === paused;
             return (
               <button key={k} type="button" disabled={busy} aria-pressed={active}
-                onClick={() => (k === 'off' ? (!paused && setChoosing((v) => !v)) : paused && doResume())}
+                onClick={() => { if (k === 'off') { if (!paused) setChoosing((v) => !v); } else if (paused) void doResume(); }}
                 className={`relative px-4 h-9 rounded-full text-xs font-bold transition-colors ${active ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}>
                 {active && <motion.span layoutId="ordering-seg" className={`absolute inset-0 rounded-full ${paused ? 'bg-amber-300' : 'bg-[#FFC400]'}`} transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
                 <span className="relative z-10">{label}</span>
@@ -90,11 +99,12 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
         {choosing && !paused && (
           <motion.div key="choose" initial={reduce ? false : { opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden relative z-30">
             <button type="button" aria-hidden="true" tabIndex={-1} onClick={() => setChoosing(false)} className="fixed inset-0 z-20 cursor-default bg-transparent" />
-            <div className="pt-4 relative">
+            {/* Panel sits above the click-catcher so duration chips stay tappable */}
+            <div className="pt-4 relative z-30">
               <p className="text-xs font-semibold text-neutral-300 mb-2.5">{t.pauseFor}</p>
               <div className="flex flex-wrap gap-2">
                 {chips.map(([label, m]) => (
-                  <button key={label} type="button" disabled={busy} onClick={() => doPause(m)} className="btn-tactile h-10 px-4 rounded-full border border-neutral-700 bg-black text-xs font-bold text-neutral-100 hover:border-[#FFC400] hover:text-[#FFC400] inline-flex items-center gap-1.5 disabled:opacity-50">
+                  <button key={label} type="button" disabled={busy} onClick={() => void doPause(m)} className="btn-tactile h-10 px-4 rounded-full border border-neutral-700 bg-black text-xs font-bold text-neutral-100 hover:border-[#FFC400] hover:text-[#FFC400] inline-flex items-center gap-1.5 disabled:opacity-50">
                     {busy ? <Loader2 size={13} className="animate-spin" /> : null}{label}
                   </button>
                 ))}
@@ -116,7 +126,7 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
                 </span>
                 {pct !== null && <span className="mt-2 block h-1.5 rounded-full bg-black overflow-hidden"><motion.span className="block h-full rounded-full bg-amber-300" animate={{ width: `${pct}%` }} transition={{ duration: 1, ease: 'linear' }} /></span>}
               </span>
-              <button type="button" disabled={busy} onClick={doResume} className="btn-tactile h-10 px-4 rounded-full bg-[#FFC400] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 disabled:opacity-60">
+              <button type="button" disabled={busy} onClick={() => void doResume()} className="btn-tactile h-10 px-4 rounded-full bg-[#FFC400] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 disabled:opacity-60">
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} strokeWidth={3} />}{t.resume}
               </button>
             </div>

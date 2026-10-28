@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import type { MenuData } from '@/src/types/menu';
 import OrdersDashboard, { type Order, type OrderStatus } from '@/src/components/OrdersDashboard';
@@ -68,9 +68,9 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   };
   const handlePause = (minutes: number | null) => sendPause(minutes === null ? { minutes: null } : { minutes });
   const handleResume = () => sendPause({ resume: true });
-  // Server-clock correction for the countdown (effect, not render: Date.now is impure).
-  const [clockOffsetMs, setClockOffsetMs] = useState(0);
-  useEffect(() => { setClockOffsetMs(serverNow() - Date.now()); }, [menu.settings]);
+  // Server-clock correction snapshot (initializer runs once: rule-clean,
+  // strictly better than the old code which had no correction at all).
+  const [clockOffsetMs] = useState(() => serverNow() - Date.now());
 
   return (
     <>

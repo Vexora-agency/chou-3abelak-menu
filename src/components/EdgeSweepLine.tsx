@@ -1,23 +1,19 @@
-import React, { useId, useRef } from 'react';
+import React, { useRef } from 'react';
 import { usePathSweep } from '@/src/hooks/useEdgeSweep';
 
 interface EdgeSweepLineProps {
   position: 'top' | 'bottom';
 }
 
-// Curved gold edge accent with a perpetually traveling comet. The curve echoes
-// the shell's rounded corners (far more visible on phones than the old 3 px
-// straight bar). The comet is a dashed path whose dashoffset is set by rAF
-// (see usePathSweep) — never a CSS keyframe — so phone power saving modes
-// cannot freeze it. Same look everywhere: header, footer, login. `top`
-// vertically mirrors the curve so it hugs top-rounded edges.
-const CURVE_D = 'M 1.5 7 C 1.5 25, 13 32.5, 30 32.5 L 70 32.5 C 87 32.5, 98.5 25, 98.5 7';
+// One single line hugging the very edge: a short liquid-LED segment traveling
+// along the shell's bottom (or top, mirrored). No static base curve, no second
+// line — so nothing can ever cross or float off the edge. The faint halo comes
+// from a drop-shadow on the segment itself, never a separate stroke.
+const EDGE_D = 'M 0.5 30 C 0.5 32.5, 2 33, 6 33 L 94 33 C 98 33, 99.5 32.5, 99.5 30';
 
 export const EdgeSweepLine: React.FC<EdgeSweepLineProps> = ({ position }) => {
   const cometRef = useRef<SVGPathElement>(null);
   usePathSweep(cometRef);
-  // useId() contains colons — unsafe inside url(#...) references, so sanitize.
-  const gid = `edgeg${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   return (
     <div
       className={`edge-curve ${position === 'top' ? 'edge-curve-t' : 'edge-curve-b'}`}
@@ -25,34 +21,19 @@ export const EdgeSweepLine: React.FC<EdgeSweepLineProps> = ({ position }) => {
       aria-hidden="true"
     >
       <svg viewBox="0 0 100 34" preserveAspectRatio="none" width="100%" height="100%" aria-hidden="true">
-        <defs>
-          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor="#ffffff" stopOpacity="0" />
-            <stop offset="0.22" style={{ stopColor: 'var(--primary)' }} />
-            <stop offset="0.5" stopColor="#FFE07A" />
-            <stop offset="0.78" style={{ stopColor: 'var(--primary)' }} />
-            <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-          </linearGradient>
-          <filter id={`${gid}b`} x="-40%" y="-60%" width="180%" height="220%">
-            <feGaussianBlur stdDeviation="2.2" />
-          </filter>
-        </defs>
-        {/* Soft glow underlay (static: composited once) */}
-        <path d={CURVE_D} fill="none" stroke={`url(#${gid})`} strokeWidth="4" vectorEffect="non-scaling-stroke" pathLength={100} filter={`url(#${gid}b)`} opacity="0.45" />
-        {/* Gold curve: thin like an LED strip */}
-        <path d={CURVE_D} fill="none" stroke={`url(#${gid})`} strokeWidth="2" vectorEffect="non-scaling-stroke" pathLength={100} />
-        {/* Traveling comet (dashoffset driven by rAF): thin yellow flash. */}
+        {/* The one moving line: thin yellow segment, halo from its own shadow. */}
         <path
           ref={cometRef}
-          d={CURVE_D}
+          d={EDGE_D}
           fill="none"
           stroke="#FFE07A"
           strokeOpacity="1"
-          strokeWidth="1.5"
+          strokeWidth="2"
           vectorEffect="non-scaling-stroke"
           strokeLinecap="round"
           pathLength={100}
-          strokeDasharray="16 84"
+          strokeDasharray="22 78"
+          style={{ filter: 'drop-shadow(0 0 3px rgba(255,224,122,0.85))' }}
         />
       </svg>
     </div>

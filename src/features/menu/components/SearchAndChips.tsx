@@ -34,8 +34,8 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
   ];
   const badgeChips = [
     { id: 'new', label: isAr ? 'جديد' : 'New', Icon: Sparkles },
-    { id: 'spicy', label: isAr ? 'حار' : 'Spicy', Icon: Flame },
     { id: 'top', label: isAr ? 'الأكثر طلباً' : 'Top', Icon: Award },
+    { id: 'spicy', label: isAr ? 'حار' : 'Spicy', Icon: Flame },
   ];
 
   // Scroll-edge arrows for the category row (mobile-first): customers only

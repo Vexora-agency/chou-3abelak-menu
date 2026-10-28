@@ -141,6 +141,14 @@ function minMenu() {
   mw2.settings.whatsapp = '96170123456';
   const vw2 = validateMenu(mw2);
   ok(vw2.ok && vw2.value.settings.ordering.enabled === true, 'enabling with whatsapp kept');
+  const mw3 = minMenu();
+  mw3.settings.ordering.enabled = true;
+  mw3.settings.whatsapp = '+961 70-123 456';
+  ok(validateMenu(mw3).ok === true, 'formatted whatsapp normalized and accepted');
+  const mw4 = minMenu();
+  mw4.settings.ordering.enabled = true;
+  mw4.settings.whatsapp = '070123456';
+  ok(validateMenu(mw4).ok === false, 'leading-zero number rejected');
   const m2 = minMenu();
   m2.settings.ordering.pausedUntil = new Date(Date.now() + 3600e3).toISOString();
   m2.settings.ordering.pausedMessage = { en: 'x'.repeat(200), ar: '' };

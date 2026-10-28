@@ -82,7 +82,6 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
           <b className="block text-sm font-extrabold">{title}</b>
           <span className="block text-xs text-neutral-400 mt-0.5">{sub}</span>
         </span>
-        {!disabled && (
         <div className="flex p-1 rounded-full bg-black border border-neutral-800" role="group" aria-label={t.accepting}>
           {([['on', t.segOn], ['off', t.segOff]] as const).map(([k, label]) => {
             const active = (k === 'off') === paused;
@@ -96,7 +95,6 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
             );
           })}
         </div>
-        )}
       </div>
 
       <AnimatePresence initial={false}>
@@ -117,7 +115,7 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
             </div>
           </motion.div>
         )}
-        {paused && !disabled && (
+        {paused && (
           <motion.div key="paused" initial={reduce ? false : { opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden">
             <div className="pt-4 flex items-center gap-3 flex-wrap">
               <span className="flex-1 basis-48 min-w-0">

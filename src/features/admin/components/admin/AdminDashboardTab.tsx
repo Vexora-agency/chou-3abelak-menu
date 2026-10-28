@@ -96,22 +96,37 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
     if (enableBusy) return;
     if (!orderingEnabled && !hasWhatsapp) {
       setEnableErr(isAr
-        ? 'أضف رقم واتساب (قسم الهوية) أولاً — لا يمكن تفعيل الطلبات بدونه.'
-        : 'Add a WhatsApp number (Identity section) first — ordering cannot be enabled without it.');
+        ? 'أضف رقم واتساب دولياً بدون صفر البداية (قسم الهوية، مثال: 96170123456) أولاً — لا يمكن التفعيل بدونه.'
+        : 'Add an international WhatsApp number with no leading zero (Identity section, e.g. 96170123456) first — ordering cannot be enabled without it.');
       return;
     }
     setEnableBusy(true);
+    let kind = 'save';
     try {
       const r = await adminFetch('/api/admin/ordering/enabled', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: !orderingEnabled }),
       });
-      if (!r.ok) throw new Error();
+      if (!r.ok) {
+        let code = '';
+        try {
+          code = ((await r.json()) as { error?: string } | null)?.error || '';
+        } catch {}
+        if (r.status === 401 || r.status === 403) kind = 'session';
+        else if (code === 'validation_error') kind = 'whatsapp';
+        throw new Error(kind);
+      }
       setEnableErr(null);
       await onMenuRefreshed();
     } catch {
-      setEnableErr(isAr ? 'تعذر الحفظ. حاول مجدداً.' : 'Could not save. Please try again.');
+      setEnableErr(
+        kind === 'session'
+          ? (isAr ? 'انتهت الجلسة. سجل الدخول مجدداً ثم حاول.' : 'Session expired. Log in again, then retry.')
+          : kind === 'whatsapp'
+          ? (isAr ? 'تعذر التفعيل — الرقم يجب أن يكون دولياً بدون صفر البداية (مثال: 96170123456).' : 'Could not enable — the number must be international with no leading zero (e.g. 96170123456).')
+          : (isAr ? 'تعذر الحفظ. حاول مجدداً.' : 'Could not save. Please try again.')
+      );
     } finally {
       setEnableBusy(false);
     }
@@ -150,7 +165,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
         </div>
         {!orderingEnabled && !hasWhatsapp && (
           <p className="mt-2.5 text-[11px] font-bold text-amber-300">
-            {isAr ? 'أضف رقم واتساب (الهوية) أولاً — بدونه لا يمكن التفعيل.' : 'Add a WhatsApp number (Identity) first — enabling requires it.'}
+            {isAr ? 'أضف رقم واتساب دولياً بدون صفر البداية (الهوية، مثال: 96170123456) — بدونه لا يمكن التفعيل.' : 'Add an international WhatsApp number with no leading zero (Identity, e.g. 96170123456) — enabling requires it.'}
           </p>
         )}
         {enableErr && (

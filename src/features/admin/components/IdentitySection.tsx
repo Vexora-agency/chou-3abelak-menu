@@ -113,12 +113,12 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
           />
         </div>
         <div>
-          <label className="block text-xs text-neutral-400 mb-1">WhatsApp (Digits only)</label>
+          <label className="block text-xs text-neutral-400 mb-1">WhatsApp (digits, e.g. 96170123456)</label>
           <input
             type="text"
             value={whatsapp}
-            onChange={(e) => onUpdate((prev) => ({ ...prev, whatsapp: e.target.value }))}
-            placeholder="201000000000"
+            onChange={(e) => onUpdate((prev) => ({ ...prev, whatsapp: e.target.value.replace(/[^0-9]/g, '') }))}
+            placeholder="96170123456"
             className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>

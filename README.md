@@ -18,28 +18,50 @@ A fast, bilingual (English & Arabic with full RTL), high-performance restaurant 
 │   ├── /_headers
 │   └── /robots.txt
 ├── /src/
-│   ├── /components/
-│   │   ├── Header.tsx             # Animated hero banner, status badge, call/WhatsApp/map CTAs
-│   │   ├── SearchAndChips.tsx     # Overlapping floating search & sticky category bar
-│   │   ├── FeaturedCarousel.tsx   # Best-seller & hot items horizontal carousel
-│   │   ├── MenuList.tsx           # Dotted leader price lists & offset-shadow card grids
-│   │   ├── ItemDetailsModal.tsx   # Item drawer modal with quantity controls
-│   │   ├── CartBar.tsx            # Floating bounce cart bottom pill
-│   │   ├── CartDrawer.tsx         # Full checkout modal with WhatsApp message builder
-│   │   ├── Footer.tsx             # Hours, address, social links & back-to-top button
-│   │   └── AdminPanel.tsx         # Comprehensive menu & settings administration
-│   ├── /types/menu.ts             # TypeScript definitions for menu, categories, cart
-│   ├── /utils/menuHelpers.ts      # Status checker, WhatsApp message compiler & sanitizers
-│   ├── App.tsx                    # Main application assembly & state orchestration
-│   ├── index.css                  # Custom styling, animations, and typography variables
-│   └── main.tsx                   # React root mount
-└── /functions/                    # Cloudflare Pages Functions
-    ├── /_shared/validate.js       # Strict document validator (pure function)
-    └── /api/
-        ├── menu.js                # Public cached GET /api/menu (ETag, 304, KV)
-        └── /admin/
-            ├── _middleware.js     # Cloudflare Access JWT validator (RS256 WebCrypto)
-            └── menu.js            # Admin GET & optimistic concurrency PUT
+│   ├── /config/                   # White-label skin: client.config, theme.config (brand),
+│   │                              # features.config (package flags), navigation.config, index barrel
+│   ├── /features/                 # REAL feature modules, each owning its UI + state:
+│   │                              # cart/, menu/, orders/, admin/, reports/, backup/
+│   │                              # layout per feature: components/, hooks/,
+│   │                              # services/*.api.ts, index.ts (public barrel).
+│   │                              # Rule: import other features via their barrel
+│   │                              # only — never deep (enforced: npm run lint:isolation).
+│   │                              # Reference example for new features: cart/.
+│   ├── /components/               # Shell + shared UI only: Header (+header/),
+│   │                              # Footer, AnnouncementBanner, ui/ design system
+│   │                              # (Button, Input, Card, Table, Modal).
+│   ├── /lib/api-client.ts         # SINGLE fetch wrapper (apiFetch/adminFetch/publicGet/
+│   │                              # publicPostRaw) — all /api traffic goes through here
+│   ├── /hooks/ (4 files)          # Shell-only shared hooks (useAppPrefs, useTickerLoop,
+│   │                              # useHeaderMotion, useHeaderIntroEngine). Feature
+│   │                              # state lives in features/*/hooks/.
+│   ├── /utils/ (13 files)         # pricing.ts + pricing-menu.ts + pricing-badges.ts (must stay
+│   │                              # identical to functions/_shared/pricing*.js), status.ts
+│   │                              # (mirrors _shared/status.js), safeJson, tz, whatsapp, …
+│   ├── /types/menu.ts             # Domain types (must stay in sync with
+│   │                              # functions/_shared/validate*.js + menu.seed.json)
+│   ├── App.tsx                    # Thin assembly: imports screens/state from
+│   │                              # features/*/ barrels + shell (Header/Footer) + config.
+│   ├── index.css                  # Tailwind v4 entry (@import tailwindcss + styles/*.css)
+│   ├── styles/                    # base.css (:root brand vars), components.css, animations.css
+│   └── main.tsx                   # Root mount + applyTheme() (pushes theme.config → :root)
+├── /functions/                    # Cloudflare Pages Functions (35 routes, file-based routing)
+│   ├── /_shared/                  # ONLY place with D1 SQL. Repositories hold canonical
+│   │   │                          # queries; domain files (orders.js, pricing*.js,
+│   │   │                          # reports*.js, validate*.js, status.js, plan.js,
+│   │   │                          # session.js) contain logic only.
+│   │   ├── /repositories/         # orders, reports, report-settings, customer-data (+index.js)
+│   │   ├── validate*.js           # Menu validator split (core/settings/catalog/items/…)
+│   │   └── pricing*.js            # Server copy of pricing engine (≡ src/utils/pricing*.ts)
+│   └── /api/
+│       ├── menu.js / orders.js (POST) / ordering-state.js / privacy-info.js
+│       ├── auth/session|login|logout.js + internal/run-reports.js
+│       └── /admin/               # menu, orders (+[id]), reports (+[month]), report-settings
+│                                 # (+/resend, /test), backup/*, versions*, trash*, import/*,
+│                                 # ordering/pause, customer-data/*, activity (+_middleware.js)
+├── /migrations/                   # D1 schema (see migrations/README.md — no 0002 by design)
+├── /scheduler/                    # Reports cron Worker (0 5 * * * → POST run-reports)
+└── /scripts/                      # Node checks (test-pricing/reports/backup/status/features…)
 ```
 
 ---

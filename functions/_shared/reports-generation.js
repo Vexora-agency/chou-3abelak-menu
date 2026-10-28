@@ -8,6 +8,13 @@
 import { isValidMonth, monthBoundsUTC, prevMonth } from './reports-time.js';
 import { buildCSV, summarizeMonth } from './reports-aggregation.js';
 import { getRetentionConfig } from './reports-retention.js';
+import {
+  countByStatusByBounds,
+  countRevenueByBounds,
+  fetchOrderRowsByBounds,
+  insertMonthlyReportRow,
+  readMonthlyReportRow,
+} from './repositories/reports.repo.js';
 
 export function csvKeyFor(month) {
   return `reports/${month}.csv`;
@@ -54,31 +61,20 @@ export async function loadMenuBasics(env) {
 }
 
 async function aggregateBounds(db, startISO, endISO) {
-  const cur = await db
-    .prepare(
-      "SELECT COUNT(*) AS c, COALESCE(SUM(total),0) AS rev FROM orders WHERE created_at >= ?1 AND created_at < ?2 AND status != 'cancelled'"
-    )
-    .bind(startISO, endISO)
-    .first();
-  const st = await db
-    .prepare('SELECT status, COUNT(*) AS c FROM orders WHERE created_at >= ?1 AND created_at < ?2 GROUP BY status')
-    .bind(startISO, endISO)
-    .all();
-  return { cur, stRows: (st && st.results) || [] };
+  // SQL lives in repositories/reports.repo.js — domain math stays here.
+  const cur = await countRevenueByBounds(db, startISO, endISO);
+  const stRows = await countByStatusByBounds(db, startISO, endISO);
+  return { cur, stRows };
 }
 
 async function fetchMonthRows(db, startISO, endISO) {
-  const res = await db
-    .prepare(
-      'SELECT id, number, created_at, type, status, items_json, subtotal, delivery_fee, total FROM orders WHERE created_at >= ?1 AND created_at < ?2 ORDER BY number ASC'
-    )
-    .bind(startISO, endISO)
-    .all();
-  return ((res && res.results) || []).map(mapReportRow);
+  // SQL lives in repositories/reports.repo.js — row mapping stays here.
+  const rows = await fetchOrderRowsByBounds(db, startISO, endISO);
+  return rows.map(mapReportRow);
 }
 
 export async function readStoredReport(db, month) {
-  const row = await db.prepare('SELECT * FROM monthly_reports WHERE month = ?1').bind(month).first();
+  const row = await readMonthlyReportRow(db, month);
   if (!row || !row.summary_json) return null;
   try {
     return { month, summary: JSON.parse(row.summary_json), csvKey: row.csv_key || null, emailedAt: row.emailed_at || null, emailStatus: row.email_status || null, attempts: row.email_attempts || 0 };
@@ -142,10 +138,7 @@ export async function generateMonthlyReport(env, ym) {
   }
 
   try {
-    await db
-      .prepare('INSERT INTO monthly_reports (month, summary_json, csv_key, generated_at) VALUES (?1, ?2, ?3, ?4)')
-      .bind(ym, JSON.stringify(summary), storedKey, summary.generatedAt)
-      .run();
+    await insertMonthlyReportRow(db, { month: ym, summaryJson: JSON.stringify(summary), csvKey: storedKey, generatedAt: summary.generatedAt });
   } catch {
     // Lost a race with another run: reuse the winner's row (idempotent).
     const winner = await readStoredReport(db, ym);

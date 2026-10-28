@@ -1,0 +1,103 @@
+import { useState, useEffect } from 'react';
+import { isRecord, readJson } from '@/src/utils/safeJson';
+import { adminFetch } from '@/src/lib/api-client';
+import type { LoginResult } from '../components/AdminLogin';
+
+export function useAdminSaveAuth() {
+  // Admin view toggle. The admin entry points are hidden from customers:
+  // the owner opens the site with #admin at the end of the address.
+  // A tab suffix (#admin/backup, ...) deep-links a tab and survives refresh.
+  const isAdminHash = (h: string) => h === '#admin' || h.startsWith('#admin/');
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [adminUnlocked, setAdminUnlocked] = useState(() => isAdminHash(window.location.hash));
+  // Cookie-session auth state for the admin area
+  const [authStatus, setAuthStatus] = useState<'checking' | 'authed' | 'guest'>('checking');
+
+  useEffect(() => {
+    let cancelled = false;
+    const checkSession = async () => {      if (!adminUnlocked) {
+        setAuthStatus('guest');
+        return;
+      }
+      setAuthStatus('checking');
+      try {
+        const res = await adminFetch('/api/auth/session');
+        // Require the exact shape, not just HTTP 200 (dev servers may
+        // answer unknown /api routes with HTML and a 200 status).
+        const data: unknown = await readJson(res);
+        if (!cancelled) setAuthStatus(res.ok && isRecord(data) && data.authenticated === true ? 'authed' : 'guest');
+      } catch {
+        if (!cancelled) setAuthStatus('guest');
+      }
+    };
+    void checkSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [adminUnlocked]);
+  const handleLoginSubmit = async (values: { username: string; password: string; remember: boolean }): Promise<LoginResult> => {
+    try {
+      const res = await adminFetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values).slice(0, 4096),
+      });
+      if (res.ok) return { ok: true };
+      if (res.status === 429) {
+        let minutes = 10;
+        try {
+          const data: unknown = await readJson(res);
+          if (isRecord(data) && typeof data.retryAfter === 'number' && data.retryAfter > 0) {
+            minutes = Math.ceil(data.retryAfter);
+          }
+        } catch {}
+        return { ok: false, error: 'locked', retryAfter: minutes };
+      }
+      if (res.status === 401) return { ok: false, error: 'invalid' };
+      if (res.status === 503) return { ok: false, error: 'unavailable' };
+      return { ok: false, error: 'network' };
+    } catch {
+      return { ok: false, error: 'network' };
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await adminFetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+    setAuthStatus('guest');
+    closeAdmin();
+  };
+
+  useEffect(() => {
+    const syncAdminHash = () => {
+      const h = window.location.hash;
+      const unlocked = h === '#admin' || h.startsWith('#admin/');
+      setAdminUnlocked(unlocked);
+      if (unlocked) setShowAdmin(true);
+    };
+    syncAdminHash();
+    window.addEventListener('hashchange', syncAdminHash);
+    return () => window.removeEventListener('hashchange', syncAdminHash);
+  }, []);
+
+  const closeAdmin = () => {
+    setShowAdmin(false);
+    setAdminUnlocked(false);
+    const h = window.location.hash;
+    if (h === '#admin' || h.startsWith('#admin/')) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  };
+
+  return {
+    showAdmin,
+    setShowAdmin,
+    adminUnlocked,
+    authStatus,
+    setAuthStatus,
+    handleLoginSubmit,
+    handleLogout,
+    closeAdmin,
+  };
+}

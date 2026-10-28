@@ -9,6 +9,48 @@
       "to": {
         "circular": true
       }
+    },
+    {
+      "name": "feature-cart-isolation",
+      "severity": "error",
+      "comment": "features/cart may only use other features via their barrels (features/<name>/index.ts) — never deep.",
+      "from": { "path": "src/features/cart/.+" },
+      "to": { "path": "src/features/(menu|orders|admin|reports|backup)/.+", "pathNot": "src/features/[^/]+/index\\.ts" }
+    },
+    {
+      "name": "feature-menu-isolation",
+      "severity": "error",
+      "comment": "features/menu may only use other features via their barrels (features/<name>/index.ts) — never deep.",
+      "from": { "path": "src/features/menu/.+" },
+      "to": { "path": "src/features/(cart|orders|admin|reports|backup)/.+", "pathNot": "src/features/[^/]+/index\\.ts" }
+    },
+    {
+      "name": "feature-orders-isolation",
+      "severity": "error",
+      "comment": "features/orders may only use other features via their barrels (features/<name>/index.ts) — never deep.",
+      "from": { "path": "src/features/orders/.+" },
+      "to": { "path": "src/features/(cart|menu|admin|reports|backup)/.+", "pathNot": "src/features/[^/]+/index\\.ts" }
+    },
+    {
+      "name": "feature-admin-isolation",
+      "severity": "error",
+      "comment": "features/admin composes other features via their barrels only (features/<name>/index.ts) — never deep. Admin is the sole allowed cross-feature importer.",
+      "from": { "path": "src/features/admin/.+" },
+      "to": { "path": "src/features/(cart|menu|orders|reports|backup)/.+", "pathNot": "src/features/[^/]+/index\\.ts" }
+    },
+    {
+      "name": "feature-reports-isolation",
+      "severity": "error",
+      "comment": "features/reports may only use other features via their barrels (features/<name>/index.ts) — never deep.",
+      "from": { "path": "src/features/reports/.+" },
+      "to": { "path": "src/features/(cart|menu|orders|admin|backup)/.+", "pathNot": "src/features/[^/]+/index\\.ts" }
+    },
+    {
+      "name": "feature-backup-isolation",
+      "severity": "error",
+      "comment": "features/backup may only use other features via their barrels (features/<name>/index.ts) — never deep.",
+      "from": { "path": "src/features/backup/.+" },
+      "to": { "path": "src/features/(cart|menu|orders|admin|reports)/.+", "pathNot": "src/features/[^/]+/index\\.ts" }
     }
   ],
   "options": {

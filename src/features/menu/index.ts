@@ -1,10 +1,11 @@
 /**
- * Feature: menu (public storefront). Public API only — other features import from here, never deep.
- * Existing implementation lives in src/components + src/hooks; re-exported here (no move, no break).
+ * Feature: menu (public storefront). Public API only — other features and
+ * App.tsx import from here, never from ./components or ./hooks directly.
  */
-export { MenuList } from '@/src/components/MenuList';
-export { FeaturedCarousel } from '@/src/components/FeaturedCarousel';
-export { SearchAndChips } from '@/src/components/SearchAndChips';
-export { ItemDetailsModal } from '@/src/components/ItemDetailsModal';
-export { useMenuLoader } from '@/src/hooks/useMenuLoader';
-export { useMenuListFiltering } from '@/src/hooks/useMenuListFiltering';
+export { MenuList } from './components/MenuList';
+export { FeaturedCarousel } from './components/FeaturedCarousel';
+export { SearchAndChips } from './components/SearchAndChips';
+export { ItemDetailsModal } from './components/ItemDetailsModal';
+export { useMenuLoader } from './hooks/useMenuLoader';
+export { useMenuListFiltering } from './hooks/useMenuListFiltering';
+export { useMenuListCartQuantities } from './hooks/useMenuListCartQuantities';

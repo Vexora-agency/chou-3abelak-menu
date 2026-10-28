@@ -1,0 +1,2 @@
+# k6 run summaries land here as k6-summary.json (gitignored build artifact).
+# Kept as a file so the directory exists in fresh clones.

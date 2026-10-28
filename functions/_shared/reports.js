@@ -18,6 +18,7 @@
  */
 
 import { loadMenuBasics } from './reports-generation.js';
+import { getReportSettingsRow } from './repositories/reports.repo.js';
 
 export {
   MONTH_RE,
@@ -70,8 +71,10 @@ export function verifyExpiryISO() {
 }
 
 export async function getReportSettings(db) {
+  // SQL lives in repositories/reports.repo.js — this stays as the compat
+  // entry point (routes + versions.js + tests import it from here).
   try {
-    const row = await db.prepare('SELECT * FROM report_settings WHERE id = 1').first();
+    const row = await getReportSettingsRow(db);
     if (!row) return null;
     return row;
   } catch {

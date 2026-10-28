@@ -7,6 +7,14 @@
  */
 
 import { MONTH_RE } from './reports-time.js';
+import {
+  deleteOldOrders,
+  deleteOldReports,
+  getOldestOrderMonth,
+  listOldReportMonths,
+  listReportedMonths,
+  purgeOldPII,
+} from './repositories/reports.repo.js';
 
 const DAY_MS = 86400000;
 
@@ -54,16 +62,14 @@ export async function runRetention(env) {
 
   const reported = new Set();
   try {
-    const res = await db.prepare('SELECT month FROM monthly_reports').all();
-    for (const r of (res && res.results) || []) {
-      if (typeof r.month === 'string') reported.add(r.month);
-    }
+    // SQL lives in repositories/reports.repo.js.
+    for (const m of await listReportedMonths(db)) reported.add(m);
   } catch {}
 
   // Earliest UTC month (from oldest order to now) with no report row.
   let oldestMonth = null;
   try {
-    const row = await db.prepare('SELECT MIN(created_at) AS m FROM orders').first();
+    const row = await getOldestOrderMonth(db);
     if (row && typeof row.m === 'string' && row.m.length >= 7) oldestMonth = utcMonthOf(row.m);
   } catch {}
   let guardISO = null;
@@ -86,13 +92,7 @@ export async function runRetention(env) {
 
   let purged = 0;
   try {
-    const r = await db
-      .prepare(
-        'UPDATE orders SET customer_name = NULL, customer_phone = NULL, phone_norm = NULL, customer_address = NULL, notes = NULL, location_lat = NULL, location_lng = NULL, pii_purged_at = ?1 WHERE created_at < ?2 AND pii_purged_at IS NULL'
-      )
-      .bind(new Date(nowMs).toISOString(), effPurgeCut)
-      .run();
-    purged = (r && r.meta && typeof r.meta.changes === 'number') ? r.meta.changes : 0;
+    purged = await purgeOldPII(db, new Date(nowMs).toISOString(), effPurgeCut);
   } catch {
     errors.push('purge');
   }
@@ -101,11 +101,7 @@ export async function runRetention(env) {
   const effDelCut = guardISO && guardISO < orderCutoff ? guardISO : orderCutoff;
   let deletedOrders = 0;
   try {
-    const r = await db
-      .prepare('DELETE FROM orders WHERE created_at < ?1 AND pii_purged_at IS NOT NULL')
-      .bind(effDelCut)
-      .run();
-    deletedOrders = (r && r.meta && typeof r.meta.changes === 'number') ? r.meta.changes : 0;
+    deletedOrders = await deleteOldOrders(db, effDelCut);
   } catch {
     errors.push('deleteOrders');
   }
@@ -117,16 +113,14 @@ export async function runRetention(env) {
   })();
   let oldMonths = [];
   try {
-    const res = await db.prepare('SELECT month FROM monthly_reports WHERE month < ?1').bind(rptCut).all();
-    oldMonths = ((res && res.results) || []).map((r) => r.month).filter((m) => typeof m === 'string');
+    oldMonths = await listOldReportMonths(db, rptCut);
   } catch {
     errors.push('readOldReports');
   }
   let deletedReports = 0;
   if (oldMonths.length) {
     try {
-      const del = await db.prepare('DELETE FROM monthly_reports WHERE month < ?1').bind(rptCut).run();
-      deletedReports = (del && del.meta && typeof del.meta.changes === 'number') ? del.meta.changes : 0;
+      deletedReports = await deleteOldReports(db, rptCut);
     } catch {
       errors.push('deleteReports');
     }

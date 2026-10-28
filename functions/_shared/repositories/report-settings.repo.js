@@ -1,14 +1,14 @@
 /**
  * Repository: report_settings table.
  * Single place for the SELECT/UPSERT/verify queries used by report-settings routes + confirm link.
+ * Canonical settings SELECT lives in ./reports.repo.js (no duplication);
+ * the `getReportSettings` compat alias stays here because confirm.js +
+ * versions.js import it alongside the UPSERT helpers.
  */
-import { getReportSettings } from '../reports.js';
+import { getReportSettingsRow } from './reports.repo.js';
 
-export { getReportSettings };
-
-export async function getReportSettingsRow(db) {
-  return db.prepare('SELECT * FROM report_settings WHERE id = 1').first();
-}
+export { getReportSettingsRow };
+export { getReportSettings } from '../reports.js';
 
 export async function upsertReportSettings(db, { enabled, email, verified, language, tokenHash, expiresAt, nowISO }) {
   await db

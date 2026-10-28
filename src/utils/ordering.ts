@@ -42,3 +42,14 @@ export function resolveLiveOrdering(
   }
   return getOrderingState(menu.settings, nowMs);
 }
+
+/**
+ * Poll freshness guard: a successful poll older than maxAgeMs is untrusted
+ * (timers may run while its fetches silently fail — the exact frozen-phone
+ * case: a ticking countdown on dead data). Callers drop back to the local
+ * machine instead of displaying it. Never fires before the first success.
+ */
+export function isPollStale(lastSuccessMs: number | null, nowMs: number, maxAgeMs = 120000): boolean {
+  if (lastSuccessMs === null) return false;
+  return nowMs - lastSuccessMs > maxAgeMs;
+}

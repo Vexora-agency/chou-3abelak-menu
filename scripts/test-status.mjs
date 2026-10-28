@@ -4,7 +4,7 @@
 // alias, which plain node cannot resolve).
 import { getOrderingState } from '../functions/_shared/status.js';
 import { validateMenu } from '../functions/_shared/validate.js';
-import { applyDraftPause, resolveLiveOrdering } from '../src/utils/ordering.ts';
+import { applyDraftPause, isPollStale, resolveLiveOrdering } from '../src/utils/ordering.ts';
 import { formatHMS, formatMMSS } from '../src/utils/countdown.ts';
 
 let passed = 0;
@@ -128,6 +128,11 @@ const base = () => ({
   ok(formatMMSS(90000) === '1:30' && formatMMSS(61000) === '1:01' && formatMMSS(0) === '0:00', 'countdown mm:ss');
   ok(formatMMSS(3661000) === '1:01:01' && formatMMSS(-500) === '0:00', 'countdown hours + clamp');
   ok(formatHMS(3661000) === '01:01:01' && formatHMS(61000) === '00:01:01', 'countdown hh:mm:ss');
+  // poll freshness guard: never fires before first success, fires past 2 periods
+  ok(isPollStale(null, 1000000) === false, 'no staleness before first success');
+  ok(isPollStale(1000000, 1000000 + 59000) === false, 'fresh poll trusted');
+  ok(isPollStale(1000000, 1000000 + 120000) === false, 'two periods still trusted (boundary)');
+  ok(isPollStale(1000000, 1000000 + 120001) === true, 'dead poll distrusted past boundary');
 }
 
 /* ---------------- validator additions ---------------- */

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Archive, CalendarClock, Check, Clock, Download, FileText, Loader2, Mail, Send, ShieldCheck, TriangleAlert } from 'lucide-react';
 
 export interface ReportSettings {
@@ -78,7 +78,8 @@ const validEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s.trim())
 const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, reports, retention, sendTime, timezone, onSaveSettings, onResendVerification, onSendTest, onDownload }) => {
   const t = STR[lang];
   const isAr = lang === 'ar';
-  const reduce = useReducedMotion();
+  // Owner decision: animations always run (never honor reduced-motion).
+  const reduce = false;
   const [enabled, setEnabled] = useState(settings.enabled);
   const [email, setEmail] = useState(settings.email);
   const [mailLang, setMailLang] = useState<'en' | 'ar'>(settings.language);

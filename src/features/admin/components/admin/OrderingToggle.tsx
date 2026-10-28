@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Loader2, Moon, PauseCircle, Play, X } from 'lucide-react';
 
 export type OrderingToggleState = 'open' | 'paused' | 'closed';
@@ -38,7 +38,8 @@ const hhmmss = (ms: number) => { const s = Math.max(0, Math.floor(ms / 1000)); c
 /** Admin pause control: segmented Accepting/Paused switch, duration picker,
  *  live countdown with progress, and resume — same design as the storefront motion. */
 const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt, reopensAt, timezone, clockOffsetMs = 0, pausedAtMs, onPause, onResume }) => {
-  const t = STR[lang]; const isAr = lang === 'ar'; const reduce = useReducedMotion();
+  // Owner decision: animations always run (never honor reduced-motion).
+  const t = STR[lang]; const isAr = lang === 'ar'; const reduce = false;
   const paused = state === 'paused';
   const [choosing, setChoosing] = useState(false);
   const [busy, setBusy] = useState(false);

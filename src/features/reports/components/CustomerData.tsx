@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, useReducedMotion } from 'motion/react';
+import { motion } from 'motion/react';
 import { Download, Eraser, Lock, Search, ShieldAlert, Trash2 } from 'lucide-react';
 
 export interface CustomerResult {
@@ -54,7 +54,8 @@ const loc = (l: 'en' | 'ar') => (l === 'ar' ? 'ar-u-nu-latn' : 'en-US');
 const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, onAction }) => {
   const t = STR[lang];
   const isAr = lang === 'ar';
-  const reduce = useReducedMotion();
+  // Owner decision: animations always run (never honor reduced-motion).
+  const reduce = false;
   const [phone, setPhone] = useState('');
   const [results, setResults] = useState<CustomerResult[]>([]);
   const [searched, setSearched] = useState(false);

@@ -164,16 +164,13 @@
   animation: btnShine 5s ease-in-out 3.5s infinite;
 }
 
-/* Pause every header animation while the header is scrolled out of view */
-.header-shell[data-paused="true"] *,
-.header-shell[data-paused="true"] *::after,
-.header-shell[data-paused="true"] .header-spot {
-  animation-play-state: paused !important;
-}
-
-/* NOTE (owner decision): header animations (edge sweep, button shine, spotlight)
-   always run for every visitor. The prefers-reduced-motion kill-switch that used
-   to disable them was removed on purpose. Off-screen pausing above still applies. */
+/* NOTE (owner decision): header animations (edge sweep, button shine,
+   spotlight) always run for every visitor, even under prefers-reduced-motion
+   or device power saving. The header shell still carries data-paused for the
+   canvas engine (its rAF loop is the real battery cost and stays gated on
+   visibility in JS), but that attribute must NEVER freeze the lightweight
+   compositor CSS loops — a stuck freeze is exactly how the edge sweep
+   disappeared on phones, so no such rule may be re-added here. */
 
 /* --- Admin login form (appended as provided) --- */
 /* The login fields draw their own focus ring; avoid doubling the global outline */

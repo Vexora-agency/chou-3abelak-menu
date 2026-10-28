@@ -2,7 +2,7 @@
 // when next touched. backup/ subfolder (backupStrings/backupUtils/ChangeList/BackupModal)
 // already started the split. Documented, not refactored (Fix 3C).
 import React, { useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import {
   Activity, AlertTriangle, Archive, Check, Clock, Download, FileJson, FileSpreadsheet, History, Loader2, Printer, RotateCcw, ShieldAlert, ShieldCheck, Trash2, Upload, Undo2, X,
 } from 'lucide-react';
@@ -61,7 +61,8 @@ interface BackupPanelProps {
 }
 
 const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status, reportsOn, onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport, onRestoreTrash, onDeleteForever, onToggleAuto, activity }) => {
-  const t = STR[lang]; const isAr = lang === 'ar'; const reduce = useReducedMotion();
+  // Owner decision: animations always run (never honor reduced-motion).
+  const t = STR[lang]; const isAr = lang === 'ar'; const reduce = false;
   const [tab, setTab] = useState<'history' | 'export' | 'import' | 'trash'>('history');
   const [actFilter, setActFilter] = useState<'all' | 'saves' | 'deletes' | 'restores' | 'imports'>('all');
   const [limit, setLimit] = useState(6);

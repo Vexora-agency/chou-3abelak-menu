@@ -148,7 +148,9 @@ export default function App() {
   const liveOrderingState: OrderingStatus | null = orderingState ?? getOrderingState(menu.settings, serverNow());
 
   return (
-    <MotionConfig reducedMotion="user">
+    <MotionConfig reducedMotion="never">
+    {/* Owner decision: every animation runs for every visitor, even when the
+        OS requests reduced motion or the device is in power saving. */}
     <motion.div
       style={{ scaleX: progress, opacity: progressOpacity, background: themeConfig.colors.primary }}
       className="fixed top-0 inset-x-0 h-[3px] origin-left rtl:origin-right z-[60] pointer-events-none"

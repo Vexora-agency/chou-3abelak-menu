@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { motion, useReducedMotion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import type { MenuSettings } from '@/src/types/menu';
 import { serverNow } from '@/src/utils/serverTime';
 import { annScroll, annSpeed, announcementStatus } from '@/src/utils/announcement';
@@ -12,7 +12,9 @@ interface AnnouncementBannerProps {
 
 export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings, lang }) => {
   const isAr = lang === 'ar';
-  const reduce = useReducedMotion();
+  // Owner decision: every animation runs for every visitor, even when the
+  // OS requests reduced motion or the device is in power saving.
+  const reduce = false;
   const [, setTick] = useState(0);
 
   // Re-evaluate every 60 s so the strip disappears by itself at expiry.

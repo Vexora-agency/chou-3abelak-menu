@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { Search, X, Sparkles, Flame, Award } from 'lucide-react';
+import { Search, X, Sparkles, Flame, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Category } from '@/src/types/menu';
 
 interface SearchAndChipsProps {
@@ -37,6 +37,72 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
     { id: 'spicy', label: isAr ? 'حار' : 'Spicy', Icon: Flame },
     { id: 'top', label: isAr ? 'الأكثر طلباً' : 'Top', Icon: Award },
   ];
+
+  // Scroll-edge arrows for the category row (mobile-first): customers only
+  // discover more chips when they see a cue. Rect-based (never scrollLeft
+  // math) so LTR and RTL behave identically in every browser.
+  const catScrollRef = useRef<HTMLDivElement>(null);
+  const catInnerRef = useRef<HTMLDivElement>(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+
+  useEffect(() => {
+    const outer = catScrollRef.current;
+    const inner = catInnerRef.current;
+    if (!outer || !inner) return;
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const cont = outer.getBoundingClientRect();
+      const kids = inner.children;
+      if (!kids.length) {
+        setCanPrev(false);
+        setCanNext(false);
+        return;
+      }
+      const SLOP = 2;
+      const first = (kids[0] as HTMLElement).getBoundingClientRect();
+      const last = (kids[kids.length - 1] as HTMLElement).getBoundingClientRect();
+      if (isAr) {
+        setCanPrev(first.right > cont.right + SLOP);
+        setCanNext(last.left < cont.left - SLOP);
+      } else {
+        setCanPrev(first.left < cont.left - SLOP);
+        setCanNext(last.right > cont.right + SLOP);
+      }
+    };
+    const requestUpdate = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
+    update();
+    outer.addEventListener('scroll', requestUpdate, { passive: true });
+    window.addEventListener('resize', requestUpdate);
+    const ro = new ResizeObserver(requestUpdate);
+    ro.observe(outer);
+    ro.observe(inner);
+    return () => {
+      outer.removeEventListener('scroll', requestUpdate);
+      window.removeEventListener('resize', requestUpdate);
+      ro.disconnect();
+    };
+  }, [isAr, chips.length]);
+
+  // Step toward the end (+1) or the start (-1) by most of a viewport.
+  const stepCats = (dir: 1 | -1) => {
+    const el = catScrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: (isAr ? -dir : dir) * el.clientWidth * 0.7, behavior: 'smooth' });
+  };
+
+  const fadeFrom = darkMode ? 'from-[#0A0A0A]' : 'from-white';
+  const arrowBtn = `absolute top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border transition active:scale-90 anim-fade-in ${
+    darkMode
+      ? 'bg-[#1c1c1c]/95 text-[var(--primary)] border-white/15'
+      : 'bg-white text-[#0A0A0A] border-black/10'
+  }`;
 
   return (
     <div className="px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
@@ -79,70 +145,121 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
         </div>
       </div>
 
-      {/* Sticky Horizontal Categories Navigation */}
+      {/* Sticky navigation: categories row (scroll arrows) + badge quick-filters below */}
       <nav
         aria-label={isAr ? 'تصنيفات القائمة' : 'Menu categories'}
-          className={`sticky top-0 z-20 -mx-5 sm:-mx-8 px-5 sm:px-8 py-3 mt-1.5 flex gap-2 sm:gap-2.5 md:gap-3 overflow-x-auto no-scrollbar md:justify-center transition-[background-color] duration-300 ${
+        className={`sticky top-0 z-20 -mx-5 sm:-mx-8 px-5 sm:px-8 py-3 mt-1.5 transition-[background-color] duration-300 ${
           darkMode ? 'bg-[#0A0A0A] border-b border-white/5' : 'bg-white border-b border-black/5'
         }`}
       >
-        {chips.map((chip) => {
-          const isSelected = selectedCategory === chip.id;
-          return (
-            <button
-              key={chip.id}
-              type="button"
-              onClick={() => onSelectCategory(chip.id)}
-              className={`relative flex-shrink-0 h-11 px-5 rounded-full text-sm transition-colors btn-tactile border-[1.5px] ${
-                isSelected
-                  ? 'text-[#0A0A0A] font-bold border-[var(--primary)]'
-                  : darkMode
-                  ? 'text-white/90 font-semibold border-white hover:border-[var(--primary)]'
-                  : 'text-[#0A0A0A] font-semibold border-[#0A0A0A]'
-              }`}
-              aria-pressed={isSelected}
-            >
-              {isSelected && (
-                <motion.span
-                  layoutId="chip-pill"
-                  className="absolute -inset-[1.5px] rounded-full bg-[var(--primary)]"
-                  transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                />
-              )}
-              <span className="relative z-10">{chip.label}</span>
-            </button>
-          );
-        })}
+        {/* Categories row with edge arrows */}
+        <div className="relative">
+          <div ref={catScrollRef} className="overflow-x-auto no-scrollbar">
+            {/* m-auto + w-max: safely centered when it fits, scrolls from the
+                start when it overflows (plain justify-center would clip the
+                start edge in RTL/overflow). */}
+            <div ref={catInnerRef} className="m-auto flex w-max max-w-full gap-2 sm:gap-2.5 md:gap-3 px-0.5 py-0.5">
+              {chips.map((chip) => {
+                const isSelected = selectedCategory === chip.id;
+                return (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={() => onSelectCategory(chip.id)}
+                    className={`relative flex-shrink-0 h-11 px-5 rounded-full text-sm transition-colors btn-tactile border-[1.5px] ${
+                      isSelected
+                        ? 'text-[#0A0A0A] font-bold border-[var(--primary)]'
+                        : darkMode
+                        ? 'text-white/90 font-semibold border-white hover:border-[var(--primary)]'
+                        : 'text-[#0A0A0A] font-semibold border-[#0A0A0A] hover:border-[var(--primary)]'
+                    }`}
+                    aria-pressed={isSelected}
+                  >
+                    {isSelected && (
+                      <motion.span
+                        layoutId="chip-pill"
+                        className="absolute -inset-[1.5px] rounded-full bg-[var(--primary)]"
+                        transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                      />
+                    )}
+                    <span className="relative z-10">{chip.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {/* Start edge: fade + arrow back */}
+          {canPrev && (
+            <>
+              <div
+                aria-hidden="true"
+                className={`pointer-events-none absolute top-0 bottom-0 start-0 w-12 bg-gradient-to-r rtl:bg-gradient-to-l ${fadeFrom} to-transparent`}
+              />
+              <button
+                type="button"
+                onClick={() => stepCats(-1)}
+                aria-label={isAr ? 'الفئات السابقة' : 'Previous categories'}
+                className={`${arrowBtn} start-1`}
+              >
+                <ChevronLeft size={16} className="rtl:rotate-180" />
+              </button>
+            </>
+          )}
+          {/* End edge: fade + arrow forward */}
+          {canNext && (
+            <>
+              <div
+                aria-hidden="true"
+                className={`pointer-events-none absolute top-0 bottom-0 end-0 w-12 bg-gradient-to-l rtl:bg-gradient-to-r ${fadeFrom} to-transparent`}
+              />
+              <button
+                type="button"
+                onClick={() => stepCats(1)}
+                aria-label={isAr ? 'المزيد من الفئات' : 'More categories'}
+                className={`${arrowBtn} end-1`}
+              >
+                <ChevronRight size={16} className="rtl:rotate-180" />
+              </button>
+            </>
+          )}
+        </div>
 
-        {/* Divider + badge quick-filters (new / spicy / top) */}
-        <span
-          className={`flex-shrink-0 self-center w-px h-6 ${darkMode ? 'bg-white/15' : 'bg-black/15'}`}
-          aria-hidden="true"
-        />
-        {badgeChips.map(({ id, label, Icon }) => {
-          const isSelected = selectedBadge === id;
-          return (
-            <button
-              key={`badge-${id}`}
-              type="button"
-              onClick={() => onToggleBadge(id)}
-              className={`relative flex-shrink-0 h-11 px-4 rounded-full text-[13px] transition-colors btn-tactile border-[1.5px] flex items-center gap-1.5 ${
-                isSelected
-                  ? 'bg-[var(--primary)] text-[#0A0A0A] font-bold border-[var(--primary)]'
-                  : darkMode
-                  ? 'text-white/90 font-semibold border-white hover:border-[var(--primary)]'
-                  : 'text-[#0A0A0A] font-semibold border-[#0A0A0A]'
-              }`}
-              aria-pressed={isSelected}
-              title={label}
-            >
-              <span className="relative z-10 flex items-center gap-1.5">
-                <Icon size={14} className={isSelected ? '' : darkMode ? 'text-[var(--primary)]' : 'text-[#8a6d00]'} />
-                {label}
-              </span>
-            </button>
-          );
-        })}
+        {/* Badge quick-filters (new / spicy / top): their own row below */}
+        <div
+          className="mt-2.5 overflow-x-auto no-scrollbar"
+          role="group"
+          aria-label={isAr ? 'تصفية سريعة' : 'Quick filters'}
+        >
+          <div className="m-auto flex w-max max-w-full items-center gap-2 px-0.5 py-0.5">
+            <span className={`flex-shrink-0 text-[11px] font-bold ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>
+              {isAr ? 'تصفية سريعة:' : 'Quick filter:'}
+            </span>
+            {badgeChips.map(({ id, label, Icon }) => {
+              const isSelected = selectedBadge === id;
+              return (
+                <button
+                  key={`badge-${id}`}
+                  type="button"
+                  onClick={() => onToggleBadge(id)}
+                  className={`relative flex-shrink-0 h-9 px-3.5 rounded-full text-xs transition-colors btn-tactile border-[1.5px] flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-[var(--primary)] text-[#0A0A0A] font-bold border-[var(--primary)]'
+                      : darkMode
+                      ? 'text-white/90 font-semibold border-white hover:border-[var(--primary)]'
+                      : 'text-[#0A0A0A] font-semibold border-[#0A0A0A] hover:border-[var(--primary)]'
+                  }`}
+                  aria-pressed={isSelected}
+                  title={label}
+                >
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <Icon size={13} className={isSelected ? '' : darkMode ? 'text-[var(--primary)]' : 'text-[#8a6d00]'} />
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </nav>
     </div>
   );

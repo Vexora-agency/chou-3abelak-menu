@@ -8,7 +8,6 @@ import { useHeaderMotion } from '@/src/hooks/useHeaderMotion';
 import { HeaderTopBar } from '@/src/components/header/HeaderTopBar';
 import { HeaderBrandBlock } from '@/src/components/header/HeaderBrandBlock';
 import { HeaderActions } from '@/src/components/header/HeaderActions';
-import { EdgeSweepLine } from '@/src/components/EdgeSweepLine';
 
 interface HeaderProps {
   menu: MenuData;
@@ -57,7 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="header-spot" />
       </motion.div>
       <div className="header-grain" aria-hidden="true" />
-      <EdgeSweepLine position="bottom" />
+      <div className="edge-line edge-line-b" aria-hidden="true" />
 
       {/* Top Utility Row */}
       <HeaderTopBar

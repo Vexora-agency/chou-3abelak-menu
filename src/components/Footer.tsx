@@ -4,7 +4,6 @@ import { Clock, MapPin, Phone, ArrowUp, Instagram, Facebook, MessageCircle, Shie
 import { sanitizeUrl, buildMapUrl } from '@/src/utils/menuHelpers';
 import { aboutOrDefault, socialOrderOrDefault } from '@/src/utils/settingsDefaults';
 import type { SocialPlatform } from '@/src/types/menu';
-import { EdgeSweepLine } from '@/src/components/EdgeSweepLine';
 
 interface FooterProps {
   menu: MenuData;
@@ -57,7 +56,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
   return (
     <footer className="relative isolate mt-12 bg-[#0A0A0A] text-white rounded-t-[32px] md:rounded-t-[44px] pt-11 px-5 sm:px-8 md:px-12 pb-8 shadow-[0_-24px_60px_-24px_rgba(0,0,0,0.6)]">
       <div className="header-grain" aria-hidden="true" />
-      <EdgeSweepLine position="top" />
+      <div className="edge-line edge-line-t" aria-hidden="true" />
       {/* Floating Back to Top Button */}
       {showBackToTop && (
         <button

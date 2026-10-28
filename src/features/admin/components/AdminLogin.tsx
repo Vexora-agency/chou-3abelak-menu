@@ -8,7 +8,6 @@ import { LoginTopBar } from './admin-login/loginTopBar';
 import type { RiseFn } from './admin-login/loginTopBar';
 import { LoginSuccessPanel } from './admin-login/loginSuccessPanel';
 import { LoginForm } from './admin-login/loginForm';
-import { EdgeSweepLine } from '@/src/components/EdgeSweepLine';
 
 export type LoginResult =
   | { ok: true }
@@ -146,7 +145,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({
             animate={shake}
             className="glass-pill relative w-full overflow-hidden rounded-[28px] p-6 sm:p-8 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85)]"
           >
-            <EdgeSweepLine position="top" />
+            <div className="edge-line edge-line-t" aria-hidden="true" />
 
             <AnimatePresence mode="wait" initial={false}>
               {phase === 'success' ? (

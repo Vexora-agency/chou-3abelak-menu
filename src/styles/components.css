@@ -104,23 +104,29 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* Curved gold edge accent (see EdgeSweepLine): an SVG smile echoing the
-   shell's rounded corners, with a static glow + an rAF-driven comet.
-   Deliberately NOT a CSS keyframe — phone power saving modes can freeze
-   those, which is how the old straight sweep disappeared on iPhones.
-   `top` instances mirror via scaleY(-1) so the curve hugs top-rounded edges.
-   The data-paused attribute still exists for the canvas engine only; no rule
-   here may ever freeze these loops again. */
-.edge-curve {
+/* Straight gold edge line with a sweeping shine (the original design).
+   NOTE: no rule here may ever pause these loops via data-paused — that
+   freeze is what once hid the sweep on phones. The canvas engine still uses
+   the data-paused attribute for its own rAF gating only. */
+.edge-line {
   position: absolute;
   left: 0;
   right: 0;
-  height: 34px;
+  height: 3px;
+  overflow: hidden;
   pointer-events: none;
-  overflow: visible;
+  background: linear-gradient(90deg, transparent 0%, var(--primary) 18%, #FFE07A 50%, var(--primary) 82%, transparent 100%);
 }
-.edge-curve-b { bottom: 0; }
-.edge-curve-t { top: 0; }
+.edge-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+  animation: edgeSweep 4.8s ease-in-out infinite;
+}
+.edge-line-b { bottom: 0; }
+.edge-line-t { top: 0; }
 
 /* NOTE (perf): no backdrop-filter here on purpose. The header runs infinite
    animations (edge sweep, spotlight, button shine) and any backdrop blur would

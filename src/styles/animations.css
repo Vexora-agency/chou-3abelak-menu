@@ -98,9 +98,10 @@
   animation: cartBarIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both, bounceCart 0.45s 0.4s ease-out;
 }
 
-/* edgeSweep keyframes retired with the ::after shine: the sweep is now a real
-   div moved by rAF (EdgeSweepLine + useEdgeSweep), immune to phone power
-   saving freezing CSS animations. */
+@keyframes edgeSweep {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(420%); }
+}
 
 /* Announcement ticker: seamless marquee (track holds 2 identical halves,
    looping 0 → -50%). Duration is set inline from the measured width so the

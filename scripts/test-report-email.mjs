@@ -1,0 +1,54 @@
+// Renderer checks for the monthly report email: enabled-only order types
+// and dark-mode force-light roles. Run: node scripts/test-report-email.mjs
+import { renderMonthlyReportEmail } from '../functions/_shared/report-email.js';
+
+let passed = 0;
+let failed = 0;
+function ok(cond, name) {
+  if (cond) {
+    passed += 1;
+  } else {
+    failed += 1;
+    console.error(`FAIL: ${name}`);
+  }
+}
+
+const data = () => ({
+  restaurantName: { en: 'Chou 3abelak', ar: 'شو عبالك' }, month: '2026-09', currency: { en: 'LBP', ar: 'ل.ل' },
+  logoUrl: 'https://example.com/assets/email-logo.png', dashboardUrl: 'https://example.com/#admin',
+  settingsUrl: 'https://example.com/#admin', csvAttached: false, retention: { piiDays: 30 },
+  totals: { orders: 100, revenue: 4000000, avg: 40000, completed: 95, cancelled: 5 },
+  prev: null, busiestDay: null, peakHour: null,
+  topItems: [{ name: { en: 'Zaatar', ar: 'زعتر' }, qty: 10 }],
+  types: { delivery: 100, pickup: 0, dinein: 0 },
+});
+
+/* ---------------- order-type filtering ---------------- */
+{
+  const all = renderMonthlyReportEmail(data(), 'en').html;
+  ok(all.includes('Delivery') && all.includes('Pickup') && all.includes('Dine-in'), 'default shows all three types');
+  const d = data();
+  d.orderTypes = ['delivery'];
+  const one = renderMonthlyReportEmail(d, 'en').html;
+  ok(one.includes('Delivery'), 'delivery-only keeps Delivery');
+  ok(!one.includes('Pickup') && !one.includes('Dine-in'), 'delivery-only hides phantom types');
+  const ar = renderMonthlyReportEmail(d, 'ar').html;
+  ok(ar.includes('توصيل') && !ar.includes('استلام'), 'arabic respects the filter');
+  const d2 = data();
+  d2.orderTypes = [];
+  ok(renderMonthlyReportEmail(d2, 'en').html.includes('Pickup'), 'empty list falls back to all');
+}
+
+/* ---------------- dark-mode force-light roles ---------------- */
+{
+  const html = renderMonthlyReportEmail(data(), 'en').html;
+  for (const cls of ['em-dark-keep', 'em-bgw', 'em-bgchip', 'em-tink', 'em-tgrey', 'em-tmut', 'em-tfaint', 'em-ylb', 'em-ylt', 'em-grn', 'em-red', 'em-barbg', 'em-bylbrd']) {
+    ok(html.includes(cls), `dark role present: ${cls}`);
+  }
+  ok(html.includes('[data-ogsc] .em-dark-keep'), 'gmail dark wrapper rule present');
+  ok(html.includes('prefers-color-scheme'), 'media query present');
+  ok(!/class="[^"]*"[^>]*class="/.test(html), 'no duplicate class attributes');
+}
+
+console.log(`\n${passed} passed, ${failed} failed`);
+if (failed > 0) process.exit(1);

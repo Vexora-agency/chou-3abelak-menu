@@ -47,12 +47,12 @@ function delta(cur, prev, l, prevName) {
   const p = pct(cur, prev);
   if (p === null) return '';
   const up = p >= 0;
-  return `<div style="font-size:12px;font-weight:bold;color:${up ? GREEN : RED};margin-top:6px;" dir="ltr">${up ? '&#9650;' : '&#9660;'} ${up ? '+' : ''}${p}%</div><div style="font-size:11px;color:#8A8A8A;margin-top:2px;">${esc(STR[l].vs(prevName))}</div>`;
+  return `<div class="${up ? 'em-grn' : 'em-red'}" style="font-size:12px;font-weight:bold;color:${up ? GREEN : RED};margin-top:6px;" dir="ltr">${up ? '&#9650;' : '&#9660;'} ${up ? '+' : ''}${p}%</div><div class="em-tmut" style="font-size:11px;color:#8A8A8A;margin-top:2px;">${esc(STR[l].vs(prevName))}</div>`;
 }
 
 function bar(pctVal) {
   const w = Math.max(3, Math.min(100, Math.round(pctVal)));
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;"><tr><td width="${w}%" height="6" bgcolor="${YELLOW}" style="height:6px;font-size:0;line-height:0;border-radius:3px;">&nbsp;</td><td height="6" bgcolor="#EDEDED" style="height:6px;font-size:0;line-height:0;">&nbsp;</td></tr></table>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;"><tr><td class="em-ylb" width="${w}%" height="6" bgcolor="${YELLOW}" style="height:6px;font-size:0;line-height:0;border-radius:3px;">&nbsp;</td><td class="em-barbg" height="6" bgcolor="#EDEDED" style="height:6px;font-size:0;line-height:0;">&nbsp;</td></tr></table>`;
 }
 
 export function renderMonthlyReportEmail(d, lang = 'en') {
@@ -74,10 +74,10 @@ export function renderMonthlyReportEmail(d, lang = 'en') {
 
   const kpi = (label, value, unit, dl) => `
     <td class="kpi" width="33%" valign="top" style="padding:0 4px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td bgcolor="${LIGHT}" style="background:${LIGHT};border:1px solid ${LINE};border-radius:14px;padding:16px 12px;text-align:center;">
-        <div style="font-size:11px;font-weight:bold;letter-spacing:${isAr ? '0' : '1px'};text-transform:${isAr ? 'none' : 'uppercase'};color:${GREY};">${esc(label)}</div>
-        <div style="font-size:26px;line-height:32px;font-weight:bold;color:${BLACK};margin-top:6px;" dir="ltr">${esc(value)}</div>
-        <div style="font-size:11px;color:#8A8A8A;">${esc(unit || '\u00a0')}</div>${dl}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td class="em-bgchip" bgcolor="${LIGHT}" style="background:${LIGHT};border:1px solid ${LINE};border-radius:14px;padding:16px 12px;text-align:center;">
+        <div class="em-tgrey" style="font-size:11px;font-weight:bold;letter-spacing:${isAr ? '0' : '1px'};text-transform:${isAr ? 'none' : 'uppercase'};color:${GREY};">${esc(label)}</div>
+        <div class="em-tink" style="font-size:26px;line-height:32px;font-weight:bold;color:${BLACK};margin-top:6px;" dir="ltr">${esc(value)}</div>
+        <div class="em-tmut" style="font-size:11px;color:#8A8A8A;">${esc(unit || '\u00a0')}</div>${dl}
       </td></tr></table>
     </td>`;
 
@@ -85,17 +85,26 @@ export function renderMonthlyReportEmail(d, lang = 'en') {
   const topRows = (d.topItems || []).slice(0, 5).map((it, i) => `
     <tr><td style="padding:9px 0 3px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-        <td style="font-size:14px;color:${BLACK};font-weight:bold;text-align:${align};"><span style="color:#A0A0A0;font-weight:normal;">${i + 1}</span>&nbsp;&nbsp;${esc(it.name[l] || it.name.en)}</td>
-        <td width="90" style="font-size:12px;color:${GREY};text-align:${opp};white-space:nowrap;"><b style="color:${BLACK};">${num(it.qty)}</b> ${esc(t.sold)}</td>
+        <td class="em-tink" style="font-size:14px;color:${BLACK};font-weight:bold;text-align:${align};"><span class="em-tfaint" style="color:#A0A0A0;font-weight:normal;">${i + 1}</span>&nbsp;&nbsp;${esc(it.name[l] || it.name.en)}</td>
+        <td class="em-tgrey" width="90" style="font-size:12px;color:${GREY};text-align:${opp};white-space:nowrap;"><b class="em-tink" style="color:${BLACK};">${num(it.qty)}</b> ${esc(t.sold)}</td>
       </tr></table>${bar((it.qty / maxQty) * 100)}
     </td></tr>`).join('');
 
-  const typeTotal = Math.max(1, d.types.delivery + d.types.pickup + d.types.dinein);
-  const typeRows = [['delivery', YELLOW], ['pickup', BLACK], ['dinein', '#9A9A9A']].map(([k, color]) => {
-    const p = Math.round((d.types[k] / typeTotal) * 100);
+  const KNOWN_TYPES = ['delivery', 'pickup', 'dinein'];
+  // Only the order types this restaurant actually offers (delivery-only
+  // clients see a single row, never phantom pickup/dine-in lines).
+  const enabledTypes = Array.isArray(d.orderTypes) && d.orderTypes.length
+    ? KNOWN_TYPES.filter((k) => d.orderTypes.includes(k))
+    : [...KNOWN_TYPES];
+  const typeCount = (k) => (((d.types || {})[k]) || 0);
+  const typeTotal = Math.max(1, enabledTypes.reduce((a, k) => a + typeCount(k), 0));
+  const TYPE_COLORS = { delivery: YELLOW, pickup: BLACK, dinein: '#9A9A9A' };
+  const typeRows = enabledTypes.map((k) => {
+    const color = TYPE_COLORS[k];
+    const p = Math.round((typeCount(k) / typeTotal) * 100);
     return `<tr><td style="padding:7px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td style="font-size:13px;color:${BLACK};text-align:${align};"><span style="display:inline-block;width:10px;height:10px;border-radius:5px;background:${color};">&nbsp;</span>&nbsp;&nbsp;${esc(t[k])}</td>
-      <td width="110" style="font-size:12px;color:${GREY};text-align:${opp};white-space:nowrap;" dir="ltr"><b style="color:${BLACK};">${num(d.types[k])}</b> &middot; ${p}%</td></tr></table></td></tr>`;
+      <td class="em-tink" style="font-size:13px;color:${BLACK};text-align:${align};"><span style="display:inline-block;width:10px;height:10px;border-radius:5px;background:${color};">&nbsp;</span>&nbsp;&nbsp;${esc(t[k])}</td>
+      <td class="em-tgrey" width="110" style="font-size:12px;color:${GREY};text-align:${opp};white-space:nowrap;" dir="ltr"><b class="em-tink" style="color:${BLACK};">${num(typeCount(k))}</b> &middot; ${p}%</td></tr></table></td></tr>`;
   }).join('');
 
   const hl = [];
@@ -103,12 +112,14 @@ export function renderMonthlyReportEmail(d, lang = 'en') {
   if (d.peakHour !== null && d.peakHour !== undefined) hl.push([t.peakHour, `${String(d.peakHour).padStart(2, '0')}:00 – ${String((d.peakHour + 1) % 24).padStart(2, '0')}:00`, '']);
   if (best) hl.push([t.bestSeller, best, d.topItems[0] ? `${num(d.topItems[0].qty)} ${t.sold}` : '']);
   const hlHtml = hl.map(([a, b, c]) => `<tr><td style="padding:10px 0;border-bottom:1px solid ${LINE};"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td style="font-size:12px;color:${GREY};text-align:${align};" width="38%">${esc(a)}</td>
-      <td style="font-size:14px;font-weight:bold;color:${BLACK};text-align:${align};">${esc(b)}${c ? `<span style="font-weight:normal;color:${GREY};font-size:12px;"> &middot; ${esc(c)}</span>` : ''}</td></tr></table></td></tr>`).join('');
+      <td class="em-tgrey" style="font-size:12px;color:${GREY};text-align:${align};" width="38%">${esc(a)}</td>
+      <td class="em-tink" style="font-size:14px;font-weight:bold;color:${BLACK};text-align:${align};">${esc(b)}${c ? `<span class="em-tgrey" style="font-weight:normal;color:${GREY};font-size:12px;"> &middot; ${esc(c)}</span>` : ''}</td></tr></table></td></tr>`).join('');
 
-  const section = (title, inner) => `<tr><td bgcolor="#FFFFFF" style="padding:22px 28px 0;text-align:${align};">
-      <div style="font-size:12px;font-weight:bold;letter-spacing:${isAr ? '0' : '1.5px'};text-transform:${isAr ? 'none' : 'uppercase'};color:${BLACK};border-${isAr ? 'right' : 'left'}:4px solid ${YELLOW};padding-${isAr ? 'right' : 'left'}:10px;margin-bottom:6px;">${esc(title)}</div>
+  const section = (title, inner) => `<tr><td class="em-bgw" bgcolor="#FFFFFF" style="padding:22px 28px 0;text-align:${align};">
+      <div class="em-tink em-bylbrd" style="font-size:12px;font-weight:bold;letter-spacing:${isAr ? '0' : '1.5px'};text-transform:${isAr ? 'none' : 'uppercase'};color:${BLACK};border-${isAr ? 'right' : 'left'}:4px solid ${YELLOW};padding-${isAr ? 'right' : 'left'}:10px;margin-bottom:6px;">${esc(title)}</div>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${inner}</table></td></tr>`;
+
+  const typesSection = enabledTypes.length ? section(t.types, typeRows) : '';
 
   const empty = T.orders === 0;
   const html = `<!doctype html>
@@ -121,33 +132,47 @@ export function renderMonthlyReportEmail(d, lang = 'en') {
    data-ogsc container when it inverts colors. */
 @media (prefers-color-scheme: dark){.em-dark-keep{background-color:${BLACK}!important;}}
 /* Gmail app dark mode (media queries stripped — the wrapper carries the signal instead). */
-[data-ogsc] .em-dark-keep{background-color:${BLACK}!important;}</style></head>
+[data-ogsc] .em-dark-keep{background-color:${BLACK}!important;}
+/* Force the light-mode design in dark mode (both contexts below): every role
+   that must not invert gets its color back. Without this, dark clients
+   invert white cards but leave dark text (or vice versa) and the mail turns
+   unreadable. Brand bands stay black via .em-dark-keep above. */
+@media (prefers-color-scheme: dark){
+.em-bgw{background-color:#FFFFFF!important;}.em-bgchip{background-color:#F6F6F6!important;}
+.em-tink{color:#0A0A0A!important;}.em-tgrey{color:#5A5A5A!important;}.em-tmut{color:#8A8A8A!important;}.em-tfaint{color:#A0A0A0!important;}
+.em-ylb{background-color:#FFC400!important;}.em-ylt{color:#FFC400!important;}.em-grn{color:#1E9E52!important;}.em-red{color:#D93636!important;}
+.em-barbg{background-color:#EDEDED!important;}.em-bylbrd{border-color:#FFC400!important;}
+}
+[data-ogsc] .em-bgw{background-color:#FFFFFF!important;}[data-ogsc] .em-bgchip{background-color:#F6F6F6!important;}
+[data-ogsc] .em-tink{color:#0A0A0A!important;}[data-ogsc] .em-tgrey{color:#5A5A5A!important;}[data-ogsc] .em-tmut{color:#8A8A8A!important;}[data-ogsc] .em-tfaint{color:#A0A0A0!important;}
+[data-ogsc] .em-ylb{background-color:#FFC400!important;}[data-ogsc] .em-ylt{color:#FFC400!important;}[data-ogsc] .em-grn{color:#1E9E52!important;}[data-ogsc] .em-red{color:#D93636!important;}
+[data-ogsc] .em-barbg{background-color:#EDEDED!important;}[data-ogsc] .em-bylbrd{border-color:#FFC400!important;}</style></head>
 <body style="margin:0;padding:0;background:#EDEDED;font-family:${font};">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${esc(pre)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#EDEDED"><tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;">
   <tr><td class="em-dark-keep" bgcolor="${BLACK}" align="center" style="background:${BLACK};border-radius:20px 20px 0 0;padding:30px 24px 24px;">
     <img src="${esc(d.logoUrl)}" width="180" alt="${esc(name)}" style="display:block;margin:0 auto;border:0;max-width:180px;height:auto;font-family:${font};font-size:18px;font-weight:bold;color:${YELLOW};">
-    <div style="margin-top:16px;font-size:12px;font-weight:bold;letter-spacing:${isAr ? '0' : '3px'};text-transform:${isAr ? 'none' : 'uppercase'};color:${YELLOW};">${esc(t.label)}</div>
+    <div class="em-ylt" style="margin-top:16px;font-size:12px;font-weight:bold;letter-spacing:${isAr ? '0' : '3px'};text-transform:${isAr ? 'none' : 'uppercase'};color:${YELLOW};">${esc(t.label)}</div>
   </td></tr>
-  <tr><td bgcolor="${YELLOW}" height="4" style="background:${YELLOW};height:4px;font-size:0;line-height:0;">&nbsp;</td></tr>
-  <tr><td bgcolor="#FFFFFF" class="px" style="padding:30px 28px 6px;text-align:${align};">
-    <div style="font-size:30px;line-height:36px;font-weight:bold;color:${BLACK};">${esc(mLabel)}</div>
-    <div style="font-size:15px;line-height:22px;color:${GREY};margin-top:6px;">${esc(t.greeting(name))}</div>
+  <tr><td class="em-ylb" bgcolor="${YELLOW}" height="4" style="background:${YELLOW};height:4px;font-size:0;line-height:0;">&nbsp;</td></tr>
+  <tr><td class="em-bgw px" bgcolor="#FFFFFF" style="padding:30px 28px 6px;text-align:${align};">
+    <div class="em-tink" style="font-size:30px;line-height:36px;font-weight:bold;color:${BLACK};">${esc(mLabel)}</div>
+    <div class="em-tgrey" style="font-size:15px;line-height:22px;color:${GREY};margin-top:6px;">${esc(t.greeting(name))}</div>
   </td></tr>
-  <tr><td bgcolor="#FFFFFF" class="px" style="padding:18px 24px 4px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+  <tr><td class="em-bgw px" bgcolor="#FFFFFF" style="padding:18px 24px 4px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
     ${kpi(t.orders, num(T.orders), '', P ? delta(T.orders, P.orders, l, pName) : '')}
     ${kpi(t.revenue, money(T.revenue), cur, P ? delta(T.revenue, P.revenue, l, pName) : '')}
     ${kpi(t.avg, money(T.avg), cur, P ? delta(T.avg, P.avg, l, pName) : '')}
   </tr></table></td></tr>
-  <tr><td bgcolor="#FFFFFF" class="px" style="padding:10px 28px 0;text-align:${align};font-size:12px;color:${GREY};">${esc(t.status)}: <b style="color:${GREEN};">${num(T.completed)}</b> &nbsp;&middot;&nbsp; ${esc(t.cancelled)}: <b style="color:${T.cancelled ? RED : GREY};">${num(T.cancelled)}</b></td></tr>
-  ${empty ? `<tr><td bgcolor="#FFFFFF" style="padding:28px;text-align:center;font-size:14px;color:${GREY};">${esc(t.noOrders)}</td></tr>` : section(t.highlights, hlHtml) + section(t.top, topRows) + section(t.types, typeRows)}
-  <tr><td bgcolor="#FFFFFF" align="center" style="padding:30px 28px 8px;">
-    <table role="presentation" cellpadding="0" cellspacing="0"><tr><td bgcolor="${YELLOW}" style="background:${YELLOW};border-radius:999px;"><a href="${esc(d.dashboardUrl)}" style="display:inline-block;padding:15px 34px;font-size:15px;font-weight:bold;color:${BLACK};text-decoration:none;font-family:${font};">${esc(t.cta)}</a></td></tr></table>
+  <tr><td class="em-bgw em-tgrey px" bgcolor="#FFFFFF" style="padding:10px 28px 0;text-align:${align};font-size:12px;color:${GREY};">${esc(t.status)}: <b class="em-grn" style="color:${GREEN};">${num(T.completed)}</b> &nbsp;&middot;&nbsp; ${esc(t.cancelled)}: <b class="${T.cancelled ? 'em-red' : 'em-tgrey'}" style="color:${T.cancelled ? RED : GREY};">${num(T.cancelled)}</b></td></tr>
+  ${empty ? `<tr><td bgcolor="#FFFFFF" class="em-tgrey" style="padding:28px;text-align:center;font-size:14px;color:${GREY};">${esc(t.noOrders)}</td></tr>` : section(t.highlights, hlHtml) + section(t.top, topRows) + typesSection}
+  <tr><td class="em-bgw" bgcolor="#FFFFFF" align="center" style="padding:30px 28px 8px;">
+    <table role="presentation" cellpadding="0" cellspacing="0"><tr><td class="em-ylb" bgcolor="${YELLOW}" style="background:${YELLOW};border-radius:999px;"><a href="${esc(d.dashboardUrl)}" class="em-tink" style="display:inline-block;padding:15px 34px;font-size:15px;font-weight:bold;color:${BLACK};text-decoration:none;font-family:${font};">${esc(t.cta)}</a></td></tr></table>
   </td></tr>
-  <tr><td bgcolor="#FFFFFF" class="px" style="padding:14px 28px 28px;text-align:center;font-size:12px;line-height:19px;color:${GREY};">${esc(d.csvAttached ? t.csvNote : t.csvLink)}<br>${esc(t.retention(d.retention.piiDays))}</td></tr>
+  <tr><td class="em-bgw em-tgrey px" bgcolor="#FFFFFF" style="padding:14px 28px 28px;text-align:center;font-size:12px;line-height:19px;color:${GREY};">${esc(d.csvAttached ? t.csvNote : t.csvLink)}<br>${esc(t.retention(d.retention.piiDays))}</td></tr>
   <tr><td class="em-dark-keep" bgcolor="${BLACK}" align="center" style="background:${BLACK};border-radius:0 0 20px 20px;padding:22px 24px;font-size:12px;line-height:19px;color:#BDBDBD;">
-    ${esc(t.footer(name))}<br><a href="${esc(d.settingsUrl)}" style="color:${YELLOW};text-decoration:underline;">${esc(t.manage)}</a>
+    ${esc(t.footer(name))}<br><a href="${esc(d.settingsUrl)}" class="em-ylt" style="color:${YELLOW};text-decoration:underline;">${esc(t.manage)}</a>
   </td></tr>
 </table></td></tr></table></body></html>`;
 

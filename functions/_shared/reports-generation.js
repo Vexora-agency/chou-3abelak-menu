@@ -57,7 +57,12 @@ export async function loadMenuBasics(env) {
   const currency = settings.currency && typeof settings.currency === 'object'
     ? { en: settings.currency.en || '', ar: settings.currency.ar || settings.currency.en || '' }
     : { en: '', ar: '' };
-  return { timezone, restaurantName: name, currency };
+  const validTypes = ['delivery', 'pickup', 'dinein'];
+  const rawTypes = settings.ordering && typeof settings.ordering === 'object' ? settings.ordering.types : null;
+  const orderTypes = Array.isArray(rawTypes) && rawTypes.length
+    ? rawTypes.filter((t) => validTypes.includes(t))
+    : [...validTypes];
+  return { timezone, restaurantName: name, currency, orderTypes };
 }
 
 async function aggregateBounds(db, startISO, endISO) {
@@ -214,7 +219,7 @@ export async function getMonthCSV(env, ym) {
 
 /** Data object for renderMonthlyReportEmail(), in the recipient's language. */
 export async function buildEmailPayload(env, summary, csvAttached) {
-  const { restaurantName, currency } = await loadMenuBasics(env);
+  const { restaurantName, currency, orderTypes } = await loadMenuBasics(env);
   const cfg = getRetentionConfig(env);
   const site = typeof env?.SITE_URL === 'string' ? env.SITE_URL.replace(/\/$/, '') : '';
   return {
@@ -232,5 +237,6 @@ export async function buildEmailPayload(env, summary, csvAttached) {
     peakHour: summary.peakHour,
     topItems: summary.topItems,
     types: summary.types,
+    orderTypes,
   };
 }

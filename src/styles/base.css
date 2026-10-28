@@ -34,6 +34,15 @@ button:focus-visible, a:focus-visible, input:focus-visible {
   outline-offset: 2px;
 }
 
+/* Opt-out of the gold focus ring for fields where it reads as a design bug
+   (e.g. the country-picker search box). This MUST live here unlayered: a
+   layered `focus:outline-none` utility always loses to the unlayered global
+   rule above, no matter its specificity — cascade layers beat specificity. */
+input.no-focus-ring:focus,
+input.no-focus-ring:focus-visible {
+  outline: none;
+}
+
 /* Custom scrollbar hiding for horizontal chip nav */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

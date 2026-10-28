@@ -93,7 +93,7 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({ value, onC
               onKeyDown={onListKey}
               placeholder={isAr ? 'ابحث بدولة أو رمز...' : 'Search name or code...'}
               aria-label={isAr ? 'ابحث عن دولة' : 'Search countries'}
-              className="w-full h-10 bg-transparent text-sm text-white placeholder-neutral-500 focus:outline-none"
+              className="no-focus-ring w-full h-10 bg-transparent text-sm text-white placeholder-neutral-500 focus:outline-none"
             />
           </div>
           <div role="listbox" aria-label={isAr ? 'الدول' : 'Countries'} className="overflow-y-auto py-1">

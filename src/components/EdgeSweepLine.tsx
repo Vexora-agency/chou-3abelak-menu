@@ -41,14 +41,14 @@ export const EdgeSweepLine: React.FC<EdgeSweepLineProps> = ({ position }) => {
         <path d={CURVE_D} fill="none" stroke={`url(#${gid})`} strokeWidth="7" pathLength={100} filter={`url(#${gid}b)`} opacity="0.5" />
         {/* Gold curve */}
         <path d={CURVE_D} fill="none" stroke={`url(#${gid})`} strokeWidth="3" pathLength={100} />
-        {/* Traveling comet (dashoffset driven by rAF) */}
+        {/* Traveling comet (dashoffset driven by rAF): thin yellow flash. */}
         <path
           ref={cometRef}
           d={CURVE_D}
           fill="none"
-          stroke="#ffffff"
-          strokeOpacity="0.95"
-          strokeWidth="3"
+          stroke="#FFE07A"
+          strokeOpacity="1"
+          strokeWidth="1.5"
           strokeLinecap="round"
           pathLength={100}
           strokeDasharray="16 84"

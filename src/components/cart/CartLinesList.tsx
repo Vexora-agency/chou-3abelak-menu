@@ -60,7 +60,7 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                       key={id}
                       className={`inline-flex items-center gap-1 ps-2 pe-1 py-0.5 rounded-full text-[11px] font-bold border ${
                         darkMode
-                          ? 'border-[#FFC400]/30 bg-[#FFC400]/5 text-[#FFC400]'
+                          ? 'border-[var(--primary)]/30 bg-[var(--primary)]/5 text-[var(--primary)]'
                           : 'border-[#8a6d00]/30 bg-[#8a6d00]/5 text-[#8a6d00]'
                       }`}
                     >
@@ -91,8 +91,8 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                 <span
                   className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-xs tabular-nums ${
                     darkMode
-                      ? 'bg-[#FFC400] text-[#0A0A0A]'
-                      : 'bg-[#0A0A0A] text-[#FFC400]'
+                      ? 'bg-[var(--primary)] text-[#0A0A0A]'
+                      : 'bg-[#0A0A0A] text-[var(--primary)]'
                   }`}
                   dir="ltr"
                 >
@@ -103,7 +103,7 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
 
             {/* Quantity Stepper & Remove */}
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-[#FFC400] text-[#0A0A0A] rounded-full p-1 shadow-sm">
+              <div className="flex items-center gap-1 bg-[var(--primary)] text-[#0A0A0A] rounded-full p-1 shadow-sm">
                 <button
                   type="button"
                   onClick={() => onUpdateLine(l.key, -1)}

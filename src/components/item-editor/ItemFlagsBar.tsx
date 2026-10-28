@@ -39,11 +39,11 @@ export const ItemFlagsBar: React.FC<ItemFlagsBarProps> = ({
                     : item.badges.filter((x) => x !== b.id);
                   onChange({ ...item, badges: newBadges });
                 }}
-                className="w-4 h-4 rounded text-[#FFC400]"
+                className="w-4 h-4 rounded text-[var(--primary)]"
               />
-              {b.id === 'spicy' && <Flame size={12} className="fill-[#FFC400] text-[#FFC400]" />}
-              {b.id === 'top' && <Award size={12} className="fill-[#FFC400] text-[#FFC400]" />}
-              {b.id === 'new' && <Sparkles size={12} className="text-[#FFC400]" />}
+              {b.id === 'spicy' && <Flame size={12} className="fill-[var(--primary)] text-[var(--primary)]" />}
+              {b.id === 'top' && <Award size={12} className="fill-[var(--primary)] text-[var(--primary)]" />}
+              {b.id === 'new' && <Sparkles size={12} className="text-[var(--primary)]" />}
               <span className="capitalize">{isAr ? b.ar : b.en}</span>
             </label>
           ))}
@@ -59,7 +59,7 @@ export const ItemFlagsBar: React.FC<ItemFlagsBarProps> = ({
             onChange={(e) =>
               onChange({ ...item, featured: e.target.checked })
             }
-            className="w-4 h-4 rounded text-[#FFC400]"
+            className="w-4 h-4 rounded text-[var(--primary)]"
           />
           <span className="font-bold">{isAr ? '★ مميز في الكاروسيل' : '★ Featured in Carousel'}</span>
         </label>
@@ -71,7 +71,7 @@ export const ItemFlagsBar: React.FC<ItemFlagsBarProps> = ({
             onChange={(e) =>
               onChange({ ...item, available: e.target.checked })
             }
-            className="w-4 h-4 rounded text-[#FFC400]"
+            className="w-4 h-4 rounded text-[var(--primary)]"
           />
           <span className="font-bold">{isAr ? 'متوفر في المخزون' : 'Available in Stock'}</span>
         </label>
@@ -82,7 +82,7 @@ export const ItemFlagsBar: React.FC<ItemFlagsBarProps> = ({
         <div className="text-xs">
           {isItemNew(menu, item) ? (
             <>
-              <span className="font-extrabold text-[#FFC400]">{isAr ? 'NEW مفعّلة' : 'NEW active'}</span>
+              <span className="font-extrabold text-[var(--primary)]">{isAr ? 'NEW مفعّلة' : 'NEW active'}</span>
               <span className="block text-[11px] text-neutral-500 mt-0.5">
                 {isAr ? 'تختفي تلقائياً بعد مدة الـ NEW' : 'Auto-removed after the NEW period'}
                 {item.addedAt ? ` (${new Date(item.addedAt).toLocaleDateString()})` : ''}
@@ -110,7 +110,7 @@ export const ItemFlagsBar: React.FC<ItemFlagsBarProps> = ({
           <button
             type="button"
             onClick={() => onChange({ ...item, addedAt: new Date().toISOString() })}
-            className="btn-tactile px-3 py-1.5 rounded-full bg-[#FFC400] text-[#0A0A0A] text-[11px] font-bold"
+            className="btn-tactile px-3 py-1.5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-[11px] font-bold"
           >
             {isAr ? 'اعتبره جديد' : 'Mark as new'}
           </button>

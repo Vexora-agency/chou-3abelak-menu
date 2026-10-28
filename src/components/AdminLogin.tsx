@@ -129,15 +129,15 @@ const AdminLogin: React.FC<AdminLoginProps> = ({
         />
 
         <motion.div {...rise(0.35)} className="mt-3 flex items-center justify-center gap-3">
-          <span className="h-px w-8 bg-gradient-to-r from-transparent to-[#FFC400]/70" aria-hidden="true" />
+          <span className="h-px w-8 bg-gradient-to-r from-transparent to-[var(--primary)]/70" aria-hidden="true" />
           <span
-            className={`font-semibold text-[#FFC400] ${
+            className={`font-semibold text-[var(--primary)] ${
               isAr ? 'text-[14px] tracking-normal' : 'text-[12px] tracking-[3px] uppercase'
             }`}
           >
             {t.console}
           </span>
-          <span className="h-px w-8 bg-gradient-to-l from-transparent to-[#FFC400]/70" aria-hidden="true" />
+          <span className="h-px w-8 bg-gradient-to-l from-transparent to-[var(--primary)]/70" aria-hidden="true" />
         </motion.div>
 
         <motion.div {...rise(0.5)} className="w-full mt-7">
@@ -182,7 +182,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({
         </motion.div>
 
         <motion.p {...rise(1.1)} className="mt-5 flex items-center justify-center gap-2 text-center text-xs text-white/45">
-          <ShieldCheck size={14} className="shrink-0 text-[#FFC400]/70" aria-hidden="true" />
+          <ShieldCheck size={14} className="shrink-0 text-[var(--primary)]/70" aria-hidden="true" />
           {t.secure}
         </motion.p>
       </main>

@@ -35,7 +35,7 @@ export const OrdersDashPeriodBar: React.FC<OrdersDashPeriodBarProps> = ({ lang, 
             <button key={p} type="button" role="tab" aria-selected={active}
               onClick={() => { onPeriodChange(p); }}
               className={`relative shrink-0 px-3 h-8 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${active ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}>
-              {active && <motion.span layoutId="dash-period" className="absolute inset-0 rounded-full bg-[#FFC400] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+              {active && <motion.span layoutId="dash-period" className="absolute inset-0 rounded-full bg-[var(--primary)] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
               <span className="relative z-10">{p === 'today' ? t.today : p === '7d' ? t.d7 : p === 'month' ? t.thisMonth : t.lastMonth}</span>
             </button>
           );
@@ -48,7 +48,7 @@ export const OrdersDashPeriodBar: React.FC<OrdersDashPeriodBarProps> = ({ lang, 
         </span>
         <button type="button" aria-label={t.refresh}
           onClick={() => { setSpin(true); onRefresh?.(); window.setTimeout(() => setSpin(false), 700); }}
-          className="btn-tactile w-9 h-9 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-[#FFC400] flex items-center justify-center">
+          className="btn-tactile w-9 h-9 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-[var(--primary)] flex items-center justify-center">
           <RefreshCw size={15} className={spin ? 'animate-spin' : ''} />
         </button>
       </div>
@@ -90,7 +90,7 @@ export const OrdersDashKpis: React.FC<OrdersDashKpisProps> = ({ lang, currency, 
         <motion.div key={k.key} {...rise(0.06 + i * 0.06)} className={card}>
           <div className="flex items-center justify-between">
             <span className={lbl}>{k.label}</span>
-            <span className="w-8 h-8 rounded-xl bg-[#FFC400]/10 text-[#FFC400] flex items-center justify-center"><k.icon size={16} /></span>
+            <span className="w-8 h-8 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center"><k.icon size={16} /></span>
           </div>
           <div className="mt-2 flex items-baseline gap-1.5">
             <span className="text-2xl font-black tabular-nums" dir="ltr"><CountUp value={k.value} format={k.format} /></span>
@@ -101,10 +101,10 @@ export const OrdersDashKpis: React.FC<OrdersDashKpisProps> = ({ lang, currency, 
       ))}
       <motion.button type="button" {...rise(0.24)}
         onClick={() => { onShowNew(); }}
-        className={`${card} text-start btn-tactile ${pendingCount ? 'border-[#FFC400]/60! bg-[#FFC400]/[0.06]' : ''}`}>
+        className={`${card} text-start btn-tactile ${pendingCount ? 'border-[var(--primary)]/60! bg-[var(--primary)]/[0.06]' : ''}`}>
         <div className="flex items-center justify-between">
           <span className={lbl}>{t.pending}</span>
-          <span className="w-8 h-8 rounded-xl bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center">
+          <span className="w-8 h-8 rounded-xl bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center">
             <BellRing size={16} className={pendingCount && !reduce ? 'animate-[wiggle_1.6s_ease-in-out_infinite]' : ''} />
           </span>
         </div>
@@ -131,7 +131,7 @@ export const OrdersDashChart: React.FC<OrdersDashChartProps> = ({ lang, currency
   const isAr = lang === 'ar';
   // Owner decision: dashboard animations always play for every visitor.
   const reduce = false;
-  const h2 = `text-sm font-extrabold text-[#FFC400] ${isAr ? '' : 'uppercase tracking-wider'}`;
+  const h2 = `text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`;
   const rise = (delay: number) => ({
     initial: reduce ? (false as const) : { opacity: 0, y: 14 },
     animate: { opacity: 1, y: 0 },
@@ -157,7 +157,7 @@ export const OrdersDashChart: React.FC<OrdersDashChartProps> = ({ lang, currency
             <button key={`${period}-${i}`} type="button" onMouseEnter={() => onSelChange(i)} onClick={() => onSelChange(i)}
               aria-label={`${b.full}: ${b.count} ${t.ordersWord}`} className="group relative flex-1 h-full flex items-end focus-visible:outline-none">
               <motion.span
-                className={`block w-full max-w-[48px] mx-auto rounded-t-[4px] transition-colors ${active ? 'bg-[#FFC400]' : b.count ? 'bg-[#FFC400]/45 group-hover:bg-[#FFC400]/75' : 'bg-neutral-800'}`}
+                className={`block w-full max-w-[48px] mx-auto rounded-t-[4px] transition-colors ${active ? 'bg-[var(--primary)]' : b.count ? 'bg-[var(--primary)]/45 group-hover:bg-[var(--primary)]/75' : 'bg-neutral-800'}`}
                 initial={reduce ? false : { height: 0 }} animate={{ height: `${pct}%` }}
                 transition={{ duration: 0.6, delay: reduce ? 0 : i * 0.015, ease: [0.22, 1, 0.36, 1] }} />
             </button>
@@ -184,7 +184,7 @@ export const OrdersDashTopItems: React.FC<OrdersDashTopItemsProps> = ({ lang, pe
   const isAr = lang === 'ar';
   // Owner decision: dashboard animations always play for every visitor.
   const reduce = false;
-  const h2 = `text-sm font-extrabold text-[#FFC400] ${isAr ? '' : 'uppercase tracking-wider'}`;
+  const h2 = `text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`;
   const rise = (delay: number) => ({
     initial: reduce ? (false as const) : { opacity: 0, y: 14 },
     animate: { opacity: 1, y: 0 },
@@ -203,7 +203,7 @@ export const OrdersDashTopItems: React.FC<OrdersDashTopItemsProps> = ({ lang, pe
               <span className="shrink-0 text-xs text-neutral-400 tabular-nums"><b className="text-white">{it.qty}</b> {t.sold}</span>
             </div>
             <div className="mt-1.5 h-1.5 rounded-full bg-neutral-800 overflow-hidden">
-              <motion.div className="h-full rounded-full bg-[#FFC400]" initial={reduce ? false : { width: 0 }}
+              <motion.div className="h-full rounded-full bg-[var(--primary)]" initial={reduce ? false : { width: 0 }}
                 animate={{ width: `${(it.qty / stats.top[0].qty) * 100}%` }} transition={{ duration: 0.7, delay: reduce ? 0 : 0.1 + i * 0.07, ease: [0.22, 1, 0.36, 1] }} />
             </div>
           </div>

@@ -49,7 +49,7 @@ export function LoginTopBar({ t, lang, onBack, onToggleLang, rise }: LoginTopBar
               {active && (
                 <motion.span
                   layoutId="login-lang-pill"
-                  className="absolute inset-0 rounded-full bg-[#FFC400] shadow-[0_4px_14px_-2px_rgba(255,196,0,0.6)]"
+                  className="absolute inset-0 rounded-full bg-[var(--primary)] shadow-[0_4px_14px_-2px_color-mix(in_srgb,var(--primary)_60%,transparent)]"
                   transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                 />
               )}

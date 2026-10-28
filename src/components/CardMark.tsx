@@ -53,7 +53,7 @@ export const CardMarkView: React.FC<CardMarkViewProps> = ({
   // on light cards (same trick as the featured carousel's yellow cards).
   const isBrand = mark.kind === 'img' && mark.src === BRAND_MARK_SRC;
   const imgTone = isBrand && !dark ? '[filter:brightness(0)]' : '';
-  const glyphTone = dark ? 'text-[#FFC400]' : 'text-[#0A0A0A]';
+  const glyphTone = dark ? 'text-[var(--primary)]' : 'text-[#0A0A0A]';
 
   if (style === 'pattern') {
     const t = Math.max(8, Math.round(SIZES.tile.img * f));

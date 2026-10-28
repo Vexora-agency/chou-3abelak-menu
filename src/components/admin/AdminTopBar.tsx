@@ -29,7 +29,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="flex items-center gap-2 text-sm font-bold text-[#FFC400] hover:underline"
+          className="flex items-center gap-2 text-sm font-bold text-[var(--primary)] hover:underline"
         >
           <ArrowLeft size={16} />
           <span>{isAr ? 'العودة للموقع الرئيسي' : 'Back to Live Menu'}</span>
@@ -47,7 +47,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
               onClick={onToggleLang}
               aria-label={isAr ? 'Switch to English' : 'التبديل إلى العربية'}
               title={isAr ? 'Switch to English' : 'التبديل إلى العربية'}
-              className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-[#FFC400] hover:border-[#FFC400]/60 transition-colors"
+              className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/60 transition-colors"
             >
               <Globe size={14} />
               <span>{isAr ? 'EN' : 'عربي'}</span>
@@ -61,10 +61,10 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
             title={isAr ? 'حفظ تلقائي لكل تعديل' : 'Auto-save every change'}
             onClick={onToggleAutoSave}
             className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border transition-colors cursor-pointer"
-            style={{ borderColor: autoSave ? '#FFC400' : '#3f3f46', color: autoSave ? '#FFC400' : '#a1a1aa' }}
+            style={{ borderColor: autoSave ? 'var(--primary)' : '#3f3f46', color: autoSave ? 'var(--primary)' : '#a1a1aa' }}
           >
             <span
-              className={`relative w-8 h-[18px] rounded-full transition-colors duration-200 ${autoSave ? 'bg-[#FFC400]' : 'bg-neutral-700'}`}
+              className={`relative w-8 h-[18px] rounded-full transition-colors duration-200 ${autoSave ? 'bg-[var(--primary)]' : 'bg-neutral-700'}`}
             >
               <span
                 className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white shadow transition-all duration-200 ${autoSave ? 'left-[18px]' : 'left-[2px]'}`}
@@ -108,7 +108,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
-            {activeTab === tab && <motion.span layoutId="admin-tab" className="absolute inset-0 rounded-xl bg-[#FFC400] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+            {activeTab === tab && <motion.span layoutId="admin-tab" className="absolute inset-0 rounded-xl bg-[var(--primary)] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
             <span className="relative z-10">
             {tab === 'dashboard' && (isAr ? 'الطلبات' : 'Dashboard')}
             {tab === 'settings' && (isAr ? 'الإعدادات' : 'Settings')}

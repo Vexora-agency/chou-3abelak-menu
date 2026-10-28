@@ -48,7 +48,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
         <div className="relative flex items-center">
           <Search
             size={19}
-            className={`absolute ${isAr ? 'right-4' : 'left-4'} stroke-[2.5] pointer-events-none ${darkMode ? 'text-[#FFC400]' : 'text-[#8a6d00]'}`}
+            className={`absolute ${isAr ? 'right-4' : 'left-4'} stroke-[2.5] pointer-events-none ${darkMode ? 'text-[var(--primary)]' : 'text-[#8a6d00]'}`}
           />
           <input
             id="menu-search-input"
@@ -56,7 +56,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={isAr ? 'ابحث في المنيو...' : 'Search the menu...'}
-            className={`w-full h-12 rounded-full border-[1.5px] text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#FFC400] ${
+            className={`w-full h-12 rounded-full border-[1.5px] text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${
               isAr ? 'pr-11 pl-10' : 'pl-11 pr-10'
             } ${
               darkMode
@@ -95,9 +95,9 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
               onClick={() => onSelectCategory(chip.id)}
               className={`relative flex-shrink-0 h-11 px-5 rounded-full text-sm transition-colors btn-tactile border-[1.5px] ${
                 isSelected
-                  ? 'text-[#0A0A0A] font-bold border-[#FFC400]'
+                  ? 'text-[#0A0A0A] font-bold border-[var(--primary)]'
                   : darkMode
-                  ? 'text-white/90 font-semibold border-white hover:border-[#FFC400]'
+                  ? 'text-white/90 font-semibold border-white hover:border-[var(--primary)]'
                   : 'text-[#0A0A0A] font-semibold border-[#0A0A0A]'
               }`}
               aria-pressed={isSelected}
@@ -105,7 +105,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
               {isSelected && (
                 <motion.span
                   layoutId="chip-pill"
-                  className="absolute -inset-[1.5px] rounded-full bg-[#FFC400]"
+                  className="absolute -inset-[1.5px] rounded-full bg-[var(--primary)]"
                   transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                 />
               )}
@@ -128,16 +128,16 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
               onClick={() => onToggleBadge(id)}
               className={`relative flex-shrink-0 h-11 px-4 rounded-full text-[13px] transition-colors btn-tactile border-[1.5px] flex items-center gap-1.5 ${
                 isSelected
-                  ? 'bg-[#FFC400] text-[#0A0A0A] font-bold border-[#FFC400]'
+                  ? 'bg-[var(--primary)] text-[#0A0A0A] font-bold border-[var(--primary)]'
                   : darkMode
-                  ? 'text-white/90 font-semibold border-white hover:border-[#FFC400]'
+                  ? 'text-white/90 font-semibold border-white hover:border-[var(--primary)]'
                   : 'text-[#0A0A0A] font-semibold border-[#0A0A0A]'
               }`}
               aria-pressed={isSelected}
               title={label}
             >
               <span className="relative z-10 flex items-center gap-1.5">
-                <Icon size={14} className={isSelected ? '' : darkMode ? 'text-[#FFC400]' : 'text-[#8a6d00]'} />
+                <Icon size={14} className={isSelected ? '' : darkMode ? 'text-[var(--primary)]' : 'text-[#8a6d00]'} />
                 {label}
               </span>
             </button>

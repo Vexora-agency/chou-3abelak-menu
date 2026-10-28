@@ -40,7 +40,7 @@ export const ItemVariantsEditor: React.FC<ItemVariantsEditorProps> = ({
       {((item.variants || []).length > 0) && (
         <div className="rounded-xl border border-neutral-800 bg-black/30 px-2.5 sm:px-3 pt-2 pb-1 mb-2">
           <div className="flex items-center justify-between mb-1">
-            <p className="text-[11px] font-extrabold text-[#FFC400]">
+            <p className="text-[11px] font-extrabold text-[var(--primary)]">
               {sizesSection ? (isAr ? sizesSection.name.ar : sizesSection.name.en) : (isAr ? 'الأحجام' : 'Sizes')}
             </p>
             <button
@@ -113,8 +113,8 @@ export const ItemVariantsEditor: React.FC<ItemVariantsEditorProps> = ({
               aria-pressed={isDefault}
               className={`shrink-0 self-center w-7 h-7 rounded-full border text-[10px] font-black transition-colors ${
                 isDefault
-                  ? 'bg-[#FFC400] text-[#0A0A0A] border-[#FFC400]'
-                  : 'border-neutral-700 text-neutral-500 hover:border-[#FFC400] hover:text-[#FFC400]'
+                  ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
+                  : 'border-neutral-700 text-neutral-500 hover:border-[var(--primary)] hover:text-[var(--primary)]'
               }`}
             >
               ★
@@ -173,7 +173,7 @@ export const ItemVariantsEditor: React.FC<ItemVariantsEditorProps> = ({
                     variants: [...(item.variants || []), { featureId: d.id, price: 0 }],
                   });
                 }}
-                className="btn-tactile px-2.5 py-1 rounded-full border border-dashed border-neutral-600 text-neutral-400 text-[10px] font-bold hover:border-[#FFC400] hover:text-[#FFC400]"
+                className="btn-tactile px-2.5 py-1 rounded-full border border-dashed border-neutral-600 text-neutral-400 text-[10px] font-bold hover:border-[var(--primary)] hover:text-[var(--primary)]"
               >
                 <Plus size={10} className="inline me-1" />
                 {isAr ? d.name.ar : d.name.en}
@@ -211,7 +211,7 @@ export const ItemVariantsEditor: React.FC<ItemVariantsEditorProps> = ({
             variants: [...(item.variants || []), ...fresh.map((d) => ({ featureId: d.id, price: 0 }))],
           });
         }}
-        className="btn-tactile px-3 py-1.5 rounded-full border border-neutral-700 text-neutral-300 text-[11px] font-bold hover:border-[#FFC400] hover:text-[#FFC400]"
+        className="btn-tactile px-3 py-1.5 rounded-full border border-neutral-700 text-neutral-300 text-[11px] font-bold hover:border-[var(--primary)] hover:text-[var(--primary)]"
       >
         <Plus size={12} className="inline me-1" />
         {isAr ? 'إضافة حجم' : 'Add size'}

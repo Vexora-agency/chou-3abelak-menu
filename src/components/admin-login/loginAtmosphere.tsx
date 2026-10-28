@@ -46,7 +46,7 @@ export function LoginAtmosphere({ reduce }: LoginAtmosphereProps): React.JSX.Ele
           <motion.span
             key={i}
             aria-hidden="true"
-            className="absolute bottom-0 rounded-full bg-[#FFC400] pointer-events-none"
+            className="absolute bottom-0 rounded-full bg-[var(--primary)] pointer-events-none"
             style={{ left: e.left, width: e.size, height: e.size }}
             initial={{ y: 0, opacity: 0 }}
             animate={{ y: -e.rise, opacity: [0, 0.6, 0], x: [0, e.drift, 0] }}

@@ -48,7 +48,7 @@ export const AdminOverlays: React.FC<AdminOverlaysProps> = ({
       {/* STICKY BOTTOM SAVE BAR (hidden while auto-save is on) */}
       {dirty && !autoSave && (
         <div className="fixed bottom-4 left-0 right-0 z-40 px-4 flex justify-center">
-          <div className="w-full max-w-[500px] bg-[#141414] border-2 border-[#FFC400] rounded-full p-2 px-5 flex items-center justify-between shadow-2xl">
+          <div className="w-full max-w-[500px] bg-[#141414] border-2 border-[var(--primary)] rounded-full p-2 px-5 flex items-center justify-between shadow-2xl">
             <div className="flex items-center gap-2 text-xs text-amber-400 font-bold">
               <AlertTriangle size={16} />
               <span>{isAr ? 'لديك تعديلات غير محفوظة!' : 'Unsaved changes!'}</span>
@@ -57,7 +57,7 @@ export const AdminOverlays: React.FC<AdminOverlaysProps> = ({
             <button
               type="button"
               onClick={() => onSave()}
-              className="btn-tactile px-5 py-2 rounded-full bg-[#FFC400] text-[#0A0A0A] font-black text-xs flex items-center gap-1.5 shadow-md"
+              className="btn-tactile px-5 py-2 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black text-xs flex items-center gap-1.5 shadow-md"
             >
               <Save size={15} />
               <span>{isAr ? 'حفظ التعديلات' : 'Save Changes'}</span>
@@ -74,7 +74,7 @@ export const AdminOverlays: React.FC<AdminOverlaysProps> = ({
             <button
               type="button"
               onClick={() => onUndo(undoToast.undo)}
-              className="btn-tactile shrink-0 px-5 py-2 rounded-full bg-[#FFC400] text-[#0A0A0A] font-black text-xs"
+              className="btn-tactile shrink-0 px-5 py-2 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black text-xs"
             >
               {isAr ? 'تراجع' : 'Undo'}
             </button>

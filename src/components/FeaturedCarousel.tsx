@@ -134,7 +134,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         transition={{ duration: 0.55, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
         className={`group relative flex-shrink-0 w-full ${forceSlider ? '' : 'md:w-auto'} h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden cursor-pointer card-lift shadow-md border ${
           isYellowCard
-            ? 'bg-[#FFC400] text-[#0A0A0A] border-[#FFC400]'
+            ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
             : darkMode
             ? 'bg-[#181818] text-white border-white/10'
             : 'bg-[#0A0A0A] text-white border-[#0A0A0A]'
@@ -157,8 +157,8 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           <span
             className={`inline-block px-3 py-1 rounded-full text-[11px] font-extrabold tracking-wider uppercase ${
               isYellowCard
-                ? 'bg-[#0A0A0A] text-[#FFC400]'
-                : 'bg-[#FFC400] text-[#0A0A0A]'
+                ? 'bg-[#0A0A0A] text-[var(--primary)]'
+                : 'bg-[var(--primary)] text-[#0A0A0A]'
             }`}
           >
             {badgeText}
@@ -172,8 +172,8 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           }}
             className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90 shadow-sm ${
               isYellowCard
-                ? 'bg-[#0A0A0A] text-[#FFC400] hover:bg-black/80'
-                : 'bg-[#FFC400] text-[#0A0A0A] hover:bg-[#ffd033]'
+                ? 'bg-[#0A0A0A] text-[var(--primary)] hover:bg-black/80'
+                : 'bg-[var(--primary)] text-[#0A0A0A] hover:brightness-110'
             }`}
             aria-label={isAr ? `أضف ${item.name.ar} إلى السلة` : `Add ${item.name.en} to cart`}
             title={isAr ? 'أضف للطلب' : 'Add to cart'}
@@ -202,8 +202,8 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           <div
             className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-black shadow-sm ${
               isYellowCard
-                ? 'bg-[#0A0A0A] text-[#FFC400]'
-                : 'bg-[#FFC400] text-[#0A0A0A]'
+                ? 'bg-[#0A0A0A] text-[var(--primary)]'
+                : 'bg-[var(--primary)] text-[#0A0A0A]'
             }`}
           >
             {priceLabel(item, lang, currency)}
@@ -218,7 +218,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
       {/* Section Title with Yellow Bar */}
       <div className="flex items-center gap-2.5 mb-3.5">
         <motion.span
-          className="w-1.5 h-6 bg-[#FFC400] rounded-sm origin-center"
+          className="w-1.5 h-6 bg-[var(--primary)] rounded-sm origin-center"
           initial={{ scaleY: 0 }}
           whileInView={{ scaleY: 1 }}
           viewport={{ once: true }}
@@ -279,7 +279,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
               aria-label={`${isAr ? 'شريحة' : 'Slide'} ${idx + 1}`}
               onClick={() => goTo(idx)}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                idx === index ? 'w-6 bg-[#FFC400]' : 'w-1.5 bg-white/25 hover:bg-white/40'
+                idx === index ? 'w-6 bg-[var(--primary)]' : 'w-1.5 bg-white/25 hover:bg-white/40'
               }`}
             />
           ))}

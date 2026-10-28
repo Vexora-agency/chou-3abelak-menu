@@ -14,7 +14,7 @@ interface MenuListItemActionProps {
 }
 
 const renderStepper = (lineKey: string, qty: number, small: boolean, isAr: boolean, onUpdateLine: (key: string, dir: 1 | -1) => void) => (
-  <div className={`flex items-center ${small ? 'gap-1 p-0.5' : 'gap-1.5 p-1'} bg-[#FFC400] text-[#0A0A0A] rounded-full ${small ? 'shadow-sm' : 'shadow-md'}`}>
+  <div className={`flex items-center ${small ? 'gap-1 p-0.5' : 'gap-1.5 p-1'} bg-[var(--primary)] text-[#0A0A0A] rounded-full ${small ? 'shadow-sm' : 'shadow-md'}`}>
     <button
       type="button"
       onClick={() => onUpdateLine(lineKey, -1)}
@@ -55,7 +55,7 @@ export const MenuListItemAction: React.FC<MenuListItemActionProps> = ({
         <button
           type="button"
           onClick={() => onAddItem(item)}
-          className={`group ${small ? 'w-8 h-8' : 'w-10 h-10'} rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center font-bold shadow-md hover:bg-[#ffd033] hover:scale-110 hover:shadow-[0_0_22px_rgba(255,196,0,0.55)] active:scale-90 transition-all duration-200`}
+          className={`group ${small ? 'w-8 h-8' : 'w-10 h-10'} rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center font-bold shadow-md hover:brightness-110 hover:scale-110 hover:shadow-[0_0_22px_color-mix(in_srgb,var(--primary)_55%,transparent)] active:scale-90 transition-all duration-200`}
           aria-label={isAr ? `إضافة ${item.name.ar}` : `Add ${item.name.en}`}
         >
           <Plus size={small ? 16 : 18} className="stroke-[2.5] transition-transform duration-300 group-hover:scale-125" />
@@ -66,7 +66,7 @@ export const MenuListItemAction: React.FC<MenuListItemActionProps> = ({
       <button
         type="button"
         onClick={() => onOpenItem(item)}
-        className={`rounded-full bg-[#FFC400] text-[#0A0A0A] font-extrabold shadow-md hover:bg-[#ffd033] hover:scale-[1.04] hover:shadow-[0_0_18px_rgba(255,196,0,0.5)] active:scale-95 transition-all duration-200 ${small ? 'h-8 px-3 text-xs' : 'h-10 px-4 text-sm'}`}
+        className={`rounded-full bg-[var(--primary)] text-[#0A0A0A] font-extrabold shadow-md hover:brightness-110 hover:scale-[1.04] hover:shadow-[0_0_18px_color-mix(in_srgb,var(--primary)_50%,transparent)] active:scale-95 transition-all duration-200 ${small ? 'h-8 px-3 text-xs' : 'h-10 px-4 text-sm'}`}
         aria-label={isAr ? `تعديل ${item.name.ar}` : `Customize ${item.name.en}`}
       >
         <span className="tabular-nums">{qty}</span>
@@ -78,7 +78,7 @@ export const MenuListItemAction: React.FC<MenuListItemActionProps> = ({
       <button
         type="button"
         onClick={() => onAddItem(item)}
-        className={`group ${small ? 'w-8 h-8' : 'w-10 h-10'} rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center font-bold shadow-md hover:bg-[#ffd033] hover:scale-110 hover:shadow-[0_0_22px_rgba(255,196,0,0.55)] active:scale-90 transition-all duration-200`}
+        className={`group ${small ? 'w-8 h-8' : 'w-10 h-10'} rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center font-bold shadow-md hover:brightness-110 hover:scale-110 hover:shadow-[0_0_22px_color-mix(in_srgb,var(--primary)_55%,transparent)] active:scale-90 transition-all duration-200`}
         aria-label={isAr ? `إضافة ${item.name.ar}` : `Add ${item.name.en}`}
       >
         <Plus size={small ? 16 : 18} className="stroke-[2.5] transition-transform duration-300 group-hover:scale-125" />

@@ -64,7 +64,7 @@ export function LoginForm({
       className="min-h-[400px] flex flex-col justify-center gap-4"
     >
       <motion.div {...rise(0.6)} className="flex items-start gap-3.5">
-        <span className="shrink-0 w-12 h-12 rounded-2xl bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center shadow-[0_10px_26px_-8px_rgba(255,196,0,0.6)]">
+        <span className="shrink-0 w-12 h-12 rounded-2xl bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center shadow-[0_10px_26px_-8px_color-mix(in_srgb,var(--primary)_60%,transparent)]">
           <Lock size={22} strokeWidth={2.4} aria-hidden="true" />
         </span>
         <div>
@@ -119,7 +119,7 @@ export function LoginForm({
             onClick={onToggleShowPw}
             aria-label={showPw ? t.hide : t.show}
             aria-pressed={showPw}
-            className="absolute end-1.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-xl flex items-center justify-center text-white/55 hover:text-[#FFC400] transition-colors"
+            className="absolute end-1.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-xl flex items-center justify-center text-white/55 hover:text-[var(--primary)] transition-colors"
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.span
@@ -153,13 +153,13 @@ export function LoginForm({
       <motion.div {...rise(0.86)} className="flex items-center justify-between gap-3 flex-wrap">
         <label className="flex items-center gap-2.5 cursor-pointer select-none text-[13px] text-white/75 min-h-[44px]">
           <input type="checkbox" checked={remember} onChange={(e) => onRememberChange(e.target.checked)} className="peer sr-only" />
-          <span className="w-5 h-5 rounded-md border border-white/30 flex items-center justify-center text-[#0A0A0A] transition-colors peer-checked:bg-[#FFC400] peer-checked:border-[#FFC400] peer-focus-visible:ring-4 peer-focus-visible:ring-[#FFC400]/25">
+          <span className="w-5 h-5 rounded-md border border-white/30 flex items-center justify-center text-[#0A0A0A] transition-colors peer-checked:bg-[var(--primary)] peer-checked:border-[var(--primary)] peer-focus-visible:ring-4 peer-focus-visible:ring-[var(--primary)]/25">
             <Check size={14} strokeWidth={3.5} className={`transition-transform duration-200 ${remember ? 'scale-100' : 'scale-0'}`} />
           </span>
           {t.remember}
         </label>
         {onForgot && (
-          <button type="button" onClick={onForgot} className="text-[13px] font-semibold text-[#FFC400] hover:underline underline-offset-4 min-h-[44px]">
+          <button type="button" onClick={onForgot} className="text-[13px] font-semibold text-[var(--primary)] hover:underline underline-offset-4 min-h-[44px]">
             {t.forgot}
           </button>
         )}

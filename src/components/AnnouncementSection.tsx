@@ -23,7 +23,7 @@ function AnnouncementTickerPreview({ text, speed, isAr }: { text: string; speed:
   return (
     <div
       ref={boxRef}
-      className="ann-mask overflow-hidden rounded-full bg-[#FFC400] text-[#0A0A0A] py-2 [mask-image:linear-gradient(to_right,transparent,black_20px,black_calc(100%-20px),transparent)]"
+      className="ann-mask overflow-hidden rounded-full bg-[var(--primary)] text-[#0A0A0A] py-2 [mask-image:linear-gradient(to_right,transparent,black_20px,black_calc(100%-20px),transparent)]"
     >
       <div
         aria-hidden="true"
@@ -152,7 +152,7 @@ function ScheduleField({
             const p = parseDatetimeLocal(e.target.value);
             onPick(p ? deviceWallPartsToUTC(p) : null);
           }}
-          className="w-full h-10 ps-3 pe-9 rounded-xl bg-black border border-neutral-700 text-sm tabular-nums text-neutral-100 focus:border-[#FFC400] focus:ring-1 focus:ring-[#FFC400]/40 outline-none [color-scheme:dark] transition-colors"
+          className="w-full h-10 ps-3 pe-9 rounded-xl bg-black border border-neutral-700 text-sm tabular-nums text-neutral-100 focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/40 outline-none [color-scheme:dark] transition-colors"
         />
         {iso && (
           <button
@@ -172,7 +172,7 @@ function ScheduleField({
             key={p.key}
             type="button"
             onClick={() => onPick(p.deltaMs === null ? null : new Date(Date.now() + p.deltaMs).toISOString())}
-            className="px-2.5 h-7 rounded-full bg-neutral-900 border border-neutral-700 text-[11px] font-bold text-neutral-300 hover:text-[#FFC400] hover:border-[#FFC400]/60 active:scale-95 transition-all"
+            className="px-2.5 h-7 rounded-full bg-neutral-900 border border-neutral-700 text-[11px] font-bold text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/60 active:scale-95 transition-all"
           >
             {p.label}
           </button>
@@ -202,7 +202,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div>
-        <h2 className="text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
+        <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
           {isAr ? 'شريط الإعلان' : 'Announcement banner'}
         </h2>
         <p className="text-[11px] text-neutral-500 mt-0.5">
@@ -218,7 +218,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
           className="w-full flex items-center justify-between gap-3 text-start"
         >
           <span className="block text-xs font-bold">{isAr ? 'إظهار الشريط' : 'Show banner'}</span>
-          <span className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${announcement.enabled ? 'bg-[#FFC400]' : 'bg-neutral-700'}`}>
+          <span className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${announcement.enabled ? 'bg-[var(--primary)]' : 'bg-neutral-700'}`}>
             <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${announcement.enabled ? (isAr ? 'left-0.5' : 'left-5') : (isAr ? 'left-5' : 'left-0.5')}`} />
           </span>
         </button>
@@ -236,7 +236,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
               {isAr ? 'إيقافه يعرض النص ثابتاً في المنتصف' : 'Off shows the text static and centered'}
             </span>
           </span>
-          <span className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${announcement.scroll !== false ? 'bg-[#FFC400]' : 'bg-neutral-700'}`}>
+          <span className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${announcement.scroll !== false ? 'bg-[var(--primary)]' : 'bg-neutral-700'}`}>
             <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${announcement.scroll !== false ? (isAr ? 'left-0.5' : 'left-5') : (isAr ? 'left-5' : 'left-0.5')}`} />
           </span>
         </button>
@@ -244,7 +244,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
         <div className={announcement.scroll === false ? 'opacity-40 pointer-events-none' : ''}>
           <div className="flex items-center justify-between mb-1">
             <label className="block text-xs text-neutral-400">{isAr ? 'سرعة الحركة' : 'Ticker speed'}</label>
-            <span className="text-[11px] font-bold text-[#FFC400] tabular-nums">
+            <span className="text-[11px] font-bold text-[var(--primary)] tabular-nums">
               {(() => {
                 const s = announcement.speed ?? 5;
                 const tag = s <= 3 ? (isAr ? 'بطيئة' : 'Slow') : s <= 7 ? (isAr ? 'متوسطة' : 'Medium') : (isAr ? 'سريعة' : 'Fast');
@@ -260,7 +260,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
             value={announcement.speed ?? 5}
             onChange={(e) => onUpdate((prev) => ({ ...prev, speed: Number(e.target.value) }))}
             aria-label={isAr ? 'سرعة الحركة' : 'Ticker speed'}
-            className="w-full accent-[#FFC400]"
+            className="w-full accent-[var(--primary)]"
           />
           <div className="flex justify-between text-[10px] text-neutral-500 mt-0.5">
             <span>{isAr ? 'بطيئة' : 'Slow'}</span>
@@ -278,7 +278,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
               value={announcement.text.en}
               maxLength={140}
               onChange={(e) => onUpdate((prev) => ({ ...prev, text: { ...prev.text, en: e.target.value } }))}
-              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
             />
           </div>
           <div>
@@ -292,7 +292,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
               value={announcement.text.ar}
               maxLength={140}
               onChange={(e) => onUpdate((prev) => ({ ...prev, text: { ...prev.text, ar: e.target.value } }))}
-              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
             />
           </div>
         </div>
@@ -355,7 +355,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
               <button
                 type="button"
                 onClick={() => onUpdate((prev) => ({ ...prev, startsAt: null, expiresAt: null }))}
-                className="font-bold text-[#FFC400] hover:underline"
+                className="font-bold text-[var(--primary)] hover:underline"
               >
                 {isAr ? 'مسح التواريخ' : 'Clear dates'}
               </button>
@@ -394,7 +394,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
               </div>
               {previewText ? (
                 announcement.scroll === false ? (
-                  <div className="rounded-full bg-[#FFC400] text-[#0A0A0A] px-4 py-2">
+                  <div className="rounded-full bg-[var(--primary)] text-[#0A0A0A] px-4 py-2">
                     <p className="text-xs font-bold leading-snug line-clamp-2" dir={isAr ? 'rtl' : 'ltr'}>
                       {previewText}
                     </p>

@@ -65,7 +65,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
           animate={{ height: 'auto', opacity: 1 }}
           exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="overflow-hidden bg-[#FFC400] text-[#0A0A0A] sticky top-0 z-50 shadow-[0_1px_0_rgba(0,0,0,0.12)]"
+          className="overflow-hidden bg-[var(--primary)] text-[#0A0A0A] sticky top-0 z-50 shadow-[0_1px_0_rgba(0,0,0,0.12)]"
         >
           {marquee ? (
             <div

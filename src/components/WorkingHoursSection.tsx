@@ -32,7 +32,7 @@ export const WorkingHoursSection: React.FC<WorkingHoursSectionProps> = ({
   const isAr = lang === 'ar';
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-      <h2 className="text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
+      <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
         {isAr ? 'مواعيد العمل والحالة' : 'Working Hours & Status'}
       </h2>
 
@@ -42,7 +42,7 @@ export const WorkingHoursSection: React.FC<WorkingHoursSectionProps> = ({
           <select
             value={statusMode}
             onChange={(e) => onUpdate((prev) => ({ ...prev, statusMode: e.target.value as 'auto' | 'open' | 'closed' }))}
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           >
             <option value="auto">{isAr ? 'تلقائي (حسب المواعيد)' : 'Auto (from hours)'}</option>
             <option value="open">{isAr ? 'مفتوح دائماً' : 'Always Open'}</option>
@@ -56,7 +56,7 @@ export const WorkingHoursSection: React.FC<WorkingHoursSectionProps> = ({
             type="time"
             value={openTime}
             onChange={(e) => onUpdate((prev) => ({ ...prev, openTime: e.target.value }))}
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400] [color-scheme:dark]"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] [color-scheme:dark]"
           />
         </div>
 
@@ -66,13 +66,13 @@ export const WorkingHoursSection: React.FC<WorkingHoursSectionProps> = ({
             type="time"
             value={closeTime}
             onChange={(e) => onUpdate((prev) => ({ ...prev, closeTime: e.target.value }))}
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400] [color-scheme:dark]"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] [color-scheme:dark]"
           />
         </div>
       </div>
 
       {/* Live AM/PM preview so open/close are never ambiguous */}
-      <p className="text-xs font-bold text-[#FFC400]">
+      <p className="text-xs font-bold text-[var(--primary)]">
         {isAr
           ? `يفتح ${formatTime12h(openTime, true)} – يغلق ${formatTime12h(closeTime, true)}`
           : `Opens ${formatTime12h(openTime, false)} – Closes ${formatTime12h(closeTime, false)}`}
@@ -110,7 +110,7 @@ export const WorkingHoursSection: React.FC<WorkingHoursSectionProps> = ({
                 title={isAr ? d.ar : d.en}
                 className={`h-9 min-w-[52px] px-3 rounded-full text-xs font-bold border-[1.5px] transition-all btn-tactile ${
                   on
-                    ? 'bg-[#FFC400] text-[#0A0A0A] border-[#FFC400]'
+                    ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
                     : 'bg-transparent text-neutral-400 border-neutral-700 hover:border-neutral-500'
                 }`}
               >

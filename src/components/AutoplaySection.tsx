@@ -42,7 +42,7 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
         className="w-full flex items-center justify-between gap-3 text-start"
       >
         <span>
-          <span className="block text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
+          <span className="block text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
             {isAr ? 'تحريك قسم المميز تلقائياً' : 'Featured Carousel Autoplay'}
           </span>
           <span className="block text-[11px] text-neutral-500 mt-0.5">
@@ -53,7 +53,7 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
         </span>
         <span
           className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${
-            on ? 'bg-[#FFC400]' : 'bg-neutral-700'
+            on ? 'bg-[var(--primary)]' : 'bg-neutral-700'
           }`}
         >
           <span
@@ -76,7 +76,7 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
             max={10}
             value={featuredAutoplayInterval || 4}
             onChange={(e) => onUpdate((prev) => ({ ...prev, featuredAutoplayInterval: Math.min(10, Math.max(2, Number(e.target.value) || 4)) }))}
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
       )}

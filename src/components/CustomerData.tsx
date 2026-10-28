@@ -120,7 +120,7 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
   return (
     <div className="space-y-4" dir={isAr ? 'rtl' : 'ltr'}>
       <motion.div {...rise(0)} className={card}>
-        <h2 className={`text-sm font-extrabold text-[#FFC400] ${isAr ? '' : 'uppercase tracking-wider'}`}>{t.title}</h2>
+        <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>{t.title}</h2>
         <p className="mt-1 text-xs text-neutral-400">{t.intro}</p>
         <div className="mt-3 flex gap-2">
           <input
@@ -131,13 +131,13 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
             dir="ltr"
             placeholder={t.searchPh}
             aria-label={t.searchPh}
-            className="flex-1 h-12 rounded-xl bg-black border border-neutral-700 px-3 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-[#FFC400] focus:ring-4 focus:ring-[#FFC400]/15"
+            className="flex-1 h-12 rounded-xl bg-black border border-neutral-700 px-3 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/15"
           />
           <button
             type="button"
             onClick={() => void doSearch()}
             disabled={busy}
-            className="btn-tactile h-12 px-5 rounded-full bg-[#FFC400] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center gap-2 disabled:opacity-40"
+            className="btn-tactile h-12 px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center gap-2 disabled:opacity-40"
           >
             <Search size={16} />{busy ? t.searching : t.search}
           </button>
@@ -172,16 +172,16 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
                 ))}
               </div>
 
-              <h3 className="mt-4 text-sm font-extrabold text-[#FFC400]">{t.modeT}</h3>
+              <h3 className="mt-4 text-sm font-extrabold text-[var(--primary)]">{t.modeT}</h3>
               <div className="mt-2 space-y-2">
                 {([
                   { k: 'anonymize', icon: Eraser, a: t.anonymize, b: t.anonymizeD },
                   { k: 'delete', icon: Trash2, a: t.del, b: t.delD },
                   { k: 'export', icon: Download, a: t.exp, b: t.expD },
                 ] as const).map((m) => (
-                  <label key={m.k} className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer ${mode === m.k ? 'border-[#FFC400]/60 bg-[#FFC400]/[0.05]' : 'border-neutral-800'}`}>
-                    <input type="radio" name="cd-mode" checked={mode === m.k} onChange={() => setMode(m.k)} className="mt-1 accent-[#FFC400]" />
-                    <span><b className="flex items-center gap-1.5 text-[13px]"><m.icon size={14} className="text-[#FFC400]" />{m.a}</b>
+                  <label key={m.k} className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer ${mode === m.k ? 'border-[var(--primary)]/60 bg-[var(--primary)]/[0.05]' : 'border-neutral-800'}`}>
+                    <input type="radio" name="cd-mode" checked={mode === m.k} onChange={() => setMode(m.k)} className="mt-1 accent-[var(--primary)]" />
+                    <span><b className="flex items-center gap-1.5 text-[13px]"><m.icon size={14} className="text-[var(--primary)]" />{m.a}</b>
                       <span className="block text-[11px] text-neutral-400 mt-0.5">{m.b}</span></span>
                   </label>
                 ))}
@@ -195,7 +195,7 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
-                    className="w-full h-12 rounded-xl bg-black border border-neutral-700 px-3 text-sm text-white outline-none focus:border-[#FFC400] focus:ring-4 focus:ring-[#FFC400]/15"
+                    className="w-full h-12 rounded-xl bg-black border border-neutral-700 px-3 text-sm text-white outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/15"
                   />
                 </div>
                 <div>
@@ -205,7 +205,7 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
                     onChange={(e) => setWord(e.target.value)}
                     autoComplete="off"
                     dir={isAr ? 'rtl' : 'ltr'}
-                    className="w-full h-12 rounded-xl bg-black border border-neutral-700 px-3 text-sm text-white outline-none focus:border-[#FFC400] focus:ring-4 focus:ring-[#FFC400]/15"
+                    className="w-full h-12 rounded-xl bg-black border border-neutral-700 px-3 text-sm text-white outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/15"
                   />
                 </div>
               </div>
@@ -213,7 +213,7 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
                 type="button"
                 onClick={() => void doAction()}
                 disabled={busy || !password || !word.trim()}
-                className="btn-tactile mt-3 h-11 px-6 rounded-full bg-[#FFC400] text-[#0A0A0A] text-sm font-extrabold disabled:opacity-40"
+                className="btn-tactile mt-3 h-11 px-6 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold disabled:opacity-40"
               >
                 {busy ? t.applying : t.go}
               </button>

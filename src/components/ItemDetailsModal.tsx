@@ -110,7 +110,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={pickLangText(item.name, lang)}
-        className={`relative z-10 w-full max-w-[520px] max-h-[92vh] overflow-y-auto overscroll-contain no-scrollbar rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[#FFC400] md:border-2 md:border-[#FFC400] px-6 sm:px-8 pt-4 sm:pt-6 pb-8 anim-slide-up shadow-2xl transition-colors duration-200 ${
+        className={`relative z-10 w-full max-w-[520px] max-h-[92vh] overflow-y-auto overscroll-contain no-scrollbar rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] px-6 sm:px-8 pt-4 sm:pt-6 pb-8 anim-slide-up shadow-2xl transition-colors duration-200 ${
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
       >
@@ -142,10 +142,10 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
               {item.badges.map((b) => (
                 <span
                   key={b}
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0A0A0A] text-[#FFC400] border border-[#FFC400]"
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]"
                 >
-                    {b === 'spicy' && <Flame size={12} className="fill-[#FFC400]" />}
-                    {b === 'top' && <Award size={12} className="fill-[#FFC400]" />}
+                    {b === 'spicy' && <Flame size={12} className="fill-[var(--primary)]" />}
+                    {b === 'top' && <Award size={12} className="fill-[var(--primary)]" />}
                     {b === 'new' && <Sparkles size={12} />}
                     {badgeLabel(b, lang)}
                 </span>
@@ -158,7 +158,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             </div>
           </div>
 
-          <div className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-lg font-black bg-[#FFC400] text-[#0A0A0A] shadow-sm whitespace-nowrap">
+          <div className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-lg font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap">
             {priceLabel(item, lang, currency)}
           </div>
         </div>
@@ -190,7 +190,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   <span className={`font-bold text-sm ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
                     {isAr ? 'الكمية:' : 'Quantity:'}
                   </span>
-                  <div className="flex items-center gap-2 bg-[#FFC400] text-[#0A0A0A] rounded-full p-1 shadow-sm">
+                  <div className="flex items-center gap-2 bg-[var(--primary)] text-[#0A0A0A] rounded-full p-1 shadow-sm">
                     <button
                       type="button"
                       onClick={() => stepQty(-1)}
@@ -218,7 +218,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   type="button"
                   disabled={liveTotal === null}
                   onClick={() => onAddConfigured(item, variantId, addonIds, qty)}
-                  className="btn-tactile w-full h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] font-extrabold text-base flex items-center justify-center gap-2 shadow-lg hover:bg-[#ffd033] disabled:opacity-50"
+                  className="btn-tactile w-full h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-extrabold text-base flex items-center justify-center gap-2 shadow-lg hover:brightness-110 disabled:opacity-50"
                 >
                   <Plus size={20} className="stroke-[3]" />
                   <span>{isAr ? 'إضافة إلى الطلب' : 'Add to Order'}</span>
@@ -231,7 +231,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
               <button
                 type="button"
                 onClick={() => onAddItem(item)}
-                className="btn-tactile w-full h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] font-extrabold text-base flex items-center justify-center gap-2 shadow-lg hover:bg-[#ffd033]"
+                className="btn-tactile w-full h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-extrabold text-base flex items-center justify-center gap-2 shadow-lg hover:brightness-110"
               >
                 <Plus size={20} className="stroke-[3]" />
                 <span>{isAr ? 'إضافة إلى الطلب' : 'Add to Order'}</span>
@@ -243,7 +243,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                 <span className="font-bold text-sm px-4">
                   {isAr ? 'الكمية في السلة:' : 'In your cart:'}
                 </span>
-                <div className="flex items-center gap-2 bg-[#FFC400] text-[#0A0A0A] rounded-full p-1 shadow-sm">
+                <div className="flex items-center gap-2 bg-[var(--primary)] text-[#0A0A0A] rounded-full p-1 shadow-sm">
                   <button
                     type="button"
                     onClick={() => onUpdateLine(singleKey, -1)}

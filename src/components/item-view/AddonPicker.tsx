@@ -44,9 +44,9 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
               aria-pressed={active}
               className={`${chipBase} ${
                 active
-                  ? 'bg-[#FFC400] text-[#0A0A0A] border-[#FFC400]'
+                  ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
                   : darkMode
-                  ? 'border-neutral-700 text-neutral-200 hover:border-[#FFC400]'
+                  ? 'border-neutral-700 text-neutral-200 hover:border-[var(--primary)]'
                   : 'border-neutral-300 text-neutral-800 hover:border-[#0A0A0A]'
               }`}
             >

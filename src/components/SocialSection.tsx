@@ -33,7 +33,7 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div>
-        <h2 className="text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
+        <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
           {isAr ? 'التواصل الاجتماعي' : 'Social Media'}
         </h2>
         <p className="text-[11px] text-neutral-500 mt-0.5">
@@ -67,7 +67,7 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
                 className="flex-1 flex items-center justify-between gap-3 text-start"
               >
                 <span className="text-xs font-bold">{label}</span>
-                <span className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${on ? 'bg-[#FFC400]' : 'bg-neutral-700'}`}>
+                <span className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${on ? 'bg-[var(--primary)]' : 'bg-neutral-700'}`}>
                   <span
                     className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${
                       on ? (isAr ? 'left-0.5' : 'left-5') : (isAr ? 'left-5' : 'left-0.5')
@@ -82,7 +82,7 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
                   disabled={idx === 0}
                   aria-label={isAr ? `حرّك ${label} لأعلى` : `Move ${label} up`}
                   title={isAr ? 'لأعلى' : 'Move up'}
-                  className="w-7 h-7 rounded-lg bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-[#FFC400] hover:border-[#FFC400]/60 disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center justify-center"
+                  className="w-7 h-7 rounded-lg bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/60 disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center justify-center"
                 >
                   <ArrowUp size={14} />
                 </button>
@@ -92,7 +92,7 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
                   disabled={idx === order.length - 1}
                   aria-label={isAr ? `حرّك ${label} لأسفل` : `Move ${label} down`}
                   title={isAr ? 'لأسفل' : 'Move down'}
-                  className="w-7 h-7 rounded-lg bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-[#FFC400] hover:border-[#FFC400]/60 disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center justify-center"
+                  className="w-7 h-7 rounded-lg bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/60 disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center justify-center"
                 >
                   <ArrowDown size={14} />
                 </button>
@@ -111,7 +111,7 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
                   }))
                 }
                 placeholder={network === 'whatsapp' ? 'https://wa.me/…' : `https://${network}.com/…`}
-                className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+                className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
               />
               {linkHint && (
                 <p className="text-[11px] text-neutral-500 mt-1">{linkHint}</p>

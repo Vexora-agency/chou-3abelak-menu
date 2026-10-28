@@ -18,7 +18,7 @@ export const MenuListSectionHeader: React.FC<MenuListSectionHeaderProps> = ({
   return (
     <div className="flex items-center gap-2.5 mb-4">
       <motion.span
-        className="w-1.5 h-6 bg-[#FFC400] rounded-sm origin-center"
+        className="w-1.5 h-6 bg-[var(--primary)] rounded-sm origin-center"
         initial={{ scaleY: 0 }}
         whileInView={{ scaleY: 1 }}
         viewport={{ once: true }}
@@ -82,10 +82,10 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
           {effectiveBadges(menu, item).map((b) => (
             <span
               key={b}
-              className="inline-flex shrink-0 items-center gap-0.5 px-1.5 py-px rounded-full text-[9px] font-extrabold bg-[#0A0A0A] text-[#FFC400] border border-[#FFC400]"
+              className="inline-flex shrink-0 items-center gap-0.5 px-1.5 py-px rounded-full text-[9px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]"
             >
-                {b === 'spicy' && <Flame size={9} className="fill-[#FFC400]" />}
-                {b === 'top' && <Award size={9} className="fill-[#FFC400]" />}
+                {b === 'spicy' && <Flame size={9} className="fill-[var(--primary)]" />}
+                {b === 'top' && <Award size={9} className="fill-[var(--primary)]" />}
                 {b === 'new' && <Sparkles size={9} />}
                 {badgeLabel(b, lang)}
             </span>
@@ -105,7 +105,7 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
           </p>
         ) : null}
       </div>
-      <span className={`shrink-0 text-sm font-extrabold tabular-nums ${darkMode ? 'text-[#FFC400]' : 'text-[#0A0A0A]'}`} dir="ltr">
+      <span className={`shrink-0 text-sm font-extrabold tabular-nums ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`} dir="ltr">
         {priceLabel(item, lang, currency)}
       </span>
       {!isSoldOut && (

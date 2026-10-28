@@ -59,7 +59,7 @@ export function Pager({
               aria-current={p === page ? 'page' : undefined}
               className={`${btn} ${
                 p === page
-                  ? 'bg-[#FFC400] text-[#0A0A0A]'
+                  ? 'bg-[var(--primary)] text-[#0A0A0A]'
                   : 'bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white'
               }`}
             >

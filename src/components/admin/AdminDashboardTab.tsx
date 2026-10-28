@@ -119,7 +119,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
                 onClick={() => onDashViewChange(v)}
                 className={`relative shrink-0 px-4 h-8 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${active ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
               >
-                {active && <motion.span layoutId="dash-view" className="absolute inset-0 rounded-full bg-[#FFC400] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+                {active && <motion.span layoutId="dash-view" className="absolute inset-0 rounded-full bg-[var(--primary)] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
                 <span className="relative z-10">
                   {v === 'overview' ? (isAr ? 'نظرة عامة' : 'Overview') : v === 'reports' ? (isAr ? 'التقارير' : 'Reports') : (isAr ? 'العملاء' : 'Customers')}
                 </span>

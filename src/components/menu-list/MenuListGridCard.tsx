@@ -63,7 +63,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
       onClick={() => !isSoldOut && onOpenItem(item)}
       className={`grid-card relative flex flex-col justify-between p-3.5 rounded-2xl border-2 ${sectionMark ? 'overflow-hidden' : ''} ${
         darkMode
-          ? 'bg-[#141414] border-[#FFC400] offset-shadow-dark'
+          ? 'bg-[#141414] border-[var(--primary)] offset-shadow-dark'
           : 'bg-white border-[#0A0A0A] offset-shadow-yellow'
       } ${isSoldOut ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer card-lift'}`}
     >
@@ -89,7 +89,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
             so it always balances diagonally against the + button. Tilted. */}
         <div className={`relative flex items-center gap-2 mb-2 h-[18px] ${sectionMark ? 'justify-between' : 'justify-end'}`}>
           {badges.length > 0 && (
-            <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wide bg-[#0A0A0A] text-[#FFC400] border-[1.5px] border-[#FFC400] shadow-lg -rotate-3 ${sectionMark ? '' : 'absolute -top-[7px] -start-1 z-10'}`}>
+            <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wide bg-[#0A0A0A] text-[var(--primary)] border-[1.5px] border-[var(--primary)] shadow-lg -rotate-3 ${sectionMark ? '' : 'absolute -top-[7px] -start-1 z-10'}`}>
               {badgeLabel(badges[0], lang)}
             </span>
           )}
@@ -139,7 +139,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
       <div className={`relative flex justify-between items-center mt-3 pt-2 border-t border-dashed ${
         darkMode ? 'border-neutral-800' : 'border-neutral-200'
       }`}>
-        <span className={`font-extrabold text-sm ${darkMode ? 'text-[#FFC400]' : 'text-[#0A0A0A]'}`}>
+        <span className={`font-extrabold text-sm ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`}>
           {priceLabel(item, lang, currency)}
         </span>
 

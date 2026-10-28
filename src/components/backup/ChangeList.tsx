@@ -6,7 +6,7 @@ import type { Change } from '@/src/components/BackupPanel';
 const KIND = {
   added: { icon: Plus, cls: 'bg-green-500/15 text-green-400' },
   removed: { icon: Minus, cls: 'bg-red-500/15 text-red-400' },
-  changed: { icon: Pencil, cls: 'bg-[#FFC400]/15 text-[#FFC400]' },
+  changed: { icon: Pencil, cls: 'bg-[var(--primary)]/15 text-[var(--primary)]' },
 } as const;
 
 export const ChangeList: React.FC<{ changes: Change[]; lang: 'en' | 'ar' }> = ({ changes, lang }) => {
@@ -32,7 +32,7 @@ export const ChangeList: React.FC<{ changes: Change[]; lang: 'en' | 'ar' }> = ({
         })}
       </ul>
       {changes.length > 5 && (
-        <button type="button" onClick={() => setOpen((v) => !v)} className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[#FFC400]">
+        <button type="button" onClick={() => setOpen((v) => !v)} className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[var(--primary)]">
           <ChevronDown size={14} className={open ? 'rotate-180 transition-transform' : 'transition-transform'} />{open ? t.close : `+${changes.length - 5}`}
         </button>
       )}

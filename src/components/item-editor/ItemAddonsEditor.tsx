@@ -121,7 +121,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                 list[ai] = next;
                 onChange({ ...item, addons: list });
               }}
-              className={`p-1 self-center transition-colors ${a.default ? 'text-[#FFC400]' : 'text-neutral-600 hover:text-[#FFC400]'}`}
+              className={`p-1 self-center transition-colors ${a.default ? 'text-[var(--primary)]' : 'text-neutral-600 hover:text-[var(--primary)]'}`}
               title={isAr ? 'مضمّنة افتراضياً — تظهر مختارة للزبون ويقدر يشيلها' : 'Included by default — pre-selected for the customer, who can remove it'}
               aria-pressed={!!a.default}
               aria-label={isAr ? 'تضمين افتراضي' : 'Include by default'}
@@ -153,7 +153,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                 return (
                 <div key={g.id} className="rounded-xl border border-neutral-800 bg-black/30 px-2.5 sm:px-3 pt-2 pb-1 mb-2">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[11px] font-extrabold text-[#FFC400]">
+                    <p className="text-[11px] font-extrabold text-[var(--primary)]">
                       {isAr ? g.name.ar : g.name.en}
                     </p>
                     <button
@@ -188,7 +188,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                               addons: [...(item.addons || []), { featureId: d.id, price: 0 }],
                             });
                           }}
-                          className="btn-tactile px-2.5 py-1 rounded-full border border-dashed border-neutral-600 text-neutral-400 text-[10px] font-bold hover:border-[#FFC400] hover:text-[#FFC400]"
+                          className="btn-tactile px-2.5 py-1 rounded-full border border-dashed border-neutral-600 text-neutral-400 text-[10px] font-bold hover:border-[var(--primary)] hover:text-[var(--primary)]"
                         >
                           <Plus size={10} className="inline me-1" />
                           {isAr ? d.name.ar : d.name.en}
@@ -209,7 +209,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
       <button
         type="button"
         onClick={() => onToggleAddonPicker()}
-        className="btn-tactile px-3 py-1.5 rounded-full border border-neutral-700 text-neutral-300 text-[11px] font-bold hover:border-[#FFC400] hover:text-[#FFC400]"
+        className="btn-tactile px-3 py-1.5 rounded-full border border-neutral-700 text-neutral-300 text-[11px] font-bold hover:border-[var(--primary)] hover:text-[var(--primary)]"
       >
         <Plus size={12} className="inline me-1" />
         {isAr ? 'إضافة إضافة' : 'Add add-on'}
@@ -255,7 +255,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                   });
                   onCloseAddonPicker();
                 }}
-                className="btn-tactile w-full text-start rounded-xl border border-neutral-700 bg-black/40 px-3 py-2 hover:border-[#FFC400] transition-colors"
+                className="btn-tactile w-full text-start rounded-xl border border-neutral-700 bg-black/40 px-3 py-2 hover:border-[var(--primary)] transition-colors"
               >
                 <span className="flex items-center justify-between gap-2">
                   <b className="text-xs text-white">{isAr ? g.name.ar : g.name.en}</b>

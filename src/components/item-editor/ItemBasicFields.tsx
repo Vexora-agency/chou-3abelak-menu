@@ -144,7 +144,7 @@ export const ItemBasicFields: React.FC<ItemBasicFieldsProps> = ({
                 })
               }
               placeholder={isAr ? 'اكتب الوحدة (مثال: ربطة، كيس)' : 'Type the unit (e.g. pack, bag)'}
-              className="w-full h-10 px-3 mt-1.5 rounded-lg bg-black border border-[#FFC400]/60 text-sm"
+              className="w-full h-10 px-3 mt-1.5 rounded-lg bg-black border border-[var(--primary)]/60 text-sm"
             />
           )}
         </div>
@@ -161,7 +161,7 @@ export const ItemBasicFields: React.FC<ItemBasicFieldsProps> = ({
               pricing: { ...normalizePricing(item), showUnit: e.target.checked },
             })
           }
-          className="w-4 h-4 rounded text-[#FFC400]"
+          className="w-4 h-4 rounded text-[var(--primary)]"
         />
         <span className="font-bold">{isAr ? `إظهار الوحدة بجانب السعر (مثال: / ${unitLabel(normalizePricing(item).unit, 1, lang)})` : `Show unit next to price (e.g. / ${unitLabel(normalizePricing(item).unit, 1, lang)})`}</span>
       </label>

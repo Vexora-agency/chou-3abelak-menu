@@ -44,7 +44,7 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
               {active && (
                 <motion.span
                   layoutId="lang-pill"
-                  className="absolute inset-0 rounded-full bg-[#FFC400] shadow-[0_4px_14px_-2px_rgba(255,196,0,0.6)]"
+                  className="absolute inset-0 rounded-full bg-[var(--primary)] shadow-[0_4px_14px_-2px_color-mix(in_srgb,var(--primary)_60%,transparent)]"
                   transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                 />
               )}
@@ -58,7 +58,7 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
         <button
           type="button"
           onClick={onToggleDarkMode}
-          className="glass-pill btn-tactile w-11 h-11 rounded-full text-[#FFC400] flex items-center justify-center"
+          className="glass-pill btn-tactile w-11 h-11 rounded-full text-[var(--primary)] flex items-center justify-center"
           aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           title={darkMode ? (isAr ? 'الوضع النهاري' : 'Light Mode') : (isAr ? 'الوضع الليلي' : 'Dark Mode')}
         >
@@ -77,7 +77,7 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
           <button
             type="button"
             onClick={onOpenAdmin}
-            className="glass-pill btn-tactile w-11 h-11 rounded-full text-white/80 hover:text-[#FFC400] flex items-center justify-center"
+            className="glass-pill btn-tactile w-11 h-11 rounded-full text-white/80 hover:text-[var(--primary)] flex items-center justify-center"
             aria-label="Admin Control Panel"
             title={isAr ? 'لوحة التحكم الإدارية' : 'Admin Management'}
           >

@@ -69,7 +69,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           .addTo(map);
         const icon = L.divIcon({
           className: 'loc-div-icon',
-          html: '<div style="width:34px;height:34px;border-radius:50%;background:#FFC400;border:3px solid #0A0A0A;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.45)"><div style="width:10px;height:10px;border-radius:50%;background:#0A0A0A"></div></div>',
+          html: '<div style="width:34px;height:34px;border-radius:50%;background:var(--primary);border:3px solid #0A0A0A;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.45)"><div style="width:10px;height:10px;border-radius:50%;background:#0A0A0A"></div></div>',
           iconSize: [34, 34],
           iconAnchor: [17, 17],
         });
@@ -173,7 +173,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         <div ref={mapRef} className="absolute inset-0 z-0" />
         {!ready && !loadError && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2">
-            <Loader2 size={22} className="animate-spin text-[#FFC400]" />
+            <Loader2 size={22} className="animate-spin text-[var(--primary)]" />
             <span className={`text-xs font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>{t.loadingMap}</span>
           </div>
         )}
@@ -202,7 +202,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         type="button"
         onClick={() => void confirm()}
         disabled={!point || confirming}
-        className="btn-tactile w-full h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] font-black text-sm disabled:opacity-50"
+        className="btn-tactile w-full h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black text-sm disabled:opacity-50"
       >
         {confirming ? <Loader2 size={17} className="animate-spin mx-auto" /> : t.confirm}
       </button>

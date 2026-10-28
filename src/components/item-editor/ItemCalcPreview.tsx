@@ -39,7 +39,7 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
               <span className="font-bold text-sm text-white">
                 {(isAr ? item.name.ar : item.name.en) || (isAr ? '(بدون اسم)' : '(no name)')}
               </span>
-              <span className="shrink-0 px-3 py-1 rounded-full text-xs font-extrabold bg-[#FFC400] text-[#0A0A0A] tabular-nums whitespace-nowrap">
+              <span className="shrink-0 px-3 py-1 rounded-full text-xs font-extrabold bg-[var(--primary)] text-[#0A0A0A] tabular-nums whitespace-nowrap">
                 {label}
               </span>
             </div>
@@ -74,7 +74,7 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
                           <div key={`${v.featureId || 'blank'}-${vi}`} className="flex justify-between text-[11px]">
                             <span className="text-neutral-300">
                               {featureName(menu, v.featureId, lang)}
-                              {isDef && <span className="ms-1.5 text-[#FFC400] font-bold">{isAr ? '(افتراضي)' : '(default)'}</span>}
+                              {isDef && <span className="ms-1.5 text-[var(--primary)] font-bold">{isAr ? '(افتراضي)' : '(default)'}</span>}
                             </span>
                             <span className="text-neutral-400 tabular-nums" dir="ltr">{formatPrice(v.price, cur)}</span>
                           </div>
@@ -115,7 +115,7 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
                       </p>
                       {lines.map((a, ai) => (
                         <div key={`${a.featureId || 'blank'}-${ai}`} className="flex justify-between text-[11px]">
-                          <span className="text-[#FFC400]">+ {featureName(menu, a.featureId, lang)}</span>
+                          <span className="text-[var(--primary)]">+ {featureName(menu, a.featureId, lang)}</span>
                           <span className="text-neutral-400 tabular-nums" dir="ltr">
                             {a.price === 0 ? (isAr ? 'مجاناً' : 'Free') : `+${formatPrice(a.price, cur)}`}
                           </span>
@@ -130,7 +130,7 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
                   })
                   .map((a, ai) => (
                     <div key={`orphan-${a.featureId || 'blank'}-${ai}`} className="flex justify-between text-[11px]">
-                      <span className="text-[#FFC400]">+ {featureName(menu, a.featureId, lang)}</span>
+                      <span className="text-[var(--primary)]">+ {featureName(menu, a.featureId, lang)}</span>
                       <span className="text-neutral-400 tabular-nums" dir="ltr">
                         {a.price === 0 ? (isAr ? 'مجاناً' : 'Free') : `+${formatPrice(a.price, cur)}`}
                       </span>

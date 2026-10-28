@@ -123,7 +123,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
 
   const Tab = (id: typeof tab, label: string, icon: React.ReactNode, badge?: number) => (    <button key={id} type="button" onClick={() => setTab(id)} aria-pressed={tab === id}
       className={`relative shrink-0 px-3.5 h-9 rounded-full text-xs font-bold whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${tab === id ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}>
-      {tab === id && <motion.span layoutId="bk-tab" className="absolute inset-0 rounded-full bg-[#FFC400]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+      {tab === id && <motion.span layoutId="bk-tab" className="absolute inset-0 rounded-full bg-[var(--primary)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
       <span className="relative z-10 inline-flex items-center gap-1.5">{icon}{label}{badge ? <span className={`px-1.5 rounded-full text-[10px] ${tab === id ? 'bg-black/15' : 'bg-neutral-800'}`}>{badge}</span> : null}</span>
     </button>
   );
@@ -131,7 +131,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
   return (
     <div className="space-y-4" dir={isAr ? 'rtl' : 'ltr'}>
       <motion.div {...rise(0)} className={`${card} flex items-start gap-3.5`}>
-        <span className="w-11 h-11 shrink-0 rounded-2xl bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center"><ShieldCheck size={22} /></span>
+        <span className="w-11 h-11 shrink-0 rounded-2xl bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center"><ShieldCheck size={22} /></span>
         <div className="min-w-0">
           <h2 className="text-base font-extrabold">{t.protectedTitle}</h2>
           <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-bold">
@@ -170,7 +170,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
                 type="button"
                 onClick={() => setActFilter(k)}
                 aria-pressed={actFilter === k}
-                className={`h-8 px-3.5 rounded-full text-[11px] font-bold border transition-colors ${actFilter === k ? 'bg-[#FFC400] border-[#FFC400] text-[#0A0A0A]' : 'bg-transparent border-neutral-700 text-neutral-400 hover:border-neutral-500 hover:text-white'}`}
+                className={`h-8 px-3.5 rounded-full text-[11px] font-bold border transition-colors ${actFilter === k ? 'bg-[var(--primary)] border-[var(--primary)] text-[#0A0A0A]' : 'bg-transparent border-neutral-700 text-neutral-400 hover:border-neutral-500 hover:text-white'}`}
               >
                 {label}
               </button>
@@ -180,35 +180,35 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
             {feed.length === 0 && <p className="py-8 text-center text-xs text-neutral-500">{t.actEmpty}</p>}
             {feed.slice(0, limit).map((f) =>
               f.kind === 'version' ? (
-                <div key={`v-${f.v.id}`} className={`rounded-xl border p-3 ${f.v.current ? 'border-[#FFC400]/40 bg-[#FFC400]/[0.05]' : 'border-neutral-800 bg-black/40'}`}>
+                <div key={`v-${f.v.id}`} className={`rounded-xl border p-3 ${f.v.current ? 'border-[var(--primary)]/40 bg-[var(--primary)]/[0.05]' : 'border-neutral-800 bg-black/40'}`}>
                   <div className="flex items-center gap-3">
-                    <span className="w-9 h-9 shrink-0 rounded-xl bg-black border border-neutral-800 text-[#FFC400] flex items-center justify-center">{f.v.source === 'restore' ? <RotateCcw size={16} /> : f.v.source === 'import' ? <Upload size={16} /> : <Archive size={16} />}</span>
+                    <span className="w-9 h-9 shrink-0 rounded-xl bg-black border border-neutral-800 text-[var(--primary)] flex items-center justify-center">{f.v.source === 'restore' ? <RotateCcw size={16} /> : f.v.source === 'import' ? <Upload size={16} /> : <Archive size={16} />}</span>
                     <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-2 flex-wrap"><b className="text-sm">{t.src[f.v.source]}</b>{f.v.current && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FFC400] text-[#0A0A0A]">{t.current}</span>}</span>
+                      <span className="flex items-center gap-2 flex-wrap"><b className="text-sm">{t.src[f.v.source]}</b>{f.v.current && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[var(--primary)] text-[#0A0A0A]">{t.current}</span>}</span>
                       <span className="block text-[11px] text-neutral-400 mt-0.5">{fmtDate(f.v.createdAt, lang)} · {t.by} {f.v.actor}</span>
                     </span>
                     {!f.v.current && (
                       <span className="flex gap-1.5 shrink-0">
-                        <button type="button" onClick={() => void openRestore(f.v)} className="btn-tactile h-9 px-3 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold hover:border-[#FFC400] hover:text-[#FFC400]">{t.preview}</button>
+                        <button type="button" onClick={() => void openRestore(f.v)} className="btn-tactile h-9 px-3 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold hover:border-[var(--primary)] hover:text-[var(--primary)]">{t.preview}</button>
                       </span>
                     )}
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-bold">
                     {f.v.summary.added > 0 && <span className="px-2 py-0.5 rounded-full bg-green-500/15 text-green-400">+{f.v.summary.added} {t.added}</span>}
                     {f.v.summary.removed > 0 && <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400">−{f.v.summary.removed} {t.removed}</span>}
-                    {f.v.summary.changed > 0 && <span className="px-2 py-0.5 rounded-full bg-[#FFC400]/15 text-[#FFC400]">~{f.v.summary.changed} {t.changed}</span>}
+                    {f.v.summary.changed > 0 && <span className="px-2 py-0.5 rounded-full bg-[var(--primary)]/15 text-[var(--primary)]">~{f.v.summary.changed} {t.changed}</span>}
                     {f.v.summary.prices > 0 && <span className="px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300">{f.v.summary.prices} {t.prices}</span>}
                   </div>
                 </div>
               ) : (
                 <div key={`a-${f.a.id || `${f.a.t}-${f.a.action}`}`} className="rounded-xl border border-neutral-800 bg-black/40 p-3 flex items-center gap-3">
-                  <span className="w-9 h-9 shrink-0 rounded-xl bg-black border border-neutral-800 text-[#FFC400] flex items-center justify-center"><Activity size={16} /></span>
+                  <span className="w-9 h-9 shrink-0 rounded-xl bg-black border border-neutral-800 text-[var(--primary)] flex items-center justify-center"><Activity size={16} /></span>
                   <span className="min-w-0 flex-1">
                     <b className="block text-xs leading-snug">{isAr ? f.a.label.ar : f.a.label.en}</b>
                     <span className="text-[11px] text-neutral-500">{rel(f.a.t, lang)} · {f.a.actor}</span>
                   </span>
                       {f.a.ref?.kind === 'trash' && trashIds.has(f.a.ref.id) && (
-                        <button type="button" onClick={() => void doUndoTrash(f.a.ref?.id)} disabled={busyUndoId === f.a.ref?.id} className="btn-tactile h-9 px-3 rounded-full border border-neutral-700 text-neutral-200 text-xs font-extrabold inline-flex items-center gap-1.5 shrink-0 hover:border-[#FFC400] hover:text-[#FFC400] disabled:opacity-50" title={t.actUndo}>
+                        <button type="button" onClick={() => void doUndoTrash(f.a.ref?.id)} disabled={busyUndoId === f.a.ref?.id} className="btn-tactile h-9 px-3 rounded-full border border-neutral-700 text-neutral-200 text-xs font-extrabold inline-flex items-center gap-1.5 shrink-0 hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-50" title={t.actUndo}>
                           {busyUndoId === f.a.ref?.id ? <Loader2 size={14} className="animate-spin" /> : <><Undo2 size={14} />{t.actUndo}</>}
                         </button>
                       )}
@@ -229,17 +229,17 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
             { k: 'print', icon: Printer, a: t.exPrint, b: t.exPrintD, rec: false, btn: t.open },
           ] as const).map((x) => (
             <div key={x.k} className={`${card} flex items-center gap-3.5`}>
-              <span className="w-11 h-11 shrink-0 rounded-2xl bg-[#FFC400]/10 text-[#FFC400] flex items-center justify-center"><x.icon size={21} /></span>
-              <span className="min-w-0 flex-1"><span className="flex items-center gap-2 flex-wrap"><b className="text-sm">{x.a}</b>{x.rec && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FFC400] text-[#0A0A0A]">{t.recommended}</span>}</span>
+              <span className="w-11 h-11 shrink-0 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center"><x.icon size={21} /></span>
+              <span className="min-w-0 flex-1"><span className="flex items-center gap-2 flex-wrap"><b className="text-sm">{x.a}</b>{x.rec && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[var(--primary)] text-[#0A0A0A]">{t.recommended}</span>}</span>
                 <span className="block text-xs leading-relaxed text-neutral-400 mt-1">{x.b}</span></span>
-              <button type="button" onClick={() => void onExport(x.k)} className="btn-tactile shrink-0 h-10 px-4 rounded-full bg-[#FFC400] text-[#0A0A0A] text-xs font-extrabold">{x.btn}</button>
+              <button type="button" onClick={() => void onExport(x.k)} className="btn-tactile shrink-0 h-10 px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold">{x.btn}</button>
             </div>
           ))}
           <div className={`${card} flex items-center gap-3.5`}>
-            <span className="w-11 h-11 shrink-0 rounded-2xl bg-[#FFC400]/10 text-[#FFC400] flex items-center justify-center"><Clock size={21} /></span>
+            <span className="w-11 h-11 shrink-0 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center"><Clock size={21} /></span>
             <span className="min-w-0 flex-1"><b className="text-sm">{t.autoTitle}</b><span className="block text-xs leading-relaxed text-neutral-400 mt-1">{!reportsOn ? t.autoNeedsPro : status.destination ? t.autoD(status.destination) : t.autoNoMail}</span></span>
             <button type="button" role="switch" aria-checked={status.autoWeekly} aria-label={t.autoTitle} disabled={!reportsOn || !status.destination} onClick={() => void onToggleAuto(!status.autoWeekly)}
-              className={`relative w-12 h-7 rounded-full shrink-0 transition-colors disabled:opacity-40 ${status.autoWeekly ? 'bg-[#FFC400]' : 'bg-neutral-700'}`}>
+              className={`relative w-12 h-7 rounded-full shrink-0 transition-colors disabled:opacity-40 ${status.autoWeekly ? 'bg-[var(--primary)]' : 'bg-neutral-700'}`}>
               <motion.span layout={!reduce} transition={{ type: 'spring', stiffness: 500, damping: 32 }} className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow ${status.autoWeekly ? 'end-1' : 'start-1'}`} />
             </button>
           </div>
@@ -251,10 +251,10 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
         <motion.div key="i" {...rise(0)} className="space-y-3">
           {!analysis && (
             <div onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={(e) => { e.preventDefault(); setDrag(false); void analyze(e.dataTransfer.files?.[0]); }}
-              className={`rounded-2xl border-2 border-dashed p-8 text-center transition-colors ${drag ? 'border-[#FFC400] bg-[#FFC400]/[0.06]' : 'border-neutral-700 bg-neutral-900'}`}>
-              {busy ? <><Loader2 size={30} className="mx-auto animate-spin text-[#FFC400]" /><p className="mt-3 text-sm font-bold">{t.analyzing}</p></> : <>
-                <Upload size={30} className="mx-auto text-[#FFC400]" /><p className="mt-3 text-sm font-extrabold">{t.dropTitle}</p><p className="mt-1 text-xs text-neutral-500">{t.dropSub}</p>
-                <button type="button" onClick={() => fileRef.current?.click()} className="btn-tactile mt-4 h-11 px-6 rounded-full bg-[#FFC400] text-[#0A0A0A] text-sm font-extrabold">{t.choose}</button></>}
+              className={`rounded-2xl border-2 border-dashed p-8 text-center transition-colors ${drag ? 'border-[var(--primary)] bg-[var(--primary)]/[0.06]' : 'border-neutral-700 bg-neutral-900'}`}>
+              {busy ? <><Loader2 size={30} className="mx-auto animate-spin text-[var(--primary)]" /><p className="mt-3 text-sm font-bold">{t.analyzing}</p></> : <>
+                <Upload size={30} className="mx-auto text-[var(--primary)]" /><p className="mt-3 text-sm font-extrabold">{t.dropTitle}</p><p className="mt-1 text-xs text-neutral-500">{t.dropSub}</p>
+                <button type="button" onClick={() => fileRef.current?.click()} className="btn-tactile mt-4 h-11 px-6 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold">{t.choose}</button></>}
               <input ref={fileRef} type="file" accept=".json,.csv,application/json,text/csv" className="sr-only" onChange={(e) => { void analyze(e.target.files?.[0]); e.target.value = ''; }} />
             </div>
           )}
@@ -262,7 +262,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
           {analysis && !applied && (
             <div className={`${card} space-y-4`}>
               <div className="flex items-start gap-3">
-                <span className="w-10 h-10 shrink-0 rounded-xl bg-black border border-neutral-800 text-[#FFC400] flex items-center justify-center">{analysis.format === 'json' ? <FileJson size={18} /> : <FileSpreadsheet size={18} />}</span>
+                <span className="w-10 h-10 shrink-0 rounded-xl bg-black border border-neutral-800 text-[var(--primary)] flex items-center justify-center">{analysis.format === 'json' ? <FileJson size={18} /> : <FileSpreadsheet size={18} />}</span>
                 <span className="min-w-0 flex-1"><b className="block text-sm truncate" dir="ltr">{analysis.fileName}</b>
                   <span className="text-xs text-neutral-400">{analysis.counts.items} {t.items} · {analysis.counts.categories} {t.categories}</span></span>
                 <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${analysis.signed ? 'bg-green-500/15 text-green-400 border-green-500/30' : 'bg-amber-500/10 text-amber-300 border-amber-400/30'}`}>
@@ -271,7 +271,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
               {!analysis.signed && <p className="text-xs leading-relaxed text-amber-200/90 bg-amber-500/[0.07] border border-amber-400/25 rounded-xl p-3">{t.unsignedNote}</p>}
               {analysis.warnings.map((w, i) => <p key={i} className="flex gap-2 text-xs text-amber-200/90"><AlertTriangle size={14} className="shrink-0 mt-px" />{w}</p>)}
 
-              <div><h3 className="text-sm font-extrabold text-[#FFC400] mb-2">{t.reviewTitle}</h3>
+              <div><h3 className="text-sm font-extrabold text-[var(--primary)] mb-2">{t.reviewTitle}</h3>
                 {visibleChanges.length ? <ChangeList changes={visibleChanges} lang={lang} /> : <p className="text-xs text-neutral-500">{t.nothing}</p>}</div>
 
               {analysis.hasSettingsChanges && (
@@ -286,10 +286,10 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
               {needsWord && (
                 <div><label htmlFor="bk-confirm" className="block text-xs font-semibold text-neutral-400 mb-1.5">{t.typeToConfirm(t.confirmWord)}</label>
                   <input id="bk-confirm" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" autoCapitalize="characters"
-                    className="w-full h-12 rounded-xl bg-black border border-neutral-700 px-3 text-sm outline-none focus:border-[#FFC400] focus:ring-4 focus:ring-[#FFC400]/15" /></div>
+                    className="w-full h-12 rounded-xl bg-black border border-neutral-700 px-3 text-sm outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/15" /></div>
               )}
               <div className="flex flex-wrap gap-2.5">
-                <button type="button" disabled={!okToApply} onClick={() => void apply()} className="btn-tactile h-11 px-5 rounded-full bg-[#FFC400] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                <button type="button" disabled={!okToApply} onClick={() => void apply()} className="btn-tactile h-11 px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
                   {busy ? <><Loader2 size={16} className="animate-spin" />{t.applying}</> : <><Check size={16} strokeWidth={3} />{t.apply}</>}</button>
                 <button type="button" onClick={() => setAnalysis(null)} className="btn-tactile h-11 px-5 rounded-full border border-neutral-700 text-neutral-300 text-sm font-bold">{t.startOver}</button>
               </div>
@@ -298,7 +298,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
 
           {analysis && applied && (
             <div className={`${card} text-center py-8`}>
-              <span className="mx-auto w-14 h-14 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center"><Check size={28} strokeWidth={3} /></span>
+              <span className="mx-auto w-14 h-14 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center"><Check size={28} strokeWidth={3} /></span>
               <p className="mt-3 text-sm font-extrabold">{t.applied}</p>
               <button type="button" onClick={() => { setAnalysis(null); setApplied(false); setTab('history'); }} className="btn-tactile mt-4 h-10 px-5 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold">{t.tHistory}</button>
             </div>
@@ -319,7 +319,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
                   <span className="min-w-0 flex-1"><b className="block text-sm truncate">{isAr ? x.name.ar : x.name.en}</b>
                     <span className="text-[11px] text-neutral-500">{x.kind === 'item' ? t.item : t.category} · {rel(x.deletedAt, lang)} · {t.purge(x.purgeInDays)}</span></span>
                     <span className="flex gap-1.5 shrink-0">
-                      <button type="button" onClick={() => void doUndoTrash(x.id)} disabled={busyUndoId === x.id} className="btn-tactile h-9 px-3 rounded-full bg-[#FFC400] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1 disabled:opacity-50">{busyUndoId === x.id ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}{t.restoreItem}</button>
+                      <button type="button" onClick={() => void doUndoTrash(x.id)} disabled={busyUndoId === x.id} className="btn-tactile h-9 px-3 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1 disabled:opacity-50">{busyUndoId === x.id ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}{t.restoreItem}</button>
                     <button type="button" onClick={() => { if (sure === x.id) { setSure(null); void onDeleteForever(x.id); } else setSure(x.id); }} onBlur={() => setSure(null)}
                       className={`btn-tactile h-9 px-3 rounded-full border text-xs font-bold ${sure === x.id ? 'border-red-400 bg-red-500/15 text-red-300' : 'border-neutral-700 text-neutral-400'}`}>{sure === x.id ? t.sure : <Trash2 size={13} aria-label={t.deleteForever} />}</button>
                   </span>
@@ -337,11 +337,11 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
               <button type="button" onClick={() => setModal(null)} aria-label={t.close} className="w-9 h-9 rounded-full border border-neutral-700 flex items-center justify-center text-neutral-400"><X size={16} /></button></div>
             <p className="mt-1 text-xs text-neutral-400">{fmtDate(modal.v.createdAt, lang)} · {t.src[modal.v.source]}</p>
             <p className="mt-4 mb-2 text-xs font-semibold text-neutral-300">{t.restoreSub}</p>
-            {modal.changes === null ? <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-[#FFC400]" /></div>
+            {modal.changes === null ? <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-[var(--primary)]" /></div>
               : modal.changes.length ? <ChangeList changes={modal.changes} lang={lang} /> : <p className="text-xs text-neutral-500 py-3">{t.noChanges}</p>}
             <p className="mt-4 flex gap-2 rounded-xl bg-green-500/[0.07] border border-green-500/25 p-3 text-xs text-green-300"><ShieldCheck size={15} className="shrink-0 mt-px" />{t.safetyCopy}</p>
             <div className="mt-4 flex gap-2.5">
-              <button type="button" disabled={busy || modal.changes === null} onClick={() => void doRestore()} className="btn-tactile flex-1 h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center justify-center gap-2 disabled:opacity-50">
+              <button type="button" disabled={busy || modal.changes === null} onClick={() => void doRestore()} className="btn-tactile flex-1 h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center justify-center gap-2 disabled:opacity-50">
                 {busy ? <><Loader2 size={16} className="animate-spin" />{t.restoring}</> : <><RotateCcw size={15} />{t.confirmRestore}</>}</button>
               <button type="button" disabled={busy} onClick={() => setModal(null)} className="btn-tactile h-12 px-5 rounded-full border border-neutral-700 text-neutral-300 text-sm font-bold">{t.cancel}</button>
             </div>

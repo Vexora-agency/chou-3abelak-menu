@@ -21,7 +21,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div>
-        <h2 className="text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
+        <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
           {isAr ? 'إعدادات الطلبات' : 'Ordering System'}
         </h2>
         <p className="text-[11px] text-neutral-500 mt-0.5">
@@ -50,7 +50,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
           </span>
           <span
             className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${
-              ordering.minOrderEnabled ? 'bg-[#FFC400]' : 'bg-neutral-700'
+              ordering.minOrderEnabled ? 'bg-[var(--primary)]' : 'bg-neutral-700'
             }`}
           >
             <span
@@ -70,7 +70,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
               step="any"
               value={ordering.minOrder}
               onChange={(e) => onUpdate((prev) => ({ ...prev, minOrder: Number(e.target.value) }))}
-              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
             />
           </div>
         )}
@@ -97,7 +97,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
           </span>
           <span
             className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${
-              ordering.deliveryFeeEnabled ? 'bg-[#FFC400]' : 'bg-neutral-700'
+              ordering.deliveryFeeEnabled ? 'bg-[var(--primary)]' : 'bg-neutral-700'
             }`}
           >
             <span
@@ -117,7 +117,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
               step="any"
               value={ordering.deliveryFee}
               onChange={(e) => onUpdate((prev) => ({ ...prev, deliveryFee: Number(e.target.value) }))}
-              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
             />
           </div>
         )}
@@ -167,7 +167,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
                   maxLength={160}
                   onChange={(e) => onUpdate((prev) => ({ ...prev, pausedMessage: { ...prev.pausedMessage, en: e.target.value } }))}
                   placeholder="We are not taking orders right now…"
-                  className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+                  className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
                 />
               </div>
               <div>
@@ -179,7 +179,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
                   maxLength={160}
                   onChange={(e) => onUpdate((prev) => ({ ...prev, pausedMessage: { ...prev.pausedMessage, ar: e.target.value } }))}
                   placeholder="لا نستقبل الطلبات حالياً…"
-                  className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+                  className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
                 />
               </div>
             </div>
@@ -206,7 +206,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
           </span>
           <span
             className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${
-              ordering.acceptWhenClosed ? 'bg-[#FFC400]' : 'bg-neutral-700'
+              ordering.acceptWhenClosed ? 'bg-[var(--primary)]' : 'bg-neutral-700'
             }`}
           >
             <span

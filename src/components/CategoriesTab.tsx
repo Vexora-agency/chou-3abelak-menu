@@ -31,13 +31,13 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
   return (
     <div className="space-y-4 stagger">
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
+        <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
           {categories.length} {isAr ? 'أقسام مضافة' : 'Categories'}
         </h2>
         <button
           type="button"
           onClick={onAdd}
-          className="btn-tactile px-3.5 py-1.5 rounded-full bg-[#FFC400] text-[#0A0A0A] font-bold text-xs flex items-center gap-1"
+          className="btn-tactile px-3.5 py-1.5 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-xs flex items-center gap-1"
         >
           <Plus size={14} />
           <span>{isAr ? 'إضافة قسم جديد' : 'Add Category'}</span>
@@ -148,7 +148,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
                         c.id === cat.id ? { ...c, layout: l } : c
                       ))
                     }
-                    className={`px-3 h-7 rounded-full text-[11px] font-bold transition-colors ${active ? 'bg-[#FFC400] text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
+                    className={`px-3 h-7 rounded-full text-[11px] font-bold transition-colors ${active ? 'bg-[var(--primary)] text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
                   >
                     {l === 'cards' ? (isAr ? 'بطاقات' : 'Cards') : l === 'list' ? (isAr ? 'قائمة' : 'List') : (isAr ? 'مدمج' : 'Compact')}
                   </button>

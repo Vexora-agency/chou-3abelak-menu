@@ -38,7 +38,7 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
           onClick={onSend}
           disabled={orderBlocked}
           aria-describedby={orderBlocked ? 'order-status-line' : undefined}
-          className={`btn-tactile w-full rounded-full font-black text-sm flex items-center justify-center gap-2 shadow-lg ${orderBlocked ? 'min-h-12 h-auto py-2.5 px-4 text-xs leading-snug bg-neutral-700 text-neutral-300 cursor-not-allowed' : 'h-12 bg-[#FFC400] text-[#0A0A0A] hover:bg-[#ffd033]'}`}
+          className={`btn-tactile w-full rounded-full font-black text-sm flex items-center justify-center gap-2 shadow-lg ${orderBlocked ? 'min-h-12 h-auto py-2.5 px-4 text-xs leading-snug bg-neutral-700 text-neutral-300 cursor-not-allowed' : 'h-12 bg-[var(--primary)] text-[#0A0A0A] hover:brightness-110'}`}
         >
           {orderBlocked ? (
             <span>{blockedMsg} {reopenText}</span>
@@ -63,7 +63,7 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
         </button>
         <p className={`text-center text-[11px] leading-relaxed ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
           {isAr ? 'اسمك وهاتفك وعنوانك تُستخدم فقط لتجهيز طلبك. ' : 'Your name, phone and address are used only to prepare your order. '}
-          <a href="privacy" className="underline underline-offset-2 font-bold hover:text-[#FFC400]">
+          <a href="privacy" className="underline underline-offset-2 font-bold hover:text-[var(--primary)]">
             {isAr ? 'الخصوصية' : 'Privacy'}
           </a>
         </p>

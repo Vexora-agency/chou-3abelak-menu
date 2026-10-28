@@ -26,7 +26,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
   const isAr = lang === 'ar';
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-      <h2 className="text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
+      <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
         {isAr ? 'بيانات المطعم' : 'Restaurant Identity'}
       </h2>
 
@@ -37,7 +37,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             type="text"
             value={name.en}
             onChange={(e) => onUpdate((prev) => ({ ...prev, name: { ...prev.name, en: e.target.value } }))}
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
         <div>
@@ -47,7 +47,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             dir="rtl"
             value={name.ar}
             onChange={(e) => onUpdate((prev) => ({ ...prev, name: { ...prev.name, ar: e.target.value } }))}
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
       </div>
@@ -62,7 +62,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             type="text"
             value={tagline.en}
             onChange={(e) => onUpdate((prev) => ({ ...prev, tagline: { ...prev.tagline, en: e.target.value } }))}
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
         <div>
@@ -72,7 +72,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             dir="rtl"
             value={tagline.ar}
             onChange={(e) => onUpdate((prev) => ({ ...prev, tagline: { ...prev.tagline, ar: e.target.value } }))}
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
       </div>
@@ -87,7 +87,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             rows={2}
             value={about.en}
             onChange={(e) => onUpdate((prev) => ({ ...prev, about: { ...prev.about, en: e.target.value } }))}
-            className="w-full px-3 py-2 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+            className="w-full px-3 py-2 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
         <div>
@@ -97,7 +97,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             dir="rtl"
             value={about.ar}
             onChange={(e) => onUpdate((prev) => ({ ...prev, about: { ...prev.about, ar: e.target.value } }))}
-            className="w-full px-3 py-2 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+            className="w-full px-3 py-2 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
       </div>
@@ -109,7 +109,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             type="text"
             value={phone}
             onChange={(e) => onUpdate((prev) => ({ ...prev, phone: e.target.value }))}
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
         <div>
@@ -119,7 +119,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             value={whatsapp}
             onChange={(e) => onUpdate((prev) => ({ ...prev, whatsapp: e.target.value }))}
             placeholder="201000000000"
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
       </div>
@@ -130,7 +130,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
           type="text"
           value={mapUrl}
           onChange={(e) => onUpdate((prev) => ({ ...prev, mapUrl: e.target.value }))}
-          className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+          className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
         />
       </div>
 
@@ -143,7 +143,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             value={currency.en}
             onChange={(e) => onUpdate((prev) => ({ ...prev, currency: { ...prev.currency, en: e.target.value } }))}
             placeholder="LBP"
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
         <div>
@@ -153,7 +153,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             value={currency.ar}
             onChange={(e) => onUpdate((prev) => ({ ...prev, currency: { ...prev.currency, ar: e.target.value } }))}
             placeholder="ل.ل"
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[#FFC400]"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
       </div>

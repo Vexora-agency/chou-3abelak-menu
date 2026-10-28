@@ -20,7 +20,7 @@ export const digits = (s: string) => s.replace(/\D/g, '');
 export const loc = (lang: 'en' | 'ar') => (lang === 'ar' ? 'ar-u-nu-latn' : 'en-US');
 
 export const STATUS_STYLE: Record<OrderStatus, string> = {
-  new: 'bg-[#FFC400] text-[#0A0A0A] border border-[#FFC400]',
+  new: 'bg-[var(--primary)] text-[#0A0A0A] border border-[var(--primary)]',
   confirmed: 'bg-white/10 text-white border border-white/25',
   completed: 'bg-green-500/15 text-green-400 border border-green-500/30',
   cancelled: 'bg-red-500/10 text-red-400 border border-red-500/30',

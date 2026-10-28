@@ -2,6 +2,10 @@
   --black: #0A0A0A;
   --yellow: #FFC400;
   --white: #FFFFFF;
+  /* White-label theme (Phase 2): driven by theme.config.ts via applyTheme().
+     --primary is the single brand token — never hardcode #FFC400 in components. */
+  --primary: #FFC400;
+  --primary-foreground: #0A0A0A;
   --gray-card: #141414;
   --gray-border: #262626;
   --gray-muted: #8A8A8A;
@@ -26,7 +30,7 @@ body {
 
 /* Focus visible styles */
 button:focus-visible, a:focus-visible, input:focus-visible {
-  outline: 3px solid #FFC400;
+  outline: 3px solid var(--primary);
   outline-offset: 2px;
 }
 

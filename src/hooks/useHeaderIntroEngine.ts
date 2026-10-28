@@ -39,6 +39,11 @@ export function useHeaderIntroEngine(
     const smokeParticles: SmokeParticle[] = [];
     const sparkParticles: SparkParticle[] = [];
 
+    // Brand ember color resolved once per intro run (canvas fillStyle cannot
+    // use var()). Falls back to the theme default if the variable is missing.
+    const brandPrimary =
+      getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#FFC400';
+
     video.defaultMuted = true;
     video.muted = true;
     video.playsInline = true;
@@ -145,7 +150,7 @@ export function useHeaderIntroEngine(
               size: 1 + Math.random() * 1.6,
               alpha: 0.85 + Math.random() * 0.15,
               decay: 0.015 + Math.random() * 0.015,
-              color: Math.random() > 0.3 ? '#FFC400' : '#FFFFFF',
+              color: Math.random() > 0.3 ? brandPrimary : '#FFFFFF',
             });
           }
         }

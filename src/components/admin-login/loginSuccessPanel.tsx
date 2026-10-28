@@ -21,7 +21,7 @@ export function LoginSuccessPanel({ t, reduce }: LoginSuccessPanelProps): React.
         {!reduce && (
           <motion.span
             aria-hidden="true"
-            className="absolute inset-0 rounded-full bg-[#FFC400]/30"
+            className="absolute inset-0 rounded-full bg-[var(--primary)]/30"
             initial={{ scale: 1, opacity: 0.7 }}
             animate={{ scale: 2.2, opacity: 0 }}
             transition={{ duration: 1.1, repeat: Infinity, ease: 'easeOut' }}
@@ -31,7 +31,7 @@ export function LoginSuccessPanel({ t, reduce }: LoginSuccessPanelProps): React.
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-          className="relative w-20 h-20 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center shadow-[0_0_60px_rgba(255,196,0,0.45)]"
+          className="relative w-20 h-20 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center shadow-[0_0_60px_color-mix(in_srgb,var(--primary)_45%,transparent)]"
         >
           <svg viewBox="0 0 24 24" className="w-10 h-10" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <motion.path
@@ -47,7 +47,7 @@ export function LoginSuccessPanel({ t, reduce }: LoginSuccessPanelProps): React.
       <p className="text-sm text-white/60">{t.opening}</p>
       <div className="w-40 h-1 rounded-full bg-white/10 overflow-hidden" aria-hidden="true">
         <motion.div
-          className="h-full rounded-full bg-[#FFC400]"
+          className="h-full rounded-full bg-[var(--primary)]"
           initial={{ width: reduce ? '100%' : '0%' }}
           animate={{ width: '100%' }}
           transition={{ duration: 1.3, ease: 'easeInOut' }}

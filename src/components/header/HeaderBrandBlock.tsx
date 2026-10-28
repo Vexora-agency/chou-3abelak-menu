@@ -107,15 +107,15 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
 
       {/* Tagline flanked by hairlines */}
       <motion.div {...rise(intro)} className="mt-2 flex items-center justify-center gap-3">
-        <span className="h-px w-8 sm:w-12 bg-gradient-to-r from-transparent to-[#FFC400]/70" aria-hidden="true" />
+        <span className="h-px w-8 sm:w-12 bg-gradient-to-r from-transparent to-[var(--primary)]/70" aria-hidden="true" />
         <p
-          className={`font-semibold text-[#FFC400] ${
+          className={`font-semibold text-[var(--primary)] ${
             isAr ? 'text-[14px] sm:text-[15px] tracking-normal' : 'text-[12px] sm:text-[13px] tracking-[3px] uppercase'
           }`}
         >
           {taglineOrDefault(menu.settings.tagline, lang)}
         </p>
-        <span className="h-px w-8 sm:w-12 bg-gradient-to-l from-transparent to-[#FFC400]/70" aria-hidden="true" />
+        <span className="h-px w-8 sm:w-12 bg-gradient-to-l from-transparent to-[var(--primary)]/70" aria-hidden="true" />
       </motion.div>
 
       {/* Live Operational Status Pill */}
@@ -134,9 +134,9 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
           <>
             <span className="relative flex h-2 w-2" aria-hidden="true">
               {status.isOpen && (
-                <span className="absolute inline-flex h-full w-full rounded-full bg-[#FFC400] opacity-70 animate-ping" />
+                <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--primary)] opacity-70 animate-ping" />
               )}
-              <span className={`relative inline-flex h-2 w-2 rounded-full ${status.isOpen ? 'bg-[#FFC400]' : 'bg-red-500'}`} />
+              <span className={`relative inline-flex h-2 w-2 rounded-full ${status.isOpen ? 'bg-[var(--primary)]' : 'bg-red-500'}`} />
             </span>
             <span>{isAr ? status.label.ar : status.label.en}</span>
           </>

@@ -11,4 +11,4 @@
 5. `npm run build` → deploy Pages → smoke test: menu loads, order 403/200, admin login, reports 404 on starter.
 6. Backend untouched. Never `if (client === …)` — use config flags.
 
-Phase 2 note: ~100 legacy `bg-[#FFC400]` hardcodes remain (App wired, rest queued). New code MUST use `themeConfig`/`components/ui`. Codemod: `bg-[#FFC400]` → `bg-[var(--yellow)]`, `bg-[#0A0A0A]` → `bg-[var(--black)]`.
+Phase 2 note: brand codemod complete — `theme.config.ts primary` drives the whole site via `var(--primary)`. Intentionally left as-is: `#8a6d00` light-mode tints, canvas particle fallback, `public/privacy.html` static page (own `<style>`, future work).

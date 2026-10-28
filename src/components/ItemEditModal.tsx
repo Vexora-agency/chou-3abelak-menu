@@ -46,7 +46,7 @@ export const ItemEditModal: React.FC<ItemEditModalProps> = ({
     onClick={() => onClose()}
     className="fixed inset-0 bg-black/70"
   />
-  <div className="relative z-10 w-full max-w-[480px] bg-[#141414] border-2 border-[#FFC400] rounded-2xl p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl stagger">
+  <div className="relative z-10 w-full max-w-[480px] bg-[#141414] border-2 border-[var(--primary)] rounded-2xl p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl stagger">
     <h3 className="text-lg font-black">
       {isNew ? (isAr ? 'إضافة وجبة جديدة' : 'Add New Item') : (isAr ? 'تعديل الوجبة' : 'Edit Item')}
     </h3>
@@ -78,7 +78,7 @@ export const ItemEditModal: React.FC<ItemEditModalProps> = ({
       <button
         type="button"
         onClick={onSave}
-        className="btn-tactile flex-1 h-11 rounded-full bg-[#FFC400] text-[#0A0A0A] font-bold text-xs"
+        className="btn-tactile flex-1 h-11 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-xs"
       >
         {isAr ? 'حفظ العنصر' : 'Save Item'}
       </button>

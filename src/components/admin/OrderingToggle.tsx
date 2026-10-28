@@ -87,7 +87,7 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
               <button key={k} type="button" disabled={busy} aria-pressed={active}
                 onClick={() => { if (k === 'off') { if (!paused) setChoosing((v) => !v); } else if (paused) void doResume(); }}
                 className={`relative px-4 h-9 rounded-full text-xs font-bold transition-colors ${active ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}>
-                {active && <motion.span layoutId="ordering-seg" className={`absolute inset-0 rounded-full ${paused ? 'bg-amber-300' : 'bg-[#FFC400]'}`} transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+                {active && <motion.span layoutId="ordering-seg" className={`absolute inset-0 rounded-full ${paused ? 'bg-amber-300' : 'bg-[var(--primary)]'}`} transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
                 <span className="relative z-10">{label}</span>
               </button>
             );
@@ -104,7 +104,7 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
               <p className="text-xs font-semibold text-neutral-300 mb-2.5">{t.pauseFor}</p>
               <div className="flex flex-wrap gap-2">
                 {chips.map(([label, m]) => (
-                  <button key={label} type="button" disabled={busy} onClick={() => void doPause(m)} className="btn-tactile h-10 px-4 rounded-full border border-neutral-700 bg-black text-xs font-bold text-neutral-100 hover:border-[#FFC400] hover:text-[#FFC400] inline-flex items-center gap-1.5 disabled:opacity-50">
+                  <button key={label} type="button" disabled={busy} onClick={() => void doPause(m)} className="btn-tactile h-10 px-4 rounded-full border border-neutral-700 bg-black text-xs font-bold text-neutral-100 hover:border-[var(--primary)] hover:text-[var(--primary)] inline-flex items-center gap-1.5 disabled:opacity-50">
                     {busy ? <Loader2 size={13} className="animate-spin" /> : null}{label}
                   </button>
                 ))}
@@ -126,7 +126,7 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
                 </span>
                 {pct !== null && <span className="mt-2 block h-1.5 rounded-full bg-black overflow-hidden"><motion.span className="block h-full rounded-full bg-amber-300" animate={{ width: `${pct}%` }} transition={{ duration: 1, ease: 'linear' }} /></span>}
               </span>
-              <button type="button" disabled={busy} onClick={() => void doResume()} className="btn-tactile h-10 px-4 rounded-full bg-[#FFC400] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 disabled:opacity-60">
+              <button type="button" disabled={busy} onClick={() => void doResume()} className="btn-tactile h-10 px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 disabled:opacity-60">
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} strokeWidth={3} />}{t.resume}
               </button>
             </div>

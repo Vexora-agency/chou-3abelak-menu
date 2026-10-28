@@ -41,7 +41,7 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div>
-        <h2 className="text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
+        <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
           {isAr ? 'مكتبة الميزات' : 'Features Library'}
         </h2>
         <p className="text-[11px] text-neutral-500 mt-0.5">
@@ -201,7 +201,7 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                         ],
                       }))
                     }
-                    className="btn-tactile px-3 py-1.5 rounded-full border border-neutral-700 text-neutral-300 text-[11px] font-bold hover:border-[#FFC400] hover:text-[#FFC400]"
+                    className="btn-tactile px-3 py-1.5 rounded-full border border-neutral-700 text-neutral-300 text-[11px] font-bold hover:border-[var(--primary)] hover:text-[var(--primary)]"
                   >
                     <Plus size={12} className="inline me-1" />
                     {isAr ? 'إضافة هنا' : 'Add here'}

@@ -42,7 +42,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
           placeholder={isAr ? 'مثال: أحمد محمد' : 'e.g. John Doe'}
           maxLength={40}
-          className={`w-full h-11 px-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#FFC400] transition-colors ${
+          className={`w-full h-11 px-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
             darkMode
               ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-500'
               : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400 shadow-xs'
@@ -62,7 +62,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
           placeholder={isAr ? 'مثال: 01012345678' : '+20 10 1234 5678'}
           maxLength={20}
-          className={`w-full h-11 px-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#FFC400] transition-colors ${
+          className={`w-full h-11 px-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
             darkMode
               ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-500'
               : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400 shadow-xs'
@@ -83,7 +83,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
             placeholder={isAr ? 'المنطقة والشارع ورقم العمارة… أو حدد موقعك بالدبوس' : 'Area, street, building… or pin your location'}
             maxLength={200}
-            className={`w-full h-11 px-3.5 pe-11 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#FFC400] transition-colors ${
+            className={`w-full h-11 px-3.5 pe-11 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
               darkMode
                 ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-500'
                 : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400 shadow-xs'
@@ -97,8 +97,8 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               aria-label={isAr ? 'افتح الخريطة لتحديد موقعك' : 'Open the map to pin your location'}
               className={`absolute end-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
                 darkMode
-                  ? 'text-[#FFC400] hover:bg-[#FFC400]/10'
-                  : 'text-[#8a6d00] hover:bg-[#FFC400]/15'
+                  ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
+                  : 'text-[#8a6d00] hover:bg-[var(--primary)]/15'
               }`}
             >
               <MapPin size={17} />
@@ -117,7 +117,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               href={`https://www.google.com/maps?q=${location.lat},${location.lng}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 underline underline-offset-2 hover:text-[#FFC400]"
+              className="shrink-0 underline underline-offset-2 hover:text-[var(--primary)]"
             >
               {isAr ? 'الخريطة' : 'Maps'}
             </a>
@@ -162,7 +162,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           onChange={(e) => setCustomer({ ...customer, notes: e.target.value })}
           placeholder={isAr ? 'بدون بصل، صوص إضافي...' : 'No onions, extra sauce...'}
           maxLength={200}
-          className={`w-full h-11 px-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[#FFC400] transition-colors ${
+          className={`w-full h-11 px-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
             darkMode
               ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-500'
               : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400 shadow-xs'
@@ -191,7 +191,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           type="checkbox"
           checked={customer.remember}
           onChange={(e) => setCustomer({ ...customer, remember: e.target.checked })}
-          className="w-4 h-4 rounded text-[#FFC400] focus:ring-[#FFC400]"
+          className="w-4 h-4 rounded text-[var(--primary)] focus:ring-[var(--primary)]"
         />
         <label
           htmlFor="remember-details"

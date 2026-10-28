@@ -121,7 +121,7 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
               ? (isAr ? 'الإجمالي الكلي:' : 'Total:')
               : (isAr ? 'المجموع الفرعي:' : 'Subtotal:')}
           </span>
-          <span className="text-base px-3.5 py-1 rounded-full bg-[#FFC400] text-[#0A0A0A] font-black shadow-xs">
+          <span className="text-base px-3.5 py-1 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black shadow-xs">
             {formatPrice(grandTotal, currency)}
           </span>
         </div>

@@ -30,7 +30,7 @@ export const FeatureSectionFooter: React.FC<FeatureSectionFooterProps> = ({
               ],
             }))
           }
-          className="btn-tactile px-3.5 h-10 rounded-xl bg-[#FFC400] text-[#0A0A0A] text-xs font-bold flex items-center gap-1 shadow-md"
+          className="btn-tactile px-3.5 h-10 rounded-xl bg-[var(--primary)] text-[#0A0A0A] text-xs font-bold flex items-center gap-1 shadow-md"
         >
           <Plus size={14} />
           <span>{isAr ? 'إضافة قسم' : 'Add section'}</span>

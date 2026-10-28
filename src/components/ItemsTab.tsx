@@ -86,7 +86,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
         <button
           type="button"
           onClick={onAdd}
-          className="btn-tactile px-3.5 py-2 rounded-full bg-[#FFC400] text-[#0A0A0A] font-bold text-xs flex items-center gap-1 shadow-md"
+          className="btn-tactile px-3.5 py-2 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-xs flex items-center gap-1 shadow-md"
         >
           <Plus size={14} />
           <span>{isAr ? 'إضافة وجبة' : 'Add Item'}</span>
@@ -125,22 +125,22 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                   </span>
                   {/* Badges — same icons as the customer menu */}
                   {item.badges.includes('new') && (
-                    <span title={isAr ? 'جديد' : 'New'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[#FFC400] border border-[#FFC400]">
+                    <span title={isAr ? 'جديد' : 'New'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]">
                       <Sparkles size={10} />
                     </span>
                   )}
                   {item.badges.includes('spicy') && (
-                    <span title={isAr ? 'حار' : 'Spicy'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[#FFC400] border border-[#FFC400]">
+                    <span title={isAr ? 'حار' : 'Spicy'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]">
                       <Flame size={10} />
                     </span>
                   )}
                   {item.badges.includes('top') && (
-                    <span title={isAr ? 'الأكثر طلباً' : 'Top'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[#FFC400] border border-[#FFC400]">
+                    <span title={isAr ? 'الأكثر طلباً' : 'Top'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]">
                       <Award size={10} />
                     </span>
                   )}
                   {item.featured && (
-                    <span title={isAr ? 'مميز — يظهر في الكاروسيل' : 'Featured — shows in the carousel'} className="text-[10px] bg-[#FFC400] text-black font-extrabold px-1.5 py-0.5 rounded">
+                    <span title={isAr ? 'مميز — يظهر في الكاروسيل' : 'Featured — shows in the carousel'} className="text-[10px] bg-[var(--primary)] text-black font-extrabold px-1.5 py-0.5 rounded">
                       ★
                     </span>
                   )}
@@ -196,7 +196,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                 <button
                   type="button"
                   onClick={() => onDuplicate(item)}
-                  className="p-1.5 text-neutral-400 hover:text-[#FFC400]"
+                  className="p-1.5 text-neutral-400 hover:text-[var(--primary)]"
                   title="Duplicate"
                 >
                   <Copy size={14} />

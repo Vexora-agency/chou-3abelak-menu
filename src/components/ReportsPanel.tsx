@@ -137,9 +137,9 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
       {/* Email settings */}
       <motion.div {...rise(0)} className={card}>
         <div className="flex items-center justify-between gap-3">
-          <h2 className={`text-sm font-extrabold text-[#FFC400] ${isAr ? '' : 'uppercase tracking-wider'}`}>{t.emailTitle}</h2>
+          <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>{t.emailTitle}</h2>
           <button type="button" role="switch" aria-checked={enabled} aria-label={t.enable} onClick={() => setEnabled((v) => !v)}
-            className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${enabled ? 'bg-[#FFC400]' : 'bg-neutral-700'}`}>
+            className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${enabled ? 'bg-[var(--primary)]' : 'bg-neutral-700'}`}>
             <motion.span layout={!reduce} transition={{ type: 'spring', stiffness: 500, damping: 32 }}
               className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow ${enabled ? 'end-1' : 'start-1'}`} />
           </button>
@@ -160,12 +160,12 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
               <Mail size={17} className="pointer-events-none absolute start-3.5 top-1/2 -translate-y-1/2 text-neutral-500" aria-hidden="true" />
               <input id="report-email" type="email" inputMode="email" autoComplete="email" dir="ltr" value={email} disabled={!enabled}
                 onChange={(e) => setEmail(e.target.value)} placeholder="owner@yourrestaurant.com" aria-invalid={showErr}
-                className={`w-full h-12 rounded-xl bg-black border ps-10 pe-3 text-sm text-white placeholder:text-neutral-600 outline-none transition-[border-color,box-shadow] focus:border-[#FFC400] focus:ring-4 focus:ring-[#FFC400]/15 ${showErr ? 'border-red-400/70' : 'border-neutral-700'} ${isAr ? 'text-right' : ''}`} />
+                className={`w-full h-12 rounded-xl bg-black border ps-10 pe-3 text-sm text-white placeholder:text-neutral-600 outline-none transition-[border-color,box-shadow] focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/15 ${showErr ? 'border-red-400/70' : 'border-neutral-700'} ${isAr ? 'text-right' : ''}`} />
             </div>
             {showErr ? <p className="mt-1.5 text-xs text-red-400">{t.invalid}</p> : <p className="mt-1.5 text-[11px] text-neutral-500">{t.emailHint}</p>}
             {status === 'pending' && !dirty && (
               <button type="button" disabled={busy === 'resend'} onClick={() => void resend()}
-                className="mt-2 text-xs font-bold text-[#FFC400] hover:underline underline-offset-4">{t.resend}</button>
+                className="mt-2 text-xs font-bold text-[var(--primary)] hover:underline underline-offset-4">{t.resend}</button>
             )}
           </div>
 
@@ -175,24 +175,24 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
               {(['en', 'ar'] as const).map((c) => (
                 <button key={c} type="button" onClick={() => setMailLang(c)} aria-pressed={mailLang === c} disabled={!enabled}
                   className={`relative px-4 h-8 rounded-full text-xs font-bold transition-colors ${mailLang === c ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}>
-                  {mailLang === c && <motion.span layoutId="rep-lang" className="absolute inset-0 rounded-full bg-[#FFC400]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+                  {mailLang === c && <motion.span layoutId="rep-lang" className="absolute inset-0 rounded-full bg-[var(--primary)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
                   <span className="relative z-10">{c === 'en' ? 'English' : 'العربية'}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          <p className="flex items-start gap-2 text-xs text-neutral-400"><CalendarClock size={15} className="mt-px shrink-0 text-[#FFC400]" />{nextInfo}</p>
+          <p className="flex items-start gap-2 text-xs text-neutral-400"><CalendarClock size={15} className="mt-px shrink-0 text-[var(--primary)]" />{nextInfo}</p>
 
           <div className="flex flex-wrap gap-2.5">
             <button type="button" onClick={() => void save()} disabled={!dirty || busy === 'save'}
-              className="btn-tactile h-11 px-5 rounded-full bg-[#FFC400] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+              className="btn-tactile h-11 px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
               {busy === 'save' ? <><Loader2 size={16} className="animate-spin" />{t.saving}</> : <><Check size={16} strokeWidth={3} />{t.save}</>}
             </button>
             <button type="button" disabled={status !== 'verified' || dirty || busy === 'test'}
               onClick={() => void sendTest()}
               className="btn-tactile h-11 px-5 rounded-full border border-neutral-700 text-neutral-200 text-sm font-bold inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
-              {busy === 'test' ? <><Loader2 size={16} className="animate-spin" />{t.testing}</> : <><Send size={15} className="text-[#FFC400]" />{t.test}</>}
+              {busy === 'test' ? <><Loader2 size={16} className="animate-spin" />{t.testing}</> : <><Send size={15} className="text-[var(--primary)]" />{t.test}</>}
             </button>
           </div>
 
@@ -210,17 +210,17 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
 
       {/* Reports list */}
       <motion.div {...rise(0.08)} className={card}>
-        <h2 className={`text-sm font-extrabold text-[#FFC400] ${isAr ? '' : 'uppercase tracking-wider'}`}>{t.reportsTitle}</h2>
+        <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>{t.reportsTitle}</h2>
         <div className="mt-3 space-y-2">
           {reports.length === 0 && <p className="text-xs text-neutral-500 py-4">{t.noReports}</p>}
           {shown.map((r, i) => (
             <motion.div key={r.month} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 + i * 0.04, duration: 0.4 }}
-              className={`rounded-xl border p-3 flex items-center gap-3 ${r.inProgress ? 'border-[#FFC400]/40 bg-[#FFC400]/[0.05]' : 'border-neutral-800 bg-black/40'}`}>
-              <span className="shrink-0 w-10 h-10 rounded-xl bg-black border border-neutral-800 text-[#FFC400] flex items-center justify-center"><FileText size={18} /></span>
+              className={`rounded-xl border p-3 flex items-center gap-3 ${r.inProgress ? 'border-[var(--primary)]/40 bg-[var(--primary)]/[0.05]' : 'border-neutral-800 bg-black/40'}`}>
+              <span className="shrink-0 w-10 h-10 rounded-xl bg-black border border-neutral-800 text-[var(--primary)] flex items-center justify-center"><FileText size={18} /></span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2 flex-wrap">
                   <b className="text-sm">{r.inProgress ? t.thisMonth : monthName(r.month, lang)}</b>
-                  {r.inProgress ? <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FFC400] text-[#0A0A0A]">{t.inProgress}</span>
+                  {r.inProgress ? <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[var(--primary)] text-[#0A0A0A]">{t.inProgress}</span>
                     : r.emailedAt ? <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-400"><Check size={11} strokeWidth={3} />{t.emailed(new Date(r.emailedAt).toLocaleDateString(loc(lang), { day: 'numeric', month: 'short' }))}</span>
                     : r.emailStatus === 'failed' ? <span className="text-[10px] font-bold text-red-400">{t.failed}</span>
                     : <span className="text-[10px] font-bold text-neutral-500">{t.notEmailed}</span>}
@@ -230,7 +230,7 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
                 </span>
               </span>
               <button type="button" disabled={!r.csvAvailable} onClick={() => onDownload(r.month)} aria-label={`${t.csv} ${monthName(r.month, lang)}`}
-                className="btn-tactile shrink-0 h-10 px-3.5 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5 hover:border-[#FFC400] hover:text-[#FFC400] disabled:opacity-40">
+                className="btn-tactile shrink-0 h-10 px-3.5 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5 hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40">
                 <Download size={14} />{t.csv}
               </button>
             </motion.div>
@@ -243,7 +243,7 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
 
       {/* Retention */}
       <motion.div {...rise(0.16)} className={card}>
-        <h2 className={`text-sm font-extrabold text-[#FFC400] ${isAr ? '' : 'uppercase tracking-wider'}`}>{t.retTitle}</h2>
+        <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>{t.retTitle}</h2>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { icon: Clock, a: t.ret1, b: t.ret1d(retention.piiDays) },
@@ -251,7 +251,7 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
             { icon: FileText, a: t.ret3, b: t.ret3d(retention.reportMonths) },
           ].map((s, i) => (
             <div key={i} className="flex sm:flex-col items-center sm:items-start gap-3 rounded-xl bg-black/40 border border-neutral-800 p-3">
-              <span className="w-9 h-9 rounded-xl bg-[#FFC400]/10 text-[#FFC400] flex items-center justify-center shrink-0"><s.icon size={17} /></span>
+              <span className="w-9 h-9 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0"><s.icon size={17} /></span>
               <span><span className="block text-[13px] font-bold">{s.a}</span><span className="block text-xs text-neutral-400 mt-0.5">{s.b}</span></span>
             </div>
           ))}

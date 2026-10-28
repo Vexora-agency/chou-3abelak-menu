@@ -17,7 +17,7 @@ export const SmartBadgesSection: React.FC<SmartBadgesSectionProps> = ({
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div>
-        <h2 className="text-sm font-extrabold text-[#FFC400] uppercase tracking-wider">
+        <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
           {isAr ? 'الشارات الذكية' : 'Smart Badges'}
         </h2>
         <p className="text-[11px] text-neutral-500 mt-0.5">

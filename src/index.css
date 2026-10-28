@@ -1,4 +1,14 @@
 @import "tailwindcss";
+
+/* Tailwind v4 scans every text file for class candidates — docs and notes can
+   contain literal arbitrary-value examples that would otherwise emit dead
+   brand rules into the production CSS. Exclude non-code paths so dist only
+   carries utilities actually used by the UI. */
+@source not "../docs";
+@source not "../.opencode";
+@source not "../scripts";
+@source not "../REORGANIZATION_PLAN.md";
+
 @import "./styles/base.css";
 @import "./styles/animations.css";
 @import "./styles/components.css";

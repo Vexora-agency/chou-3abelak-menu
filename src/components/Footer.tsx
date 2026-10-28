@@ -62,7 +62,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
         <button
           type="button"
           onClick={scrollToTop}
-          className="btn-tactile absolute right-5 sm:right-8 -top-6 w-12 h-12 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center shadow-lg hover:bg-[#ffd033] border-4 border-[#0A0A0A]"
+          className="btn-tactile absolute right-5 sm:right-8 -top-6 w-12 h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center shadow-lg hover:brightness-110 border-4 border-[#0A0A0A]"
           aria-label={isAr ? 'العودة لأعلى الصفحة' : 'Back to top'}
         >
           <ArrowUp size={20} className="stroke-[2.5]" />
@@ -88,29 +88,29 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
 
           {/* Col 2: Restaurant Hours & Location */}
           <div className="space-y-3.5 text-xs text-neutral-300">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#FFC400] mb-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--primary)] mb-2">
               {isAr ? 'معلومات المطعم' : 'Store Information'}
             </h3>
 
             <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-full bg-[#1C1C1C] text-[#FFC400] flex items-center justify-center flex-shrink-0">
+              <span className="w-8 h-8 rounded-full bg-[#1C1C1C] text-[var(--primary)] flex items-center justify-center flex-shrink-0">
                 <Clock size={16} />
               </span>
               <span>{isAr ? menu.settings.hoursText.ar : menu.settings.hoursText.en}</span>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-full bg-[#1C1C1C] text-[#FFC400] flex items-center justify-center flex-shrink-0">
+              <span className="w-8 h-8 rounded-full bg-[#1C1C1C] text-[var(--primary)] flex items-center justify-center flex-shrink-0">
                 <MapPin size={16} />
               </span>
               <span>{isAr ? menu.settings.address.ar : menu.settings.address.en}</span>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-full bg-[#1C1C1C] text-[#FFC400] flex items-center justify-center flex-shrink-0">
+              <span className="w-8 h-8 rounded-full bg-[#1C1C1C] text-[var(--primary)] flex items-center justify-center flex-shrink-0">
                 <Phone size={16} />
               </span>
-                <a href={phoneLink} dir="ltr" className="hover:text-[#FFC400] transition-colors font-medium">
+                <a href={phoneLink} dir="ltr" className="hover:text-[var(--primary)] transition-colors font-medium">
                 {menu.settings.phone}
               </a>
             </div>
@@ -118,7 +118,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
 
           {/* Col 3: Social Links & Directions CTA */}
           <div className="flex flex-col gap-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#FFC400]">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
               {isAr ? 'تواصل معنا' : 'Connect with Us'}
             </h3>
 
@@ -136,7 +136,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-10 h-10 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center hover:scale-105 transition-transform"
+                    className="w-10 h-10 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center hover:scale-105 transition-transform"
                     aria-label={label}
                   >
                     <Icon size={18} />
@@ -150,7 +150,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
               href={mapLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-tactile w-full h-11 rounded-full bg-[#FFC400] text-[#0A0A0A] flex items-center justify-center font-bold text-xs shadow-md hover:bg-[#ffd033]"
+              className="btn-tactile w-full h-11 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center font-bold text-xs shadow-md hover:brightness-110"
             >
               {isAr ? 'الاتجاهات على الخريطة' : 'Get Directions'}
             </a>
@@ -168,7 +168,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
           <div className="flex items-center gap-2">
             <a
               href="privacy"
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-[#FFC400] hover:border-[#FFC400] transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors"
             >
               <Shield size={12} />
               <span>{isAr ? 'الخصوصية' : 'Privacy'}</span>
@@ -177,7 +177,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
             <button
               type="button"
               onClick={onOpenAdmin}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-[#FFC400] hover:border-[#FFC400] transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors"
             >
               <Shield size={12} />
               <span>{isAr ? 'لوحة التحكم للمطعم' : 'Admin Portal'}</span>

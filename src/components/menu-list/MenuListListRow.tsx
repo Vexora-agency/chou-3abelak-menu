@@ -65,10 +65,10 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         {effectiveBadges(menu, item).map((b) => (
           <span
             key={b}
-            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#0A0A0A] text-[#FFC400] border border-[#FFC400]"
+            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]"
           >
-            {b === 'spicy' && <Flame size={10} className="fill-[#FFC400]" />}
-            {b === 'top' && <Award size={10} className="fill-[#FFC400]" />}
+            {b === 'spicy' && <Flame size={10} className="fill-[var(--primary)]" />}
+            {b === 'top' && <Award size={10} className="fill-[var(--primary)]" />}
             {b === 'new' && <Sparkles size={10} />}
                         {badgeLabel(b, lang)}
           </span>
@@ -81,7 +81,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         )}
 
         {/* Price Pill */}
-        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[#FFC400] text-[#0A0A0A] shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform">
+        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[var(--primary)] text-[#0A0A0A] shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform">
           {priceLabel(item, lang, currency)}
         </span>
       </div>
@@ -122,10 +122,10 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         {effectiveBadges(menu, item).map((b) => (
           <span
             key={b}
-            className="shrink-0 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#0A0A0A] text-[#FFC400] border border-[#FFC400]"
+            className="shrink-0 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]"
           >
-            {b === 'spicy' && <Flame size={10} className="fill-[#FFC400]" />}
-            {b === 'top' && <Award size={10} className="fill-[#FFC400]" />}
+            {b === 'spicy' && <Flame size={10} className="fill-[var(--primary)]" />}
+            {b === 'top' && <Award size={10} className="fill-[var(--primary)]" />}
             {b === 'new' && <Sparkles size={10} />}
                         {badgeLabel(b, lang)}
           </span>
@@ -137,7 +137,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
           </span>
         )}
 
-        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[#FFC400] text-[#0A0A0A] shadow-sm flex-shrink-0 transition-transform group-hover:scale-105">
+        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[var(--primary)] text-[#0A0A0A] shadow-sm flex-shrink-0 transition-transform group-hover:scale-105">
           {priceLabel(item, lang, currency)}
         </span>
 

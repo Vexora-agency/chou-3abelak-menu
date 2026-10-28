@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MenuItem } from '@/src/types/menu';
+import { clientConfig } from '@/src/config/client.config';
+import { themeConfig } from '@/src/config/theme.config';
 import { Header } from '@/src/components/Header';
 import { AnnouncementBanner } from '@/src/components/AnnouncementBanner';
 import { getOrderingState, type OrderingStatus } from '@/src/utils/status';
@@ -76,12 +78,12 @@ export default function App() {
     };
   }, []);
 
-  // Skeleton Loader while menu initial fetch happens
+  // Skeleton Loader while menu initial fetch happens (white-label: logo + colors from config)
   if (loading || !menu) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-6 text-white text-center">
-        <div className="w-16 h-16 rounded-full border-4 border-[#FFC400] border-t-transparent animate-spin mb-4" />
-        <h2 className="text-xl font-bold tracking-wide">Chou 3abelak · شو عبالك</h2>
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-white text-center" style={{ background: themeConfig.colors.background }}>
+        <div className="w-16 h-16 rounded-full border-4 border-t-transparent animate-spin mb-4" style={{ borderColor: themeConfig.colors.primary, borderTopColor: 'transparent' }} />
+        <h2 className="text-xl font-bold tracking-wide">{clientConfig.companyNameEn} · {clientConfig.companyNameAr}</h2>
         <p className="text-xs text-neutral-400 mt-1">Loading delicious menu...</p>
       </div>
     );
@@ -108,10 +110,10 @@ export default function App() {
       return (
         <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white">
           <img
-            src="/assets/logo-final.png"
-            alt="Chou 3abelak"
-            width={1440}
-            height={532}
+            src={clientConfig.logo}
+            alt={clientConfig.companyNameEn}
+            width={clientConfig.logoWidth}
+            height={clientConfig.logoHeight}
             className="w-48 h-auto animate-pulse"
           />
         </div>
@@ -150,8 +152,8 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
     <motion.div
-      style={{ scaleX: progress, opacity: progressOpacity }}
-      className="fixed top-0 inset-x-0 h-[3px] bg-[#FFC400] origin-left rtl:origin-right z-[60] pointer-events-none"
+      style={{ scaleX: progress, opacity: progressOpacity, background: themeConfig.colors.primary }}
+      className="fixed top-0 inset-x-0 h-[3px] origin-left rtl:origin-right z-[60] pointer-events-none"
       aria-hidden="true"
     />
     <div

@@ -7,6 +7,8 @@ import CustomerData, { type CustomerResult } from '@/src/components/CustomerData
 import OrderingToggle from '@/src/components/admin/OrderingToggle';
 import { getOrderingState } from '@/src/utils/status';
 import { serverNow } from '@/src/utils/serverTime';
+import type { AdminFetch } from '@/src/lib/api-client';
+import { featuresConfig } from '@/src/config/features.config';
 
 export type DashView = 'overview' | 'reports' | 'customers';
 
@@ -32,7 +34,7 @@ interface AdminDashboardTabProps {
   onDownloadReport: (month: string) => void;
   onSearchCustomers: (phone: string) => Promise<{ results: CustomerResult[]; count: number }>;
   onCustomerAction: (args: { phone: string; mode: string; password: string; confirm: string }) => Promise<{ ok: boolean; mode?: string; count?: number; error?: string } | { ok: boolean; error: string }>;
-  adminFetch: (url: string, init?: RequestInit) => Promise<Response>;
+  adminFetch: AdminFetch;
   onMenuRefreshed: () => Promise<boolean>;
 }
 
@@ -47,6 +49,10 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   adminFetch, onMenuRefreshed,
 }) => {
   const isAr = lang === 'ar';
+  // White-label package gate: starter clients hide Reports UI even if the API
+  // ever answers (backend 404s on starter via SITE_PLAN — this only hides the tab).
+  // Current client has enableReports=true → visually identical.
+  const showReports = reportsOn && featuresConfig.enableReports;
   const paused = !!menu.settings.ordering.paused;
   const liveState = getOrderingState(menu.settings, serverNow());
   const toggleState = liveState.state === 'paused' ? 'paused' : liveState.state === 'closed' ? 'closed' : 'open';
@@ -100,9 +106,9 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
           </button>
         </div>
       )}
-      {(reportsOn || customersOn) && (
+      {(showReports || customersOn) && (
         <div className="mb-4 flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800 w-fit max-w-full overflow-x-auto" role="tablist" aria-label={isAr ? 'الداشبورد' : 'Dashboard'}>
-          {(['overview', ...(reportsOn ? ['reports'] : []), ...(customersOn ? ['customers'] : [])] as Array<'overview' | 'reports' | 'customers'>).map((v) => {
+          {(['overview', ...(showReports ? ['reports'] : []), ...(customersOn ? ['customers'] : [])] as Array<'overview' | 'reports' | 'customers'>).map((v) => {
             const active = dashView === v;
             return (
               <button
@@ -132,7 +138,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
         onRefresh={() => onRefreshOrders()}
       />
       )}
-      {dashView === 'reports' && reportsOn && reportSettings && (
+      {dashView === 'reports' && showReports && reportSettings && (
         <ReportsPanel
           lang={lang}
           currency={menu.settings.currency[lang] || menu.settings.currency.en}

@@ -40,6 +40,12 @@ import {
   weekdayInTZ,
   weeklyBackupEmail,
 } from '../../_shared/versions.js';
+import {
+  markReportAttempt,
+  markReportFailed,
+  markReportPending,
+  markReportSent,
+} from '../../_shared/repositories/reports.repo.js';
 import { base64EncodeUtf8, sendEmail } from '../../_shared/mail.js';
 import { renderMonthlyReportEmail } from '../../_shared/report-email.js';
 
@@ -83,11 +89,7 @@ export async function onRequest(context) {
       if (fresh && !fresh.emailedAt && attempts < MAX_ATTEMPTS) {
         attempts += 1;
         try {
-          await env.ORDERS_DB.prepare(
-            'UPDATE monthly_reports SET email_attempts = ?1, email_status = ?2 WHERE month = ?3'
-          )
-            .bind(attempts, 'pending', month)
-            .run();
+          await markReportPending(env.ORDERS_DB, month, attempts);
         } catch {}
         try {
           let csvText = null;
@@ -113,24 +115,16 @@ export async function onRequest(context) {
           });
           emailed = true;
           try {
-            await env.ORDERS_DB.prepare(
-              "UPDATE monthly_reports SET emailed_at = ?1, email_status = 'sent' WHERE month = ?2"
-            )
-              .bind(new Date().toISOString(), month)
-              .run();
+            await markReportSent(env.ORDERS_DB, month, new Date().toISOString());
           } catch {}
         } catch {
           try {
-            await env.ORDERS_DB.prepare('UPDATE monthly_reports SET email_attempts = ?1, email_status = ?2 WHERE month = ?3')
-              .bind(attempts, attempts >= MAX_ATTEMPTS ? 'failed' : 'pending', month)
-              .run();
+            await markReportAttempt(env.ORDERS_DB, month, attempts, MAX_ATTEMPTS);
           } catch {}
         }
       } else if (fresh && !fresh.emailedAt && attempts >= MAX_ATTEMPTS && fresh.emailStatus !== 'failed') {
         try {
-          await env.ORDERS_DB.prepare("UPDATE monthly_reports SET email_status = 'failed' WHERE month = ?1")
-            .bind(month)
-            .run();
+          await markReportFailed(env.ORDERS_DB, month);
         } catch {}
       }
     }

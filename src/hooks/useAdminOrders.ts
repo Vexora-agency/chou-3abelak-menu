@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Order, OrderStatus } from '@/src/components/OrdersDashboard';
 import { prevMonthStartISO } from '@/src/utils/tz';
 import { isRecord, readJson } from '@/src/utils/safeJson';
+import { adminFetch } from '@/src/lib/api-client';
 
 interface AdminOrdersOptions {
   isAr: boolean;
@@ -26,10 +27,7 @@ export function useAdminOrders({ isAr, timezone, activeTab }: AdminOrdersOptions
       // Today / 7 days / This month / Last month views all work; the
       // limit=2000 cap bounds the payload.
       const tz = timezone || 'Asia/Beirut';
-      const res = await fetch(`/api/admin/orders?from=${encodeURIComponent(prevMonthStartISO(tz))}&limit=2000`, {
-        headers: { 'X-Requested-With': 'menu-admin' },
-        credentials: 'same-origin',
-      });
+      const res = await adminFetch(`/api/admin/orders?from=${encodeURIComponent(prevMonthStartISO(tz))}&limit=2000`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: unknown = await readJson(res);
       const rawOrders = isRecord(data) ? data.orders : undefined;
@@ -73,10 +71,9 @@ export function useAdminOrders({ isAr, timezone, activeTab }: AdminOrdersOptions
     const prev = orders;
     setOrders((cur) => cur.map((o) => (o.id === id ? { ...o, status } : o)));
     try {
-      const res = await fetch(`/api/admin/orders/${encodeURIComponent(id)}`, {
+      const res = await adminFetch(`/api/admin/orders/${encodeURIComponent(id)}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'menu-admin' },
-        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

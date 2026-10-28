@@ -5,7 +5,7 @@
  */
 
 import { jsonNoStore } from '../../_shared/session.js';
-import { mapOrderRow } from '../../_shared/orders.js';
+import { listOrdersByWindow } from '../../_shared/repositories/orders.repo.js';
 
 function parseISO(v) {
   if (typeof v !== 'string' || !v) return null;
@@ -32,35 +32,29 @@ export async function onRequest(context) {
   // Explicit window (used by the dashboard: from = first day of the
   // previous month in the business timezone so Today / 7 days / This month
   // / Last month all work). Falls back to the legacy days= window.
+  // Validation stays in the route; SQL templates live in the repository.
   const fromParam = url.searchParams.get('from');
   const toParam = url.searchParams.get('to');
-  let where;
-  let args;
+  let window;
   if (fromParam !== null || toParam !== null) {
     const from = parseISO(fromParam);
     const to = toParam === null ? new Date().toISOString() : parseISO(toParam);
     if (!from || !to || from >= to) {
       return jsonNoStore({ error: 'bad_request', message: 'Invalid from/to window' }, 400);
     }
-    where = 'WHERE created_at >= ?1 AND created_at < ?2';
-    args = [from, to];
+    window = { from, to };
   } else {
     const daysRaw = parseInt(url.searchParams.get('days') || '35', 10);
     const days = Number.isInteger(daysRaw) ? Math.min(365, Math.max(1, daysRaw)) : 35;
-    where = 'WHERE created_at >= ?1';
-    args = [new Date(Date.now() - days * 86400000).toISOString()];
+    window = { days };
   }
 
-  let rows;
+  let orders;
   try {
-    const res = await db
-      .prepare(`SELECT * FROM orders ${where} ORDER BY created_at DESC LIMIT ?${args.length + 1}`)
-      .bind(...args, limit)
-      .all();
-    rows = (res && res.results) || [];
+    orders = await listOrdersByWindow(db, window, limit);
   } catch {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
 
-  return jsonNoStore({ orders: rows.map(mapOrderRow) });
+  return jsonNoStore({ orders });
 }

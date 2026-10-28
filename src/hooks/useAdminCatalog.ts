@@ -1,13 +1,14 @@
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import { normalizePricing } from '@/src/utils/pricing';
 import { isRecord, str } from '@/src/utils/safeJson';
+import type { AdminFetch } from '@/src/lib/api-client';
 
 interface AdminCatalogOptions {
   menu: MenuData;
   updateMenu: (updater: (prev: MenuData) => MenuData) => void;
   flushDirty: () => Promise<number | null>;
   isAr: boolean;
-  adminFetch: (url: string, init?: RequestInit) => Promise<Response>;
+  adminFetch: AdminFetch;
   showUndoToast: (label: string, undo: () => void) => void;
   refreshMenuFromServer: () => Promise<boolean>;
   handleRestoreTrashById: (trashId: string) => Promise<boolean>;

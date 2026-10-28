@@ -4,7 +4,7 @@
  */
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
-import { mapOrderRow } from '../../../_shared/orders.js';
+import { updateOrderStatus } from '../../../_shared/repositories/orders.repo.js';
 
 const STATUSES = ['new', 'confirmed', 'completed', 'cancelled'];
 
@@ -45,19 +45,12 @@ export async function onRequest(context) {
     return jsonNoStore({ error: 'not_found' }, 404);
   }
 
-  const nowIso = new Date().toISOString();
   try {
-    const res = await db
-      .prepare('UPDATE orders SET status = ?1, updated_at = ?2 WHERE id = ?3')
-      .bind(status, nowIso, id)
-      .run();
-    const changed = res && res.meta ? res.meta.changes : 0;
-    if (!changed) {
+    const order = await updateOrderStatus(db, id, status);
+    if (!order) {
       return jsonNoStore({ error: 'not_found' }, 404);
     }
-    const row = await db.prepare('SELECT * FROM orders WHERE id = ?1').bind(id).first();
-    if (!row) return jsonNoStore({ error: 'not_found' }, 404);
-    return jsonNoStore({ order: mapOrderRow(row) });
+    return jsonNoStore({ order });
   } catch {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }

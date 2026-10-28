@@ -13,8 +13,13 @@ import {
   checkAdminPassword,
   confirmWordOk,
   digitsOnly,
-  findMatches,
 } from '../../../_shared/customer-data.js';
+import {
+  anonymizeByPhoneNorm,
+  deleteByPhoneNorm,
+  exportByPhoneNorm,
+  findMatches,
+} from '../../../_shared/repositories/customer-data.repo.js';
 import { escapeCSV } from '../../../_shared/reports.js';
 
 export async function onRequest(context) {
@@ -52,20 +57,11 @@ export async function onRequest(context) {
   const nowISO = new Date().toISOString();
   try {
     if (mode === 'delete') {
-      await env.ORDERS_DB.prepare('DELETE FROM orders WHERE phone_norm LIKE ?1').bind(`%${q}%`).run();
+      await deleteByPhoneNorm(env.ORDERS_DB, q);
     } else if (mode === 'anonymize') {
-      await env.ORDERS_DB.prepare(
-        'UPDATE orders SET customer_name = NULL, customer_phone = NULL, phone_norm = NULL, customer_address = NULL, customer_table = NULL, notes = NULL, location_lat = NULL, location_lng = NULL, pii_purged_at = ?1 WHERE phone_norm LIKE ?2'
-      )
-        .bind(nowISO, `%${q}%`)
-        .run();
+      await anonymizeByPhoneNorm(env.ORDERS_DB, nowISO, q);
     } else {
-      const full = await env.ORDERS_DB.prepare(
-        'SELECT id, number, created_at, updated_at, status, type, customer_name, customer_phone, phone_norm, customer_address, customer_table, notes, location_lat, location_lng, items_json, subtotal, delivery_fee, total, lang, pii_purged_at FROM orders WHERE phone_norm LIKE ?1 ORDER BY created_at DESC LIMIT 50'
-      )
-        .bind(`%${q}%`)
-        .all();
-      const list = (full && full.results) || [];
+      const list = await exportByPhoneNorm(env.ORDERS_DB, q);
       const lines = ['order_id,order_number,created_at,updated_at,status,type,customer_name,customer_phone,phone_norm,customer_address,customer_table,notes,location_lat,location_lng,items_json,subtotal,delivery_fee,total,lang,pii_purged_at'];
       for (const r of list) {
         lines.push(

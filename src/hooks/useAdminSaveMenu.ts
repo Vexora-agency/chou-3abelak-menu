@@ -1,19 +1,16 @@
 import { MenuData, AdminSaveResult } from '@/src/types/menu';
 import { isRecord, readJson, parseJson } from '@/src/utils/safeJson';
+import { adminFetch } from '@/src/lib/api-client';
 
 // Sends the admin's filled copy to the server and resolves with the
 // authoritative doc. The admin screen keeps its raw text on screen
 // (autofill appears after reload); only the version is adopted there.
 export function useAdminSaveMenu(setMenu: (menu: MenuData) => void) {
   const handleSaveMenuFromAdmin = (newMenu: MenuData, source?: 'manual' | 'autosave'): Promise<AdminSaveResult | null> => {
-    // Send to the backend and surface any failure instead of hiding it
-    return fetch(`/api/admin/menu${source === 'autosave' ? '?source=autosave' : ''}`, {
+    // Send to the backend and surface any failure instead of hiding it (single api-client)
+    return adminFetch(`/api/admin/menu${source === 'autosave' ? '?source=autosave' : ''}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'menu-admin',
-      },
-      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newMenu),
     })
       .then(async (res): Promise<AdminSaveResult | null> => {

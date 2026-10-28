@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import type { ReportSettings, MonthlyReportRow } from '@/src/components/ReportsPanel';
 import type { CustomerResult } from '@/src/components/CustomerData';
 import { isRecord, readJson } from '@/src/utils/safeJson';
+import type { AdminFetch } from '@/src/lib/api-client';
 
 interface ReportCenterOptions {
   isAr: boolean;
   activeTab: string;
-  adminFetch: (url: string, init?: RequestInit) => Promise<Response>;
+  adminFetch: AdminFetch;
 }
 
 /** Dashboard reports + customer-data tool (single reason to change: the dashboard data tab). */
@@ -24,10 +25,7 @@ export function useReportCenter({ isAr, activeTab, adminFetch }: ReportCenterOpt
 
   const fetchReportData = useCallback(async () => {
     try {
-      const r = await fetch('/api/admin/report-settings', {
-        headers: { 'X-Requested-With': 'menu-admin' },
-        credentials: 'same-origin',
-      });
+      const r = await adminFetch('/api/admin/report-settings');
       if (r.status === 404) {
         setReportsOn(false);
         return;
@@ -56,10 +54,7 @@ export function useReportCenter({ isAr, activeTab, adminFetch }: ReportCenterOpt
       }
       if (typeof rec.businessTimezone === 'string' && rec.businessTimezone) setBizTz(rec.businessTimezone);
       setReportsOn(true);
-      const rl = await fetch('/api/admin/reports', {
-        headers: { 'X-Requested-With': 'menu-admin' },
-        credentials: 'same-origin',
-      });
+      const rl = await adminFetch('/api/admin/reports');
       if (!rl.ok) throw new Error(`HTTP ${rl.status}`);
       const d: unknown = await readJson(rl);
       const rows = isRecord(d) && Array.isArray(d.reports) ? (d.reports as MonthlyReportRow[]) : [];
@@ -67,7 +62,7 @@ export function useReportCenter({ isAr, activeTab, adminFetch }: ReportCenterOpt
     } catch {
       // Stay on Overview; the error banner covers order loading.
     }
-  }, []);
+  }, [adminFetch]);
 
   // Load reports data when the dashboard tab opens (fetch trigger).
   useEffect(() => {
@@ -92,10 +87,9 @@ export function useReportCenter({ isAr, activeTab, adminFetch }: ReportCenterOpt
 
   const handleSaveReportSettings = async (s: { enabled: boolean; email: string; language: 'en' | 'ar' }) => {
     try {
-      const res = await fetch('/api/admin/report-settings', {
+      const res = await adminFetch('/api/admin/report-settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'menu-admin' },
-        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(s),
       });
       const data: unknown = await readJson(res);
@@ -109,22 +103,14 @@ export function useReportCenter({ isAr, activeTab, adminFetch }: ReportCenterOpt
 
   const handleResendVerification = async () => {
     try {
-      await fetch('/api/admin/report-settings/resend', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'menu-admin' },
-        credentials: 'same-origin',
-      });
+      await adminFetch('/api/admin/report-settings/resend', { method: 'POST' });
       await fetchReportData();
     } catch {}
   };
 
   const handleSendTestReport = async () => {
     try {
-      const res = await fetch('/api/admin/report-settings/test', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'menu-admin' },
-        credentials: 'same-origin',
-      });
+      const res = await adminFetch('/api/admin/report-settings/test', { method: 'POST' });
       const data: unknown = await readJson(res);
       return { ok: !!(res.ok && isRecord(data) && data.ok) };
     } catch {
@@ -134,10 +120,7 @@ export function useReportCenter({ isAr, activeTab, adminFetch }: ReportCenterOpt
 
   const handleDownloadReport = async (month: string) => {
     try {
-      const res = await fetch(`/api/admin/reports/${encodeURIComponent(month)}.csv`, {
-        headers: { 'X-Requested-With': 'menu-admin' },
-        credentials: 'same-origin',
-      });
+      const res = await adminFetch(`/api/admin/reports/${encodeURIComponent(month)}.csv`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);

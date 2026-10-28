@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import type { MenuData } from '@/src/types/menu';
 import { normalizeMenu } from '@/src/utils/pricing';
-import { setServerOffsetFromDateHeader } from '@/src/utils/serverTime';
-import { isRecord, readJson, parseJson } from '@/src/utils/safeJson';
+import { isRecord, parseJson, readJson } from '@/src/utils/safeJson';
+import { publicGet } from '@/src/lib/api-client';
 
 /** Loads the menu document (API → cache → seed) and exposes it with its setter. */
 export function useMenuLoader() {
@@ -34,11 +34,9 @@ export function useMenuLoader() {
       } catch {}
 
       try {
-        // Try to fetch from /api/menu or fallback to /menu.seed.json
-        const res = await fetch('/api/menu').catch(() => null);
-        if (res && res.ok) {
-          setServerOffsetFromDateHeader(res.headers.get('Date'));
-          const data = (await readJson(res)) as MenuData;
+        // Try to fetch from /api/menu or fallback to /menu.seed.json (single api-client)
+        const data = await publicGet<MenuData>('/api/menu');
+        if (data) {
           const normalized = normalizeMenu(data);
           setMenu(normalized);
           try {
@@ -57,7 +55,7 @@ export function useMenuLoader() {
         return;
       }
 
-      // Fallback to /menu.seed.json
+      // Fallback to /menu.seed.json (static asset — raw fetch is correct here, not /api)
       try {
         const seedRes = await fetch('/menu.seed.json');
         if (seedRes.ok) {
@@ -87,10 +85,8 @@ export function useMenuLoader() {
     let alive = true;
     const refresh = async () => {
       try {
-        const res = await fetch('/api/menu').catch(() => null);
-        if (!alive || !res || !res.ok) return;
-        setServerOffsetFromDateHeader(res.headers.get('Date'));
-        const data = (await readJson(res)) as MenuData;
+        const data = await publicGet<MenuData>('/api/menu');
+        if (!alive || !data) return;
         if (!isRecord(data)) return;
         setMenu((prev) => {
           if (

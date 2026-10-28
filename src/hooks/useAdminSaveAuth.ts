@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { isRecord, readJson } from '@/src/utils/safeJson';
+import { adminFetch } from '@/src/lib/api-client';
 import type { LoginResult } from '@/src/components/AdminLogin';
 
 export function useAdminSaveAuth() {
@@ -20,10 +21,7 @@ export function useAdminSaveAuth() {
       }
       setAuthStatus('checking');
       try {
-        const res = await fetch('/api/auth/session', {
-          headers: { 'X-Requested-With': 'menu-admin' },
-          credentials: 'same-origin',
-        });
+        const res = await adminFetch('/api/auth/session');
         // Require the exact shape, not just HTTP 200 (dev servers may
         // answer unknown /api routes with HTML and a 200 status).
         const data: unknown = await readJson(res);
@@ -39,10 +37,9 @@ export function useAdminSaveAuth() {
   }, [adminUnlocked]);
   const handleLoginSubmit = async (values: { username: string; password: string; remember: boolean }): Promise<LoginResult> => {
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await adminFetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'menu-admin' },
-        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values).slice(0, 4096),
       });
       if (res.ok) return { ok: true };
@@ -66,11 +63,7 @@ export function useAdminSaveAuth() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'menu-admin' },
-        credentials: 'same-origin',
-      });
+      await adminFetch('/api/auth/logout', { method: 'POST' });
     } catch {}
     setAuthStatus('guest');
     closeAdmin();

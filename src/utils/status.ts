@@ -5,8 +5,8 @@
  */
 import { getOrderingState as getState } from '@/functions/_shared/status.js';
 import type { MenuSettings } from '@/src/types/menu';
-import { isRecord, readJson, str } from '@/src/utils/safeJson';
-import { setServerOffsetFromDateHeader } from '@/src/utils/serverTime';
+import { isRecord, str } from '@/src/utils/safeJson';
+import { publicGet } from '@/src/lib/api-client';
 
 export type OrderingState = 'open' | 'paused' | 'closed' | 'disabled';
 
@@ -25,12 +25,9 @@ export function getOrderingState(settings: MenuSettings, nowMs: number = Date.no
  * failure so callers can fall back to the last known / local state.
  */
 export async function fetchOrderingStatus(signal?: AbortSignal): Promise<OrderingStatus | null> {
+  const data = await publicGet<unknown>('/api/ordering-state', signal);
   try {
-    const res = await fetch('/api/ordering-state', signal ? { signal } : undefined).catch(() => null);
-    if (!res || !res.ok) return null;
-    setServerOffsetFromDateHeader(res.headers.get('Date'));
-    const data: unknown = await readJson(res);
-    if (!isRecord(data)) return null;
+    if (!data || !isRecord(data)) return null;
     const state = data.state;
     if (state !== 'open' && state !== 'paused' && state !== 'closed' && state !== 'disabled') return null;
     return {

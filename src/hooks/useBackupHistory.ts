@@ -2,12 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { MenuData } from '@/src/types/menu';
 import type { ActivityEntry, Change, VersionEntry, TrashEntry, ImportAnalysis } from '@/src/components/BackupPanel';
 import { isRecord, readJson } from '@/src/utils/safeJson';
+import type { AdminFetch } from '@/src/lib/api-client';
 
 interface BackupHistoryOptions {
   isAr: boolean;
   lang: 'en' | 'ar';
   activeTab: string;
-  adminFetch: (url: string, init?: RequestInit) => Promise<Response>;
+  adminFetch: AdminFetch;
   savePaused: { current: boolean };
   menuVersion: number;
   replaceMenu: (doc: MenuData) => void;

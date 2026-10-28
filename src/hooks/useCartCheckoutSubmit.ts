@@ -4,7 +4,7 @@ import { buildWhatsAppMessage, haversineMeters, parseMapUrlCoords, formatDistanc
 import { formatPrice, round2 } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { getOrderingState, fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
-import { isRecord, readJson, str } from '@/src/utils/safeJson';
+import { submitOrder } from '@/src/features/cart/services/cart.api';
 
 interface UseCartCheckoutSubmitArgs {
   menu: MenuData;
@@ -172,6 +172,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
 
     // Record the order on the server BEFORE opening WhatsApp. Never blocks
     // the WhatsApp flow: any failure still opens WhatsApp immediately.
+    // Transport lives in features/cart/services/cart.api.ts (single place).
     let orderNumber: number | null = null;
     try {
       if (!idemKeyRef.current) {
@@ -180,14 +181,9 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
             ? crypto.randomUUID()
             : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       }
-      const idemKey = idemKeyRef.current;
-      const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), 4000);
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idemKey,
+      const result = await submitOrder(
+        {
+          idemKey: idemKeyRef.current,
           type: 'delivery',
           customer: {
             name: customer.name.trim(),
@@ -204,21 +200,16 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
           ...(location ? { location: { lat: location.lat, lng: location.lng, accuracy: Math.round(location.accuracy) } } : {}),
           lang,
           website: honeypot,
-        }),
-        signal: controller.signal,
-      }).catch(() => null);
-      window.clearTimeout(timer);
-      if (res && res.ok) {
-        const data: unknown = await readJson(res);
-        if (isRecord(data) && typeof data.orderNumber === 'number') orderNumber = data.orderNumber;
-      } else if (res && res.status === 403) {
+        },
+        lang
+      );
+      if (result.blockedMessage) {
         // Server-side availability gate (paused/closed/disabled): show the
         // message and never open WhatsApp.
-        const data: unknown = await readJson(res);
-        const msg = isRecord(data) && isRecord(data.message) && (isAr ? str(data.message.ar) : str(data.message.en));
-        setErrorMsg(msg || (isAr ? 'الطلب غير متاح حالياً' : 'Ordering is currently unavailable'));
+        setErrorMsg(result.blockedMessage || (isAr ? 'الطلب غير متاح حالياً' : 'Ordering is currently unavailable'));
         return;
       }
+      orderNumber = result.orderNumber;
     } catch {
       orderNumber = null;
     }

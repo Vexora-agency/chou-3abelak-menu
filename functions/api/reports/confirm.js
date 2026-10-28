@@ -6,6 +6,7 @@
 
 import { safeCompareStrings } from '../../_shared/session.js';
 import { sha256Hex } from '../../_shared/reports.js';
+import { confirmReportEmail, getReportSettingsRow } from '../../_shared/repositories/report-settings.repo.js';
 
 function page(ok) {
   const title = ok ? 'Email confirmed / تم تأكيد البريد' : 'Link invalid or expired / الرابط غير صالح أو منتهي';
@@ -34,7 +35,7 @@ export async function onRequest(context) {
 
   let row;
   try {
-    row = await env.ORDERS_DB.prepare('SELECT * FROM report_settings WHERE id = 1').first();
+    row = await getReportSettingsRow(env.ORDERS_DB);
   } catch {
     return page(false);
   }
@@ -51,11 +52,7 @@ export async function onRequest(context) {
 
   // Single use: verify and burn the token in one write.
   try {
-    await env.ORDERS_DB.prepare(
-      'UPDATE report_settings SET verified = 1, verify_token_hash = NULL, verify_expires_at = NULL, updated_at = ?1 WHERE id = 1'
-    )
-      .bind(new Date().toISOString())
-      .run();
+    await confirmReportEmail(env.ORDERS_DB, new Date().toISOString());
   } catch {
     return page(false);
   }

@@ -6,6 +6,7 @@
 
 import { checkApiHeaders, jsonNoStore } from '../../_shared/session.js';
 import { featureOffResponse, hasFeature } from '../../_shared/plan.js';
+import { listMonthlyReportSummaries } from '../../_shared/repositories/reports.repo.js';
 import {
   currentMonthInTZ,
   loadMenuBasics,
@@ -35,10 +36,7 @@ export async function onRequest(context) {
 
   let stored;
   try {
-    const res = await env.ORDERS_DB.prepare(
-      'SELECT month, summary_json, emailed_at, email_status FROM monthly_reports ORDER BY month DESC'
-    ).all();
-    stored = (res && res.results) || [];
+    stored = await listMonthlyReportSummaries(env.ORDERS_DB);
   } catch {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }

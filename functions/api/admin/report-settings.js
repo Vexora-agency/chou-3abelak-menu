@@ -19,6 +19,7 @@ import {
   sha256Hex,
   verifyExpiryISO,
 } from '../../_shared/reports.js';
+import { upsertReportSettings } from '../../_shared/repositories/report-settings.repo.js';
 import { confirmEmailContent, sendEmail } from '../../_shared/mail.js';
 
 function publicSettings(row, env) {
@@ -103,12 +104,15 @@ export async function onRequest(context) {
 
     const nowISO = new Date().toISOString();
     try {
-      await env.ORDERS_DB.prepare(
-        'INSERT INTO report_settings (id, enabled, email, verified, language, verify_token_hash, verify_expires_at, updated_at) VALUES (1, ?1, ?2, ?3, ?4, ?5, ?6, ?7) ' +
-          'ON CONFLICT(id) DO UPDATE SET enabled = ?1, email = ?2, verified = ?3, language = ?4, verify_token_hash = ?5, verify_expires_at = ?6, updated_at = ?7'
-      )
-        .bind(body.enabled ? 1 : 0, email, verified, body.language, tokenHash, expiresAt, nowISO)
-        .run();
+      await upsertReportSettings(env.ORDERS_DB, {
+        enabled: body.enabled,
+        email,
+        verified,
+        language: body.language,
+        tokenHash,
+        expiresAt,
+        nowISO,
+      });
     } catch {
       return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
     }

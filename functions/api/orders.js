@@ -6,7 +6,8 @@
  */
 
 import { jsonNoStore, readJsonBody } from '../_shared/session.js';
-import { mapOrderRow, newOrderId, validateOrderInput } from '../_shared/orders.js';
+import { mapOrderRow, validateOrderInput } from '../_shared/orders.js';
+import { findOrderById, findOrderByIdemKey, getMaxOrderNumber, insertOrderWithNumber } from '../_shared/repositories/orders.repo.js';
 import { getOrderingState } from '../_shared/status.js';
 
 const MAX_BODY_BYTES = 8 * 1024;
@@ -129,10 +130,7 @@ export async function onRequest(context) {
   // freshly computed ones — the menu may have changed since the first insert).
   if (c.idemKey) {
     try {
-      const existing = await db
-        .prepare('SELECT number, total FROM orders WHERE idem_key = ?1')
-        .bind(c.idemKey)
-        .first();
+      const existing = await findOrderByIdemKey(db, c.idemKey);
       if (existing && typeof existing.number === 'number') {
         return jsonNoStore({
           ok: true,
@@ -143,55 +141,22 @@ export async function onRequest(context) {
     } catch {}
   }
 
+  // One timestamp per request (verbatim original: created_at/updated_at identical, even on retry).
   const nowIso = new Date().toISOString();
-  const insertWithNumber = async (num) => {
-    const id = newOrderId();
-    await db.batch([
-      db
-        .prepare(
-          'INSERT INTO orders (id, number, idem_key, created_at, updated_at, status, type, customer_name, customer_phone, phone_norm, customer_address, customer_table, notes, location_lat, location_lng, items_json, subtotal, delivery_fee, total, lang) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20)'
-        )
-        .bind(
-          id,
-          num,
-          c.idemKey,
-          nowIso,
-          nowIso,
-          'new',
-          c.type,
-          c.name,
-          c.phone,
-          c.phoneNorm,
-          c.address,
-          c.table,
-          c.notes,
-          c.location ? c.location.lat : null,
-          c.location ? c.location.lng : null,
-          JSON.stringify(c.items),
-          c.subtotal,
-          c.deliveryFee,
-          c.total,
-          c.lang
-        ),
-    ]);
-    return { id, num };
-  };
+  const insertWithNumber = async (num) => insertOrderWithNumber(db, c, num, nowIso);
 
   // Order numbers start at 1001: MAX(number)+1 inside one batch, one retry on conflict
   let created = null;
   for (let attempt = 0; attempt < 2 && !created; attempt++) {
     try {
-      const row = await db.prepare('SELECT MAX(number) AS m FROM orders').first();
-      const next = (row && typeof row.m === 'number' ? row.m : 1000) + 1;
+      const max = await getMaxOrderNumber(db);
+      const next = max + 1;
       created = await insertWithNumber(next);
     } catch {
       created = null;
       if (c.idemKey) {
         try {
-          const existing = await db
-            .prepare('SELECT number, total FROM orders WHERE idem_key = ?1')
-            .bind(c.idemKey)
-            .first();
+          const existing = await findOrderByIdemKey(db, c.idemKey);
           if (existing && typeof existing.number === 'number') {
             return jsonNoStore({
               ok: true,
@@ -229,7 +194,7 @@ export async function onRequest(context) {
   // Fetch the stored row back so the response reflects exactly what was saved
   let savedTotal = c.total;
   try {
-    const row = await db.prepare('SELECT * FROM orders WHERE id = ?1').bind(created.id).first();
+    const row = await findOrderById(db, created.id);
     if (row) savedTotal = mapOrderRow(row).total;
   } catch {}
   return jsonNoStore({ ok: true, orderNumber: created.num, total: savedTotal });

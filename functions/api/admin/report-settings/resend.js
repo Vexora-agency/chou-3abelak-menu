@@ -12,6 +12,7 @@ import {
   sha256Hex,
   verifyExpiryISO,
 } from '../../../_shared/reports.js';
+import { updateVerifyToken } from '../../../_shared/repositories/report-settings.repo.js';
 import { confirmEmailContent, sendEmail } from '../../../_shared/mail.js';
 import { hitRateLimit } from '../../../_shared/ratelimit.js';
 
@@ -35,11 +36,7 @@ export async function onRequest(context) {
   const { token, hash } = await newVerifyToken();
   const expiresAt = verifyExpiryISO();
   try {
-    await env.ORDERS_DB.prepare(
-      'UPDATE report_settings SET verify_token_hash = ?1, verify_expires_at = ?2, updated_at = ?3 WHERE id = 1'
-    )
-      .bind(hash, expiresAt, new Date().toISOString())
-      .run();
+    await updateVerifyToken(env.ORDERS_DB, hash, expiresAt, new Date().toISOString());
   } catch {
     return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
   }

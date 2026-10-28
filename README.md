@@ -345,3 +345,14 @@ Production env (in addition to the report vars): `BACKUP_SECRET` (Secret,
 - README note: rows deleted via the tool may still exist inside D1's
   point-in-time recovery history for a limited period, and backups or
   exports the owner already downloaded are outside the system.
+
+---
+
+## White-Label Base System (sell to N clients)
+
+This repo is a BASE SYSTEM. Backend stays unchanged per client; only `src/config/*` changes.
+
+- `src/config/client.config.ts` (name, logo, support email), `theme.config.ts` (primary `#FFC400`, bg `#0A0A0A`), `features.config.ts` (package flags), `navigation.config.ts` (sidebar).
+- `src/lib/api-client.ts` — single fetch wrapper. `src/components/ui/*` — design system. `src/features/*` — public API per domain.
+- Backend SQL ONLY in `functions/_shared/**` (`repositories/*.repo.js`); routes in `functions/api/**` are thin.
+- New client: `node scripts/setup-new-client.mjs "Name" "#PRIMARY" [plan]` → see `docs/ADD_NEW_CLIENT.md`. New feature: see `docs/ADD_NEW_FEATURE.md`. Architecture: `docs/ARCHITECTURE.md` + `REORGANIZATION_PLAN.md`.

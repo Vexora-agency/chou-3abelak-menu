@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Loader2, Moon, PauseCircle, Play, X } from 'lucide-react';
+import { Loader2, Moon, PauseCircle, Play, PowerOff, X } from 'lucide-react';
 
-export type OrderingToggleState = 'open' | 'paused' | 'closed';
+export type OrderingToggleState = 'open' | 'paused' | 'closed' | 'disabled';
 
 interface OrderingToggleProps {
   lang: 'en' | 'ar';
@@ -21,9 +21,9 @@ interface OrderingToggleProps {
 }
 
 const STR = {
-  en: { accepting: 'Accepting orders', paused: 'Orders paused', closed: 'Closed by schedule', subOpen: 'Customers can place orders.', subPaused: 'Customers cannot send orders.', subClosed: (t: string) => `Customers cannot order until ${t}.`, subClosedNo: 'Customers cannot order right now.',
+  en: { accepting: 'Accepting orders', paused: 'Orders paused', closed: 'Closed by schedule', offline: 'Online ordering off', subOpen: 'Customers can place orders.', subPaused: 'Customers cannot send orders.', subClosed: (t: string) => `Customers cannot order until ${t}.`, subClosedNo: 'Customers cannot order right now.', subOffline: 'Customers cannot order at all. Turn the master switch on to accept orders.',
     pauseFor: 'Pause for how long?', m30: '30 min', h1: '1 hour', h2: '2 hours', until: 'Until I resume', cancel: 'Cancel', resume: 'Resume now', resumesIn: 'Resumes in', elapsed: 'Paused for', manual: 'Stays paused until you resume', segOn: 'Accepting', segOff: 'Paused', done: 'Updated' },
-  ar: { accepting: 'نستقبل الطلبات', paused: 'الطلبات متوقفة', closed: 'مغلق حسب الجدول', subOpen: 'يمكن للعملاء إرسال الطلبات.', subPaused: 'لا يستطيع العملاء إرسال الطلبات.', subClosed: (t: string) => `لا يستطيع العملاء الطلب حتى ${t}.`, subClosedNo: 'لا يستطيع العملاء الطلب الآن.',
+  ar: { accepting: 'نستقبل الطلبات', paused: 'الطلبات متوقفة', closed: 'مغلق حسب الجدول', offline: 'الطلب أونلاين متوقف', subOpen: 'يمكن للعملاء إرسال الطلبات.', subPaused: 'لا يستطيع العملاء إرسال الطلبات.', subClosed: (t: string) => `لا يستطيع العملاء الطلب حتى ${t}.`, subClosedNo: 'لا يستطيع العملاء الطلب الآن.', subOffline: 'لا يستطيع العملاء الطلب نهائياً. شغّل المفتاح الرئيسي لاستقبال الطلبات.',
     pauseFor: 'لكم من الوقت تريد الإيقاف؟', m30: '30 دقيقة', h1: 'ساعة', h2: 'ساعتان', until: 'حتى أستأنف', cancel: 'إلغاء', resume: 'استئناف الآن', resumesIn: 'تستأنف بعد', elapsed: 'متوقف منذ', manual: 'تبقى متوقفة حتى تستأنفها', segOn: 'نستقبل', segOff: 'إيقاف', done: 'تم التحديث' },
 } as const;
 
@@ -41,6 +41,7 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
   // Owner decision: animations always run (never honor reduced-motion).
   const t = STR[lang]; const isAr = lang === 'ar'; const reduce = false;
   const paused = state === 'paused';
+  const disabled = state === 'disabled';
   const [choosing, setChoosing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(() => Date.now() + clockOffsetMs);
@@ -62,18 +63,18 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
   const left = until !== null ? until - now : null;
   const pct = left !== null && totalMs ? Math.min(100, Math.max(0, (left / totalMs) * 100)) : null;
   const elapsed = paused && pausedAtMs ? now - pausedAtMs : null;
-  const sub = paused ? t.subPaused : state === 'closed' ? (reopensAt ? t.subClosed(formatTime(Date.parse(reopensAt), timezone, lang)) : t.subClosedNo) : t.subOpen;
-  const title = paused ? t.paused : state === 'closed' ? t.closed : t.accepting;
+  const sub = disabled ? t.subOffline : paused ? t.subPaused : state === 'closed' ? (reopensAt ? t.subClosed(formatTime(Date.parse(reopensAt), timezone, lang)) : t.subClosedNo) : t.subOpen;
+  const title = disabled ? t.offline : paused ? t.paused : state === 'closed' ? t.closed : t.accepting;
 
   const doPause = async (minutes: number | null) => { setBusy(true); setTotalMs(minutes ? minutes * 60000 : null); await onPause(minutes); setBusy(false); setChoosing(false); };
   const doResume = async () => { setBusy(true); await onResume(); setBusy(false); };
   const chips: [string, number | null][] = [[t.m30, 30], [t.h1, 60], [t.h2, 120], [t.until, null]];
 
   return (
-    <div dir={isAr ? 'rtl' : 'ltr'} className={`rounded-2xl border p-4 transition-colors ${paused ? 'bg-amber-500/[0.07] border-amber-400/40' : 'bg-neutral-900 border-neutral-800'}`}>
+    <div dir={isAr ? 'rtl' : 'ltr'} className={`rounded-2xl border p-4 transition-colors ${disabled ? 'bg-red-500/[0.06] border-red-500/40' : paused ? 'bg-amber-500/[0.07] border-amber-400/40' : 'bg-neutral-900 border-neutral-800'}`}>
       <div className="flex items-center gap-3.5 flex-wrap">
-        <span className={`w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center ${paused ? 'bg-amber-400/15 text-amber-300' : state === 'closed' ? 'bg-neutral-800 text-neutral-300' : 'bg-green-500/15 text-green-400'}`}>
-          {paused ? <PauseCircle size={22} /> : state === 'closed' ? <Moon size={21} /> : (
+        <span className={`w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center ${disabled ? 'bg-red-500/15 text-red-400' : paused ? 'bg-amber-400/15 text-amber-300' : state === 'closed' ? 'bg-neutral-800 text-neutral-300' : 'bg-green-500/15 text-green-400'}`}>
+          {disabled ? <PowerOff size={21} /> : paused ? <PauseCircle size={22} /> : state === 'closed' ? <Moon size={21} /> : (
             <span className="relative flex h-3 w-3"><span className="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-60 animate-ping" /><span className="relative inline-flex h-3 w-3 rounded-full bg-green-500" /></span>
           )}
         </span>
@@ -81,6 +82,7 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
           <b className="block text-sm font-extrabold">{title}</b>
           <span className="block text-xs text-neutral-400 mt-0.5">{sub}</span>
         </span>
+        {!disabled && (
         <div className="flex p-1 rounded-full bg-black border border-neutral-800" role="group" aria-label={t.accepting}>
           {([['on', t.segOn], ['off', t.segOff]] as const).map(([k, label]) => {
             const active = (k === 'off') === paused;
@@ -94,6 +96,7 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
             );
           })}
         </div>
+        )}
       </div>
 
       <AnimatePresence initial={false}>
@@ -114,7 +117,7 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
             </div>
           </motion.div>
         )}
-        {paused && (
+        {paused && !disabled && (
           <motion.div key="paused" initial={reduce ? false : { opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden">
             <div className="pt-4 flex items-center gap-3 flex-wrap">
               <span className="flex-1 basis-48 min-w-0">

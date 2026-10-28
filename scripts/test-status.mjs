@@ -94,6 +94,10 @@ const base = () => ({
   pe.ordering.paused = true;
   pe.ordering.pausedUntil = new Date(monOpen - 1000).toISOString();
   ok(getOrderingState(pe, monOpen).state === 'open', 'expired pause auto-resumes');
+  const sh = base();
+  sh.ordering.paused = false;
+  sh.ordering.pausedUntil = new Date(monOpen + 3600e3).toISOString();
+  ok(getOrderingState(sh, monOpen).state === 'open', 'stale pausedUntil ignored when not paused');
   const pc = base();
   pc.ordering.paused = true;
   pc.ordering.pausedMessage = { en: 'Back soon', ar: '' };
@@ -129,6 +133,14 @@ function minMenu() {
   m.settings.ordering.paused = true;
   m.settings.ordering.pausedUntil = 'not-a-date';
   ok(validateMenu(m).ok === false, 'invalid pausedUntil rejected');
+  const mw = minMenu();
+  mw.settings.ordering.enabled = true;
+  ok(validateMenu(mw).ok === false, 'enabling without whatsapp rejected');
+  const mw2 = minMenu();
+  mw2.settings.ordering.enabled = true;
+  mw2.settings.whatsapp = '96170123456';
+  const vw2 = validateMenu(mw2);
+  ok(vw2.ok && vw2.value.settings.ordering.enabled === true, 'enabling with whatsapp kept');
   const m2 = minMenu();
   m2.settings.ordering.pausedUntil = new Date(Date.now() + 3600e3).toISOString();
   m2.settings.ordering.pausedMessage = { en: 'x'.repeat(200), ar: '' };

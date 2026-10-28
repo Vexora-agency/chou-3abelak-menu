@@ -29,7 +29,6 @@ export const Header: React.FC<HeaderProps> = ({
   orderingState,
 }) => {
   const { parY, glowY, intro, rise } = useHeaderMotion();
-  const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const smokeCanvasRef = useRef<HTMLCanvasElement>(null);
   const headerRef = useRef<HTMLElement>(null);
@@ -40,15 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const status = isOpenNow(menu.settings);
 
-  useHeaderIntroEngine(videoRef, canvasRef, smokeCanvasRef, headerRef, setHasEnded, setEngineDone);
-
-  const handleVideoEnded = () => {
-    setHasEnded(true);
-    const video = videoRef.current;
-    if (video) {
-      video.pause();
-    }
-  };
+  useHeaderIntroEngine(canvasRef, smokeCanvasRef, headerRef, setHasEnded, setEngineDone);
 
   const phoneLink = `tel:${menu.settings.phone || '+96170123456'}`;
   const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
@@ -86,12 +77,10 @@ export const Header: React.FC<HeaderProps> = ({
         intro={intro}
         status={status}
         orderingState={orderingState}
-        videoRef={videoRef}
         canvasRef={canvasRef}
         smokeCanvasRef={smokeCanvasRef}
         hasEnded={hasEnded}
         engineDone={engineDone}
-        handleVideoEnded={handleVideoEnded}
       />
 
       {/* Actions: WhatsApp is the primary call to action, Call and Map are secondary */}

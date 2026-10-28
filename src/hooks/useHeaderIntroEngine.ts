@@ -2,8 +2,27 @@ import { useEffect } from 'react';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 import type { SmokeParticle, SparkParticle } from '@/src/components/header/headerIntroParticles';
 
+// Forced-playback intro: the same 6 s / 24 fps logo reveal as the old video,
+// but sourced from 4 preloaded sprite sheets instead of a <video> element.
+// Canvas drawImage is never subject to autoplay policies (iOS Low Power Mode,
+// Android data saver), so the intro now runs on EVERY device. Frame timing,
+// alpha keying, particles and end states are identical to the video version.
+const SHEETS = [
+  '/assets/intro-sheet-0.webp',
+  '/assets/intro-sheet-1.webp',
+  '/assets/intro-sheet-2.webp',
+  '/assets/intro-sheet-3.webp',
+];
+const CELL_W = 720;
+const CELL_H = 266;
+const COLS = 4;
+const FRAMES_PER_SHEET = 36;
+const FPS = 24;
+const TOTAL_FRAMES = SHEETS.length * FRAMES_PER_SHEET; // 144
+const DURATION_S = TOTAL_FRAMES / FPS; // 6.0
+const END_AT_S = DURATION_S - 0.25; // match the old timeupdate threshold
+
 export function useHeaderIntroEngine(
-  videoRef: RefObject<HTMLVideoElement | null>,
   canvasRef: RefObject<HTMLCanvasElement | null>,
   smokeCanvasRef: RefObject<HTMLCanvasElement | null>,
   headerRef: RefObject<HTMLElement | null>,
@@ -12,18 +31,17 @@ export function useHeaderIntroEngine(
 ): void {
   // Real-time High-Definition Canvas Alpha Extraction + Cinematic Steam & Ember Engine
   useEffect(() => {
-    const video = videoRef.current;
     const canvas = canvasRef.current;
     const smokeCanvas = smokeCanvasRef.current;
-    if (!video || !canvas || !smokeCanvas) return;
+    if (!canvas || !smokeCanvas) return;
 
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const sCtx = smokeCanvas.getContext('2d');
     if (!ctx || !sCtx) return;
 
     // The intro always plays for everyone (site owner decision): no reduced-motion
-    // skip here. If playback is truly blocked, the catch/stall fallbacks below
-    // still show the final logo so the header never stays blank.
+    // skip here. If the sheets fail to load, the fallbacks below still show
+    // the final logo so the header never stays blank.
 
     // Enable high-definition image smoothing
     ctx.imageSmoothingEnabled = true;
@@ -34,6 +52,8 @@ export function useHeaderIntroEngine(
     let animId = 0;
     let isRunning = true;
     let finished = false;
+    let sheets: HTMLImageElement[] | null = null;
+    let startStamp = 0;
 
     // Particle pools
     const smokeParticles: SmokeParticle[] = [];
@@ -44,11 +64,17 @@ export function useHeaderIntroEngine(
     const brandPrimary =
       getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#FFC400';
 
-    video.defaultMuted = true;
-    video.muted = true;
-    video.playsInline = true;
-
     let tick = 0;
+
+    // Elapsed intro seconds; -1 while the sheets are still loading.
+    const introTime = () => (startStamp === 0 ? -1 : (performance.now() - startStamp) / 1000);
+
+    const finishNow = () => {
+      isRunning = false;
+      finished = true;
+      setHasEnded(true);
+      setEngineDone(true);
+    };
 
     const renderLoop = () => {
       if (!isRunning) {
@@ -65,14 +91,20 @@ export function useHeaderIntroEngine(
       const w = canvas.width;
       const h = canvas.height;
 
-      // 1. Process Video Frame with Crisp Subpixel Alpha Keying & Edge Luminosity Restoration
-      if (video.readyState >= 2 && !video.paused && !video.ended) {
+      // 1. Process Sprite Frame with Crisp Subpixel Alpha Keying & Edge Luminosity Restoration
+      const t = introTime();
+      if (sheets && t >= 0 && !finished) {
+        const frame = Math.min(Math.floor(t * FPS), TOTAL_FRAMES - 1);
+        const sheet = sheets[Math.floor(frame / FRAMES_PER_SHEET)];
+        const local = frame % FRAMES_PER_SHEET;
+        const sx = (local % COLS) * CELL_W;
+        const sy = Math.floor(local / COLS) * CELL_H;
         ctx.clearRect(0, 0, w, h);
-        ctx.drawImage(video, 0, 0, w, h);
+        ctx.drawImage(sheet, sx, sy, CELL_W, CELL_H, 0, 0, w, h);
 
         try {
-          const frame = ctx.getImageData(0, 0, w, h);
-          const data = frame.data;
+          const frameData = ctx.getImageData(0, 0, w, h);
+          const data = frameData.data;
           const len = data.length;
 
           for (let i = 0; i < len; i += 4) {
@@ -82,12 +114,12 @@ export function useHeaderIntroEngine(
             const max = r > g ? (r > b ? r : b) : (g > b ? g : b);
 
             if (max <= 12) {
-              // Complete transparent zero floor (cleans video compression black artifacts)
+              // Complete transparent zero floor (cleans compression artifacts)
               data[i + 3] = 0;
             } else if (max < 52) {
               // Smooth cubic Hermite anti-aliasing curve: eliminates jagged pixels
-              const t = (max - 12) / 40;
-              const smooth = t * t * (3 - 2 * t);
+              const tt = (max - 12) / 40;
+              const smooth = tt * tt * (3 - 2 * tt);
               data[i + 3] = (smooth * 255) | 0;
 
               // De-darken boundary pixels so edges stay vibrant & razor-sharp rather than dark/blurry
@@ -106,14 +138,18 @@ export function useHeaderIntroEngine(
               }
             }
           }
-          ctx.putImageData(frame, 0, 0);
+          ctx.putImageData(frameData, 0, 0);
         } catch {
-          // Fallback if cross-origin restricts
+          // Fallback if compositing is restricted
+        }
+
+        if (t >= END_AT_S) {
+          setHasEnded(true);
         }
 
         // 2. Spawn Dynamic Gourmet Smoke & Sizzle Sparks in 720x266 coordinate
         // space (buffers run at half resolution for performance; CSS upscales).
-        const curTime = video.currentTime;
+        const curTime = t;
         if (curTime > 0.3 && curTime < 4.8) {
           // Spawn positions per intro chapter (720x266 coordinate space).
           const spawn =
@@ -178,7 +214,6 @@ export function useHeaderIntroEngine(
         grad.addColorStop(0.35, `rgba(220, 220, 220, ${p.alpha * 0.32})`);
         grad.addColorStop(0.75, `rgba(180, 180, 180, ${p.alpha * 0.1})`);
         grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
         sCtx.fillStyle = grad;
         sCtx.beginPath();
         sCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
@@ -213,7 +248,8 @@ export function useHeaderIntroEngine(
       // The intro is over and every particle has faded: stop the loop for good
       // and unmount the canvases (they are already invisible via opacity-0).
       // This frees the main thread for scroll / hover for the rest of the visit.
-      if (video.ended && smokeParticles.length === 0 && sparkParticles.length === 0) {
+      const done = startStamp !== 0 && (performance.now() - startStamp) / 1000 >= DURATION_S;
+      if (done && smokeParticles.length === 0 && sparkParticles.length === 0) {
         finished = true;
         animId = 0;
         setEngineDone(true);
@@ -230,45 +266,46 @@ export function useHeaderIntroEngine(
       }
     };
 
-    const startPlayback = () => {
-      video.defaultMuted = true;
-      video.muted = true;
-      const promise = video.play();
-      if (promise !== undefined) {
-        promise
-          .then(() => {
-            kick();
-          })
-          .catch(() => {
-            // Autoplay blocked (e.g. iOS Low Power Mode): show the final logo right away
-            isRunning = false;
-            finished = true;
-            setHasEnded(true);
-            setEngineDone(true);
-          });
+    // Preload every sheet, then start the clock: playback itself can never be
+    // blocked (plain canvas drawing), so the only failure mode left is a
+    // network failure, which falls back to the final logo like before.
+    let settled = false;
+    const settle = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(stallTimer);
+      if (ok && sheets) {
+        startStamp = performance.now();
+        kick();
+      } else {
+        finishNow();
       }
     };
 
-    if (video.readyState >= 2) {
-      startPlayback();
-    } else {
-      video.addEventListener('canplay', startPlayback, { once: true });
-    }
-
-    const handleTimeUpdate = () => {
-      if (video.duration && video.currentTime >= video.duration - 0.25) {
-        setHasEnded(true);
+    const loaders = SHEETS.map(
+      (src) =>
+        new Promise<HTMLImageElement | null>((resolve) => {
+          const img = new Image();
+          img.decoding = 'async';
+          img.onload = () => resolve(img.naturalWidth > 0 ? img : null);
+          img.onerror = () => resolve(null);
+          img.src = src;
+        })
+    );
+    void Promise.all(loaders).then((imgs) => {
+      if (imgs.every((im): im is HTMLImageElement => im !== null)) {
+        sheets = imgs;
+        settle(true);
+      } else {
+        settle(false);
       }
-    };
-    video.addEventListener('timeupdate', handleTimeUpdate);
+    });
 
-    // Safety net: if the video never starts moving, show the final logo
+    // Safety net: if the sheets never arrive, show the final logo.
+    // Same 3.5 s window the video version used.
     const stallTimer = window.setTimeout(() => {
-      if (video.currentTime === 0 && !finished) {
-        isRunning = false;
-        finished = true;
-        setHasEnded(true);
-        setEngineDone(true);
+      if (!finished && startStamp === 0) {
+        finishNow();
       }
     }, 3500);
 
@@ -291,7 +328,7 @@ export function useHeaderIntroEngine(
       io.disconnect();
       cancelAnimationFrame(animId);
       animId = 0;
-      video.removeEventListener('timeupdate', handleTimeUpdate);
+      sheets = null;
     };
-  }, [videoRef, canvasRef, smokeCanvasRef, headerRef, setHasEnded, setEngineDone]);
+  }, [canvasRef, smokeCanvasRef, headerRef, setHasEnded, setEngineDone]);
 }

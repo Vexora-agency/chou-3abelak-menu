@@ -15,12 +15,10 @@ interface HeaderBrandBlockProps {
   intro: number;
   status: { isOpen: boolean; label: { en: string; ar: string } };
   orderingState?: OrderingStatus | null;
-  videoRef: RefObject<HTMLVideoElement | null>;
   canvasRef: RefObject<HTMLCanvasElement | null>;
   smokeCanvasRef: RefObject<HTMLCanvasElement | null>;
   hasEnded: boolean;
   engineDone: boolean;
-  handleVideoEnded: () => void;
 }
 
 export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
@@ -31,12 +29,10 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
   intro,
   status,
   orderingState,
-  videoRef,
   canvasRef,
   smokeCanvasRef,
   hasEnded,
   engineDone,
-  handleVideoEnded,
 }) => {
   const isAr = lang === 'ar';
 
@@ -63,6 +59,10 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
           decoding="async"
         />
 
+        {/* Sprite-driven intro frames are painted onto the canvas below by
+            the intro engine (forced playback: no autoplay policy applies).
+            The canvases hide once the intro completes. */}
+
         {/* Real-time Alpha-Keyed Video Canvas (720x266 buffer, CSS-upscaled) */}
         <canvas
           ref={canvasRef}
@@ -85,21 +85,6 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
           style={{ backgroundColor: 'transparent', mixBlendMode: 'screen' }}
         />
 
-        {/* Hidden Source Video Engine */}
-        <video
-          ref={videoRef}
-          muted
-          autoPlay
-          playsInline
-          preload="auto"
-          width={720}
-          height={266}
-          onEnded={handleVideoEnded}
-          style={{ display: 'none' }}
-        >
-          <source src="/assets/logo-intro.webm" type="video/webm" />
-          <source src="/assets/logo-intro.mp4" type="video/mp4" />
-        </video>
       </div>
 
       {/* Visually Hidden Semantic H1 for SEO / Screen Readers */}

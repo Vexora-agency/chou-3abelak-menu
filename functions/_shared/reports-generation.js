@@ -228,7 +228,7 @@ export async function buildEmailPayload(env, summary, csvAttached) {
     currency,
     logoUrl: site ? `${site}/assets/email-logo.png` : '',
     dashboardUrl: site ? `${site}/#admin` : '',
-    settingsUrl: site ? `${site}/#admin` : '',
+    manageUrl: site ? `${site}/#admin/reports` : '',
     csvAttached: !!csvAttached,
     retention: { piiDays: cfg.piiDays },
     totals: summary.totals,

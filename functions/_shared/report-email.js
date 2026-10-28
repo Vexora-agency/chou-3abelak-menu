@@ -172,12 +172,12 @@ export function renderMonthlyReportEmail(d, lang = 'en') {
   </td></tr>
   <tr><td class="em-bgw em-tgrey px" bgcolor="#FFFFFF" style="padding:14px 28px 28px;text-align:center;font-size:12px;line-height:19px;color:${GREY};">${esc(d.csvAttached ? t.csvNote : t.csvLink)}<br>${esc(t.retention(d.retention.piiDays))}</td></tr>
   <tr><td class="em-dark-keep" bgcolor="${BLACK}" align="center" style="background:${BLACK};border-radius:0 0 20px 20px;padding:22px 24px;font-size:12px;line-height:19px;color:#BDBDBD;">
-    ${esc(t.footer(name))}<br><a href="${esc(d.settingsUrl)}" class="em-ylt" style="color:${YELLOW};text-decoration:underline;">${esc(t.manage)}</a>
+    ${esc(t.footer(name))}<br><a href="${esc(d.manageUrl)}" class="em-ylt" style="color:${YELLOW};text-decoration:underline;">${esc(t.manage)}</a>
   </td></tr>
 </table></td></tr></table></body></html>`;
 
   const lines = [`${t.label} - ${mLabel} - ${name}`, '', `${t.orders}: ${num(T.orders)}`, `${t.revenue}: ${num(T.revenue)} ${cur}`, `${t.avg}: ${num(T.avg)} ${cur}`, `${t.status}: ${num(T.completed)} | ${t.cancelled}: ${num(T.cancelled)}`, ''];
   (d.topItems || []).slice(0, 5).forEach((it, i) => lines.push(`${i + 1}. ${it.name[l] || it.name.en} - ${num(it.qty)} ${t.sold}`));
-  lines.push('', `${t.cta}: ${d.dashboardUrl}`, '', t.retention(d.retention.piiDays), `${t.manage}: ${d.settingsUrl}`);
+  lines.push('', `${t.cta}: ${d.dashboardUrl}`, '', t.retention(d.retention.piiDays), `${t.manage}: ${d.manageUrl}`);
   return { subject, html, text: lines.join('\n') };
 }

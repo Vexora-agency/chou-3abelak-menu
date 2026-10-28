@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { MenuData, MenuItem, AdminSaveResult } from '@/src/types/menu';
 import { BackupPanel } from '@/src/features/backup';
 import { normalizePricing } from '@/src/utils/pricing';
@@ -41,20 +41,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
     // Deep-link: #admin/backup (or any tab) survives refresh.
+    // #admin/reports opens the dashboard on the reports view (email link).
     const m = /^#admin\/([a-z]+)$/.exec(window.location.hash);
-    const t = m ? (m[1] as AdminTab) : null;
-    return t === 'dashboard' || t === 'settings' || t === 'categories' || t === 'items' || t === 'backup'
-      ? t
+    const raw = m ? m[1] : null;
+    if (raw === 'reports') return 'dashboard';
+    return raw === 'dashboard' || raw === 'settings' || raw === 'categories' || raw === 'items' || raw === 'backup'
+      ? (raw as AdminTab)
       : 'dashboard';
   });
-  // Keep the tab in the address bar (replaceState: no history spam, refresh-safe).
-  useEffect(() => {
-    const want = `#admin/${activeTab}`;
-    if (window.location.hash !== want) {
-      window.history.replaceState(null, '', want);
-    }
-  }, [activeTab]);
-
   // Item edit modal state
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isNewItem, setIsNewItem] = useState(false);
@@ -109,6 +103,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   useEffect(() => {
     if (saveSuccess) void fetchActivityOnSave();
   }, [saveSuccess, fetchActivityOnSave]);
+
+  // Keep the tab (and the reports deep-link) in the address bar
+  // (replaceState: no history spam, refresh-safe). The URL follows state;
+  // state is forced from the URL only once below, so manual navigation is
+  // never yanked back. Placed after the hooks it reads (TS block scope).
+  useEffect(() => {
+    const want = activeTab === 'dashboard' && report.dashView === 'reports' && report.reportsOn
+      ? '#admin/reports'
+      : `#admin/${activeTab}`;
+    if (window.location.hash !== want) {
+      window.history.replaceState(null, '', want);
+    }
+  }, [activeTab, report.dashView, report.reportsOn]);
+
+  // One-shot: an incoming #admin/reports link opens the reports view once
+  // reports are known to be on (they load async). Never re-fires, so manual
+  // tab switches afterwards are left alone.
+  const reportsLinkHandled = useRef(false);
+  useEffect(() => {
+    if (reportsLinkHandled.current || !report.reportsOn) return;
+    if (/^#admin\/reports$/.test(window.location.hash)) {
+      reportsLinkHandled.current = true;
+      report.setDashView('reports');
+    }
+  }, [report.reportsOn]);
 
   const handleTabChange = (tab: AdminTab) => {
     setActiveTab(tab);

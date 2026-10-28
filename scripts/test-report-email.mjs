@@ -16,7 +16,7 @@ function ok(cond, name) {
 const data = () => ({
   restaurantName: { en: 'Chou 3abelak', ar: 'شو عبالك' }, month: '2026-09', currency: { en: 'LBP', ar: 'ل.ل' },
   logoUrl: 'https://example.com/assets/email-logo.png', dashboardUrl: 'https://example.com/#admin',
-  settingsUrl: 'https://example.com/#admin', csvAttached: false, retention: { piiDays: 30 },
+  manageUrl: 'https://example.com/#admin/reports', csvAttached: false, retention: { piiDays: 30 },
   totals: { orders: 100, revenue: 4000000, avg: 40000, completed: 95, cancelled: 5 },
   prev: null, busiestDay: null, peakHour: null,
   topItems: [{ name: { en: 'Zaatar', ar: 'زعتر' }, qty: 10 }],
@@ -48,6 +48,7 @@ const data = () => ({
   ok(html.includes('[data-ogsc] .em-dark-keep'), 'gmail dark wrapper rule present');
   ok(html.includes('prefers-color-scheme'), 'media query present');
   ok(!/class="[^"]*"[^>]*class="/.test(html), 'no duplicate class attributes');
+  ok(html.includes('https://example.com/#admin/reports'), 'manage link deep-links the reports view');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

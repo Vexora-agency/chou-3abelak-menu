@@ -4,7 +4,7 @@ import { renderMonthlyReportEmail } from '../functions/_shared/report-email.js';
 const logoUrl = process.argv[2] || 'https://example.com/assets/email-logo.png';
 const data = {
   restaurantName: { en: 'Chou 3abelak', ar: 'شو عبالك' }, month: '2026-09', currency: { en: 'LBP', ar: 'ل.ل' },
-  logoUrl, dashboardUrl: 'https://example.com/#admin', settingsUrl: 'https://example.com/#admin', csvAttached: true, retention: { piiDays: 90 },
+  logoUrl, dashboardUrl: 'https://example.com/#admin', manageUrl: 'https://example.com/#admin/reports', csvAttached: true, retention: { piiDays: 90 },
   totals: { orders: 412, revenue: 68040000, avg: 165146, completed: 380, cancelled: 32 },
   prev: { orders: 368, revenue: 60120000, avg: 163370 },
   busiestDay: { date: '2026-09-12', orders: 31 }, peakHour: 20,

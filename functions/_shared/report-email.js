@@ -112,14 +112,22 @@ export function renderMonthlyReportEmail(d, lang = 'en') {
 
   const empty = T.orders === 0;
   const html = `<!doctype html>
-<html lang="${l}" dir="${isAr ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>${esc(subject)}</title>
-<style>@media only screen and (max-width:480px){.kpi{display:block!important;width:100%!important;padding:0 0 8px!important}.px{padding-left:18px!important;padding-right:18px!important}}</style></head>
+<html lang="${l}" dir="${isAr ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark"><title>${esc(subject)}</title>
+<style>@media only screen and (max-width:480px){.kpi{display:block!important;width:100%!important;padding:0 0 8px!important}.px{padding-left:18px!important;padding-right:18px!important}}
+/* Brand bands (logo header + footer) must stay black in dark mode: the logo
+   artwork is white-on-transparent, so an inverted white band would erase it.
+   The media query covers Apple Mail/Samsung/Outlook; the data-ogsc rule
+   covers the Gmail app, which strips media queries but wraps content in a
+   data-ogsc container when it inverts colors. */
+@media (prefers-color-scheme: dark){.em-dark-keep{background-color:${BLACK}!important;}}
+/* Gmail app dark mode (media queries stripped — the wrapper carries the signal instead). */
+[data-ogsc] .em-dark-keep{background-color:${BLACK}!important;}</style></head>
 <body style="margin:0;padding:0;background:#EDEDED;font-family:${font};">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${esc(pre)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#EDEDED"><tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;">
-  <tr><td bgcolor="${BLACK}" align="center" style="background:${BLACK};border-radius:20px 20px 0 0;padding:30px 24px 24px;">
-    <img src="${esc(d.logoUrl)}" width="180" alt="${esc(name)}" style="display:block;margin:0 auto;border:0;max-width:180px;height:auto;">
+  <tr><td class="em-dark-keep" bgcolor="${BLACK}" align="center" style="background:${BLACK};border-radius:20px 20px 0 0;padding:30px 24px 24px;">
+    <img src="${esc(d.logoUrl)}" width="180" alt="${esc(name)}" style="display:block;margin:0 auto;border:0;max-width:180px;height:auto;font-family:${font};font-size:18px;font-weight:bold;color:${YELLOW};">
     <div style="margin-top:16px;font-size:12px;font-weight:bold;letter-spacing:${isAr ? '0' : '3px'};text-transform:${isAr ? 'none' : 'uppercase'};color:${YELLOW};">${esc(t.label)}</div>
   </td></tr>
   <tr><td bgcolor="${YELLOW}" height="4" style="background:${YELLOW};height:4px;font-size:0;line-height:0;">&nbsp;</td></tr>
@@ -138,7 +146,7 @@ export function renderMonthlyReportEmail(d, lang = 'en') {
     <table role="presentation" cellpadding="0" cellspacing="0"><tr><td bgcolor="${YELLOW}" style="background:${YELLOW};border-radius:999px;"><a href="${esc(d.dashboardUrl)}" style="display:inline-block;padding:15px 34px;font-size:15px;font-weight:bold;color:${BLACK};text-decoration:none;font-family:${font};">${esc(t.cta)}</a></td></tr></table>
   </td></tr>
   <tr><td bgcolor="#FFFFFF" class="px" style="padding:14px 28px 28px;text-align:center;font-size:12px;line-height:19px;color:${GREY};">${esc(d.csvAttached ? t.csvNote : t.csvLink)}<br>${esc(t.retention(d.retention.piiDays))}</td></tr>
-  <tr><td bgcolor="${BLACK}" align="center" style="background:${BLACK};border-radius:0 0 20px 20px;padding:22px 24px;font-size:12px;line-height:19px;color:#BDBDBD;">
+  <tr><td class="em-dark-keep" bgcolor="${BLACK}" align="center" style="background:${BLACK};border-radius:0 0 20px 20px;padding:22px 24px;font-size:12px;line-height:19px;color:#BDBDBD;">
     ${esc(t.footer(name))}<br><a href="${esc(d.settingsUrl)}" style="color:${YELLOW};text-decoration:underline;">${esc(t.manage)}</a>
   </td></tr>
 </table></td></tr></table></body></html>`;

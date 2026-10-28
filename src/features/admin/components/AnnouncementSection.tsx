@@ -145,7 +145,10 @@ function ScheduleField({
       <div className="flex items-center justify-between mb-1">
         <label className="block text-xs text-neutral-400">{label}</label>
       </div>
-      <div className="relative">
+      {/* overflow-hidden: iOS Safari paints datetime-local segments past the
+          input's own box (ignoring max-width); clipping at this rounded
+          wrapper keeps the field visually inside its frame on any engine. */}
+      <div className="relative overflow-hidden rounded-xl">
         <input
           type="datetime-local"
           dir="ltr"

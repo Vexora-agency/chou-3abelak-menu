@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useId, useRef } from 'react';
 import { usePathSweep } from '@/src/hooks/useEdgeSweep';
 
 interface EdgeSweepLineProps {
@@ -14,6 +14,8 @@ const EDGE_D = 'M 0.5 30 C 0.5 32.5, 2 33, 6 33 L 94 33 C 98 33, 99.5 32.5, 99.5
 export const EdgeSweepLine: React.FC<EdgeSweepLineProps> = ({ position }) => {
   const cometRef = useRef<SVGPathElement>(null);
   usePathSweep(cometRef);
+  // useId() contains colons — unsafe inside url(#...) references, so sanitize.
+  const mid = `edgef${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   return (
     <div
       className={`edge-curve ${position === 'top' ? 'edge-curve-t' : 'edge-curve-b'}`}
@@ -21,19 +23,39 @@ export const EdgeSweepLine: React.FC<EdgeSweepLineProps> = ({ position }) => {
       aria-hidden="true"
     >
       <svg viewBox="0 0 100 34" preserveAspectRatio="none" width="100%" height="100%" aria-hidden="true">
-        {/* The one moving line: thin yellow segment, halo from its own shadow. */}
+        <defs>
+          {/* Moving window: a blurred white dash on black. Its dashoffset is
+              driven by rAF (see usePathSweep) — never a CSS keyframe. */}
+          <mask id={mid} maskUnits="userSpaceOnUse">
+            <g filter={`url(#${mid}b)`}>
+              <path
+                ref={cometRef}
+                d={EDGE_D}
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth="4"
+                vectorEffect="non-scaling-stroke"
+                strokeLinecap="round"
+                pathLength={100}
+                strokeDasharray="30 70"
+              />
+            </g>
+          </mask>
+          {/* Softens the window edges so the light reads as liquid, not cut. */}
+          <filter id={`${mid}b`} x="-20%" y="-60%" width="140%" height="220%">
+            <feGaussianBlur stdDeviation="1.6" />
+          </filter>
+        </defs>
+        {/* The one flowing line: bright gold revealed only inside the window. */}
         <path
-          ref={cometRef}
           d={EDGE_D}
           fill="none"
           stroke="#FFE07A"
-          strokeOpacity="1"
-          strokeWidth="2"
+          strokeWidth="2.5"
           vectorEffect="non-scaling-stroke"
           strokeLinecap="round"
           pathLength={100}
-          strokeDasharray="22 78"
-          style={{ filter: 'drop-shadow(0 0 3px rgba(255,224,122,0.85))' }}
+          mask={`url(#${mid})`}
         />
       </svg>
     </div>

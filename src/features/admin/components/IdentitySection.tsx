@@ -1,7 +1,7 @@
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
 import type { MenuSettings } from '@/src/types/menu';
-import { DIAL_CODES, OTHER_ISO, composeFull, flagEmoji, splitDialCode } from '@/src/config/dialCodes';
+import { DIAL_CODES, OTHER_ISO, composeFull, splitDialCode } from '@/src/config/dialCodes';
+import { CountryCodePicker } from './CountryCodePicker';
 
 type IdentityValues = Pick<
   MenuSettings,
@@ -126,22 +126,11 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
         <div className="col-span-2">
           <label className="block text-xs text-neutral-400 mb-1">WhatsApp number</label>
           <div className="flex gap-2" dir="ltr">
-            <div className="relative shrink-0">
-              <select
-                value={waSplit.iso}
-                onChange={(e) => setWa(e.target.value, waSplit.national)}
-                aria-label="Country code"
-                className="h-10 max-w-[150px] ps-2.5 pe-7 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] appearance-none cursor-pointer"
-              >
-                {DIAL_CODES.map((c) => (
-                  <option key={c.iso} value={c.iso}>
-                    {flagEmoji(c.iso)} {c.name} +{c.code}
-                  </option>
-                ))}
-                <option value={OTHER_ISO}>Other (full international)</option>
-              </select>
-              <ChevronDown size={14} className="absolute end-2 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
-            </div>
+            <CountryCodePicker
+              value={waSplit.iso}
+              onChange={(iso) => setWa(iso, waSplit.national)}
+              lang={lang}
+            />
             <input
               type="tel"
               inputMode="tel"

@@ -1,10 +1,12 @@
 // Unit tests for the Google-style WhatsApp country picker data + logic.
 // Run: npx tsx scripts/test-dial-codes.ts
 import {
+  DIAL_AR_NAMES,
   DIAL_CODES,
   DEFAULT_DIAL_ISO,
   OTHER_ISO,
   composeFull,
+  filterDialCodes,
   flagEmoji,
   splitDialCode,
 } from '../src/config/dialCodes';
@@ -58,6 +60,21 @@ function ok(cond: boolean, name: string) {
   const full = composeFull('20', '0101234567');
   const back = splitDialCode(full);
   ok(full === '20101234567' && back.iso === 'EG' && back.national === '101234567', 'round trip egypt local format');
+}
+
+/* ---------------- search ---------------- */
+{
+  ok(filterDialCodes('').length === DIAL_CODES.length, 'empty query returns all');
+  ok(filterDialCodes('e').some((c) => c.iso === 'EG'), '"e" matches Egypt');
+  const byCode = filterDialCodes('961');
+  ok(byCode.length === 1 && byCode[0].iso === 'LB', '"961" isolates Lebanon');
+  ok(filterDialCodes('لب').some((c) => c.iso === 'LB'), 'arabic alias matches Lebanon');
+  ok(filterDialCodes('مصر').some((c) => c.iso === 'EG'), 'arabic alias matches Egypt');
+  ok(filterDialCodes('xyz123').length === 0, 'no match returns empty');
+  ok(
+    Object.keys(DIAL_AR_NAMES).every((iso) => DIAL_CODES.some((c) => c.iso === iso)),
+    'every arabic alias points at a real entry'
+  );
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

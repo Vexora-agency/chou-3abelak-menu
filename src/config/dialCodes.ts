@@ -296,3 +296,50 @@ export function composeFull(code: string, national: string): string {
   if (!rest) return '';
   return `${code}${rest}`;
 }
+
+/** Arabic aliases for the countries an owner is most likely to search for. */
+export const DIAL_AR_NAMES: Record<string, string> = {
+  LB: 'لبنان',
+  EG: 'مصر',
+  SA: 'السعودية',
+  JO: 'الأردن',
+  SY: 'سوريا',
+  AE: 'الإمارات',
+  IQ: 'العراق',
+  PS: 'فلسطين',
+  KW: 'الكويت',
+  QA: 'قطر',
+  OM: 'عمان',
+  BH: 'البحرين',
+  YE: 'اليمن',
+  TR: 'تركيا',
+  US: 'أمريكا',
+  GB: 'بريطانيا',
+  FR: 'فرنسا',
+  DE: 'ألمانيا',
+  CA: 'كندا',
+  AU: 'أستراليا',
+  BR: 'البرازيل',
+  ES: 'إسبانيا',
+  IT: 'إيطاليا',
+};
+
+/**
+ * Search the table by English name, Arabic alias, or dial digits
+ * ("e" -> Egypt/Yemen/..., "961" -> Lebanon, "لب" -> Lebanon).
+ */
+export function filterDialCodes(query: string): DialCode[] {
+  const raw = (query || '').trim();
+  if (!raw) return DIAL_CODES;
+  const q = raw.toLowerCase();
+  // Digit matching only for digit-ish queries ("961", "+961") — a query
+  // with letters ("xyz123") matches names alone, never area codes.
+  const qd = /^[+\d\s-]+$/.test(raw) ? raw.replace(/\D/g, '') : '';
+  return DIAL_CODES.filter((c) => {
+    if (c.name.toLowerCase().includes(q)) return true;
+    const ar = DIAL_AR_NAMES[c.iso];
+    if (ar && ar.includes(raw)) return true;
+    if (qd && (c.code.startsWith(qd) || qd.startsWith(c.code))) return true;
+    return false;
+  });
+}

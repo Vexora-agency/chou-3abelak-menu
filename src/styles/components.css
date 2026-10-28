@@ -113,13 +113,18 @@
   pointer-events: none;
   background: linear-gradient(90deg, transparent 0%, var(--primary) 18%, #FFE07A 50%, var(--primary) 82%, transparent 100%);
 }
-.edge-line::after {
-  content: "";
+/* rAF-driven shine (see EdgeSweepLine + useEdgeSweep): a real div whose inline
+   translateX (%) is set every frame. Deliberately NOT a CSS keyframe —
+   phone power saving modes can freeze those, which is how the header sweep
+   disappeared on iPhones. */
+.edge-sweep {
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
   width: 30%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
-  animation: edgeSweep 4.8s ease-in-out infinite;
+  will-change: transform;
 }
 .edge-line-b { bottom: 0; }
 .edge-line-t { top: 0; }

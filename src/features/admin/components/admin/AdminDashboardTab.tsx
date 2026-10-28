@@ -116,7 +116,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
         </div>
       )}
       {(showReports || customersOn) && (
-        <div className="mb-4 flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800 w-fit max-w-full overflow-x-auto" role="tablist" aria-label={isAr ? 'الداشبورد' : 'Dashboard'}>
+        <div className="mb-4 flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800 w-fit max-w-full overflow-x-auto no-scrollbar" role="tablist" aria-label={isAr ? 'الداشبورد' : 'Dashboard'}>
           {(['overview', ...(showReports ? ['reports'] : []), ...(customersOn ? ['customers'] : [])] as Array<'overview' | 'reports' | 'customers'>).map((v) => {
             const active = dashView === v;
             return (

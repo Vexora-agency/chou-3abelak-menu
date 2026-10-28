@@ -25,17 +25,18 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
   return (
     <>
       {/* Top Bar */}
-      <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
+      <div className="flex items-center justify-between gap-2 pb-4 border-b border-neutral-800">
         <button
           type="button"
           onClick={onClose}
-          className="flex items-center gap-2 text-sm font-bold text-[var(--primary)] hover:underline"
+          className="flex items-center gap-2 text-sm font-bold text-[var(--primary)] hover:underline shrink-0"
         >
-          <ArrowLeft size={16} />
-          <span>{isAr ? 'العودة للموقع الرئيسي' : 'Back to Live Menu'}</span>
+          <ArrowLeft size={16} className="rtl:rotate-180 shrink-0" />
+          <span className="hidden min-[480px]:inline">{isAr ? 'العودة للموقع الرئيسي' : 'Back to Live Menu'}</span>
+          <span className="min-[480px]:hidden">{isAr ? 'رجوع' : 'Back'}</span>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {saveSuccess && (
             <span className="flex items-center gap-1 text-xs text-green-400 font-bold">
               <Check size={14} /> {isAr ? 'تم الحفظ!' : 'Saved!'}
@@ -47,7 +48,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
               onClick={onToggleLang}
               aria-label={isAr ? 'Switch to English' : 'التبديل إلى العربية'}
               title={isAr ? 'Switch to English' : 'التبديل إلى العربية'}
-              className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/60 transition-colors"
+              className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/60 transition-colors whitespace-nowrap shrink-0"
             >
               <Globe size={14} />
               <span>{isAr ? 'EN' : 'عربي'}</span>
@@ -60,7 +61,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
             aria-label={isAr ? 'الحفظ التلقائي' : 'Auto-save'}
             title={isAr ? 'حفظ تلقائي لكل تعديل' : 'Auto-save every change'}
             onClick={onToggleAutoSave}
-            className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border transition-colors cursor-pointer whitespace-nowrap shrink-0"
             style={{ borderColor: autoSave ? 'var(--primary)' : '#3f3f46', color: autoSave ? 'var(--primary)' : '#a1a1aa' }}
           >
             <span
@@ -76,7 +77,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
           <button
             type="button"
             onClick={onSignOut}
-            className="text-xs px-2.5 py-1 rounded-full bg-neutral-800 border border-neutral-700 text-neutral-400 hover:text-red-400 hover:border-red-400/60 transition-colors font-bold"
+            className="text-xs px-2.5 py-1 rounded-full bg-neutral-800 border border-neutral-700 text-neutral-400 hover:text-red-400 hover:border-red-400/60 transition-colors font-bold whitespace-nowrap shrink-0"
           >
             {isAr ? 'تسجيل الخروج' : 'Sign out'}
           </button>
@@ -96,7 +97,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
       </h1>
 
       {/* Tabs */}
-      <div className="flex gap-1.5 p-1 bg-neutral-900 rounded-2xl border border-neutral-800 mt-4 mb-6 overflow-x-auto">
+      <div className="flex gap-1.5 p-1 bg-neutral-900 rounded-2xl border border-neutral-800 mt-4 mb-6 overflow-x-auto no-scrollbar">
         {(['dashboard', 'settings', 'categories', 'items', 'backup'] as const).map((tab) => (
           <button
             key={tab}

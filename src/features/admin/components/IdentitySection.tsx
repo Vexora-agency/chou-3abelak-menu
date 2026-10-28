@@ -118,6 +118,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
           <label className="block text-xs text-neutral-400 mb-1">Phone</label>
           <input
             type="text"
+            dir="ltr"
             value={phone}
             onChange={(e) => onUpdate((prev) => ({ ...prev, phone: e.target.value }))}
             className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
@@ -152,10 +153,11 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
       </div>
 
       <div>
-        <label className="block text-xs text-neutral-400 mb-1">Google Maps URL</label>
-        <input
-          type="text"
-          value={mapUrl}
+          <label className="block text-xs text-neutral-400 mb-1">Google Maps URL</label>
+          <input
+            type="text"
+            dir="ltr"
+            value={mapUrl}
           onChange={(e) => onUpdate((prev) => ({ ...prev, mapUrl: e.target.value }))}
           className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
         />

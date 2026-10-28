@@ -56,7 +56,13 @@ export default function App() {
   const {
     cart, cartLines, totalCartCount, totalCartPrice,
     handleAddItem, handleAddConfigured, handleUpdateLine, handleRemoveLine, handleRemoveAddon, handleClearCart,
-  } = useShopCartState(menu, setActiveItem);
+  } = useShopCartState(menu, setActiveItem, () => {
+    // Every successful add (plain, or configured with variants/add-ons)
+    // lands the customer in the cart: close the item sheet (if open) and
+    // open the cart drawer on top.
+    setActiveItem(null);
+    setIsCartOpen(true);
+  });
 
   // Online / Offline listener
   useEffect(() => {

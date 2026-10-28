@@ -77,6 +77,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     };
   }, [isOpen, idemKeyRef]);
 
+  // Escape closes the topmost layer first (location sheet, then the
+  // drawer) — same keyboard contract as the item details sheet.
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      // Same as the sheet's own X / backdrop: dismiss discards the
+      // unconfirmed pick instead of keeping a half-chosen point.
+      if (locSheetOpen) closeLocSheet(false);
+      else onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, locSheetOpen, closeLocSheet, onClose]);
+
   // Reset transient checkout state whenever the drawer closes.
   // Render-phase adjustment (blessed pattern): guarded so it converges
   // immediately, and the closed drawer never flashes stale errors.
@@ -241,6 +256,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               onSend={() => void handleSendOrder()}
               onClearCart={handleClearCartWithLocation}
             />
+
+            {/* Bottom Close — same contract as the item sheet: keep
+                shopping without touching the cart contents. */}
+            <button
+              type="button"
+              onClick={onClose}
+              className={`btn-tactile w-full h-11 rounded-full border text-sm font-semibold transition-colors ${
+                darkMode
+                  ? 'border-neutral-700 text-neutral-300 hover:bg-white/5'
+                  : 'border-neutral-300 text-neutral-700 hover:bg-black/5'
+              }`}
+            >
+              {isAr ? 'إغلاق' : 'Close'}
+            </button>
           </div>
         )}
       </div>

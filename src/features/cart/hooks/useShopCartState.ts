@@ -65,7 +65,13 @@ function loadCart(): Record<string, CartLine> {
   }
 }
 
-export function useShopCartState(menu: MenuData | null, setActiveItem: (item: MenuItem | null) => void) {
+export function useShopCartState(
+  menu: MenuData | null,
+  setActiveItem: (item: MenuItem | null) => void,
+  // Called after EVERY successful add (plain or configured with add-ons):
+  // the caller opens the cart drawer so the customer sees what landed.
+  onAdded?: () => void,
+) {
   // Cart lines keyed by id + variantId + sorted addonIds (legacy id->qty
   // carts migrate on load).
   const [cart, setCart] = useState<Record<string, CartLine>>(loadCart);
@@ -133,6 +139,7 @@ export function useShopCartState(menu: MenuData | null, setActiveItem: (item: Me
       const next = ex ? Math.min(ex.quantity + p.step, p.maxQty) : p.minQty;
       return { ...prev, [key]: { id: item.id, quantity: next } };
     });
+    onAdded?.();
   };
 
   const snapDown = (item: MenuItem, qty: number) => {
@@ -152,6 +159,7 @@ export function useShopCartState(menu: MenuData | null, setActiveItem: (item: Me
       if (addonIds.length) line.addonIds = [...addonIds];
       return { ...prev, [key]: line };
     });
+    onAdded?.();
   };
 
   const handleUpdateLine = (key: string, dir: 1 | -1) => {

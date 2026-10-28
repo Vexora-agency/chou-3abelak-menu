@@ -280,9 +280,8 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
               onClick={() => goTo(idx)}
               className={`h-1.5 rounded-full transition-all duration-300 ${
                 idx === index
-                  // Active: gold on dark, deep gold (#8a6d00) on light —
-                  // pure yellow on white is unreadable.
-                  ? darkMode ? 'w-6 bg-[var(--primary)]' : 'w-6 bg-[#8a6d00]'
+                  // Active: gold on dark, solid black on light (owner call).
+                  ? darkMode ? 'w-6 bg-[var(--primary)]' : 'w-6 bg-[#0A0A0A]'
                   : darkMode ? 'w-1.5 bg-white/25 hover:bg-white/40' : 'w-1.5 bg-black/20 hover:bg-black/40'
               }`}
             />

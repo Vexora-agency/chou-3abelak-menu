@@ -55,19 +55,20 @@ export function isPollStale(lastSuccessMs: number | null, nowMs: number, maxAgeM
 }
 
 /**
- * Adaptive poll cadence: every 5 s while paused (a resume must surface in
+ * Adaptive poll cadence: every 3 s while paused (a resume must surface in
  * seconds — this is the moment customers stare at the countdown), every
- * 10 s within two minutes of opening/returning (fresh sessions are when
+ * 5 s within two minutes of opening/returning (fresh sessions are when
  * owners test and customers decide — a pause must surface fast there too),
  * every 60 s otherwise (idle-open pages stay cheap on KV reads and phone
- * battery).
+ * battery). Fast cadences run only in short windows, so steady-state cost
+ * never moves. Below ~3 s polling stops paying: truer instant needs push.
  */
 export function pollIntervalMs(
   state: OrderingStatus | null,
   nowMs: number = Date.now(),
   lastReturnMs: number = 0
 ): number {
-  if (state?.state === 'paused') return 5000;
-  if (nowMs - lastReturnMs < 120000) return 10000;
+  if (state?.state === 'paused') return 3000;
+  if (nowMs - lastReturnMs < 120000) return 5000;
   return 60000;
 }

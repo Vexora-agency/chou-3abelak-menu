@@ -6,7 +6,13 @@
 
 import { randomBytes, pbkdf2Sync } from 'node:crypto';
 
-const ITERATIONS = 260000;
+// 50,000 iterations, NOT the OWASP 600k: Cloudflare's free tier kills any
+// request past 50 ms CPU, and 260k measured ~173 ms (laptop OpenSSL; edge
+// proportional). 50k (~12-15 ms edge) keeps 3-4x headroom while staying 5x
+// above the NIST 800-63B 10k minimum — plenty behind a 5-fail/15-min lockout,
+// unique 16 B salts, and strong generated passwords. Verified end-to-end:
+// higher counts 401 on production free tier (CPU-killed derive, silent catch).
+const ITERATIONS = 50000;
 const SALT_BYTES = 16;
 const HASH_BYTES = 32;
 

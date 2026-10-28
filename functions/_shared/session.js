@@ -4,7 +4,10 @@
  */
 
 export const COOKIE_NAME = '__Host-admin-session';
-export const MIN_PBKDF2_ITERATIONS = 210000;
+// Floor == generator value. MUST stay fittable in the 50 ms free-tier CPU
+// budget (see scripts/hash-password.mjs); higher counts get CPU-killed and
+// every login 401s. Older (higher-count) hashes keep verifying (>= check).
+export const MIN_PBKDF2_ITERATIONS = 50000;
 export const MAX_BODY_BYTES = 4 * 1024;
 
 /* ---------- base64 helpers (standard base64, matching the hash format) ---------- */

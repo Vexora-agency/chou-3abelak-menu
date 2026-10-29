@@ -1,11 +1,18 @@
 /**
- * GET /api/admin/versions/<id>/changes — diff that version vs the live menu.
+ * GET /api/admin/versions/<id>/changes — the version's OWN changes.
+ *
+ * Each version row stores the menu as it was BEFORE its save, so the row's
+ * truthful content is the step to its next-newer neighbor (exactly what its
+ * badges were counted from at save time). Comparing against live instead
+ * repeats every later save's changes inside EVERY older review — the same
+ * cumulative list everywhere ("duplicated versions"). Only the newest row
+ * has no neighbor and still compares against live.
  */
 
 import { checkApiHeaders, jsonNoStore } from '../../../../_shared/session.js';
 import { featureOffResponse, hasFeature } from '../../../../_shared/plan.js';
 import { diffMenus } from '../../../../_shared/diff.js';
-import { getVersionDoc } from '../../../../_shared/versions.js';
+import { getVersionDoc, listVersions, getVersionDoc as getV } from '../../../../_shared/versions.js';
 
 export async function onRequest(context) {
   const { request, env, params } = context;
@@ -15,23 +22,48 @@ export async function onRequest(context) {
   if (request.method !== 'GET') return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'GET' });
   if (!env.MENU_KV) return jsonNoStore({ error: 'unavailable' }, 503);
 
-  const id = typeof params?.id === 'string' ? params.id : '';
+  const rawId = typeof params?.id === 'string' ? params.id : '';
+  let id = rawId;
+  try {
+    id = decodeURIComponent(id);
+  } catch {
+    return jsonNoStore({ error: 'not_found' }, 404);
+  }
   const stored = await getVersionDoc(env, id);
   if (!stored) return jsonNoStore({ error: 'not_found' }, 404);
 
-  let current = null;
-  try {
-    current = await env.MENU_KV.get('menu', { type: 'json' });
-  } catch {}
-  if (!current) return jsonNoStore({ error: 'unavailable' }, 503);
-
   const url = new URL(request.url);
   const lang = url.searchParams.get('lang') === 'ar' ? 'ar' : 'en';
+
+  // Next-newer surviving snapshot (list is newest-first, so index-1).
+  // Pruning may have eaten intermediates — the step then aggregates the
+  // gap, still truthful about what this row's span contains.
+  let compareTo = null;
+  let comparedTo = 'live';
+  try {
+    const all = await listVersions(env);
+    const idx = all.findIndex((e) => e && e.id === id);
+    const next = idx >= 0 ? all[idx - 1] : null;
+    if (next && next.id) {
+      const nd = await getV(env, next.id);
+      if (nd && nd.menu && typeof nd.menu === 'object') {
+        compareTo = nd.menu;
+        comparedTo = 'version';
+      }
+    }
+  } catch {}
+  if (!compareTo) {
+    try {
+      compareTo = await env.MENU_KV.get('menu', { type: 'json' });
+    } catch {}
+    if (!compareTo) return jsonNoStore({ error: 'unavailable' }, 503);
+  }
+
   let changes;
   try {
-    changes = diffMenus(stored.menu, current, lang);
+    changes = diffMenus(stored.menu, compareTo, lang);
   } catch {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
-  return jsonNoStore({ changes });
+  return jsonNoStore({ changes, comparedTo });
 }

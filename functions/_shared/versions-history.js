@@ -55,6 +55,13 @@ export async function snapshotMenu(env, { prevDoc, incomingDoc, source, actor })
   try {
     summary = summarizeChanges(diffMenus(prevDoc, incomingDoc || {}, 'en'));
   } catch {}
+  // A save that changed nothing must not mint an empty history row — it
+  // would review as "no changes" forever and bloat the timeline with noise.
+  // (Safety copies for restore/import are unaffected: identical docs have
+  // nothing to undo, so skipping loses nothing.)
+  if (!summary.added && !summary.removed && !summary.changed && !summary.prices) {
+    return { id: null, coalesced: false, skipped: true };
+  }
   const id = newVersionId(new Date(now));
   const value = { menu: prevDoc, actor: actor || 'owner', source: src, summary };
   const metadata = { createdAt: new Date(now).toISOString(), source: src, actor: actor || 'owner', summary };

@@ -135,9 +135,12 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
 
   const onLoadChanges = useCallback(async (versionId: string) => {
     const r = await adminFetch(`/api/admin/versions/${encodeURIComponent(versionId)}/changes?lang=${lang}`);
-    if (!r.ok) return [];
+    if (!r.ok) return { changes: [], comparedTo: 'live' as const };
     const d: unknown = await readJson(r);
-    return isRecord(d) && Array.isArray(d.changes) ? (d.changes as Change[]) : [];
+    return {
+      changes: isRecord(d) && Array.isArray(d.changes) ? (d.changes as Change[]) : [],
+      comparedTo: isRecord(d) && d.comparedTo === 'version' ? ('version' as const) : ('live' as const),
+    };
   }, [adminFetch, lang]);
 
   const onRestoreVersion = useCallback(async (versionId: string) => {

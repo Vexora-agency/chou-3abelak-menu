@@ -49,7 +49,7 @@ interface BackupPanelProps {
   status: { lastBackupAt?: string; autoWeekly: boolean; destination?: string };
   /** False when the Reports tab is plan-gated — the email can never be set then. */
   reportsOn: boolean;
-  onLoadChanges: (versionId: string) => Promise<Change[]>;
+  onLoadChanges: (versionId: string) => Promise<{ changes: Change[]; comparedTo: 'live' | 'version' }>;
   onRestoreVersion: (versionId: string) => Promise<{ ok: boolean }>;
   onExport: (kind: 'json' | 'csv' | 'print') => void | Promise<void>;
   onAnalyzeImport: (file: File) => Promise<ImportAnalysis>;
@@ -66,7 +66,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
   const [tab, setTab] = useState<'history' | 'export' | 'import' | 'trash'>('history');
   const [actFilter, setActFilter] = useState<'all' | 'saves' | 'deletes' | 'restores' | 'imports'>('all');
   const [limit, setLimit] = useState(6);
-  const [modal, setModal] = useState<{ v: VersionEntry; changes: Change[] | null } | null>(null);
+  const [modal, setModal] = useState<{ v: VersionEntry; changes: Change[] | null; comparedTo: 'live' | 'version' } | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [errNote, setErrNote] = useState<string | null>(null);
@@ -92,7 +92,17 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
   const flashErr = (s: string) => { setErrNote(s); window.setTimeout(() => setErrNote(null), 6000); };
   const rise = (d: number) => ({ initial: reduce ? (false as const) : { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.45, delay: d, ease: [0.22, 1, 0.36, 1] as const } });
 
-  const openRestore = async (v: VersionEntry) => { setModal({ v, changes: null }); const c = await onLoadChanges(v.id); setModal({ v, changes: c }); };
+  // Review race guard: tapping Review on several rows fast must never land
+  // an older response on top of a newer modal (wrong version restored!).
+  // Each open takes a ticket; only the latest ticket may commit.
+  const reviewTicket = useRef(0);
+  const openRestore = async (v: VersionEntry) => {
+    const ticket = ++reviewTicket.current;
+    setModal({ v, changes: null, comparedTo: 'live' });
+    const loaded = await onLoadChanges(v.id);
+    if (reviewTicket.current !== ticket) return;
+    setModal({ v, changes: loaded.changes, comparedTo: loaded.comparedTo });
+  };
   const doRestore = async () => { if (!modal) return; setBusy(true); const r = await onRestoreVersion(modal.v.id); setBusy(false); if (r.ok) { setModal(null); flash(t.done); } else { flashErr(t.restoreFailed); } };
 
   // One timeline: version snapshots + logged actions, newest first.
@@ -340,7 +350,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
             <div className="flex items-start justify-between gap-3"><h3 className="text-lg font-extrabold">{t.restoreTitle}</h3>
               <button type="button" onClick={() => setModal(null)} aria-label={t.close} className="w-9 h-9 rounded-full border border-neutral-700 flex items-center justify-center text-neutral-400"><X size={16} /></button></div>
             <p className="mt-1 text-xs text-neutral-400">{fmtDate(modal.v.createdAt, lang)} · {t.src[modal.v.source]}</p>
-            <p className="mt-4 mb-2 text-xs font-semibold text-neutral-300">{t.restoreSub}</p>
+            <p className="mt-4 mb-2 text-xs font-semibold text-neutral-300">{modal.comparedTo === 'version' ? t.stepSub : t.restoreSub}</p>
             {modal.changes === null ? <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-[var(--primary)]" /></div>
               : modal.changes.length ? <ChangeList changes={modal.changes} lang={lang} /> : <p className="text-xs text-neutral-500 py-3">{t.noChanges}</p>}
             <p className="mt-4 flex gap-2 rounded-xl bg-green-500/[0.07] border border-green-500/25 p-3 text-xs text-green-300"><ShieldCheck size={15} className="shrink-0 mt-px" />{t.safetyCopy}</p>

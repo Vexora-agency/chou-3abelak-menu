@@ -18,6 +18,7 @@
     "test:cart": "node scripts/test-cart-isolation.mjs",
     "test:plan": "node scripts/test-plan.mjs",
     "test:access": "node scripts/test-access.mjs",
+    "test:versions": "node scripts/test-versions.mjs",
     "test:all": "npm run test:client && npm run test:dial && npm run test:parity && npm run test:cart"
   },
   "dependencies": {

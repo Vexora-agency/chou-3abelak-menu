@@ -1,0 +1,113 @@
+// Version-history logic: own-changes reviews, no empty rows (node, no infra).
+// Usage: node scripts/test-versions.mjs
+// Runs the REAL endpoint modules + REAL migration-free KV shim:
+// every save/review/restore below executes production code paths.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const mod = (rel) => import(pathToFileURL(path.join(ROOT, rel)).href);
+const BASE = 'http://127.0.0.1:8788';
+
+const store = new Map();
+const KV = {
+  get: async (k, opts) => {
+    const e = store.get(k);
+    if (!e) return null;
+    if (opts && opts.type === 'json') { try { return JSON.parse(e.value); } catch { return null; } }
+    return e.value;
+  },
+  put: async (k, v, opts) => { store.set(k, { value: String(v), metadata: (opts && opts.metadata) || null }); },
+  delete: async (k) => { store.delete(k); },
+  list: async (opts) => ({
+    keys: [...store.entries()].filter(([k]) => k.startsWith((opts && opts.prefix) || '')).map(([name, e]) => ({ name, metadata: e.metadata })),
+    list_complete: true,
+    cursor: '',
+  }),
+};
+
+const env = { MENU_KV: KV, SITE_PLAN: 'pro' };
+const menuMod = await mod('functions/api/admin/menu.js');
+const versMod = await mod('functions/api/admin/versions.js');
+const changesMod = await mod('functions/api/admin/versions/[id]/changes.js');
+const restoreMod = await mod('functions/api/admin/versions/[id]/restore.js');
+
+let fails = 0;
+const check = (name, cond, extra = '') => {
+  if (!cond) { fails++; console.error(`  FAIL ${name} ${extra}`); }
+  else console.log(`  ok ${name}`);
+};
+const H = { 'X-Requested-With': 'menu-admin', Origin: BASE, 'Content-Type': 'application/json' };
+const put = async (doc, source) => {
+  const r = await menuMod.onRequest({
+    request: new Request(BASE + `/api/admin/menu${source ? `?source=${source}` : ''}`, { method: 'PUT', headers: H, body: JSON.stringify(doc) }),
+    env,
+  });
+  return { status: r.status, doc: await r.json().catch(() => ({})) };
+};
+const versions = async () => (await (await versMod.onRequest({ request: new Request(BASE + '/api/admin/versions', { headers: { 'X-Requested-With': 'menu-admin' } }), env })).json().catch(() => ({}))).versions || [];
+const review = async (id) => {
+  const r = await changesMod.onRequest({
+    request: new Request(BASE + `/api/admin/versions/${encodeURIComponent(id)}/changes?lang=en`, { headers: { 'X-Requested-With': 'menu-admin' } }),
+    env, params: { id },
+  });
+  const body = await r.json().catch(() => ({}));
+  return { status: r.status, changes: (body && body.changes) || [], basis: (body && body.comparedTo) || '?' };
+};
+
+const seed = JSON.parse(fs.readFileSync(path.join(ROOT, 'sample-menus/menu-30-items.json'), 'utf8'));
+let r = await put({ ...seed, version: 1 });
+check('seed saves', r.status === 200);
+
+const d2 = JSON.parse(JSON.stringify(r.doc));
+d2.items[0].pricing.price += 5000;
+r = await put(d2);
+check('price save', r.status === 200);
+
+const d3 = JSON.parse(JSON.stringify(r.doc));
+d3.items.push({ ...d3.items[0], id: 'test-version-item', name: { en: 'Test Item', ar: 'صنف' } });
+r = await put(d3);
+check('add save', r.status === 200);
+
+// No-op save must NOT mint an empty history row.
+r = await put(JSON.parse(JSON.stringify(r.doc)));
+check('noop save 200', r.status === 200);
+let rows = await versions();
+check('no empty rows', rows.length === 2 && rows.every((e) => (e.summary.added + e.summary.removed + e.summary.changed) > 0), `got ${rows.length}`);
+
+// Every review matches its own badges (latest: vs live; older: vs neighbor).
+let mismatch = 0;
+let basisOk = true;
+for (const e of rows) {
+  const rv = await review(e.id);
+  const n = (k) => rv.changes.filter((c) => c.kind === k).length;
+  if (n('added') !== e.summary.added || n('removed') !== e.summary.removed || n('changed') !== e.summary.changed) mismatch++;
+  if (!['live', 'version'].includes(rv.basis)) basisOk = false;
+}
+check('review == badges on every row', mismatch === 0);
+check('comparedTo basis present', basisOk);
+{
+  const payloads = [];
+  for (const e of rows) payloads.push(JSON.stringify((await review(e.id)).changes));
+  check('no duplicated review payloads', new Set(payloads).size === payloads.length);
+}
+
+// Restore works; restoring twice mints no second row (identical docs).
+{
+  const oldest = rows[rows.length - 1];
+  const call = (id) => restoreMod.onRequest({
+    request: new Request(BASE + `/api/admin/versions/${encodeURIComponent(id)}/restore`, { method: 'POST', headers: H, body: '{}' }),
+    env, params: { id },
+  });
+  const r1 = await call(oldest.id);
+  check('restore ok', r1.status === 200);
+  const n1 = (await versions()).length;
+  const r2 = await call(oldest.id);
+  check('restore again ok', r2.status === 200);
+  const n2 = (await versions()).length;
+  check('identical re-restore mints no row', n2 === n1, `before=${n1} after=${n2}`);
+}
+
+if (fails) { console.error(`test-versions: ${fails} FAILURES`); process.exit(1); }
+console.log('test-versions: all green');

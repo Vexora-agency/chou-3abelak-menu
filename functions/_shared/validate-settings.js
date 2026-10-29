@@ -220,6 +220,14 @@ function validateSettings(s, errors) {
     topCount: intOr(bRaw.topCount, 6, 1, 50),
   };
 
+  // Show-more paging (menu sections; safe defaults when missing). Bounds keep
+  // it sane: at least 4 (below that a button is silly), at most 50 a screen.
+  const smRaw = s.showMore && typeof s.showMore === 'object' ? s.showMore : {};
+  const showMore = {
+    initial: intOr(smRaw.initial, 12, 4, 50),
+    batch: intOr(smRaw.batch, 8, 4, 50),
+  };
+
   // Feature groups + library (names only; prices live per item) are parsed
   // by the feature-library module so settings can carry them; legacy docs
   // migrate into the library during items validation below.
@@ -249,6 +257,7 @@ function validateSettings(s, errors) {
     featuredAutoplay,
     featuredAutoplayInterval,
     badges,
+    showMore,
     featureDefs,
     featureGroups,
     ordering: {

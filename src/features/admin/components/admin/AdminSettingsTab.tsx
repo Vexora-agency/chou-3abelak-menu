@@ -10,6 +10,7 @@ import { IdentitySection } from '../IdentitySection';
 import { SocialSection } from '../SocialSection';
 import { VisitorDefaultsSection } from '../VisitorDefaultsSection';
 import { SmartBadgesSection } from '../SmartBadgesSection';
+import { ShowMoreSection } from '../ShowMoreSection';
 import { AutoplaySection } from '../AutoplaySection';
 import { FeaturesSection } from '../FeaturesSection';
 
@@ -155,6 +156,18 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         onUpdate={(updater) =>
           onUpdateMenu((m) => {
             const next = updater({ featuredAutoplay: m.settings.featuredAutoplay, featuredAutoplayInterval: m.settings.featuredAutoplayInterval });
+            return { ...m, settings: { ...m.settings, ...next } };
+          })
+        }
+      />
+
+      <ShowMoreSection
+        menu={menu}
+        showMore={menu.settings.showMore}
+        lang={lang}
+        onUpdate={(updater) =>
+          onUpdateMenu((m) => {
+            const next = updater({ showMore: m.settings.showMore });
             return { ...m, settings: { ...m.settings, ...next } };
           })
         }

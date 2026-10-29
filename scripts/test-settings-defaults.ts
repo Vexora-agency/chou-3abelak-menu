@@ -88,5 +88,15 @@ const baseMenu = (settings: unknown): MenuData => ({
   ok(!('announcement' in (settings as object)), 'input settings untouched');
 }
 
+// 6. Show-more paging defaults, keeps and clamps (mirrors server validate).
+{
+  const out = ensureSettingsBlocks(baseMenu({}));
+  ok(out.settings.showMore.initial === 12 && out.settings.showMore.batch === 8, 'showMore defaults 12/8');
+  const kept = ensureSettingsBlocks(baseMenu({ showMore: { initial: 20, batch: 6 } }));
+  ok(kept.settings.showMore.initial === 20 && kept.settings.showMore.batch === 6, 'showMore keeps tuned values');
+  const clamped = ensureSettingsBlocks(baseMenu({ showMore: { initial: 2, batch: 99 } }));
+  ok(clamped.settings.showMore.initial === 12 && clamped.settings.showMore.batch === 8, 'showMore out-of-range falls back');
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

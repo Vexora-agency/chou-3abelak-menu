@@ -139,6 +139,13 @@ export interface MenuSettings {  name: { en: string; ar: string };
   about: { en: string; ar: string };
   defaultTheme: 'dark' | 'light';
   defaultLang: 'en' | 'ar';
+  /** Show-more paging for long menu sections (admin-tunable, 4..50). */
+  showMore: {
+    /** Items visible before the expander (default 12). */
+    initial: number;
+    /** Items added per "show more" tap (default 8). */
+    batch: number;
+  };
   ordering: {
     enabled: boolean;
     types: OrderType[];

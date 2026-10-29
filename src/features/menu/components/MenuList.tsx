@@ -29,26 +29,24 @@ interface MenuListProps {
 // (Category watermark rendering lives in ./CardMark — shared with admin.)
 
 /**
- * Initial items per section before "show more" (text rows are short, cards
- * are tall — one screenful each on a phone). While any filter is active
- * (search / badge / single category) everything shows: collapsing would hide
- * matches. Expanded state is per category and survives re-renders.
+ * Batched reveal: long sections show `initial` items, then `batch` more per
+ * tap (both admin-tunable in Settings → Section Show-More, 4..50). The button
+ * appears only when the rest is worth a tap (> MIN_REST): a "show more (2)"
+ * button is sillier than just showing the two.
+ * While any filter is active everything shows — collapsing would hide matches.
  */
-const INITIAL_COUNT: Record<'list' | 'compact' | 'cards', number> = {
-  list: 12,
-  compact: 12,
-  cards: 8,
-};
+const MIN_REST = 4;
 
 interface ShowMoreButtonProps {
   expanded: boolean;
-  rest: number;
+  /** Next-batch size (more) — unused for less. */
+  count: number;
   isAr: boolean;
   onToggle: () => void;
 }
 
-/** On-brand expander: gold-outline pill, rotating chevron, remaining count. */
-const ShowMoreButton: React.FC<ShowMoreButtonProps> = ({ expanded, rest, isAr, onToggle }) => (
+/** On-brand pager button: gold-outline pill, rotating chevron, batch count. */
+const ShowMoreButton: React.FC<ShowMoreButtonProps> = ({ expanded, count, isAr, onToggle }) => (
   <div className="mt-4 flex justify-center">
     <button
       type="button"
@@ -59,7 +57,7 @@ const ShowMoreButton: React.FC<ShowMoreButtonProps> = ({ expanded, rest, isAr, o
       <span>
         {expanded
           ? (isAr ? 'عرض أقل' : 'Show less')
-          : isAr ? `عرض المزيد (${rest})` : `Show more (${rest})`}
+          : isAr ? `عرض المزيد (${count})` : `Show more (${count})`}
       </span>
       <ChevronDown size={16} className={`transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
     </button>
@@ -190,12 +188,15 @@ export const MenuList: React.FC<MenuListProps> = ({
 
   const { totalQtyOf } = useMenuListCartQuantities(cart);
 
-  // Per-category expansion (collapsed by default). Any active filter shows
+  // Per-category visible counts (absent = initial). Any active filter shows
   // everything: collapsing would hide matches.
-  const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
+  const [visibleCounts, setVisibleCounts] = useState<Record<string, number>>({});
   const filtering = searchQuery.trim() !== '' || selectedBadge !== null || selectedCategory !== 'all';
-  const toggleCat = (id: string) =>
-    setExpandedCats((prev) => ({ ...prev, [id]: !prev[id] }));
+  const smRaw = (menu.settings as { showMore?: { initial?: unknown; batch?: unknown } }).showMore || {};
+  const intOr = (v: unknown, fb: number) =>
+    Number.isInteger(v) && (v as number) >= 4 && (v as number) <= 50 ? (v as number) : fb;
+  const initial = intOr(smRaw.initial, 12);
+  const batch = intOr(smRaw.batch, 8);
 
   if (filteredItems.length === 0) {
     return <MenuListEmptyState darkMode={darkMode} isAr={isAr} />;
@@ -228,15 +229,7 @@ export const MenuList: React.FC<MenuListProps> = ({
             : kind === 'list'
               ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-4'
               : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5';
-        const limit = INITIAL_COUNT[kind];
-        const expanded = !!expandedCats[cat.id];
-        // Split grids (same classes, so column flow continues seamlessly):
-        // the head always renders; the tail lives in a 0fr→1fr animated
-        // wrapper, inert + unfocusable while collapsed. Filtering (or a short
-        // section) renders one plain grid with no button.
-        const collapsible = !filtering && catItems.length > limit;
-        const head = collapsible ? catItems.slice(0, limit) : catItems;
-        const tail = collapsible ? catItems.slice(limit) : [];
+        const total = catItems.length;
         const rowCtx: Omit<MenuListRowItemProps, 'item' | 'index'> = {
           kind,
           menu,
@@ -256,77 +249,56 @@ export const MenuList: React.FC<MenuListProps> = ({
           markRotate: markRot,
           totalQtyOf,
         };
-        const tailWrap = (
-          <div
-            className={`grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
-            inert={!expanded}
-          >
-            <div
-              className={`overflow-hidden min-h-0 transition-opacity duration-500 ${expanded ? 'opacity-100' : 'opacity-0'}`}
-            >
-              <div className={gridClass}>
-                {tail.map((item, i) => (
-                  <MenuListRowItem
-                    key={item.id}
-                    item={item}
-                    index={i + head.length}
-                    {...rowCtx}
-                  />
-                ))}
-              </div>
-            </div>
+        // One stable grid whose window grows by batches: new items mount fresh
+        // with their entrance animation, nothing already on screen moves — so
+        // no layout-measurement overlap is possible (unlike mounting inside an
+        // animating container). Collapsing snaps shut, masked by scrolling the
+        // header back into view — otherwise the user is stranded at the bottom
+        // of a suddenly shorter page.
+        const collapsible = !filtering && total > initial + MIN_REST;
+        const visible = collapsible ? Math.min(total, visibleCounts[cat.id] ?? initial) : total;
+        const hasMore = collapsible && visible < total;
+        const showLess = collapsible && visible >= total;
+        const more = () =>
+          setVisibleCounts((prev) => ({ ...prev, [cat.id]: Math.min(total, (prev[cat.id] ?? initial) + batch) }));
+        const less = () => {
+          setVisibleCounts((prev) => {
+            const next = { ...prev };
+            delete next[cat.id];
+            return next;
+          });
+          window.setTimeout(() => {
+            document.getElementById(`category-${cat.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 80);
+        };
+        const pagerButton = collapsible ? (
+          hasMore ? (
+            <ShowMoreButton
+              expanded={false}
+              count={Math.min(batch, total - visible)}
+              isAr={isAr}
+              onToggle={more}
+            />
+          ) : showLess ? (
+            <ShowMoreButton expanded isAr={isAr} count={0} onToggle={less} />
+          ) : null
+        ) : null;
+        const visibleItems = catItems.slice(0, visible);
+        const itemsGrid = (
+          <div className={gridClass}>
+            {visibleItems.map((item, idx) => (
+              <MenuListRowItem key={item.id} item={item} index={idx} {...rowCtx} />
+            ))}
           </div>
         );
-        const moreButton = collapsible ? (
-          <ShowMoreButton
-            expanded={expanded}
-            rest={tail.length}
-            isAr={isAr}
-            onToggle={() => toggleCat(cat.id)}
-          />
-        ) : null;
         return (
           <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-16 menu-section">
             {/* Category Header */}
             <MenuListSectionHeader title={isAr ? cat.name.ar : cat.name.en} darkMode={darkMode} count={catItems.length} />
-            {/* Compact rows: dense single-line rows with smooth reflow on filter */}
-            {isCompactSection ? (
-              <>
-                <div className={gridClass}>
-                  {head.map((item, idx) => (
-                    <MenuListRowItem key={item.id} item={item} index={idx} {...rowCtx} />
-                  ))}
-                </div>
-                {tailWrap}
-                {moreButton}
-              </>
-            ) : (
-            /* List View for text-first sections: 1-col on mobile, 2-col on
-               tablet/desktop */
-            isListSection ? (
-              <>
-                <div className={gridClass}>
-                  {head.map((item, idx) => (
-                    <MenuListRowItem key={item.id} item={item} index={idx} {...rowCtx} />
-                  ))}
-                </div>
-                {tailWrap}
-                {moreButton}
-              </>
-            ) : (
-              /* Grid View for Sides, Drinks, etc. (2-col mobile, 3-col tablet, 4-col desktop).
-                 Equal heights (stretch): prices align across the row; bare
-                 cards keep full size via the glyph slot below, never a void. */
-              <>
-                <div className={gridClass}>
-                  {head.map((item, idx) => (
-                    <MenuListRowItem key={item.id} item={item} index={idx} {...rowCtx} />
-                  ))}
-                </div>
-                {tailWrap}
-                {moreButton}
-              </>
-            ))}
+            {/* One grid per section: compact/list/cards differ only by the
+                grid classes and the row component, both resolved above. */}
+            {itemsGrid}
+            {pagerButton}
           </section>
         );
       })}

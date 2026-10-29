@@ -60,6 +60,13 @@ export function ensureSettingsBlocks(menu: MenuData): MenuData {
       featuredAutoplayInterval: autoplayIntervalOrDefault(
         (s as unknown as { featuredAutoplayInterval?: unknown }).featuredAutoplayInterval
       ),
+      showMore: (() => {
+        const sm = (s as unknown as { showMore?: unknown }).showMore;
+        const o = sm && typeof sm === 'object' ? (sm as Record<string, unknown>) : {};
+        const intOr = (v: unknown, fb: number) =>
+          Number.isInteger(v) && (v as number) >= 4 && (v as number) <= 50 ? (v as number) : fb;
+        return { initial: intOr(o.initial, 12), batch: intOr(o.batch, 8) };
+      })(),
       ordering: {
         ...(o as object),
         enabled: Boolean((o as { enabled?: unknown }).enabled),

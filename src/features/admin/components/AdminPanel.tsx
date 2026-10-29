@@ -322,6 +322,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           trash={backup.trash}
           status={backup.backupStatus}
           reportsOn={report.reportsOn}
+          menuVersion={menu.version}
           onLoadChanges={backup.onLoadChanges}
           onRestoreVersion={backup.onRestoreVersion}
           onExport={backup.onExport}

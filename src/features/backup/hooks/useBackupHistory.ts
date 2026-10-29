@@ -113,7 +113,7 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
     }
   }, [adminFetch, fetchBackupData, fetchActivity, replaceMenu, savePausedRef]);
 
-  const handleRestoreTrashById = useCallback(async (trashId: string): Promise<boolean> => {
+  const handleRestoreTrashById = useCallback(async (trashId: string): Promise<{ ok: boolean; conflict: boolean }> => {
     try {
       const res = await adminFetch(`/api/admin/trash/${encodeURIComponent(trashId)}/restore`, {
         method: 'POST',
@@ -122,14 +122,15 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
       });
       const data: unknown = await readJson(res);
       if (!res.ok || !isRecord(data) || !data.ok) {
-        if (res.status === 409) await refreshMenuFromServer();
-        return false;
+        const conflict = res.status === 409;
+        if (conflict) await refreshMenuFromServer();
+        return { ok: false, conflict };
       }
       clearUndoToast();
       await refreshMenuFromServer();
-      return true;
+      return { ok: true, conflict: false };
     } catch {
-      return false;
+      return { ok: false, conflict: false };
     }
   }, [adminFetch, menuVersion, refreshMenuFromServer, clearUndoToast]);
 
@@ -143,22 +144,23 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
     };
   }, [adminFetch, lang]);
 
-  const onRestoreVersion = useCallback(async (versionId: string) => {
+  const onRestoreVersion = useCallback(async (versionId: string, expectedVersion?: number) => {
     try {
       const r = await adminFetch(`/api/admin/versions/${encodeURIComponent(versionId)}/restore`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: '{}',
+        body: JSON.stringify(expectedVersion === undefined ? {} : { expectedVersion }),
       });
       const d: unknown = await readJson(r);
       if (!r.ok || !isRecord(d) || !d.ok) {
-        if (r.status === 409) await refreshMenuFromServer();
-        return { ok: false };
+        const conflict = r.status === 409;
+        if (conflict) await refreshMenuFromServer();
+        return { ok: false, conflict };
       }
       await refreshMenuFromServer();
-      return { ok: true };
+      return { ok: true, conflict: false };
     } catch {
-      return { ok: false };
+      return { ok: false, conflict: false };
     }
   }, [adminFetch, refreshMenuFromServer]);
 
@@ -225,18 +227,22 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
       const r = await adminFetch('/api/admin/import/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, includeSettings: !!opts.includeSettings }),
+        body: JSON.stringify({ token, includeSettings: !!opts.includeSettings, baseVersion: menuVersion }),
       });
       const d: unknown = await readJson(r);
-      if (!r.ok || !isRecord(d) || !d.ok) return { ok: false };
+      if (!r.ok || !isRecord(d) || !d.ok) {
+        const conflict = r.status === 409;
+        if (conflict) await refreshMenuFromServer();
+        return { ok: false, conflict };
+      }
       await refreshMenuFromServer();
-      return { ok: true };
+      return { ok: true, conflict: false };
     } catch {
-      return { ok: false };
+      return { ok: false, conflict: false };
     }
-  }, [adminFetch, refreshMenuFromServer]);
+  }, [adminFetch, menuVersion, refreshMenuFromServer]);
 
-  const onRestoreTrash = useCallback(async (id: string): Promise<boolean> => {
+  const onRestoreTrash = useCallback(async (id: string): Promise<{ ok: boolean; conflict: boolean }> => {
     return handleRestoreTrashById(id);
   }, [handleRestoreTrashById]);
 

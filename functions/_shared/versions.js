@@ -178,8 +178,17 @@ export async function purgePublicMenu(request) {
  * Validate -> snapshot (safety copy) -> versioned write.
  * Returns { doc } on success or { res } (a ready error Response) on failure.
  * `invalidError` preserves each endpoint's historical error code.
+ *
+ * Concurrency contract (the whole undo/review race fix): when the caller
+ * passes expectedVersion, the stale check runs BEFORE the snapshot, so a
+ * loser never mints a noise row. writeMenuVersioned re-checks against a
+ * fresh read as the final guard (true races still 409, snapshot included —
+ * vanishingly rare and truthful: the attempt really happened).
  */
 export async function restoreValidatedMenu(env, request, { doc, prevDoc, source, expectedVersion, invalidError }) {
+  if (expectedVersion !== undefined && prevDoc && typeof prevDoc.version === 'number' && prevDoc.version !== expectedVersion) {
+    return { res: jsonNoStore({ ok: false, error: 'conflict', version: prevDoc.version }, 409) };
+  }
   const validation = validateMenu(doc);
   if (!validation.ok) return { res: jsonNoStore({ ok: false, error: invalidError || 'invalid_menu' }, 400) };
   const actor = await getActor(request, env);

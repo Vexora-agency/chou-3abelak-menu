@@ -55,6 +55,7 @@ export async function onRequest(context) {
   const token = typeof body.token === 'string' && /^[0-9a-f]{32}$/.test(body.token) ? body.token : '';
   const includeSettings = body.includeSettings === true;
   if (!token) return jsonNoStore({ ok: false, error: 'bad_request' }, 400);
+  const baseVersion = typeof body.baseVersion === 'number' ? body.baseVersion : undefined;
 
   let staged = null;
   try {
@@ -63,16 +64,20 @@ export async function onRequest(context) {
   if (!staged || typeof staged !== 'object') return jsonNoStore({ ok: false, error: 'invalid_token' }, 400);
   const sub = await sessionSub(request, env);
   if (!staged.session || staged.session !== sub) return jsonNoStore({ ok: false, error: 'invalid_token' }, 403);
-  // Single use: burn the token before doing anything else.
-  try {
-    await env.MENU_KV.delete(IMPORT_KEY(token));
-  } catch {}
-
+  // Concurrency BEFORE the burn: a stale apply 409s with its token intact,
+  // so the owner simply presses Apply again (nothing is lost, no dup row).
   let current = null;
   try {
     current = await env.MENU_KV.get('menu', { type: 'json' });
   } catch {}
   if (!current) return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
+  if (baseVersion !== undefined && current.version !== baseVersion) {
+    return jsonNoStore({ ok: false, error: 'conflict', version: current.version }, 409);
+  }
+  // Single use: burn the token before doing anything else.
+  try {
+    await env.MENU_KV.delete(IMPORT_KEY(token));
+  } catch {}
 
   let merged;
   try {

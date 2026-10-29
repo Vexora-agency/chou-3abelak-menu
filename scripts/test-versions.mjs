@@ -94,19 +94,25 @@ check('comparedTo basis present', basisOk);
 }
 
 // Restore works; restoring twice mints no second row (identical docs).
+// A stale base (double-click / moved menu) 409s with NO noise row.
 {
   const oldest = rows[rows.length - 1];
-  const call = (id) => restoreMod.onRequest({
-    request: new Request(BASE + `/api/admin/versions/${encodeURIComponent(id)}/restore`, { method: 'POST', headers: H, body: '{}' }),
+  const call = (id, base) => restoreMod.onRequest({
+    request: new Request(BASE + `/api/admin/versions/${encodeURIComponent(id)}/restore`, { method: 'POST', headers: H, body: JSON.stringify(base === undefined ? {} : { expectedVersion: base }) }),
     env, params: { id },
   });
-  const r1 = await call(oldest.id);
+  // live version for a fresh base:
+  const menuNow = await (await menuMod.onRequest({ request: new Request(BASE + '/api/admin/menu', { headers: { 'X-Requested-With': 'menu-admin' } }), env })).json().catch(() => ({}));
+  const base = menuNow && typeof menuNow.version === 'number' ? menuNow.version : 0;
+  const r1 = await call(oldest.id, base);
   check('restore ok', r1.status === 200);
   const n1 = (await versions()).length;
-  const r2 = await call(oldest.id);
-  check('restore again ok', r2.status === 200);
+  const r2 = await call(oldest.id, base); // same stale base -> conflict
+  check('stale-base restore -> 409', r2.status === 409, `got ${r2.status}`);
   const n2 = (await versions()).length;
-  check('identical re-restore mints no row', n2 === n1, `before=${n1} after=${n2}`);
+  check('conflict mints no row', n2 === n1, `before=${n1} after=${n2}`);
+  const r3 = await call(oldest.id); // legacy no-base call still restores
+  check('baseless restore ok', r3.status === 200);
 }
 
 if (fails) { console.error(`test-versions: ${fails} FAILURES`); process.exit(1); }

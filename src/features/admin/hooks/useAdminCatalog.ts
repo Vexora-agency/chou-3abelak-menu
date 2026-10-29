@@ -11,7 +11,7 @@ interface AdminCatalogOptions {
   adminFetch: AdminFetch;
   showUndoToast: (label: string, undo: () => void) => void;
   refreshMenuFromServer: () => Promise<boolean>;
-  handleRestoreTrashById: (trashId: string) => Promise<boolean>;
+  handleRestoreTrashById: (trashId: string) => Promise<{ ok: boolean; conflict: boolean }>;
   editingItem: MenuItem | null;
   setEditingItem: (item: MenuItem | null) => void;
   isNewItem: boolean;

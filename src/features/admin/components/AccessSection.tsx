@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { KeyRound, Copy, Check, Ban, Plus } from 'lucide-react';
+import { KeyRound, Copy, Check, Ban, Plus, Power, Trash2 } from 'lucide-react';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { readJson } from '@/src/utils/safeJson';
 
@@ -11,27 +11,39 @@ interface InviteRow {
   status: 'pending' | 'used' | 'expired';
 }
 
+interface ClientRow {
+  username: string;
+  createdAt: string;
+  disabled: boolean;
+}
+
 interface AccessSectionProps {
   lang: 'en' | 'ar';
   adminFetch: AdminFetch;
 }
 
 /**
- * Owner access control: mint single-use invite links so each client sets
- * their own password, list them, revoke them. Owner-only by construction —
- * the endpoints 403 non-master sessions, and then this whole section hides
- * itself (a client login never sees it).
+ * Owner access control: logins (disable/enable/delete) plus single-use
+ * invite links (create/revoke). Owner-only by construction — the endpoints
+ * 403 non-master sessions, and then this whole section hides itself (a
+ * client login never sees it).
+ *
+ * Disable vs delete: disable keeps the account but locks it out NOW
+ * (live sessions die at once); delete removes the row entirely and frees
+ * the name for a future invite.
  */
 export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }) => {
   const isAr = lang === 'ar';
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [rows, setRows] = useState<InviteRow[]>([]);
+  const [clients, setClients] = useState<ClientRow[]>([]);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
+  const [acting, setActing] = useState<string | null>(null);
   const [formErr, setFormErr] = useState('');
   const [fresh, setFresh] = useState<{ link: string; username: string; expiresAt: string } | null>(null);
   const [copied, setCopied] = useState(false);
-  const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
+  const [confirmKey, setConfirmKey] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -40,10 +52,11 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }
         setAllowed(false);
         return;
       }
-      const data = (await readJson(res)) as { ok?: boolean; invites?: InviteRow[] };
+      const data = (await readJson(res)) as { ok?: boolean; invites?: InviteRow[]; clients?: ClientRow[] };
       if (res.ok && data && data.ok && Array.isArray(data.invites)) {
         setAllowed(true);
         setRows(data.invites);
+        setClients(Array.isArray(data.clients) ? data.clients : []);
       } else {
         setAllowed(false);
       }
@@ -115,24 +128,55 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }
     window.setTimeout(() => setCopied(false), 2000);
   };
 
-  const revoke = async (id: string) => {
-    if (confirmRevoke !== id) {
-      setConfirmRevoke(id);
-      window.setTimeout(() => setConfirmRevoke((cur) => (cur === id ? null : cur)), 4000);
+  /** Two-tap arm-then-fire for destructive actions (revoke invite, delete login). */
+  const armed = (key: string, fire: () => Promise<void>) => {
+    if (confirmKey !== key) {
+      setConfirmKey(key);
+      window.setTimeout(() => setConfirmKey((cur) => (cur === key ? null : cur)), 4000);
       return;
     }
-    setConfirmRevoke(null);
-    try {
-      await adminFetch('/api/admin/invites/revoke', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
-    } catch {}
-    void refresh();
+    setConfirmKey(null);
+    void fire();
   };
 
-  const pill = (s: InviteRow['status']) =>
+  const revoke = (id: string) =>
+    armed(`revoke:${id}`, async () => {
+      try {
+        await adminFetch('/api/admin/invites/revoke', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        });
+      } catch {}
+      void refresh();
+    });
+
+  const updateClient = (username: string, action: 'disable' | 'enable' | 'delete') => {
+    const fire = async () => {
+      setActing(`${action}:${username}`);
+      setFormErr('');
+      try {
+        const res = await adminFetch('/api/admin/clients/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, action }),
+        });
+        if (!res.ok) {
+          setFormErr(isAr ? 'تعذر تنفيذ العملية' : 'Could not complete the action');
+        }
+      } catch {
+        setFormErr(isAr ? 'تعذر الاتصال' : 'Connection problem');
+      } finally {
+        setActing(null);
+        void refresh();
+      }
+    };
+    // Deleting is forever — arm first. Disable/enable reverses in one tap.
+    if (action === 'delete') armed(`delete:${username}`, fire);
+    else void fire();
+  };
+
+  const invitePill = (s: InviteRow['status']) =>
     s === 'pending'
       ? 'bg-amber-500/10 border-amber-400/30 text-amber-300'
       : s === 'used'
@@ -169,7 +213,7 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }
           className="btn-tactile h-10 px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold hover:brightness-110 disabled:opacity-40 flex items-center gap-1.5 whitespace-nowrap"
         >
           <Plus size={15} className="stroke-[3]" />
-          {busy ? (isAr ? '…' : '…') : isAr ? 'إنشاء رابط' : 'Create link'}
+          {busy ? '…' : isAr ? 'إنشاء رابط' : 'Create link'}
         </button>
       </form>
       {formErr ? (
@@ -207,42 +251,107 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }
         </div>
       ) : null}
 
-      {rows.length ? (
-        <ul className="space-y-2">
-          {rows.map((r) => (
-            <li
-              key={r.id}
-              className="flex items-center gap-2.5 rounded-xl bg-black border border-neutral-800 px-3 py-2"
-            >
-              <span className="font-bold text-sm tabular-nums" dir="ltr">{r.username}</span>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${pill(r.status)}`}>
-                {r.status === 'pending' ? (isAr ? 'بانتظار' : 'pending') : r.status === 'used' ? (isAr ? 'مُستخدم' : 'used') : (isAr ? 'منتهي' : 'expired')}
-              </span>
-              <span className="text-[10px] text-neutral-500 tabular-nums ms-auto" dir="ltr">
-                {r.expiresAt.slice(0, 10)}
-              </span>
-              {r.status === 'pending' ? (
-                <button
-                  type="button"
-                  onClick={() => void revoke(r.id)}
-                  className={`h-8 px-3 rounded-full text-[11px] font-bold border transition-colors flex items-center gap-1 ${
-                    confirmRevoke === r.id
-                      ? 'border-red-500 text-red-400 hover:bg-red-500 hover:text-black'
-                      : 'border-neutral-700 text-neutral-400 hover:text-red-400 hover:border-red-500/50'
+      {/* Live logins: disable locks out now (sessions die too), delete removes all. */}
+      <div>
+        <h3 className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-400 mb-2">
+          {isAr ? 'حسابات الدخول' : 'Logins'}
+        </h3>
+        {clients.length ? (
+          <ul className="space-y-2">
+            {clients.map((c) => (
+              <li
+                key={c.username}
+                className="flex items-center gap-2 rounded-xl bg-black border border-neutral-800 px-3 py-2"
+              >
+                <span className="font-bold text-sm tabular-nums" dir="ltr">{c.username}</span>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    c.disabled
+                      ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                      : 'bg-green-500/10 border-green-500/30 text-green-400'
                   }`}
                 >
-                  <Ban size={13} />
-                  {confirmRevoke === r.id ? (isAr ? 'تأكيد الحذف؟' : 'Confirm?') : (isAr ? 'حذف' : 'Revoke')}
-                </button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-[11px] text-neutral-600">
-          {isAr ? 'لا توجد روابط دعوة بعد.' : 'No invite links yet.'}
-        </p>
-      )}
+                  {c.disabled ? (isAr ? 'موقوف' : 'disabled') : (isAr ? 'نشط' : 'active')}
+                </span>
+                <span className="ms-auto flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={acting !== null}
+                    onClick={() => updateClient(c.username, c.disabled ? 'enable' : 'disable')}
+                    title={c.disabled ? (isAr ? 'تفعيل' : 'Enable') : (isAr ? 'تعطيل الدخول فورًا' : 'Disable now')}
+                    aria-label={c.disabled ? (isAr ? `تفعيل ${c.username}` : `Enable ${c.username}`) : (isAr ? `تعطيل ${c.username}` : `Disable ${c.username}`)}
+                    className="h-8 w-8 rounded-full border border-neutral-700 text-neutral-400 hover:text-[var(--primary)] hover:border-[var(--primary)]/50 flex items-center justify-center transition-colors disabled:opacity-40"
+                  >
+                    <Power size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={acting !== null}
+                    onClick={() => updateClient(c.username, 'delete')}
+                    title={isAr ? 'حذف نهائي' : 'Delete forever'}
+                    aria-label={isAr ? `حذف ${c.username} نهائيًا` : `Delete ${c.username} forever`}
+                    className={`h-8 px-2.5 rounded-full text-[11px] font-bold border transition-colors flex items-center gap-1 disabled:opacity-40 ${
+                      confirmKey === `delete:${c.username}`
+                        ? 'border-red-500 text-red-400 hover:bg-red-500 hover:text-black'
+                        : 'border-neutral-700 text-neutral-400 hover:text-red-400 hover:border-red-500/50'
+                    }`}
+                  >
+                    <Trash2 size={13} />
+                    {confirmKey === `delete:${c.username}` ? (isAr ? 'تأكيد؟' : 'Sure?') : (isAr ? 'حذف' : 'Delete')}
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-[11px] text-neutral-600">
+            {isAr ? 'لا توجد حسابات دخول بعد — أنشئ رابط دعوة أعلاه.' : 'No logins yet — create an invite link above.'}
+          </p>
+        )}
+      </div>
+
+      {/* Pending invite links. */}
+      <div>
+        <h3 className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-400 mb-2">
+          {isAr ? 'روابط الدعوة' : 'Invite links'}
+        </h3>
+        {rows.length ? (
+          <ul className="space-y-2">
+            {rows.map((r) => (
+              <li
+                key={r.id}
+                className="flex items-center gap-2.5 rounded-xl bg-black border border-neutral-800 px-3 py-2"
+              >
+                <span className="font-bold text-sm tabular-nums" dir="ltr">{r.username}</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${invitePill(r.status)}`}>
+                  {r.status === 'pending' ? (isAr ? 'بانتظار' : 'pending') : r.status === 'used' ? (isAr ? 'مُستخدم' : 'used') : (isAr ? 'منتهي' : 'expired')}
+                </span>
+                <span className="text-[10px] text-neutral-500 tabular-nums ms-auto" dir="ltr">
+                  {r.expiresAt.slice(0, 10)}
+                </span>
+                {r.status === 'pending' ? (
+                  <button
+                    type="button"
+                    onClick={() => revoke(r.id)}
+                    className={`h-8 px-3 rounded-full text-[11px] font-bold border transition-colors flex items-center gap-1 ${
+                      confirmKey === `revoke:${r.id}`
+                        ? 'border-red-500 text-red-400 hover:bg-red-500 hover:text-black'
+                        : 'border-neutral-700 text-neutral-400 hover:text-red-400 hover:border-red-500/50'
+                    }`}
+                  >
+                    <Ban size={13} />
+                    {confirmKey === `revoke:${r.id}` ? (isAr ? 'تأكيد الحذف؟' : 'Confirm?') : (isAr ? 'حذف' : 'Revoke')}
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-[11px] text-neutral-600">
+            {isAr ? 'لا توجد روابط دعوة بعد.' : 'No invite links yet.'}
+          </p>
+        )}
+      </div>
     </div>
   );
 };

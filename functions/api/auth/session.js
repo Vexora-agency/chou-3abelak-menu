@@ -10,6 +10,7 @@ import {
   jsonNoStore,
   verifySessionToken,
 } from '../../_shared/session.js';
+import { isSessionRevoked } from '../../_shared/access.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -28,5 +29,10 @@ export async function onRequest(context) {
   if (!token) return jsonNoStore({ authenticated: false });
 
   const payload = await verifySessionToken(secret, token);
-  return jsonNoStore({ authenticated: payload !== null });
+  if (!payload) return jsonNoStore({ authenticated: false });
+  // A disabled/deleted account reads as logged-out everywhere at once.
+  if (await isSessionRevoked(env.MENU_KV || null, payload.sub, payload.iat)) {
+    return jsonNoStore({ authenticated: false });
+  }
+  return jsonNoStore({ authenticated: true });
 }

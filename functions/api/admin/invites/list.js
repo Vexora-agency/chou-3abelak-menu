@@ -35,7 +35,26 @@ export async function onRequest(context) {
       expiresAt: r.expiresAt,
       status: r.usedAt ? 'used' : r.expiresAt <= nowIso ? 'expired' : 'pending',
     }));
-    return jsonNoStore({ ok: true, invites });
+    let clients = [];
+    try {
+      const cres = await db
+        .prepare('SELECT username, created_at AS createdAt, disabled_at AS disabledAt FROM client_users ORDER BY created_at DESC LIMIT 100')
+        .all();
+      clients = (cres.results || []).map((r) => ({
+        username: r.username,
+        createdAt: r.createdAt,
+        disabled: !!r.disabledAt,
+      }));
+    } catch {
+      // Pre-0008 databases have no disabled_at: list names, all enabled.
+      try {
+        const fallback = await db
+          .prepare('SELECT username, created_at AS createdAt FROM client_users ORDER BY created_at DESC LIMIT 100')
+          .all();
+        clients = (fallback.results || []).map((r) => ({ username: r.username, createdAt: r.createdAt, disabled: false }));
+      } catch {}
+    }
+    return jsonNoStore({ ok: true, invites, clients });
   } catch {
     return jsonNoStore({ error: 'unavailable', message: 'Could not list invites' }, 503);
   }

@@ -113,13 +113,15 @@ export async function onRequest(context) {
     if (db) {
       try {
         const row = await db
-          .prepare('SELECT username, pass_hash FROM client_users WHERE username = ?')
+          .prepare('SELECT username, pass_hash, disabled_at FROM client_users WHERE username = ?')
           .bind(username)
           .first();
         const passOk = row
           ? await verifyPassword(password, row.pass_hash)
           : await verifyPassword(password, storedHash);
-        if (row && passOk) {
+        // Disabled accounts fail exactly like wrong passwords (generic 401,
+        // no enumeration). Work is burned either way, as above.
+        if (row && passOk && !row.disabled_at) {
           try {
             await kv.delete(FAIL_PREFIX + ip);
           } catch {}

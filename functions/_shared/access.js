@@ -20,6 +20,8 @@ export const INVITE_MAX_ATTEMPTS = 20;
 export const TOKEN_BYTES = 32;
 export const MIN_CLIENT_PASSWORD = 12;
 export const MAX_CLIENT_PASSWORD = 128;
+// Revocation stamps must outlive the longest session they can kill.
+export const REVOKE_TTL_SEC = 30 * 24 * 3600;
 // PBKDF2-SHA256 cost identical to scripts/hash-password.mjs (edge CPU budget).
 export const CLIENT_PBKDF2_ITERATIONS = 50000;
 
@@ -190,4 +192,48 @@ export async function bumpInviteAttempts(db, row) {
       await db.prepare('UPDATE invites SET attempts = ? WHERE token_hash = ?').bind(attempts, row.tokenHash).run();
     }
   } catch {}
+}
+
+/* ---------- live-session revocation (disable/delete kills NOW) ---------- */
+
+export function revokeKey(username) {
+  return `access:revoked:${username}`;
+}
+
+/**
+ * Stamp a revocation: every session of this user minted at or before now
+ * dies on its next check. The stamp carries its own timestamp so a LATER
+ * account under the same name (fresh sessions, newer iat) keeps working.
+ */
+export async function revokeSessions(kv, username) {
+  try {
+    if (kv) await kv.put(revokeKey(username), String(Math.floor(Date.now() / 1000)), { expirationTtl: REVOKE_TTL_SEC });
+  } catch {}
+}
+
+export async function clearRevocation(kv, username) {
+  try {
+    if (kv) await kv.delete(revokeKey(username));
+  } catch {}
+}
+
+/**
+ * True when this session must die: a client session older than (or equal
+ * to) its user's revocation stamp. Owner sessions ('admin') are never
+ * revoked. Fails CLOSED when the store is unreachable — a revoked user
+ * must not slip through on a blip (the owner is unaffected either way).
+ */
+export async function isSessionRevoked(kv, sub, iat) {
+  if (typeof sub !== 'string' || !sub.startsWith('client:')) return false;
+  const username = sub.slice('client:'.length);
+  if (!username || !kv) return true;
+  try {
+    const raw = await kv.get(revokeKey(username));
+    if (!raw) return false;
+    const revokedAt = Number(raw);
+    if (!Number.isFinite(revokedAt)) return false;
+    return !(typeof iat === 'number' && iat > revokedAt);
+  } catch {
+    return true;
+  }
 }

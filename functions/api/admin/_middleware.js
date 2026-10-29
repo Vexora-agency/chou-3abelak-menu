@@ -9,6 +9,7 @@
  */
 
 import { getSessionCookie, getSessionSecret, jsonNoStore, verifySessionToken } from '../../_shared/session.js';
+import { isSessionRevoked } from '../../_shared/access.js';
 
 let cachedJwks = null;
 let jwksCachedAt = 0;
@@ -43,6 +44,11 @@ export async function onRequest(context) {
       try {
         const payload = await verifySessionToken(sessionSecret, token);
         if (payload) {
+          // Disabled/deleted client accounts die here even mid-session
+          // (owner sessions are never revoked — see isSessionRevoked).
+          if (await isSessionRevoked(env.MENU_KV || null, payload.sub, payload.iat)) {
+            return jsonNoStore({ error: 'forbidden', message: 'Forbidden' }, 403);
+          }
           const res = await next();
           res.headers.set('Cache-Control', 'no-store');
           return res;

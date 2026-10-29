@@ -3,13 +3,17 @@
 import {
   INVITE_MAX_ATTEMPTS,
   INVITE_TTL_SEC,
+  REVOKE_TTL_SEC,
+  clearRevocation,
   inviteLinkFor,
   inviteUsable,
   isInviteUsername,
   isPasswordOk,
+  isSessionRevoked,
   isTokenFormat,
   newInviteToken,
   normalizeUsername,
+  revokeSessions,
   sha256Hex,
   siteBaseUrl,
 } from '../functions/_shared/access.js';
@@ -87,6 +91,29 @@ check('link null without site', inviteLinkFor({}, 't'.repeat(43)) === null);
 
 check('TTL is 72h', INVITE_TTL_SEC === 72 * 3600);
 check('attempt cap sane', INVITE_MAX_ATTEMPTS >= 10 && INVITE_MAX_ATTEMPTS <= 50);
+
+// Revocation: fake KV store, no infra.
+{
+  const store = new Map();
+  const kv = {
+    get: async (k) => (store.has(k) ? store.get(k) : null),
+    put: async (k, v) => { store.set(k, v); },
+    delete: async (k) => { store.delete(k); },
+  };
+  const now = Math.floor(Date.now() / 1000);
+  check('owner never revoked', (await isSessionRevoked(kv, 'admin', now - 100)) === false);
+  check('other subs pass', (await isSessionRevoked(kv, 'x', now)) === false);
+  check('fresh client passes', (await isSessionRevoked(kv, 'client:layali', now)) === false);
+  await revokeSessions(kv, 'layali');
+  check('old session dies', (await isSessionRevoked(kv, 'client:layali', now - 5)) === true);
+  check('boundary dies', (await isSessionRevoked(kv, 'client:layali', now)) === true);
+  check('newer account lives', (await isSessionRevoked(kv, 'client:layali', now + 3600)) === false);
+  check('other users unaffected', (await isSessionRevoked(kv, 'client:other', now - 5)) === false);
+  await clearRevocation(kv, 'layali');
+  check('enable clears', (await isSessionRevoked(kv, 'client:layali', now - 5)) === false);
+  check('no store fails closed', (await isSessionRevoked(null, 'client:layali', now)) === true);
+  check('revoke TTL covers longest session', REVOKE_TTL_SEC >= 30 * 24 * 3600);
+}
 
 if (fails) {
   console.error(`test-access: ${fails} FAILURES`);

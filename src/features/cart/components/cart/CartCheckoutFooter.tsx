@@ -41,7 +41,13 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
           className={`btn-tactile w-full rounded-full font-black text-sm flex items-center justify-center gap-2 shadow-lg ${orderBlocked ? 'min-h-12 h-auto py-2.5 px-4 text-xs leading-snug bg-neutral-700 text-neutral-300 cursor-not-allowed' : 'h-12 bg-[var(--primary)] text-[#0A0A0A] hover:brightness-110'}`}
         >
           {orderBlocked ? (
-            <span>{blockedMsg} {reopenText}</span>
+            /* Blocked: the status line above already says why (once). The button
+               keeps its action label in a disabled skin so the layout never
+               jumps and the CTA stays recognizable. */
+            <>
+              <Send size={18} className="opacity-60" />
+              <span>{isAr ? 'إرسال الطلب عبر واتساب' : 'Send Order on WhatsApp'}</span>
+            </>
           ) : (
             <>
               <Send size={18} />

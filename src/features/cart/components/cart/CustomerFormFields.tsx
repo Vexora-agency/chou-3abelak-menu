@@ -60,7 +60,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           type="tel"
           value={customer.phone} dir={isAr ? 'rtl' : 'ltr'}
           onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
-          placeholder={isAr ? 'مثال: 01012345678' : '+20 10 1234 5678'}
+          placeholder={isAr ? 'مثال: 70123456' : '+961 70 123 456'}
           maxLength={20}
           className={`w-full h-11 px-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
             darkMode

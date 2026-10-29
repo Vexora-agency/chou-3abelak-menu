@@ -53,4 +53,7 @@ export const STR = {
   },
 } as const;
 
-export type LoginStrings = (typeof STR)[keyof typeof STR];
+// Widened from the STR literal union on purpose: sibling screens (invite)
+// reuse the same components with their own copy. Lookups still typecheck;
+// behavior is unchanged (types only, no runtime effect).
+export type LoginStrings = Record<string, string>;

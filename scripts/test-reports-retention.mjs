@@ -109,7 +109,7 @@ ok(getRetentionConfig({ PII_RETENTION_DAYS: 'x', ORDER_RETENTION_MONTHS: -5 }).o
 }
 ok(isValidReportEmail('owner@restaurant.com') && !isValidReportEmail('not-an-email') && !isValidReportEmail('a@b') && !isValidReportEmail(''), 'email validation');
 ok(hasFeature({}, 'monthlyReports') === false, 'starter (default) has no monthlyReports');
-ok(hasFeature({ SITE_PLAN: 'pro' }, 'monthlyReports') && hasFeature({ SITE_PLAN: 'signature' }, 'monthlyReports'), 'pro + signature allowed');
+  ok(hasFeature({ SITE_PLAN: 'pro' }, 'monthlyReports') && hasFeature({ SITE_PLAN: 'plus' }, 'monthlyReports'), 'pro + plus allowed');
 ok(hasFeature({ SITE_PLAN: 'enterprise' }, 'monthlyReports') === false, 'unknown plan fails closed');
 ok(featureOffResponse().status === 404, 'feature-off answers 404');
 

@@ -5,6 +5,7 @@
  */
 
 import { jsonNoStore } from '../../_shared/session.js';
+import { featureOffResponse, hasFeature } from '../../_shared/plan.js';
 import { listOrdersByWindow } from '../../_shared/repositories/orders.repo.js';
 
 function parseISO(v) {
@@ -16,6 +17,7 @@ function parseISO(v) {
 export async function onRequest(context) {
   const { request, env } = context;
 
+  if (!hasFeature(env, 'orderLogging')) return featureOffResponse();
   if (request.method !== 'GET') {
     return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'GET' });
   }

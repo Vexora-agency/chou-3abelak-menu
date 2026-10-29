@@ -48,10 +48,13 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   adminFetch, onMenuRefreshed,
 }) => {
   const isAr = lang === 'ar';
-  // White-label package gate: starter clients hide Reports UI even if the API
-  // ever answers (backend 404s on starter via SITE_PLAN — this only hides the tab).
-  // Current client has enableReports=true → visually identical.
+  // White-label package gates: starter hides Reports UI, the customers view
+  // and the orders overview (backend 404s all three too — these only hide
+  // the tabs). The pause toggle above stays for every plan (core ops).
+  // Current client has everything on → visually identical.
   const showReports = reportsOn && featuresConfig.enableReports;
+  const showCustomers = customersOn && featuresConfig.enableCustomerData;
+  const showOrders = featuresConfig.enableOrderLogging;
   // An expired timed pause counts as resumed everywhere (the state machine
   // treats it as open) — otherwise admin shows a stuck amber panel + 0:00
   // counter while customers can already order.
@@ -103,7 +106,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
           onResume={handleResume}
         />
       </div>
-      {ordersError && (
+      {ordersError && showOrders && (
         <div className="mb-3 flex items-center justify-between gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-bold">
           <span>{isAr ? 'تعذر تحميل الطلبات.' : 'Could not load orders.'}</span>
           <button
@@ -115,9 +118,9 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
           </button>
         </div>
       )}
-      {(showReports || customersOn) && (
+      {(showReports || showCustomers) && (
         <div className="mb-4 flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800 w-fit max-w-full overflow-x-auto no-scrollbar" role="tablist" aria-label={isAr ? 'الداشبورد' : 'Dashboard'}>
-          {(['overview', ...(showReports ? ['reports'] : []), ...(customersOn ? ['customers'] : [])] as Array<'overview' | 'reports' | 'customers'>).map((v) => {
+          {(['overview', ...(showReports ? ['reports'] : []), ...(showCustomers ? ['customers'] : [])] as Array<'overview' | 'reports' | 'customers'>).map((v) => {
             const active = dashView === v;
             return (
               <button
@@ -137,7 +140,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
           })}
         </div>
       )}
-      {dashView === 'overview' && (
+      {dashView === 'overview' && showOrders && (
       <OrdersDashboard
         lang={lang}
         orders={orders}
@@ -162,7 +165,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
           onDownload={(m) => onDownloadReport(m)}
         />
       )}
-      {dashView === 'customers' && customersOn && (
+      {dashView === 'customers' && showCustomers && (
         <CustomerData
           lang={lang}
           currency={menu.settings.currency[lang] || menu.settings.currency.en}

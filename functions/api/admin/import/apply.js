@@ -14,6 +14,7 @@ import { validateMenu } from '../../../_shared/validate.js';
 import { IMPORT_KEY, applyCSVToMenu, getActor, purgePublicMenu, snapshotMenu, writeMenuVersioned } from '../../../_shared/versions.js';
 import { hitRateLimit } from '../../../_shared/ratelimit.js';
 import { logActivity } from '../../../_shared/activity.js';
+import { featureOffResponse, hasFeature } from '../../../_shared/plan.js';
 
 async function sessionSub(request, env) {
   try {
@@ -35,6 +36,7 @@ async function sessionSub(request, env) {
 
 export async function onRequest(context) {
   const { request, env } = context;
+  if (!hasFeature(env, 'backups')) return featureOffResponse();
   const gate = checkApiHeaders(request);
   if (!gate.ok) return jsonNoStore({ error: gate.error }, gate.status);
   if (request.method !== 'POST') return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'POST' });

@@ -6,6 +6,7 @@
 
 import { validateMenu } from '../../_shared/validate.js';
 import { jsonNoStore } from '../../_shared/session.js';
+import { applyPlanToSettings } from '../../_shared/plan.js';
 import { getActor, migrateLegacyBackup, purgePublicMenu, snapshotMenu } from '../../_shared/versions.js';
 import { diffMenus, summarizeChanges } from '../../_shared/diff.js';
 import { logActivity } from '../../_shared/activity.js';
@@ -114,6 +115,10 @@ export async function onRequest(context) {
     }
 
     const validatedDoc = validation.value;
+    // Plan scrub: a starter save cannot smuggle gated settings blocks
+    // (announcements) past the hidden admin UI. Runs before the snapshot so
+    // history never holds what the plan forbids.
+    validatedDoc.settings = applyPlanToSettings(env, validatedDoc.settings);
 
     // 5. Optimistic concurrency check with KV
     let currentStored = null;

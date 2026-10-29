@@ -5,9 +5,11 @@
 import { checkApiHeaders, jsonNoStore } from '../../../_shared/session.js';
 import { buildMenuCSV } from '../../../_shared/versions.js';
 import { businessTimezone, fileDate, readLiveMenu } from '../../../_shared/reports.js';
+import { featureOffResponse, hasFeature } from '../../../_shared/plan.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
+  if (!hasFeature(env, 'backups')) return featureOffResponse();
   const gate = checkApiHeaders(request);
   if (!gate.ok) return jsonNoStore({ error: gate.error }, gate.status);
   if (request.method !== 'GET') return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'GET' });

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { MenuData } from '@/src/types/menu';
 import type { AdminFetch } from '@/src/lib/api-client';
+import { featuresConfig } from '@/src/config/features.config';
 import { socialOrderOrDefault } from '@/src/utils/settingsDefaults';
 import { AnnouncementSection } from '../AnnouncementSection';
 import { WorkingHoursSection } from '../WorkingHoursSection';
@@ -132,6 +133,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         }
       />
 
+      {featuresConfig.enableAnnouncements && (
       <AnnouncementSection
         announcement={menu.settings.announcement}
         timezone={menu.settings.timezone || 'Asia/Beirut'}
@@ -143,6 +145,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           }))
         }
       />
+      )}
 
       <AutoplaySection
         menu={menu}

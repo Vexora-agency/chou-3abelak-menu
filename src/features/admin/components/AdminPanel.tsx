@@ -14,6 +14,7 @@ import { useAdminOrders } from '@/src/features/orders';
 import { useReportCenter } from '@/src/features/reports';
 import { useBackupHistory } from '@/src/features/backup';
 import { useAdminCatalog } from '../hooks/useAdminCatalog';
+import { featuresConfig } from '@/src/config/features.config';
 
 interface AdminPanelProps {
   initialMenu: MenuData;
@@ -43,9 +44,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     // Deep-link: #admin/backup (or any tab) survives refresh.
     // #admin/reports opens the dashboard on the reports view (email link).
     // #admin/customers opens the dashboard on the customers view.
+    // A starter #admin/backup link falls back to the dashboard (tab hidden).
     const m = /^#admin\/([a-z]+)$/.exec(window.location.hash);
     const raw = m ? m[1] : null;
     if (raw === 'reports' || raw === 'customers') return 'dashboard';
+    if (raw === 'backup' && !featuresConfig.enableBackup) return 'dashboard';
     return raw === 'dashboard' || raw === 'settings' || raw === 'categories' || raw === 'items' || raw === 'backup'
       ? (raw as AdminTab)
       : 'dashboard';
@@ -85,7 +88,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   } = useMenuSaver({ initialMenu, onSaveMenu, isAr, savePaused, onSaved: flashSaved });
   const {
     orders, ordersLoading, ordersError, fetchOrders, handleOrderStatusChange,
-  } = useAdminOrders({ isAr, timezone: menu.settings.timezone || 'Asia/Beirut', activeTab });
+  } = useAdminOrders({ isAr, timezone: menu.settings.timezone || 'Asia/Beirut', activeTab, enabled: featuresConfig.enableOrderLogging });
   const report = useReportCenter({ isAr, activeTab, adminFetch });
   const backup = useBackupHistory({
     isAr, lang, activeTab, adminFetch, savePaused,
@@ -100,9 +103,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   });
 
   // Refresh the activity feed after every successful save (manual or autosave).
+  // Skipped for starter (activity endpoint 404s there — no wasted request).
   const fetchActivityOnSave = backup.fetchActivity;
   useEffect(() => {
-    if (saveSuccess) void fetchActivityOnSave();
+    if (saveSuccess && featuresConfig.enableBackup) void fetchActivityOnSave();
   }, [saveSuccess, fetchActivityOnSave]);
 
   // Deep-link shield (declared before the sync effect that reads it): while
@@ -281,8 +285,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         />
       )}
 
-      {/* TAB 4: BACKUP & HISTORY */}
-      {activeTab === 'backup' && (
+      {/* TAB 4: BACKUP & HISTORY (hidden on starter — backend 404s it too) */}
+      {activeTab === 'backup' && featuresConfig.enableBackup && (
         <BackupPanel
           lang={lang}
           versions={backup.versions}

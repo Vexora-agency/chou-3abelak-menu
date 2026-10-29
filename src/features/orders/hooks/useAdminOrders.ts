@@ -8,10 +8,12 @@ interface AdminOrdersOptions {
   isAr: boolean;
   timezone: string;
   activeTab: string;
+  /** Plan gate: starter never fetches (no orders UI, endpoint 404s anyway). */
+  enabled?: boolean;
 }
 
 /** Orders dashboard data: load + 30s poll + optimistic status changes. */
-export function useAdminOrders({ isAr, timezone, activeTab }: AdminOrdersOptions) {
+export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: AdminOrdersOptions) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [ordersError, setOrdersError] = useState(false);
@@ -51,14 +53,19 @@ export function useAdminOrders({ isAr, timezone, activeTab }: AdminOrdersOptions
 
   // Initial load + 30s poll while the tab is visible (fetch trigger: all
   // setStates happen async inside fetchOrders, no cascading render).
+  // Skipped entirely when the plan hides orders (starter).
   useEffect(() => {
+    if (!enabled) {
+      setOrdersLoading(false);
+      return;
+    }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch trigger, see above
     void fetchOrders(false);
     const id = window.setInterval(() => {
       if (document.visibilityState === 'visible') void fetchOrders(true);
     }, 30000);
     return () => window.clearInterval(id);
-  }, [fetchOrders]);
+  }, [fetchOrders, enabled]);
 
   // Restore the page title when the dashboard tab is viewed
   useEffect(() => {

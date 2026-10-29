@@ -200,7 +200,7 @@ Set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET` (mark all as **Sec
 
 ---
 
-## 📊 Monthly reports (plan-gated: pro / signature)
+## 📊 Monthly reports (plan-gated: pro / plus)
 
 Dashboard → **Reports** tab (Overview | Reports switch) shows one card per month
 plus the current month live, a CSV download per month, the report-email
@@ -229,7 +229,7 @@ the `SITE_PLAN` env var (`starter` when unset).
 
 | Var | Purpose |
 | --- | ------- |
-| `SITE_PLAN` | `pro` or `signature` to unlock reports (`starter`/unset hides them) |
+| `SITE_PLAN` | `pro` or `plus` to unlock reports (`starter`/unset hides them) |
 | `RESEND_API_KEY` | Resend API key (free plan is enough) |
 | `MAIL_FROM_DOMAIN_EMAIL` | Full sender address, e.g. `reports@your-domain.com` |
 | `REPLY_TO` | Owner's Zoho address (replies go here, never to the sender) |
@@ -274,7 +274,7 @@ retention only runs in the daily job.
 | # | Action | Expected |
 | --- | --- | --- |
 | 1 | Unset `SITE_PLAN`, restart dev | All `/api/admin/report-*`, `/api/admin/reports*`, `/api/internal/run-reports` → 404; Reports switch hidden |
-| 2 | `SITE_PLAN=signature`, change email, save | `verificationSent:false` without Resend key; DB holds only a 64-hex token hash, `verified=0`, expiry ~48 h |
+| 2 | `SITE_PLAN=plus`, change email, save | `verificationSent:false` without Resend key; DB holds only a 64-hex token hash, `verified=0`, expiry ~48 h |
 | 3 | `GET /api/reports/confirm?token=…` | 200 generic page, no address shown; second use → invalid page; `verified=1`, hash cleared |
 | 4 | Test mail before/after verifying | 400 `not_verified`, then graceful `mail_unconfigured` without a key; 4th call in an hour → 429 |
 | 5 | `POST /api/internal/run-reports` twice | First generates + attempts=1; second attempts=2 (mail fails without key); wrong secret → 404 |

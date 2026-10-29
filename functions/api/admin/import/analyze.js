@@ -18,6 +18,7 @@ import {
   assertSafeJSON,
   verifyPayload,
 } from '../../../_shared/versions.js';
+import { featureOffResponse, hasFeature } from '../../../_shared/plan.js';
 
 const MAX_BYTES = 2 * 1024 * 1024;
 
@@ -62,6 +63,7 @@ const WARN = {
 
 export async function onRequest(context) {
   const { request, env } = context;
+  if (!hasFeature(env, 'backups')) return featureOffResponse();
   const gate = checkApiHeaders(request);
   if (!gate.ok) return jsonNoStore({ error: gate.error }, gate.status);
   if (request.method !== 'POST') return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'POST' });

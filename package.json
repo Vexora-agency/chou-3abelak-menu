@@ -16,6 +16,7 @@
     "test:dial": "tsx scripts/test-dial-codes.ts",
     "test:parity": "tsx scripts/test-parity.mjs",
     "test:cart": "node scripts/test-cart-isolation.mjs",
+    "test:plan": "node scripts/test-plan.mjs",
     "test:all": "npm run test:client && npm run test:dial && npm run test:parity && npm run test:cart"
   },
   "dependencies": {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Check, Globe } from 'lucide-react';
+import { featuresConfig } from '@/src/config/features.config';
 
 export type AdminTab = 'dashboard' | 'settings' | 'categories' | 'items' | 'backup';
 
@@ -96,9 +97,9 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
         <span>{isAr ? 'إدارة قائمة الطعام' : 'Menu Management'}</span>
       </h1>
 
-      {/* Tabs */}
+      {/* Tabs (Backup hidden on starter — backend 404s it too) */}
       <div className="flex gap-1.5 p-1 bg-neutral-900 rounded-2xl border border-neutral-800 mt-4 mb-6 overflow-x-auto no-scrollbar">
-        {(['dashboard', 'settings', 'categories', 'items', 'backup'] as const).map((tab) => (
+        {(['dashboard', 'settings', 'categories', 'items', ...(featuresConfig.enableBackup ? ['backup'] as const : [])] as const).map((tab) => (
           <button
             key={tab}
             type="button"

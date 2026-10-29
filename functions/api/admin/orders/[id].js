@@ -4,6 +4,7 @@
  */
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
+import { featureOffResponse, hasFeature } from '../../../_shared/plan.js';
 import { updateOrderStatus } from '../../../_shared/repositories/orders.repo.js';
 
 const STATUSES = ['new', 'confirmed', 'completed', 'cancelled'];
@@ -11,6 +12,7 @@ const STATUSES = ['new', 'confirmed', 'completed', 'cancelled'];
 export async function onRequest(context) {
   const { request, env, params } = context;
 
+  if (!hasFeature(env, 'orderLogging')) return featureOffResponse();
   if (request.method !== 'PATCH') {
     return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'PATCH' });
   }

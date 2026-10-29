@@ -22,7 +22,7 @@ const { ok, summary } = createAsserts();
 const req = makeReq;
 const json = readJson;
 
-const ENV = () => ({ MENU_KV: makeKV(), BACKUP_SECRET: 'test-backup-secret-1234567890' });
+const ENV = () => ({ MENU_KV: makeKV(), BACKUP_SECRET: 'test-backup-secret-1234567890', SITE_PLAN: 'pro' });
 
 /* ---------------- 4. Import: signed apply, tamper, unsigned guard ---------------- */
 

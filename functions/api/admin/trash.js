@@ -1,11 +1,13 @@
 /**
- * Trash: GET /api/admin/trash (auto-purges entries older than 30 days),
- * POST /api/admin/trash { kind: 'item'|'category', id, baseVersion } —
- * moves the object into the trash (server-side menu edit + version
- * snapshot + version bump). Works on every plan.
+ * Trash: GET /api/admin/trash (auto-purges entries older than 30 days;
+ * plan-gated: backups) , POST /api/admin/trash { kind: 'item'|'category',
+ * id, baseVersion } — moves the object into the trash (server-side menu
+ * edit + version snapshot + version bump). POST + restore-by-id stay open on
+ * every plan: delete-with-undo is safety, not premium.
  */
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../_shared/session.js';
+import { featureOffResponse, hasFeature } from '../../_shared/plan.js';
 import { validateMenu } from '../../_shared/validate.js';
 import { logActivity } from '../../_shared/activity.js';
 import {
@@ -25,6 +27,7 @@ export async function onRequest(context) {
   if (!env.MENU_KV) return jsonNoStore({ error: 'unavailable' }, 503);
 
   if (request.method === 'GET') {
+    if (!hasFeature(env, 'backups')) return featureOffResponse();
     const entries = await readTrash(env);
     return jsonNoStore({ trash: toTrashList(entries) });
   }

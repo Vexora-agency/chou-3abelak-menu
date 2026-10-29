@@ -37,8 +37,37 @@ interface MenuListProps {
  * appears only when the rest is worth a tap (> MIN_REST): a "show more (2)"
  * button is sillier than just showing the two.
  * While any filter is active everything shows — collapsing would hide matches.
+ * Wide screens snap both numbers UP to full grid rows (12 initial on a 5-col
+ * desktop grid would leave an orphan pair + 3 empty slots; 15 fills 3 rows),
+ * so the pager count never sits under visibly empty space.
  */
 const MIN_REST = 4;
+
+/**
+ * Live column count of a section grid, mirroring the Tailwind breakpoints in
+ * `gridClass` below (sm:640 md:768 lg:1024 xl:1280). Re-evaluates on resize
+ * so rotating/resizing re-snaps the visible window to full rows.
+ */
+function useGridCols(kind: 'list' | 'compact' | 'cards'): number {
+  const get = () => {
+    if (typeof window === 'undefined' || !window.matchMedia) return kind === 'cards' ? 2 : 1;
+    const mq = (min: number) => window.matchMedia(`(min-width: ${min}px)`).matches;
+    if (kind === 'cards') return mq(1280) ? 5 : mq(1024) ? 4 : mq(640) ? 3 : 2;
+    if (kind === 'list') return mq(1280) ? 3 : mq(768) ? 2 : 1;
+    return mq(768) ? 2 : 1; // compact
+  };
+  const [cols, setCols] = useState(get);
+  useEffect(() => {
+    const onChange = () => setCols(get());
+    const mqls = [640, 768, 1024, 1280].map((min) => window.matchMedia(`(min-width: ${min}px)`));
+    mqls.forEach((m) => m.addEventListener('change', onChange));
+    onChange();
+    return () => mqls.forEach((m) => m.removeEventListener('change', onChange));
+    // get is re-created per render but reads only viewport + kind.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind]);
+  return cols;
+}
 
 interface ShowMoreButtonProps {
   expanded: boolean;
@@ -223,6 +252,10 @@ export const MenuList: React.FC<MenuListProps> = ({
     Number.isInteger(v) && (v as number) >= 4 && (v as number) <= 50 ? (v as number) : fb;
   const initial = intOr(smRaw.initial, 12);
   const batch = intOr(smRaw.batch, 8);
+  // One hook call per grid kind (never inside the section loop below).
+  const cardsCols = useGridCols('cards');
+  const listCols = useGridCols('list');
+  const compactCols = useGridCols('compact');
 
   if (filteredItems.length === 0) {
     return <MenuListEmptyState darkMode={darkMode} isAr={isAr} />;
@@ -257,6 +290,14 @@ export const MenuList: React.FC<MenuListProps> = ({
               ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-4'
               : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5';
         const total = catItems.length;
+        // Snap the window to FULL rows of this section's live grid: on a
+        // 5-column desktop grid initial 12 → 15, batch 8 → 10, so no orphan
+        // row and no empty slots beside the pager. Mobile grids (2 cols)
+        // keep 12/8 exactly (already multiples). At least one full row.
+        const cols = kind === 'compact' ? compactCols : isListSection ? listCols : cardsCols;
+        const snapRows = (n: number) => Math.max(cols, Math.ceil(n / cols) * cols);
+        const effInitial = snapRows(initial);
+        const effBatch = snapRows(batch);
         const rowCtx: Omit<MenuListRowItemProps, 'item' | 'index' | 'leaveDelayMs'> = {
           kind,
           menu,
@@ -282,12 +323,12 @@ export const MenuList: React.FC<MenuListProps> = ({
         // no layout-measurement overlap is possible (unlike mounting inside an
         // animating container). Collapsing is phased (fade, then commit with
         // pixel-lock) so the viewport never jumps.
-        const collapsible = !filtering && total > initial + MIN_REST;
-        const visible = collapsible ? Math.min(total, visibleCounts[cat.id] ?? initial) : total;
+        const collapsible = !filtering && total > effInitial + MIN_REST;
+        const visible = collapsible ? Math.min(total, visibleCounts[cat.id] ?? effInitial) : total;
         const hasMore = collapsible && visible < total;
         // Stepped collapse: "less" goes back one batch per tap (never jumps
         // straight to the start), mirroring "more".
-        const pastStart = collapsible && visible > initial;
+        const pastStart = collapsible && visible > effInitial;
         const more = () => {
           if (leaving) return;
           setSteppingBack((prev) => {
@@ -296,7 +337,7 @@ export const MenuList: React.FC<MenuListProps> = ({
             delete next[cat.id];
             return next;
           });
-          setVisibleCounts((prev) => ({ ...prev, [cat.id]: Math.min(total, (prev[cat.id] ?? initial) + batch) }));
+          setVisibleCounts((prev) => ({ ...prev, [cat.id]: Math.min(total, (prev[cat.id] ?? effInitial) + effBatch) }));
         };
         // Phased "less": phase 1 fades the doomed range [target, visible) in
         // place — layout fully frozen, so the scroll position CANNOT jump.
@@ -305,8 +346,8 @@ export const MenuList: React.FC<MenuListProps> = ({
         // are ignored (one collapse at a time).
         const less = () => {
           if (leaving) return;
-          const target = Math.max(initial, visible - batch);
-          const landing = target <= initial;
+          const target = Math.max(effInitial, visible - effBatch);
+          const landing = target <= effInitial;
           setLeaving({ id: cat.id, from: target });
           window.clearTimeout(leaveTimer.current);
           leaveTimer.current = window.setTimeout(() => {

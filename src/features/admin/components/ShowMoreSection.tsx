@@ -94,8 +94,8 @@ export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
         </h2>
         <p className="text-[11px] text-neutral-500 mt-0.5">
           {isAr
-            ? 'الأقسام الطويلة تُطوى، والزر يكشف دفعات. الزر يظهر فقط عندما يستحق الباقي ضغطة (أكثر من 4).'
-            : 'Long sections collapse; the button reveals batches. It appears only when the rest is worth a tap (more than 4).'}
+            ? 'الأقسام الطويلة تُطوى، والزر يكشف دفعات. الزر يظهر فقط عندما يستحق الباقي ضغطة (أكثر من 4). على الشاشات الكبيرة تُقرَّب الأعداد لأقرب صف كامل تلقائيًا.'
+            : 'Long sections collapse; the button reveals batches. It appears only when the rest is worth a tap (more than 4). On wide screens counts snap up to full grid rows automatically.'}
         </p>
       </div>
       <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">

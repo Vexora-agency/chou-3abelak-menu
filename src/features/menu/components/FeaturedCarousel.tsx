@@ -41,7 +41,8 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   const interactive = orderingEnabled;
 
   // One-card-at-a-time slider on mobile: smooth transform slide with dots,
-  // wraps instantly at the end. Desktop shows a static grid instead.
+  // wraps instantly at the end. Desktop shows a single static row instead
+  // (equal-share flex, never wraps to a second row).
   const marqueeOn = autoplay && items.length > 1;
   const perCard = Math.min(10, Math.max(2, autoplayInterval || 4));
   const [index, setIndex] = useState(0);
@@ -139,7 +140,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-40px' }}
         transition={{ duration: 0.55, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
-        className={`group relative flex-shrink-0 w-full ${forceSlider ? '' : 'md:w-auto'} h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden ${interactive ? 'cursor-pointer' : ''} card-lift shadow-md border ${
+        className={`group relative flex-shrink-0 w-full ${forceSlider ? '' : 'md:w-auto md:flex-1 md:min-w-0 md:shrink'} h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden ${interactive ? 'cursor-pointer' : ''} card-lift shadow-md border ${
           isYellowCard
             ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
             : darkMode
@@ -239,7 +240,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         </h2>
       </div>
 
-      {/* One-card slider on mobile (smooth transform slide + dots), static grid on desktop */}
+      {/* One-card slider on mobile (smooth transform slide + dots), single static row on desktop */}
       <div className={`relative overflow-hidden ${forceSlider ? '' : 'md:overflow-visible'}`}>
         <div
           onMouseEnter={pause}
@@ -247,7 +248,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
           onPointerDown={pause}
-          className={`slider-track flex gap-0 ${forceSlider ? '' : 'md:grid md:grid-cols-3 md:gap-4'} ${
+          className={`slider-track flex gap-0 ${forceSlider ? '' : 'md:gap-4'} ${
             instant ? 'slider-track-instant' : ''
           }`}
           style={{ '--sx': isAr ? `${index * 100}%` : `-${index * 100}%` } as React.CSSProperties}

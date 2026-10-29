@@ -25,8 +25,8 @@
   pointer-events: none;
 }
 
-/* Featured one-card slider (mobile only; desktop shows the grid).
-   The track shifts via a --sx variable so the desktop grid is untouched. */
+/* Featured one-card slider (mobile only; desktop shows a single row).
+   The track shifts via a --sx variable so the desktop row is untouched. */
 .slider-track {
   transform: translateX(var(--sx, 0));
 }

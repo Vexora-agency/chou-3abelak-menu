@@ -49,44 +49,45 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
   const isAr = lang === 'ar';
   return (
     <div className="space-y-4 stagger">
-      <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
-        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={isAr ? 'بحث في الوجبات...' : 'Search items...'}
-              className="h-9 px-3 rounded-lg bg-neutral-900 border border-neutral-700 text-xs w-full"
-            />
-            <select
-              value={categoryFilter}
-              onChange={(e) => onCategoryFilterChange(e.target.value)}
-            className="h-9 px-2.5 rounded-lg bg-neutral-900 border border-neutral-700 text-xs"
-          >
-            <option value="all">{isAr ? 'كل الأقسام' : 'All Categories'}</option>
-            {menu.categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name.en}
-              </option>
-            ))}
-          </select>
-            <select
-              value={badgeFilter}
-              onChange={(e) => onBadgeFilterChange(e.target.value as ItemBadgeFilter)}
-            className="h-9 px-2.5 rounded-lg bg-neutral-900 border border-neutral-700 text-xs"
-            aria-label={isAr ? 'فلترة بالشارة' : 'Filter by badge'}
-          >
-            <option value="all">{isAr ? 'كل الشارات' : 'All Badges'}</option>
-            <option value="new">{isAr ? 'جديد' : 'New'}</option>
-            <option value="spicy">{isAr ? 'حار' : 'Spicy'}</option>
-            <option value="top">{isAr ? 'الأكثر طلباً' : 'Top'}</option>
-          </select>
-        </div>
+      {/* Toolbar: stacked rows on phones (search / filters / full-width Add),
+          single row on wide screens. The old flex-1 min-w-[200px] filter group
+          could not shrink, so the badge select ran into the Add button. */}
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder={isAr ? 'بحث في الوجبات...' : 'Search items...'}
+          className="h-10 px-3 rounded-lg bg-neutral-900 border border-neutral-700 text-xs w-full min-w-0 basis-full min-[560px]:w-auto min-[560px]:flex-1"
+        />
+        <select
+          value={categoryFilter}
+          onChange={(e) => onCategoryFilterChange(e.target.value)}
+          className="h-10 px-2.5 rounded-lg bg-neutral-900 border border-neutral-700 text-xs flex-1 min-w-0 max-w-full"
+        >
+          <option value="all">{isAr ? 'كل الأقسام' : 'All Categories'}</option>
+          {menu.categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name.en}
+            </option>
+          ))}
+        </select>
+        <select
+          value={badgeFilter}
+          onChange={(e) => onBadgeFilterChange(e.target.value as ItemBadgeFilter)}
+          className="h-10 px-2.5 rounded-lg bg-neutral-900 border border-neutral-700 text-xs flex-1 min-w-0 max-w-full"
+          aria-label={isAr ? 'فلترة بالشارة' : 'Filter by badge'}
+        >
+          <option value="all">{isAr ? 'كل الشارات' : 'All Badges'}</option>
+          <option value="new">{isAr ? 'جديد' : 'New'}</option>
+          <option value="spicy">{isAr ? 'حار' : 'Spicy'}</option>
+          <option value="top">{isAr ? 'الأكثر طلباً' : 'Top'}</option>
+        </select>
 
         <button
           type="button"
           onClick={onAdd}
-          className="btn-tactile px-3.5 py-2 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-xs flex items-center gap-1 shadow-md"
+          className="btn-tactile h-10 px-3.5 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-xs flex items-center justify-center gap-1 shadow-md basis-full min-[560px]:basis-auto"
         >
           <Plus size={14} />
           <span>{isAr ? 'إضافة وجبة' : 'Add Item'}</span>
@@ -156,8 +157,8 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                 </div>
               </div>
 
-              {/* Quick Toggles & Actions */}
-              <div className="flex items-center gap-1.5">
+              {/* Quick Toggles & Actions — compact fixed cluster, never squeezes the name */}
+              <div className="flex items-center gap-1 shrink-0">
                 {/* Available toggle */}
                 <button
                   type="button"
@@ -180,14 +181,16 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                 <button
                   type="button"
                   onClick={() => onMove(item.id, 'up')}
-                  className="p-1 text-neutral-400 hover:text-white"
+                  className="p-2 text-neutral-400 hover:text-white"
+                  aria-label={isAr ? 'تحريك لأعلى' : 'Move up'}
                 >
                   <ChevronUp size={14} />
                 </button>
                 <button
                   type="button"
                   onClick={() => onMove(item.id, 'down')}
-                  className="p-1 text-neutral-400 hover:text-white"
+                  className="p-2 text-neutral-400 hover:text-white"
+                  aria-label={isAr ? 'تحريك لأسفل' : 'Move down'}
                 >
                   <ChevronDown size={14} />
                 </button>
@@ -196,7 +199,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                 <button
                   type="button"
                   onClick={() => onDuplicate(item)}
-                  className="p-1.5 text-neutral-400 hover:text-[var(--primary)]"
+                  className="p-2 text-neutral-400 hover:text-[var(--primary)]"
                   title="Duplicate"
                 >
                   <Copy size={14} />
@@ -206,7 +209,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                 <button
                   type="button"
                   onClick={() => onDelete(item.id)}
-                  className="p-1.5 text-neutral-400 hover:text-red-400"
+                  className="p-2 text-neutral-400 hover:text-red-400"
                   title="Delete"
                 >
                   <Trash2 size={14} />

@@ -23,7 +23,7 @@ export const ItemFlagsBar: React.FC<ItemFlagsBarProps> = ({
       {/* Badges Checkboxes (same icons as the menu) */}
       <div>
         <label className="block text-xs text-neutral-400 mb-1.5">{isAr ? 'الشارات' : 'Badges'}</label>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
           {([
             { id: 'new', en: 'New', ar: 'جديد' },
             { id: 'spicy', en: 'Spicy', ar: 'حار' },
@@ -51,7 +51,7 @@ export const ItemFlagsBar: React.FC<ItemFlagsBarProps> = ({
       </div>
 
       {/* Featured & Available toggles */}
-      <div className="flex gap-6 pt-2 border-t border-neutral-800">
+      <div className="flex flex-wrap gap-x-6 gap-y-2 pt-2 border-t border-neutral-800">
         <label className="flex items-center gap-2 text-xs cursor-pointer">
           <input
             type="checkbox"

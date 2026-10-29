@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import { useItemEditorSections } from '../hooks/useItemEditorSections';
 import { ItemBasicFields } from './item-editor/ItemBasicFields';
@@ -40,16 +41,38 @@ export const ItemEditModal: React.FC<ItemEditModalProps> = ({
 }) => {
   const isAr = lang === 'ar';
   const { nonEmptySections, sizesSection } = useItemEditorSections(menu);
+  // Escape closes the topmost layer: the addon picker first, the modal after.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (pickingAddonSec) onCloseAddonPicker();
+      else onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [pickingAddonSec, onClose, onCloseAddonPicker]);
   return (
-<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+<div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
   <div
     onClick={() => onClose()}
     className="fixed inset-0 bg-black/70"
   />
-  <div className="relative z-10 w-full max-w-[480px] bg-[#141414] border-2 border-[var(--primary)] rounded-2xl p-5 max-h-[90vh] overflow-y-auto space-y-4 shadow-2xl stagger">
-    <h3 className="text-lg font-black">
-      {isNew ? (isAr ? 'إضافة وجبة جديدة' : 'Add New Item') : (isAr ? 'تعديل الوجبة' : 'Edit Item')}
-    </h3>
+  {/* dvh (not vh): iOS Safari's vh includes the toolbar zone, so 90vh can run
+      under it. overscroll-contain keeps scroll chaining inside the panel. */}
+  <div className="relative z-10 w-full max-w-[480px] bg-[#141414] border-2 border-[var(--primary)] rounded-2xl p-5 max-h-[90dvh] overflow-y-auto overscroll-contain space-y-4 shadow-2xl stagger">
+    <div className="flex items-center justify-between gap-3">
+      <h3 className="text-lg font-black">
+        {isNew ? (isAr ? 'إضافة وجبة جديدة' : 'Add New Item') : (isAr ? 'تعديل الوجبة' : 'Edit Item')}
+      </h3>
+      <button
+        type="button"
+        onClick={() => onClose()}
+        aria-label={isAr ? 'إغلاق' : 'Close'}
+        className="p-2 -m-1 text-neutral-400 hover:text-white rounded-full"
+      >
+        <X size={18} />
+      </button>
+    </div>
 
     <ItemBasicFields item={item} menu={menu} lang={lang} onChange={onChange} />
 
@@ -73,8 +96,8 @@ export const ItemEditModal: React.FC<ItemEditModalProps> = ({
 
     <ItemFlagsBar item={item} menu={menu} lang={lang} onChange={onChange} />
 
-    {/* Modal Buttons */}
-    <div className="flex gap-3 pt-3">
+    {/* Modal Buttons — sticky: Save/Cancel stay visible while the form scrolls */}
+    <div className="sticky bottom-0 -mx-5 -mb-5 px-5 pt-3 pb-5 bg-[#141414]/95 backdrop-blur border-t border-neutral-800/70 flex gap-3 rounded-b-2xl">
       <button
         type="button"
         onClick={onSave}

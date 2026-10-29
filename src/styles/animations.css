@@ -103,19 +103,19 @@
   to { transform: translateX(420%); }
 }
 
-/* Announcement ticker: seamless marquee (track holds 2 identical halves,
-   looping 0 → -50%). Duration is set inline from the measured width so the
-   reading speed stays constant whatever the text length. */
+/* Announcement ticker: one-direction marquee (track holds 2 identical halves,
+   looping 0 → -50% forever). The halves are byte-identical, so the wrap point
+   is invisible — no ping-pong needed. Duration is set inline from the measured
+   width so the reading speed stays constant whatever the text length.
+   Direction is leftward in BOTH languages: new items enter at the right edge,
+   where Arabic reading starts — the same convention Arabic news tickers use. */
 .ann-track {
   display: flex;
   align-items: center;
   width: max-content;
-  animation: annMarquee var(--ann-duration, 20s) linear infinite alternate;
+  animation: annMarquee var(--ann-duration, 20s) linear infinite;
   will-change: transform;
 }
-/* Ping-pong (alternate) instead of a wrapping loop: there is no wrap point,
-   so no seam can ever show where a loop restarts — the shine travels right
-   and left forever. Same reading speed both ways. */
 /* Pause while the cursor rests on the bar — hover-capable devices ONLY. On
    touch screens :hover sticks after the first tap and would freeze the
    ticker until the next tap elsewhere. */

@@ -65,16 +65,14 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
 
       <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="block text-xs text-neutral-400">Tagline (EN)</label>
-            <span className="text-[10px] text-neutral-500">{isAr ? 'فارغ = الافتراضي' : 'Empty = house default'}</span>
-          </div>
+          <label className="block text-xs text-neutral-400 mb-1">Tagline (EN)</label>
           <input
             type="text"
             value={tagline.en}
             onChange={(e) => onUpdate((prev) => ({ ...prev, tagline: { ...prev.tagline, en: e.target.value } }))}
             className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
+          <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'فارغ = الافتراضي' : 'Empty = house default'}</p>
         </div>
         <div>
           <label className="block text-xs text-neutral-400 mb-1">الشعار اللفظي (AR)</label>
@@ -90,16 +88,14 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
 
       <div className="grid grid-cols-1 gap-3">
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="block text-xs text-neutral-400">About / Footer Description (EN)</label>
-            <span className="text-[10px] text-neutral-500">{isAr ? 'فارغ = الوصف الافتراضي' : 'Empty = house default'}</span>
-          </div>
+          <label className="block text-xs text-neutral-400 mb-1">About / Footer Description (EN)</label>
           <textarea
             rows={2}
             value={about.en}
             onChange={(e) => onUpdate((prev) => ({ ...prev, about: { ...prev.about, en: e.target.value } }))}
             className="w-full px-3 py-2 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
+          <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'فارغ = الوصف الافتراضي' : 'Empty = house default'}</p>
         </div>
         <div>
           <label className="block text-xs text-neutral-400 mb-1">وصف الفوتر (AR)</label>

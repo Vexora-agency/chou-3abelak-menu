@@ -80,7 +80,7 @@ chou-3abelak-menu-main/
 
 4. **Validation:** every route validates via `functions/_shared/validate*.js`. Never trust client totals — recompute from KV menu.
 
-5. **Plan gates:** `functions/_shared/plan.js` (`SITE_PLAN` env: starter/pro/plus). Starter returns 404 for gated features (reports/orderLogging/backups/announcements). Never branch on client name.
+5. **Plan gates:** `functions/_shared/plan.js` (`SITE_PLAN` env: starter/pro). Starter returns 404 for gated features (reports/orderLogging/backups/announcements). Never branch on client name.
 
 ## 3. Frontend Rules (React, no Router/Query)
 

@@ -16,7 +16,7 @@
 - Owner's domains: `vexora.agency` (Resend sending domain, **verified**),
   Zoho for receiving (`info@vexora.agency`).
 
-## Done: monthly reports (plan-gated: pro/plus, 404-when-off)- `SITE_PLAN` env (`starter` default). All report routes + `run-reports`
+## Done: monthly reports (plan-gated: pro, 404-when-off)- `SITE_PLAN` env (`starter` default). All report routes + `run-reports`
   return 404 on starter.
 - Dashboard tab has **Overview | Reports** switch (hidden when feature off).
   Periods: Today / 7 days / This month / Last month (calendar windows, list
@@ -107,7 +107,7 @@
   with countdown, Customers screen (password-gated actions).
 - Migration 0005 (location_lat/lng, phone_norm + index + backfill).
   Permissions-Policy geolocation=(self); CSP untouched.
-- FEATURES.orderLogging = [pro, plus]; roles skipped (single owner).
+- FEATURES.orderLogging = [pro]; roles skipped (single owner).
 - Tests: test-status.mjs (31), test-features.mjs (46).
 - E2E-verified live: pause/resume/state, 403s, location insert, CSV/BOM,
   privacy page+info, search/mask/anonymize/audit, announcement save,
@@ -118,7 +118,7 @@ Status: Resend domain `vexora.agency` verified + DKIM/DMARC/SPF in place.
 Nothing left in DNS. Remaining, in order:
 1. Owner creates Resend API key (`re_...`).
 2. Production env vars (Pages → Settings → Production, redeploy after):
-   `SITE_PLAN=plus`, `RESEND_API_KEY`, `MAIL_FROM_DOMAIN_EMAIL`
+   `SITE_PLAN=pro`, `RESEND_API_KEY`, `MAIL_FROM_DOMAIN_EMAIL`
    (= `reports@vexora.agency` — agreed sender; From shows
    "Chou 3abelak <reports@vexora.agency>"), `REPLY_TO=info@vexora.agency`
    (Zoho inbox), `SITE_URL` (❓ owner hasn't given the final site domain),
@@ -142,7 +142,7 @@ Nothing left in DNS. Remaining, in order:
 - PowerShell `Invoke-WebRequest` can't do `Secure` cookies over http or the
   login `Origin` rule — for API probes either send `Origin` explicitly or
   flip `ALLOW_LOCAL_DEV=1` temporarily (it is `0` normally).
-- `.dev.vars` currently also has `SITE_PLAN=plus`, `CRON_SECRET`,
+- `.dev.vars` currently also has `SITE_PLAN=pro`, `CRON_SECRET`,
   `SITE_URL=http://127.0.0.1:3000`, `BACKUP_SECRET` (local-only, gitignored).
 - Seeded local test data exists in local D1 (Sep 2026 orders + old-month
   fixtures + `newowner@example.com` pending settings). Offer cleanup before

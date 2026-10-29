@@ -1,5 +1,4 @@
-// Plan tiers + feature gates: starter < pro < plus (plus unlocks the same
-// code as pro; it differs by service, not by gates).
+// Plan tiers + feature gates: starter (menu display) < pro (full ordering).
 // Covers: getPlan/hasFeature matrix, save-scrub, and every gated endpoint
 // answering 404 on starter while staying open on pro. Safety endpoints
 // (trash POST delete-with-undo, trash restore-by-id) must stay open on ALL
@@ -30,17 +29,18 @@ const J = { headers: { 'Content-Type': 'application/json' } };
 
 /* ---------------- 1. Tier matrix ---------------- */
 
-ok(JSON.stringify(PLANS) === JSON.stringify(['starter', 'pro', 'plus']), 'tiers are starter/pro/plus in order');
+ok(JSON.stringify(PLANS) === JSON.stringify(['starter', 'pro']), 'tiers are starter/pro in order');
 ok(getPlan({}) === 'starter', 'missing env defaults to starter');
 ok(getPlan({ SITE_PLAN: 'enterprise' }) === 'starter', 'unknown plan fails closed to starter');
+ok(getPlan({ SITE_PLAN: 'plus' }) === 'pro', 'retired plus aliases to pro (no flag day)');
+ok(getPlan({ SITE_PLAN: 'signature' }) === 'pro', 'retired signature aliases to pro');
 ok(getPlan({ SITE_PLAN: '  PRO ' }) === 'pro', 'plan is trimmed + lowercased');
-ok(getPlan({ SITE_PLAN: 'plus' }) === 'plus', 'plus is a first-class plan');
 
 for (const f of Object.keys(FEATURES)) {
   ok(hasFeature({ SITE_PLAN: 'starter' }, f) === false, `${f} off on starter`);
   ok(hasFeature({ SITE_PLAN: 'pro' }, f) === true, `${f} on pro`);
-  ok(hasFeature({ SITE_PLAN: 'plus' }, f) === true, `${f} on plus`);
 }
+ok(hasFeature({ SITE_PLAN: 'plus' }, 'monthlyReports') === true, 'retired plus keeps working (alias)');
 ok(hasFeature({ SITE_PLAN: 'plus' }, 'nope') === false, 'unknown feature fails closed');
 
 /* ---------------- 2. Save scrub ---------------- */
@@ -70,8 +70,6 @@ const INERT = { enabled: false, text: { en: '', ar: '' }, startsAt: null, expire
   ok(smuggle.announcement.enabled === false && smuggle.announcement.text.en === '', 'starter save cannot enable announcements');
   const kept = applyPlanToSettings({ SITE_PLAN: 'pro' }, withAnn().settings, null);
   ok(kept.announcement.enabled === true, 'pro save keeps announcement');
-  const keptPlus = applyPlanToSettings({ SITE_PLAN: 'plus' }, withAnn().settings, null);
-  ok(keptPlus.announcement.enabled === true, 'plus save keeps announcement');
   ok(applyPlanToSettings({ SITE_PLAN: 'starter' }, null, null) === null, 'scrub is null-safe');
 }
 

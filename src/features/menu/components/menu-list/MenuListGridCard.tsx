@@ -28,6 +28,8 @@ interface MenuListGridCardProps {
   onAddItem: (item: MenuItem) => void;
   onUpdateLine: (key: string, dir: 1 | -1) => void;
   onOpenItem: (item: MenuItem) => void;
+  /** Menu-only mode (starter): hides ordering UI, cards are not clickable. */
+  orderingEnabled?: boolean;
 }
 
 export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
@@ -50,9 +52,11 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
   onAddItem,
   onUpdateLine,
   onOpenItem,
+  orderingEnabled = true,
 }) => {
   const idx = index;
   const isSoldOut = !item.available;
+  const interactive = orderingEnabled && !isSoldOut;
   const descText = pickLangText(item.description, lang).trim();
   const badges = effectiveBadges(menu, item);
 
@@ -64,12 +68,12 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.5, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
       style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
-      onClick={() => !isSoldOut && onOpenItem(item)}
+      onClick={() => interactive && onOpenItem(item)}
       className={`grid-card relative flex flex-col justify-between p-3.5 rounded-2xl border-2 ${sectionMark ? 'overflow-hidden' : ''} ${
         darkMode
           ? 'bg-[#141414] border-[var(--primary)] offset-shadow-dark'
           : 'bg-white border-[#0A0A0A] offset-shadow-yellow'
-      } ${isSoldOut ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer card-lift'}${leaveDelayMs != null ? ' row-leaving' : ''}`}
+      } ${interactive ? 'cursor-pointer card-lift' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${leaveDelayMs != null ? ' row-leaving' : ''}`}
     >
       {/* Watermark on every card of the section (shared
           renderer — same as the admin live preview).
@@ -147,7 +151,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
           {priceLabel(item, lang, currency)}
         </span>
 
-        {!isSoldOut && (
+        {!isSoldOut && orderingEnabled && (
           <div onClick={(e) => e.stopPropagation()}>
             <MenuListItemAction item={item} small qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} />
           </div>

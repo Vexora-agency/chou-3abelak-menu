@@ -1,5 +1,5 @@
 /**
- * Feature: reports (plan-gated: pro/plus). Disabled via features.config
+ * Feature: reports (plan-gated: pro). Disabled via features.config
  * + backend 404 on starter. Public API only — import from here, never deep.
  */
 export { default as ReportsPanel } from './components/ReportsPanel';

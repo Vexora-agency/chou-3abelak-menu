@@ -54,6 +54,8 @@ interface MenuListRowProps {
   onAddItem: (item: MenuItem) => void;
   onUpdateLine: (key: string, dir: 1 | -1) => void;
   onOpenItem: (item: MenuItem) => void;
+  /** Menu-only mode (starter): hides ordering UI, rows are not clickable. */
+  orderingEnabled?: boolean;
 }
 
 export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
@@ -69,9 +71,11 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
   onAddItem,
   onUpdateLine,
   onOpenItem,
+  orderingEnabled = true,
 }) => {
   const idx = index;
   const isSoldOut = !item.available;
+  const interactive = orderingEnabled && !isSoldOut;
   return (
     <motion.div
       key={item.id}
@@ -81,10 +85,10 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.05, ease: [0.22, 1, 0.36, 1] }}
       style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
-      onClick={() => !isSoldOut && onOpenItem(item)}
+      onClick={() => interactive && onOpenItem(item)}
       className={`group relative flex items-center gap-3 py-3 px-2 -mx-2 rounded-xl border-b transition-colors ${
         darkMode ? 'border-neutral-800 hover:bg-white/[0.04]' : 'border-neutral-200 hover:bg-black/[0.04]'
-      } ${isSoldOut ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}${leaveDelayMs != null ? ' row-leaving' : ''}`}
+      } ${interactive ? 'cursor-pointer' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${leaveDelayMs != null ? ' row-leaving' : ''}`}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -120,7 +124,7 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
       <span className={`shrink-0 text-sm font-extrabold tabular-nums ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`} dir="ltr">
         {priceLabel(item, lang, currency)}
       </span>
-      {!isSoldOut && (
+      {!isSoldOut && orderingEnabled && (
         <div
           onClick={(e) => e.stopPropagation()}
           className="flex-shrink-0"

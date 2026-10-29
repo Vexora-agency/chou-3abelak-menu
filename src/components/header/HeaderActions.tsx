@@ -10,6 +10,8 @@ interface HeaderActionsProps {
   lang: 'en' | 'ar';
   rise: ReturnType<typeof useHeaderMotion>['rise'];
   intro: number;
+  /** Menu-only mode (starter): WhatsApp CTA hidden, Call becomes primary. */
+  orderingEnabled?: boolean;
 }
 
 export const HeaderActions: React.FC<HeaderActionsProps> = ({
@@ -19,6 +21,7 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({
   lang,
   rise,
   intro,
+  orderingEnabled = true,
 }) => {
   const isAr = lang === 'ar';
 
@@ -27,12 +30,17 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({
       <motion.a
         {...rise(intro + 0.35)}
         href={phoneLink}
-        className="btn-tactile btn-glass w-full min-[360px]:w-auto min-[360px]:flex-1 h-12 rounded-full flex items-center justify-center gap-1.5 text-sm font-bold"
+        className={`btn-tactile w-full min-[360px]:w-auto min-[360px]:flex-1 h-12 rounded-full flex items-center justify-center gap-1.5 text-sm ${
+          orderingEnabled
+            ? 'btn-glass font-bold'
+            : 'btn-primary-shine font-extrabold min-[360px]:flex-[1.35]'
+        }`}
       >
         <Phone size={17} className="stroke-[2.2]" />
         <span>{isAr ? 'اتصال' : 'Call'}</span>
       </motion.a>
 
+      {orderingEnabled && (
       <motion.a
         {...rise(intro + 0.45)}
         href={whatsappLink}
@@ -43,6 +51,7 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({
         <MessageCircle size={17} className="stroke-[2.4]" />
         <span>{isAr ? 'واتساب' : 'WhatsApp'}</span>
       </motion.a>
+      )}
 
       <motion.a
         {...rise(intro + 0.55)}

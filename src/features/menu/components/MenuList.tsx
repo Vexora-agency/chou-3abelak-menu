@@ -25,6 +25,8 @@ interface MenuListProps {
   currency: string;
   lang: 'en' | 'ar';
   darkMode: boolean;
+  /** Menu-only mode (starter): hides ordering UI, rows are not clickable. */
+  orderingEnabled?: boolean;
 }
 
 // (Category watermark rendering lives in ./CardMark — shared with admin.)
@@ -71,6 +73,8 @@ interface MenuListRowItemProps {
   index: number;
   /** Phased-collapse fade delay (null = not leaving). See .row-leaving. */
   leaveDelayMs: number | null;
+  /** Menu-only mode (starter): hides ordering UI, rows are not clickable. */
+  orderingEnabled: boolean;
   menu: MenuData;
   lang: 'en' | 'ar';
   currency: string;
@@ -95,6 +99,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
   item,
   index,
   leaveDelayMs,
+  orderingEnabled,
   menu,
   lang,
   currency,
@@ -119,7 +124,8 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         item={item}
         index={index}
         leaveDelayMs={leaveDelayMs}
-        menu={menu}
+        orderingEnabled={orderingEnabled}
+                menu={menu}
         lang={lang}
         currency={currency}
         darkMode={darkMode}
@@ -137,7 +143,8 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         item={item}
         index={index}
         leaveDelayMs={leaveDelayMs}
-        menu={menu}
+        orderingEnabled={orderingEnabled}
+                menu={menu}
         lang={lang}
         currency={currency}
         darkMode={darkMode}
@@ -154,6 +161,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
       item={item}
       index={index}
       leaveDelayMs={leaveDelayMs}
+      orderingEnabled={orderingEnabled}
       menu={menu}
       lang={lang}
       currency={currency}
@@ -188,6 +196,7 @@ export const MenuList: React.FC<MenuListProps> = ({
   currency,
   lang,
   darkMode,
+  orderingEnabled = true,
 }) => {
   const isAr = lang === 'ar';
 
@@ -255,6 +264,7 @@ export const MenuList: React.FC<MenuListProps> = ({
           currency,
           darkMode,
           isAr,
+          orderingEnabled,
           onAddItem,
           onUpdateLine,
           onOpenItem,

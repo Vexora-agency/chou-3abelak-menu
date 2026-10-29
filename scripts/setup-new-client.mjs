@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Setup a new white-label client from this base system.
- * Usage: node scripts/setup-new-client.mjs "Client Name" "#PRIMARY" [starter|pro|plus]
+ * Usage: node scripts/setup-new-client.mjs "Client Name" "#PRIMARY" [starter|pro]
  * (Node — not perl/sed — so it runs on Windows Git-Bash, macOS and Linux alike.
  *  Node is already required for wrangler/vite, so no extra dependency.)
  */
@@ -11,11 +11,11 @@ import { fileURLToPath } from 'node:url';
 
 const [name, primary, plan = 'starter'] = process.argv.slice(2);
 if (!name || !primary) {
-  console.error('Usage: node scripts/setup-new-client.mjs "Client Name" "#PRIMARY" [starter|pro|plus]');
+  console.error('Usage: node scripts/setup-new-client.mjs "Client Name" "#PRIMARY" [starter|pro]');
   process.exit(1);
 }
-if (!['starter', 'pro', 'plus'].includes(plan)) {
-  console.error(`Refusing: plan must be starter|pro|plus, got ${JSON.stringify(plan)}`);
+if (!['starter', 'pro'].includes(plan)) {
+  console.error(`Refusing: plan must be starter|pro, got ${JSON.stringify(plan)}`);
   process.exit(1);
 }
 if (!/^#[0-9a-fA-F]{6}$/.test(primary)) {
@@ -60,7 +60,7 @@ patch('src/config/client.config.ts', "companyNameEn: 'Chou 3abelak'", `companyNa
   const rel = 'src/config/features.config.ts';
   const p = join(root, rel);
   const before = readFileSync(p, 'utf8');
-  const cur = ['starter', 'pro', 'plus'].find((v) => before.includes(`return '${v}';`));
+  const cur = ['starter', 'pro'].find((v) => before.includes(`return '${v}';`));
   if (!cur) {
     console.error(`Refusing: plan fallback line not found in ${rel}`);
     process.exit(1);

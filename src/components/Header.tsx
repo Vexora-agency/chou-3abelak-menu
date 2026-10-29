@@ -16,6 +16,8 @@ interface HeaderProps {
   onToggleDarkMode: () => void;
   onOpenAdmin?: () => void;
   orderingState?: OrderingStatus | null;
+  /** Menu-only mode (starter): WhatsApp CTA hidden, Call becomes primary. */
+  orderingEnabled?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -26,6 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleDarkMode,
   onOpenAdmin,
   orderingState,
+  orderingEnabled = true,
 }) => {
   const { parY, glowY, intro, rise } = useHeaderMotion();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -82,7 +85,8 @@ export const Header: React.FC<HeaderProps> = ({
         engineDone={engineDone}
       />
 
-      {/* Actions: WhatsApp is the primary call to action, Call and Map are secondary */}
+      {/* Actions: WhatsApp is the primary call to action, Call and Map are secondary
+          (menu-only starter: WhatsApp hidden, Call promoted to primary) */}
       <HeaderActions
         phoneLink={phoneLink}
         whatsappLink={whatsappLink}
@@ -90,6 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
         lang={lang}
         rise={rise}
         intro={intro}
+        orderingEnabled={orderingEnabled}
       />
     </header>
   );

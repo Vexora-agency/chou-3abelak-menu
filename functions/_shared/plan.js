@@ -1,35 +1,36 @@
 /**
  * Plan + feature gating (WebCrypto/node-compatible, no dependencies).
  *
- * Tiers (low to high): starter < pro < plus. Plus currently unlocks the same
- * code features as pro — it differs by service (custom domain, redesign,
- * review calls), not by gates — but it is a first-class plan value so the
- * marketing tiers and the code never disagree on names.
+ * Two tiers: starter (menu display) < pro (full ordering + business tools).
+ * Starter is display-only by UI contract (no cart, no checkout); the server
+ * gates data features. Features not included answer 404 — same shape as a
+ * missing route so outsiders cannot tell a gated feature from an absent one.
  *
  * The site plan comes from the SITE_PLAN env var ('starter' when unset).
- * Features not included in the current plan answer 404 — same shape as a
- * missing route so outsiders cannot tell a gated feature from an absent one.
  */
 
-export const PLANS = ['starter', 'pro', 'plus'];
+export const PLANS = ['starter', 'pro'];
 
 export const FEATURES = {
   // Monthly reports (dashboard tab, report APIs, scheduled emails).
-  monthlyReports: ['pro', 'plus'],
+  monthlyReports: ['pro'],
   // Order recording views + customer data tool (recording itself always runs
   // so an upgrade unlocks history; the privacy page itself is public).
-  orderLogging: ['pro', 'plus'],
+  orderLogging: ['pro'],
   // Backup & history: versions, trash listing, import/export/print, auto
   // weekly mail, activity feed. (Trash delete-with-undo + restore-by-id stay
   // open on every plan: they are safety, not premium.)
-  backups: ['pro', 'plus'],
+  backups: ['pro'],
   // Announcement banner authoring (the banner renders from saved data, so a
   // starter storefront simply has nothing to show).
-  announcements: ['pro', 'plus'],
+  announcements: ['pro'],
 };
 
 export function getPlan(env) {
   const p = typeof env?.SITE_PLAN === 'string' ? env.SITE_PLAN.trim().toLowerCase() : '';
+  // Legacy alias: 'plus'/'signature' always meant pro-equivalent — existing
+  // deployments keep working with zero flag-day (new sales use starter|pro).
+  if (p === 'plus' || p === 'signature') return 'pro';
   return PLANS.includes(p) ? p : 'starter';
 }
 

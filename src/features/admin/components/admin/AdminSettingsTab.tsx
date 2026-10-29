@@ -119,6 +119,9 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         }
       />
 
+      {/* Ordering config lives here on pro; on starter (menu-only) it is
+          hidden and the dashboard toggle is the only ordering surface. */}
+      {featuresConfig.enableOrdering && (
       <OrderingSection
         ordering={menu.settings.ordering}
         currency={menu.settings.currency.en}
@@ -133,6 +136,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           }))
         }
       />
+      )}
 
       {featuresConfig.enableAnnouncements && (
       <AnnouncementSection
@@ -232,6 +236,8 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         }
       />
 
+      {/* Smart-badge windows are a pro tuning surface; starter keeps defaults. */}
+      {featuresConfig.enableOrdering && (
       <SmartBadgesSection
         badges={menu.settings.badges}
         lang={lang}
@@ -242,6 +248,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           }))
         }
       />
+      )}
     </div>
   );
 };

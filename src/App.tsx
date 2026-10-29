@@ -240,6 +240,9 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
 
   const isAr = lang === 'ar';
   const currency = isAr ? menu.settings.currency.ar : menu.settings.currency.en;
+  // Menu-only mode (starter): no cart, no checkout, no item modal — the menu
+  // is display-only with a call CTA. Gated in one place, passed down.
+  const orderingOn = featuresConfig.enableOrdering;
   const featuredItems = menu.items.filter((i) => i.featured && i.available);
   // Live endpoint state wins; the menu-derived state is the fail-open
   // fallback when the endpoint is unreachable (an outage never stops orders).
@@ -292,6 +295,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           onToggleDarkMode={() => setDarkMode(!darkMode)}
           onOpenAdmin={adminUnlocked ? () => setShowAdmin(true) : undefined}
           orderingState={liveOrderingState}
+          orderingEnabled={orderingOn}
         />
 
         {/* Main Content Area */}
@@ -322,6 +326,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
               darkMode={darkMode}
               autoplay={menu.settings.featuredAutoplay !== false}
               autoplayInterval={menu.settings.featuredAutoplayInterval || 4}
+              orderingEnabled={orderingOn}
             />
           )}
 
@@ -336,10 +341,11 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
             cart={cart}
             onAddItem={handleAddItem}
             onUpdateLine={handleUpdateLine}
-            onOpenItem={setActiveItem}
+            onOpenItem={orderingOn ? setActiveItem : () => {}}
             currency={currency}
             lang={lang}
             darkMode={darkMode}
+            orderingEnabled={orderingOn}
           />
         </main>
 
@@ -350,7 +356,8 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           lang={lang}
         />
 
-        {/* Floating Cart Bottom Bar */}
+        {/* Floating Cart Bottom Bar (ordering plans only) */}
+        {orderingOn && (
         <CartBar
           totalCount={totalCartCount}
           totalPrice={totalCartPrice}
@@ -360,8 +367,10 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           lang={lang}
           orderingState={liveOrderingState}
         />
+        )}
 
-        {/* Item Details Bottom Sheet Modal */}
+        {/* Item Details Bottom Sheet Modal (ordering plans only) */}
+        {orderingOn && (
         <ItemDetailsModal
           item={activeItem}
           menu={menu}
@@ -374,8 +383,10 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           lang={lang}
           darkMode={darkMode}
         />
+        )}
 
-        {/* Full Cart Checkout Bottom Sheet */}
+        {/* Full Cart Checkout Bottom Sheet (ordering plans only) */}
+        {orderingOn && (
         <CartDrawer
           isOpen={isCartOpen}
           onClose={() => setIsCartOpen(false)}
@@ -390,6 +401,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           darkMode={darkMode}
           orderingState={liveOrderingState}
         />
+        )}
       </div>
     </div>
     </MotionConfig>

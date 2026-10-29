@@ -27,7 +27,7 @@ const json = readJson;
     mkOrderRow(2, '2026-09-02T10:00:00.000Z', '70123456'),
     mkOrderRow(3, '2026-09-03T10:00:00.000Z', '70999999'),
   ]);
-  const env = { MENU_KV: makeKV(), ORDERS_DB: db, SITE_PLAN: 'plus', ADMIN_USERNAME: 'admin', ADMIN_PASSWORD_HASH: 'x', AUDIT_SECRET: 'audit-secret-12345678901234567890' };
+  const env = { MENU_KV: makeKV(), ORDERS_DB: db, SITE_PLAN: 'pro', ADMIN_USERNAME: 'admin', ADMIN_PASSWORD_HASH: 'x', AUDIT_SECRET: 'audit-secret-12345678901234567890' };
   // need a real hash for password checks
   const { execSync } = await import('node:child_process');
   const hash = execSync('node scripts/hash-password.mjs "test-pass-9"', { cwd: process.cwd() }).toString().trim().split('\n').pop();
@@ -91,7 +91,7 @@ const json = readJson;
 
 /* ---------------- 5. privacy-info + report CSV exclusion ---------------- */
 {
-  const r = await privacyReq({ request: req('GET', 'https://x/api/privacy-info'), env: { SITE_PLAN: 'plus' } });
+  const r = await privacyReq({ request: req('GET', 'https://x/api/privacy-info'), env: { SITE_PLAN: 'pro' } });
   const d = await json(r);
   ok(r.status === 200 && d.piiDays === 90 && d.orderMonths === 13 && d.reportMonths === 36 && d.hasOrderRecords === false, 'privacy-info defaults (no D1 bound here)');
   // monthly CSV never includes location columns

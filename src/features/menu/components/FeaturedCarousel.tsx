@@ -19,6 +19,8 @@ interface FeaturedCarouselProps {
   forceSlider?: boolean;
   /** Preview-only manual arrows: step through cards with the same slide motion. */
   showArrows?: boolean;
+  /** Menu-only mode (starter): hides the add button, cards are not clickable. */
+  orderingEnabled?: boolean;
 }
 
 export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
@@ -33,8 +35,10 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   autoplayInterval,
   forceSlider = false,
   showArrows = false,
+  orderingEnabled = true,
 }) => {
   const isAr = lang === 'ar';
+  const interactive = orderingEnabled;
 
   // One-card-at-a-time slider on mobile: smooth transform slide with dots,
   // wraps instantly at the end. Desktop shows a static grid instead.
@@ -130,12 +134,12 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     return (
       <motion.div
         key={item.id}
-        onClick={() => onOpenItem(item)}
+        onClick={() => interactive && onOpenItem(item)}
         initial={{ opacity: 0, y: 22 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-40px' }}
         transition={{ duration: 0.55, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
-        className={`group relative flex-shrink-0 w-full ${forceSlider ? '' : 'md:w-auto'} h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden cursor-pointer card-lift shadow-md border ${
+        className={`group relative flex-shrink-0 w-full ${forceSlider ? '' : 'md:w-auto'} h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden ${interactive ? 'cursor-pointer' : ''} card-lift shadow-md border ${
           isYellowCard
             ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
             : darkMode
@@ -167,6 +171,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             {badgeText}
           </span>
 
+          {interactive && (
           <button
             type="button"
           onClick={(e) => {
@@ -183,6 +188,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           >
             <Plus size={16} className="stroke-[3]" />
           </button>
+          )}
         </div>
 
         {/* Bottom Info: Name & Price */}

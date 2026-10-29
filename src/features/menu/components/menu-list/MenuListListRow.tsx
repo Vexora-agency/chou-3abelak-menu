@@ -20,6 +20,8 @@ interface MenuListListRowProps {
   onAddItem: (item: MenuItem) => void;
   onUpdateLine: (key: string, dir: 1 | -1) => void;
   onOpenItem: (item: MenuItem) => void;
+  /** Menu-only mode (starter): hides ordering UI, rows are not clickable. */
+  orderingEnabled?: boolean;
 }
 
 export const MenuListListRow: React.FC<MenuListListRowProps> = ({
@@ -35,9 +37,11 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
   onAddItem,
   onUpdateLine,
   onOpenItem,
+  orderingEnabled = true,
 }) => {
   const idx = index;
   const isSoldOut = !item.available;
+  const interactive = orderingEnabled && !isSoldOut;
 
   return (
     <motion.div
@@ -47,10 +51,10 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.5, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
       style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
-      onClick={() => !isSoldOut && onOpenItem(item)}
+      onClick={() => interactive && onOpenItem(item)}
       className={`group relative pb-4 border-b transition-colors ${
         darkMode ? 'border-neutral-800' : 'border-neutral-200'
-      } ${isSoldOut ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}${leaveDelayMs != null ? ' row-leaving' : ''}`}
+      } ${interactive ? 'cursor-pointer' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${leaveDelayMs != null ? ' row-leaving' : ''}`}
     >
       {/* Name, Badges, Price (+ action when there is no
           description, so the + never dangles on an empty row) */}
@@ -101,7 +105,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         </p>
 
         {/* Action Control: Add Button or Stepper */}
-        {!isSoldOut && (
+        {!isSoldOut && orderingEnabled && (
           <div
             onClick={(e) => e.stopPropagation()}
             className="flex-shrink-0"
@@ -145,7 +149,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
           {priceLabel(item, lang, currency)}
         </span>
 
-        {!isSoldOut && (
+        {!isSoldOut && orderingEnabled && (
           <div
             onClick={(e) => e.stopPropagation()}
             className="flex-shrink-0"

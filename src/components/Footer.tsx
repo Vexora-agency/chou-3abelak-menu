@@ -104,12 +104,16 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
               <span>{isAr ? menu.settings.hoursText.ar : menu.settings.hoursText.en}</span>
             </div>
 
+            {/* Written address (hidden when empty — the Map button below
+                always carries the saved work location instead). */}
+            {(isAr ? menu.settings.address?.ar : menu.settings.address?.en || '')?.trim() ? (
             <div className="flex items-center gap-3">
               <span className="w-8 h-8 rounded-full bg-[#1C1C1C] text-[var(--primary)] flex items-center justify-center flex-shrink-0">
                 <MapPin size={16} />
               </span>
               <span>{isAr ? menu.settings.address.ar : menu.settings.address.en}</span>
             </div>
+            ) : null}
 
             <div className="flex items-center gap-3">
               <span className="w-8 h-8 rounded-full bg-[#1C1C1C] text-[var(--primary)] flex items-center justify-center flex-shrink-0">

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { MenuSettings } from '@/src/types/menu';
 import { DIAL_CODES, OTHER_ISO, composeFull, splitDialCode } from '@/src/config/dialCodes';
+import { normalizeMapLocation, parseMapUrlCoords } from '@/src/utils/menuHelpers';
 import { CountryCodePicker } from './CountryCodePicker';
 
 type IdentityValues = Pick<
@@ -150,14 +151,40 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
       </div>
 
       <div>
-          <label className="block text-xs text-neutral-400 mb-1">Google Maps URL</label>
+          <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'موقع العمل' : 'Work Location'}</label>
           <input
             type="text"
             dir="ltr"
             value={mapUrl}
           onChange={(e) => onUpdate((prev) => ({ ...prev, mapUrl: e.target.value }))}
-          className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
+          placeholder="maps.app.goo.gl/… · 33.89, 35.50 · Hamra, Beirut"
+          className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] placeholder:text-neutral-600"
         />
+        <p className="text-[11px] text-neutral-500 mt-1" dir={isAr ? 'rtl' : 'ltr'}>
+          {(() => {
+            const loc = normalizeMapLocation(mapUrl);
+            if (loc.kind === 'empty') {
+              return isAr
+                ? 'الصق رابط خرائط جوجل بأي شكل، أو إحداثيات، أو اسم المكان.'
+                : 'Paste any Google Maps link, coordinates, or a place name.';
+            }
+            if (loc.kind === 'coords') {
+              const c = parseMapUrlCoords(mapUrl);
+              const label = c ? `${c.lat}, ${c.lng}` : '';
+              return isAr
+                ? <>إحداثيات معتمدة: <b className="text-neutral-300 tabular-nums" dir="ltr">{label}</b> — تُستخدم للرابط والمسافة.</>
+                : <>Recognized coordinates: <b className="text-neutral-300 tabular-nums">{label}</b> — used for the link and distance.</>;
+            }
+            if (loc.kind === 'search') {
+              return isAr
+                ? 'سيُحفظ كبحث خرائط عن هذا الاسم (الرابط يعمل، بدون مسافة).'
+                : 'Will be saved as a Maps search for this name (link works, no distance).';
+            }
+            return isAr
+              ? 'رابط مباشر معتمد — زر الموقع في الموقع يفتحه.'
+              : 'Direct link recognized — the site Map button opens it.';
+          })()}
+        </p>
       </div>
 
       {/* Currency Configuration */}

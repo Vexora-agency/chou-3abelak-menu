@@ -114,16 +114,72 @@ export function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: 
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
-/** Extract `lat,lng` from a Google Maps URL (?q= / ?query=). Null when absent/invalid. */
+/** Extract `lat,lng` from a Google Maps URL in ANY common shape:
+ *  bare "lat,lng" · ?q= / ?query= / ?api=1&query= · ?ll= / ?center= ·
+ *  path "@lat,lng,zoom" (place/share URLs) · data "…!3dlat!4dlng".
+ *  Short links (maps.app.goo.gl) carry no coords — null there (the link
+ *  itself still works as a directions URL). Null when absent/invalid. */
 export function parseMapUrlCoords(url: string | undefined): { lat: number; lng: number } | null {
   if (!url) return null;
-  const m = url.match(/[?&](?:q|query)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
-  if (!m) return null;
-  const lat = Number(m[1]);
-  const lng = Number(m[2]);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
-  return { lat, lng };
+  const clean = url.trim();
+  const inRange = (lat: number, lng: number) =>
+    Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+  const pair = (a: string | undefined, b: string | undefined) => {
+    if (a === undefined || b === undefined) return null;
+    const lat = Number(a);
+    const lng = Number(b);
+    return inRange(lat, lng) ? { lat, lng } : null;
+  };
+  // Bare "lat,lng" typed by hand.
+  let m = clean.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+  if (m) return pair(m[1], m[2]);
+  // Query params: ?q=lat,lng · ?query= · ?api=1&query= · ?ll= · ?center=.
+  m = clean.match(/[?&](?:q|query|ll|center)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  if (m) return pair(m[1], m[2]);
+  // Path "@lat,lng,…" (desktop place URLs and "share" links).
+  m = clean.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)(?:,|$|[?/])/);
+  if (m) return pair(m[1], m[2]);
+  // Embed data "…!3dlat!4dlng…".
+  m = clean.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+  if (m) return pair(m[1], m[2]);
+  return null;
+}
+
+export type MapLocationKind = 'empty' | 'coords' | 'link' | 'search';
+
+/**
+ * Accept a work location in ANY form the owner might paste or type and turn
+ * it into a directions link that always opens Google Maps:
+ *  - "" → empty (buttons fall back to the written address search)
+ *  - "33.89, 35.50" → coords search URL (also feeds the distance feature)
+ *  - any https:// URL (goo.gl short links included) → kept verbatim
+ *  - http:// → upgraded to https://
+ *  - bare domain/path (maps.google.com/…) → https:// assumed
+ *  - anything else ("Hamra, Beirut") → maps search URL for the text
+ * Pure — same input always yields the same output, so the admin hint, the
+ * client link builder and the backend validator can all share it in spirit
+ * (backend mirrors this logic in plain JS; see validate-settings.js).
+ */
+export function normalizeMapLocation(raw: string | undefined): { url: string; kind: MapLocationKind } {
+  const clean = (raw || '').trim();
+  if (!clean) return { url: '', kind: 'empty' };
+  // Bare "lat,lng" typed by hand (full-string match — a URL never matches).
+  const cm = clean.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+  if (cm) {
+    const lat = Number(cm[1]);
+    const lng = Number(cm[2]);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+      return { url: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, kind: 'coords' };
+    }
+    // Out-of-range numbers are not coords — fall through to text search.
+  }
+  const coords = parseMapUrlCoords(clean); // kind label for URLs carrying coords
+  if (/^http:\/\//i.test(clean)) return { url: clean.replace(/^http:\/\//i, 'https://'), kind: coords ? 'coords' : 'link' };
+  if (/^https:\/\//i.test(clean)) return { url: clean, kind: coords ? 'coords' : 'link' };
+  // Bare domain/path without a scheme — assume https (never a dead "#" link).
+  if (/^(www\.)?[\w-]+(\.[\w-]+)+([/?#].*)?$/.test(clean)) return { url: `https://${clean}`, kind: coords ? 'coords' : 'link' };
+  // Free text (a place name typed by hand) → maps search for that text.
+  return { url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clean)}`, kind: 'search' };
 }
 
 /** Customer-facing distance: whole meters below 1 km, 1-decimal km above. */
@@ -137,11 +193,12 @@ export function formatDistance(meters: number, lang: 'en' | 'ar'): string {
   return lang === 'ar' ? `≈ ${v} كم` : `≈ ${v} km`;
 }
 
-// Get Directions link: uses the saved Google Maps URL when valid,
-// otherwise falls back to a Maps search for the written address.
+// Get Directions link: the saved location in whatever form it was stored
+// (short link, full URL, raw coords, place name) normalized to a working
+// Maps URL — otherwise falls back to a Maps search for the written address.
 export function buildMapUrl(settings: MenuData['settings']): string {
-  const direct = (settings.mapUrl || '').trim();
-  if (direct.startsWith('https://')) return direct;
+  const direct = normalizeMapLocation(settings.mapUrl).url;
+  if (direct) return direct;
   const query = (settings.address?.en || '').trim() || (settings.name?.en || '').trim();
   if (query) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   return '#';

@@ -11,6 +11,29 @@ import { buildFeatureLibrary } from './validate-feature-library.js';
  * their ensure* helpers), which the items phase mutates for legacy
  * migration. Appends to `errors` in document order.
  */
+/**
+ * Plain-JS twin of normalizeMapLocation() (client TS). Keep the two in sync:
+ * bare "lat,lng" → coords search URL; http → https; bare domain → https;
+ * free text → Maps search URL; https URLs kept verbatim.
+ */
+function normalizeMapLocationJs(raw) {
+  const clean = (raw || '').trim();
+  if (!clean) return '';
+  const coordRe = /^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/;
+  const cm = clean.match(coordRe);
+  if (cm) {
+    const lat = Number(cm[1]);
+    const lng = Number(cm[2]);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+      return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    }
+  }
+  if (/^http:\/\//i.test(clean)) return clean.replace(/^http:\/\//i, 'https://');
+  if (/^https:\/\//i.test(clean)) return clean;
+  if (/^(www\.)?[\w-]+(\.[\w-]+)+([/?#].*)?$/.test(clean)) return `https://${clean}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clean)}`;
+}
+
 function validateSettings(s, errors) {
   const name = validateBilingual(errors, s.name, 'name', 80);
   const tagline = validateBilingual(errors, s.tagline, 'tagline', 80);
@@ -29,8 +52,12 @@ function validateSettings(s, errors) {
   // WhatsApp
   const whatsapp = typeof s.whatsapp === 'string' ? s.whatsapp.replace(/[^0-9]/g, '') : '';
 
-  // Map URL
-  const mapUrl = typeof s.mapUrl === 'string' ? s.mapUrl.trim() : '';
+  // Map URL — accepts a work location in any form (full/short Maps URL,
+  // raw "lat,lng", place name) and normalizes to a working https Maps link.
+  // Mirrors normalizeMapLocation() in src/utils/menuHelpers.ts (plain-JS
+  // twin: functions cannot import the TS client utils).
+  const mapUrlRaw = typeof s.mapUrl === 'string' ? s.mapUrl.trim() : '';
+  const mapUrl = normalizeMapLocationJs(mapUrlRaw);
   if (mapUrl && !mapUrl.startsWith('https://')) {
     errors.push('settings.mapUrl must be an https URL or empty');
   }

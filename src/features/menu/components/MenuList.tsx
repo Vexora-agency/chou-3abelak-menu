@@ -283,21 +283,21 @@ export const MenuList: React.FC<MenuListProps> = ({
             }, 80);
           }
         };
+        // One morphing button: "more" while anything remains (label = what is
+        // left), then ONLY "less" at the very end — never two buttons side by
+        // side. "Less" steps back one batch per tap, mirroring "more".
         const pagerButton = collapsible ? (
-          <div className="mt-4 flex justify-center gap-2.5">
-            {hasMore && (
-              <ShowMoreButton
-                expanded={false}
-                // Remaining count (shrinks every tap: 50 → 42 → 34 …).
-                count={total - visible}
-                isAr={isAr}
-                onToggle={more}
-              />
-            )}
-            {pastStart && (
-              <ShowMoreButton expanded isAr={isAr} count={0} onToggle={less} />
-            )}
-          </div>
+          hasMore ? (
+            <ShowMoreButton
+              expanded={false}
+              // Remaining count (shrinks every tap: 50 → 42 → 34 …).
+              count={total - visible}
+              isAr={isAr}
+              onToggle={more}
+            />
+          ) : pastStart ? (
+            <ShowMoreButton expanded isAr={isAr} count={0} onToggle={less} />
+          ) : null
         ) : null;
         const visibleItems = catItems.slice(0, visible);
         const itemsGrid = (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { MenuData, MenuSettings } from '@/src/types/menu';
 
 type ShowMoreValues = Pick<MenuSettings, 'showMore'>;
@@ -18,11 +18,52 @@ export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
   onUpdate,
 }) => {
   const isAr = lang === 'ar';
-  // Displayed as typed (raw ints); clamping lives server-side on save.
-  const rawInitial = (showMore as { initial?: unknown } | undefined)?.initial;
-  const rawBatch = (showMore as { batch?: unknown } | undefined)?.batch;
-  const initial = Number.isInteger(rawInitial) ? (rawInitial as number) : 12;
-  const batch = Number.isInteger(rawBatch) ? (rawBatch as number) : 8;
+  const committedInitial = Number.isInteger(
+    (showMore as { initial?: unknown } | undefined)?.initial
+  )
+    ? ((showMore as { initial: number }).initial)
+    : 12;
+  const committedBatch = Number.isInteger(
+    (showMore as { batch?: unknown } | undefined)?.batch
+  )
+    ? ((showMore as { batch: number }).batch)
+    : 8;
+  // Free-text drafts: typing commits NOTHING until blur/Enter. Committing
+  // (or autosaving) mid-typing is what made values snap back — the server
+  // clamps out-of-range drafts to 4..50 and the round-trip overwrote the
+  // half-typed number. Drafts never touch menu state, so autosave can't fight
+  // the typing either.
+  const [draft, setDraft] = useState<{ initial: string; batch: string } | null>(null);
+  const shownInitial = draft?.initial ?? String(committedInitial);
+  const shownBatch = draft?.batch ?? String(committedBatch);
+  // Reconcile: whenever the committed values change (save round-trip, undo,
+  // external edit), the draft has served its purpose — drop it so the truth
+  // shows. Typing never triggers this (committed is stable mid-typing), so
+  // focus and half-typed text survive; no remount, no focus loss.
+  useEffect(() => {
+    setDraft(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional sync on committed values only
+  }, [committedInitial, committedBatch]);
+  const clamp48 = (v: number) => Math.min(50, Math.max(4, v));
+  const commit = (key: 'initial' | 'batch') => {
+    const text = (draft?.[key] ?? '').trim();
+    const v = text === '' ? NaN : Math.round(Number(text));
+    // Invalid text reverts (draft dropped by the effect-free path below).
+    if (!Number.isInteger(v)) {
+      setDraft(null);
+      return;
+    }
+    const clamped = clamp48(v);
+    onUpdate((prev) => ({
+      ...prev,
+      showMore: {
+        initial: key === 'initial' ? clamped : committedInitial,
+        batch: key === 'batch' ? clamped : committedBatch,
+      },
+    }));
+    // Display follows local state synchronously (no waiting for the server,
+    // which clamps identically) — then the effect above reconciles.
+  };
   const biggest = menu.categories
     .map((c) => ({
       name: isAr ? c.name.ar : c.name.en,
@@ -67,8 +108,12 @@ export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
             min={4}
             max={50}
             step={1}
-            value={initial}
-            onChange={setNum('initial', 12)}
+            value={shownInitial}
+            onChange={(e) => setDraft((d) => ({ batch: shownBatch, ...d, initial: e.target.value }))}
+            onBlur={() => commit('initial')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+            }}
             className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
@@ -81,8 +126,12 @@ export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
             min={4}
             max={50}
             step={1}
-            value={batch}
-            onChange={setNum('batch', 8)}
+            value={shownBatch}
+            onChange={(e) => setDraft((d) => ({ initial: shownInitial, ...d, batch: e.target.value }))}
+            onBlur={() => commit('batch')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+            }}
             className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
         </div>
@@ -90,8 +139,8 @@ export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
       {biggest && biggest.n > 0 && (
         <p className="text-[11px] text-neutral-500">
           {isAr
-            ? `مثال: ${biggest.name} (${biggest.n}) ← ${initial} أولًا ثم دفعات ${batch}`
-            : `Example: ${biggest.name} (${biggest.n}) → ${initial} first, then batches of ${batch}`}
+            ? `مثال: ${biggest.name} (${biggest.n}) ← ${committedInitial} أولًا ثم دفعات ${committedBatch}`
+            : `Example: ${biggest.name} (${biggest.n}) → ${committedInitial} first, then batches of ${committedBatch}`}
         </p>
       )}
     </div>

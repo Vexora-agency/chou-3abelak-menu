@@ -48,7 +48,7 @@ interface ShowMoreButtonProps {
 
 /** On-brand pager button: gold-outline pill, rotating chevron, batch count. */
 const ShowMoreButton: React.FC<ShowMoreButtonProps> = ({ expanded, count, isAr, onToggle }) => (
-  <div className="mt-4 flex justify-center">
+  <div className="mt-4 flex justify-center pager-anchor">
     <button
       type="button"
       aria-expanded={expanded}
@@ -298,14 +298,19 @@ export const MenuList: React.FC<MenuListProps> = ({
             setVisibleCounts((prev) => ({ ...prev, [cat.id]: visible - batch }));
             setSteppingBack((prev) => ({ ...prev, [cat.id]: true }));
           }
-          // Scroll home only on landing back at the start (slightly delayed so
-          // the fade cascade and the glide overlap instead of queueing);
-          // mid-way steps keep the viewport where the finger is.
-          if (landing) {
-            window.setTimeout(() => {
+          // Position discipline: removing a batch above the button yanks it
+          // upward and the browser clamp-jumps when near the page bottom.
+          // Landing → glide home to the header. Mid-way → recenter the pager
+          // itself (slightly delayed so the fade cascade leads and the glide
+          // follows instead of fighting it).
+          window.setTimeout(() => {
+            if (landing) {
               document.getElementById(`category-${cat.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 150);
-          }
+            } else {
+              const section = document.getElementById(`category-${cat.id}`);
+              section?.querySelector(':scope .pager-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, landing ? 150 : 250);
         };
         // One morphing button: "more" (remaining count) until the end, then
         // ONLY "less" — which keeps stepping back through every stage (the

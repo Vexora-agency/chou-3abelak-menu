@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import { MenuData, MenuItem, Category, CartLine } from '@/src/types/menu';
 import type { CardMarkStyleId, ResolvedMark } from '@/src/utils/cardMark';
@@ -299,42 +300,45 @@ export const MenuList: React.FC<MenuListProps> = ({
           setLeaving({ id: cat.id, from: target });
           window.clearTimeout(leaveTimer.current);
           leaveTimer.current = window.setTimeout(() => {
-            // Measure BEFORE the commit (frozen layout), so the rAF below can
-            // compensate exactly for the removed height.
+            // Measure BEFORE the commit (frozen layout), so the compensation
+            // below can lock the pager pixel-stable.
             const pager = document.querySelector(`#category-${cat.id} .pager-anchor`);
             const before = pager ? pager.getBoundingClientRect().top : null;
-            setLeaving((cur) => (cur && cur.id === cat.id ? null : cur));
-            if (landing) {
-              setVisibleCounts((prev) => {
-                const next = { ...prev };
-                delete next[cat.id];
-                return next;
-              });
-              setSteppingBack((prev) => {
-                if (!prev[cat.id]) return prev;
-                const next = { ...prev };
-                delete next[cat.id];
-                return next;
-              });
-            } else {
-              setVisibleCounts((prev) => ({ ...prev, [cat.id]: target }));
-              setSteppingBack((prev) => ({ ...prev, [cat.id]: true }));
-            }
+            // flushSync: the commit lands SYNCHRONOUSLY. An async callback
+            // (rAF) could fire before React flushes, measure the old layout,
+            // no-op, and leave the browser clamp-jump in place — that race
+            // produced the 1140px instant jump. Deterministic beats fast here.
+            flushSync(() => {
+              setLeaving((cur) => (cur && cur.id === cat.id ? null : cur));
+              if (landing) {
+                setVisibleCounts((prev) => {
+                  const next = { ...prev };
+                  delete next[cat.id];
+                  return next;
+                });
+                setSteppingBack((prev) => {
+                  if (!prev[cat.id]) return prev;
+                  const next = { ...prev };
+                  delete next[cat.id];
+                  return next;
+                });
+              } else {
+                setVisibleCounts((prev) => ({ ...prev, [cat.id]: target }));
+                setSteppingBack((prev) => ({ ...prev, [cat.id]: true }));
+              }
+            });
             // The user may have moved on (search/filter) mid-fade — then
             // touch nothing at all: yanking the viewport during typing is worse.
             if (filteringRef.current) return;
-            // The commit above flushes before paint; this rAF lands after it.
-            // Pixel-lock: shift by exactly the removed height so the pager
-            // sits pixel-stable (defeats the browser clamp-jump); then glide
-            // home on landing, on the now-stable layout.
-            requestAnimationFrame(() => {
-              const pagerAfter = document.querySelector(`#category-${cat.id} .pager-anchor`);
-              const after = pagerAfter ? pagerAfter.getBoundingClientRect().top : null;
-              if (before != null && after != null) window.scrollBy(0, after - before);
-              if (landing) {
-                document.getElementById(`category-${cat.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }
-            });
+            // DOM is committed: shift by exactly the removed height so the
+            // pager sits pixel-stable (defeats the browser clamp-jump), then
+            // glide home on landing, on the now-stable layout.
+            const pagerAfter = document.querySelector(`#category-${cat.id} .pager-anchor`);
+            const after = pagerAfter ? pagerAfter.getBoundingClientRect().top : null;
+            if (before != null && after != null) window.scrollBy(0, after - before);
+            if (landing) {
+              document.getElementById(`category-${cat.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
           }, 520);
         };
         // One morphing button: "more" (remaining count) until the end, then

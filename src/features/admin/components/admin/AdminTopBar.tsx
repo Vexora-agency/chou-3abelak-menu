@@ -95,6 +95,25 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
           className="w-8 h-8 object-contain -rotate-12"
         />
         <span>{isAr ? 'إدارة قائمة الطعام' : 'Menu Management'}</span>
+        {/* Client's sold plan (from features.config `plan`, set by the setup
+            script — keep SITE_PLAN in sync on rebuild). Colors climb with the
+            tier: starter gray, pro brand gold, plus platinum. */}
+        <span
+          title={isAr ? 'باقة العميل' : 'Client plan'}
+          className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+            featuresConfig.plan === 'plus'
+              ? 'bg-neutral-100 text-black border-white'
+              : featuresConfig.plan === 'pro'
+                ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
+                : 'bg-neutral-800 text-neutral-300 border-neutral-700'
+          }`}
+        >
+          {featuresConfig.plan === 'plus'
+            ? (isAr ? 'بلس' : 'Plus')
+            : featuresConfig.plan === 'pro'
+              ? (isAr ? 'برو' : 'Pro')
+              : (isAr ? 'ستارتر' : 'Starter')}
+        </span>
       </h1>
 
       {/* Tabs (Backup hidden on starter — backend 404s it too) */}

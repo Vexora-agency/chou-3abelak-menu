@@ -51,22 +51,25 @@ patch('src/styles/base.css', '--yellow: #FFC400;', `--yellow: ${primary};`);
 // 2. Client identity.
 patch('src/config/client.config.ts', "companyNameEn: 'Chou 3abelak'", `companyNameEn: '${name.replace(/'/g, "\\'")}'`);
 
-// 3. Plan-gated flags (backend 404s via SITE_PLAN anyway). Works BOTH ways:
-// a fresh starter sets true->false, an upgrade re-run flips false->true, so
-// downgrades and upgrades are both just: set SITE_PLAN, re-run this script,
-// rebuild, redeploy. No data is touched — hidden features' data stays stored.
-// Plus unlocks the same code as pro (service-only difference), so no flag differs.
-const FLAGS = [
-  'enableReports',
-  'enableOrderLogging',
-  'enableBackup',
-  'enableCustomerData',
-  'enableAnnouncements',
-];
-if (plan === 'starter') {
-  for (const f of FLAGS) patch('src/config/features.config.ts', `${f}: true`, `${f}: false`);
-} else {
-  for (const f of FLAGS) patch('src/config/features.config.ts', `${f}: false`, `${f}: true`);
+// 3. Plan (single source of truth — the five UI flags derive from it).
+// Works BOTH ways: downgrades and upgrades are just: set SITE_PLAN, re-run
+// this script, rebuild, redeploy. No data is touched — hidden features' data
+// stays stored. Plus unlocks the same code as pro (service-only difference).
+{
+  const rel = 'src/config/features.config.ts';
+  const p = join(root, rel);
+  const before = readFileSync(p, 'utf8');
+  const cur = ['starter', 'pro', 'plus'].find((v) => before.includes(`plan = '${v}'`));
+  if (!cur) {
+    console.error(`Refusing: plan line not found in ${rel}`);
+    process.exit(1);
+  }
+  if (cur === plan) {
+    console.log(`  already ${rel}: plan = '${plan}'`);
+  } else {
+    writeFileSync(p, before.replace(`plan = '${cur}'`, `plan = '${plan}'`));
+    console.log(`  patched ${rel}: plan ${cur} -> ${plan}`);
+  }
 }
 
 console.log('✓ Patched src/config + base.css. Next:');

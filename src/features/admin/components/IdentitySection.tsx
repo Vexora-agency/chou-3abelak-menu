@@ -42,6 +42,46 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
   const addr = address || { en: '', ar: '' };
   const locCoords = parseMapUrlCoords(mapUrl);
   const [geoState, setGeoState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  // Written-address fields stay hidden until there is something to show:
+  // existing saved text, a fresh fetch, or the manual toggle.
+  const [addrOpen, setAddrOpen] = useState(!!(addr.en.trim() || addr.ar.trim()));
+  // Machine-translate an English address to Arabic (free endpoints, best
+  // effort — the owner reviews the result). Used only when Nominatim has
+  // no Arabic name (e.g. London returns English for accept-language=ar).
+  const toArabic = async (text: string): Promise<string> => {
+    const t = (text || '').trim();
+    if (!t) return '';
+    if (/[\u0600-\u06FF]/.test(t)) return t;
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      const r = await fetch(
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=${encodeURIComponent(t)}`,
+        { signal: ctrl.signal }
+      );
+      clearTimeout(timer);
+      if (r.ok) {
+        const j: unknown = await r.json();
+        const parts = Array.isArray(j) && Array.isArray(j[0]) ? (j[0] as unknown[]) : [];
+        const out = parts
+          .map((s) => (Array.isArray(s) && typeof s[0] === 'string' ? (s[0] as string) : ''))
+          .join('')
+          .trim();
+        if (out) return out;
+      }
+    } catch {}
+    try {
+      const r2 = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(t)}&langpair=en|ar`
+      );
+      if (r2.ok) {
+        const j2 = (await r2.json()) as { responseData?: { translatedText?: string } };
+        const out2 = (j2?.responseData?.translatedText || '').trim();
+        if (out2) return out2;
+      }
+    } catch {}
+    return t;
+  };
   const fetchAddress = async () => {
     const c = parseMapUrlCoords(mapUrl);
     if (!c) return;
@@ -58,12 +98,15 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
         // for a footer line, and the owner can edit freely afterwards.
         return name.split(',').slice(0, 3).join(',').trim();
       };
-      const [en, ar] = await Promise.all([one('en'), one('ar')]);
+      const [en, arRaw] = await Promise.all([one('en'), one('ar')]);
+      if (!en && !arRaw) throw new Error('geo');
+      const ar = await toArabic(arRaw || en);
       if (!en && !ar) throw new Error('geo');
       onUpdate((prev) => ({
         ...prev,
         address: { en: en || prev.address?.en || '', ar: ar || prev.address?.ar || '' },
       }));
+      setAddrOpen(true);
       setGeoState('done');
     } catch {
       setGeoState('error');
@@ -224,46 +267,35 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
       </div>
 
       {/* Written address = the text line in the footer (Store Information).
-          Type it by hand, or fetch it from the work location above. */}
+          Hidden until fetched or manually opened; type by hand or fetch
+          from the work location above (Arabic auto-translated when the
+          map has no Arabic name). */}
       <div>
-        <label className="block text-xs text-neutral-400 mb-1">
-          {isAr ? 'العنوان النصي (يظهر في الموقع)' : 'Written Address (shown on site)'}
-        </label>
-        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
-          <input
-            type="text"
-            dir="ltr"
-            value={addr.en}
-            onChange={(e) => onUpdate((prev) => ({ ...prev, address: { en: e.target.value, ar: prev.address?.ar || '' } }))}
-            placeholder="Gouraud Street, Mar Mikhael, Beirut"
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] placeholder:text-neutral-600"
-          />
-          <input
-            type="text"
-            dir="rtl"
-            value={addr.ar}
-            onChange={(e) => onUpdate((prev) => ({ ...prev, address: { en: prev.address?.en || '', ar: e.target.value } }))}
-            placeholder="شارع غورو، مار مخايل، بيروت"
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] placeholder:text-neutral-600"
-          />
-        </div>
-        {locCoords ? (
-          <div className="flex flex-wrap items-center gap-2 mt-2">
+        {!addrOpen ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {locCoords ? (
+              <button
+                type="button"
+                onClick={fetchAddress}
+                disabled={geoState === 'loading'}
+                className="h-9 px-4 rounded-full border border-[var(--primary)]/50 text-[var(--primary)] text-xs font-extrabold hover:bg-[var(--primary)] hover:text-[#0A0A0A] transition-colors disabled:opacity-50"
+              >
+                {geoState === 'loading'
+                  ? (isAr ? 'جارٍ جلب العنوان…' : 'Fetching address…')
+                  : (isAr ? 'جلب العنوان من الموقع' : 'Fetch address from location')}
+              </button>
+            ) : (
+              <p className="text-[11px] text-neutral-500" dir={isAr ? 'rtl' : 'ltr'}>
+                {isAr ? 'ضع رابطًا أو إحداثيات أعلاه لجلب العنوان تلقائيًا.' : 'Put a link or coordinates above to auto-fetch the address.'}
+              </p>
+            )}
             <button
               type="button"
-              onClick={fetchAddress}
-              disabled={geoState === 'loading'}
-              className="h-9 px-4 rounded-full border border-[var(--primary)]/50 text-[var(--primary)] text-xs font-extrabold hover:bg-[var(--primary)] hover:text-[#0A0A0A] transition-colors disabled:opacity-50"
+              onClick={() => setAddrOpen(true)}
+              className="h-9 px-4 rounded-full text-xs font-bold text-neutral-400 hover:text-[var(--primary)] transition-colors"
             >
-              {geoState === 'loading'
-                ? (isAr ? 'جارٍ جلب العنوان…' : 'Fetching address…')
-                : (isAr ? 'جلب العنوان من الموقع' : 'Fetch address from location')}
+              {isAr ? 'أو اكتبه يدويًا' : 'or write it manually'}
             </button>
-            {geoState === 'done' && (
-              <span className="text-[11px] text-green-400">
-                {isAr ? 'تم ملء العنوان من OpenStreetMap — راجعه وعدّله لو لزم.' : 'Address filled from OpenStreetMap — review and edit if needed.'}
-              </span>
-            )}
             {geoState === 'error' && (
               <span className="text-[11px] text-amber-400">
                 {isAr ? 'تعذر الجلب — اكتب العنوان يدويًا.' : 'Could not fetch — type the address manually.'}
@@ -271,9 +303,55 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             )}
           </div>
         ) : (
-          <p className="text-[11px] text-neutral-500 mt-1" dir={isAr ? 'rtl' : 'ltr'}>
-            {isAr ? 'ضع رابطًا أو إحداثيات أعلاه لجلب العنوان تلقائيًا.' : 'Put a link or coordinates above to auto-fetch the address.'}
-          </p>
+          <>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs text-neutral-400">
+                {isAr ? 'العنوان النصي (يظهر في الموقع)' : 'Written Address (shown on site)'}
+              </label>
+              {locCoords && (
+                <button
+                  type="button"
+                  onClick={fetchAddress}
+                  disabled={geoState === 'loading'}
+                  className="text-[11px] font-bold text-neutral-500 hover:text-[var(--primary)] transition-colors disabled:opacity-50"
+                >
+                  {geoState === 'loading'
+                    ? (isAr ? 'جارٍ الجلب…' : 'Fetching…')
+                    : (isAr ? '↻ إعادة الجلب من الموقع' : '↻ Re-fetch from location')}
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
+              <input
+                type="text"
+                dir="ltr"
+                value={addr.en}
+                onChange={(e) => onUpdate((prev) => ({ ...prev, address: { en: e.target.value, ar: prev.address?.ar || '' } }))}
+                placeholder="Gouraud Street, Mar Mikhael, Beirut"
+                className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] placeholder:text-neutral-600"
+              />
+              <input
+                type="text"
+                dir="rtl"
+                value={addr.ar}
+                onChange={(e) => onUpdate((prev) => ({ ...prev, address: { en: prev.address?.en || '', ar: e.target.value } }))}
+                placeholder="شارع غورو، مار مخايل، بيروت"
+                className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] placeholder:text-neutral-600"
+              />
+            </div>
+            {geoState === 'done' && (
+              <p className="text-[11px] text-green-400 mt-1" dir={isAr ? 'rtl' : 'ltr'}>
+                {isAr
+                  ? 'تم ملء العنوان (العربية مترجمة آليًا عند غياب الاسم) — راجعه وعدّله.'
+                  : 'Address filled (Arabic auto-translated when missing) — review and edit.'}
+              </p>
+            )}
+            {geoState === 'error' && (
+              <p className="text-[11px] text-amber-400 mt-1" dir={isAr ? 'rtl' : 'ltr'}>
+                {isAr ? 'تعذر الجلب — اكتب العنوان يدويًا.' : 'Could not fetch — type the address manually.'}
+              </p>
+            )}
+          </>
         )}
       </div>
 

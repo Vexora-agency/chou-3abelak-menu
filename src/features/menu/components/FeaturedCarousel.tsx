@@ -23,6 +23,21 @@ interface FeaturedCarouselProps {
   orderingEnabled?: boolean;
 }
 
+/** Desktop ≥768px (mirrors the md: breakpoint): 3 cards slide together. */
+function useDesktop(): boolean {
+  const get = () =>
+    typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(min-width: 768px)').matches;
+  const [v, setV] = useState(get);
+  useEffect(() => {
+    const m = window.matchMedia('(min-width: 768px)');
+    const on = () => setV(m.matches);
+    m.addEventListener('change', on);
+    on();
+    return () => m.removeEventListener('change', on);
+  }, []);
+  return v;
+}
+
 export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   items,
   menu,
@@ -41,8 +56,10 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   const interactive = orderingEnabled;
 
   // One-card-at-a-time slider on mobile: smooth transform slide with dots,
-  // wraps instantly at the end. Desktop shows a single static row instead
-  // (equal-share flex, never wraps to a second row).
+  // wraps instantly at the end. Desktop slides 3 cards at a time in ONE row
+  // (equal thirds, step = one card, instant wrap at the end).
+  const isDesktop = useDesktop();
+  const visible = !forceSlider && isDesktop ? 3 : 1;
   const marqueeOn = autoplay && items.length > 1;
   const perCard = Math.min(10, Math.max(2, autoplayInterval || 4));
   const [index, setIndex] = useState(0);
@@ -52,6 +69,35 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   const resumeTimer = useRef<number | null>(null);
   const touchX = useRef<number | null>(null);
   const count = items.length;
+  // Last start position with a FULL window (6 items, 3 visible → 0..3).
+  const maxIndex = Math.max(0, count - visible);
+
+  // Pixel step = one card + one gap (card widths are container-driven, so a
+  // resize listener is enough — no per-frame measuring). Drives --sx on the
+  // track for mobile AND desktop alike.
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [stepPx, setStepPx] = useState(0);
+  const gapPx = visible > 1 ? 16 : 0; // md:gap-4
+  useEffect(() => {
+    const measure = () => {
+      const first = trackRef.current?.children[0] as HTMLElement | undefined;
+      setStepPx(first ? first.getBoundingClientRect().width + gapPx : 0);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [gapPx, count]);
+
+  // Resizing across the md breakpoint can strand the index past the end —
+  // restart instantly rather than showing half-empty space.
+  useEffect(() => {
+    if (indexRef.current > maxIndex) {
+      setInstant(true);
+      indexRef.current = 0;
+      setIndex(0);
+      requestAnimationFrame(() => requestAnimationFrame(() => setInstant(false)));
+    }
+  }, [maxIndex]);
 
   // Fresh mount per item list (parent keys by item ids), so index/ref
   // always start at 0 — no reset effect needed.
@@ -60,7 +106,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     const id = window.setInterval(() => {
       if (document.hidden || pausedRef.current) return;
       const next = indexRef.current + 1;
-      if (next >= count) {
+      if (next > maxIndex) {
         // Instant wrap (no visible rewind), then re-enable animation
         setInstant(true);
         indexRef.current = 0;
@@ -74,7 +120,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
       }
     }, perCard * 1000);
     return () => window.clearInterval(id);
-  }, [marqueeOn, count, perCard]);
+  }, [marqueeOn, count, perCard, maxIndex]);
 
   useEffect(() => {
     return () => {
@@ -96,7 +142,10 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   };
   const goTo = (i: number) => {
     pause();
-    const n = ((i % count) + count) % count;
+    // Mobile wraps around the whole list; desktop clamps to full windows.
+    const n = visible > 1
+      ? Math.min(maxIndex, Math.max(0, i))
+      : ((i % count) + count) % count;
     indexRef.current = n;
     setIndex(n);
     resumeSoon();
@@ -112,8 +161,11 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         // Mirrored in RTL: the track advances rightward there, so a
         // finger swiping left goes to the previous card (native RTL paging).
         const step = dx < 0 ? 1 : -1;
-        const n = indexRef.current + (isAr ? -step : step);
-        indexRef.current = ((n % count) + count) % count;
+        const raw = indexRef.current + (isAr ? -step : step);
+        const n = visible > 1
+          ? Math.min(maxIndex, Math.max(0, raw))
+          : ((raw % count) + count) % count;
+        indexRef.current = n;
         setIndex(indexRef.current);
       }
     }
@@ -140,7 +192,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-40px' }}
         transition={{ duration: 0.55, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
-        className={`group relative flex-shrink-0 w-full ${forceSlider ? '' : 'md:w-auto md:flex-1 md:min-w-0 md:shrink'} h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden ${interactive ? 'cursor-pointer' : ''} card-lift shadow-md border ${
+        className={`group relative flex-shrink-0 w-full ${forceSlider ? '' : 'md:w-auto md:min-w-0 md:grow-0 md:shrink-0 md:basis-[calc((100%_-_2rem)/3)]'} h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden ${interactive ? 'cursor-pointer' : ''} card-lift shadow-md border ${
           isYellowCard
             ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
             : darkMode
@@ -240,9 +292,10 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         </h2>
       </div>
 
-      {/* One-card slider on mobile (smooth transform slide + dots), single static row on desktop */}
-      <div className={`relative overflow-hidden ${forceSlider ? '' : 'md:overflow-visible'}`}>
+      {/* One-card slider on mobile, 3-card sliding row on desktop (both autoplay) */}
+      <div className="relative overflow-hidden">
         <div
+          ref={trackRef}
           onMouseEnter={pause}
           onMouseLeave={resumeSoon}
           onTouchStart={onTouchStart}
@@ -251,7 +304,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           className={`slider-track flex gap-0 ${forceSlider ? '' : 'md:gap-4'} ${
             instant ? 'slider-track-instant' : ''
           }`}
-          style={{ '--sx': isAr ? `${index * 100}%` : `-${index * 100}%` } as React.CSSProperties}
+          style={{ '--sx': `${isAr ? index * stepPx : -index * stepPx}px` } as React.CSSProperties}
         >
           {items.map((item, idx) => renderCard(item, idx))}
         </div>
@@ -277,12 +330,12 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           </>
         )}
       </div>
-      {/* Dots */}
-      {marqueeOn && items.length > 1 && (
-        <div className={`flex justify-center items-center gap-1.5 mt-1 ${forceSlider ? '' : 'md:hidden'}`} role="tablist" aria-label={isAr ? 'شرائح المميز' : 'Featured slides'}>
-          {items.map((item, idx) => (
+      {/* Dots: one per start position (mobile: every card, desktop: every full window) */}
+      {marqueeOn && maxIndex >= 1 && (
+        <div className="flex justify-center items-center gap-1.5 mt-1" role="tablist" aria-label={isAr ? 'شرائح المميز' : 'Featured slides'}>
+          {Array.from({ length: maxIndex + 1 }).map((_, idx) => (
             <button
-              key={item.id}
+              key={idx}
               type="button"
               role="tab"
               aria-selected={idx === index}

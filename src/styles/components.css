@@ -25,24 +25,15 @@
   pointer-events: none;
 }
 
-/* Featured one-card slider (mobile only; desktop shows a single row).
-   The track shifts via a --sx variable so the desktop row is untouched. */
+/* Featured slider (mobile 1 card, desktop 3 cards in one row).
+   The track shifts via a --sx pixel variable set from measured card width. */
 .slider-track {
   transform: translateX(var(--sx, 0));
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
 }
-@media (max-width: 767.98px) {
-  .slider-track {
-    transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: transform;
-  }
-  .slider-track-instant {
-    transition: none;
-  }
-}
-@media (min-width: 768px) {
-  .slider-track {
-    transform: none;
-  }
+.slider-track-instant {
+  transition: none;
 }
 
 /* Custom offset shadow for neo-brutalist cards */

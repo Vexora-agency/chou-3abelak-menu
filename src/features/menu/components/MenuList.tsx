@@ -269,9 +269,8 @@ export const MenuList: React.FC<MenuListProps> = ({
         // One stable grid whose window grows by batches: new items mount fresh
         // with their entrance animation, nothing already on screen moves — so
         // no layout-measurement overlap is possible (unlike mounting inside an
-        // animating container). Collapsing snaps shut, masked by scrolling the
-        // header back into view — otherwise the user is stranded at the bottom
-        // of a suddenly shorter page.
+        // animating container). Collapsing is phased (fade, then commit with
+        // pixel-lock) so the viewport never jumps.
         const collapsible = !filtering && total > initial + MIN_REST;
         const visible = collapsible ? Math.min(total, visibleCounts[cat.id] ?? initial) : total;
         const hasMore = collapsible && visible < total;
@@ -300,6 +299,10 @@ export const MenuList: React.FC<MenuListProps> = ({
           setLeaving({ id: cat.id, from: target });
           window.clearTimeout(leaveTimer.current);
           leaveTimer.current = window.setTimeout(() => {
+            // Measure BEFORE the commit (frozen layout), so the rAF below can
+            // compensate exactly for the removed height.
+            const pager = document.querySelector(`#category-${cat.id} .pager-anchor`);
+            const before = pager ? pager.getBoundingClientRect().top : null;
             setLeaving((cur) => (cur && cur.id === cat.id ? null : cur));
             if (landing) {
               setVisibleCounts((prev) => {
@@ -317,25 +320,28 @@ export const MenuList: React.FC<MenuListProps> = ({
               setVisibleCounts((prev) => ({ ...prev, [cat.id]: target }));
               setSteppingBack((prev) => ({ ...prev, [cat.id]: true }));
             }
-            // The user may have moved on (search/filter) mid-fade — then no
-            // scroll at all: yanking the viewport during typing is worse.
+            // The user may have moved on (search/filter) mid-fade — then
+            // touch nothing at all: yanking the viewport during typing is worse.
             if (filteringRef.current) return;
-            window.setTimeout(() => {
+            // The commit above flushes before paint; this rAF lands after it.
+            // Pixel-lock: shift by exactly the removed height so the pager
+            // sits pixel-stable (defeats the browser clamp-jump); then glide
+            // home on landing, on the now-stable layout.
+            requestAnimationFrame(() => {
+              const pagerAfter = document.querySelector(`#category-${cat.id} .pager-anchor`);
+              const after = pagerAfter ? pagerAfter.getBoundingClientRect().top : null;
+              if (before != null && after != null) window.scrollBy(0, after - before);
               if (landing) {
                 document.getElementById(`category-${cat.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              } else {
-                const section = document.getElementById(`category-${cat.id}`);
-                section?.querySelector(':scope .pager-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }
-            }, 60);
+            });
           }, 520);
         };
         // One morphing button: "more" (remaining count) until the end, then
         // ONLY "less" — which keeps stepping back through every stage (the
-        // button never morphs mid-way back). Hidden mid-fade to prevent
-        // double-tap state clashes.
-        const isLeaving = leaving?.id === cat.id;
-        const pagerButton = collapsible && !isLeaving ? (
+        // button never morphs mid-way back). Buttons stay mounted mid-fade
+        // (taps guarded) so the pixel-lock anchor is always measurable.
+        const pagerButton = collapsible ? (
           hasMore && !steppingBack[cat.id] ? (
             <ShowMoreButton
               expanded={false}
@@ -349,6 +355,7 @@ export const MenuList: React.FC<MenuListProps> = ({
           ) : null
         ) : null;
         const visibleItems = catItems.slice(0, visible);
+        const isLeaving = leaving?.id === cat.id;
         const itemsGrid = (
           <div className={gridClass}>
             {visibleItems.map((item, idx) => (

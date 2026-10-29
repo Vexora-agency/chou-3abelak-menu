@@ -14,7 +14,7 @@ import { Footer } from '@/src/components/Footer';
 import { useAdminSaveMenu } from '@/src/features/admin/hooks/useAdminSaveMenu';
 import { useAdminSaveAuth } from '@/src/features/admin/hooks/useAdminSaveAuth';
 import { scheduleIdle } from '@/src/utils/scheduleIdle';
-// Admin UI is a separate chunk, downloaded only when #admin opens: customers
+// Admin UI is a separate chunk, downloaded only when /admin opens: customers
 // never pay for the panel, editors and backup code. NOTE: these dynamic
 // imports bypass the admin barrel ON PURPOSE — importing the barrel (even
 // lazily) keeps it in the main chunk because the hooks above import it
@@ -49,7 +49,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const { orderingState } = useOrderingState();
   const {
-    showAdmin, setShowAdmin, adminUnlocked, authStatus, setAuthStatus,
+    showAdmin, openAdmin, adminUnlocked, authStatus, setAuthStatus,
     handleLoginSubmit, handleLogout, closeAdmin,
   } = useAdminSaveAuth();
   const { lang, setLang, darkMode, setDarkMode } = useAppPrefs(menu);
@@ -189,7 +189,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     );
   }
 
-  // Admin View (gated by #admin + cookie session)
+  // Admin View (gated by /admin path + cookie session)
   if (showAdmin) {
     // TEMPORARY local preview shortcut (?dev-admin): compiled out of
     // production builds (import.meta.env.DEV is statically false there),
@@ -293,7 +293,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           onToggleLang={() => setLang(lang === 'en' ? 'ar' : 'en')}
           darkMode={darkMode}
           onToggleDarkMode={() => setDarkMode(!darkMode)}
-          onOpenAdmin={adminUnlocked ? () => setShowAdmin(true) : undefined}
+          onOpenAdmin={adminUnlocked ? () => openAdmin() : undefined}
           orderingState={liveOrderingState}
           orderingEnabled={orderingOn}
         />
@@ -352,7 +352,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
         {/* Footer */}
         <Footer
           menu={menu}
-          onOpenAdmin={adminUnlocked ? () => setShowAdmin(true) : undefined}
+          onOpenAdmin={adminUnlocked ? () => openAdmin() : undefined}
           lang={lang}
         />
 

@@ -41,11 +41,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   }, []);
 
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
-    // Deep-link: #admin/backup (or any tab) survives refresh.
-    // #admin/reports opens the dashboard on the reports view (email link).
-    // #admin/customers opens the dashboard on the customers view.
-    // A starter #admin/backup link falls back to the dashboard (tab hidden).
-    const m = /^#admin\/([a-z]+)$/.exec(window.location.hash);
+    // Deep-link: /admin/backup (or any tab) survives refresh.
+    // /admin/reports opens the dashboard on the reports view (email link).
+    // /admin/customers opens the dashboard on the customers view.
+    // A starter /admin/backup link falls back to the dashboard (tab hidden).
+    const m = /^\/admin\/([a-z]+)\/?$/.exec(window.location.pathname);
     const raw = m ? m[1] : null;
     if (raw === 'reports' || raw === 'customers') return 'dashboard';
     if (raw === 'backup' && !featuresConfig.enableBackup) return 'dashboard';
@@ -110,7 +110,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   }, [saveSuccess, fetchActivityOnSave]);
 
   // Deep-link shield (declared before the sync effect that reads it): while
-  // an incoming #admin/reports or #admin/customers link is still unhandled,
+  // an incoming /admin/reports or /admin/customers link is still unhandled,
   // the URL-sync below must not replaceState it away.
   const deepLinkHandled = useRef(false);
 
@@ -121,27 +121,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   useEffect(() => {
     // Never wipe an incoming deep link before its view is showing: the flags
     // load async, and the first renders would otherwise replaceState it away
-    // on mount (this race also broke #admin/reports).
+    // on mount (this race also broke /admin/reports).
     if (!deepLinkHandled.current) {
-      const inc = /^#admin\/(reports|customers)$/.exec(window.location.hash)?.[1];
+      const inc = /^\/admin\/(reports|customers)\/?$/.exec(window.location.pathname)?.[1];
       if (inc && report.dashView !== inc) return;
     }
     const want = activeTab === 'dashboard' && report.dashView === 'reports' && report.reportsOn
-      ? '#admin/reports'
+      ? '/admin/reports'
       : activeTab === 'dashboard' && report.dashView === 'customers' && report.customersOn
-        ? '#admin/customers'
-        : `#admin/${activeTab}`;
-    if (window.location.hash !== want) {
-      window.history.replaceState(null, '', want);
+        ? '/admin/customers'
+        : `/admin/${activeTab}`;
+    if (window.location.pathname !== want) {
+      window.history.replaceState(null, '', want + window.location.search);
     }
   }, [activeTab, report.dashView, report.reportsOn, report.customersOn]);
 
-  // One-shot: an incoming #admin/reports or #admin/customers link opens its
+  // One-shot: an incoming /admin/reports or /admin/customers link opens its
   // view once the feature flags are known (they load async). A 4 s fallback
   // stops shielding the link (slow probe or feature off) so the address bar
   // follows manual navigation again; the tab stays clickable manually.
   useEffect(() => {
-    const m = /^#admin\/(reports|customers)$/.exec(window.location.hash);
+    const m = /^\/admin\/(reports|customers)\/?$/.exec(window.location.pathname);
     if (!m) {
       deepLinkHandled.current = true;
       return;
@@ -156,8 +156,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
     const timer = window.setTimeout(() => {
       deepLinkHandled.current = true;
-      if (/^#admin\/(reports|customers)$/.test(window.location.hash)) {
-        window.history.replaceState(null, '', '#admin/dashboard');
+      if (/^\/admin\/(reports|customers)\/?$/.test(window.location.pathname)) {
+        window.history.replaceState(null, '', '/admin/dashboard' + window.location.search);
       }
     }, 4000);
     return () => window.clearTimeout(timer);
@@ -168,6 +168,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setCatPage(0);
     setItemPage(0);
   };
+
+  // Back/forward across real history entries (deep-link chains, refresh +
+  // navigate): re-derive the tab from the path so content never disagrees
+  // with the address bar. (In-app tab switches use replaceState — one
+  // entry — so Back normally exits the admin instead.)
+  useEffect(() => {
+    const onPop = () => {
+      const m = /^\/admin\/([a-z]+)\/?$/.exec(window.location.pathname);
+      const raw = m ? m[1] : null;
+      if (raw === 'reports' || raw === 'customers') {
+        deepLinkHandled.current = true;
+        setActiveTab('dashboard');
+        report.setDashView(raw);
+        return;
+      }
+      const tab =
+        raw === 'dashboard' || raw === 'settings' || raw === 'categories' || raw === 'items' ||
+        (raw === 'backup' && featuresConfig.enableBackup)
+          ? (raw as AdminTab)
+          : null;
+      if (tab) {
+        setActiveTab(tab);
+        setCatPage(0);
+        setItemPage(0);
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [report]);
 
   return (
       <div className="min-h-screen bg-[#0A0A0A] text-white p-4 sm:p-6 md:p-8 pb-24 font-sans max-w-4xl mx-auto overflow-x-clip">

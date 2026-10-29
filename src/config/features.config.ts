@@ -17,8 +17,8 @@ const plan: 'starter' | 'pro' =
   // DEV-ONLY plan preview (?plan=starter|pro): compiled out of
   // production builds (import.meta.env.DEV is statically false there), so
   // customers can never switch plans. Browse every tier locally, e.g.
-  // http://localhost:5173/?dev-admin&plan=starter#admin
-  // http://localhost:5173/?dev-admin&plan=pro#admin
+  // http://localhost:5173/admin/dashboard?dev-admin&plan=starter
+  // http://localhost:5173/admin/dashboard?dev-admin&plan=pro
   (() => {
     if (typeof window !== 'undefined' && import.meta.env.DEV) {
       const q = new URLSearchParams(window.location.search).get('plan');

@@ -4,12 +4,17 @@ import { adminFetch } from '@/src/lib/api-client';
 import type { LoginResult } from '../components/AdminLogin';
 
 export function useAdminSaveAuth() {
-  // Admin view toggle. The admin entry points are hidden from customers:
-  // the owner opens the site with #admin at the end of the address.
-  // A tab suffix (#admin/backup, ...) deep-links a tab and survives refresh.
-  const isAdminHash = (h: string) => h === '#admin' || h.startsWith('#admin/');
+  // Admin view toggle. The admin lives at /admin[/tab] paths (served the
+  // app shell via _redirects, no-store + noindex via _headers) — no #hash:
+  // back/forward, refresh and emailed links all behave like normal pages.
+  // Old #admin/... bookmarks are upgraded to paths once, on load.
+  const isAdminPath = (p: string) => p === '/admin' || p.startsWith('/admin/');
+  const isLegacyHash = (h: string) => h === '#admin' || h.startsWith('#admin/');
+  const withQuery = (path: string) => path + window.location.search;
   const [showAdmin, setShowAdmin] = useState(false);
-  const [adminUnlocked, setAdminUnlocked] = useState(() => isAdminHash(window.location.hash));
+  const [adminUnlocked, setAdminUnlocked] = useState(
+    () => isAdminPath(window.location.pathname) || isLegacyHash(window.location.hash)
+  );
   // Cookie-session auth state for the admin area
   const [authStatus, setAuthStatus] = useState<'checking' | 'authed' | 'guest'>('checking');
 
@@ -70,29 +75,45 @@ export function useAdminSaveAuth() {
   };
 
   useEffect(() => {
-    const syncAdminHash = () => {
-      const h = window.location.hash;
-      const unlocked = h === '#admin' || h.startsWith('#admin/');
+    // One-time upgrade: old #admin/... bookmarks and emailed links become
+    // /admin/... paths (the fragment never reaches the server, so the
+    // client performs the migration itself).
+    const hm = /^#admin(?:\/([a-z]+))?$/.exec(window.location.hash);
+    if (hm && !isAdminPath(window.location.pathname)) {
+      window.history.replaceState(null, '', withQuery(`/admin${hm[1] ? `/${hm[1]}` : '/dashboard'}`));
+    }
+    const syncAdminRoute = () => {
+      // Back/forward across the /admin boundary opens/closes the view.
+      const unlocked = isAdminPath(window.location.pathname);
       setAdminUnlocked(unlocked);
-      if (unlocked) setShowAdmin(true);
+      setShowAdmin(unlocked);
     };
-    syncAdminHash();
-    window.addEventListener('hashchange', syncAdminHash);
-    return () => window.removeEventListener('hashchange', syncAdminHash);
+    syncAdminRoute();
+    window.addEventListener('popstate', syncAdminRoute);
+    return () => window.removeEventListener('popstate', syncAdminRoute);
   }, []);
+
+  const openAdmin = () => {
+    setAdminUnlocked(true);
+    setShowAdmin(true);
+    if (!isAdminPath(window.location.pathname)) {
+      window.history.pushState(null, '', withQuery('/admin/dashboard'));
+    }
+  };
 
   const closeAdmin = () => {
     setShowAdmin(false);
     setAdminUnlocked(false);
-    const h = window.location.hash;
-    if (h === '#admin' || h.startsWith('#admin/')) {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    if (isAdminPath(window.location.pathname)) {
+      // Back to the storefront, keeping dev query flags (?dev-admin…).
+      window.history.replaceState(null, '', '/' + window.location.search);
     }
   };
 
   return {
     showAdmin,
     setShowAdmin,
+    openAdmin,
     adminUnlocked,
     authStatus,
     setAuthStatus,

@@ -1,0 +1,4 @@
+# Admin SPA routes render the app shell (client-side admin view, login-gated).
+# The /admin/* response carries no-store + noindex (see _headers).
+/admin /index.html 200
+/admin/* /index.html 200

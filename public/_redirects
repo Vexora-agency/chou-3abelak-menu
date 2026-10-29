@@ -2,3 +2,6 @@
 # The /admin/* response carries no-store + noindex (see _headers).
 /admin /index.html 200
 /admin/* /index.html 200
+# One-time invite landing (token in path; no-referrer + no-store, see _headers).
+/invite /index.html 200
+/invite/* /index.html 200

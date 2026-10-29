@@ -91,26 +91,33 @@ async function derivePasswordKey(password, salt, iterations, hashLen) {
 }
 
 /**
+ * Verify a password against a stored hash. Unknown/misconfigured hashes
+ * still burn comparable CPU (dummy PBKDF2) so timing leaks nothing.
+ * Never throws for bad input.
+ */
+export async function verifyPassword(password, storedHash) {
+  const parsed = parsePasswordHash(storedHash);
+  try {
+    if (parsed) {
+      const derived = await derivePasswordKey(password, parsed.salt, parsed.iterations, parsed.hash.length);
+      return timingSafeEqual(derived, parsed.hash);
+    }
+    // Unknown/misconfigured hash: still burn comparable CPU so timing leaks nothing.
+    await derivePasswordKey(password, new Uint8Array(16), 260000, 32);
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Verify a username + password pair. Unknown users cost roughly the same
  * amount of work (a dummy PBKDF2) so wrong-user and wrong-password look
  * identical from the outside. Never throws for bad input.
  */
 export async function verifyLogin(username, password, expectedUsername, storedHash) {
   const userOk = safeCompareStrings(username, expectedUsername);
-  const parsed = parsePasswordHash(storedHash);
-  let passOk;
-  try {
-    if (parsed) {
-      const derived = await derivePasswordKey(password, parsed.salt, parsed.iterations, parsed.hash.length);
-      passOk = timingSafeEqual(derived, parsed.hash);
-    } else {
-      // Unknown/misconfigured hash: still burn comparable CPU so timing leaks nothing.
-      await derivePasswordKey(password, new Uint8Array(16), 260000, 32);
-      passOk = false;
-    }
-  } catch {
-    passOk = false;
-  }
+  const passOk = await verifyPassword(password, storedHash);
   return userOk && passOk;
 }
 

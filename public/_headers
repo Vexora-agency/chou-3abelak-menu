@@ -9,6 +9,14 @@
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow
 
+# Invite landing: the token lives in the URL, so it must never be stored,
+# indexed, or leaked — no-referrer keeps it out of every Referer header.
+# (The page itself loads zero third-party resources regardless.)
+/invite/*
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+  Referrer-Policy: no-referrer
+
 # Entry HTML revalidates every load (never stale: it references hashed /assets/*
 # files, so a fresh entry guarantees phones pick up every deploy immediately —
 # stale HTML was once the reason a fix "didn't appear" on a device). no-cache

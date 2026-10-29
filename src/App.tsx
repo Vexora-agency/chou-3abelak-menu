@@ -22,6 +22,11 @@ import { scheduleIdle } from '@/src/utils/scheduleIdle';
 // 1,164 kB). Static imports elsewhere still go through the barrel.
 const AdminPanel = lazy(() => import('@/src/features/admin/components/AdminPanel').then((m) => ({ default: m.AdminPanel })));
 const AdminLogin = lazy(() => import('@/src/features/admin/components/AdminLogin'));
+// One-time invite landing (/invite/<token>): its own chunk — customers never
+// download it, and it downloads no admin code either.
+const InvitePage = lazy(() =>
+  import('@/src/features/invite/components/InvitePage').then((m) => ({ default: m.InvitePage }))
+);
 import { WifiOff } from 'lucide-react';
 import { useShopCartState } from '@/src/features/cart';
 import { useOrderingState } from '@/src/features/orders';
@@ -186,6 +191,18 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
         <h2 className="text-xl font-bold tracking-wide">{clientConfig.companyNameEn} · {clientConfig.companyNameAr}</h2>
         <p className="text-xs text-neutral-400 mt-1">Loading delicious menu...</p>
       </div>
+    );
+  }
+
+  // One-time client invite (/invite/<token>): standalone page, needs no
+  // menu data and shares no state with the storefront or the admin.
+  // A bare /invite shows the same page in its invalid state (never the menu).
+  const inviteMatch = /^\/invite(?:\/([^/]+))?\/?$/.exec(window.location.pathname);
+  if (inviteMatch) {
+    return (
+      <Suspense fallback={<AdminLoadingSplash />}>
+        <InvitePage token={inviteMatch[1] || ''} />
+      </Suspense>
     );
   }
 

@@ -11,6 +11,7 @@ import { SocialSection } from '../SocialSection';
 import { VisitorDefaultsSection } from '../VisitorDefaultsSection';
 import { SmartBadgesSection } from '../SmartBadgesSection';
 import { ShowMoreSection } from '../ShowMoreSection';
+import { AccessSection } from '../AccessSection';
 import { AutoplaySection } from '../AutoplaySection';
 import { FeaturesSection } from '../FeaturesSection';
 
@@ -240,9 +241,8 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
 
       {/* Smart-badge windows are a pro tuning surface (claimed Pro-only in
           pricing); starter keeps defaults. Same gate as OrderingSection. */}
-      {featuresConfig.enableOrdering && (
-      <SmartBadgesSection
-        badges={menu.settings.badges}
+            {featuresConfig.enableOrdering && (
+      <SmartBadgesSection        badges={menu.settings.badges}
         lang={lang}
         onUpdate={(updater) =>
           onUpdateMenu((m) => ({
@@ -252,6 +252,10 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         }
       />
       )}
+
+      {/* Client access: owner-minted invite links (hidden from client logins —
+          the section hides itself on 403). Last: it is account-level, not menu. */}
+      <AccessSection lang={lang} adminFetch={adminFetch} />
     </div>
   );
 };

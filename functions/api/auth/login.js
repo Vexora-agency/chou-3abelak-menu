@@ -9,8 +9,10 @@ import {
   getSessionSecret,
   jsonNoStore,
   readJsonBody,
+  safeCompareStrings,
   sessionCookieHeader,
   verifyLogin,
+  verifyPassword,
 } from '../../_shared/session.js';
 
 const FAIL_PREFIX = 'login:fail:';
@@ -98,6 +100,39 @@ export async function onRequest(context) {
     return jsonNoStore({ ok: true }, 200, {
       'Set-Cookie': sessionCookieHeader(token, maxAge),
     });
+  }
+
+  // Client-account fallback (per-site logins minted via invite links).
+  // Same cost profile either way: an unknown name burns one real PBKDF2
+  // against the master hash (discarded), so master-unknown and
+  // client-unknown are indistinguishable from the outside. The master name
+  // itself never reaches this lookup (usernames cannot collide with it —
+  // invite creation rejects it), saving the second derive on typos.
+  if (!safeCompareStrings(username, expectedUser)) {
+    const db = env.ORDERS_DB || null;
+    if (db) {
+      try {
+        const row = await db
+          .prepare('SELECT username, pass_hash FROM client_users WHERE username = ?')
+          .bind(username)
+          .first();
+        const passOk = row
+          ? await verifyPassword(password, row.pass_hash)
+          : await verifyPassword(password, storedHash);
+        if (row && passOk) {
+          try {
+            await kv.delete(FAIL_PREFIX + ip);
+          } catch {}
+          const maxAge = remember ? SESSION_LONG_SEC : SESSION_SHORT_SEC;
+          const token = await createSessionToken(secret, `client:${row.username}`, maxAge);
+          return jsonNoStore({ ok: true }, 200, {
+            'Set-Cookie': sessionCookieHeader(token, maxAge),
+          });
+        }
+      } catch {
+        // Fall through to the generic failure below.
+      }
+    }
   }
 
   // Record the failure (generic response either way)

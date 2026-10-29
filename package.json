@@ -17,6 +17,7 @@
     "test:parity": "tsx scripts/test-parity.mjs",
     "test:cart": "node scripts/test-cart-isolation.mjs",
     "test:plan": "node scripts/test-plan.mjs",
+    "test:access": "node scripts/test-access.mjs",
     "test:all": "npm run test:client && npm run test:dial && npm run test:parity && npm run test:cart"
   },
   "dependencies": {
@@ -27,6 +28,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "@workspace/boosthis-runtime-web": "file:./lib/boosthis-runtime-web",
     "dotenv": "^17.2.3",
+    "gsap": "^3.15.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",

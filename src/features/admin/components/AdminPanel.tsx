@@ -42,9 +42,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
     // Deep-link: #admin/backup (or any tab) survives refresh.
     // #admin/reports opens the dashboard on the reports view (email link).
+    // #admin/customers opens the dashboard on the customers view.
     const m = /^#admin\/([a-z]+)$/.exec(window.location.hash);
     const raw = m ? m[1] : null;
-    if (raw === 'reports') return 'dashboard';
+    if (raw === 'reports' || raw === 'customers') return 'dashboard';
     return raw === 'dashboard' || raw === 'settings' || raw === 'categories' || raw === 'items' || raw === 'backup'
       ? (raw as AdminTab)
       : 'dashboard';
@@ -104,30 +105,59 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     if (saveSuccess) void fetchActivityOnSave();
   }, [saveSuccess, fetchActivityOnSave]);
 
-  // Keep the tab (and the reports deep-link) in the address bar
+  // Deep-link shield (declared before the sync effect that reads it): while
+  // an incoming #admin/reports or #admin/customers link is still unhandled,
+  // the URL-sync below must not replaceState it away.
+  const deepLinkHandled = useRef(false);
+
+  // Keep the tab (and the reports/customers deep-links) in the address bar
   // (replaceState: no history spam, refresh-safe). The URL follows state;
   // state is forced from the URL only once below, so manual navigation is
   // never yanked back. Placed after the hooks it reads (TS block scope).
   useEffect(() => {
+    // Never wipe an incoming deep link before its view is showing: the flags
+    // load async, and the first renders would otherwise replaceState it away
+    // on mount (this race also broke #admin/reports).
+    if (!deepLinkHandled.current) {
+      const inc = /^#admin\/(reports|customers)$/.exec(window.location.hash)?.[1];
+      if (inc && report.dashView !== inc) return;
+    }
     const want = activeTab === 'dashboard' && report.dashView === 'reports' && report.reportsOn
       ? '#admin/reports'
-      : `#admin/${activeTab}`;
+      : activeTab === 'dashboard' && report.dashView === 'customers' && report.customersOn
+        ? '#admin/customers'
+        : `#admin/${activeTab}`;
     if (window.location.hash !== want) {
       window.history.replaceState(null, '', want);
     }
-  }, [activeTab, report.dashView, report.reportsOn]);
+  }, [activeTab, report.dashView, report.reportsOn, report.customersOn]);
 
-  // One-shot: an incoming #admin/reports link opens the reports view once
-  // reports are known to be on (they load async). Never re-fires, so manual
-  // tab switches afterwards are left alone.
-  const reportsLinkHandled = useRef(false);
+  // One-shot: an incoming #admin/reports or #admin/customers link opens its
+  // view once the feature flags are known (they load async). A 4 s fallback
+  // stops shielding the link (slow probe or feature off) so the address bar
+  // follows manual navigation again; the tab stays clickable manually.
   useEffect(() => {
-    if (reportsLinkHandled.current || !report.reportsOn) return;
-    if (/^#admin\/reports$/.test(window.location.hash)) {
-      reportsLinkHandled.current = true;
-      report.setDashView('reports');
+    const m = /^#admin\/(reports|customers)$/.exec(window.location.hash);
+    if (!m) {
+      deepLinkHandled.current = true;
+      return;
     }
-  }, [report.reportsOn]);
+    if (deepLinkHandled.current) return;
+    const view = m[1] as 'reports' | 'customers';
+    const flag = view === 'reports' ? report.reportsOn : report.customersOn;
+    if (flag) {
+      deepLinkHandled.current = true;
+      report.setDashView(view);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      deepLinkHandled.current = true;
+      if (/^#admin\/(reports|customers)$/.test(window.location.hash)) {
+        window.history.replaceState(null, '', '#admin/dashboard');
+      }
+    }, 4000);
+    return () => window.clearTimeout(timer);
+  }, [report.reportsOn, report.customersOn]);
 
   const handleTabChange = (tab: AdminTab) => {
     setActiveTab(tab);

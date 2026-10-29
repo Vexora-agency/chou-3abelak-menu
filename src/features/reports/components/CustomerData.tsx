@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Download, Eraser, Lock, Search, ShieldAlert, Trash2 } from 'lucide-react';
 
@@ -24,7 +24,7 @@ interface CustomerDataProps {
 const STR = {
   en: {
     title: 'Customer data', intro: 'Search by phone number. Results are masked — full details are never shown on screen.',
-    searchPh: 'Phone digits (min 6)', search: 'Search', searching: 'Searching…',
+    searchPh: 'Phone digits (min 6)', search: 'Search', searching: 'Searching…', liveHint: 'Results update live as you type.',
     needDigits: 'Enter at least 6 digits.',
     anonymized: 'Anonymized', orders: 'orders', noRes: 'No orders found for this number.',
     modeT: 'Action on all matches', anonymize: 'Anonymize (recommended)', anonymizeD: 'Removes name, phone, address, notes and location. Keeps totals for statistics.',
@@ -36,7 +36,7 @@ const STR = {
   },
   ar: {
     title: 'بيانات العملاء', intro: 'ابحث برقم الهاتف. النتائج مقنّعة — لا تظهر التفاصيل الكاملة على الشاشة أبداً.',
-    searchPh: 'أرقام الهاتف (6 على الأقل)', search: 'بحث', searching: 'جارٍ البحث…',
+    searchPh: 'أرقام الهاتف (6 على الأقل)', search: 'بحث', searching: 'جارٍ البحث…', liveHint: 'النتائج تتحدث مباشرة أثناء الكتابة.',
     needDigits: 'أدخل 6 أرقام على الأقل.',
     anonymized: 'مجهول', orders: 'طلب', noRes: 'لا توجد طلبات لهذا الرقم.',
     modeT: 'إجراء على كل النتائج', anonymize: 'إخفاء الهوية (موصى به)', anonymizeD: 'يحذف الاسم والهاتف والعنوان والملاحظات والموقع. يُبقي الإجماليات للإحصاءات.',
@@ -66,22 +66,48 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
   const digits = phone.replace(/[^0-9]/g, '');
+  // Live search: typing runs a debounced query (600 ms) once 6+ digits are
+  // in. Stale responses are dropped by request id; identical queries are
+  // never re-sent. Short input clears the list instead of erroring — the
+  // "min 6 digits" error stays manual-only (Search button / Enter).
+  const lastQueried = useRef('');
+  const reqId = useRef(0);
+  const runSearch = async (query: string) => {
+    lastQueried.current = query;
+    const id = ++reqId.current;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await onSearch(query);
+      if (reqId.current !== id) return;
+      setResults(r.results);
+      setSearched(true);
+    } catch {
+      if (reqId.current !== id) return;
+      setMsg({ kind: 'err', text: t.err });
+    } finally {
+      if (reqId.current === id) setBusy(false);
+    }
+  };
+  useEffect(() => {
+    if (digits.length < 6) {
+      setResults([]);
+      setSearched(false);
+      setMsg(null);
+      lastQueried.current = '';
+      return;
+    }
+    if (digits === lastQueried.current) return;
+    const timer = window.setTimeout(() => { void runSearch(digits); }, 600);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- live-query trigger on digits only; runSearch identity is irrelevant (id-guarded).
+  }, [digits]);
   const doSearch = async () => {
     if (digits.length < 6) {
       setMsg({ kind: 'err', text: t.needDigits });
       return;
     }
-    setBusy(true);
-    setMsg(null);
-    try {
-      const r = await onSearch(digits);
-      setResults(r.results);
-      setSearched(true);
-    } catch {
-      setMsg({ kind: 'err', text: t.err });
-    } finally {
-      setBusy(false);
-    }
+    await runSearch(digits);
   };
 
   const wordNeed = isAr ? 'حذف' : 'DELETE';
@@ -143,6 +169,7 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
             <Search size={16} />{busy ? t.searching : t.search}
           </button>
         </div>
+        <p className="mt-1.5 text-[11px] text-neutral-500">{t.liveHint}</p>
         {msg && (
           <div role="status" className={`mt-3 rounded-xl border px-3.5 py-3 text-xs ${msg.kind === 'ok' ? 'border-green-500/30 bg-green-500/10 text-green-300' : 'border-red-400/30 bg-red-500/10 text-red-200'}`}>
             {msg.text}

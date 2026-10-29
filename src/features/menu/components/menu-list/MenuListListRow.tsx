@@ -9,8 +9,8 @@ import { MenuListItemAction } from './MenuListItemAction';
 interface MenuListListRowProps {
   item: MenuItem;
   index: number;
-  /** Reverse-cascade exit delay (collapse removes bottom-up). */
-  exitDelay?: number;
+  /** Phased-collapse fade delay (null = not leaving). See .row-leaving. */
+  leaveDelayMs?: number | null;
   menu: MenuData;
   lang: 'en' | 'ar';
   currency: string;
@@ -25,7 +25,7 @@ interface MenuListListRowProps {
 export const MenuListListRow: React.FC<MenuListListRowProps> = ({
   item,
   index,
-  exitDelay,
+  leaveDelayMs,
   menu,
   lang,
   currency,
@@ -46,12 +46,11 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.5, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
-      // Collapse cascade: compositor-only (opacity/y), upward like the scroll.
-      exit={{ opacity: 0, y: -16, transition: { duration: 0.28, delay: exitDelay ?? 0, ease: [0.22, 1, 0.36, 1] } }}
+      style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
       onClick={() => !isSoldOut && onOpenItem(item)}
       className={`group relative pb-4 border-b transition-colors ${
         darkMode ? 'border-neutral-800' : 'border-neutral-200'
-      } ${isSoldOut ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+      } ${isSoldOut ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}${leaveDelayMs != null ? ' row-leaving' : ''}`}
     >
       {/* Name, Badges, Price (+ action when there is no
           description, so the + never dangles on an empty row) */}

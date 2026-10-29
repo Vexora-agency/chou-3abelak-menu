@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { AnimatePresence } from 'motion/react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { MenuData, MenuItem, Category, CartLine } from '@/src/types/menu';
 import type { CardMarkStyleId, ResolvedMark } from '@/src/utils/cardMark';
@@ -69,8 +68,8 @@ interface MenuListRowItemProps {
   kind: 'list' | 'compact' | 'cards';
   item: MenuItem;
   index: number;
-  /** Reverse-cascade exit delay, computed from the bottom (collapse order). */
-  exitDelay?: number;
+  /** Phased-collapse fade delay (null = not leaving). See .row-leaving. */
+  leaveDelayMs: number | null;
   menu: MenuData;
   lang: 'en' | 'ar';
   currency: string;
@@ -94,7 +93,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
   kind,
   item,
   index,
-  exitDelay,
+  leaveDelayMs,
   menu,
   lang,
   currency,
@@ -118,7 +117,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
       <MenuListCompactRow
         item={item}
         index={index}
-        exitDelay={exitDelay}
+        leaveDelayMs={leaveDelayMs}
         menu={menu}
         lang={lang}
         currency={currency}
@@ -136,7 +135,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
       <MenuListListRow
         item={item}
         index={index}
-        exitDelay={exitDelay}
+        leaveDelayMs={leaveDelayMs}
         menu={menu}
         lang={lang}
         currency={currency}
@@ -153,7 +152,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
     <MenuListGridCard
       item={item}
       index={index}
-      exitDelay={exitDelay}
+      leaveDelayMs={leaveDelayMs}
       menu={menu}
       lang={lang}
       currency={currency}
@@ -201,6 +200,13 @@ export const MenuList: React.FC<MenuListProps> = ({
   // Stepping-back mode: once "less" starts at the end, the button STAYS
   // "less" through every stage back to the start (never morphs mid-way).
   const [steppingBack, setSteppingBack] = useState<Record<string, boolean>>({});
+  // Phased collapse: { id, from } marks the range [from, visible) as leaving
+  // (fading in place, layout frozen). One collapse at a time globally — a
+  // second tap mid-fade is ignored (520 ms), which also kills timer clashes.
+  const [leaving, setLeaving] = useState<{ id: string; from: number } | null>(null);
+  const leaveTimer = useRef(0);
+  useEffect(() => () => window.clearTimeout(leaveTimer.current), []);
+  const filteringRef = useRef(false);
   const filtering = searchQuery.trim() !== '' || selectedBadge !== null || selectedCategory !== 'all';
   const smRaw = (menu.settings as { showMore?: { initial?: unknown; batch?: unknown } }).showMore || {};
   const intOr = (v: unknown, fb: number) =>
@@ -211,6 +217,7 @@ export const MenuList: React.FC<MenuListProps> = ({
   if (filteredItems.length === 0) {
     return <MenuListEmptyState darkMode={darkMode} isAr={isAr} />;
   }
+  filteringRef.current = filtering;
 
   // Get visible categories that have items in filtered list
   const activeCategoryIds = Array.from(new Set(filteredItems.map((i) => i.categoryId)));
@@ -240,7 +247,7 @@ export const MenuList: React.FC<MenuListProps> = ({
               ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-4'
               : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5';
         const total = catItems.length;
-        const rowCtx: Omit<MenuListRowItemProps, 'item' | 'index'> = {
+        const rowCtx: Omit<MenuListRowItemProps, 'item' | 'index' | 'leaveDelayMs'> = {
           kind,
           menu,
           lang,
@@ -272,6 +279,7 @@ export const MenuList: React.FC<MenuListProps> = ({
         // straight to the start), mirroring "more".
         const pastStart = collapsible && visible > initial;
         const more = () => {
+          if (leaving) return;
           setSteppingBack((prev) => {
             if (!prev[cat.id]) return prev;
             const next = { ...prev };
@@ -280,42 +288,54 @@ export const MenuList: React.FC<MenuListProps> = ({
           });
           setVisibleCounts((prev) => ({ ...prev, [cat.id]: Math.min(total, (prev[cat.id] ?? initial) + batch) }));
         };
+        // Phased "less": phase 1 fades the doomed range [target, visible) in
+        // place — layout fully frozen, so the scroll position CANNOT jump.
+        // Phase 2 (520 ms) commits the smaller window and glides: home to the
+        // header on landing, recentered on the pager mid-way. Taps mid-fade
+        // are ignored (one collapse at a time).
         const less = () => {
-          const landing = visible - batch <= initial;
-          if (landing) {
-            setVisibleCounts((prev) => {
-              const next = { ...prev };
-              delete next[cat.id];
-              return next;
-            });
-            setSteppingBack((prev) => {
-              if (!prev[cat.id]) return prev;
-              const next = { ...prev };
-              delete next[cat.id];
-              return next;
-            });
-          } else {
-            setVisibleCounts((prev) => ({ ...prev, [cat.id]: visible - batch }));
-            setSteppingBack((prev) => ({ ...prev, [cat.id]: true }));
-          }
-          // Position discipline: removing a batch above the button yanks it
-          // upward and the browser clamp-jumps when near the page bottom.
-          // Landing → glide home to the header. Mid-way → recenter the pager
-          // itself (slightly delayed so the fade cascade leads and the glide
-          // follows instead of fighting it).
-          window.setTimeout(() => {
+          if (leaving) return;
+          const target = Math.max(initial, visible - batch);
+          const landing = target <= initial;
+          setLeaving({ id: cat.id, from: target });
+          window.clearTimeout(leaveTimer.current);
+          leaveTimer.current = window.setTimeout(() => {
+            setLeaving((cur) => (cur && cur.id === cat.id ? null : cur));
             if (landing) {
-              document.getElementById(`category-${cat.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              setVisibleCounts((prev) => {
+                const next = { ...prev };
+                delete next[cat.id];
+                return next;
+              });
+              setSteppingBack((prev) => {
+                if (!prev[cat.id]) return prev;
+                const next = { ...prev };
+                delete next[cat.id];
+                return next;
+              });
             } else {
-              const section = document.getElementById(`category-${cat.id}`);
-              section?.querySelector(':scope .pager-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              setVisibleCounts((prev) => ({ ...prev, [cat.id]: target }));
+              setSteppingBack((prev) => ({ ...prev, [cat.id]: true }));
             }
-          }, landing ? 150 : 250);
+            // The user may have moved on (search/filter) mid-fade — then no
+            // scroll at all: yanking the viewport during typing is worse.
+            if (filteringRef.current) return;
+            window.setTimeout(() => {
+              if (landing) {
+                document.getElementById(`category-${cat.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              } else {
+                const section = document.getElementById(`category-${cat.id}`);
+                section?.querySelector(':scope .pager-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 60);
+          }, 520);
         };
         // One morphing button: "more" (remaining count) until the end, then
         // ONLY "less" — which keeps stepping back through every stage (the
-        // button never morphs mid-way back).
-        const pagerButton = collapsible ? (
+        // button never morphs mid-way back). Hidden mid-fade to prevent
+        // double-tap state clashes.
+        const isLeaving = leaving?.id === cat.id;
+        const pagerButton = collapsible && !isLeaving ? (
           hasMore && !steppingBack[cat.id] ? (
             <ShowMoreButton
               expanded={false}
@@ -329,21 +349,21 @@ export const MenuList: React.FC<MenuListProps> = ({
           ) : null
         ) : null;
         const visibleItems = catItems.slice(0, visible);
-        // Reverse-cascade exits (bottom-up) run inside AnimatePresence;
-        // initial={false} so first mount keeps the scroll entrances only.
         const itemsGrid = (
           <div className={gridClass}>
-            <AnimatePresence initial={false}>
-              {visibleItems.map((item, idx) => (
-                <MenuListRowItem
-                  key={item.id}
-                  item={item}
-                  index={idx}
-                  exitDelay={Math.min(Math.max(0, visible - 1 - idx) * 0.006, 0.3)}
-                  {...rowCtx}
-                />
-              ))}
-            </AnimatePresence>
+            {visibleItems.map((item, idx) => (
+              <MenuListRowItem
+                key={item.id}
+                item={item}
+                index={idx}
+                leaveDelayMs={
+                  isLeaving && idx >= (leaving?.from ?? visible)
+                    ? Math.min((visible - 1 - idx) * 5, 200)
+                    : null
+                }
+                {...rowCtx}
+              />
+            ))}
           </div>
         );
         return (

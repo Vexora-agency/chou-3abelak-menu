@@ -10,8 +10,8 @@ import { MenuListItemAction } from './MenuListItemAction';
 interface MenuListGridCardProps {
   item: MenuItem;
   index: number;
-  /** Reverse-cascade exit delay (collapse removes bottom-up). */
-  exitDelay?: number;
+  /** Phased-collapse fade delay (null = not leaving). See .row-leaving. */
+  leaveDelayMs?: number | null;
   menu: MenuData;
   lang: 'en' | 'ar';
   currency: string;
@@ -33,7 +33,7 @@ interface MenuListGridCardProps {
 export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
   item,
   index,
-  exitDelay,
+  leaveDelayMs,
   menu,
   lang,
   currency,
@@ -63,14 +63,13 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.5, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
-      // Collapse cascade: compositor-only (opacity/y), upward like the scroll.
-      exit={{ opacity: 0, y: -16, transition: { duration: 0.28, delay: exitDelay ?? 0, ease: [0.22, 1, 0.36, 1] } }}
+      style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
       onClick={() => !isSoldOut && onOpenItem(item)}
       className={`grid-card relative flex flex-col justify-between p-3.5 rounded-2xl border-2 ${sectionMark ? 'overflow-hidden' : ''} ${
         darkMode
           ? 'bg-[#141414] border-[var(--primary)] offset-shadow-dark'
           : 'bg-white border-[#0A0A0A] offset-shadow-yellow'
-      } ${isSoldOut ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer card-lift'}`}
+      } ${isSoldOut ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer card-lift'}${leaveDelayMs != null ? ' row-leaving' : ''}`}
     >
       {/* Watermark on every card of the section (shared
           renderer — same as the admin live preview).

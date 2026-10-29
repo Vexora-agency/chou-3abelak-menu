@@ -191,6 +191,9 @@ export const MenuList: React.FC<MenuListProps> = ({
   // Per-category visible counts (absent = initial). Any active filter shows
   // everything: collapsing would hide matches.
   const [visibleCounts, setVisibleCounts] = useState<Record<string, number>>({});
+  // Stepping-back mode: once "less" starts at the end, the button STAYS
+  // "less" through every stage back to the start (never morphs mid-way).
+  const [steppingBack, setSteppingBack] = useState<Record<string, boolean>>({});
   const filtering = searchQuery.trim() !== '' || selectedBadge !== null || selectedCategory !== 'all';
   const smRaw = (menu.settings as { showMore?: { initial?: unknown; batch?: unknown } }).showMore || {};
   const intOr = (v: unknown, fb: number) =>
@@ -259,22 +262,35 @@ export const MenuList: React.FC<MenuListProps> = ({
         const visible = collapsible ? Math.min(total, visibleCounts[cat.id] ?? initial) : total;
         const hasMore = collapsible && visible < total;
         // Stepped collapse: "less" goes back one batch per tap (never jumps
-        // straight to the start), mirroring "more". Both buttons sit side by
-        // side mid-way; each end shows its single button.
+        // straight to the start), mirroring "more".
         const pastStart = collapsible && visible > initial;
-        const more = () =>
+        const more = () => {
+          setSteppingBack((prev) => {
+            if (!prev[cat.id]) return prev;
+            const next = { ...prev };
+            delete next[cat.id];
+            return next;
+          });
           setVisibleCounts((prev) => ({ ...prev, [cat.id]: Math.min(total, (prev[cat.id] ?? initial) + batch) }));
+        };
         const less = () => {
           const landing = visible - batch <= initial;
-          setVisibleCounts((prev) => {
-            const next = (prev[cat.id] ?? initial) - batch;
-            if (next <= initial) {
-              const n = { ...prev };
-              delete n[cat.id];
-              return n;
-            }
-            return { ...prev, [cat.id]: next };
-          });
+          if (landing) {
+            setVisibleCounts((prev) => {
+              const next = { ...prev };
+              delete next[cat.id];
+              return next;
+            });
+            setSteppingBack((prev) => {
+              if (!prev[cat.id]) return prev;
+              const next = { ...prev };
+              delete next[cat.id];
+              return next;
+            });
+          } else {
+            setVisibleCounts((prev) => ({ ...prev, [cat.id]: visible - batch }));
+            setSteppingBack((prev) => ({ ...prev, [cat.id]: true }));
+          }
           // Scroll home only on landing back at the start; mid-way steps keep
           // the viewport where the finger is.
           if (landing) {
@@ -283,11 +299,11 @@ export const MenuList: React.FC<MenuListProps> = ({
             }, 80);
           }
         };
-        // One morphing button: "more" while anything remains (label = what is
-        // left), then ONLY "less" at the very end — never two buttons side by
-        // side. "Less" steps back one batch per tap, mirroring "more".
+        // One morphing button: "more" (remaining count) until the end, then
+        // ONLY "less" — which keeps stepping back through every stage (the
+        // button never morphs mid-way back).
         const pagerButton = collapsible ? (
-          hasMore ? (
+          hasMore && !steppingBack[cat.id] ? (
             <ShowMoreButton
               expanded={false}
               // Remaining count (shrinks every tap: 50 → 42 → 34 …).

@@ -258,31 +258,46 @@ export const MenuList: React.FC<MenuListProps> = ({
         const collapsible = !filtering && total > initial + MIN_REST;
         const visible = collapsible ? Math.min(total, visibleCounts[cat.id] ?? initial) : total;
         const hasMore = collapsible && visible < total;
-        const showLess = collapsible && visible >= total;
+        // Stepped collapse: "less" goes back one batch per tap (never jumps
+        // straight to the start), mirroring "more". Both buttons sit side by
+        // side mid-way; each end shows its single button.
+        const pastStart = collapsible && visible > initial;
         const more = () =>
           setVisibleCounts((prev) => ({ ...prev, [cat.id]: Math.min(total, (prev[cat.id] ?? initial) + batch) }));
         const less = () => {
+          const landing = visible - batch <= initial;
           setVisibleCounts((prev) => {
-            const next = { ...prev };
-            delete next[cat.id];
-            return next;
+            const next = (prev[cat.id] ?? initial) - batch;
+            if (next <= initial) {
+              const n = { ...prev };
+              delete n[cat.id];
+              return n;
+            }
+            return { ...prev, [cat.id]: next };
           });
-          window.setTimeout(() => {
-            document.getElementById(`category-${cat.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 80);
+          // Scroll home only on landing back at the start; mid-way steps keep
+          // the viewport where the finger is.
+          if (landing) {
+            window.setTimeout(() => {
+              document.getElementById(`category-${cat.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 80);
+          }
         };
         const pagerButton = collapsible ? (
-          hasMore ? (
-            <ShowMoreButton
-              expanded={false}
-              // Remaining count (shrinks every tap: 50 → 42 → 34 …).
-              count={total - visible}
-              isAr={isAr}
-              onToggle={more}
-            />
-          ) : showLess ? (
-            <ShowMoreButton expanded isAr={isAr} count={0} onToggle={less} />
-          ) : null
+          <div className="mt-4 flex justify-center gap-2.5">
+            {hasMore && (
+              <ShowMoreButton
+                expanded={false}
+                // Remaining count (shrinks every tap: 50 → 42 → 34 …).
+                count={total - visible}
+                isAr={isAr}
+                onToggle={more}
+              />
+            )}
+            {pastStart && (
+              <ShowMoreButton expanded isAr={isAr} count={0} onToggle={less} />
+            )}
+          </div>
         ) : null;
         const visibleItems = catItems.slice(0, visible);
         const itemsGrid = (

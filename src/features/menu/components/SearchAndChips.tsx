@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Search, X, Sparkles, Flame, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Category } from '@/src/types/menu';
+import { scheduleIdle } from '@/src/utils/scheduleIdle';
 
 interface SearchAndChipsProps {
   searchQuery: string;
@@ -77,24 +78,19 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
         requestAnimationFrame(update);
       }
     };
-    // First measure AFTER paint (double rAF): reading geometry on a dirty
-    // post-mount tree forces a full-page synchronous layout (~87 ms on a
-    // low-end phone with a 90-item menu). One frame later the tree is clean
-    // and the same reads cost ~0. Arrows appear a frame late — invisible.
+    // First measure on idle (settled tree, ~free reads), 1.5 s ceiling — see
+    // scheduleIdle: these reads on the dirty post-mount tree forced a
+    // full-page synchronous layout on low-end phones. Arrows appear a beat
+    // late on first paint; nobody perceives it.
     // Later updates (scroll/resize/observer) already run on clean trees.
-    let cancelled = false;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (!cancelled) update();
-      });
-    });
+    const cancelIdle = scheduleIdle(update, 1500);
     outer.addEventListener('scroll', requestUpdate, { passive: true });
     window.addEventListener('resize', requestUpdate);
     const ro = new ResizeObserver(requestUpdate);
     ro.observe(outer);
     ro.observe(inner);
     return () => {
-      cancelled = true;
+      cancelIdle();
       outer.removeEventListener('scroll', requestUpdate);
       window.removeEventListener('resize', requestUpdate);
       ro.disconnect();

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { pxPerSec } from '@/src/utils/announcement';
+import { scheduleIdle } from '@/src/utils/scheduleIdle';
 
 /**
  * Shared marquee measure loop (storefront banner + admin live preview).
@@ -55,13 +56,15 @@ export function useTickerLoop(active: boolean, text: string, speed: number) {
       frozen.current = true;
       setReady(true);
     };
-    compute();
-    // Start on webfont metrics when they arrive fast, otherwise after 1.2 s
-    // on fallback metrics (a later swap can no longer restart the loop).
-    const timer = window.setTimeout(finish, 1200);
-    if (typeof document !== 'undefined' && document.fonts) {
-      document.fonts.ready.then(() => finish()).catch(() => {});
-    }
+    // (No measuring on mount: the first reads would land in the dirty tree.
+    // The idle finish below takes the one and only pre-start measurement.)
+    // Start measuring on idle (settled tree, ~free reads), 1.2 s ceiling:
+    // the pre-start reads land in the dirty post-menu-commit tree otherwise,
+    // forcing a full-page synchronous layout on low-end phones. Static text
+    // shows until ready, so nothing visible waits on this.
+    // (Webfont metrics arrive with the idle window on every real load; the
+    // old document.fonts.ready + bare-timeout pair is subsumed by it.)
+    const cancelIdle = scheduleIdle(finish, 1200);
     // Pre-start only: keep the estimate fresh while still static.
     const box = boxRef.current;
     const ro = box ? new ResizeObserver(compute) : null;
@@ -78,7 +81,7 @@ export function useTickerLoop(active: boolean, text: string, speed: number) {
     window.addEventListener('orientationchange', onViewport);
     return () => {
       alive = false;
-      window.clearTimeout(timer);
+      cancelIdle();
       ro?.disconnect();
       window.removeEventListener('resize', onViewport);
       window.removeEventListener('orientationchange', onViewport);

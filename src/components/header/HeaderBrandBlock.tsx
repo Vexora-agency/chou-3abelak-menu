@@ -37,8 +37,8 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
   const isAr = lang === 'ar';
 
   return (
-    <motion.div
-      style={{ y: parY }}
+    <div
+      ref={parY}
       className="relative z-10 text-center mt-3 sm:mt-5 flex flex-col items-center max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full"
     >
       {/* Logo Container with Transparent Video & Atmospheric Sizzle Smoke */}
@@ -133,6 +133,6 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
           </>
         )}
       </motion.div>
-    </motion.div>
+    </div>
   );
 };

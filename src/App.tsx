@@ -12,6 +12,7 @@ import { CartBar, CartDrawer } from '@/src/features/cart';
 import { Footer } from '@/src/components/Footer';
 import { useAdminSaveMenu } from '@/src/features/admin/hooks/useAdminSaveMenu';
 import { useAdminSaveAuth } from '@/src/features/admin/hooks/useAdminSaveAuth';
+import { scheduleIdle } from '@/src/utils/scheduleIdle';
 // Admin UI is a separate chunk, downloaded only when #admin opens: customers
 // never pay for the panel, editors and backup code. NOTE: these dynamic
 // imports bypass the admin barrel ON PURPOSE — importing the barrel (even
@@ -61,6 +62,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   // (lerp inside rAF) and the same fade-in over the first 1% of scroll.
   const progressRef = useRef<HTMLDivElement>(null);
   const pageHeightRef = useRef(1);
+  const measuredRef = useRef(false);
   useEffect(() => {
     let raf = 0;
     let running = false;
@@ -89,21 +91,21 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     const measure = () => {
       const se = document.scrollingElement || document.documentElement;
       pageHeightRef.current = Math.max(1, se.scrollHeight - window.innerHeight);
+      measuredRef.current = true;
     };
     const update = () => {
+      // A pre-idle scroll measures on the spot (one-time ~cost) instead of
+      // pinning the bar full (scrollY / 1 clamps to 1 = wrong).
+      if (!measuredRef.current) measure();
       target = Math.min(1, Math.max(0, window.scrollY / pageHeightRef.current));
       kick();
     };
-    // First measure post-paint (clean tree, ~free); scrollY reads below never
-    // force layout no matter how dirty the tree is.
-    let cancelled = false;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (cancelled) return;
-        measure();
-        update();
-      });
-    });
+    // First measure on idle (settled tree), 2 s ceiling — a scroll indicator
+    // needs no geometry before the first scroll anyway.
+    const cancelIdle = scheduleIdle(() => {
+      measure();
+      update();
+    }, 2000);
     let ticking = false;
     const onScroll = () => {
       if (ticking) return;
@@ -123,7 +125,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     const fonts = (document as Document).fonts;
     if (fonts) fonts.ready.then(onResize).catch(() => {});
     return () => {
-      cancelled = true;
+      cancelIdle();
       cancelAnimationFrame(raf);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onResize);

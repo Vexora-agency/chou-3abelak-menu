@@ -1,5 +1,4 @@
 import React, { useRef, useState } from 'react';
-import { motion } from 'motion/react';
 import { MenuData } from '@/src/types/menu';
 import { isOpenNow, buildMapUrl } from '@/src/utils/menuHelpers';
 import type { OrderingStatus } from '@/src/utils/status';
@@ -52,9 +51,9 @@ export const Header: React.FC<HeaderProps> = ({
       className="header-shell relative isolate overflow-hidden bg-[#0A0A0A] text-white rounded-b-[32px] md:rounded-b-[44px] pt-4 sm:pt-6 px-5 sm:px-8 md:px-12 pb-10 sm:pb-12 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.6)]"
     >
       {/* Warm spotlight behind the logo (replaces the old ring + hatch pattern) */}
-      <motion.div style={{ y: glowY }} className="absolute inset-0 pointer-events-none" aria-hidden="true">
+      <div ref={glowY} className="absolute inset-0 pointer-events-none" aria-hidden="true">
         <div className="header-spot" />
-      </motion.div>
+      </div>
       <div className="header-grain" aria-hidden="true" />
       <div className="edge-line edge-line-b" aria-hidden="true" />
 

@@ -43,6 +43,8 @@ export const MenuListSectionHeader: React.FC<MenuListSectionHeaderProps> = ({
 interface MenuListRowProps {
   item: MenuItem;
   index: number;
+  /** Reverse-cascade exit delay (collapse removes bottom-up). */
+  exitDelay?: number;
   menu: MenuData;
   lang: 'en' | 'ar';
   currency: string;
@@ -57,6 +59,7 @@ interface MenuListRowProps {
 export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
   item,
   index,
+  exitDelay,
   menu,
   lang,
   currency,
@@ -77,6 +80,8 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.05, ease: [0.22, 1, 0.36, 1] }}
+      // Collapse cascade: compositor-only (opacity/y), upward like the scroll.
+      exit={{ opacity: 0, y: -16, transition: { duration: 0.28, delay: exitDelay ?? 0, ease: [0.22, 1, 0.36, 1] } }}
       onClick={() => !isSoldOut && onOpenItem(item)}
       className={`group relative flex items-center gap-3 py-3 px-2 -mx-2 rounded-xl border-b transition-colors ${
         darkMode ? 'border-neutral-800 hover:bg-white/[0.04]' : 'border-neutral-200 hover:bg-black/[0.04]'

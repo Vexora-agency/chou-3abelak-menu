@@ -10,6 +10,8 @@ import { MenuListItemAction } from './MenuListItemAction';
 interface MenuListGridCardProps {
   item: MenuItem;
   index: number;
+  /** Reverse-cascade exit delay (collapse removes bottom-up). */
+  exitDelay?: number;
   menu: MenuData;
   lang: 'en' | 'ar';
   currency: string;
@@ -31,6 +33,7 @@ interface MenuListGridCardProps {
 export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
   item,
   index,
+  exitDelay,
   menu,
   lang,
   currency,
@@ -60,6 +63,8 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.5, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
+      // Collapse cascade: compositor-only (opacity/y), upward like the scroll.
+      exit={{ opacity: 0, y: -16, transition: { duration: 0.28, delay: exitDelay ?? 0, ease: [0.22, 1, 0.36, 1] } }}
       onClick={() => !isSoldOut && onOpenItem(item)}
       className={`grid-card relative flex flex-col justify-between p-3.5 rounded-2xl border-2 ${sectionMark ? 'overflow-hidden' : ''} ${
         darkMode

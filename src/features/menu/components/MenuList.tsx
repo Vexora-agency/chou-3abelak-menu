@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
 import { MenuData, MenuItem, Category, CartLine } from '@/src/types/menu';
 import type { CardMarkStyleId, ResolvedMark } from '@/src/utils/cardMark';
@@ -68,6 +69,8 @@ interface MenuListRowItemProps {
   kind: 'list' | 'compact' | 'cards';
   item: MenuItem;
   index: number;
+  /** Reverse-cascade exit delay, computed from the bottom (collapse order). */
+  exitDelay?: number;
   menu: MenuData;
   lang: 'en' | 'ar';
   currency: string;
@@ -91,6 +94,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
   kind,
   item,
   index,
+  exitDelay,
   menu,
   lang,
   currency,
@@ -114,6 +118,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
       <MenuListCompactRow
         item={item}
         index={index}
+        exitDelay={exitDelay}
         menu={menu}
         lang={lang}
         currency={currency}
@@ -131,6 +136,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
       <MenuListListRow
         item={item}
         index={index}
+        exitDelay={exitDelay}
         menu={menu}
         lang={lang}
         currency={currency}
@@ -147,6 +153,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
     <MenuListGridCard
       item={item}
       index={index}
+      exitDelay={exitDelay}
       menu={menu}
       lang={lang}
       currency={currency}
@@ -291,12 +298,13 @@ export const MenuList: React.FC<MenuListProps> = ({
             setVisibleCounts((prev) => ({ ...prev, [cat.id]: visible - batch }));
             setSteppingBack((prev) => ({ ...prev, [cat.id]: true }));
           }
-          // Scroll home only on landing back at the start; mid-way steps keep
-          // the viewport where the finger is.
+          // Scroll home only on landing back at the start (slightly delayed so
+          // the fade cascade and the glide overlap instead of queueing);
+          // mid-way steps keep the viewport where the finger is.
           if (landing) {
             window.setTimeout(() => {
               document.getElementById(`category-${cat.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 80);
+            }, 150);
           }
         };
         // One morphing button: "more" (remaining count) until the end, then
@@ -316,11 +324,21 @@ export const MenuList: React.FC<MenuListProps> = ({
           ) : null
         ) : null;
         const visibleItems = catItems.slice(0, visible);
+        // Reverse-cascade exits (bottom-up) run inside AnimatePresence;
+        // initial={false} so first mount keeps the scroll entrances only.
         const itemsGrid = (
           <div className={gridClass}>
-            {visibleItems.map((item, idx) => (
-              <MenuListRowItem key={item.id} item={item} index={idx} {...rowCtx} />
-            ))}
+            <AnimatePresence initial={false}>
+              {visibleItems.map((item, idx) => (
+                <MenuListRowItem
+                  key={item.id}
+                  item={item}
+                  index={idx}
+                  exitDelay={Math.min(Math.max(0, visible - 1 - idx) * 0.006, 0.3)}
+                  {...rowCtx}
+                />
+              ))}
+            </AnimatePresence>
           </div>
         );
         return (

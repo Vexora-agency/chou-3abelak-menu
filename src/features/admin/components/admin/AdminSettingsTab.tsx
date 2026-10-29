@@ -236,7 +236,8 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         }
       />
 
-      {/* Smart-badge windows are a pro tuning surface; starter keeps defaults. */}
+      {/* Smart-badge windows are a pro tuning surface (claimed Pro-only in
+          pricing); starter keeps defaults. Same gate as OrderingSection. */}
       {featuresConfig.enableOrdering && (
       <SmartBadgesSection
         badges={menu.settings.badges}

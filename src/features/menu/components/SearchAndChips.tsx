@@ -77,13 +77,24 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
         requestAnimationFrame(update);
       }
     };
-    update();
+    // First measure AFTER paint (double rAF): reading geometry on a dirty
+    // post-mount tree forces a full-page synchronous layout (~87 ms on a
+    // low-end phone with a 90-item menu). One frame later the tree is clean
+    // and the same reads cost ~0. Arrows appear a frame late — invisible.
+    // Later updates (scroll/resize/observer) already run on clean trees.
+    let cancelled = false;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) update();
+      });
+    });
     outer.addEventListener('scroll', requestUpdate, { passive: true });
     window.addEventListener('resize', requestUpdate);
     const ro = new ResizeObserver(requestUpdate);
     ro.observe(outer);
     ro.observe(inner);
     return () => {
+      cancelled = true;
       outer.removeEventListener('scroll', requestUpdate);
       window.removeEventListener('resize', requestUpdate);
       ro.disconnect();

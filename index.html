@@ -13,6 +13,17 @@
 
     <!-- Fonts are self-hosted (Fontsource, imported in src/index.css): no
          third-party font requests, nothing render-blocking here. -->
+
+    <!-- LCP logo is injected by React after the menu loads, so the preload
+         scanner can't see it: hint it here (same candidates as the img) so it
+         downloads at high priority instead of waiting for the render. -->
+    <link
+      rel="preload"
+      as="image"
+      imagesrcset="/assets/logo-final-480.webp 480w, /assets/logo-final-880.webp 880w, /assets/logo-final-1440.webp 1440w"
+      imagesizes="(max-width: 640px) 320px, (max-width: 768px) 380px, 440px"
+      fetchpriority="high"
+    />
   </head>
   <body class="bg-[#0A0A0A] text-[#0A0A0A] antialiased m-0 p-0 selection:bg-[var(--primary)] selection:text-[#0A0A0A]">
     <div id="root"></div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense, lazy } from 'react';
+import { useState, useEffect, Suspense, lazy, useRef } from 'react';
 import { MenuItem } from '@/src/types/menu';
 import { clientConfig } from '@/src/config/client.config';
 import { themeConfig } from '@/src/config/theme.config';
@@ -24,7 +24,7 @@ import { WifiOff } from 'lucide-react';
 import { useShopCartState } from '@/src/features/cart';
 import { useOrderingState } from '@/src/features/orders';
 import { useAppPrefs } from '@/src/hooks/useAppPrefs';
-import { MotionConfig, motion, useScroll, useSpring, useTransform } from 'motion/react';
+import { MotionConfig } from 'motion/react';
 
 /** Splash while the admin chunk loads or the session is being checked (same look). */
 function AdminLoadingSplash() {
@@ -53,10 +53,83 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   const { lang, setLang, darkMode, setDarkMode } = useAppPrefs(menu);
   const handleSaveMenuFromAdmin = useAdminSaveMenu(setMenu);
 
-  // Thin reading-progress line at the top of the page
-  const { scrollYProgress } = useScroll();
-  const progress = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4 });
-  const progressOpacity = useTransform(scrollYProgress, [0, 0.01], [0, 1]);
+  // Thin reading-progress line at the top of the page — hand-rolled on purpose:
+  // motion's useScroll measures document geometry on every scroll (forced
+  // reflow ~235 ms on a low-end phone, the top flagged offender in traces).
+  // This version reads scrollY only (a free read that never forces layout)
+  // against a cached page height, with the same buttery lag the spring gave
+  // (lerp inside rAF) and the same fade-in over the first 1% of scroll.
+  const progressRef = useRef<HTMLDivElement>(null);
+  const pageHeightRef = useRef(1);
+  useEffect(() => {
+    let raf = 0;
+    let running = false;
+    let current = 0;
+    let target = 0;
+    const paint = () => {
+      current += (target - current) * 0.18;
+      if (Math.abs(target - current) < 0.001) current = target;
+      const el = progressRef.current;
+      if (el) {
+        el.style.transform = `scaleX(${current})`;
+        el.style.opacity = current > 0.004 ? String(Math.min(1, current / 0.01)) : '0';
+      }
+      if (current !== target) {
+        raf = requestAnimationFrame(paint);
+      } else {
+        running = false;
+      }
+    };
+    const kick = () => {
+      if (!running) {
+        running = true;
+        raf = requestAnimationFrame(paint);
+      }
+    };
+    const measure = () => {
+      const se = document.scrollingElement || document.documentElement;
+      pageHeightRef.current = Math.max(1, se.scrollHeight - window.innerHeight);
+    };
+    const update = () => {
+      target = Math.min(1, Math.max(0, window.scrollY / pageHeightRef.current));
+      kick();
+    };
+    // First measure post-paint (clean tree, ~free); scrollY reads below never
+    // force layout no matter how dirty the tree is.
+    let cancelled = false;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        measure();
+        update();
+      });
+    });
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        update();
+      });
+    };
+    const onResize = () => {
+      measure();
+      update();
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize);
+    window.addEventListener('load', onResize);
+    const fonts = (document as Document).fonts;
+    if (fonts) fonts.ready.then(onResize).catch(() => {});
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('load', onResize);
+    };
+  }, [menu?.version]);
 
   // Search & Category Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -175,8 +248,9 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     <MotionConfig reducedMotion="never">
     {/* Owner decision: every animation runs for every visitor, even when the
         OS requests reduced motion or the device is in power saving. */}
-    <motion.div
-      style={{ scaleX: progress, opacity: progressOpacity, background: themeConfig.colors.primary }}
+    <div
+      ref={progressRef}
+      style={{ transform: 'scaleX(0)', opacity: 0, background: themeConfig.colors.primary }}
       className="fixed top-0 inset-x-0 h-[3px] origin-left rtl:origin-right z-[60] pointer-events-none"
       aria-hidden="true"
     />

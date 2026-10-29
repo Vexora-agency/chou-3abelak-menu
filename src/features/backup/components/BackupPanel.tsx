@@ -56,7 +56,7 @@ interface BackupPanelProps {
   onApplyImport: (token: string, opts: { includeSettings: boolean }) => Promise<{ ok: boolean }>;
   onRestoreTrash: (id: string) => Promise<boolean>;
   onDeleteForever: (id: string) => Promise<void>;
-  onToggleAuto: (on: boolean) => Promise<void>;
+  onToggleAuto: (on: boolean) => Promise<{ ok: boolean }>;
   activity: ActivityEntry[];
 }
 
@@ -242,7 +242,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
           <div className={`${card} flex items-center gap-3.5`}>
             <span className="w-11 h-11 shrink-0 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center"><Clock size={21} /></span>
             <span className="min-w-0 flex-1"><b className="text-sm">{t.autoTitle}</b><span className="block text-xs leading-relaxed text-neutral-400 mt-1">{!reportsOn ? t.autoNeedsPro : status.destination ? t.autoD(status.destination) : t.autoNoMail}</span></span>
-            <button type="button" role="switch" aria-checked={status.autoWeekly} aria-label={t.autoTitle} disabled={!reportsOn || !status.destination} onClick={() => void onToggleAuto(!status.autoWeekly)}
+            <button type="button" role="switch" aria-checked={status.autoWeekly} aria-label={t.autoTitle} disabled={!reportsOn || !status.destination} onClick={() => { const on = !status.autoWeekly; void (async () => { const r = await onToggleAuto(on); if (r.ok) { if (on) flash(t.autoOn); } else flashErr(t.autoFailed); })(); }}
               className={`relative w-12 h-7 rounded-full shrink-0 transition-colors disabled:opacity-40 ${status.autoWeekly ? 'bg-[var(--primary)]' : 'bg-neutral-700'}`}>
               <motion.span layout={!reduce} transition={{ type: 'spring', stiffness: 500, damping: 32 }} className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow ${status.autoWeekly ? 'end-1' : 'start-1'}`} />
             </button>

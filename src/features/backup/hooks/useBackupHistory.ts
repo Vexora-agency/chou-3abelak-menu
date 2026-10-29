@@ -248,14 +248,23 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
   }, [adminFetch, fetchBackupData, isAr]);
 
   const onToggleAuto = useCallback(async (on: boolean) => {
+    // Optimistic: the switch answers instantly. A failed save reverts to the
+    // server truth via the refetch below — the caller shows the error note.
+    setBackupStatus((s) => ({ ...s, autoWeekly: on }));
     try {
-      await adminFetch('/api/admin/backup/auto', {
+      const r = await adminFetch('/api/admin/backup/auto', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: on }),
       });
+      const d: unknown = await readJson(r);
+      if (!r.ok || !isRecord(d) || !d.ok) throw new Error('toggle_failed');
       await fetchBackupData();
-    } catch {}
+      return { ok: true };
+    } catch {
+      await fetchBackupData();
+      return { ok: false };
+    }
   }, [adminFetch, fetchBackupData]);
 
   return {

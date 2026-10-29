@@ -2,6 +2,7 @@ import { useState, useEffect, Suspense, lazy, useRef } from 'react';
 import { MenuItem } from '@/src/types/menu';
 import { clientConfig } from '@/src/config/client.config';
 import { themeConfig } from '@/src/config/theme.config';
+import { featuresConfig } from '@/src/config/features.config';
 import { Header } from '@/src/components/Header';
 import { AnnouncementBanner } from '@/src/components/AnnouncementBanner';
 import { type OrderingStatus } from '@/src/utils/status';
@@ -275,8 +276,10 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           </div>
         )}
 
-        {/* Announcement strip (menu-loaded only, no layout flicker) */}
-        {menu && (
+        {/* Announcement strip (menu-loaded only, no layout flicker).
+            Plan-gated: starter builds hide it entirely (backend also freezes
+            the stored block on save, so an upgrade restores it untouched). */}
+        {menu && featuresConfig.enableAnnouncements && (
           <AnnouncementBanner settings={menu.settings} lang={lang} />
         )}
 

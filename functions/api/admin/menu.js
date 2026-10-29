@@ -115,10 +115,6 @@ export async function onRequest(context) {
     }
 
     const validatedDoc = validation.value;
-    // Plan scrub: a starter save cannot smuggle gated settings blocks
-    // (announcements) past the hidden admin UI. Runs before the snapshot so
-    // history never holds what the plan forbids.
-    validatedDoc.settings = applyPlanToSettings(env, validatedDoc.settings);
 
     // 5. Optimistic concurrency check with KV
     let currentStored = null;
@@ -136,6 +132,16 @@ export async function onRequest(context) {
         latest: currentStored
       }, 409);
     }
+
+    // Plan scrub (starter): freeze — never wipe — the stored announcement.
+    // A downgraded client keeps its Pro-era announcement byte-identical: the
+    // admin UI is hidden so it can neither be edited nor re-enabled, and each
+    // save re-freezes the stored value. It reappears on upgrade.
+    // Runs before the snapshot so history stays consistent.
+    const storedAnn = currentStored && currentStored.settings && typeof currentStored.settings === 'object'
+      ? currentStored.settings.announcement
+      : null;
+    validatedDoc.settings = applyPlanToSettings(env, validatedDoc.settings, storedAnn);
 
     // 6. Version history: snapshot the PREVIOUS document before overwrite.
     // source comes from ?source= (autosave coalesces to one per 5 minutes;

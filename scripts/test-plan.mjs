@@ -50,16 +50,29 @@ const withAnn = () => {
   m.settings.announcement = { enabled: true, text: { en: 'Sale!', ar: 'تخفيض!' }, startsAt: null, expiresAt: null };
   return m;
 };
+const INERT = { enabled: false, text: { en: '', ar: '' }, startsAt: null, expiresAt: null };
 {
-  const s = applyPlanToSettings({ SITE_PLAN: 'starter' }, withAnn().settings);
+  // Starter with no stored announcement: inert block (nothing to show).
+  const s = applyPlanToSettings({ SITE_PLAN: 'starter' }, withAnn().settings, null);
   ok(s.announcement && s.announcement.enabled === false, 'starter scrub disables announcement');
   ok(s.announcement.text.en === '' && s.announcement.text.ar === '', 'starter scrub empties announcement text');
   ok(s.phone === '70123456' && s.ordering.enabled === false, 'starter scrub preserves everything else');
-  const kept = applyPlanToSettings({ SITE_PLAN: 'pro' }, withAnn().settings);
+  // Starter WITH a stored (Pro-era) announcement: frozen byte-identical, not wiped.
+  const live = { enabled: true, text: { en: 'Sale!', ar: 'تخفيض!' }, startsAt: null, expiresAt: null };
+  const f = applyPlanToSettings({ SITE_PLAN: 'starter' }, withAnn().settings, live);
+  ok(f.announcement === live, 'starter save freezes (not wipes) the stored announcement');
+  // Starter cannot smuggle a NEW announcement past the hidden UI.
+  const smuggle = applyPlanToSettings(
+    { SITE_PLAN: 'starter' },
+    { ...withAnn().settings, announcement: { enabled: true, text: { en: 'HACK', ar: '' }, startsAt: null, expiresAt: null } },
+    { enabled: false, text: { en: '', ar: '' }, startsAt: null, expiresAt: null }
+  );
+  ok(smuggle.announcement.enabled === false && smuggle.announcement.text.en === '', 'starter save cannot enable announcements');
+  const kept = applyPlanToSettings({ SITE_PLAN: 'pro' }, withAnn().settings, null);
   ok(kept.announcement.enabled === true, 'pro save keeps announcement');
-  const keptPlus = applyPlanToSettings({ SITE_PLAN: 'plus' }, withAnn().settings);
+  const keptPlus = applyPlanToSettings({ SITE_PLAN: 'plus' }, withAnn().settings, null);
   ok(keptPlus.announcement.enabled === true, 'plus save keeps announcement');
-  ok(applyPlanToSettings({ SITE_PLAN: 'starter' }, null) === null, 'scrub is null-safe');
+  ok(applyPlanToSettings({ SITE_PLAN: 'starter' }, null, null) === null, 'scrub is null-safe');
 }
 
 /* ---------------- 3. Endpoint gates ---------------- */
@@ -143,6 +156,27 @@ await expectOpen((env) => activityReq({ request: req('GET', 'https://x/api/admin
   const d = await json(r);
   ok(r.status === 200 && !!d && !!d.settings && !!d.settings.announcement && d.settings.announcement.enabled === false, 'starter menu save forces announcement off');
   ok(!!d && !!d.settings && d.settings.phone === '70123456', 'starter menu save preserves the rest');
+}
+
+{
+  // Downgrade freeze at PUT level: stored live announcement + starter save
+  // (any edit) returns the SAME announcement object, byte-identical.
+  const kv = makeKV();
+  const stored = withAnn();
+  await kv.put('menu', JSON.stringify(stored));
+  const env = { SITE_PLAN: 'starter', MENU_KV: kv };
+  const edit = withAnn();
+  edit.items = [...edit.items];
+  const r = await menuReq({
+    request: req('PUT', 'https://x/api/admin/menu', { ...J, body: JSON.stringify(edit) }),
+    env,
+  });
+  const d = await json(r);
+  ok(
+    r.status === 200 && !!d && !!d.settings &&
+    d.settings.announcement.text.en === 'Sale!' && d.settings.announcement.enabled === true,
+    'starter save freezes stored announcement (downgrade-safe)'
+  );
 }
 
 summary();

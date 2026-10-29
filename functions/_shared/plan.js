@@ -48,17 +48,23 @@ export function featureOffResponse() {
 }
 
 /**
- * Plan scrub for menu saves (starter): forces plan-gated settings blocks to
- * their inert values. Type-valid (announcement stays a well-formed disabled
- * block), validation-safe (validate.js treats both as optional), and every
- * reader already tolerates them (announcementStatus(undefined) === off).
+ * Plan scrub for menu saves (starter): the stored announcement is FROZEN,
+ * never wiped. A starter save keeps whatever announcement was already stored
+ * (downgraded Pro data survives untouched and reappears on upgrade); only a
+ * client with no stored announcement gets the inert disabled-empty block —
+ * and since the admin UI is hidden, no new announcement can be authored.
+ * Type-valid, validation-safe (validate.js treats it as optional), and every
+ * reader already tolerates it (announcementStatus(undefined) === off).
  * Returns the same object when nothing is gated (no copy, no surprise).
  */
-export function applyPlanToSettings(env, settings) {
+const INERT_ANNOUNCEMENT = { enabled: false, text: { en: '', ar: '' }, startsAt: null, expiresAt: null };
+
+export function applyPlanToSettings(env, settings, preservedAnnouncement) {
   if (!settings || typeof settings !== 'object') return settings;
   if (hasFeature(env, 'announcements')) return settings;
-  return {
-    ...settings,
-    announcement: { enabled: false, text: { en: '', ar: '' }, startsAt: null, expiresAt: null },
-  };
+  const keep = preservedAnnouncement && typeof preservedAnnouncement === 'object'
+    ? preservedAnnouncement
+    : INERT_ANNOUNCEMENT;
+  if (settings.announcement === keep) return settings;
+  return { ...settings, announcement: keep };
 }

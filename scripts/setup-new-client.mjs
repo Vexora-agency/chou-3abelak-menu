@@ -14,6 +14,10 @@ if (!name || !primary) {
   console.error('Usage: node scripts/setup-new-client.mjs "Client Name" "#PRIMARY" [starter|pro|plus]');
   process.exit(1);
 }
+if (!['starter', 'pro', 'plus'].includes(plan)) {
+  console.error(`Refusing: plan must be starter|pro|plus, got ${JSON.stringify(plan)}`);
+  process.exit(1);
+}
 if (!/^#[0-9a-fA-F]{6}$/.test(primary)) {
   console.error(`Refusing: primary must be a #RRGGBB hex color, got ${JSON.stringify(primary)}`);
   process.exit(1);
@@ -24,6 +28,11 @@ const patch = (rel, from, to) => {
   const p = join(root, rel);
   const before = readFileSync(p, 'utf8');
   if (!before.includes(from)) {
+    // Idempotent re-runs (plan change scripts run twice): already there.
+    if (before.includes(to)) {
+      console.log(`  already ${rel}: ${JSON.stringify(to)}`);
+      return;
+    }
     console.error(`Refusing: pattern not found in ${rel}: ${JSON.stringify(from)}`);
     process.exit(1);
   }
@@ -34,22 +43,30 @@ const patch = (rel, from, to) => {
 console.log(`→ client=${name} primary=${primary} plan=${plan}`);
 
 // 1. Theme primary (TS tokens + CSS var stay in sync; components read the var).
+// (The old hardcoded focus-outline patch is gone: base.css now reads
+// var(--primary), so theming follows theme.config automatically.)
 patch('src/config/theme.config.ts', "primary: '#FFC400'", `primary: '${primary}'`);
 patch('src/styles/base.css', '--yellow: #FFC400;', `--yellow: ${primary};`);
-patch('src/styles/base.css', 'outline: 3px solid #FFC400;', `outline: 3px solid ${primary};`);
 
 // 2. Client identity.
 patch('src/config/client.config.ts', "companyNameEn: 'Chou 3abelak'", `companyNameEn: '${name.replace(/'/g, "\\'")}'`);
 
-// 3. Plan-gated flags (starter hides reports/orders/backup/customers/
-// announcements UI; backend 404s via SITE_PLAN anyway). Plus unlocks the
-// same code as pro (service-only difference), so no flag differs.
+// 3. Plan-gated flags (backend 404s via SITE_PLAN anyway). Works BOTH ways:
+// a fresh starter sets true->false, an upgrade re-run flips false->true, so
+// downgrades and upgrades are both just: set SITE_PLAN, re-run this script,
+// rebuild, redeploy. No data is touched — hidden features' data stays stored.
+// Plus unlocks the same code as pro (service-only difference), so no flag differs.
+const FLAGS = [
+  'enableReports',
+  'enableOrderLogging',
+  'enableBackup',
+  'enableCustomerData',
+  'enableAnnouncements',
+];
 if (plan === 'starter') {
-  patch('src/config/features.config.ts', 'enableReports: true', 'enableReports: false');
-  patch('src/config/features.config.ts', 'enableOrderLogging: true', 'enableOrderLogging: false');
-  patch('src/config/features.config.ts', 'enableBackup: true', 'enableBackup: false');
-  patch('src/config/features.config.ts', 'enableCustomerData: true', 'enableCustomerData: false');
-  patch('src/config/features.config.ts', 'enableAnnouncements: true', 'enableAnnouncements: false');
+  for (const f of FLAGS) patch('src/config/features.config.ts', `${f}: true`, `${f}: false`);
+} else {
+  for (const f of FLAGS) patch('src/config/features.config.ts', `${f}: false`, `${f}: true`);
 }
 
 console.log('✓ Patched src/config + base.css. Next:');

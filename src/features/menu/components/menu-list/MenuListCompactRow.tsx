@@ -9,11 +9,14 @@ import { MenuListItemAction } from './MenuListItemAction';
 interface MenuListSectionHeaderProps {
   title: string;
   darkMode: boolean;
+  /** Item count pill (total in section, or filtered count while searching). */
+  count?: number;
 }
 
 export const MenuListSectionHeader: React.FC<MenuListSectionHeaderProps> = ({
   title,
   darkMode,
+  count,
 }) => {
   return (
     <div className="flex items-center gap-2.5 mb-4">
@@ -28,6 +31,11 @@ export const MenuListSectionHeader: React.FC<MenuListSectionHeaderProps> = ({
       <h2 className={`text-xl sm:text-2xl font-extrabold ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
         {title}
       </h2>
+      {typeof count === 'number' && (
+        <span className={`text-[11px] font-extrabold tabular-nums px-2 py-0.5 rounded-full border ${darkMode ? 'text-neutral-400 border-neutral-800 bg-black/40' : 'text-neutral-600 border-neutral-200 bg-black/5'}`}>
+          {count}
+        </span>
+      )}
     </div>
   );
 };

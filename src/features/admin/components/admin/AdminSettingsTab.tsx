@@ -44,6 +44,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         phone={menu.settings.phone}
         whatsapp={menu.settings.whatsapp}
         mapUrl={menu.settings.mapUrl}
+        address={menu.settings.address}
         currency={menu.settings.currency}
         lang={lang}
         onUpdate={(updater) =>
@@ -56,6 +57,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
               phone: s.phone,
               whatsapp: s.whatsapp,
               mapUrl: s.mapUrl,
+              address: s.address,
               currency: s.currency,
             });
             return { ...m, settings: { ...m.settings, ...next } };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { MenuSettings } from '@/src/types/menu';
 import { DIAL_CODES, OTHER_ISO, composeFull, splitDialCode } from '@/src/config/dialCodes';
 import { normalizeMapLocation, parseMapUrlCoords } from '@/src/utils/menuHelpers';
@@ -6,7 +6,7 @@ import { CountryCodePicker } from './CountryCodePicker';
 
 type IdentityValues = Pick<
   MenuSettings,
-  'name' | 'tagline' | 'about' | 'phone' | 'whatsapp' | 'mapUrl' | 'currency'
+  'name' | 'tagline' | 'about' | 'phone' | 'whatsapp' | 'mapUrl' | 'address' | 'currency'
 >;
 
 interface IdentitySectionProps extends IdentityValues {
@@ -22,6 +22,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
   phone,
   whatsapp,
   mapUrl,
+  address,
   currency,
   lang,
   onUpdate,
@@ -36,6 +37,38 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
     onUpdate((prev) => ({ ...prev, whatsapp: composeFull(entry ? entry.code : '', national) }));
   };
   const waComposed = (whatsapp || '').replace(/\D/g, '');
+  // Text address shown in the footer (Store Information). Resolvable from
+  // the work location above: one on-demand lookup fills both languages.
+  const addr = address || { en: '', ar: '' };
+  const locCoords = parseMapUrlCoords(mapUrl);
+  const [geoState, setGeoState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const fetchAddress = async () => {
+    const c = parseMapUrlCoords(mapUrl);
+    if (!c) return;
+    setGeoState('loading');
+    try {
+      const one = async (accept: string) => {
+        const r = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${c.lat}&lon=${c.lng}&zoom=18&accept-language=${accept}`
+        );
+        if (!r.ok) throw new Error('geo');
+        const j = await r.json();
+        const name = typeof j?.display_name === 'string' ? j.display_name : '';
+        // First 3 parts (street → area → city); the full string is too long
+        // for a footer line, and the owner can edit freely afterwards.
+        return name.split(',').slice(0, 3).join(',').trim();
+      };
+      const [en, ar] = await Promise.all([one('en'), one('ar')]);
+      if (!en && !ar) throw new Error('geo');
+      onUpdate((prev) => ({
+        ...prev,
+        address: { en: en || prev.address?.en || '', ar: ar || prev.address?.ar || '' },
+      }));
+      setGeoState('done');
+    } catch {
+      setGeoState('error');
+    }
+  };
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
@@ -156,7 +189,10 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             type="text"
             dir="ltr"
             value={mapUrl}
-          onChange={(e) => onUpdate((prev) => ({ ...prev, mapUrl: e.target.value }))}
+          onChange={(e) => {
+            setGeoState('idle');
+            onUpdate((prev) => ({ ...prev, mapUrl: e.target.value }));
+          }}
           placeholder="maps.app.goo.gl/… · 33.89, 35.50 · Hamra, Beirut"
           className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] placeholder:text-neutral-600"
         />
@@ -185,6 +221,60 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
               : 'Direct link recognized — the site Map button opens it.';
           })()}
         </p>
+      </div>
+
+      {/* Written address = the text line in the footer (Store Information).
+          Type it by hand, or fetch it from the work location above. */}
+      <div>
+        <label className="block text-xs text-neutral-400 mb-1">
+          {isAr ? 'العنوان النصي (يظهر في الموقع)' : 'Written Address (shown on site)'}
+        </label>
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
+          <input
+            type="text"
+            dir="ltr"
+            value={addr.en}
+            onChange={(e) => onUpdate((prev) => ({ ...prev, address: { en: e.target.value, ar: prev.address?.ar || '' } }))}
+            placeholder="Gouraud Street, Mar Mikhael, Beirut"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] placeholder:text-neutral-600"
+          />
+          <input
+            type="text"
+            dir="rtl"
+            value={addr.ar}
+            onChange={(e) => onUpdate((prev) => ({ ...prev, address: { en: prev.address?.en || '', ar: e.target.value } }))}
+            placeholder="شارع غورو، مار مخايل، بيروت"
+            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] placeholder:text-neutral-600"
+          />
+        </div>
+        {locCoords ? (
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <button
+              type="button"
+              onClick={fetchAddress}
+              disabled={geoState === 'loading'}
+              className="h-9 px-4 rounded-full border border-[var(--primary)]/50 text-[var(--primary)] text-xs font-extrabold hover:bg-[var(--primary)] hover:text-[#0A0A0A] transition-colors disabled:opacity-50"
+            >
+              {geoState === 'loading'
+                ? (isAr ? 'جارٍ جلب العنوان…' : 'Fetching address…')
+                : (isAr ? 'جلب العنوان من الموقع' : 'Fetch address from location')}
+            </button>
+            {geoState === 'done' && (
+              <span className="text-[11px] text-green-400">
+                {isAr ? 'تم ملء العنوان من OpenStreetMap — راجعه وعدّله لو لزم.' : 'Address filled from OpenStreetMap — review and edit if needed.'}
+              </span>
+            )}
+            {geoState === 'error' && (
+              <span className="text-[11px] text-amber-400">
+                {isAr ? 'تعذر الجلب — اكتب العنوان يدويًا.' : 'Could not fetch — type the address manually.'}
+              </span>
+            )}
+          </div>
+        ) : (
+          <p className="text-[11px] text-neutral-500 mt-1" dir={isAr ? 'rtl' : 'ltr'}>
+            {isAr ? 'ضع رابطًا أو إحداثيات أعلاه لجلب العنوان تلقائيًا.' : 'Put a link or coordinates above to auto-fetch the address.'}
+          </p>
+        )}
       </div>
 
       {/* Currency Configuration */}

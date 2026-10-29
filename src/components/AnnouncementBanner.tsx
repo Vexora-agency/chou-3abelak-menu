@@ -23,13 +23,35 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
     return () => window.clearInterval(id);
   }, []);
 
+  const { status, text } = announcementStatus(settings.announcement, lang, serverNow());
+  const show = status === 'visible';
   // NOTE: the banner used to hide on scroll-down via a height animation.
   // Collapsing a sticky bar changes the document height, which moves the
   // scroll position, which re-triggered the listener — a show/hide feedback
-  // loop (visible flicker). The bar now stays sticky-visible whenever the
-  // announcement is live: no scroll listener, no layout shift, no flicker.
-  const { status, text } = announcementStatus(settings.announcement, lang, serverNow());
-  const show = status === 'visible';
+  // loop (visible flicker). Hiding now uses transform + opacity ONLY: the
+  // layout slot never changes, so the scroll position can't feed back into
+  // the listener. The bar slides up and fades when scrolling down past the
+  // hero, and glides back on any upward scroll or near the top.
+  const [scrollHidden, setScrollHidden] = useState(false);
+  useEffect(() => {
+    if (!show) return;
+    let lastY = window.scrollY;
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        ticking = false;
+        const y = window.scrollY;
+        const dy = y - lastY;
+        lastY = y;
+        if (y > 140 && dy > 4) setScrollHidden(true);
+        else if (dy < -4 || y <= 140) setScrollHidden(false);
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [show]);
   const label = isAr ? 'إعلان' : 'Announcement';
   // Owner decision: the ticker ALWAYS scrolls when enabled — even when the
   // device requests reduced motion. (Hovering pauses it.) Entrance height
@@ -64,7 +86,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
           role="region"
           aria-label={label}
           initial={reduce ? false : { height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
+          animate={{ height: 'auto', opacity: scrollHidden ? 0 : 1, y: scrollHidden ? '-110%' : '0%', pointerEvents: scrollHidden ? 'none' : 'auto' }}
           exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           className="overflow-hidden bg-[var(--primary)] text-[#0A0A0A] sticky top-0 z-50 shadow-[0_1px_0_rgba(0,0,0,0.12)]"

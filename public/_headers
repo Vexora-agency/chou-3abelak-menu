@@ -9,11 +9,13 @@
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow
 
-# Entry HTML is never cached: it references hashed /assets/* files, so a
-# fresh entry guarantees phones pick up every deploy immediately (stale
-# HTML was once the reason a fix "didn't appear" on a device).
+# Entry HTML revalidates every load (never stale: it references hashed /assets/*
+# files, so a fresh entry guarantees phones pick up every deploy immediately —
+# stale HTML was once the reason a fix "didn't appear" on a device). no-cache
+# (not no-store) keeps bfcache eligible: back/forward restores stay instant
+# and the app's own 60 s menu refresh + pageshow refresh keep data current.
 /
-  Cache-Control: no-store
+  Cache-Control: no-cache
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable

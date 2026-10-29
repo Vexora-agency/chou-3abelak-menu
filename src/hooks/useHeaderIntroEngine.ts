@@ -52,7 +52,11 @@ export function useHeaderIntroEngine(
     let animId = 0;
     let isRunning = true;
     let finished = false;
-    let sheets: HTMLImageElement[] | null = null;
+    // Sheets fill in as each downloads (sheet 0 starts the clock; 1-3 stream
+    // in during playback — each is needed 1.5 s after the previous, so even
+    // slow networks stay ahead). A null slot = still downloading.
+    let sheets: (HTMLImageElement | null)[] = [null, null, null, null];
+    const sheetFailed: boolean[] = [false, false, false, false];
     let startStamp = 0;
 
     // Particle pools
@@ -93,9 +97,14 @@ export function useHeaderIntroEngine(
 
       // 1. Process Sprite Frame with Crisp Subpixel Alpha Keying & Edge Luminosity Restoration
       const t = introTime();
-      if (sheets && t >= 0 && !finished) {
-        const frame = Math.min(Math.floor(t * FPS), TOTAL_FRAMES - 1);
-        const sheet = sheets[Math.floor(frame / FRAMES_PER_SHEET)];
+      const frame = Math.min(Math.floor(Math.max(0, t) * FPS), TOTAL_FRAMES - 1);
+      const si = Math.floor(frame / FRAMES_PER_SHEET);
+      // A later sheet still downloading: hold the last painted frame (the
+      // clear/draw below is skipped) instead of flashing blank. A failed
+      // sheet ends the intro on the final logo instead of hanging mid-air.
+      if (!sheets[si] && sheetFailed[si]) finishNow();
+      const sheet = sheets[si];
+      if (sheet && t >= 0 && !finished) {
         const local = frame % FRAMES_PER_SHEET;
         const sx = (local % COLS) * CELL_W;
         const sy = Math.floor(local / COLS) * CELL_H;
@@ -266,15 +275,19 @@ export function useHeaderIntroEngine(
       }
     };
 
-    // Preload every sheet, then start the clock: playback itself can never be
-    // blocked (plain canvas drawing), so the only failure mode left is a
-    // network failure, which falls back to the final logo like before.
+    // Sequential start: the clock begins the moment sheet 0 is ready (66 kB),
+    // while sheets 1-3 stream in during playback — each chapter starts 1.5 s
+    // after the previous, so the network stays ahead on any real connection.
+    // Waiting for ALL sheets (Promise.all) held the whole 6 s intro hostage
+    // to the slowest (331 kB) file: on slow lines the logo revealed seconds
+    // late, which is exactly what LCP measures. Failure of sheet 0 still
+    // falls back to the final logo like before.
     let settled = false;
     const settle = (ok: boolean) => {
       if (settled) return;
       settled = true;
       window.clearTimeout(stallTimer);
-      if (ok && sheets) {
+      if (ok) {
         startStamp = performance.now();
         kick();
       } else {
@@ -282,23 +295,24 @@ export function useHeaderIntroEngine(
       }
     };
 
-    const loaders = SHEETS.map(
-      (src) =>
-        new Promise<HTMLImageElement | null>((resolve) => {
-          const img = new Image();
-          img.decoding = 'async';
-          img.onload = () => resolve(img.naturalWidth > 0 ? img : null);
-          img.onerror = () => resolve(null);
-          img.src = src;
-        })
-    );
-    void Promise.all(loaders).then((imgs) => {
-      if (imgs.every((im): im is HTMLImageElement => im !== null)) {
-        sheets = imgs;
-        settle(true);
-      } else {
-        settle(false);
-      }
+    SHEETS.forEach((src, i) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => {
+        if (img.naturalWidth > 0) {
+          sheets[i] = img;
+          if (i === 0) settle(true);
+        } else if (i === 0) {
+          settle(false);
+        } else {
+          sheetFailed[i] = true;
+        }
+      };
+      img.onerror = () => {
+        if (i === 0) settle(false);
+        else sheetFailed[i] = true;
+      };
+      img.src = src;
     });
 
     // Safety net: if the sheets never arrive, show the final logo.
@@ -328,7 +342,7 @@ export function useHeaderIntroEngine(
       io.disconnect();
       cancelAnimationFrame(animId);
       animId = 0;
-      sheets = null;
+      sheets = [null, null, null, null];
     };
   }, [canvasRef, smokeCanvasRef, headerRef, setHasEnded, setEngineDone]);
 }

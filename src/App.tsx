@@ -32,6 +32,8 @@ function AdminLoadingSplash() {
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white">
       <img
         src={clientConfig.logo}
+        srcSet="/assets/logo-final-480.webp 480w, /assets/logo-final-880.webp 880w"
+        sizes="192px"
         alt={clientConfig.companyNameEn}
         width={clientConfig.logoWidth}
         height={clientConfig.logoHeight}

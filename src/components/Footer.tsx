@@ -77,6 +77,9 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
             <div className="w-48 max-w-[80%] mb-3">
               <img
                 src="/assets/logo-final.png"
+                srcSet="/assets/logo-final-480.webp 480w, /assets/logo-final-880.webp 880w"
+                sizes="192px"
+                loading="lazy"
                 alt={isAr ? menu.settings.name.ar : menu.settings.name.en}
                 className="w-full h-auto object-contain"
               />

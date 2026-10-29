@@ -53,7 +53,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 
 /** Brand pan watermark (same asset as the featured carousel). */
-export const BRAND_MARK_SRC = '/assets/pan-icon-yellow.png';
+export const BRAND_MARK_SRC = '/assets/pan-icon-yellow-336.webp';
 
 /** Default opacity (percent) for watermarks — calm but visible. */
 export const DEFAULT_MARK_OPACITY = 18;

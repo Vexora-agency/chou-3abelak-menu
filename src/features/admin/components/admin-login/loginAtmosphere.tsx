@@ -32,7 +32,7 @@ export function LoginAtmosphere({ reduce }: LoginAtmosphereProps): React.JSX.Ele
       </motion.div>
       <div className="header-grain" aria-hidden="true" />
       <motion.img
-        src="/assets/pan-icon-yellow.png"
+        src="/assets/pan-icon-yellow-336.webp"
         alt=""
         aria-hidden="true"
         draggable={false}

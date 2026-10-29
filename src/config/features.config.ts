@@ -13,7 +13,20 @@
  *          enableCustomerData ↔ plan FEATURES.orderLogging (pro, plus)
  *          enableAnnouncements ↔ plan FEATURES.announcements (pro, plus)
  */
-const plan: 'starter' | 'pro' | 'plus' = 'pro';
+const plan: 'starter' | 'pro' | 'plus' =
+  // DEV-ONLY plan preview (?plan=starter|pro|plus): compiled out of
+  // production builds (import.meta.env.DEV is statically false there), so
+  // customers can never switch plans. Browse every tier locally, e.g.
+  // http://localhost:5173/?dev-admin&plan=starter#admin
+  // http://localhost:5173/?dev-admin&plan=pro#admin
+  // http://localhost:5173/?dev-admin&plan=plus#admin
+  (() => {
+    if (typeof window !== 'undefined' && import.meta.env.DEV) {
+      const q = new URLSearchParams(window.location.search).get('plan');
+      if (q === 'starter' || q === 'pro' || q === 'plus') return q;
+    }
+    return 'pro';
+  })();
 const premium = plan === 'pro' || plan === 'plus';
 
 export const featuresConfig = {

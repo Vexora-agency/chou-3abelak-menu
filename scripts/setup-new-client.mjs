@@ -55,19 +55,20 @@ patch('src/config/client.config.ts', "companyNameEn: 'Chou 3abelak'", `companyNa
 // Works BOTH ways: downgrades and upgrades are just: set SITE_PLAN, re-run
 // this script, rebuild, redeploy. No data is touched — hidden features' data
 // stays stored. Plus unlocks the same code as pro (service-only difference).
+// (The ?plan= dev preview override below the fallback is untouched.)
 {
   const rel = 'src/config/features.config.ts';
   const p = join(root, rel);
   const before = readFileSync(p, 'utf8');
-  const cur = ['starter', 'pro', 'plus'].find((v) => before.includes(`plan = '${v}'`));
+  const cur = ['starter', 'pro', 'plus'].find((v) => before.includes(`return '${v}';`));
   if (!cur) {
-    console.error(`Refusing: plan line not found in ${rel}`);
+    console.error(`Refusing: plan fallback line not found in ${rel}`);
     process.exit(1);
   }
   if (cur === plan) {
     console.log(`  already ${rel}: plan = '${plan}'`);
   } else {
-    writeFileSync(p, before.replace(`plan = '${cur}'`, `plan = '${plan}'`));
+    writeFileSync(p, before.replace(`return '${cur}';`, `return '${plan}';`));
     console.log(`  patched ${rel}: plan ${cur} -> ${plan}`);
   }
 }

@@ -80,6 +80,8 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
                 srcSet="/assets/logo-final-480.webp 480w, /assets/logo-final-880.webp 880w"
                 sizes="192px"
                 loading="lazy"
+                width={480}
+                height={177}
                 alt={isAr ? menu.settings.name.ar : menu.settings.name.en}
                 className="w-full h-auto object-contain"
               />

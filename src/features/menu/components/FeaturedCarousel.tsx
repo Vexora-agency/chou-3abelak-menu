@@ -145,7 +145,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
       >
         {/* Brand mark from the logo (pan + handle) as a quiet watermark */}
         <img
-          src="/assets/pan-icon-yellow-336.webp"
+          src="/assets/pan-icon-yellow-192.webp"
           alt=""
           aria-hidden="true"
           draggable={false}

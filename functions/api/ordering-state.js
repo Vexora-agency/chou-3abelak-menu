@@ -14,7 +14,10 @@ export async function onRequest(context) {
   }
   let settings = null;
   try {
-    const menu = env.MENU_KV ? await env.MENU_KV.get('menu', { type: 'json' }) : null;
+    // cacheTtl: polls hit this every few seconds while paused — the state it
+    // computes changes on minute scales, so a short edge cache cuts repeated
+    // KV reads without ever serving a stale open/closed flip.
+    const menu = env.MENU_KV ? await env.MENU_KV.get('menu', { type: 'json', cacheTtl: 30 }) : null;
     settings = (menu && menu.settings) || null;
   } catch {}
   if (!settings) {

@@ -33,12 +33,36 @@ export function useMenuLoader() {
         }
       } catch {}
 
+      // Stale-while-revalidate: paint the cached menu INSTANTLY (no network
+      // wait — this is what LCP measures on repeat visits), then let the
+      // fetch below replace it only if the version moved. First visits have
+      // no cache and fall through to the network/seed paths unchanged.
+      if (cached) {
+        const normalized = normalizeMenu(cached);
+        setMenu(normalized);
+        setLoading(false);
+      }
+
       try {
         // Try to fetch from /api/menu or fallback to /menu.seed.json (single api-client)
         const data = await publicGet<MenuData>('/api/menu');
         if (data) {
           const normalized = normalizeMenu(data);
-          setMenu(normalized);
+          // Stale-while-revalidate: the cache already painted instantly above;
+          // swap only when the server version actually moved (same rule as the
+          // 60 s background refresh), so repeat visits never flash or re-render.
+          setMenu((prev) => {
+            if (
+              prev &&
+              typeof normalized.version === 'number' &&
+              typeof normalized.updatedAt === 'string' &&
+              prev.version === normalized.version &&
+              prev.updatedAt === normalized.updatedAt
+            ) {
+              return prev;
+            }
+            return normalized;
+          });
           try {
             localStorage.setItem('menu_cache_v3', JSON.stringify(normalized));
           } catch {}
@@ -47,29 +71,26 @@ export function useMenuLoader() {
         }
       } catch {}
 
-      // Fallback to cache if available
-      if (cached) {
-        const normalized = normalizeMenu(cached);
-        setMenu(normalized);
-        setLoading(false);
-        return;
-      }
-
-      // Fallback to /menu.seed.json (static asset — raw fetch is correct here, not /api)
-      try {
-        const seedRes = await fetch('/menu.seed.json');
-        if (seedRes.ok) {
-          const seedData = (await readJson(seedRes)) as MenuData;
-          const normalized = normalizeMenu(seedData);
-          setMenu(normalized);
-          try {
-            localStorage.setItem('menu_cache_v3', JSON.stringify(normalized));
-          } catch {}
+      // No cache (painted above) and no network — last resort.
+      // Fallback to /menu.seed.json (static asset — raw fetch is correct here, not /api).
+      // Skipped when the cache already painted: the seed must never overwrite
+      // fresher cached data with its older baked-in copy.
+      if (!cached) {
+        try {
+          const seedRes = await fetch('/menu.seed.json');
+          if (seedRes.ok) {
+            const seedData = (await readJson(seedRes)) as MenuData;
+            const normalized = normalizeMenu(seedData);
+            setMenu(normalized);
+            try {
+              localStorage.setItem('menu_cache_v3', JSON.stringify(normalized));
+            } catch {}
+          }
+        } catch {
+          // Seed failed too — menu stays null, UI shows its fallback.
+        } finally {
+          setLoading(false);
         }
-      } catch {
-        // Seed failed too — menu stays null, UI shows its fallback.
-      } finally {
-        setLoading(false);
       }
     };
 

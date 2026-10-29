@@ -87,7 +87,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
 
       <h1 className="text-2xl font-black mt-4 mb-2 flex items-center gap-2.5">
         <img
-          src="/assets/pan-icon-yellow-336.webp"
+          src="/assets/pan-icon-yellow-192.webp"
           alt=""
           aria-hidden="true"
           draggable={false}

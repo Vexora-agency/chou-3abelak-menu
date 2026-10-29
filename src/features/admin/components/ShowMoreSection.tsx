@@ -9,9 +9,6 @@ interface ShowMoreSectionProps extends ShowMoreValues {
   onUpdate: (updater: (prev: ShowMoreValues) => ShowMoreValues) => void;
 }
 
-const clamp412 = (v: number, fb: number) =>
-  Number.isInteger(v) && v >= 4 && v <= 50 ? v : fb;
-
 /** Show-more paging controls: how many items a long section shows first and
  *  per tap. The expander appears only when the rest is worth a tap (> 4). */
 export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
@@ -21,22 +18,30 @@ export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
   onUpdate,
 }) => {
   const isAr = lang === 'ar';
-  const initial = clamp412(showMore?.initial, 12);
-  const batch = clamp412(showMore?.batch, 8);
-  // Live example from the longest visible category.
+  // Displayed as typed (raw ints); clamping lives server-side on save.
+  const rawInitial = (showMore as { initial?: unknown } | undefined)?.initial;
+  const rawBatch = (showMore as { batch?: unknown } | undefined)?.batch;
+  const initial = Number.isInteger(rawInitial) ? (rawInitial as number) : 12;
+  const batch = Number.isInteger(rawBatch) ? (rawBatch as number) : 8;
   const biggest = menu.categories
     .map((c) => ({
       name: isAr ? c.name.ar : c.name.en,
       n: menu.items.filter((i) => i.categoryId === c.id).length,
     }))
     .sort((a, b) => b.n - a.n)[0];
+  // NOTE: no clamping while typing — clamping every keystroke makes multi-digit
+  // values untypable ("20" snaps back at the "2"). Raw ints are stored; the
+  // server clamps to 4..50 on save and the storefront clamps on read, so an
+  // out-of-range draft can never leak anywhere visible.
   const setNum = (key: 'initial' | 'batch', fb: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = Math.round(Number(e.target.value));
+    const raw = e.target.value;
+    const v = raw.trim() === '' ? fb : Math.round(Number(raw));
+    const stored = Number.isInteger(v) ? v : fb;
     onUpdate((prev) => ({
       ...prev,
       showMore: {
-        initial: key === 'initial' ? clamp412(v, fb) : clamp412(prev.showMore?.initial, 12),
-        batch: key === 'batch' ? clamp412(v, fb) : clamp412(prev.showMore?.batch, 8),
+        initial: key === 'initial' ? stored : (Number.isInteger(prev.showMore?.initial) ? (prev.showMore as { initial: number }).initial : 12),
+        batch: key === 'batch' ? stored : (Number.isInteger(prev.showMore?.batch) ? (prev.showMore as { batch: number }).batch : 8),
       },
     }));
   };

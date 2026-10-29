@@ -275,7 +275,8 @@ export const MenuList: React.FC<MenuListProps> = ({
           hasMore ? (
             <ShowMoreButton
               expanded={false}
-              count={Math.min(batch, total - visible)}
+              // Remaining count (shrinks every tap: 50 → 42 → 34 …).
+              count={total - visible}
               isAr={isAr}
               onToggle={more}
             />

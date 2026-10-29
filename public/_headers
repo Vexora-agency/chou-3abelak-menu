@@ -9,10 +9,21 @@
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow
 
+# Bare paths fall through to the shell via the unknown-path fallback (see
+# _redirects), so they need the same protections as their wildcard siblings.
+/admin
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
 # Invite landing: the token lives in the URL, so it must never be stored,
 # indexed, or leaked — no-referrer keeps it out of every Referer header.
 # (The page itself loads zero third-party resources regardless.)
 /invite/*
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+  Referrer-Policy: no-referrer
+
+/invite
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow
   Referrer-Policy: no-referrer

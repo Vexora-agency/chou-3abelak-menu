@@ -1,7 +1,8 @@
-# Admin SPA routes render the app shell (client-side admin view, login-gated).
-# The /admin/* response carries no-store + noindex (see _headers).
-/admin /index.html 200
+# Admin + invite SPA routes render the app shell (login-gated / token-gated).
+# NOTE: exact-path rules ("/admin /index.html 200") are DELIBERATELY absent:
+# on this project they answered 308 instead of serving, and browsers cache
+# a 308 permanently. Bare paths fall through to the same shell below via the
+# platform's unknown-path fallback (verified live: /zzz → 200 shell), and the
+# app itself routes bare /admin and /invite correctly.
 /admin/* /index.html 200
-# One-time invite landing (token in path; no-referrer + no-store, see _headers).
-/invite /index.html 200
 /invite/* /index.html 200

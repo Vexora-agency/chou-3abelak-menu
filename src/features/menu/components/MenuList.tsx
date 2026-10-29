@@ -237,6 +237,25 @@ export const MenuList: React.FC<MenuListProps> = ({
         const collapsible = !filtering && catItems.length > limit;
         const head = collapsible ? catItems.slice(0, limit) : catItems;
         const tail = collapsible ? catItems.slice(limit) : [];
+        const rowCtx: Omit<MenuListRowItemProps, 'item' | 'index'> = {
+          kind,
+          menu,
+          lang,
+          currency,
+          darkMode,
+          isAr,
+          onAddItem,
+          onUpdateLine,
+          onOpenItem,
+          sectionMark: SectionMark,
+          markStyle,
+          markOpacity: markOpa,
+          markX: markPos.x,
+          markY: markPos.y,
+          markScale,
+          markRotate: markRot,
+          totalQtyOf,
+        };
         const tailWrap = (
           <div
             className={`grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
@@ -266,25 +285,6 @@ export const MenuList: React.FC<MenuListProps> = ({
             onToggle={() => toggleCat(cat.id)}
           />
         ) : null;
-        const rowCtx: Omit<MenuListRowItemProps, 'item' | 'index'> = {
-          kind,
-          menu,
-          lang,
-          currency,
-          darkMode,
-          isAr,
-          onAddItem,
-          onUpdateLine,
-          onOpenItem,
-          sectionMark: SectionMark,
-          markStyle,
-          markOpacity: markOpa,
-          markX: markPos.x,
-          markY: markPos.y,
-          markScale,
-          markRotate: markRot,
-          totalQtyOf,
-        };
         return (
           <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-16 menu-section">
             {/* Category Header */}

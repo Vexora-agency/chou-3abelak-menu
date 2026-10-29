@@ -3,6 +3,11 @@
  * App.tsx imports from here, never from ./components or ./hooks directly.
  * Admin composes other features (orders/reports/backup/menu) via their
  * barrels only — never deep.
+ *
+ * SOLE EXCEPTION (perf): App.tsx lazy-loads the two components and statically
+ * imports the two gating hooks via direct file paths. Importing this barrel
+ * (even lazily) keeps it whole in the customer bundle — the split was
+ * verified broken (1,164 kB) until the barrel left the static graph.
  */
 export { AdminPanel } from './components/AdminPanel';
 export { default as AdminLogin } from './components/AdminLogin';

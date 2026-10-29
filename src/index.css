@@ -1,3 +1,19 @@
+/* Self-hosted fonts (Fontsource, same weights the Google Fonts link served:
+   Poppins for English, Cairo for Arabic). Identical woff2 files, but served
+   from our own edge over the already-warm HTTP/2 connection — no DNS+TLS to
+   googleapis/gstatic, no render-blocking css2 request, display:swap, and each
+   unicode-range subset downloads only when its script actually renders. */
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/poppins/700.css";
+@import "@fontsource/poppins/800.css";
+@import "@fontsource/cairo/400.css";
+@import "@fontsource/cairo/500.css";
+@import "@fontsource/cairo/600.css";
+@import "@fontsource/cairo/700.css";
+@import "@fontsource/cairo/800.css";
+
 @import "tailwindcss";
 
 /* Tailwind v4 scans every text file for class candidates — docs and notes can

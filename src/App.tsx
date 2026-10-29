@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { MenuItem } from '@/src/types/menu';
 import { clientConfig } from '@/src/config/client.config';
 import { themeConfig } from '@/src/config/theme.config';
@@ -10,15 +10,38 @@ import { serverNow } from '@/src/utils/serverTime';
 import { SearchAndChips, FeaturedCarousel, MenuList, ItemDetailsModal, useMenuLoader } from '@/src/features/menu';
 import { CartBar, CartDrawer } from '@/src/features/cart';
 import { Footer } from '@/src/components/Footer';
-import { AdminPanel, AdminLogin, useAdminSaveMenu, useAdminSaveAuth } from '@/src/features/admin';
+import { useAdminSaveMenu } from '@/src/features/admin/hooks/useAdminSaveMenu';
+import { useAdminSaveAuth } from '@/src/features/admin/hooks/useAdminSaveAuth';
+// Admin UI is a separate chunk, downloaded only when #admin opens: customers
+// never pay for the panel, editors and backup code. NOTE: these dynamic
+// imports bypass the admin barrel ON PURPOSE — importing the barrel (even
+// lazily) keeps it in the main chunk because the hooks above import it
+// statically, which silently disables the split (verified: 1,164 kB stayed
+// 1,164 kB). Static imports elsewhere still go through the barrel.
+const AdminPanel = lazy(() => import('@/src/features/admin/components/AdminPanel').then((m) => ({ default: m.AdminPanel })));
+const AdminLogin = lazy(() => import('@/src/features/admin/components/AdminLogin'));
 import { WifiOff } from 'lucide-react';
 import { useShopCartState } from '@/src/features/cart';
 import { useOrderingState } from '@/src/features/orders';
 import { useAppPrefs } from '@/src/hooks/useAppPrefs';
 import { MotionConfig, motion, useScroll, useSpring, useTransform } from 'motion/react';
 
-export default function App() {
-  const { menu, setMenu, loading } = useMenuLoader();
+/** Splash while the admin chunk loads or the session is being checked (same look). */
+function AdminLoadingSplash() {
+  return (
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white">
+      <img
+        src={clientConfig.logo}
+        alt={clientConfig.companyNameEn}
+        width={clientConfig.logoWidth}
+        height={clientConfig.logoHeight}
+        className="w-48 h-auto animate-pulse"
+      />
+    </div>
+  );
+}
+
+export default function App() {  const { menu, setMenu, loading } = useMenuLoader();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const { orderingState } = useOrderingState();
   const {
@@ -95,49 +118,45 @@ export default function App() {
     // so it can never reach customers. REMOVE BEFORE COMMIT.
     if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('dev-admin')) {
       return (
-        <AdminPanel
-          initialMenu={menu}
-          onSaveMenu={handleSaveMenuFromAdmin}
-          onClose={closeAdmin}
-          onSignOut={closeAdmin}
-          onToggleLang={() => setLang(lang === 'en' ? 'ar' : 'en')}
-          lang={lang}
-        />
+        <Suspense fallback={<AdminLoadingSplash />}>
+          <AdminPanel
+            initialMenu={menu}
+            onSaveMenu={handleSaveMenuFromAdmin}
+            onClose={closeAdmin}
+            onSignOut={closeAdmin}
+            onToggleLang={() => setLang(lang === 'en' ? 'ar' : 'en')}
+            lang={lang}
+          />
+        </Suspense>
       );
     }
     if (authStatus === 'checking') {
-      return (
-        <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white">
-          <img
-            src={clientConfig.logo}
-            alt={clientConfig.companyNameEn}
-            width={clientConfig.logoWidth}
-            height={clientConfig.logoHeight}
-            className="w-48 h-auto animate-pulse"
-          />
-        </div>
-      );
+      return <AdminLoadingSplash />;
     }
     if (authStatus === 'authed') {
       return (
-        <AdminPanel
-          initialMenu={menu}
-          onSaveMenu={handleSaveMenuFromAdmin}
-          onClose={closeAdmin}
-          onSignOut={() => void handleLogout()}
-          onToggleLang={() => setLang(lang === 'en' ? 'ar' : 'en')}
-          lang={lang}
-        />
+        <Suspense fallback={<AdminLoadingSplash />}>
+          <AdminPanel
+            initialMenu={menu}
+            onSaveMenu={handleSaveMenuFromAdmin}
+            onClose={closeAdmin}
+            onSignOut={() => void handleLogout()}
+            onToggleLang={() => setLang(lang === 'en' ? 'ar' : 'en')}
+            lang={lang}
+          />
+        </Suspense>
       );
     }
     return (
-      <AdminLogin
-        lang={lang}
-        onToggleLang={() => setLang(lang === 'en' ? 'ar' : 'en')}
-        onSubmit={handleLoginSubmit}
-        onSuccess={() => setAuthStatus('authed')}
-        onBack={closeAdmin}
-      />
+      <Suspense fallback={<AdminLoadingSplash />}>
+        <AdminLogin
+          lang={lang}
+          onToggleLang={() => setLang(lang === 'en' ? 'ar' : 'en')}
+          onSubmit={handleLoginSubmit}
+          onSuccess={() => setAuthStatus('authed')}
+          onBack={closeAdmin}
+        />
+      </Suspense>
     );
   }
 

@@ -4,6 +4,7 @@ import {
   fetchVapidKey, ensureSW, getExistingSub, isIosDevice, isPushCapable, isStandaloneApp,
   postJson, subscribeDevice, unsubscribeLocal,
 } from '@/src/utils/webpush';
+import { useInstallPrompt } from '@/src/hooks/useInstallPrompt';
 import { adminFetch } from '@/src/lib/api-client';
 
 interface KitchenPushCardProps {
@@ -26,6 +27,9 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
   // iPhone tab (not installed): push is impossible here by Apple policy —
   // say so UP FRONT instead of after the tap, with the install path.
   const [needsInstall] = useState<boolean>(() => isIosDevice() && !isStandaloneApp());
+  // Android/desktop: the OS offers a real one-tap install sheet.
+  const { canInstall, install } = useInstallPrompt();
+  const [installing, setInstalling] = useState(false);
 
   const refreshCount = async () => {
     try {
@@ -170,9 +174,25 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
       {(state === 'ios' || (needsInstall && state === 'idle')) && (
         <p className="text-[11px] leading-relaxed text-neutral-400 rounded-xl border border-neutral-800 bg-black/40 p-2.5">
           {isAr
-            ? 'للآيفون: افتح اللوحة في سفاري ← مشاركة ← إضافة للشاشة الرئيسية ← افتح أيقونة اللوحة ← فعّل من هناك.'
-            : 'For iPhone: open the panel in Safari → Share → Add to Home Screen → open the panel icon → enable from there.'}
+            ? 'للآيفون: افتح اللوحة في سفاري ← مشاركة ← إضافة للشاشة الرئيسية ← افتح أيقونة اللوحة ← فعّل من هناك. (آبل لا تسمح بالتثبيت التلقائي — الخطوات إجبارية.)'
+            : 'For iPhone: open the panel in Safari → Share → Add to Home Screen → open the panel icon → enable from there. (Apple forbids auto-install — manual steps only.)'}
         </p>
+      )}
+      {canInstall && !isStandaloneApp() && (
+        <button
+          type="button"
+          disabled={installing}
+          onClick={() => {
+            setInstalling(true);
+            void install().finally(() => setInstalling(false));
+          }}
+          className="btn-tactile h-10 px-4 rounded-full border border-[var(--primary)]/60 text-[var(--primary)] text-xs font-extrabold inline-flex items-center justify-center gap-2 disabled:opacity-60"
+        >
+          <Smartphone size={14} />
+          {installing
+            ? (isAr ? 'جارٍ التثبيت…' : 'Installing…')
+            : (isAr ? 'ثبّت اللوحة على الجهاز (ضغطة واحدة)' : 'Install the panel (one tap)')}
+        </button>
       )}
       {note && (
         <p className="text-[11px] text-neutral-500 inline-flex items-center gap-1">

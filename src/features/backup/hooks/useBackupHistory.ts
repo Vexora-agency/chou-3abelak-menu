@@ -233,12 +233,15 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
       if (!r.ok || !isRecord(d) || !d.ok) {
         const conflict = r.status === 409;
         if (conflict) await refreshMenuFromServer();
-        return { ok: false, conflict };
+        // Surface the server's specific reason (e.g. which item references
+        // a deleted feature) instead of a generic failure wherever present.
+        const message = isRecord(d) && typeof d.message === 'string' && d.message ? d.message : '';
+        return { ok: false, conflict, message };
       }
       await refreshMenuFromServer();
-      return { ok: true, conflict: false };
+      return { ok: true, conflict: false, message: '' };
     } catch {
-      return { ok: false, conflict: false };
+      return { ok: false, conflict: false, message: '' };
     }
   }, [adminFetch, menuVersion, refreshMenuFromServer]);
 

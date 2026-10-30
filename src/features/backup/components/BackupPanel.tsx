@@ -55,7 +55,7 @@ interface BackupPanelProps {
   onRestoreVersion: (versionId: string, expectedVersion?: number) => Promise<{ ok: boolean; conflict: boolean }>;
   onExport: (kind: 'json' | 'csv' | 'print') => void | Promise<void>;
   onAnalyzeImport: (file: File) => Promise<ImportAnalysis>;
-  onApplyImport: (token: string, opts: { includeSettings?: boolean }) => Promise<{ ok: boolean; conflict: boolean }>;
+  onApplyImport: (token: string, opts: { includeSettings?: boolean }) => Promise<{ ok: boolean; conflict: boolean; message: string }>;
   onRestoreTrash: (id: string) => Promise<{ ok: boolean; conflict: boolean }>;
   onDeleteForever: (id: string) => Promise<void>;
   onToggleAuto: (on: boolean) => Promise<{ ok: boolean; noDestination?: boolean }>;
@@ -176,7 +176,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
       const r = await runOp(() => onApplyImport(analysis.token, { includeSettings: includeSettings && canSettings }));
       if (r.ok) setApplied(true);
       else if (r.conflict) flashErr(t.applyConflict);
-      else flashErr(t.applyFailed);
+      else flashErr(r.message || t.applyFailed);
     } finally {
       setBusy(false);
     }

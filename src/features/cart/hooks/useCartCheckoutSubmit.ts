@@ -171,13 +171,17 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       }
     }
 
-    // Validation
-    if (!customer.name.trim()) {
-      setErrorMsg(isAr ? 'يرجى إدخال اسمك الكريم' : 'Please enter your name');
+    // Strict customer validation — mirrors the server (validateOrderInput)
+    // EXACTLY, so a bad field can never "still send": name 2+ chars,
+    // phone 6–15 digits, delivery address required. Anything else stops
+    // here with a specific message and WhatsApp never opens.
+    if (customer.name.trim().length < 2) {
+      setErrorMsg(isAr ? 'يرجى إدخال الاسم (حرفان على الأقل)' : 'Please enter your name (2+ characters)');
       return;
     }
-    if (!customer.phone.trim()) {
-      setErrorMsg(isAr ? 'يرجى إدخال رقم هاتفك للتواصل' : 'Please enter your phone number');
+    const phoneDigits = customer.phone.replace(/[^0-9]/g, '');
+    if (phoneDigits.length < 6 || phoneDigits.length > 15) {
+      setErrorMsg(isAr ? 'رقم الهاتف يجب أن يكون من 6 إلى 15 رقمًا (أرقام فقط)' : 'Phone must be 6–15 digits (numbers only)');
       return;
     }
     if (!customer.address.trim()) {

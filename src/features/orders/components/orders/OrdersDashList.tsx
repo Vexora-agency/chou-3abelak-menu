@@ -79,7 +79,7 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                   <span className="shrink-0 w-10 h-10 rounded-xl bg-black border border-neutral-800 text-[var(--primary)] flex items-center justify-center"><TypeIcon size={18} /></span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
-                      <b className="text-sm tabular-nums">#{o.number}</b>
+                      <b className="text-sm tabular-nums" dir="ltr">#{o.number}</b>
                       <span className="text-sm font-semibold truncate">{o.customer.name}</span>
                     </span>
                     <span className="block text-[11px] text-neutral-500 truncate mt-0.5">

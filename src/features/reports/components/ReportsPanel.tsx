@@ -180,7 +180,7 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
               <Mail size={17} className="pointer-events-none absolute start-3.5 top-1/2 -translate-y-1/2 text-neutral-500" aria-hidden="true" />
               <input id="report-email" type="email" inputMode="email" autoComplete="email" dir="ltr" value={email} disabled={!enabled}
                 onChange={(e) => setEmail(e.target.value)} placeholder="owner@yourrestaurant.com" aria-invalid={showErr}
-                className={`w-full h-12 rounded-xl bg-black border ps-10 pe-3 text-sm text-white placeholder:text-neutral-600 outline-none transition-[border-color,box-shadow] focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/15 ${showErr ? 'border-red-400/70' : 'border-neutral-700'} ${isAr ? 'text-right' : ''}`} />
+                className={`w-full h-12 rounded-xl bg-black border ps-10 pe-3 text-sm text-white placeholder:text-neutral-600 outline-none transition-[border-color,box-shadow] focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/15 text-left ${showErr ? 'border-red-400/70' : 'border-neutral-700'}`} />
             </div>
             {showErr ? <p className="mt-1.5 text-xs text-red-400">{t.invalid}</p> : <p className="mt-1.5 text-[11px] text-neutral-500">{t.emailHint}</p>}
             {status === 'pending' && !dirty && (

@@ -27,6 +27,7 @@ const menu = {
       { id: 'regular', groupId: 'sizes', name: { en: 'Regular', ar: 'عادي' } },
       { id: 'mashrouha', groupId: 'sizes', name: { en: 'Mashrouha', ar: 'مشروحة' } },
       { id: 'extra-veg', groupId: 'addons', name: { en: 'Extra vegetables', ar: 'إضافة خضرة' } },
+      { id: 'spicy', groupId: 'addons', name: { en: 'Make It Spicy', ar: 'إضافة حار' } },
     ],
   },
 } as unknown as MenuData;
@@ -63,12 +64,14 @@ const lines: WhatsAppLine[] = [
 // ---- EN ----
 const en = buildWhatsAppMessage(menu, lines, customer, 'en', 1007, { lat: 33.9, lng: 35.5 }, '≈ 2.3 km');
 ok(en.includes('🍔 Order #1007 — Chou 3abelak'), 'en header+number');
-ok(en.includes('2x Plain Zaatar (Mashrouha (large & thin)) + Extra vegetables') || en.includes('2x Plain Zaatar'), 'en title+variant+addon', en.split('\n').slice(2, 4).join('|'));
+ok(en.includes('2x *Plain Zaatar (Mashrouha)*'), 'en bold title+variant');
+ok(en.includes('*Add-ons:* *Extra vegetables* (+30,000)'), 'en bold addons line with price');
+ok(!en.includes('+ Extra vegetables'), 'en no legacy plus-join');
 ok(en.includes('2 × 150,000 = 300,000'), 'en math line', en.split('\n').slice(2, 6).join('|'));
 ok(en.includes('Items: 2 (3 pcs)'), 'en count line');
-ok(en.includes('Subtotal: 350,000'), 'en subtotal');
+ok(en.includes('*Subtotal: 350,000 LBP*'), 'en bold subtotal');
 ok(en.includes('Delivery Fee: 100,000'), 'en fee');
-ok(en.includes('Total: 450,000'), 'en total');
+ok(en.includes('*Total: 450,000 LBP*'), 'en bold total');
 ok(en.includes('Name: Mina') && en.includes('Phone: +96170123456'), 'en customer');
 ok(en.includes('Address: Hamra St'), 'en address');
 ok(en.includes('https://www.google.com/maps?q=33.9,35.5'), 'en maps link');
@@ -81,11 +84,30 @@ const arCustomer = { ...customer, name: 'مينا', address: 'شارع الحم�
 const ar = buildWhatsAppMessage(menu, lines, arCustomer, 'ar', 1007, { lat: 33.9, lng: 35.5 }, '≈ 2.3 كم');
 ok(ar.includes('🍔 طلب #1007 — شو عبالك'), 'ar header+number');
 ok(ar.includes('زعتر سادة') && ar.includes('مشروحة'), 'ar title');
+ok(ar.includes('*الإضافات:* *إضافة خضرة* (+30,000)'), 'ar bold addons line');
 ok(ar.includes('الأصناف: 2 (3 قطع)'), 'ar count');
-ok(ar.includes('المجموع: 350,000'), 'ar subtotal');
-ok(ar.includes('الإجمالي النهائي: 450,000'), 'ar total');
+ok(ar.includes('*المجموع: 350,000 ل.ل*'), 'ar bold subtotal');
+ok(ar.includes('*الإجمالي النهائي: 450,000 ل.ل*'), 'ar bold total');
 ok(ar.includes('المسافة من المطعم: ≈ 2.3 كم'), 'ar distance');
 ok(ar.includes('ل.ل'), 'ar currency present');
+
+// ---- spicy: badge OR option -> (*حار*) after title, never an addon line ----
+const sujukBadged = {
+  ...zaatar, id: 'mk-sujuk', name: { en: 'Sujuk', ar: 'سجق' },
+  badges: ['spicy'],
+  addons: [{ featureId: 'extra-veg', price: 30000 }],
+} as unknown as WhatsAppLine['item'];
+const hot1 = buildWhatsAppMessage(menu,
+  [{ item: sujukBadged, variantId: 'regular', addonIds: ['extra-veg'], quantity: 1 }],
+  customer, 'ar', 1008, null, null);
+ok(hot1.includes('(*حار*)'), 'ar spicy badge marker after title', hot1.split('\n').slice(2, 5).join('|'));
+ok(!hot1.split('\n').some((l) => l.includes('الإضافات') && l.includes('حار')), 'ar badge heat not in addons');
+const hot2 = buildWhatsAppMessage(menu,
+  [{ item: { ...zaatar, addons: [...zaatar.addons, { featureId: 'spicy', price: 0 }] }, variantId: 'regular', addonIds: ['spicy'], quantity: 1 }],
+  customer, 'en', 1009, null, null);
+ok(hot2.includes('(*SPICY*)'), 'en spicy option marker after title');
+ok(!hot2.includes('Make It Spicy'), 'en spicy option hidden from addons');
+ok(hot2.includes('1 × 80,000 = 80,000'), 'en free spicy keeps math', hot2.split('\n').slice(2, 5).join('|'));
 
 // ---- fee off / no location / no number ----
 const noFeeMenu = JSON.parse(JSON.stringify(menu));
@@ -113,7 +135,7 @@ const big = buildWhatsAppMessage(menu, many, customer, 'en', 2001, null, null);
 ok(big.length <= 1400 + 60, 'truncated near cap', String(big.length));
 ok(!big.endsWith('...') || big.includes('order #2001'), 'marker references order');
 ok(big.split('\n').every((l) => l.length < 1400), 'no single mutated line');
-const linesKept = big.split('\n').filter((l) => l.startsWith('1x Juice Item'));
+const linesKept = big.split('\n').filter((l) => l.startsWith('1x *Juice Item'));
 ok(linesKept.length > 0 && linesKept.length < 60, 'items cut, marker present', `${linesKept.length}/60`);
 
 // ---- truncation: WITHOUT number -> never cut (integrity over convenience) ----

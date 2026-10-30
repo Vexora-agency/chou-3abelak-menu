@@ -63,8 +63,12 @@ export function buildWhatsAppMessage(
 
   const linesOut: string[] = [numberedHeader, '-------------------------'];
 
-  // Same per-line format as the cart: title (name + variant + add-ons),
-  // then the math ("3 × 120,000 = 360,000").
+  // Per-line format (WhatsApp *bold*):
+  //   2x *Name (Variant)* (*حار*)
+  //      *الإضافات:* *إضافة خضرة* (+30,000)
+  //      2 × 150,000 = 300,000 LBP
+  // Heat is NEVER an add-on line: a spicy badge OR the spicy add-on both
+  // render as (*حار*) right after the title (they mean the same thing).
   let subtotal = 0;
   let lineCount = 0;
   let pieceCount = 0;
@@ -81,13 +85,22 @@ export function buildWhatsAppMessage(
     subtotal += lineTotalValue;
     lineCount += 1;
     pieceCount += quantity;
+    const ids = Array.isArray(line.addonIds) ? line.addonIds : [];
+    const isHot = (item.badges || []).includes('spicy') || ids.includes('spicy');
     const name = pickLangText(item.name, lang);
     const variant = getVariant(item, line.variantId);
     const title = variant ? `${name} (${featureName(menu, line.variantId as string, lang)})` : name;
-    const addonNames = (Array.isArray(line.addonIds) ? line.addonIds : [])
-      .map((id) => featureName(menu, id, lang));
-    const fullTitle = addonNames.length ? `${title} + ${addonNames.join(' + ')}` : title;
-    linesOut.push(`${quantity}x ${fullTitle}`);
+    linesOut.push(`${quantity}x *${title}*${isHot ? ` (*${badgeLabel('spicy', lang)}*)` : ''}`);
+    const addonBits = ids
+      .filter((id) => id !== 'spicy')
+      .map((id) => {
+        const def = (item.addons || []).find((a) => a && a.featureId === id);
+        const tag = def && def.price > 0 ? `+${formatPrice(def.price)}` : (isAr ? 'مجاناً' : 'Free');
+        return `*${featureName(menu, id, lang)}* (${tag})`;
+      });
+    if (addonBits.length) {
+      linesOut.push(isAr ? `   *الإضافات:* ${addonBits.join('، ')}` : `   *Add-ons:* ${addonBits.join(', ')}`);
+    }
     linesOut.push(`   ${lineMathText(item, quantity, unit, lang)} ${currency}`);
   }
 
@@ -95,7 +108,7 @@ export function buildWhatsAppMessage(
   linesOut.push(
     isAr ? `الأصناف: ${lineCount} (${pieceCount} قطع)` : `Items: ${lineCount} (${pieceCount} pcs)`
   );
-  linesOut.push(isAr ? `المجموع: ${formatPrice(subtotal, currency)}` : `Subtotal: ${formatPrice(subtotal, currency)}`);
+  linesOut.push(isAr ? `*المجموع: ${formatPrice(subtotal, currency)}*` : `*Subtotal: ${formatPrice(subtotal, currency)}*`);
 
   // Must mirror the server (validateOrderInput) and the cart drawer exactly:
   // the fee applies only when it is enabled AND greater than zero.
@@ -103,7 +116,7 @@ export function buildWhatsAppMessage(
   const fee = feeEnabled ? round2(Number(menu.settings.ordering.deliveryFee) || 0) : 0;
   if (customer.orderType === 'delivery' && fee > 0) {
     linesOut.push(isAr ? `رسوم التوصيل: ${formatPrice(fee, currency)}` : `Delivery Fee: ${formatPrice(fee, currency)}`);
-    linesOut.push(isAr ? `الإجمالي النهائي: ${formatPrice(subtotal + fee, currency)}` : `Total: ${formatPrice(subtotal + fee, currency)}`);
+    linesOut.push(isAr ? `*الإجمالي النهائي: ${formatPrice(subtotal + fee, currency)}*` : `*Total: ${formatPrice(subtotal + fee, currency)}*`);
   }
 
   linesOut.push('-------------------------');

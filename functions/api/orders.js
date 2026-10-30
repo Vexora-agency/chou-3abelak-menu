@@ -14,7 +14,10 @@ import { getOrderingState } from '../_shared/status.js';
 const MAX_BODY_BYTES = 8 * 1024;
 const RATE_PREFIX = 'order:ip:';
 const RATE_TTL_SEC = 10 * 60;
-const RATE_MAX = 5;
+// Human bursts welcome (family + guests ordering together), bots capped:
+// 15 distinct orders per 10 minutes per IP. Same-key retries never consume
+// budget (a retry is not a new order — the dedupe returns the stored row).
+const RATE_MAX = 15;
 
 function clientIp(request) {
   return request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -111,7 +114,7 @@ export async function onRequest(context) {
   // row's token below), gates the public /api/track page. No PII in it.
   c.trackToken = newTrackToken();
 
-  // Rate limit: 5 orders per 10 minutes per IP
+  // Rate limit: 15 orders per 10 minutes per IP
   const ip = clientIp(request);
   const nowSec = Math.floor(Date.now() / 1000);
   let used = 0;

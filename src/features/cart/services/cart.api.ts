@@ -43,6 +43,17 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
       const msg = isRecord(data) && isRecord(data.message) ? str(lang === 'ar' ? data.message.ar : data.message.en) : '';
       return { orderNumber: null, trackToken: null, blockedMessage: msg || null };
     }
+    if (res.status === 429) {
+      // Too fast: show it and STOP (no numberless ghost message to the
+      // kitchen). Retrying the same tap later succeeds — same key, same row.
+      return {
+        orderNumber: null,
+        trackToken: null,
+        blockedMessage: lang === 'ar'
+          ? 'طلبات كثيرة بسرعة — انتظر دقيقة وحاول مجددًا'
+          : 'Too many orders at once — wait a minute and try again',
+      };
+    }
     return { orderNumber: null, trackToken: null, blockedMessage: null };
   } catch {
     return { orderNumber: null, trackToken: null, blockedMessage: null };

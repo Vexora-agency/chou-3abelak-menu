@@ -148,8 +148,22 @@ export function parseMapUrlCoords(url: string | undefined): { lat: number; lng: 
 export type MapLocationKind = 'empty' | 'coords' | 'link' | 'search';
 
 /**
+ * True when a WRITTEN-address value isn't really text: a pasted link
+ * (scheme or domain+path) or bare coordinates. The footer hides such values
+ * (a link must never render as address text) and the admin auto-converts
+ * them to real text on sight. Plain names ("Hamra, Beirut") return false.
+ */
+export function looksLikeMapInput(raw: string | undefined): boolean {
+  const clean = (raw || '').trim();
+  if (!clean) return false;
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(clean)) return true;
+  if (parseMapUrlCoords(clean) !== null) return true;
+  const m = clean.match(/^(www\.)?[\w-]+(\.[\w-]+)+([/?#].*)?$/);
+  return !!m && !!m[3] && m[3].length > 1;
+}
+
+/**
  * Accept a work location in ANY form the owner might paste or type and turn
- * it into a directions link that always opens Google Maps:
  *  - "" → empty (buttons fall back to the written address search)
  *  - "33.89, 35.50" → coords search URL (also feeds the distance feature)
  *  - any https:// URL (goo.gl short links included) → kept verbatim

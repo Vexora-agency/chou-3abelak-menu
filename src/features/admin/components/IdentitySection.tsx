@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { MenuSettings } from '@/src/types/menu';
 import { DIAL_CODES, OTHER_ISO, composeFull, splitDialCode } from '@/src/config/dialCodes';
-import { normalizeMapLocation, parseMapUrlCoords } from '@/src/utils/menuHelpers';
+import { normalizeMapLocation, parseMapUrlCoords, looksLikeMapInput } from '@/src/utils/menuHelpers';
 import { CountryCodePicker } from './CountryCodePicker';
 
 type IdentityValues = Pick<
@@ -110,21 +110,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
     if (!c) return;
     setGeoState('loading');
     try {
-      const one = async (accept: string) => {
-        const r = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${c.lat}&lon=${c.lng}&zoom=18&accept-language=${accept}`
-        );
-        if (!r.ok) throw new Error('geo');
-        const j = await r.json();
-        const name = typeof j?.display_name === 'string' ? j.display_name : '';
-        // First 3 parts (street → area → city); the full string is too long
-        // for a footer line, and the owner can edit freely afterwards.
-        return name.split(',').slice(0, 3).join(',').trim();
-      };
-      const [en, arRaw] = await Promise.all([one('en'), one('ar')]);
-      if (!en && !arRaw) throw new Error('geo');
-      const ar = await toArabic(arRaw || en);
-      if (!en && !ar) throw new Error('geo');
+      const { en, ar } = await resolveAddressText(c);
       onUpdate((prev) => ({
         ...prev,
         address: { en: en || prev.address?.en || '', ar: ar || prev.address?.ar || '' },
@@ -136,6 +122,100 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
       setGeoState('error');
     }
   };
+  // Shared resolver: coords -> short EN+AR text (OAR names, machine Arabic
+  // fallback). Used by the location auto-fetch AND by pasted links below.
+  async function resolveAddressText(c: { lat: number; lng: number }) {
+    const one = async (accept: string) => {
+      const r = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${c.lat}&lon=${c.lng}&zoom=18&accept-language=${accept}`
+      );
+      if (!r.ok) throw new Error('geo');
+      const j = await r.json();
+      const name = typeof j?.display_name === 'string' ? j.display_name : '';
+      // First 3 parts (street → area → city); the full string is too long
+      // for a footer line, and the owner can edit freely afterwards.
+      return name.split(',').slice(0, 3).join(',').trim();
+    };
+    const [en, arRaw] = await Promise.all([one('en'), one('ar')]);
+    if (!en && !arRaw) throw new Error('geo');
+    const ar = await toArabic(arRaw || en);
+    if (!en && !ar) throw new Error('geo');
+    return { en, ar };
+  }
+  // Coords out of typed address text: direct parse, or follow a short link
+  // first (browsers may refuse cross-origin follows — then the hint below
+  // asks for the full link instead).
+  async function coordsFromTyped(text: string) {
+    const direct = parseMapUrlCoords(text);
+    if (direct) return direct;
+    const t = (text || '').trim();
+    if (!/^(https?:\/\/)?(maps\.app\.goo\.gl|goo\.gl|maps\.gl)\//i.test(t)) return null;
+    try {
+      const r = await fetch(/^https?:\/\//i.test(t) ? t : `https://${t}`, { redirect: 'follow' });
+      if (!r.ok) return null;
+      return parseMapUrlCoords(r.url || '');
+    } catch {
+      return null;
+    }
+  }
+  const [typedErr, setTypedErr] = useState<'short' | 'link' | null>(null);
+  // Convert a pasted link/coords sitting in the address fields into real
+  // text (both languages). Returns whether anything resolved.
+  async function resolveTyped() {
+    const cur = addrRef.current;
+    const src = looksLikeMapInput(cur.en) ? cur.en : looksLikeMapInput(cur.ar) ? cur.ar : '';
+    if (!src) {
+      setTypedErr(null);
+      return false;
+    }
+    setGeoState('loading');
+    setTypedErr(null);
+    const c = await coordsFromTyped(src);
+    if (!c) {
+      setGeoState('idle');
+      setTypedErr(/maps\.app\.goo\.gl|goo\.gl|maps\.gl/i.test(src) ? 'short' : 'link');
+      return false;
+    }
+    try {
+      const { en, ar } = await resolveAddressText(c);
+      onUpdate((prev) => ({
+        ...prev,
+        address: { en: en || prev.address?.en || '', ar: ar || prev.address?.ar || '' },
+      }));
+      autoFilledRef.current = true;
+      setAddrOpen(true);
+      setGeoState('done');
+      return true;
+    } catch {
+      setGeoState('error');
+      return false;
+    }
+  }
+  // Debounced: pasting a link or coords into the address fields converts
+  // itself to text. Plain names never match, so normal typing is untouched.
+  useEffect(() => {
+    if (!looksLikeMapInput(addr.en) && !looksLikeMapInput(addr.ar)) {
+      setTypedErr(null);
+      return;
+    }
+    const t = window.setTimeout(() => {
+      void resolveTyped();
+    }, 900);
+    return () => window.clearTimeout(t);
+    // addr values drive the schedule; resolveTyped reads live refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addr.en, addr.ar]);
+  // Mount once: a previously-saved link converts itself (the footer never
+  // shows raw links — see the Footer guard).
+  const convertedRef = useRef(false);
+  useEffect(() => {
+    if (convertedRef.current) return;
+    convertedRef.current = true;
+    if (looksLikeMapInput(addr.en) || looksLikeMapInput(addr.ar)) {
+      void resolveTyped();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Auto-fetch: typing fresh coordinates fills the address by itself, no
   // button press. Debounced; skips hand-typed text (never overwrite the
   // owner's words) and skips the mount (existing coords are settled).
@@ -321,7 +401,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
           map has no Arabic name). */}
       <div>
         {!addrOpen ? (
-          hasAddr ? (
+          hasAddr && !looksLikeMapInput(addr.en) && !looksLikeMapInput(addr.ar) ? (
             <button
               type="button"
               onClick={() => setAddrOpen(true)}
@@ -342,7 +422,24 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             </button>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
-              {locCoords ? (
+              {(looksLikeMapInput(addr.en) || looksLikeMapInput(addr.ar)) ? (
+                <>
+                  <span className="text-[11px] text-neutral-500" dir={isAr ? 'rtl' : 'ltr'}>
+                    {geoState === 'loading'
+                      ? (isAr ? 'جارٍ تحويل الرابط إلى عنوان…' : 'Converting the link to an address…')
+                      : (isAr ? 'هذا المحتوى رابط — سيتحول لنص عنوان.' : 'This is a link — it will become address text.')}
+                  </span>
+                  {geoState !== 'loading' && (
+                    <button
+                      type="button"
+                      onClick={() => void resolveTyped()}
+                      className="h-9 px-4 rounded-full border border-[var(--primary)]/50 text-[var(--primary)] text-xs font-extrabold hover:bg-[var(--primary)] hover:text-[#0A0A0A] transition-colors"
+                    >
+                      {isAr ? 'تحويل الآن' : 'Convert now'}
+                    </button>
+                  )}
+                </>
+              ) : locCoords ? (
                 <span className="text-[11px] text-neutral-500" dir={isAr ? 'rtl' : 'ltr'}>
                   {geoState === 'loading'
                     ? (isAr ? 'جارٍ جلب العنوان تلقائيًا…' : 'Fetching the address automatically…')
@@ -360,6 +457,16 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
               >
                 {isAr ? 'أو اكتبه يدويًا' : 'or write it manually'}
               </button>
+              {typedErr === 'short' && (
+                <span className="text-[11px] text-amber-400">
+                  {isAr ? 'الرابط مختصر ولا يُفتح هنا — الصق الرابط الكامل أو الإحداثيات.' : 'Short links cannot open here — paste the full link or coordinates.'}
+                </span>
+              )}
+              {typedErr === 'link' && (
+                <span className="text-[11px] text-amber-400">
+                  {isAr ? 'هذا الرابط بلا إحداثيات — ضعه في خانة موقع العمل، وهنا اكتب النص.' : 'This link carries no coordinates — put it in Work Location and type text here.'}
+                </span>
+              )}
               {geoState === 'error' && (
                 <span className="text-[11px] text-amber-400">
                   {isAr ? 'تعذر الجلب — اكتب العنوان يدويًا.' : 'Could not fetch — type the address manually.'}

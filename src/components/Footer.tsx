@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MenuData } from '@/src/types/menu';
 import { Clock, MapPin, Phone, ArrowUp, Instagram, Facebook, MessageCircle, Shield } from 'lucide-react';
-import { sanitizeUrl, buildMapUrl } from '@/src/utils/menuHelpers';
+import { sanitizeUrl, buildMapUrl, looksLikeMapInput } from '@/src/utils/menuHelpers';
 import { aboutOrDefault, socialOrderOrDefault } from '@/src/utils/settingsDefaults';
 import type { SocialPlatform } from '@/src/types/menu';
 
@@ -105,15 +105,22 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
             </div>
 
             {/* Written address (hidden when empty — the Map button below
-                always carries the saved work location instead). */}
-            {(isAr ? menu.settings.address?.ar : menu.settings.address?.en || '')?.trim() ? (
-            <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-full bg-[#1C1C1C] text-[var(--primary)] flex items-center justify-center flex-shrink-0">
-                <MapPin size={16} />
-              </span>
-              <span>{isAr ? menu.settings.address.ar : menu.settings.address.en}</span>
-            </div>
-            ) : null}
+                always carries the saved work location instead). A pasted
+                link is NEVER rendered as text (the admin converts it); if
+                one slipped into storage, hide it rather than show a URL. */}
+            {(() => {
+              const raw = isAr ? menu.settings.address?.ar : menu.settings.address?.en || '';
+              const text = (raw || '').trim();
+              if (!text || looksLikeMapInput(text)) return null;
+              return (
+                <div className="flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-[#1C1C1C] text-[var(--primary)] flex items-center justify-center flex-shrink-0">
+                    <MapPin size={16} />
+                  </span>
+                  <span>{text}</span>
+                </div>
+              );
+            })()}
 
             <div className="flex items-center gap-3">
               <span className="w-8 h-8 rounded-full bg-[#1C1C1C] text-[var(--primary)] flex items-center justify-center flex-shrink-0">

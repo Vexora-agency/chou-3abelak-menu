@@ -60,14 +60,25 @@ const LIB = {
   ],
 };
 
-// 1) HIS exact case: bare invented ids -> clear 400 (nothing silently invented)
+// 1) HIS exact file: nameless affix ids reuse library features (no 400).
 {
   const doc = libDoc(
     [item('drink-pepsi', [{ featureId: 'drink-regular', price: 100000 }, { featureId: 'drink-diet', price: 100000 }])],
     LIB.groups, LIB.defs
   );
   const r = validateMenu(doc);
-  check('bare invented ids rejected', !r.ok && r.errors.some((e) => e.includes('drink-regular') && e.includes('name:{en,ar}')), r.errors.join(' | ').slice(0, 160));
+  const ids = r.ok ? r.value.items[0].variants.map((v) => v.featureId) : [];
+  check('affix ids accepted+aliased', r.ok && ids[0] === 'regular' && ids[1] === 'diet', r.ok ? JSON.stringify(ids) : r.errors.join(' | ').slice(0, 160));
+  check('no defs invented', r.ok && r.value.settings.featureDefs.length === 2);
+}
+// 1b) Truly unknown bare ids still fail LOUD (nothing silently invented).
+{
+  const doc = libDoc(
+    [item('drink-pepsi', [{ featureId: 'fizzy-pop', price: 100000 }])],
+    LIB.groups, LIB.defs
+  );
+  const r = validateMenu(doc);
+  check('unknown bare ids rejected', !r.ok && r.errors.some((e) => e.includes('fizzy-pop') && e.includes('name:{en,ar}')), r.errors.join(' | ').slice(0, 160));
 }
 // 2) with NEW names + groups -> created in place (matching names alias instead)
 {
@@ -149,6 +160,28 @@ const LIB = {
   check('analyze 200 + token', r.status === 200 && !!j.token, `got ${r.status}`);
   check('created warning names the feature', warns.includes('brand-new-size'), warns.slice(0, 200));
   check('aliased warning maps ids', warns.includes('pepsi-r') && warns.includes('regular'), warns.slice(0, 200));
+}
+// 8) affix guardrails: ambiguous / infix-only / single-token stay rejected.
+{
+  const mk = (fid) => libDoc([item('drink-pepsi', [{ featureId: fid, price: 100000 }, { featureId: 'diet', price: 100000 }])], LIB.groups, LIB.defs);
+  let r = validateMenu(mk('regular-diet'));
+  check('two affix matches -> ambiguous 400', !r.ok && r.errors.some((e) => e.includes('regular-diet')), r.errors.join(' | ').slice(0, 140));
+  r = validateMenu(mk('super-regular-plus'));
+  check('middle token never matches', !r.ok && r.errors.some((e) => e.includes('super-regular-plus')));
+  r = validateMenu(mk('fizzy'));
+  check('single unknown token rejected', !r.ok && r.errors.some((e) => e.includes('fizzy')));
+}
+// 9) prefix + underscore affix forms reuse too.
+{
+  const doc = libDoc(
+    [item('drink-mirinda', [{ featureId: 'mirinda-regular', price: 100000 }]),
+     item('drink-7up', [{ featureId: 'x7up_diet', price: 100000 }])],
+    LIB.groups, LIB.defs
+  );
+  const r = validateMenu(doc);
+  const got = (id) => (r.ok ? r.value.items.find((x) => x.id === id).variants.map((v) => v.featureId) : []);
+  check('prefix form aliases', r.ok && got('drink-mirinda')[0] === 'regular', JSON.stringify(got('drink-mirinda')));
+  check('underscore form aliases', r.ok && got('drink-7up')[0] === 'diet', JSON.stringify(got('drink-7up')));
 }
 
 if (fails) { console.error(`import-features: ${fails} FAILURES`); process.exit(1); }

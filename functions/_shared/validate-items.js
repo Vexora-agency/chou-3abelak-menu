@@ -20,9 +20,10 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
   // Flexible custom features (hand/AI-authored imports): an unknown
   // featureId is accepted when it carries a usable bilingual name —
   // aliased onto an existing feature when the name matches one, else
-  // created (explicit groupId, or the kind default). Bare unknown ids
-  // (no name) still fail with an actionable message. Returns the final
-  // featureId, or null (error already pushed).
+  // created (explicit groupId, or the kind default). Nameless invented ids
+  // get one last chance via affix matching (see below); anything left
+  // fails with an actionable message. Returns the final featureId, or
+  // null (error already pushed).
   const usableName = (name) =>
     name && typeof name === 'object' && (
       (typeof name.en === 'string' && name.en.trim()) || (typeof name.ar === 'string' && name.ar.trim())
@@ -41,6 +42,24 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
   const resolveCustomFeature = (vid, name, groupId, kind, itemId, field) => {
     if (featureById.has(vid)) return vid;
     if (!usableName(name)) {
+      // Last resort for nameless invented ids (the classic AI pattern
+      // "drink-regular"): reuse when the FIRST or LAST dash-token exactly
+      // equals an existing feature ("pepsi-diet" → "diet"). Middle tokens
+      // never match ("super-regular-plus" stays rejected), and two
+      // different matches mean ambiguous → rejected. Every alias surfaces
+      // in the import preview, so nothing remaps silently.
+      const toks = vid.toLowerCase().split(/[-_]+/).filter(Boolean);
+      if (toks.length >= 2) {
+        const ends = new Set([toks[0], toks[toks.length - 1]]);
+        let found = null;
+        for (const t of ends) {
+          if (featureById.has(t)) {
+            if (found && found !== t) { found = null; break; }
+            found = t;
+          }
+        }
+        if (found) return found;
+      }
       errors.push(
         `Item "${itemId}" ${field} "${vid}" is not a known feature (add name:{en,ar} to auto-create it, or define it in Features Library first)`
       );

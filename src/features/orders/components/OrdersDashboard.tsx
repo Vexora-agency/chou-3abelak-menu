@@ -2,8 +2,7 @@ import { useEffect, useRef, useState, type FC } from 'react';
 import type { Order, OrderItem, OrderStatus, OrderType, OrdersDashboardProps, Period } from './orders/ordersDashTypes';
 import { useOrdersDashClock } from '../hooks/useOrdersDashClock';
 import { useOrdersDashStats } from '../hooks/useOrdersDashStats';
-import { playNewOrderBeep, isAudioLocked, unlockOrderSound, useNewOrderAlarm, useNewOrderSound } from '../hooks/useNewOrderSound';
-import { isIosDevice } from '@/src/utils/webpush';
+import { playNewOrderBeep, unlockOrderSound, useNewOrderAlarm, useNewOrderSound } from '../hooks/useNewOrderSound';
 import { OrdersDashChart, OrdersDashKpis, OrdersDashPeriodBar, OrdersDashTopItems } from './orders/OrdersDashPanels';
 import { OrdersDashList } from './orders/OrdersDashList';
 import { KitchenPushCard } from './KitchenPushCard';
@@ -11,47 +10,6 @@ import { KitchenPushCard } from './KitchenPushCard';
 export type { Order, OrderItem, OrderStatus, OrderType, Period };
 
 /* ---------- Main component ---------- */
-
-/**
- * Self-diagnosing audio hint: while unacknowledged orders exist and the bell
- * is on, re-checks the autoplay lock every 2s. If the browser still refuses
- * audio (no gesture yet), it says so WITH the fix (tap anywhere) instead of
- * beeping into the void — the #1 "sometimes silent" cause, made visible.
- * Mounts only while relevant; unmounts (interval cleaned) otherwise.
- */
-const AudioLockHint: FC<{ visible: boolean; isAr: boolean }> = ({ visible, isAr }) => {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    if (!visible) return;
-    const id = window.setInterval(() => setTick((t) => t + 1), 2000);
-    return () => window.clearInterval(id);
-  }, [visible]);
-  if (!visible) return null;
-  let locked = true;
-  try {
-    locked = isAudioLocked();
-  } catch {
-    locked = true;
-  }
-  if (!locked) return null;
-  return (
-    <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-[11px] font-bold text-amber-300 flex items-center gap-2">
-      <span className="relative flex h-2 w-2 shrink-0">
-        <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60 animate-ping" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-400" />
-      </span>
-      {isAr
-        ? 'الصوت مقفول من المتصفح — دوس في أي مكان بالصفحة لتشغيله.'
-        : 'Browser muted audio — tap anywhere on the page to enable sound.'}
-      {isIosDevice() && (
-        <span className="opacity-80">
-          {isAr ? 'ولو آيفون: تأكد أن زر الصامت مطفأ.' : 'On iPhone also flip the mute switch off.'}
-        </span>
-      )}
-    </div>
-  );
-};
-
 const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loading, onStatusChange, onRefresh }) => {  const isAr = lang === 'ar';
   // Owner decision: dashboard animations always play for every visitor.
   const reduce = false;
@@ -133,7 +91,6 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
   return (
     <div className="space-y-4" dir={isAr ? 'rtl' : 'ltr'}>
       <KitchenPushCard lang={lang} />
-      <AudioLockHint visible={soundOn && orders.some((o) => o.status === 'new')} isAr={isAr} />
       <OrdersDashPeriodBar
         lang={lang}
         period={period}

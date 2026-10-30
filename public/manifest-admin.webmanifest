@@ -1,0 +1,20 @@
+{
+  "name": "Chou 3abelak Admin",
+  "short_name": "Admin",
+  "start_url": "/admin",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
+  "icons": [
+    {
+      "src": "/assets/pan-icon-yellow-192.webp",
+      "sizes": "192x192",
+      "type": "image/webp"
+    },
+    {
+      "src": "/assets/pan-icon-yellow-336.webp",
+      "sizes": "336x336",
+      "type": "image/webp"
+    }
+  ]
+}

@@ -65,6 +65,22 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   const { lang, setLang, darkMode, setDarkMode } = useAppPrefs(menu);
   const handleSaveMenuFromAdmin = useAdminSaveMenu(setMenu);
 
+  // Per-route install manifest: iOS Home Screen icons open the manifest's
+  // start_url (NOT the page added from), so the admin needs its own manifest
+  // (start_url /admin, distinct "Admin" name) while the storefront keeps the
+  // menu one. Swapped live — the share sheet reads the DOM at tap time, and
+  // the fresh filename defeats any cached old manifest.
+  useEffect(() => {
+    const href = showAdmin ? '/manifest-admin.webmanifest' : '/manifest.webmanifest';
+    let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'manifest';
+      document.head.appendChild(link);
+    }
+    if (link.getAttribute('href') !== href) link.setAttribute('href', href);
+  }, [showAdmin]);
+
   // Thin reading-progress line at the top of the page — hand-rolled on purpose:
   // motion's useScroll measures document geometry on every scroll (forced
   // reflow ~235 ms on a low-end phone, the top flagged offender in traces).

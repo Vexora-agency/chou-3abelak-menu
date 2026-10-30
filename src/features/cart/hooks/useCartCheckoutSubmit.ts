@@ -90,6 +90,17 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // when the drawer closes so the next checkout is a new order.
   const idemKeyRef = useRef<string | null>(null);
 
+  // In-flight guard (ref = synchronous, state = button skin): double-taps
+  // while the first POST is still running are ignored, so concurrent
+  // same-key submits can never race each other.
+  const sendingRef = useRef(false);
+  const [sending, setSending] = useState(false);
+
+  // Exact wa.me URL built by the first send. "Re-open WhatsApp" re-opens
+  // THIS and never POSTs again — so it can neither record a second order
+  // row nor message the kitchen an emptied cart.
+  const lastWaUrlRef = useRef<string | null>(null);
+
   const subtotal = lines.reduce((acc, l) => acc + l.total, 0);
   const liveState = resolveLiveOrdering(orderingState, menu, serverNow());
   const orderBlocked = liveState.state !== 'open';
@@ -123,7 +134,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   const isBelowMin = minActive && ordering.minOrder > 0 && subtotal < ordering.minOrder;
   const minOrder = ordering.minOrder;
 
-  const handleSendOrder = async () => {
+  const sendOrder = async () => {
     setErrorMsg('');
 
     // Submit-time availability check: ask the server first (2.5 s timeout).
@@ -243,6 +254,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     );
     const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
     const url = `https://wa.me/${whatsappNum}?text=${encodeURIComponent(message)}`;
+    lastWaUrlRef.current = url;
 
     // Open WhatsApp
     const opened = window.open(url, '_blank', 'noopener,noreferrer');
@@ -257,6 +269,34 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     // return early). State clear re-persists via the cart hook's effect.
     if (clientConfig.cart?.clearAfterOrder) onOrderSuccess?.();
     setOrderPrepared(true);
+  };
+
+  // Guarded entry: concurrent taps collapse into the single in-flight send.
+  const handleSendOrder = async () => {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+    setSending(true);
+    try {
+      await sendOrder();
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
+    }
+  };
+
+  // Re-open re-opens the FIRST message only — zero server contact, zero new
+  // rows, zero ghost empty messages. Falls back to a fresh send when no
+  // message was ever built (e.g. hot-reload wiped the ref).
+  const reopenWhatsApp = () => {
+    const url = lastWaUrlRef.current;
+    if (!url) {
+      void handleSendOrder();
+      return;
+    }
+    const opened = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!opened) {
+      window.location.href = url;
+    }
   };
 
   return {
@@ -287,6 +327,9 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     errorMsg,
     setErrorMsg,
     idemKeyRef,
+    sending,
+    lastWaUrlRef,
     handleSendOrder,
+    reopenWhatsApp,
   };
 }

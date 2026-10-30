@@ -65,13 +65,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     errorMsg,
     setErrorMsg,
     idemKeyRef,
+    sending,
+    lastWaUrlRef,
     handleSendOrder,
+    reopenWhatsApp,
   } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart });
 
   // Lock body scroll when open (no state inside — rule-clean effect).
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : '';
-    if (!isOpen) idemKeyRef.current = null;
+    if (!isOpen) {
+      idemKeyRef.current = null;
+      lastWaUrlRef.current = null;
+    }
     return () => {
       document.body.style.overflow = '';
     };
@@ -175,7 +181,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
             <div className="pt-4 flex flex-col gap-2.5">
               <button
                 type="button"
-                onClick={() => void handleSendOrder()}
+                onClick={() => reopenWhatsApp()}
                 className="btn-tactile h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:brightness-110"
               >
                 <Send size={16} />
@@ -253,6 +259,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               reopenText={reopenText}
               lang={lang}
               darkMode={darkMode}
+              sending={sending}
               onSend={() => void handleSendOrder()}
               onClearCart={handleClearCartWithLocation}
             />

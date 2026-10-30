@@ -7,6 +7,8 @@ interface CartCheckoutFooterProps {
   reopenText: string;
   lang: 'en' | 'ar';
   darkMode: boolean;
+  /** In-flight send: button locks so double-taps can't fire concurrent POSTs. */
+  sending: boolean;
   onSend: () => void;
   onClearCart: () => void;
 }
@@ -17,6 +19,7 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
   reopenText,
   lang,
   darkMode,
+  sending,
   onSend,
   onClearCart,
 }) => {
@@ -36,9 +39,9 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
         <button
           type="button"
           onClick={onSend}
-          disabled={orderBlocked}
+          disabled={orderBlocked || sending}
           aria-describedby={orderBlocked ? 'order-status-line' : undefined}
-          className={`btn-tactile w-full rounded-full font-black text-sm flex items-center justify-center gap-2 shadow-lg ${orderBlocked ? 'min-h-12 h-auto py-2.5 px-4 text-xs leading-snug bg-neutral-700 text-neutral-300 cursor-not-allowed' : 'h-12 bg-[var(--primary)] text-[#0A0A0A] hover:brightness-110'}`}
+          className={`btn-tactile w-full rounded-full font-black text-sm flex items-center justify-center gap-2 shadow-lg ${orderBlocked ? 'min-h-12 h-auto py-2.5 px-4 text-xs leading-snug bg-neutral-700 text-neutral-300 cursor-not-allowed' : 'h-12 bg-[var(--primary)] text-[#0A0A0A] hover:brightness-110'} ${sending && !orderBlocked ? 'opacity-70 cursor-wait' : ''}`}
         >
           {orderBlocked ? (
             /* Blocked: the status line above already says why (once). The button
@@ -51,7 +54,7 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
           ) : (
             <>
               <Send size={18} />
-              <span>{isAr ? 'إرسال الطلب عبر واتساب' : 'Send Order on WhatsApp'}</span>
+              <span>{sending ? (isAr ? 'جارٍ إرسال الطلب…' : 'Sending order…') : (isAr ? 'إرسال الطلب عبر واتساب' : 'Send Order on WhatsApp')}</span>
             </>
           )}
         </button>

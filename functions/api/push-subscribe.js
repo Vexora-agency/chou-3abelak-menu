@@ -7,6 +7,7 @@
  * pruned at send time, never here.
  */
 import { jsonNoStore, readJsonBody } from '../_shared/session.js';
+import { validatePushSub } from '../_shared/push.js';
 
 const MAX_BODY_BYTES = 4 * 1024;
 
@@ -19,7 +20,7 @@ export async function onRequest(context) {
 
   const contentType = request.headers.get('Content-Type') || '';
   if (!contentType.includes('application/json')) {
-    return jsonNoStore({ error: 'bad_request' }, 400);
+    return jsonNoStore({ error: 'bad_content_type' }, 400);
   }
 
   const db = env.ORDERS_DB || null;
@@ -31,25 +32,22 @@ export async function onRequest(context) {
   try {
     body = await readJsonBody(request, MAX_BODY_BYTES);
   } catch {
-    return jsonNoStore({ error: 'bad_request' }, 400);
+    return jsonNoStore({ error: 'bad_body' }, 400);
   }
 
-  const endpoint = typeof body.endpoint === 'string' ? body.endpoint.trim() : '';
-  const p256dh = typeof body.p256dh === 'string' ? body.p256dh.trim() : '';
-  const auth = typeof body.auth === 'string' ? body.auth.trim() : '';
+  const sub = validatePushSub(body || {});
+  if (!sub.ok) {
+    return jsonNoStore({ error: 'bad_subscription', field: sub.field, got: sub.got }, 400);
+  }
+  const { endpoint, p256dh, auth } = sub;
   const orderNumber = Number.parseInt(body.orderNumber, 10);
   const trackToken = typeof body.trackToken === 'string' ? body.trackToken.trim() : '';
 
-  // Note: browsers hand standard base64 (+/= padding) here, not base64url —
-  // the character class must accept both.
   if (
-    !endpoint.startsWith('https://') || endpoint.length > 512 ||
-    !/^[A-Za-z0-9_+\/=]{20,120}$/.test(p256dh) ||
-    !/^[A-Za-z0-9_+\/=]{10,60}$/.test(auth) ||
     !Number.isInteger(orderNumber) || orderNumber <= 0 ||
     !/^[0-9a-f]{32}$/.test(trackToken)
   ) {
-    return jsonNoStore({ error: 'bad_request' }, 400);
+    return jsonNoStore({ error: 'bad_order_ref' }, 400);
   }
 
   // Capability check: the token must belong to this order number.

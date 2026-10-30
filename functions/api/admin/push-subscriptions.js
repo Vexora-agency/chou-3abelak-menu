@@ -7,6 +7,7 @@
  */
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../_shared/session.js';
 import { featureOffResponse, hasFeature } from '../../_shared/plan.js';
+import { validatePushSub } from '../../_shared/push.js';
 
 const MAX_BODY_BYTES = 4 * 1024;
 
@@ -18,20 +19,6 @@ function maskEndpoint(e) {
   } catch {
     return `${e.slice(0, 12)}…`;
   }
-}
-
-function validSub(body) {
-  const endpoint = typeof body.endpoint === 'string' ? body.endpoint.trim() : '';
-  const p256dh = typeof body.p256dh === 'string' ? body.p256dh.trim() : '';
-  const auth = typeof body.auth === 'string' ? body.auth.trim() : '';
-  if (
-    !endpoint.startsWith('https://') || endpoint.length > 512 ||
-    !/^[A-Za-z0-9_+\/=]{20,120}$/.test(p256dh) ||
-    !/^[A-Za-z0-9_+\/=]{10,60}$/.test(auth)
-  ) {
-    return null;
-  }
-  return { endpoint, p256dh, auth };
 }
 
 export async function onRequest(context) {
@@ -72,14 +59,14 @@ export async function onRequest(context) {
 
   const contentType = request.headers.get('Content-Type') || '';
   if (!contentType.includes('application/json')) {
-    return jsonNoStore({ error: 'bad_request' }, 400);
+    return jsonNoStore({ error: 'bad_content_type' }, 400);
   }
 
   let body;
   try {
     body = await readJsonBody(request, MAX_BODY_BYTES);
   } catch {
-    return jsonNoStore({ error: 'bad_request' }, 400);
+    return jsonNoStore({ error: 'bad_body' }, 400);
   }
 
   // Unsubscribe one device (endpoint required so one device can never drop
@@ -98,9 +85,11 @@ export async function onRequest(context) {
   }
 
   // Subscribe (upsert by endpoint: re-subscribing refreshes keys).
-  const sub = validSub(body || {});
-  if (!sub) {
-    return jsonNoStore({ error: 'bad_request' }, 400);
+  // Failures name the field (never values) so the UI can explain + support
+  // can pinpoint without a single guess.
+  const sub = validatePushSub(body || {});
+  if (!sub.ok) {
+    return jsonNoStore({ error: 'bad_subscription', field: sub.field, got: sub.got }, 400);
   }
   const label = body && typeof body.label === 'string' ? body.label.trim().slice(0, 60) : '';
   try {

@@ -1,6 +1,6 @@
 // Tracking tokens + VAPID lazy-gen + notify guards (no infra).
 // Usage: node scripts/test-track-push.mjs
-import { newTrackToken, getVapidSettings, notifyOrderStatus, notifyNewOrder, nagUnackedOrders } from '../functions/_shared/push.js';
+import { newTrackToken, getVapidSettings, notifyOrderStatus, notifyNewOrder, nagUnackedOrders, validatePushSub } from '../functions/_shared/push.js';
 
 let fails = 0;
 const check = (name, cond, extra = '') => {
@@ -90,6 +90,31 @@ function fakeDb() {
   const { api } = fakeDb();
   check('new-order bad number no-op', (await notifyNewOrder(api, { orderNumber: 0 })).sent === 0);
   check('new-order no devices no-op', (await notifyNewOrder(api, { orderNumber: 1007, total: 350000, currency: 'LBP' })).sent === 0);
+}
+
+// ---- subscription shape: std base64 AND base64url, field-precise rejects ----
+{
+  const std = {
+    endpoint: 'https://web.push.apple.com/abc123',
+    p256dh: 'B'.repeat(87) + '=',
+    auth: 'C'.repeat(22) + '==',
+  };
+  const r1 = validatePushSub(std);
+  check('std-base64 sub accepted', r1.ok === true);
+  const url = {
+    endpoint: 'https://fcm.googleapis.com/fcm/send/xyz',
+    p256dh: 'D'.repeat(86) + '_-',
+    auth: 'E'.repeat(22) + '==',
+  };
+  check('base64url sub accepted', validatePushSub(url).ok === true);
+  const noEp = validatePushSub({ ...std, endpoint: 'http://evil.test/x' });
+  check('http endpoint names field', noEp.ok === false && noEp.field === 'endpoint');
+  const badKey = validatePushSub({ ...std, p256dh: '!!!' });
+  check('bad key names field', badKey.ok === false && badKey.field === 'p256dh');
+  const noAuth = validatePushSub({ endpoint: std.endpoint, p256dh: std.p256dh });
+  check('missing auth names field', noAuth.ok === false && noAuth.field === 'auth');
+  const empty = validatePushSub({});
+  check('empty names endpoint first', empty.ok === false && empty.field === 'endpoint');
 }
 
 // ---- nag pass guards (no unacked rows in the fake) ----

@@ -175,7 +175,15 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
         : state === 'error'
           ? errDetail.startsWith('SAVE-401') || errDetail.startsWith('SAVE-403')
             ? isAr ? 'انتهت جلسة الدخول — سجّل الخروج والدخول مجددًا ثم فعّل.' : 'Admin session expired — log out and back in, then enable.'
-            : isAr ? `تعذر الحفظ (${errDetail}) — ابعث هذا السطر كاملًا.` : `Could not save (${errDetail}) — send this full line.`
+            : errDetail.includes('bad_subscription')
+              ? isAr
+                ? `هذا المتصفح أعطى اشتراكًا مرفوضًا — احذف الأيقونة وأعد تثبيتها من /admin ثم فعّل. (${errDetail})`
+                : `This browser gave a rejected subscription — remove the icon, re-add from /admin, then enable. (${errDetail})`
+              : errDetail.includes('Missing Origin')
+                ? isAr
+                  ? `التطبيق المثبت لا يرسل الترويسة المطلوبة — حدّث iOS وكرر التثبيت من سفاري. (${errDetail})`
+                  : `The installed app omits a required header — update iOS and reinstall from Safari. (${errDetail})`
+                : isAr ? `تعذر الحفظ (${errDetail}) — ابعث هذا السطر كاملًا.` : `Could not save (${errDetail}) — send this full line.`
           : null;
 
   const on = state === 'on';

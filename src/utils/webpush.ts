@@ -97,10 +97,13 @@ export async function postJson(
 ): Promise<{ ok: boolean; status: number | null; err: string }> {
   const readErr = async (res: Response): Promise<string> => {
     try {
-      const data = (await res.json()) as { error?: unknown; message?: unknown };
-      const msg = typeof data.message === 'string' && data.message ? data.message : '';
+      const data = (await res.json()) as { error?: unknown; message?: unknown; field?: unknown; got?: unknown };
       const code = typeof data.error === 'string' && data.error ? data.error : '';
-      return [code, msg].filter(Boolean).join(':').slice(0, 80) || 'unknown';
+      const detail =
+        typeof data.field === 'string' && data.field
+          ? `${data.field}=${typeof data.got === 'number' ? data.got : '?'}` : '';
+      const msg = typeof data.message === 'string' && data.message ? data.message : '';
+      return [code, detail, msg].filter(Boolean).join(':').slice(0, 100) || 'unknown';
     } catch {
       return 'unreadable';
     }

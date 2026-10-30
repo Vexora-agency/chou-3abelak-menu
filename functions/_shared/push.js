@@ -21,6 +21,31 @@ export function newTrackToken() {
   return [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
 }
 
+/**
+ * Browser subscription shape check (shared by customer + admin endpoints).
+ * Accepts standard base64 AND base64url (browsers hand either). Returns the
+ * cleaned triple, or { field, got } naming the FIRST failing field with its
+ * received length (never values — safe to surface to the UI for support).
+ */
+export function validatePushSub(body) {
+  const endpoint = body && typeof body.endpoint === 'string' ? body.endpoint.trim() : '';
+  const p256dh = body && typeof body.p256dh === 'string' ? body.p256dh.trim() : '';
+  const auth = body && typeof body.auth === 'string' ? body.auth.trim() : '';
+  if (!endpoint.startsWith('https://') || endpoint.length > 512) {
+    return { ok: false, field: 'endpoint', got: endpoint.length };
+  }
+  // Standard base64 (+/=) and base64url (-_) both accepted: specs say
+  // browsers hand standard, but tolerance here rescues legit users and
+  // costs attackers nothing (fixed-shape opaque blobs, bound params only).
+  if (!/^[A-Za-z0-9_\-+\/=]{20,120}$/.test(p256dh)) {
+    return { ok: false, field: 'p256dh', got: p256dh.length };
+  }
+  if (!/^[A-Za-z0-9_\-+\/=]{10,60}$/.test(auth)) {
+    return { ok: false, field: 'auth', got: auth.length };
+  }
+  return { ok: true, endpoint, p256dh, auth };
+}
+
 function isValidKey(s) {
   return typeof s === 'string' && /^[A-Za-z0-9_-]{20,120}$/.test(s);
 }

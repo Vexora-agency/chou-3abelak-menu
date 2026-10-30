@@ -328,10 +328,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           onExport={backup.onExport}
           onAnalyzeImport={backup.onAnalyzeImport}
           onApplyImport={backup.onApplyImport}
-        onRestoreTrash={backup.onRestoreTrash}
-        onDeleteForever={backup.onDeleteForever}
-        onToggleAuto={backup.onToggleAuto}
-        activity={backup.activity}
+          onRestoreTrash={backup.onRestoreTrash}
+          onDeleteForever={backup.onDeleteForever}
+          onToggleAuto={backup.onToggleAuto}
+          activity={backup.activity}
+          historyLocked={backup.historyForbidden}
       />
       )}
 

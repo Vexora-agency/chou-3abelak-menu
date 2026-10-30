@@ -1,5 +1,7 @@
 /**
  * GET /api/admin/versions/<id>/changes — the version's OWN changes.
+ * OWNER-ONLY (same reason as the listing): review content belongs to the
+ * owner's eyes only.
  *
  * Each version row stores the menu as it was BEFORE its save, so the row's
  * truthful content is the step to its next-newer neighbor (exactly what its
@@ -10,6 +12,7 @@
  */
 
 import { checkApiHeaders, jsonNoStore } from '../../../../_shared/session.js';
+import { requireOwner } from '../../../../_shared/access.js';
 import { featureOffResponse, hasFeature } from '../../../../_shared/plan.js';
 import { diffMenus } from '../../../../_shared/diff.js';
 import { getVersionDoc, listVersions, getVersionDoc as getV } from '../../../../_shared/versions.js';
@@ -21,6 +24,7 @@ export async function onRequest(context) {
   if (!gate.ok) return jsonNoStore({ error: gate.error }, gate.status);
   if (request.method !== 'GET') return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'GET' });
   if (!env.MENU_KV) return jsonNoStore({ error: 'unavailable' }, 503);
+  if (!(await requireOwner(request, env))) return jsonNoStore({ error: 'forbidden' }, 403);
 
   const rawId = typeof params?.id === 'string' ? params.id : '';
   let id = rawId;

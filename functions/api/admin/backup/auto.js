@@ -3,6 +3,7 @@
  */
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
+import { requireOwner } from '../../../_shared/access.js';
 import { featureOffResponse, hasFeature } from '../../../_shared/plan.js';
 import { getAutoBackup, setAutoBackup } from '../../../_shared/versions.js';
 import { getReportSettings } from '../../../_shared/reports.js';
@@ -21,6 +22,8 @@ export async function onRequest(context) {
     return jsonNoStore({ ok: false, error: 'bad_request' }, 400);
   }
   if (typeof body.enabled !== 'boolean') return jsonNoStore({ ok: false, error: 'bad_request' }, 400);
+  // Account-level switch: owner-only (a client must never arm/disarm it).
+  if (!(await requireOwner(request, env))) return jsonNoStore({ error: 'forbidden' }, 403);
   // Enabling without a verified destination email is refused outright —
   // the switch must never read ON while there is nowhere to send to
   // (stale enabled:true + wiped email produced exactly that ghost state).

@@ -1,7 +1,7 @@
 // TODO(maint): 355 lines — split into BackupPanel + BackupHistory + BackupImport
 // when next touched. backup/ subfolder (backupStrings/backupUtils/ChangeList/BackupModal)
 // already started the split. Documented, not refactored (Fix 3C).
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   Activity, AlertTriangle, Archive, Check, Clock, Download, FileJson, FileSpreadsheet, History, Loader2, Printer, RotateCcw, ShieldAlert, ShieldCheck, Trash2, Upload, Undo2, X,
@@ -60,12 +60,37 @@ interface BackupPanelProps {
   onDeleteForever: (id: string) => Promise<void>;
   onToggleAuto: (on: boolean) => Promise<{ ok: boolean; noDestination?: boolean }>;
   activity: ActivityEntry[];
+  /** True for client sessions: history (and the auto-backup switch) hide. */
+  historyLocked: boolean;
 }
 
-const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status, reportsOn, menuVersion, onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport, onRestoreTrash, onDeleteForever, onToggleAuto, activity }) => {
+const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status, reportsOn, menuVersion, onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport, onRestoreTrash, onDeleteForever, onToggleAuto, activity, historyLocked }) => {
   // Owner decision: animations always run (never honor reduced-motion).
   const t = STR[lang]; const isAr = lang === 'ar'; const reduce = false;
   const [tab, setTab] = useState<'history' | 'export' | 'import' | 'trash'>('history');
+  // Clients never see history: park them on export the moment the lock is
+  // known (their versions/activity fetches already 403 above).
+  useEffect(() => {
+    if (historyLocked) setTab((cur) => (cur === 'history' ? 'export' : cur));
+  }, [historyLocked]);
+  // Who did it: owner gets the gold pill, each client their own name pill.
+  // The pill is the "marked" trail the owner asked for — every row carries it.
+  const actorPill = (actor: string) => {
+    const isOwner = actor === 'admin' || actor === 'owner' || actor === 'local';
+    const name = isOwner ? t.actorOwner : actor.startsWith('client:') ? actor.slice('client:'.length) : actor;
+    return (
+      <span
+        dir="ltr"
+        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
+          isOwner
+            ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
+            : 'bg-transparent text-[var(--primary)] border-[var(--primary)]/50'
+        }`}
+      >
+        {name}
+      </span>
+    );
+  };
   const [actFilter, setActFilter] = useState<'all' | 'saves' | 'deletes' | 'restores' | 'imports'>('all');
   const [limit, setLimit] = useState(6);
   const [modal, setModal] = useState<{ v: VersionEntry; changes: Change[] | null; comparedTo: 'live' | 'version'; baseVersion: number } | null>(null);
@@ -204,7 +229,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
       </motion.div>
 
       <motion.div {...rise(0.06)} className="flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800 max-w-full overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-        {Tab('history', t.tHistory, <History size={14} />)}{Tab('export', t.tExport, <Download size={14} />)}{Tab('import', t.tImport, <Upload size={14} />)}{Tab('trash', t.tTrash, <Trash2 size={14} />, trash.length)}
+        {!historyLocked && Tab('history', t.tHistory, <History size={14} />)}{Tab('export', t.tExport, <Download size={14} />)}{Tab('import', t.tImport, <Upload size={14} />)}{Tab('trash', t.tTrash, <Trash2 size={14} />, trash.length)}
       </motion.div>
 
       <AnimatePresence initial={false}>
@@ -214,8 +239,9 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
           <div className="flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-3.5 py-3 text-xs text-red-300"><AlertTriangle size={15} />{errNote}</div></motion.div>)}
       </AnimatePresence>
 
-      {/* HISTORY — one timeline: snapshots + logged actions, newest first */}
-      {tab === 'history' && (
+      {/* HISTORY — one timeline: snapshots + logged actions, newest first.
+          Owner-only: clients never reach this tab (locked above). */}
+      {!historyLocked && tab === 'history' && (
         <motion.div key="h" {...rise(0)} className={card}>
           <p className="text-xs leading-relaxed text-neutral-400">{t.histIntro}</p>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -244,10 +270,10 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
                 <div key={`v-${f.v.id}`} className={`rounded-xl border p-3 ${f.v.current ? 'border-[var(--primary)]/40 bg-[var(--primary)]/[0.05]' : 'border-neutral-800 bg-black/40'}`}>
                   <div className="flex items-center gap-3">
                     <span className="w-9 h-9 shrink-0 rounded-xl bg-black border border-neutral-800 text-[var(--primary)] flex items-center justify-center">{f.v.source === 'restore' ? <RotateCcw size={16} /> : f.v.source === 'import' ? <Upload size={16} /> : <Archive size={16} />}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-2 flex-wrap"><b className="text-sm">{t.src[f.v.source]}</b>{f.v.current && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[var(--primary)] text-[#0A0A0A]">{t.current}</span>}</span>
-                      <span className="block text-[11px] text-neutral-400 mt-0.5">{fmtDate(f.v.createdAt, lang)} · {t.by} {f.v.actor}</span>
-                    </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-2 flex-wrap"><b className="text-sm">{t.src[f.v.source]}</b>{f.v.current && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[var(--primary)] text-[#0A0A0A]">{t.current}</span>}{actorPill(f.v.actor)}</span>
+                        <span className="block text-[11px] text-neutral-400 mt-0.5">{fmtDate(f.v.createdAt, lang)}</span>
+                      </span>
                     {!f.v.current && (
                       <span className="flex gap-1.5 shrink-0">
                         <button type="button" onClick={() => void openRestore(f.v)} className="btn-tactile h-9 px-3 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold hover:border-[var(--primary)] hover:text-[var(--primary)]">{t.preview}</button>
@@ -266,7 +292,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
                   <span className="w-9 h-9 shrink-0 rounded-xl bg-black border border-neutral-800 text-[var(--primary)] flex items-center justify-center"><Activity size={16} /></span>
                   <span className="min-w-0 flex-1">
                     <b className="block text-xs leading-snug">{isAr ? f.a.label.ar : f.a.label.en}</b>
-                    <span className="text-[11px] text-neutral-500">{rel(f.a.t, lang)} · {f.a.actor}</span>
+                    <span className="mt-1 flex items-center gap-2 text-[11px] text-neutral-500">{rel(f.a.t, lang)}{actorPill(f.a.actor)}</span>
                   </span>
                       {f.a.ref?.kind === 'trash' && trashIds.has(f.a.ref.id) && (
                         <button type="button" onClick={() => void doUndoTrash(f.a.ref?.id)} disabled={busyUndoId === f.a.ref?.id || opBusy} className="btn-tactile h-9 px-3 rounded-full border border-neutral-700 text-neutral-200 text-xs font-extrabold inline-flex items-center gap-1.5 shrink-0 hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-50" title={t.actUndo}>
@@ -296,6 +322,8 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
               <button type="button" onClick={() => void onExport(x.k)} className="btn-tactile shrink-0 h-10 px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold">{x.btn}</button>
             </div>
           ))}
+          {/* Account-level switch: owners only (clients never see it). */}
+          {!historyLocked && (
           <div className={`${card} flex items-center gap-3.5`}>
             <span className="w-11 h-11 shrink-0 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center"><Clock size={21} /></span>
             <span className="min-w-0 flex-1"><b className="text-sm">{t.autoTitle}</b><span className="block text-xs leading-relaxed text-neutral-400 mt-1">{!reportsOn ? t.autoNeedsPro : status.destination ? t.autoD(status.destination) : t.autoNoMail}</span></span>
@@ -304,6 +332,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
               <motion.span layout={!reduce} transition={{ type: 'spring', stiffness: 500, damping: 32 }} className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow ${status.autoWeekly ? 'end-1' : 'start-1'}`} />
             </button>
           </div>
+          )}
         </motion.div>
       )}
 

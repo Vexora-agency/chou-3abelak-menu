@@ -25,6 +25,23 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
   const [devices, setDevices] = useState<number | null>(null);
   // Precise failure stage for remote diagnosis (SW / KEY / SUB / SAVE+status).
   const [errDetail, setErrDetail] = useState<string>('');
+  // Environment snapshot: permission + SW + standalone. Chrome- and
+  // Safari-installed apps share the WebKit engine, so a working Chrome icon
+  // next to a failing Safari icon is always state (stale icon / denied
+  // permission) — this line proves which, instantly.
+  const [envInfo, setEnvInfo] = useState<string>('');
+  const refreshEnv = () => {
+    try {
+      const parts: string[] = [];
+      parts.push(`perm:${typeof Notification !== 'undefined' ? Notification.permission : 'none'}`);
+      parts.push(`sw:${'serviceWorker' in navigator ? 'yes' : 'no'}`);
+      parts.push(`app:${isStandaloneApp() ? 'yes' : 'no'}`);
+      setEnvInfo(parts.join(' · '));
+    } catch {}
+  };
+  useEffect(() => {
+    refreshEnv();
+  }, [state]);
   // iPhone tab (not installed): push is impossible here by Apple policy —
   // say so UP FRONT instead of after the tap, with the install path.
   const [needsInstall] = useState<boolean>(() => isIosDevice() && !isStandaloneApp());
@@ -228,6 +245,11 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
         <p className="text-[11px] text-neutral-500 inline-flex items-center gap-1">
           <BellOff size={11} />
           {note}
+        </p>
+      )}
+      {envInfo && (
+        <p className="text-[10px] text-neutral-600 tabular-nums" dir="ltr">
+          {envInfo}
         </p>
       )}
     </div>

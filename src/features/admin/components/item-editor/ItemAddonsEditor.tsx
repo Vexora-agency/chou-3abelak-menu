@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, X, Star } from 'lucide-react';
+import { Flame, Plus, Trash2, X, Star } from 'lucide-react';
 import type { FeatureGroup, ItemAddon, MenuData, MenuItem } from '@/src/types/menu';
 import { featuresByGroup } from '@/src/utils/pricing';
 
@@ -28,11 +28,32 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
   onCloseAddonPicker,
 }) => {
   const isAr = lang === 'ar';
+  // A badged-spicy item offering a "Make It Spicy" option is a contradiction:
+  // the badge says the heat is inherent, the option says it's optional.
+  const spicyOverlap = (item.badges || []).includes('spicy')
+    && (item.addons || []).some((a) => a.featureId === 'spicy');
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
         <label className="block text-xs text-neutral-400">{isAr ? 'إضافات هذا الصنف' : 'Add-ons on this item'}</label>
       </div>
+      {spicyOverlap && (
+        <div className="mb-2 rounded-xl border border-red-500/50 bg-red-950/40 px-3 py-2 flex items-center justify-between gap-2">
+          <p className="text-[11px] leading-relaxed text-red-200">
+            <Flame size={12} className="inline me-1 -mt-0.5" />
+            {isAr
+              ? 'هذا الصنف عليه شارة «حار» — خيار «إضافة حار» زائد ويشتّت الزبون. الشارة تكفي.'
+              : 'This item is badged Spicy — the “Make It Spicy” option is redundant and confuses customers. The badge is enough.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => onChange({ ...item, addons: (item.addons || []).filter((a) => a.featureId !== 'spicy') })}
+            className="btn-tactile shrink-0 px-2.5 py-1 rounded-full bg-red-500 text-white text-[10px] font-bold hover:brightness-110"
+          >
+            {isAr ? 'شيل خيار الحار' : 'Remove spicy option'}
+          </button>
+        </div>
+      )}
       {((item.addons || []).length === 0) && (
         <p className="text-[11px] text-neutral-500 mb-1.5">
           {isAr ? 'بدون إضافات.' : 'No add-ons.'}

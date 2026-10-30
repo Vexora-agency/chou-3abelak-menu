@@ -5,8 +5,8 @@
  * are bound by the admin login: no session, no subscription. Never returns
  * full endpoints or keys (masked prefix only, for device recognition).
  */
-import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
-import { featureOffResponse, hasFeature } from '../../../_shared/plan.js';
+import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../_shared/session.js';
+import { featureOffResponse, hasFeature } from '../../_shared/plan.js';
 
 const MAX_BODY_BYTES = 4 * 1024;
 

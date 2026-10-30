@@ -1,6 +1,6 @@
 // Tracking tokens + VAPID lazy-gen + notify guards (no infra).
 // Usage: node scripts/test-track-push.mjs
-import { newTrackToken, getVapidSettings, notifyOrderStatus, notifyNewOrder } from '../functions/_shared/push.js';
+import { newTrackToken, getVapidSettings, notifyOrderStatus, notifyNewOrder, nagUnackedOrders } from '../functions/_shared/push.js';
 
 let fails = 0;
 const check = (name, cond, extra = '') => {
@@ -90,6 +90,13 @@ function fakeDb() {
   const { api } = fakeDb();
   check('new-order bad number no-op', (await notifyNewOrder(api, { orderNumber: 0 })).sent === 0);
   check('new-order no devices no-op', (await notifyNewOrder(api, { orderNumber: 1007, total: 350000, currency: 'LBP' })).sent === 0);
+}
+
+// ---- nag pass guards (no unacked rows in the fake) ----
+{
+  const { api } = fakeDb();
+  const out = await nagUnackedOrders(api, { storeName: 'T', currency: 'LBP', adminUrl: 'https://x/admin' });
+  check('nag empty no-op', out.nagged === 0);
 }
 
 console.log(fails ? `\n${fails} FAILED` : '\nall green');

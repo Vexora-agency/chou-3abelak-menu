@@ -138,8 +138,11 @@ function fmtMoney(n) {
  * subscribed device. Payload is deliberately PII-free (number + total only —
  * names/phones/addresses open behind the admin login after the tap).
  * Same best-effort contract: never breaks order creation.
+ * `tag` groups re-pushes into ONE persistent notification (with renotify the
+ * OS re-blips instead of stacking) — the nag job reuses it every minute
+ * until the order is acknowledged.
  */
-export async function notifyNewOrder(db, { storeName, orderNumber, total, currency, adminUrl, subject }) {
+export async function notifyNewOrder(db, { storeName, orderNumber, total, currency, adminUrl, subject, tag }) {
   if (!Number.isInteger(orderNumber) || orderNumber <= 0) return { sent: 0 };
 
   let subs = [];
@@ -159,6 +162,8 @@ export async function notifyNewOrder(db, { storeName, orderNumber, total, curren
   const title = typeof storeName === 'string' && storeName ? storeName : 'New order';
   const money = currency ? ` · ${fmtMoney(total)} ${currency}` : '';
   const body = `🔔 طلب جديد #${orderNumber}${money} · New order`;
+  const payload = { title, body, url: adminUrl };
+  if (typeof tag === 'string' && tag) payload.tag = tag.slice(0, 64);
 
   let sent = 0;
   for (const s of subs) {
@@ -166,7 +171,7 @@ export async function notifyNewOrder(db, { storeName, orderNumber, total, curren
     try {
       const delivered = await sendPushNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-        { title, body, url: adminUrl },
+        payload,
         { publicKey: vapid.public_key, privateKey: vapid.private_key, subject: vapid.subject }
       );
       if (delivered === false) {
@@ -181,4 +186,46 @@ export async function notifyNewOrder(db, { storeName, orderNumber, total, curren
     }
   }
   return { sent };
+}
+
+/**
+ * Nag pass (called every minute by the external cron): re-pushes every
+ * UNACKNOWLEDGED order (status new, 1–30 min old) with its stable tag, so a
+ * closed phone re-blips instead of staying silent. Ack/cancel/completion
+ * flips the status and the nagging stops by itself; past-30-min orders age
+ * out (the kitchen missed them — no infinite nagging).
+ */
+export async function nagUnackedOrders(db, { storeName, currency, adminUrl, subject }) {
+  let rows = [];
+  try {
+    const now = Date.now();
+    const from = new Date(now - 30 * 60 * 1000).toISOString();
+    const to = new Date(now - 60 * 1000).toISOString();
+    const res = await db
+      .prepare(
+        "SELECT number, total FROM orders WHERE status = 'new' AND created_at >= ?1 AND created_at <= ?2 ORDER BY created_at ASC LIMIT 20"
+      )
+      .bind(from, to)
+      .all();
+    rows = (res && res.results) || [];
+  } catch {
+    return { nagged: 0 };
+  }
+  let nagged = 0;
+  for (const r of rows) {
+    if (!r || !Number.isInteger(r.number)) continue;
+    try {
+      const out = await notifyNewOrder(db, {
+        storeName,
+        orderNumber: r.number,
+        total: r.total,
+        currency,
+        adminUrl,
+        subject,
+        tag: `new-order-${r.number}`,
+      });
+      if (out.sent > 0) nagged += 1;
+    } catch {}
+  }
+  return { nagged };
 }

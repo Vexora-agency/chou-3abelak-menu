@@ -207,6 +207,7 @@ export async function onRequest(context) {
         currency: cur,
         adminUrl: origin ? `${origin}/admin` : '',
         subject: origin || undefined,
+        tag: `new-order-${created.num}`,
       });
     } catch {}
   })();

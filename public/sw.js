@@ -11,12 +11,19 @@ self.addEventListener('push', (event) => {
   const url = typeof data.url === 'string' && data.url ? data.url : '/';
   // Every push MUST show a notification: silent pushes get the subscription
   // revoked (Safari rule), so there is no silent path here by design.
+  // Stable tag groups an order's re-pushes into ONE persistent banner;
+  // renotify re-blips the OS sound instead of stacking silently. vibrate is
+  // Android-only (iOS ignores it) and harmless elsewhere.
+  const tag = typeof data.tag === 'string' && data.tag ? data.tag.slice(0, 64) : undefined;
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
       icon: '/assets/pan-icon-yellow-192.webp',
       badge: '/assets/pan-icon-yellow-192.webp',
       data: { url },
+      tag,
+      renotify: tag ? true : undefined,
+      vibrate: [200, 100, 200, 100, 500],
     })
   );
 });

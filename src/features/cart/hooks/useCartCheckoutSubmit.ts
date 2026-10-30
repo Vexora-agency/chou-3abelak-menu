@@ -282,6 +282,18 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       trackUrl
     );
     const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
+    if (!whatsappNum) {
+      // No restaurant number (settings validation normally prevents this,
+      // but legacy data can lack it): the order above IS the record — say so
+      // plainly instead of opening a broken wa.me link.
+      setErrorMsg(orderNumber
+        ? (isAr ? `تم حفظ طلبك #${orderNumber}، لكن رقم واتساب المطعم غير مضبوط — اتصل بالمطعم لتأكيده.` : `Order #${orderNumber} saved, but the restaurant WhatsApp number is missing — please call to confirm.`)
+        : (isAr ? 'رقم واتساب المطعم غير مضبوط ولا يمكن فتح المحادثة — اتصل بالمطعم.' : 'Restaurant WhatsApp number is missing — please call the restaurant.'));
+      clearLocation();
+      if (clientConfig.cart?.clearAfterOrder) onOrderSuccess?.();
+      setOrderPrepared(true);
+      return;
+    }
     const url = `https://wa.me/${whatsappNum}?text=${encodeURIComponent(message)}`;
     lastWaUrlRef.current = url;
 

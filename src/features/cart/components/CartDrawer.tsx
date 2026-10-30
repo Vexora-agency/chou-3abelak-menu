@@ -182,6 +182,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 ? 'يرجى الضغط على زر "إرسال" داخل تطبيق واتساب لتأكيد الطلب مع المطعم.'
                 : 'Please press "Send" in WhatsApp to confirm your order with the kitchen.'}
             </p>
+            {/* Send-failure honesty (plan §7): a DB/transport failure must
+                never look like a clean success — the cause shows HERE on the
+                confirmation screen, not just in the (now replaced) form. */}
+            {errorMsg && (
+              <p role="alert" className={`text-xs max-w-xs mx-auto leading-relaxed rounded-xl border px-3 py-2 ${darkMode ? 'border-amber-500/40 bg-amber-500/10 text-amber-300' : 'border-amber-600/40 bg-amber-100 text-amber-900'}`}>
+                {errorMsg}
+              </p>
+            )}
             {/* Order loop: live tracking + push updates for THIS order. */}
             {lastOrder && (
               <div className="pt-1 flex flex-col gap-2.5 max-w-xs mx-auto w-full">

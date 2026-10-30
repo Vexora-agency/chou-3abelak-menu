@@ -50,6 +50,20 @@
         }
       },
       {
+        "id": "type",
+        "name": {
+          "en": "Type",
+          "ar": "النوع"
+        }
+      },
+      {
+        "id": "choice",
+        "name": {
+          "en": "Choice",
+          "ar": "الاختيار"
+        }
+      },
+      {
         "id": "addons",
         "name": {
           "en": "Add-ons",
@@ -64,7 +78,7 @@
           "en": "Regular",
           "ar": "عادي"
         },
-        "groupId": "sizes"
+        "groupId": "type"
       },
       {
         "id": "mashrouha",
@@ -72,7 +86,7 @@
           "en": "Mashrouha (large & thin)",
           "ar": "مشروحة"
         },
-        "groupId": "sizes"
+        "groupId": "type"
       },
       {
         "id": "medium",
@@ -96,7 +110,7 @@
           "en": "Diet",
           "ar": "دايت"
         },
-        "groupId": "sizes"
+        "groupId": "choice"
       },
       {
         "id": "extra-veg",

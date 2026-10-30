@@ -265,9 +265,12 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       orderNumber = null;
     }
 
-    const trackUrl = orderNumber && trackToken
-      ? `${window.location.origin}/?track=${orderNumber}&t=${trackToken}`
-      : null;
+    // NOTE: trackUrl is deliberately NOT passed: WhatsApp unfurls any URL
+    // into a logo/title preview card and the owner wants a clean text-only
+    // message. Tracking stays one tap away on the confirmation screen
+    // (lastOrder -> Track button). Re-enable by passing trackUrl again —
+    // the builder + tests already support it.
+    const trackUrl = null;
     const message = buildWhatsAppMessage(
       menu,
       lines.map((l) => ({ item: l.item, variantId: l.variantId, addonIds: l.addonIds, quantity: l.quantity })),

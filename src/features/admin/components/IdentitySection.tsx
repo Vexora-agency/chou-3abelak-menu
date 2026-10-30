@@ -57,38 +57,52 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
   // Machine-translate an English address to Arabic (free endpoints, best
   // effort — the owner reviews the result). Used only when Nominatim has
   // no Arabic name (e.g. London returns English for accept-language=ar).
+  // Strict acceptance: a result counts ONLY if it actually contains Arabic
+  // script — echoes ("Main Street" → "Main Street") and quota warnings
+  // ("MYMEMORY WARNING…") fall through to the next option, never to the UI.
+  const ARABIC_RE = /[\u0600-\u06FF]/;
   const toArabic = async (text: string): Promise<string> => {
     const t = (text || '').trim();
     if (!t) return '';
-    if (/[\u0600-\u06FF]/.test(t)) return t;
-    try {
+    if (ARABIC_RE.test(t)) return t;
+    const withTimeout = async (work: (signal: AbortSignal) => Promise<string>): Promise<string> => {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 8000);
+      try {
+        return await work(ctrl.signal);
+      } catch {
+        return '';
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+    const google = await withTimeout(async (signal) => {
       const r = await fetch(
         `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=${encodeURIComponent(t)}`,
-        { signal: ctrl.signal }
+        { signal }
       );
-      clearTimeout(timer);
-      if (r.ok) {
-        const j: unknown = await r.json();
-        const parts = Array.isArray(j) && Array.isArray(j[0]) ? (j[0] as unknown[]) : [];
-        const out = parts
-          .map((s) => (Array.isArray(s) && typeof s[0] === 'string' ? (s[0] as string) : ''))
-          .join('')
-          .trim();
-        if (out) return out;
-      }
-    } catch {}
-    try {
+      if (!r.ok) return '';
+      const j: unknown = await r.json();
+      const parts = Array.isArray(j) && Array.isArray(j[0]) ? (j[0] as unknown[]) : [];
+      const out = parts
+        .map((s) => (Array.isArray(s) && typeof s[0] === 'string' ? (s[0] as string) : ''))
+        .join('')
+        .trim();
+      return out && ARABIC_RE.test(out) ? out : '';
+    });
+    if (google) return google;
+    const memo = await withTimeout(async (signal) => {
       const r2 = await fetch(
-        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(t)}&langpair=en|ar`
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(t)}&langpair=en|ar`,
+        { signal }
       );
-      if (r2.ok) {
-        const j2 = (await r2.json()) as { responseData?: { translatedText?: string } };
-        const out2 = (j2?.responseData?.translatedText || '').trim();
-        if (out2) return out2;
-      }
-    } catch {}
+      if (!r2.ok) return '';
+      const j2 = (await r2.json()) as { responseData?: { translatedText?: string } };
+      const out2 = (j2?.responseData?.translatedText || '').trim();
+      if (!out2 || /MYMEMORY WARNING/i.test(out2) || !ARABIC_RE.test(out2)) return '';
+      return out2;
+    });
+    if (memo) return memo;
     return t;
   };
   const fetchAddress = async () => {

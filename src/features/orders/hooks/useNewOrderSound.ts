@@ -25,9 +25,14 @@ export function unlockOrderSound() {
 }
 
 /** Two-tone kitchen bell, Web Audio only — zero assets, zero deps. */
-export function playNewOrderBeep() {
+export function playNewOrderBeep(retryOnSuspend = true) {
   const ac = ensureCtx();
   if (!ac) return;
+  // Suspended (no gesture yet): schedule anyway (harmless silence) and try
+  // once more shortly after — covers the unlock landing mid-poll.
+  if (ac.state !== 'running' && retryOnSuspend && typeof window !== 'undefined') {
+    window.setTimeout(() => playNewOrderBeep(false), 600);
+  }
   try {
     const t = ac.currentTime;
     [880, 1174.66].forEach((freq, i) => {

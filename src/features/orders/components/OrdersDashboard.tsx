@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FC } from 'react';
 import type { Order, OrderItem, OrderStatus, OrderType, OrdersDashboardProps, Period } from './orders/ordersDashTypes';
 import { useOrdersDashClock } from '../hooks/useOrdersDashClock';
 import { useOrdersDashStats } from '../hooks/useOrdersDashStats';
-import { unlockOrderSound, useNewOrderAlarm, useNewOrderSound } from '../hooks/useNewOrderSound';
+import { playNewOrderBeep, unlockOrderSound, useNewOrderAlarm, useNewOrderSound } from '../hooks/useNewOrderSound';
 import { OrdersDashChart, OrdersDashKpis, OrdersDashPeriodBar, OrdersDashTopItems } from './orders/OrdersDashPanels';
 import { OrdersDashList } from './orders/OrdersDashList';
 
@@ -44,7 +44,11 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
   useEffect(() => {
     const unlock = () => unlockOrderSound();
     window.addEventListener('pointerdown', unlock);
-    return () => window.removeEventListener('pointerdown', unlock);
+    document.addEventListener('visibilitychange', unlock);
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      document.removeEventListener('visibilitychange', unlock);
+    };
   }, []);
   const toggleSound = () => {
     setSoundOn((v) => {
@@ -52,7 +56,12 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
       try {
         localStorage.setItem('dash_sound_v1', next ? 'on' : 'off');
       } catch {}
-      if (next) unlockOrderSound();
+      if (next) {
+        // Proof-of-life: toggling on always beeps instantly, so the owner
+        // can verify the speaker with one tap (and so can we, remotely).
+        unlockOrderSound();
+        playNewOrderBeep();
+      }
       return next;
     });
   };

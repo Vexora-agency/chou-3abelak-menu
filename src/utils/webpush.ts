@@ -90,7 +90,11 @@ export async function subscribeDevice(
   };
 }
 
-export async function postJson(path: string, body: unknown, admin = false): Promise<boolean> {
+export async function postJson(
+  path: string,
+  body: unknown,
+  admin = false
+): Promise<{ ok: boolean; status: number | null }> {
   try {
     if (admin) {
       const { adminFetch } = await import('@/src/lib/api-client');
@@ -99,15 +103,15 @@ export async function postJson(path: string, body: unknown, admin = false): Prom
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      return res.ok;
+      return { ok: res.ok, status: res.status };
     }
     const res = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    return res.ok;
+    return { ok: res.ok, status: res.status };
   } catch {
-    return false;
+    return { ok: false, status: null };
   }
 }

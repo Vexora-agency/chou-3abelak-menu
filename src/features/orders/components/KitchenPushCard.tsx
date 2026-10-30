@@ -12,7 +12,6 @@ interface KitchenPushCardProps {
 }
 
 type State = 'idle' | 'working' | 'on' | 'denied' | 'unsupported' | 'ios' | 'error';
-
 /**
  * Kitchen alerts: subscribes THIS owner device (phone/laptop) so every new
  * order pushes a system notification — dashboard open or not, browser open
@@ -24,6 +23,8 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
   const isAr = lang === 'ar';
   const [state, setState] = useState<State>('idle');
   const [devices, setDevices] = useState<number | null>(null);
+  // Precise failure stage for remote diagnosis (SW / KEY / SUB / SAVE+status).
+  const [errDetail, setErrDetail] = useState<string>('');
   // iPhone tab (not installed): push is impossible here by Apple policy —
   // say so UP FRONT instead of after the tap, with the install path.
   const [needsInstall] = useState<boolean>(() => isIosDevice() && !isStandaloneApp());
@@ -76,11 +77,29 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
       return;
     }
     setState('working');
+    setErrDetail('');
     try {
-      await ensureSW();
+      try {
+        await ensureSW();
+      } catch {
+        setErrDetail('SW');
+        setState('error');
+        return;
+      }
       const key = await fetchVapidKey();
-      if (!key) throw new Error('no-key');
-      const result = await subscribeDevice(key);
+      if (!key) {
+        setErrDetail('KEY');
+        setState('error');
+        return;
+      }
+      let result;
+      try {
+        result = await subscribeDevice(key);
+      } catch {
+        setErrDetail('SUB');
+        setState('error');
+        return;
+      }
       if (result.status === 'denied') {
         setState('denied');
         return;
@@ -89,14 +108,21 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
         setState(isIosDevice() ? 'ios' : 'unsupported');
         return;
       }
-      const ok = await postJson(
+      const saved = await postJson(
         '/api/admin/push-subscriptions',
         { ...result.sub, label: deviceLabel() },
         true
       );
-      setState(ok ? 'on' : 'error');
-      if (ok) void refreshCount();
+      if (!saved.ok) {
+        // 401/403 = admin session gone (re-login); anything else = server.
+        setErrDetail(`SAVE-${saved.status ?? 'net'}`);
+        setState('error');
+        return;
+      }
+      setState('on');
+      void refreshCount();
     } catch {
+      setErrDetail('UNK');
       setState('error');
     }
   };
@@ -128,7 +154,9 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
       : state === 'unsupported'
         ? isAr ? 'هذا المتصفح لا يدعم تنبيهات الخلفية.' : 'This browser cannot do background alerts.'
         : state === 'error'
-          ? isAr ? 'تعذر الحفظ — حاول مجددًا.' : 'Could not save — try again.'
+          ? errDetail === '' || errDetail.startsWith('SAVE-401') || errDetail.startsWith('SAVE-403')
+            ? isAr ? 'انتهت جلسة الدخول — سجّل الخروج والدخول مجددًا ثم فعّل.' : 'Admin session expired — log out and back in, then enable.'
+            : isAr ? `تعذر الحفظ (${errDetail}) — ابعث هذا الرمز للدعم.` : `Could not save (${errDetail}) — send this code to support.`
           : null;
 
   const on = state === 'on';

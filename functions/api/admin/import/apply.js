@@ -42,7 +42,11 @@ export async function onRequest(context) {
   if (request.method !== 'POST') return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'POST' });
   if (!env.MENU_KV) return jsonNoStore({ error: 'unavailable' }, 503);
 
-  if (!(await hitRateLimit(env.MENU_KV, 'rl:import-apply', 5, 3600))) {
+  // 10 applies/hour: each apply is a full-menu write by an authenticated
+  // admin, version-guarded and restorable — the cap exists to stop
+  // runaway loops, not to punish legit retry cycles (5 proved too tight
+  // while troubleshooting an upload: every click counts, pass or fail).
+  if (!(await hitRateLimit(env.MENU_KV, 'rl:import-apply', 10, 3600))) {
     return jsonNoStore({ ok: false, error: 'rate_limited' }, 429);
   }
 

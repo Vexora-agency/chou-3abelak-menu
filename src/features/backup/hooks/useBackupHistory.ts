@@ -238,15 +238,16 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
       if (!r.ok || !isRecord(d) || !d.ok) {
         const conflict = r.status === 409;
         if (conflict) await refreshMenuFromServer();
-        // Surface the server's specific reason (e.g. which item references
-        // a deleted feature) instead of a generic failure wherever present.
+        // Surface the server's specific reason (validation detail,
+        // rate-limit, conflict) instead of a generic failure wherever present.
         const message = isRecord(d) && typeof d.message === 'string' && d.message ? d.message : '';
-        return { ok: false, conflict, message };
+        const rateLimited = r.status === 429;
+        return { ok: false, conflict, message, rateLimited };
       }
       await refreshMenuFromServer();
-      return { ok: true, conflict: false, message: '' };
+      return { ok: true, conflict: false, message: '', rateLimited: false };
     } catch {
-      return { ok: false, conflict: false, message: '' };
+      return { ok: false, conflict: false, message: '', rateLimited: false };
     }
   }, [adminFetch, menuVersion, refreshMenuFromServer]);
 

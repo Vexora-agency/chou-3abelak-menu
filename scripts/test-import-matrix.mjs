@@ -146,5 +146,24 @@ const liveDoc = () => JSON.parse(store.get('menu').value);
   check('C: groups stay deleted', !now.settings.featureGroups.some((g) => g.id === 'addons'));
 }
 
+// D) rate guard: exhausted budget -> distinct 429 (not generic failure);
+// cleared budget works again. (Prod incident: repeated clicks ate the
+// hourly budget and every retry failed with a generic message.)
+{
+  const plain = baseDoc(40);
+  plain.items = [{ ...plain.items[0], id: 'plain' }];
+  delete plain.items[0].variants;
+  delete plain.items[0].addons;
+  plain.items[0].pricing = { ...plain.items[0].pricing, price: 50000 };
+  const tok = await stage(plain, false);
+  await KV.put('rl:import-apply', '10');
+  const r = await apply(tok, false);
+  check('exhausted budget -> 429', r.status === 429, `got ${r.status}`);
+  await KV.delete('rl:import-apply');
+  const tok2 = await stage(plain, false);
+  const r2 = await apply(tok2, false);
+  check('cleared budget applies', r2.status === 200, `got ${r2.status} ${JSON.stringify(r2.body).slice(0, 100)}`);
+}
+
 if (fails) { console.error(`import-matrix: ${fails} FAILURES`); process.exit(1); }
 console.log('import-matrix: all green (real apply.js)');

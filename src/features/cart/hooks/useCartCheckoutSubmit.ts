@@ -55,6 +55,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   });
 
   const [orderPrepared, setOrderPrepared] = useState(false);
+  // Cloud API delivered (no wa.me draft exists): confirmation screen variant.
+  const [apiSent, setApiSent] = useState(false);
   // Last placed order (number + tracking token) for the confirmation
   // screen: tracking link + push subscribe. Reset when the drawer closes.
   const [lastOrder, setLastOrder] = useState<{ number: number; trackToken: string | null } | null>(null);
@@ -211,6 +213,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     // Transport lives in features/cart/services/cart.api.ts (single place).
     let orderNumber: number | null = null;
     let trackToken: string | null = null;
+    let sentVia: 'wa' | 'api' = 'wa';
     try {
       if (!idemKeyRef.current) {
         idemKeyRef.current =
@@ -237,6 +240,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
           ...(location ? { location: { lat: location.lat, lng: location.lng, accuracy: Math.round(location.accuracy) } } : {}),
           lang,
           website: honeypot,
+          whatsappUpdates: customer.whatsappUpdates === true,
         },
         lang
       );
@@ -258,11 +262,23 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       }
       orderNumber = result.orderNumber;
       trackToken = result.trackToken ?? null;
+      sentVia = result.sentVia;
       if (result.orderNumber) {
         setLastOrder({ number: result.orderNumber, trackToken: result.trackToken ?? null });
       }
     } catch {
       orderNumber = null;
+    }
+
+    if (sentVia === 'api' && orderNumber) {
+      // Cloud API delivered it: no WhatsApp hop at all. Tracking + updates
+      // replace the wa.me draft (see confirmation screen); Re-open stays
+      // hidden because there is no draft to reopen.
+      setApiSent(true);
+      clearLocation();
+      if (clientConfig.cart?.clearAfterOrder) onOrderSuccess?.();
+      setOrderPrepared(true);
+      return;
     }
 
     // NOTE: trackUrl is deliberately NOT passed: WhatsApp unfurls any URL
@@ -365,6 +381,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     reopenText,
     orderPrepared,
     setOrderPrepared,
+    apiSent,
+    setApiSent,
     lastOrder,
     setLastOrder,
     errorMsg,

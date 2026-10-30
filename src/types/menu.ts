@@ -235,4 +235,6 @@ export interface CustomerDetails {
   notes: string;
   orderType: OrderType;
   remember: boolean;
+  /** Opt-in: WhatsApp order confirmations (used only if the restaurant enabled the Cloud API sender). */
+  whatsappUpdates?: boolean;
 }

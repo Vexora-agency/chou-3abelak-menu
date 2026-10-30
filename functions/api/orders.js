@@ -8,7 +8,19 @@
 import { jsonNoStore, readJsonBody } from '../_shared/session.js';
 import { mapOrderRow, validateOrderInput } from '../_shared/orders.js';
 import { newTrackToken, notifyNewOrder } from '../_shared/push.js';
-import { findOrderById, findOrderByIdemKey, insertOrderWithNumber, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
+import {
+  WA_CONFIG_KEY,
+  WA_TOKEN_KEY,
+  buildCustomerParams,
+  buildOwnerParams,
+  checkCap,
+  incrCap,
+  isCompleteConfig,
+  sanitizeWaConfig,
+  sendTemplate,
+  toApiPhone,
+} from '../_shared/whatsapp-api.js';
+import { findOrderById, findOrderByIdemKey, insertOrderWithNumber, markOrderSentVia, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
 import { getOrderingState } from '../_shared/status.js';
 
 const MAX_BODY_BYTES = 8 * 1024;
@@ -135,6 +147,9 @@ export async function onRequest(context) {
 
   // Idempotency: a repeated key returns the original order (stored totals, not
   // freshly computed ones — the menu may have changed since the first insert).
+  // sentVia replays the ORIGINAL channel so a retry never double-contacts
+  // (API message + wa.me draft for one order).
+  const sentViaOf = (existing) => (existing && existing.sent_via === 'api' ? 'api' : 'wa');
   if (c.idemKey) {
     try {
       const existing = await findOrderByIdemKey(db, c.idemKey);
@@ -144,6 +159,7 @@ export async function onRequest(context) {
           orderNumber: existing.number,
           total: typeof existing.total === 'number' ? existing.total : c.total,
           trackToken: typeof existing.track_token === 'string' ? existing.track_token : null,
+          sentVia: sentViaOf(existing),
         });
       }
     } catch {}
@@ -171,6 +187,7 @@ export async function onRequest(context) {
             orderNumber: existing.number,
             total: typeof existing.total === 'number' ? existing.total : c.total,
             trackToken: typeof existing.track_token === 'string' ? existing.track_token : null,
+            sentVia: sentViaOf(existing),
           });
         }
       } catch {}
@@ -179,6 +196,84 @@ export async function onRequest(context) {
   if (!created) {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
+
+  // Cloud API path (only when fully configured): the SITE delivers the order
+  // over WhatsApp itself, so the client must NOT open wa.me (sentVia tells
+  // it). Awaited inline — the client decision depends on it — with tight
+  // timeouts; any failure falls back to wa.me ('wa'). Owner first (gates
+  // 'api'), customer confirmation second (opt-in only), each capped.
+  let sentVia = 'wa';
+  try {
+    let cfgRaw = null;
+    let token = '';
+    try {
+      const cfgRow = await db
+        .prepare('SELECT value FROM service_config WHERE key = ?1')
+        .bind(WA_CONFIG_KEY)
+        .first();
+      cfgRaw = cfgRow && typeof cfgRow.value === 'string' ? JSON.parse(cfgRow.value) : {};
+      const tokRow = await db
+        .prepare('SELECT secret FROM service_secrets WHERE key = ?1')
+        .bind(WA_TOKEN_KEY)
+        .first();
+      token = tokRow && typeof tokRow.secret === 'string' ? tokRow.secret : '';
+    } catch {}
+    const { config: waCfg } = sanitizeWaConfig(cfgRaw || {});
+    if (token && isCompleteConfig(waCfg)) {
+      const cap = await checkCap(kv, waCfg.dailyCap);
+      if (cap.allowed) {
+        let origin = '';
+        try {
+          origin = new URL(request.url).origin;
+        } catch {}
+        const currency = menu?.settings?.currency;
+        const cur = currency && typeof currency === 'object'
+          ? String(currency.en || currency.ar || '') : '';
+        const nm = menu?.settings?.name;
+        const storeName = nm && typeof nm === 'object' ? String(nm.en || nm.ar || '') : '';
+        const owner = await sendTemplate({
+          token,
+          phoneNumberId: waCfg.phoneNumberId,
+          to: waCfg.ownerRecipient,
+          templateName: waCfg.ownerTemplate,
+          params: buildOwnerParams({
+            number: created.num,
+            items: c.items,
+            total: c.total,
+            currency: cur,
+            name: c.name,
+            phone: c.phone,
+          }),
+          timeoutMs: 8000,
+        });
+        if (owner.ok) {
+          await incrCap(kv);
+          sentVia = 'api';
+          await markOrderSentVia(db, created.id, 'api');
+          if (waCfg.customerUpdates && c.whatsappUpdates && c.phone) {
+            const to = toApiPhone(c.phone);
+            if (to && waCfg.customerTemplate) {
+              const cu = await sendTemplate({
+                token,
+                phoneNumberId: waCfg.phoneNumberId,
+                to,
+                templateName: waCfg.customerTemplate,
+                params: buildCustomerParams({
+                  number: created.num,
+                  total: c.total,
+                  currency: cur,
+                  storeName,
+                  trackUrl: origin && c.trackToken ? `${origin}/?track=${created.num}&t=${c.trackToken}` : '',
+                }),
+                timeoutMs: 8000,
+              });
+              if (cu.ok) await incrCap(kv);
+            }
+          }
+        }
+      }
+    }
+  } catch {}
 
   // Bookkeeping (never blocks the response). Retention lives in the daily
   // /api/internal/run-reports job now — never here.
@@ -228,5 +323,5 @@ export async function onRequest(context) {
     const row = await findOrderById(db, created.id);
     if (row) savedTotal = mapOrderRow(row).total;
   } catch {}
-  return jsonNoStore({ ok: true, orderNumber: created.num, total: savedTotal, trackToken: c.trackToken });
+  return jsonNoStore({ ok: true, orderNumber: created.num, total: savedTotal, trackToken: c.trackToken, sentVia });
 }

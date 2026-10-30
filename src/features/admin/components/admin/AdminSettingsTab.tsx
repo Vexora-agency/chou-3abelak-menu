@@ -12,6 +12,7 @@ import { VisitorDefaultsSection } from '../VisitorDefaultsSection';
 import { SmartBadgesSection } from '../SmartBadgesSection';
 import { ShowMoreSection } from '../ShowMoreSection';
 import { AccessSection } from '../AccessSection';
+import { WhatsappApiSection } from '../WhatsappApiSection';
 import { AutoplaySection } from '../AutoplaySection';
 import { FeaturesSection } from '../FeaturesSection';
 
@@ -139,6 +140,10 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           }))
         }
       />
+      )}
+
+      {featuresConfig.enableOrdering && (
+        <WhatsappApiSection lang={lang} adminFetch={adminFetch} />
       )}
 
       {featuresConfig.enableAnnouncements && (

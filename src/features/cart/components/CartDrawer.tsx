@@ -63,6 +63,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     reopenText,
     orderPrepared,
     setOrderPrepared,
+    apiSent,
+    setApiSent,
     lastOrder,
     setLastOrder,
     errorMsg,
@@ -104,8 +106,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   // Reset transient checkout state whenever the drawer closes.
   // Render-phase adjustment (blessed pattern): guarded so it converges
   // immediately, and the closed drawer never flashes stale errors.
-  if (!isOpen && (orderPrepared || errorMsg !== '' || location !== null || lastOrder !== null)) {
+  if (!isOpen && (orderPrepared || errorMsg !== '' || location !== null || lastOrder !== null || apiSent)) {
     setOrderPrepared(false);
+    setApiSent(false);
     setErrorMsg('');
     setLastOrder(null);
     clearLocation();
@@ -175,12 +178,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <CheckCircle2 size={36} />
             </div>
             <h3 className={`text-xl font-black ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-              {isAr ? 'تم تجهيز طلبك بنجاح!' : 'Order prepared successfully!'}
+              {apiSent
+                ? (isAr ? 'وصل طلبك للمطعم مباشرة!' : 'Your order reached the kitchen directly!')
+                : (isAr ? 'تم تجهيز طلبك بنجاح!' : 'Order prepared successfully!')}
             </h3>
             <p className={`text-sm max-w-xs mx-auto leading-relaxed ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>
-              {isAr
-                ? 'يرجى الضغط على زر "إرسال" داخل تطبيق واتساب لتأكيد الطلب مع المطعم.'
-                : 'Please press "Send" in WhatsApp to confirm your order with the kitchen.'}
+              {apiSent
+                ? (isAr
+                  ? 'أرسلنا طلبك للمطعم عبر واتساب تلقائيًا — لا حاجة لفتح واتساب. تتبعه بالأسفل.'
+                  : 'We sent your order to the kitchen over WhatsApp — no need to open WhatsApp. Track it below.')
+                : (isAr
+                  ? 'يرجى الضغط على زر "إرسال" داخل تطبيق واتساب لتأكيد الطلب مع المطعم.'
+                  : 'Please press "Send" in WhatsApp to confirm your order with the kitchen.')}
             </p>
             {/* Send-failure honesty (plan §7): a DB/transport failure must
                 never look like a clean success — the cause shows HERE on the
@@ -215,6 +224,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               </div>
             )}
             <div className="pt-4 flex flex-col gap-2.5">
+              {/* No wa.me draft exists after an API send — nothing to reopen. */}
+              {!apiSent && (
               <button
                 type="button"
                 onClick={() => reopenWhatsApp()}
@@ -223,6 +234,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 <Send size={16} />
                 <span>{isAr ? 'إعادة فتح واتساب' : 'Re-open WhatsApp'}</span>
               </button>
+              )}
               <button
                 type="button"
                 onClick={() => {

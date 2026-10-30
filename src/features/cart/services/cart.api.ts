@@ -12,6 +12,7 @@ export interface SubmitOrderPayload {
   location?: { lat: number; lng: number; accuracy: number };
   lang: string;
   website: string;
+  whatsappUpdates: boolean;
 }
 
 export interface SubmitOrderResult {
@@ -20,11 +21,13 @@ export interface SubmitOrderResult {
   blockedMessage: string | null;
   /** Machine cause for UI + remote diagnosis (null = recorded OK). */
   failure: null | 'timeout' | 'rate' | 'blocked' | 'invalid';
+  /** Delivery channel the server used: 'api' (no WhatsApp hop) or 'wa'. */
+  sentVia: 'wa' | 'api';
 }
 
 export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'): Promise<SubmitOrderResult> {
   const fail = (failure: NonNullable<SubmitOrderResult['failure']>, blockedMessage: string | null = null): SubmitOrderResult =>
-    ({ orderNumber: null, trackToken: null, blockedMessage, failure });
+    ({ orderNumber: null, trackToken: null, blockedMessage, failure, sentVia: 'wa' });
   const send = async (timeoutMs: number) => {
     try {
       return await publicPostRaw('/api/orders', payload, timeoutMs);
@@ -46,13 +49,15 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
       const data: unknown = await readJson(res);
       const orderNumber = isRecord(data) && typeof data.orderNumber === 'number' ? data.orderNumber : null;
       const trackToken = isRecord(data) && typeof data.trackToken === 'string' ? data.trackToken : null;
+      // Only an explicit 'api' counts (server default is wa.me).
+      const sentVia: 'wa' | 'api' = isRecord(data) && data.sentVia === 'api' ? 'api' : 'wa';
       if (!orderNumber) return fail('invalid');
-      return { orderNumber, trackToken, blockedMessage: null, failure: null };
+      return { orderNumber, trackToken, blockedMessage: null, failure: null, sentVia };
     }
     if (res.status === 403) {
       const data: unknown = await readJson(res);
       const msg = isRecord(data) && isRecord(data.message) ? str(lang === 'ar' ? data.message.ar : data.message.en) : '';
-      return { orderNumber: null, trackToken: null, blockedMessage: msg || null, failure: 'blocked' };
+      return { orderNumber: null, trackToken: null, blockedMessage: msg || null, failure: 'blocked', sentVia: 'wa' };
     }
     if (res.status === 429) {
       // Too fast: show it and STOP (no numberless ghost message to the
@@ -64,6 +69,7 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
           ? 'طلبات كثيرة بسرعة — انتظر دقيقة وحاول مجددًا'
           : 'Too many orders at once — wait a minute and try again',
         failure: 'rate',
+        sentVia: 'wa',
       };
     }
     return fail('invalid');

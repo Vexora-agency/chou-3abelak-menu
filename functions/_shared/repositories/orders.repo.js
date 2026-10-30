@@ -6,7 +6,7 @@
 import { mapOrderRow, newOrderId } from '../orders.js';
 
 export async function findOrderByIdemKey(db, idemKey) {
-  return db.prepare('SELECT number, total, track_token FROM orders WHERE idem_key = ?1').bind(idemKey).first();
+  return db.prepare('SELECT number, total, track_token, sent_via FROM orders WHERE idem_key = ?1').bind(idemKey).first();
 }
 
 export async function findOrderById(db, id) {
@@ -66,6 +66,16 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
   return { id, num };
 }
 
+/** Stamp the delivery channel after a Cloud API send (best-effort). */
+export async function markOrderSentVia(db, id, via) {
+  try {
+    await db
+      .prepare('UPDATE orders SET sent_via = ?1 WHERE id = ?2')
+      .bind(via, id)
+      .run();
+  } catch {}
+}
+
 /**
  * Allowlist of window WHERE templates — the ONLY strings that may reach the
  * SQL below. listOrders() throws on anything else, so a caller-supplied
@@ -104,8 +114,7 @@ export async function listOrdersByWindow(db, { from, to, days }, limit) {
   return listOrders(db, WINDOW_WHERE.days, [new Date(Date.now() - n * 86400000).toISOString()], limit);
 }
 
-export async function updateOrderStatus(db, id, status) {
-  const nowIso = new Date().toISOString();
+export async function updateOrderStatus(db, id, status) {  const nowIso = new Date().toISOString();
   const res = await db
     .prepare('UPDATE orders SET status = ?1, updated_at = ?2 WHERE id = ?3')
     .bind(status, nowIso, id)

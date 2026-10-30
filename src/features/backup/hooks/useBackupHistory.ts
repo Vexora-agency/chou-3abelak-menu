@@ -267,12 +267,15 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
         body: JSON.stringify({ enabled: on }),
       });
       const d: unknown = await readJson(r);
-      if (!r.ok || !isRecord(d) || !d.ok) throw new Error('toggle_failed');
+      if (!r.ok || !isRecord(d) || !d.ok) {
+        await fetchBackupData();
+        return { ok: false as const, noDestination: isRecord(d) && d.error === 'no_destination' };
+      }
       await fetchBackupData();
-      return { ok: true };
+      return { ok: true as const, noDestination: false };
     } catch {
       await fetchBackupData();
-      return { ok: false };
+      return { ok: false as const, noDestination: false };
     }
   }, [adminFetch, fetchBackupData]);
 

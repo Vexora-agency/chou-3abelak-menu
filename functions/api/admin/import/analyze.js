@@ -52,12 +52,18 @@ const WARN = {
     csvSkipped: (n) => `${n} spreadsheet row(s) were skipped (unknown item, bad price, or missing category).`,
     csvAdded: (n) => `${n} new item(s) will be added (their categories already exist).`,
     settingsOnlySigned: 'Business settings in this file will be ignored unless it is signed.',
+    featuresCreated: (names) => `New features will be created in the library: ${names}. Check their names.`,
+    featuresAliased: (pairs) => `Custom names matched to existing features: ${pairs}.`,
+    featuresNeedSigned: 'New features only persist in a SIGNED file applied with "replace business settings".',
   },
   ar: {
     unsigned: 'هذا الملف غير موقّع من هذا الموقع: سيتم تجاهل إعدادات العمل (الهاتف وواتساب والطلب).',
     csvSkipped: (n) => `تم تخطي ${n} من صفوف الجدول (صنف غير معروف أو سعر خاطئ أو قسم مفقود).`,
     csvAdded: (n) => `ستُضاف ${n} أصناف جديدة (أقسامها موجودة بالفعل).`,
     settingsOnlySigned: 'سيتم تجاهل إعدادات العمل في هذا الملف ما لم يكن موقّعاً.',
+    featuresCreated: (names) => `سيتم إنشاء ميزات جديدة في المكتبة: ${names}. تحقق من أسمائها.`,
+    featuresAliased: (pairs) => `تمت مطابقة أسماء مخصصة لميزات موجودة: ${pairs}.`,
+    featuresNeedSigned: 'الميزات الجديدة لا تُحفظ إلا في ملف موقّع يُطبق مع "استبدال إعدادات العمل".',
   },
 };
 
@@ -125,10 +131,45 @@ export async function onRequest(context) {
         signed = false;
       }
       assertSafeJSON(doc);
+      // Snapshot the library + item refs BEFORE validation mutates them
+      // (auto-created/aliased features): surfaced below as warnings so
+      // silent library growth never surprises the "Used by" counts.
+      const preDefs = new Set(
+        Array.isArray(doc.settings?.featureDefs) ? doc.settings.featureDefs.map((f) => f && f.id) : []
+      );
+      const preRefs = new Map();
+      if (Array.isArray(doc.items)) {
+        for (const it of doc.items) {
+          if (!it || typeof it.id !== 'string') continue;
+          const refs = [];
+          for (const v of it.variants || []) refs.push(v && (v.featureId || v.id));
+          for (const a of it.addons || []) refs.push(a && a.featureId);
+          preRefs.set(it.id, refs.filter(Boolean));
+        }
+      }
       const v = validateMenu(doc);
       if (!v.ok) return jsonNoStore({ error: 'validation_error', message: v.errors.join('; ') }, 400);
       doc = v.value;
       if (!signed) warnings.push(w.unsigned);
+      {
+        const created = (doc.settings.featureDefs || [])
+          .filter((f) => f && !preDefs.has(f.id))
+          .map((f) => `${f.id} (${(f.name && (f.name.en || f.name.ar)) || '?'})`);
+        const aliased = [];
+        for (const it of doc.items || []) {
+          const before = preRefs.get(it && it.id) || [];
+          const after = [...(it.variants || []).map((x) => x.featureId), ...(it.addons || []).map((x) => x.featureId)];
+          const n = Math.min(before.length, after.length);
+          for (let i = 0; i < n; i++) {
+            if (before[i] && after[i] && before[i] !== after[i] && !aliased.some((p) => p[0] === before[i] && p[1] === after[i])) {
+              aliased.push([before[i], after[i]]);
+            }
+          }
+        }
+        if (created.length) warnings.push(w.featuresCreated(created.slice(0, 8).join(', ') + (created.length > 8 ? ', …' : '')));
+        if (aliased.length) warnings.push(w.featuresAliased(aliased.slice(0, 8).map(([a, b]) => `${a} → ${b}`).join(', ') + (aliased.length > 8 ? ', …' : '')));
+        if ((created.length || aliased.length) && !signed) warnings.push(w.featuresNeedSigned);
+      }
     } else {
       kind = 'csv';
       signed = null;

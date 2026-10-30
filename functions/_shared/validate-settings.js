@@ -258,7 +258,8 @@ function validateSettings(s, errors) {
   // Feature groups + library (names only; prices live per item) are parsed
   // by the feature-library module so settings can carry them; legacy docs
   // migrate into the library during items validation below.
-  const { featureGroups, featureDefs, featureById, ensureFeature } = buildFeatureLibrary(s, errors);
+  const { featureGroups, featureDefs, featureById, groupById, ensureFeature } =
+    buildFeatureLibrary(s, errors);
 
   const cleanSettings = {
     name,
@@ -311,7 +312,7 @@ function validateSettings(s, errors) {
     },
     privacy,
   };
-  return { cleanSettings, featureById, ensureFeature };
+  return { cleanSettings, featureById, groupById, ensureFeature };
 }
 
 export { validateSettings };

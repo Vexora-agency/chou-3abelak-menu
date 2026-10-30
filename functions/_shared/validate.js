@@ -44,7 +44,7 @@ export function validateMenu(doc) {
     errors.push('Missing or invalid settings object');
     return { ok: false, errors, value: null };
   }
-  const { cleanSettings, featureById, ensureFeature } = validateSettings(s, errors);
+  const { cleanSettings, featureById, groupById, ensureFeature } = validateSettings(s, errors);
   // Categories validation
   if (!Array.isArray(doc.categories)) {
     errors.push('categories must be an array');
@@ -57,7 +57,7 @@ export function validateMenu(doc) {
     errors.push('items must be an array');
     return { ok: false, errors, value: null };
   }
-  const cleanItems = validateItems(doc.items, errors, categoryIds, legacyGroups, featureById, ensureFeature);
+  const cleanItems = validateItems(doc.items, errors, categoryIds, legacyGroups, featureById, ensureFeature, groupById);
   return {
     ok: errors.length === 0,
     errors,

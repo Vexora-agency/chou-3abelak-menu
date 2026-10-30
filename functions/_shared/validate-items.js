@@ -10,13 +10,56 @@ import { validateBilingual, ID_REGEX, stripControls } from './validate-core.js';
  * feature library lookup/mutator. Returns the cleaned items. Appends to
  * `errors` in document order.
  */
-function validateItems(items, errors, categoryIds, legacyGroups, featureById, ensureFeature) {
+function validateItems(items, errors, categoryIds, legacyGroups, featureById, ensureFeature, groupById) {
   if (items.length > 500) {
     errors.push('Maximum 500 items allowed');
   }
   const itemIds = new Set();
   const cleanItems = [];
   const allowedBadges = ['new', 'spicy', 'top'];
+  // Flexible custom features (hand/AI-authored imports): an unknown
+  // featureId is accepted when it carries a usable bilingual name —
+  // aliased onto an existing feature when the name matches one, else
+  // created (explicit groupId, or the kind default). Bare unknown ids
+  // (no name) still fail with an actionable message. Returns the final
+  // featureId, or null (error already pushed).
+  const usableName = (name) =>
+    name && typeof name === 'object' && (
+      (typeof name.en === 'string' && name.en.trim()) || (typeof name.ar === 'string' && name.ar.trim())
+    );
+  const aliasByName = (name) => {
+    const en = typeof name?.en === 'string' ? name.en.trim().toLowerCase() : '';
+    const ar = typeof name?.ar === 'string' ? name.ar.trim() : '';
+    if (!en && !ar) return null;
+    for (const def of featureById.values()) {
+      const den = typeof def.name?.en === 'string' ? def.name.en.trim().toLowerCase() : '';
+      const dar = typeof def.name?.ar === 'string' ? def.name.ar.trim() : '';
+      if ((en && den && en === den) || (ar && dar && ar === dar)) return def.id;
+    }
+    return null;
+  };
+  const resolveCustomFeature = (vid, name, groupId, kind, itemId, field) => {
+    if (featureById.has(vid)) return vid;
+    if (!usableName(name)) {
+      errors.push(
+        `Item "${itemId}" ${field} "${vid}" is not a known feature (add name:{en,ar} to auto-create it, or define it in Features Library first)`
+      );
+      return null;
+    }
+    const aliased = aliasByName(name);
+    if (aliased) return aliased;
+    const gid = typeof groupId === 'string' ? groupId.trim() : '';
+    if (gid) {
+      if (!groupById || !groupById.has(gid)) {
+        errors.push(`Item "${itemId}" ${field} "${vid}" group "${gid}" does not exist`);
+        return null;
+      }
+      ensureFeature(vid, kind, name, gid);
+      return vid;
+    }
+    ensureFeature(vid, kind, name);
+    return vid;
+  };
   for (const item of items) {
     if (!item || typeof item !== 'object') continue;
     const id = typeof item.id === 'string' ? item.id.trim() : '';
@@ -78,6 +121,10 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
     // Sizes (optional; names come from the feature library, prices live here).
     // Legacy inline {id, name, price} variants migrate into the library.
     let variants;
+    // Raw→final id map for this item (custom ids resolve/alias during the
+    // loop below; defaultVariant below reuses it). Per-item scope: declared
+    // here so it exists even when variants are absent.
+    const vAlias = new Map();
     if (item.variants !== undefined) {
       if (!Array.isArray(item.variants) || item.variants.length === 0) {
         errors.push(`Item "${id}" must have at least one variant when "variants" is present`);
@@ -92,10 +139,29 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
       let vOk = true;
       for (const v of item.variants) {
         if (!v || typeof v !== 'object') { vOk = false; break; }
-        // New shape {featureId, price} or legacy {id, name?, price}
+        // New shape {featureId, price} or legacy {id, name?, price}.
+        // Unknown featureIds carrying names auto-create/alias (flexible
+        // hand/AI-authored imports); duplicates are judged on final ids.
         const rawId = typeof v.featureId === 'string' && v.featureId ? v.featureId : (typeof v.id === 'string' ? v.id : '');
-        const vid = rawId.trim();
-        if (!ID_REGEX.test(vid) || seenV.has(vid)) {
+        let vid = rawId.trim();
+        if (!ID_REGEX.test(vid)) {
+          errors.push(`Item "${id}" has an invalid or duplicate variant: "${vid}"`);
+          vOk = false;
+          break;
+        }
+        if (v.featureId) {
+          if (!featureById.has(vid)) {
+            const gid = typeof v.groupId === 'string' ? v.groupId : undefined;
+            const resolved = resolveCustomFeature(vid, v.name, gid, 'size', id, 'variant');
+            if (!resolved) { vOk = false; break; }
+            vAlias.set(vid, resolved);
+            vid = resolved;
+          }
+        } else {
+          // Legacy inline name migrates into the library (first wins)
+          ensureFeature(vid, 'size', v.name);
+        }
+        if (seenV.has(vid)) {
           errors.push(`Item "${id}" has an invalid or duplicate variant: "${vid}"`);
           vOk = false;
           break;
@@ -105,16 +171,6 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
           errors.push(`Item "${id}" variant "${vid}" price must be a number >= 0 (decimals allowed, 0 = free)`);
           vOk = false;
           break;
-        }
-        if (v.featureId) {
-          if (!featureById.has(vid)) {
-            errors.push(`Item "${id}" variant "${vid}" is not a known feature`);
-            vOk = false;
-            break;
-          }
-        } else {
-          // Legacy inline name migrates into the library (first wins)
-          ensureFeature(vid, 'size', v.name);
         }
         variants.push({ featureId: vid, price: Math.round((v.price + Number.EPSILON) * 100) / 100 });
       }
@@ -136,18 +192,26 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
       let aOk = true;
       for (const a of item.addons) {
         if (!a || typeof a !== 'object') { aOk = false; break; }
-        const aid = typeof a.featureId === 'string' ? a.featureId.trim() : '';
-        if (!ID_REGEX.test(aid) || seenA.has(aid)) {
+        let aid = typeof a.featureId === 'string' ? a.featureId.trim() : '';
+        if (!ID_REGEX.test(aid)) {
+          errors.push(`Item "${id}" has an invalid or duplicate add-on: "${aid}"`);
+          aOk = false;
+          break;
+        }
+        // Unknown ids with names auto-create/alias like variants (flexible
+        // imports); accepted shape gains optional name/groupId.
+        if (!featureById.has(aid)) {
+          const gid = typeof a.groupId === 'string' ? a.groupId : undefined;
+          const resolved = resolveCustomFeature(aid, a.name, gid, 'addon', id, 'add-on');
+          if (!resolved) { aOk = false; break; }
+          aid = resolved;
+        }
+        if (seenA.has(aid)) {
           errors.push(`Item "${id}" has an invalid or duplicate add-on: "${aid}"`);
           aOk = false;
           break;
         }
         seenA.add(aid);
-        if (!featureById.has(aid)) {
-          errors.push(`Item "${id}" add-on "${aid}" is not a known feature`);
-          aOk = false;
-          break;
-        }
         if (typeof a.price !== 'number' || !Number.isFinite(a.price) || a.price < 0 || a.price > 100000000) {
           errors.push(`Item "${id}" add-on "${aid}" price must be a number >= 0 (decimals allowed)`);
           aOk = false;
@@ -182,9 +246,13 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
       available: item.available !== false,
     };
     if (variants) cleanItem.variants = variants;
-    // Explicit default (★ marks in place, order untouched): must point at a size
+    // Explicit default (★ marks in place, order untouched): must point at a size.
+    // Raw ids pass through the same alias map as the variants above, so a
+    // file that invents "drink-regular" with defaultVariant "drink-regular"
+    // still resolves when the name matches the library.
     if (item.defaultVariant !== undefined) {
-      const dvd = typeof item.defaultVariant === 'string' ? item.defaultVariant.trim() : '';
+      const dvdRaw = typeof item.defaultVariant === 'string' ? item.defaultVariant.trim() : '';
+      const dvd = vAlias.get(dvdRaw) || dvdRaw;
       if (!dvd || !variants || !variants.some((v) => v.featureId === dvd)) {
         errors.push(`Item "${id}" defaultVariant must match one of its variants`);
         continue;

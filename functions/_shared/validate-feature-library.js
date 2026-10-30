@@ -94,5 +94,5 @@ export function buildFeatureLibrary(s, errors) {
     return def;
   };
 
-  return { featureGroups, featureDefs, featureById, ensureFeature };
+  return { featureGroups, featureDefs, featureById, groupById, ensureFeature };
 }

@@ -21,6 +21,9 @@ const STR = {
     mapFail: 'Map tiles did not load (offline?). You can still confirm the detected point.',
     addrFail: 'Address lookup failed — coordinates will be saved.',
     manual: 'Enter address manually',
+    denied: 'Location is blocked — allow it in the browser settings, or pin manually.',
+    failed: 'Could not detect you — drag the pin or type the address.',
+    unsupported: 'This browser has no location service — drag the pin to set your point.',
   },
   ar: {
     title: 'موقع التوصيل', close: 'إغلاق', locating: 'جارٍ تحديد موقعك…',
@@ -29,6 +32,9 @@ const STR = {
     mapFail: 'تعذر تحميل الخريطة (لا إنترنت؟). يمكنك تأكيد النقطة المكتشفة.',
     addrFail: 'تعذر جلب العنوان — سيُحفظ بالإحداثيات.',
     manual: 'كتابة العنوان يدوياً',
+    denied: 'الموقع محظور — اسمح به من إعدادات المتصفح أو حدد بالدبوس.',
+    failed: 'تعذر تحديد موقعك — اسحب الدبوس أو اكتب العنوان.',
+    unsupported: 'هذا المتصفح بلا خدمة موقع — اسحب الدبوس لتحديد نقطتك.',
   },
 } as const;
 
@@ -45,6 +51,9 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   const [detecting, setDetecting] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [addrWarn, setAddrWarn] = useState(false);
+  // Human-readable detect outcome (never silent: weak browsers may lack the
+  // API entirely or never answer — both used to leave a dead spinner).
+  const [locError, setLocError] = useState<string | null>(null);
   const [point, setPoint] = useState<{ lat: number; lng: number; accuracy: number } | null>(
     initial ? { ...initial, accuracy: 100 } : null
   );
@@ -88,12 +97,14 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           const p = marker.getLatLng();
           manualRef.current = true;
           setDetecting(false);
+          setLocError(null);
           setPoint({ lat: round5(p.lat), lng: round5(p.lng), accuracy: 100 });
         });
         map.on('click', (e: Leaflet.LeafletMouseEvent) => {
           marker.setLatLng(e.latlng);
           manualRef.current = true;
           setDetecting(false);
+          setLocError(null);
           setPoint({ lat: round5(e.latlng.lat), lng: round5(e.latlng.lng), accuracy: 100 });
         });
         mapObj.current = map;
@@ -128,10 +139,31 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   };
 
   const detect = (userTap = false) => {
-    if (!('geolocation' in navigator)) return;
+    // No API at all (minimal/WebView browsers): say so now, not silence.
+    if (!('geolocation' in navigator) || typeof navigator.geolocation?.getCurrentPosition !== 'function') {
+      setDetecting(false);
+      setLocError(t.unsupported);
+      return;
+    }
     const seq = ++seqRef.current;
-    if (userTap) manualRef.current = false;
+    if (userTap) {
+      manualRef.current = false;
+      setLocError(null);
+    }
     setDetecting(true);
+    // Watchdog: some browsers never call back AND ignore timeout — without
+    // this the spinner (and the user) waits forever. Force-settles the run.
+    window.setTimeout(() => {
+      if (seq !== seqRef.current) return;
+      setDetecting(false);
+      setLocError((prev) => {
+        if (prev) return prev;
+        // A hand-placed pin already answers the user — stay silent then,
+        // unless they explicitly tapped (their tap deserves an answer).
+        if (manualRef.current && !userTap) return prev;
+        return pointRef.current && !userTap ? prev : t.failed;
+      });
+    }, 15000);
     // Phase 1 — fast: cached/cell fix lands in ~a second so the pin moves
     // immediately. Good enough (WiFi-grade) ends here.
     navigator.geolocation.getCurrentPosition(
@@ -141,6 +173,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
           const acc = typeof accuracy === 'number' ? accuracy : 100;
           moveTo(latitude, longitude, acc);
+          setLocError(null);
           if (acc <= 60) {
             setDetecting(false);
             return;
@@ -148,8 +181,15 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         }
         refine(seq);
       },
-      () => {
+      (err) => {
         if (seq !== seqRef.current) return;
+        // Permission denial is final (retrying nags the OS): report how to
+        // fix instead of spinning into phase 2.
+        if (err && (err as GeolocationPositionError).code === 1) {
+          setDetecting(false);
+          setLocError(t.denied);
+          return;
+        }
         refine(seq); // low-power fix failed → still try GPS
       },
       { enableHighAccuracy: false, timeout: 4000, maximumAge: 300000 }
@@ -171,7 +211,15 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           moveTo(latitude, longitude, acc);
         }
       },
-      () => setDetecting(false),
+      (err) => {
+        setDetecting(false);
+        if (seq !== seqRef.current || manualRef.current) return;
+        // A coarse phase-1 fix already answers the user — only speak up when
+        // there is still no point at all.
+        if (pointRef.current) return;
+        if (err && (err as GeolocationPositionError).code === 1) setLocError(t.denied);
+        else setLocError(t.failed);
+      },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
   };
@@ -239,6 +287,9 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
 
       {tilesFailed && (
         <p className="text-[11px] font-bold text-amber-500">{t.mapFail}</p>
+      )}
+      {locError && (
+        <p className="text-[11px] font-bold text-amber-500">{locError}</p>
       )}
 
       <LocationAddressPreview point={point} addrLoading={addrLoading} addrPreview={addrPreview} darkMode={darkMode} isAr={isAr} />

@@ -74,17 +74,23 @@ interface ShowMoreButtonProps {
   /** Next-batch size (more) — unused for less. */
   count: number;
   isAr: boolean;
+  darkMode: boolean;
   onToggle: () => void;
 }
 
-/** On-brand pager button: gold-outline pill, rotating chevron, batch count. */
-const ShowMoreButton: React.FC<ShowMoreButtonProps> = ({ expanded, count, isAr, onToggle }) => (
+/** On-brand pager button: outline pill in the mode's ink color (black on light,
+ *  gold on dark — gold-on-white is unreadable), gold fill on hover in both. */
+const ShowMoreButton: React.FC<ShowMoreButtonProps> = ({ expanded, count, isAr, darkMode, onToggle }) => (
   <div className="mt-4 flex justify-center pager-anchor">
     <button
       type="button"
       aria-expanded={expanded}
       onClick={onToggle}
-      className="btn-tactile inline-flex items-center gap-2 h-11 px-6 rounded-full border border-[var(--primary)]/50 text-[var(--primary)] text-sm font-extrabold hover:bg-[var(--primary)] hover:text-[#0A0A0A] hover:border-[var(--primary)] transition-colors"
+      className={`btn-tactile inline-flex items-center gap-2 h-11 px-6 rounded-full border text-sm font-extrabold transition-colors hover:bg-[var(--primary)] hover:text-[#0A0A0A] hover:border-[var(--primary)] ${
+        darkMode
+          ? 'border-[var(--primary)]/50 text-[var(--primary)]'
+          : 'border-[#0A0A0A] text-[#0A0A0A]'
+      }`}
     >
       <span>
         {expanded
@@ -403,10 +409,11 @@ export const MenuList: React.FC<MenuListProps> = ({
               // Remaining count (shrinks every tap: 50 → 42 → 34 …).
               count={total - visible}
               isAr={isAr}
+              darkMode={darkMode}
               onToggle={more}
             />
           ) : pastStart ? (
-            <ShowMoreButton expanded isAr={isAr} count={0} onToggle={less} />
+            <ShowMoreButton expanded isAr={isAr} count={0} darkMode={darkMode} onToggle={less} />
           ) : null
         ) : null;
         const visibleItems = catItems.slice(0, visible);

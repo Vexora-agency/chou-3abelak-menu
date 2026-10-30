@@ -1,6 +1,60 @@
-/* Push-only service worker: shows order-status notifications, opens the
-   tracking link on tap. Deliberately NO fetch handler — this worker must
-   never cache or interfere with the site. */
+/* Push + app-shell cache. Push handlers show order notifications; the
+   fetch handler ONLY accelerates repeat opens (cache-first for hashed
+   /assets/* — a new deploy is new filenames, so staleness is impossible).
+   index.html, /api/* and routes always go to network: never cached here. */
+const ASSET_CACHE = 'app-assets-v1';
+
+self.addEventListener('install', (event) => {
+  event.waitUntil((async () => {
+    try {
+      const cache = await caches.open(ASSET_CACHE);
+      // Warm the notification icon so the first alert renders instantly.
+      await cache.addAll(['/assets/pan-icon-yellow-192.webp']);
+    } catch (e) {}
+    await self.skipWaiting();
+  })());
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== ASSET_CACHE).map((k) => caches.delete(k)));
+    } catch (e) {}
+    try {
+      await self.clients.claim();
+    } catch (e) {}
+  })());
+});
+
+self.addEventListener('fetch', (event) => {
+  let u;
+  try {
+    u = new URL(event.request.url);
+  } catch (e) {
+    return;
+  }
+  if (event.request.method !== 'GET' || u.origin !== self.location.origin) return;
+  if (!u.pathname.startsWith('/assets/')) return;
+  event.respondWith((async () => {
+    const cache = await caches.open(ASSET_CACHE);
+    try {
+      const hit = await cache.match(event.request);
+      if (hit) return hit;
+      const res = await fetch(event.request);
+      if (res && res.ok) {
+        try {
+          await cache.put(event.request, res.clone());
+        } catch (e) {}
+      }
+      return res;
+    } catch (e) {
+      const hit = await cache.match(event.request);
+      if (hit) return hit;
+      throw e;
+    }
+  })());
+});
 self.addEventListener('push', (event) => {
   let data = {};
   try {

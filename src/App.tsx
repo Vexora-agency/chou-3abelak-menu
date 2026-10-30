@@ -79,6 +79,8 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
       document.head.appendChild(link);
     }
     if (link.getAttribute('href') !== href) link.setAttribute('href', href);
+    // Boot splash served its purpose (first React paint is on screen).
+    document.getElementById('boot-splash')?.remove();
   }, [showAdmin]);
 
   // Thin reading-progress line at the top of the page — hand-rolled on purpose:

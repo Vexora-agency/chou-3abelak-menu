@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BellRing, BellOff, Loader2, Smartphone } from 'lucide-react';
 import {
-  fetchVapidKey, ensureSW, getExistingSub, isIosDevice, isPushCapable,
+  fetchVapidKey, ensureSW, getExistingSub, isIosDevice, isPushCapable, isStandaloneApp,
   postJson, subscribeDevice, unsubscribeLocal,
 } from '@/src/utils/webpush';
 import { adminFetch } from '@/src/lib/api-client';
@@ -23,6 +23,9 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
   const isAr = lang === 'ar';
   const [state, setState] = useState<State>('idle');
   const [devices, setDevices] = useState<number | null>(null);
+  // iPhone tab (not installed): push is impossible here by Apple policy —
+  // say so UP FRONT instead of after the tap, with the install path.
+  const [needsInstall] = useState<boolean>(() => isIosDevice() && !isStandaloneApp());
 
   const refreshCount = async () => {
     try {
@@ -164,7 +167,7 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
           </button>
         )}
       </div>
-      {state === 'ios' && (
+      {(state === 'ios' || (needsInstall && state === 'idle')) && (
         <p className="text-[11px] leading-relaxed text-neutral-400 rounded-xl border border-neutral-800 bg-black/40 p-2.5">
           {isAr
             ? 'للآيفون: افتح اللوحة في سفاري ← مشاركة ← إضافة للشاشة الرئيسية ← افتح أيقونة اللوحة ← فعّل من هناك.'

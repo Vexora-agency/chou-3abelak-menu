@@ -26,6 +26,17 @@ export const isPushCapable = (): boolean =>
   'PushManager' in window &&
   typeof Notification !== 'undefined';
 
+/** Running as an installed Home Screen app (Apple's gate for iOS push). */
+export const isStandaloneApp = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    if (window.matchMedia('(display-mode: standalone)').matches) return true;
+    return (navigator as unknown as { standalone?: boolean }).standalone === true;
+  } catch {
+    return false;
+  }
+};
+
 export async function ensureSW(): Promise<ServiceWorkerRegistration> {
   return navigator.serviceWorker.register('/sw.js');
 }

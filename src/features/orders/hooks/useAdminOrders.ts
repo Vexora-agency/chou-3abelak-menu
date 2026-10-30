@@ -12,7 +12,7 @@ interface AdminOrdersOptions {
   enabled?: boolean;
 }
 
-/** Orders dashboard data: load + 30s poll + optimistic status changes. */
+/** Orders dashboard data: load + 10s poll + optimistic status changes. */
 export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: AdminOrdersOptions) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
@@ -51,8 +51,10 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
     }
   }, [isAr, timezone]);
 
-  // Initial load + 30s poll while the tab is visible (fetch trigger: all
+  // Initial load + 10s poll while the tab is visible (fetch trigger: all
   // setStates happen async inside fetchOrders, no cascading render).
+  // 10s, not 30s: this is a kitchen screen — a new order must surface while
+  // the owner is still looking. Payload is capped (limit=2000) and tiny.
   // Skipped entirely when the plan hides orders (starter).
   useEffect(() => {
     if (!enabled) {
@@ -63,7 +65,7 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
     void fetchOrders(false);
     const id = window.setInterval(() => {
       if (document.visibilityState === 'visible') void fetchOrders(true);
-    }, 30000);
+    }, 10000);
     return () => window.clearInterval(id);
   }, [fetchOrders, enabled]);
 

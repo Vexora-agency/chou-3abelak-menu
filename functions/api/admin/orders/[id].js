@@ -6,6 +6,7 @@
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
 import { featureOffResponse, hasFeature } from '../../../_shared/plan.js';
 import { updateOrderStatus } from '../../../_shared/repositories/orders.repo.js';
+import { notifyOrderStatus } from '../../../_shared/push.js';
 
 const STATUSES = ['new', 'confirmed', 'completed', 'cancelled'];
 
@@ -51,6 +52,42 @@ export async function onRequest(context) {
     const order = await updateOrderStatus(db, id, status);
     if (!order) {
       return jsonNoStore({ error: 'not_found' }, 404);
+    }
+    // Owner -> customer loop: status change pushes subscribed devices.
+    // Best-effort only (never delays or breaks the admin action); devices
+    // subscribed with the order's tracking link, pruned when gone.
+    if (order.trackToken && order.number) {
+      const done = (async () => {
+        try {
+          let origin = '';
+          let storeName = '';
+          try {
+            origin = new URL(request.url).origin;
+          } catch {}
+          try {
+            const kv = env.MENU_KV || null;
+            const menu = kv ? await kv.get('menu', { type: 'json' }) : null;
+            const nm = menu && menu.settings && menu.settings.name;
+            storeName = typeof nm?.en === 'string' && nm.en ? nm.en : '';
+          } catch {}
+          await notifyOrderStatus(db, {
+            storeName,
+            orderId: id,
+            orderNumber: order.number,
+            status,
+            lang: order.lang === 'ar' ? 'ar' : 'en',
+            trackUrl: origin ? `${origin}/?track=${order.number}&t=${order.trackToken}` : '',
+            subject: origin || undefined,
+          });
+        } catch {}
+      })();
+      if (context.waitUntil) {
+        try {
+          context.waitUntil(done);
+        } catch {}
+      } else {
+        await done;
+      }
     }
     return jsonNoStore({ order });
   } catch {

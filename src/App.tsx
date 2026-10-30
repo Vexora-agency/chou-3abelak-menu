@@ -27,6 +27,11 @@ const AdminLogin = lazy(() => import('@/src/features/admin/components/AdminLogin
 const InvitePage = lazy(() =>
   import('@/src/features/invite/components/InvitePage').then((m) => ({ default: m.InvitePage }))
 );
+// Customer order tracking (?track=N&t=token): its own chunk — only tracking
+// visitors download it.
+const TrackView = lazy(() =>
+  import('@/src/features/track/TrackView').then((m) => ({ default: m.TrackView }))
+);
 import { WifiOff } from 'lucide-react';
 import { useShopCartState } from '@/src/features/cart';
 import { useOrderingState } from '@/src/features/orders';
@@ -202,6 +207,25 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     return (
       <Suspense fallback={<AdminLoadingSplash />}>
         <InvitePage token={inviteMatch[1] || ''} />
+      </Suspense>
+    );
+  }
+
+  // Customer order tracking (?track=N&t=token): standalone page, needs no
+  // menu data and shares no state with the storefront or the admin.
+  const trackQ = new URLSearchParams(window.location.search);
+  const trackN = Number.parseInt(trackQ.get('track') || '', 10);
+  const trackT = (trackQ.get('t') || '').trim();
+  if (Number.isInteger(trackN) && trackN > 0 && /^[0-9a-f]{32}$/.test(trackT)) {
+    return (
+      <Suspense fallback={<AdminLoadingSplash />}>
+        <TrackView
+          number={trackN}
+          token={trackT}
+          onBack={() => {
+            window.location.href = '/';
+          }}
+        />
       </Suspense>
     );
   }

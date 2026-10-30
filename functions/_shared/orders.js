@@ -256,5 +256,6 @@ export function mapOrderRow(row) {
     deliveryFee: row.delivery_fee,
     total: row.total,
     ...(row.lang ? { lang: row.lang } : {}),
+    ...(row.track_token ? { trackToken: row.track_token } : {}),
   };
 }

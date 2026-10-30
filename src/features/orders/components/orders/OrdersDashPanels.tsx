@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Banknote, BellRing, Receipt, RefreshCw, ShoppingBag } from 'lucide-react';
+import { Banknote, Bell, BellOff, BellRing, Receipt, RefreshCw, ShoppingBag } from 'lucide-react';
 import { STR } from './ordersDashTypes';
 import type { Period } from './ordersDashTypes';
 import { fmt, fmtCompact } from './ordersDashUtils';
@@ -13,9 +13,12 @@ interface OrdersDashPeriodBarProps {
   period: Period;
   onPeriodChange: (p: Period) => void;
   onRefresh?: () => void;
+  /** Kitchen bell: beeps when a new order lands on the next poll. */
+  soundOn: boolean;
+  onToggleSound: () => void;
 }
 
-export const OrdersDashPeriodBar: React.FC<OrdersDashPeriodBarProps> = ({ lang, period, onPeriodChange, onRefresh }) => {
+export const OrdersDashPeriodBar: React.FC<OrdersDashPeriodBarProps> = ({ lang, period, onPeriodChange, onRefresh, soundOn, onToggleSound }) => {
   const t = STR[lang];
   // Owner decision: dashboard animations always play for every visitor.
   const reduce = false;
@@ -50,6 +53,12 @@ export const OrdersDashPeriodBar: React.FC<OrdersDashPeriodBarProps> = ({ lang, 
           onClick={() => { setSpin(true); onRefresh?.(); window.setTimeout(() => setSpin(false), 700); }}
           className="btn-tactile w-9 h-9 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-[var(--primary)] flex items-center justify-center">
           <RefreshCw size={15} className={spin ? 'animate-spin' : ''} />
+        </button>
+        <button type="button" aria-label={soundOn ? t.soundOn : t.soundOff} title={soundOn ? t.soundOn : t.soundOff}
+          aria-pressed={soundOn}
+          onClick={onToggleSound}
+          className={`btn-tactile w-9 h-9 rounded-full border flex items-center justify-center transition-colors ${soundOn ? 'bg-neutral-900 border-[var(--primary)]/60 text-[var(--primary)]' : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:text-neutral-300'}`}>
+          {soundOn ? <Bell size={15} /> : <BellOff size={15} />}
         </button>
       </div>
     </motion.div>

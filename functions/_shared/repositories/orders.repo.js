@@ -6,7 +6,7 @@
 import { mapOrderRow, newOrderId } from '../orders.js';
 
 export async function findOrderByIdemKey(db, idemKey) {
-  return db.prepare('SELECT number, total FROM orders WHERE idem_key = ?1').bind(idemKey).first();
+  return db.prepare('SELECT number, total, track_token FROM orders WHERE idem_key = ?1').bind(idemKey).first();
 }
 
 export async function findOrderById(db, id) {
@@ -37,12 +37,13 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
   await db.batch([
     db
       .prepare(
-        'INSERT INTO orders (id, number, idem_key, created_at, updated_at, status, type, customer_name, customer_phone, phone_norm, customer_address, customer_table, notes, location_lat, location_lng, items_json, subtotal, delivery_fee, total, lang) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20)'
+        'INSERT INTO orders (id, number, idem_key, track_token, created_at, updated_at, status, type, customer_name, customer_phone, phone_norm, customer_address, customer_table, notes, location_lat, location_lng, items_json, subtotal, delivery_fee, total, lang) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21)'
       )
       .bind(
         id,
         num,
         cleaned.idemKey,
+        typeof cleaned.trackToken === 'string' ? cleaned.trackToken : null,
         stamp,
         stamp,
         'new',

@@ -41,7 +41,7 @@ export type Period = 'today' | '7d' | 'month' | 'lastMonth';
 
 export const STR = {
   en: {
-    today: 'Today', d7: '7 days', thisMonth: 'This month', lastMonth: 'Last month', refresh: 'Refresh', live: 'Live', liveTip: 'Auto-refresh on: new orders appear here by themselves',
+    today: 'Today', d7: '7 days', thisMonth: 'This month', lastMonth: 'Last month', refresh: 'Refresh', live: 'Live', liveTip: 'Auto-refresh on: new orders appear here by themselves', soundOn: 'New-order sound on', soundOff: 'New-order sound off',
     orders: 'Orders', revenue: 'Revenue', avg: 'Avg. order', pending: 'Awaiting you',
     vsPrev: 'vs previous', over: 'Orders over time', peak: 'Peak', ordersWord: 'orders',
     top: 'Top sellers', sold: 'sold',
@@ -56,7 +56,7 @@ export const STR = {
     min: (n: number) => `${n} min ago`, hr: (n: number) => `${n}h ago`,
   },
   ar: {
-    today: 'اليوم', d7: '7 أيام', thisMonth: 'هذا الشهر', lastMonth: 'الشهر الماضي', refresh: 'تحديث', live: 'مباشر', liveTip: 'التحديث التلقائي يعمل: الطلبات الجديدة تظهر هنا وحدها',
+    today: 'اليوم', d7: '7 أيام', thisMonth: 'هذا الشهر', lastMonth: 'الشهر الماضي', refresh: 'تحديث', live: 'مباشر', liveTip: 'التحديث التلقائي يعمل: الطلبات الجديدة تظهر هنا وحدها', soundOn: 'صوت الطلبات الجديدة يعمل', soundOff: 'صوت الطلبات الجديدة متوقف',
     orders: 'الطلبات', revenue: 'الإيرادات', avg: 'متوسط الطلب', pending: 'بانتظارك',
     vsPrev: 'عن السابقة', over: 'الطلبات عبر الوقت', peak: 'الذروة', ordersWord: 'طلب',
     top: 'الأكثر مبيعاً', sold: 'مباع',

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FC } from 'react';
 import type { Order, OrderItem, OrderStatus, OrderType, OrdersDashboardProps, Period } from './orders/ordersDashTypes';
 import { useOrdersDashClock } from '../hooks/useOrdersDashClock';
 import { useOrdersDashStats } from '../hooks/useOrdersDashStats';
+import { unlockOrderSound, useNewOrderSound } from '../hooks/useNewOrderSound';
 import { OrdersDashChart, OrdersDashKpis, OrdersDashPeriodBar, OrdersDashTopItems } from './orders/OrdersDashPanels';
 import { OrdersDashList } from './orders/OrdersDashList';
 
@@ -25,6 +26,33 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
     orders, period, lang, now, filter, sel,
   });
 
+  // Kitchen bell: beeps when the 30s poll brings ids we haven't seen.
+  // Preference survives reloads; the first tap anywhere unlocks audio
+  // (autoplay policy) so the bell works even if it starts muted-by-browser.
+  const [soundOn, setSoundOn] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('dash_sound_v1') !== 'off';
+    } catch {
+      return true;
+    }
+  });
+  useNewOrderSound(orders.map((o) => o.id), soundOn);
+  useEffect(() => {
+    const unlock = () => unlockOrderSound();
+    window.addEventListener('pointerdown', unlock);
+    return () => window.removeEventListener('pointerdown', unlock);
+  }, []);
+  const toggleSound = () => {
+    setSoundOn((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem('dash_sound_v1', next ? 'on' : 'off');
+      } catch {}
+      if (next) unlockOrderSound();
+      return next;
+    });
+  };
+
   // Flash the newest order when a new one arrives
   const topId = sorted[0]?.id;
   const seen = useRef<string | undefined>(undefined);
@@ -46,6 +74,8 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
         period={period}
         onPeriodChange={(p) => { setPeriod(p); setSel(null); }}
         onRefresh={onRefresh}
+        soundOn={soundOn}
+        onToggleSound={toggleSound}
       />
       <OrdersDashKpis
         lang={lang}

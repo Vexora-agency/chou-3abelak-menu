@@ -11,6 +11,16 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
 
+    <!-- Installable web app (order tracking + push notifications): no caching
+         in the worker (public/sw.js is push-only), these tags only enable
+         Add to Home Screen — required for iOS notifications. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/assets/pan-icon-yellow.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Chou 3abelak" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
     <!-- Fonts are self-hosted (Fontsource, imported in src/index.css): no
          third-party font requests, nothing render-blocking here. -->
 

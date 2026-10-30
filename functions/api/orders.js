@@ -7,6 +7,7 @@
 
 import { jsonNoStore, readJsonBody } from '../_shared/session.js';
 import { mapOrderRow, validateOrderInput } from '../_shared/orders.js';
+import { newTrackToken } from '../_shared/push.js';
 import { findOrderById, findOrderByIdemKey, insertOrderWithNumber, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
 import { getOrderingState } from '../_shared/status.js';
 
@@ -106,6 +107,9 @@ export async function onRequest(context) {
     return jsonNoStore({ error: code }, 400);
   }
   const c = checked.cleaned;
+  // Tracking token: minted once per logical order (retries reuse the stored
+  // row's token below), gates the public /api/track page. No PII in it.
+  c.trackToken = newTrackToken();
 
   // Rate limit: 5 orders per 10 minutes per IP
   const ip = clientIp(request);
@@ -136,6 +140,7 @@ export async function onRequest(context) {
           ok: true,
           orderNumber: existing.number,
           total: typeof existing.total === 'number' ? existing.total : c.total,
+          trackToken: typeof existing.track_token === 'string' ? existing.track_token : null,
         });
       }
     } catch {}
@@ -162,6 +167,7 @@ export async function onRequest(context) {
             ok: true,
             orderNumber: existing.number,
             total: typeof existing.total === 'number' ? existing.total : c.total,
+            trackToken: typeof existing.track_token === 'string' ? existing.track_token : null,
           });
         }
       } catch {}
@@ -196,5 +202,5 @@ export async function onRequest(context) {
     const row = await findOrderById(db, created.id);
     if (row) savedTotal = mapOrderRow(row).total;
   } catch {}
-  return jsonNoStore({ ok: true, orderNumber: created.num, total: savedTotal });
+  return jsonNoStore({ ok: true, orderNumber: created.num, total: savedTotal, trackToken: c.trackToken });
 }

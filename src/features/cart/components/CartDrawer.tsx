@@ -3,6 +3,7 @@ import { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { type OrderingStatus } from '@/src/utils/status';
 import { X, Send, CheckCircle2 } from 'lucide-react';
 import { useCartCheckoutSubmit } from '../hooks/useCartCheckoutSubmit';
+import { PushSubscribeButton } from '@/src/features/track/PushSubscribeButton';
 import { CartLinesList } from './cart/CartLinesList';
 import { CustomerFormFields } from './cart/CustomerFormFields';
 import { OrderSummaryLines } from './cart/OrderSummaryLines';
@@ -62,6 +63,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     reopenText,
     orderPrepared,
     setOrderPrepared,
+    lastOrder,
+    setLastOrder,
     errorMsg,
     setErrorMsg,
     idemKeyRef,
@@ -101,9 +104,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   // Reset transient checkout state whenever the drawer closes.
   // Render-phase adjustment (blessed pattern): guarded so it converges
   // immediately, and the closed drawer never flashes stale errors.
-  if (!isOpen && (orderPrepared || errorMsg !== '' || location !== null)) {
+  if (!isOpen && (orderPrepared || errorMsg !== '' || location !== null || lastOrder !== null)) {
     setOrderPrepared(false);
     setErrorMsg('');
+    setLastOrder(null);
     clearLocation();
   }
 
@@ -178,6 +182,30 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 ? 'يرجى الضغط على زر "إرسال" داخل تطبيق واتساب لتأكيد الطلب مع المطعم.'
                 : 'Please press "Send" in WhatsApp to confirm your order with the kitchen.'}
             </p>
+            {/* Order loop: live tracking + push updates for THIS order. */}
+            {lastOrder && (
+              <div className="pt-1 flex flex-col gap-2.5 max-w-xs mx-auto w-full">
+                {lastOrder.trackToken && (
+                  <a
+                    href={`/?track=${lastOrder.number}&t=${lastOrder.trackToken}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-tactile h-11 px-5 rounded-full border border-[var(--primary)] text-[var(--primary)] text-xs font-extrabold inline-flex items-center justify-center gap-2 hover:bg-[var(--primary)] hover:text-[#0A0A0A] transition-colors"
+                  >
+                    <span className="tabular-nums" dir="ltr">#{lastOrder.number}</span>
+                    <span>{isAr ? 'تتبع طلبك لحظة بلحظة' : 'Track your order live'}</span>
+                  </a>
+                )}
+                {lastOrder.trackToken && (
+                  <PushSubscribeButton
+                    orderNumber={lastOrder.number}
+                    trackToken={lastOrder.trackToken}
+                    lang={lang}
+                    darkMode={darkMode}
+                  />
+                )}
+              </div>
+            )}
             <div className="pt-4 flex flex-col gap-2.5">
               <button
                 type="button"

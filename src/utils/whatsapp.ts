@@ -45,7 +45,9 @@ export function buildWhatsAppMessage(
   orderNumber?: number | null,
   location?: { lat: number; lng: number } | null,
   /** Pre-formatted customer-facing distance ("≈ 2.3 km") for delivery. */
-  distanceText?: string | null
+  distanceText?: string | null,
+  /** Live tracking URL (order number + token). Appended when known. */
+  trackUrl?: string | null
 ): string {
   const isAr = lang === 'ar';
   const currency = isAr ? menu.settings.currency.ar : menu.settings.currency.en;
@@ -117,6 +119,12 @@ export function buildWhatsAppMessage(
   if (customer.orderType === 'delivery' && fee > 0) {
     linesOut.push(isAr ? `رسوم التوصيل: ${formatPrice(fee, currency)}` : `Delivery Fee: ${formatPrice(fee, currency)}`);
     linesOut.push(isAr ? `*الإجمالي النهائي: ${formatPrice(subtotal + fee, currency)}*` : `*Total: ${formatPrice(subtotal + fee, currency)}*`);
+  }
+
+  // Live tracking: the same link the confirmation screen shows. Plain URL
+  // (no bold) so WhatsApp's link preview + tap-to-open stay clean.
+  if (trackUrl && trackUrl.trim()) {
+    linesOut.push(isAr ? `📍 تتبع طلبك لحظة بلحظة: ${trackUrl.trim()}` : `📍 Track your order live: ${trackUrl.trim()}`);
   }
 
   linesOut.push('-------------------------');

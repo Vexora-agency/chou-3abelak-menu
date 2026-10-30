@@ -103,11 +103,18 @@ const hot1 = buildWhatsAppMessage(menu,
 ok(hot1.includes('(*حار*)'), 'ar spicy badge marker after title', hot1.split('\n').slice(2, 5).join('|'));
 ok(!hot1.split('\n').some((l) => l.includes('الإضافات') && l.includes('حار')), 'ar badge heat not in addons');
 const hot2 = buildWhatsAppMessage(menu,
-  [{ item: { ...zaatar, addons: [...zaatar.addons, { featureId: 'spicy', price: 0 }] }, variantId: 'regular', addonIds: ['spicy'], quantity: 1 }],
+  [{ item: { ...zaatar, addons: [...(zaatar.addons || []), { featureId: 'spicy', price: 0 }] }, variantId: 'regular', addonIds: ['spicy'], quantity: 1 }],
   customer, 'en', 1009, null, null);
 ok(hot2.includes('(*SPICY*)'), 'en spicy option marker after title');
 ok(!hot2.includes('Make It Spicy'), 'en spicy option hidden from addons');
 ok(hot2.includes('1 × 80,000 = 80,000'), 'en free spicy keeps math', hot2.split('\n').slice(2, 5).join('|'));
+
+// ---- tracking link: appended when known, absent when not ----
+const tr = buildWhatsAppMessage(menu, lines, customer, 'en', 1007, null, null, 'https://site.test/?track=1007&t=' + 'a'.repeat(32));
+ok(tr.includes('📍 Track your order live: https://site.test/?track=1007&t=' + 'a'.repeat(32)), 'en tracking link');
+const arTr = buildWhatsAppMessage(menu, lines, arCustomer, 'ar', 1007, null, null, 'https://site.test/?track=1007&t=' + 'b'.repeat(32));
+ok(arTr.includes('📍 تتبع طلبك لحظة بلحظة: https://site.test/'), 'ar tracking link');
+ok(!en.includes('📍') && !ar.includes('📍'), 'no tracking line without url');
 
 // ---- fee off / no location / no number ----
 const noFeeMenu = JSON.parse(JSON.stringify(menu));

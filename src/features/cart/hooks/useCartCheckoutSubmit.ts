@@ -55,6 +55,9 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   });
 
   const [orderPrepared, setOrderPrepared] = useState(false);
+  // Last placed order (number + tracking token) for the confirmation
+  // screen: tracking link + push subscribe. Reset when the drawer closes.
+  const [lastOrder, setLastOrder] = useState<{ number: number; trackToken: string | null } | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   // Honeypot state (always empty for real users; bots fill it).
   // NOTE: must stay above the `if (!isOpen)` early return — hooks order
@@ -203,6 +206,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     // the WhatsApp flow: any failure still opens WhatsApp immediately.
     // Transport lives in features/cart/services/cart.api.ts (single place).
     let orderNumber: number | null = null;
+    let trackToken: string | null = null;
     try {
       if (!idemKeyRef.current) {
         idemKeyRef.current =
@@ -239,10 +243,17 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         return;
       }
       orderNumber = result.orderNumber;
+      trackToken = result.trackToken ?? null;
+      if (result.orderNumber) {
+        setLastOrder({ number: result.orderNumber, trackToken: result.trackToken ?? null });
+      }
     } catch {
       orderNumber = null;
     }
 
+    const trackUrl = orderNumber && trackToken
+      ? `${window.location.origin}/?track=${orderNumber}&t=${trackToken}`
+      : null;
     const message = buildWhatsAppMessage(
       menu,
       lines.map((l) => ({ item: l.item, variantId: l.variantId, addonIds: l.addonIds, quantity: l.quantity })),
@@ -250,7 +261,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       lang,
       orderNumber,
       location ? { lat: location.lat, lng: location.lng } : null,
-      distanceText
+      distanceText,
+      trackUrl
     );
     const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
     const url = `https://wa.me/${whatsappNum}?text=${encodeURIComponent(message)}`;
@@ -324,6 +336,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     reopenText,
     orderPrepared,
     setOrderPrepared,
+    lastOrder,
+    setLastOrder,
     errorMsg,
     setErrorMsg,
     idemKeyRef,

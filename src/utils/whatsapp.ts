@@ -43,7 +43,9 @@ export function buildWhatsAppMessage(
   customer: CustomerDetails,
   lang: 'en' | 'ar',
   orderNumber?: number | null,
-  location?: { lat: number; lng: number } | null
+  location?: { lat: number; lng: number } | null,
+  /** Pre-formatted customer-facing distance ("≈ 2.3 km") for delivery. */
+  distanceText?: string | null
 ): string {
   const isAr = lang === 'ar';
   const currency = isAr ? menu.settings.currency.ar : menu.settings.currency.en;
@@ -64,6 +66,8 @@ export function buildWhatsAppMessage(
   // Same per-line format as the cart: title (name + variant + add-ons),
   // then the math ("3 × 120,000 = 360,000").
   let subtotal = 0;
+  let lineCount = 0;
+  let pieceCount = 0;
   for (const line of lines) {
     const { item, quantity } = line;
     if (!item || !Number.isInteger(quantity) || quantity <= 0) continue;
@@ -75,6 +79,8 @@ export function buildWhatsAppMessage(
     }
     const lineTotalValue = quantity * unit;
     subtotal += lineTotalValue;
+    lineCount += 1;
+    pieceCount += quantity;
     const name = pickLangText(item.name, lang);
     const variant = getVariant(item, line.variantId);
     const title = variant ? `${name} (${featureName(menu, line.variantId as string, lang)})` : name;
@@ -86,6 +92,9 @@ export function buildWhatsAppMessage(
   }
 
   linesOut.push('-------------------------');
+  linesOut.push(
+    isAr ? `الأصناف: ${lineCount} (${pieceCount} قطع)` : `Items: ${lineCount} (${pieceCount} pcs)`
+  );
   linesOut.push(isAr ? `المجموع: ${formatPrice(subtotal, currency)}` : `Subtotal: ${formatPrice(subtotal, currency)}`);
 
   // Must mirror the server (validateOrderInput) and the cart drawer exactly:
@@ -117,9 +126,14 @@ export function buildWhatsAppMessage(
   }
 
   // Shared delivery point: link built ONLY from validated rounded numbers.
+  // The pre-formatted distance (when the restaurant location is known)
+  // rides right below it — the kitchen's delivery-time estimate.
   if (customer.orderType === 'delivery' && location && Number.isFinite(location.lat) && Number.isFinite(location.lng)) {
     const link = `https://www.google.com/maps?q=${location.lat},${location.lng}`;
     linesOut.push(isAr ? `الموقع: ${link}` : `Location: ${link}`);
+    if (distanceText && distanceText.trim()) {
+      linesOut.push(isAr ? `المسافة من المطعم: ${distanceText.trim()}` : `Distance from restaurant: ${distanceText.trim()}`);
+    }
   }
 
   if (customer.orderType === 'dinein' && customer.tableNumber.trim()) {
@@ -135,6 +149,21 @@ export function buildWhatsAppMessage(
     linesOut.push(`\n📌 ${orderNote.trim()}`);
   }
 
-  const fullMsg = linesOut.join('\n');
-  return fullMsg.length > 1400 ? fullMsg.slice(0, 1400) + '...' : fullMsg;
+  // wa.me links break on extreme lengths (Arabic encodes ~6x), so overlong
+  // messages are cut — but NEVER mid-line (a sliced price lies), and only
+  // when the order number exists: the kitchen pulls the full order #N from
+  // the dashboard. Without a server record, integrity beats convenience
+  // and the full text goes out uncut.
+  const MAX_MSG = 1400;
+  let fullMsg = linesOut.join('\n');
+  if (fullMsg.length > MAX_MSG && typeof orderNumber === 'number') {
+    const cut = fullMsg.lastIndexOf('\n', MAX_MSG);
+    const kept = cut > 0 ? fullMsg.slice(0, cut) : fullMsg.slice(0, MAX_MSG);
+    fullMsg =
+      kept +
+      (isAr
+        ? `\n… (الباقي محفوظ في الطلب #${orderNumber})`
+        : `\n… (rest saved under order #${orderNumber})`);
+  }
+  return fullMsg;
 }

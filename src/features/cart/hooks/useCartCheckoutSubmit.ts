@@ -238,7 +238,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       customer,
       lang,
       orderNumber,
-      location ? { lat: location.lat, lng: location.lng } : null
+      location ? { lat: location.lat, lng: location.lng } : null,
+      distanceText
     );
     const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
     const url = `https://wa.me/${whatsappNum}?text=${encodeURIComponent(message)}`;

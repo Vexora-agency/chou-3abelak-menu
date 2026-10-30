@@ -24,15 +24,42 @@ export function unlockOrderSound() {
   ensureCtx();
 }
 
+/**
+ * True while the browser refuses audio (no gesture yet / autoplay block).
+ * The dashboard shows a "tap anywhere" hint in this state instead of
+ * beeping into the void.
+ */
+export function isAudioLocked(): boolean {
+  try {
+    if (!ctx) return true;
+    return ctx.state !== 'running';
+  } catch {
+    return true;
+  }
+}
+
 /** Two-tone kitchen bell, Web Audio only — zero assets, zero deps. */
-export function playNewOrderBeep(retryOnSuspend = true) {
+export function playNewOrderBeep() {
   const ac = ensureCtx();
   if (!ac) return;
-  // Suspended (no gesture yet): schedule anyway (harmless silence) and try
-  // once more shortly after — covers the unlock landing mid-poll.
-  if (ac.state !== 'running' && retryOnSuspend && typeof window !== 'undefined') {
-    window.setTimeout(() => playNewOrderBeep(false), 600);
+  // Suspended (no gesture yet): schedule anyway (harmless silence) and retry
+  // on a widening ladder — the alarm re-fires every tick anyway, so a late
+  // unlock still catches sound within seconds instead of losing this beep.
+  // Each retry re-resolves the context (never re-ladders: bounded, 2 shots).
+  if (ac.state !== 'running' && typeof window !== 'undefined') {
+    const retryOnce = () => {
+      try {
+        const c2 = ensureCtx();
+        if (c2 && c2.state === 'running') playOnce(c2);
+      } catch {}
+    };
+    window.setTimeout(retryOnce, 600);
+    window.setTimeout(retryOnce, 2500);
   }
+  playOnce(ac);
+}
+
+function playOnce(ac: AudioContext) {
   try {
     const t = ac.currentTime;
     [880, 1174.66].forEach((freq, i) => {

@@ -37,7 +37,7 @@ class FakeCtx {
 let pass = 0, fail = 0;
 const ok = (c: boolean, n: string, x = '') => { if (c) { pass++; console.log('PASS', n); } else { fail++; console.log('FAIL', n, x); } };
 
-const { playNewOrderBeep, unlockOrderSound } = await import('@/src/features/orders/hooks/useNewOrderSound');
+const { playNewOrderBeep, unlockOrderSound, isAudioLocked } = await import('@/src/features/orders/hooks/useNewOrderSound');
 
 // Suspended ctx: schedules anyway + asks resume (browser decides).
 playNewOrderBeep();
@@ -57,16 +57,26 @@ ok(ctxState === 'running' && calls.includes('ctx.resume'), 'unlock resumes conte
 
 (globalThis as unknown as { __gesture: boolean }).__gesture = false;
 
-// Drain the retry timer armed by the first phase, then test the retry alone.
-await new Promise((r) => setTimeout(r, 700));
+// Drain BOTH retry timers armed by the first phase, then test the retry alone.
+await new Promise((r) => setTimeout(r, 2700));
 calls.length = 0;
 ctxState = 'suspended';
-// Suspended retry: tones scheduled again ~600ms later (unlock landing mid-poll).
+// Suspended ladder: replay only once audio actually unlocks (an unlock
+// landing mid-ladder is caught — perpetual silence is not replayed).
 playNewOrderBeep();
 const first = calls.filter((c) => c.startsWith('osc.start')).length;
-await new Promise((r) => setTimeout(r, 800));
+await new Promise((r) => setTimeout(r, 300));
+(globalThis as unknown as { __gesture: boolean }).__gesture = true; // unlock lands
+await new Promise((r) => setTimeout(r, 600));
 const total = calls.filter((c) => c.startsWith('osc.start')).length;
-ok(first === 2 && total === 4, 'retry replays bell after suspend', `${first}->${total}`);
+ok(first === 2 && total === 4, 'ladder replays once unlocked', `${first}->${total}`);
+(globalThis as unknown as { __gesture: boolean }).__gesture = false;
+
+// Lock sensor for the dashboard hint.
+ctxState = 'suspended';
+ok(isAudioLocked() === true, 'locked while suspended');
+ctxState = 'running';
+ok(isAudioLocked() === false, 'unlocked when running');
 
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

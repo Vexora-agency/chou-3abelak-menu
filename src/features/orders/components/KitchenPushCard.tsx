@@ -196,7 +196,7 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
             <Smartphone size={17} />
           </span>
           <div>
-            <p className="text-sm font-black text-white">{isAr ? 'إشعارات المطبخ' : 'Kitchen alerts'}</p>
+            <p className="text-sm font-black text-white">{isAr ? 'تنبيهات الطلبات الجديدة' : 'New order alerts'}</p>
             <p className="text-[11px] text-neutral-500">
               {isAr
                 ? 'كل طلب جديد يرنّ على هذا الجهاز — حتى واللوحة مقفولة.'

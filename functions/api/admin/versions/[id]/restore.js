@@ -4,7 +4,8 @@
  * document with version+1. Optional { expectedVersion } for concurrency.
  */
 
-import { checkApiHeaders, jsonNoStore } from '../../../../_shared/session.js';
+import { checkApiHeaders, getSessionCookie, getSessionSecret, jsonNoStore, verifySessionToken } from '../../../../_shared/session.js';
+import { requireOwner } from '../../../../_shared/access.js';
 import { featureOffResponse, hasFeature } from '../../../../_shared/plan.js';
 import { getVersionDoc, getActor, restoreValidatedMenu } from '../../../../_shared/versions.js';
 import { logActivity } from '../../../../_shared/activity.js';
@@ -20,6 +21,20 @@ export async function onRequest(context) {
   const id = typeof params?.id === 'string' ? params.id : '';
   const stored = await getVersionDoc(env, id);
   if (!stored || !stored.menu) return jsonNoStore({ ok: false, error: 'not_found' }, 404);
+  // Clients restore only their own snapshots (same invisibility rule as
+  // review — anything else is 404, never a hint it exists).
+  if (!(await requireOwner(request, env))) {
+    let sub = '';
+    try {
+      const secret = getSessionSecret(env);
+      const token = getSessionCookie(request);
+      if (secret && token) {
+        const payload = await verifySessionToken(secret, token);
+        if (payload && typeof payload.sub === 'string') sub = payload.sub;
+      }
+    } catch {}
+    if (!sub || stored.actor !== sub) return jsonNoStore({ ok: false, error: 'not_found' }, 404);
+  }
 
   let body = {};
   try {

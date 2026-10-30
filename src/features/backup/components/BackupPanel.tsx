@@ -1,7 +1,7 @@
 // TODO(maint): 355 lines — split into BackupPanel + BackupHistory + BackupImport
 // when next touched. backup/ subfolder (backupStrings/backupUtils/ChangeList/BackupModal)
 // already started the split. Documented, not refactored (Fix 3C).
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   Activity, AlertTriangle, Archive, Check, Clock, Download, FileJson, FileSpreadsheet, History, Loader2, Printer, RotateCcw, ShieldAlert, ShieldCheck, Trash2, Upload, Undo2, X,
@@ -60,29 +60,27 @@ interface BackupPanelProps {
   onDeleteForever: (id: string) => Promise<void>;
   onToggleAuto: (on: boolean) => Promise<{ ok: boolean; noDestination?: boolean }>;
   activity: ActivityEntry[];
-  /** True for client sessions: history (and the auto-backup switch) hide. */
-  historyLocked: boolean;
+  /** Owner signal: pills + auto-backup switch render only for the owner.
+   *  Clients see plain rows (all theirs) and never learn of the master. */
+  isOwner: boolean;
 }
 
-const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status, reportsOn, menuVersion, onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport, onRestoreTrash, onDeleteForever, onToggleAuto, activity, historyLocked }) => {
+const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status, reportsOn, menuVersion, onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport, onRestoreTrash, onDeleteForever, onToggleAuto, activity, isOwner }) => {
   // Owner decision: animations always run (never honor reduced-motion).
   const t = STR[lang]; const isAr = lang === 'ar'; const reduce = false;
   const [tab, setTab] = useState<'history' | 'export' | 'import' | 'trash'>('history');
-  // Clients never see history: park them on export the moment the lock is
-  // known (their versions/activity fetches already 403 above).
-  useEffect(() => {
-    if (historyLocked) setTab((cur) => (cur === 'history' ? 'export' : cur));
-  }, [historyLocked]);
-  // Who did it: owner gets the gold pill, each client their own name pill.
-  // The pill is the "marked" trail the owner asked for — every row carries it.
+  // Who did it: the owner gets the gold pill, each client their own name.
+  // Rendered for the owner ONLY — a client sees no pills at all (every row
+  // is theirs, and no master trace may leak into their view).
   const actorPill = (actor: string) => {
-    const isOwner = actor === 'admin' || actor === 'owner' || actor === 'local';
-    const name = isOwner ? t.actorOwner : actor.startsWith('client:') ? actor.slice('client:'.length) : actor;
+    if (!isOwner) return null;
+    const ownerRow = actor === 'admin' || actor === 'owner' || actor === 'local';
+    const name = ownerRow ? t.actorOwner : actor.startsWith('client:') ? actor.slice('client:'.length) : actor;
     return (
       <span
         dir="ltr"
         className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
-          isOwner
+          ownerRow
             ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
             : 'bg-transparent text-[var(--primary)] border-[var(--primary)]/50'
         }`}
@@ -229,7 +227,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
       </motion.div>
 
       <motion.div {...rise(0.06)} className="flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800 max-w-full overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-        {!historyLocked && Tab('history', t.tHistory, <History size={14} />)}{Tab('export', t.tExport, <Download size={14} />)}{Tab('import', t.tImport, <Upload size={14} />)}{Tab('trash', t.tTrash, <Trash2 size={14} />, trash.length)}
+        {Tab('history', t.tHistory, <History size={14} />)}{Tab('export', t.tExport, <Download size={14} />)}{Tab('import', t.tImport, <Upload size={14} />)}{Tab('trash', t.tTrash, <Trash2 size={14} />, trash.length)}
       </motion.div>
 
       <AnimatePresence initial={false}>
@@ -240,8 +238,8 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
       </AnimatePresence>
 
       {/* HISTORY — one timeline: snapshots + logged actions, newest first.
-          Owner-only: clients never reach this tab (locked above). */}
-      {!historyLocked && tab === 'history' && (
+          Everyone sees their own rows; the owner additionally sees pills. */}
+      {tab === 'history' && (
         <motion.div key="h" {...rise(0)} className={card}>
           <p className="text-xs leading-relaxed text-neutral-400">{t.histIntro}</p>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -323,7 +321,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
             </div>
           ))}
           {/* Account-level switch: owners only (clients never see it). */}
-          {!historyLocked && (
+          {isOwner && (
           <div className={`${card} flex items-center gap-3.5`}>
             <span className="w-11 h-11 shrink-0 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center"><Clock size={21} /></span>
             <span className="min-w-0 flex-1"><b className="text-sm">{t.autoTitle}</b><span className="block text-xs leading-relaxed text-neutral-400 mt-1">{!reportsOn ? t.autoNeedsPro : status.destination ? t.autoD(status.destination) : t.autoNoMail}</span></span>

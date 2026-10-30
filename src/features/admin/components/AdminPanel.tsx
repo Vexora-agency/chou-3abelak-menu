@@ -332,7 +332,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           onDeleteForever={backup.onDeleteForever}
           onToggleAuto={backup.onToggleAuto}
           activity={backup.activity}
-          historyLocked={backup.historyForbidden}
+          isOwner={backup.isOwner}
       />
       )}
 

@@ -35,13 +35,18 @@ const restoreMod = await mod('functions/api/admin/versions/[id]/restore.js');
 const actMod = await mod('functions/api/admin/activity.js');
 const { createSessionToken } = await mod('functions/_shared/session.js');
 
-// Owner session for the owner-gated history endpoints (history is invisible
-// to client logins — asserted below).
+// Sessions: owner sees all (marked), each client sees only its own rows,
+// no session sees nothing. The master layer never leaks downward.
 const SECRET = new Uint8Array(32).map((_, i) => (i * 7 + 3) & 0xff);
 env.SESSION_SECRET = Buffer.from(SECRET).toString('base64');
-const OWNER_COOKIE = `__Host-admin-session=${await createSessionToken(SECRET, 'admin', 3600)}`;
-const CLIENT_COOKIE = `__Host-admin-session=${await createSessionToken(SECRET, 'client:layali', 3600)}`;
-const AH = { 'X-Requested-With': 'menu-admin', Cookie: OWNER_COOKIE };
+const cookieFor = async (sub) => `__Host-admin-session=${await createSessionToken(SECRET, sub, 3600)}`;
+const OWNER_COOKIE = await cookieFor('admin');
+const LAYALI_COOKIE = await cookieFor('client:layali');
+const OMAR_COOKIE = await cookieFor('client:omar');
+const AH = { 'X-Requested-With': 'menu-admin', Origin: BASE, 'Content-Type': 'application/json', Cookie: OWNER_COOKIE };
+const LH = { 'X-Requested-With': 'menu-admin', Origin: BASE, 'Content-Type': 'application/json', Cookie: LAYALI_COOKIE };
+const OH = { 'X-Requested-With': 'menu-admin', Origin: BASE, 'Content-Type': 'application/json', Cookie: OMAR_COOKIE };
+const NH = { 'X-Requested-With': 'menu-admin' };
 
 let fails = 0;
 const check = (name, cond, extra = '') => {
@@ -49,14 +54,15 @@ const check = (name, cond, extra = '') => {
   else console.log(`  ok ${name}`);
 };
 const H = { 'X-Requested-With': 'menu-admin', Origin: BASE, 'Content-Type': 'application/json' };
-const put = async (doc, source) => {
+const put = async (doc, source, headers) => {
   const r = await menuMod.onRequest({
-    request: new Request(BASE + `/api/admin/menu${source ? `?source=${source}` : ''}`, { method: 'PUT', headers: H, body: JSON.stringify(doc) }),
+    request: new Request(BASE + `/api/admin/menu${source ? `?source=${source}` : ''}`, { method: 'PUT', headers: headers || H, body: JSON.stringify(doc) }),
     env,
   });
   return { status: r.status, doc: await r.json().catch(() => ({})) };
 };
-const versions = async (headers) => (await (await versMod.onRequest({ request: new Request(BASE + '/api/admin/versions', { headers }), env })).json().catch(() => ({}))).versions || [];
+const versionsFull = async (headers) => (await versMod.onRequest({ request: new Request(BASE + '/api/admin/versions', { headers }), env })).json().catch(() => ({}));
+const versions = async (headers) => (await versionsFull(headers)).versions || [];
 const versionsStatus = async (headers) => (await versMod.onRequest({ request: new Request(BASE + '/api/admin/versions', { headers }), env })).status;
 const review = async (id, headers) => {
   const r = await changesMod.onRequest({
@@ -72,36 +78,50 @@ const seed = JSON.parse(fs.readFileSync(path.join(ROOT, 'sample-menus/menu-30-it
 let r = await put({ ...seed, version: 1 });
 check('seed saves', r.status === 200);
 
+// Saves under different identities attribute rows: owner, layali, omar.
 const d2 = JSON.parse(JSON.stringify(r.doc));
 d2.items[0].pricing.price += 5000;
-r = await put(d2);
-check('price save', r.status === 200);
+r = await put(d2, undefined, LH);
+check('layali price save', r.status === 200);
 
 const d3 = JSON.parse(JSON.stringify(r.doc));
 d3.items.push({ ...d3.items[0], id: 'test-version-item', name: { en: 'Test Item', ar: 'صنف' } });
-r = await put(d3);
-check('add save', r.status === 200);
+r = await put(d3, undefined, OH);
+check('omar add save', r.status === 200);
 
 // No-op save must NOT mint an empty history row.
 r = await put(JSON.parse(JSON.stringify(r.doc)));
 check('noop save 200', r.status === 200);
-// Owner-only gates: client sessions see nothing (their movements stay
-// invisible to them); owner sees everything.
+// One more owner-attributed change so all three actors own rows.
 {
-  const CH = { 'X-Requested-With': 'menu-admin', Cookie: CLIENT_COOKIE };
-  check('client versions -> 403', (await versionsStatus(CH)) === 403);
-  check('client activity -> 403', (await activityStatus(CH)) === 403);
-  const someId = '2000-01-01T00:00:00.000Z-x';
-  const rc = await changesMod.onRequest({
-    request: new Request(BASE + `/api/admin/versions/${encodeURIComponent(someId)}/changes?lang=en`, { headers: CH }),
-    env, params: { id: someId },
+  const d = JSON.parse(JSON.stringify(r.doc));
+  d.items[1].pricing.price += 1000;
+  r = await put(d, undefined, AH);
+  check('owner edit save', r.status === 200);
+}
+// Visibility: owner all+marked, each client only own, none nothing.
+{
+  const CH = { 'X-Requested-With': 'menu-admin', Cookie: (await cookieFor('client:nobody')) };
+  check('no-session versions -> 403', (await versionsStatus(NH)) === 403);
+  check('no-session activity -> 403', (await activityStatus(NH)) === 403);
+  const noRev = await changesMod.onRequest({
+    request: new Request(BASE + '/api/admin/versions/x/changes?lang=en', { headers: NH }), env, params: { id: 'x' },
   });
-  check('client review -> 403', rc.status === 403, `got ${rc.status}`);
-  check('owner versions 200', (await versionsStatus(AH)) === 200);
-  check('owner activity 200', (await activityStatus(AH)) === 200);
+  check('no-session review -> 404', noRev.status === 404);
+  const ow = await versionsFull(AH);
+  check('owner sees all + isOwner', ow.isOwner === true && (ow.versions || []).length === 3, `got ${(ow.versions || []).length}`);
+  check('owner actors mixed', new Set((ow.versions || []).map((e) => e.actor)).size >= 2);
+  check('owner status hides nothing structurally', ow.status && typeof ow.status.autoWeekly === 'boolean');
+  const ly = await versionsFull(LH);
+  check('layali sees own only + not owner', ly.isOwner === false && (ly.versions || []).length === 1 && ly.versions[0].actor === 'client:layali', JSON.stringify((ly.versions || []).map((e) => e.actor)));
+  const om = await versionsFull(OH);
+  check('omar sees own only', (om.versions || []).length === 1 && om.versions[0].actor === 'client:omar');
+  check('client status leaks no destination', !('destination' in ((await versionsFull(LH)).status || {})));
+  const nobody = await versionsFull(CH);
+  check('stranger sees zero rows', (nobody.versions || []).length === 0 && nobody.isOwner === false);
 }
 let rows = await versions(AH);
-check('no empty rows', rows.length === 2 && rows.every((e) => (e.summary.added + e.summary.removed + e.summary.changed) > 0), `got ${rows.length}`);
+check('no empty rows', rows.length === 3 && rows.every((e) => (e.summary.added + e.summary.removed + e.summary.changed) > 0), `got ${rows.length}`);
 
 // Every review matches its own badges (latest: vs live; older: vs neighbor).
 let mismatch = 0;
@@ -119,13 +139,46 @@ check('comparedTo basis present', basisOk);
   for (const e of rows) payloads.push(JSON.stringify((await review(e.id, AH)).changes));
   check('no duplicated review payloads', new Set(payloads).size === payloads.length);
 }
+// Per-actor review/restore scoping: own rows work, others' 404.
+{
+  const byActor = {};
+  for (const e of rows) byActor[e.actor] = e;
+  const ownL = await review(byActor['client:layali'].id, LH);
+  check('layali reviews own row', ownL.status === 200 && ownL.changes.length > 0);
+  const cross1 = await review(byActor['client:omar'].id, LH);
+  check('layali blocked from omar row', cross1.status === 404, `got ${cross1.status}`);
+  const cross2 = await review(byActor['admin'].id, LH);
+  check('layali blocked from owner row', cross2.status === 404, `got ${cross2.status}`);
+  const menuNow = await (await menuMod.onRequest({ request: new Request(BASE + '/api/admin/menu', { headers: AH }), env })).json().catch(() => ({}));
+  const base = menuNow && typeof menuNow.version === 'number' ? menuNow.version : 0;
+  const rOwn = await restoreMod.onRequest({
+    request: new Request(BASE + `/api/admin/versions/${encodeURIComponent(byActor['client:layali'].id)}/restore`, { method: 'POST', headers: { ...LH, Origin: BASE, 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedVersion: base }) }),
+    env, params: { id: byActor['client:layali'].id },
+  });
+  check('layali restores own row', rOwn.status === 200, `got ${rOwn.status}`);
+  const rCross = await restoreMod.onRequest({
+    request: new Request(BASE + `/api/admin/versions/${encodeURIComponent(byActor['client:omar'].id)}/restore`, { method: 'POST', headers: { ...LH, Origin: BASE, 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedVersion: base + 1 }) }),
+    env, params: { id: byActor['client:omar'].id },
+  });
+  check('layali blocked from omar restore', rCross.status === 404, `got ${rCross.status}`);
+}
+// Activity is filtered the same way.
+{
+  const all = async (h) => (await (await actMod.onRequest({ request: new Request(BASE + '/api/admin/activity', { headers: h }), env })).json().catch(() => ({}))).activity || [];
+  const oa = await all(AH);
+  check('owner activity sees all actors', new Set(oa.map((e) => e.actor)).size >= 2, oa.map((e) => e.actor).join(','));
+  const la = await all(LH);
+  check('layali activity only own', la.length > 0 && la.every((e) => e.actor === 'client:layali'), la.map((e) => e.actor).join(','));
+  const oa2 = await all(OH);
+  check('omar activity only own', oa2.length > 0 && oa2.every((e) => e.actor === 'client:omar'));
+}
 
 // Restore works; restoring twice mints no second row (identical docs).
 // A stale base (double-click / moved menu) 409s with NO noise row.
 {
   const oldest = rows[rows.length - 1];
   const call = (id, base) => restoreMod.onRequest({
-    request: new Request(BASE + `/api/admin/versions/${encodeURIComponent(id)}/restore`, { method: 'POST', headers: H, body: JSON.stringify(base === undefined ? {} : { expectedVersion: base }) }),
+    request: new Request(BASE + `/api/admin/versions/${encodeURIComponent(id)}/restore`, { method: 'POST', headers: { ...H, Cookie: OWNER_COOKIE }, body: JSON.stringify(base === undefined ? {} : { expectedVersion: base }) }),
     env, params: { id },
   });
   // live version for a fresh base:

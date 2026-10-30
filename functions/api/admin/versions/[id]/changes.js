@@ -11,7 +11,7 @@
  * has no neighbor and still compares against live.
  */
 
-import { checkApiHeaders, jsonNoStore } from '../../../../_shared/session.js';
+import { checkApiHeaders, getSessionCookie, getSessionSecret, jsonNoStore, verifySessionToken } from '../../../../_shared/session.js';
 import { requireOwner } from '../../../../_shared/access.js';
 import { featureOffResponse, hasFeature } from '../../../../_shared/plan.js';
 import { diffMenus } from '../../../../_shared/diff.js';
@@ -24,7 +24,6 @@ export async function onRequest(context) {
   if (!gate.ok) return jsonNoStore({ error: gate.error }, gate.status);
   if (request.method !== 'GET') return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'GET' });
   if (!env.MENU_KV) return jsonNoStore({ error: 'unavailable' }, 503);
-  if (!(await requireOwner(request, env))) return jsonNoStore({ error: 'forbidden' }, 403);
 
   const rawId = typeof params?.id === 'string' ? params.id : '';
   let id = rawId;
@@ -35,6 +34,20 @@ export async function onRequest(context) {
   }
   const stored = await getVersionDoc(env, id);
   if (!stored) return jsonNoStore({ error: 'not_found' }, 404);
+  // Clients review only their own snapshots; anything else is 404
+  // (indistinguishable from missing — no enumeration oracle).
+  if (!(await requireOwner(request, env))) {
+    let sub = '';
+    try {
+      const secret = getSessionSecret(env);
+      const token = getSessionCookie(request);
+      if (secret && token) {
+        const payload = await verifySessionToken(secret, token);
+        if (payload && typeof payload.sub === 'string') sub = payload.sub;
+      }
+    } catch {}
+    if (!sub || stored.actor !== sub) return jsonNoStore({ error: 'not_found' }, 404);
+  }
 
   const url = new URL(request.url);
   const lang = url.searchParams.get('lang') === 'ar' ? 'ar' : 'en';

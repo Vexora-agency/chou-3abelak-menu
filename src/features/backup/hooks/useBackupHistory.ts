@@ -38,9 +38,10 @@ function analyzeErrorText(code: string, detail: string, isAr: boolean): string {
 export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused: savePausedRef, menuVersion, replaceMenu }: BackupHistoryOptions) {
   const [versions, setVersions] = useState<VersionEntry[]>([]);
   const [trash, setTrash] = useState<TrashEntry[]>([]);
-  // Owner-only history: a 403 here means a client session — the history
-  // (versions + activity) stays invisible to them; only the owner watches.
-  const [historyForbidden, setHistoryForbidden] = useState(false);
+  // Owner signal from the server (versions response). Clients see their own
+  // rows only and must never learn of the master layer: no actor pills, no
+  // auto-backup switch. Defaults to locked (fail-closed until proven owner).
+  const [isOwner, setIsOwner] = useState(false);
   const [backupStatus, setBackupStatus] = useState<{ lastBackupAt?: string; autoWeekly: boolean; destination?: string }>({ autoWeekly: false });
   const [undoToast, setUndoToast] = useState<{ label: string; undo: () => void } | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
@@ -61,11 +62,10 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
   const fetchBackupData = useCallback(async () => {
     try {
       const r = await adminFetch('/api/admin/versions');
-      if (r.status === 403) setHistoryForbidden(true);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      setHistoryForbidden(false);
       const d: unknown = await readJson(r);
       setVersions(isRecord(d) && Array.isArray(d.versions) ? (d.versions as VersionEntry[]) : []);
+      setIsOwner(isRecord(d) && d.isOwner === true);
       if (isRecord(d) && isRecord(d.status)) {
         setBackupStatus({
           autoWeekly: !!d.status.autoWeekly,
@@ -291,6 +291,6 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
     versions, trash, backupStatus, undoToast, showUndoToast, clearUndoToast,
     activity, fetchActivity, fetchBackupData, refreshMenuFromServer, handleRestoreTrashById,
     onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport,
-    onRestoreTrash, onDeleteForever, onToggleAuto, historyForbidden,
+    onRestoreTrash, onDeleteForever, onToggleAuto, isOwner,
   };
 }

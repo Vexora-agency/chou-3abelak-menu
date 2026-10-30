@@ -94,7 +94,17 @@ export async function postJson(
   path: string,
   body: unknown,
   admin = false
-): Promise<{ ok: boolean; status: number | null }> {
+): Promise<{ ok: boolean; status: number | null; err: string }> {
+  const readErr = async (res: Response): Promise<string> => {
+    try {
+      const data = (await res.json()) as { error?: unknown; message?: unknown };
+      const msg = typeof data.message === 'string' && data.message ? data.message : '';
+      const code = typeof data.error === 'string' && data.error ? data.error : '';
+      return [code, msg].filter(Boolean).join(':').slice(0, 80) || 'unknown';
+    } catch {
+      return 'unreadable';
+    }
+  };
   try {
     if (admin) {
       const { adminFetch } = await import('@/src/lib/api-client');
@@ -103,15 +113,15 @@ export async function postJson(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      return { ok: res.ok, status: res.status };
+      return { ok: res.ok, status: res.status, err: res.ok ? '' : await readErr(res) };
     }
     const res = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    return { ok: res.ok, status: res.status };
+    return { ok: res.ok, status: res.status, err: res.ok ? '' : await readErr(res) };
   } catch {
-    return { ok: false, status: null };
+    return { ok: false, status: null, err: 'net' };
   }
 }

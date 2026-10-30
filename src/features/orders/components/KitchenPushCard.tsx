@@ -114,8 +114,10 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
         true
       );
       if (!saved.ok) {
-        // 401/403 = admin session gone (re-login); anything else = server.
-        setErrDetail(`SAVE-${saved.status ?? 'net'}`);
+        // 401/403 = admin session gone (re-login); anything else shows the
+        // server's own reason so one tap diagnoses it (e.g. a header the
+        // installed app doesn't send).
+        setErrDetail(`SAVE-${saved.status ?? 'net'}:${saved.err || 'unknown'}`);
         setState('error');
         return;
       }
@@ -154,9 +156,9 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
       : state === 'unsupported'
         ? isAr ? 'هذا المتصفح لا يدعم تنبيهات الخلفية.' : 'This browser cannot do background alerts.'
         : state === 'error'
-          ? errDetail === '' || errDetail.startsWith('SAVE-401') || errDetail.startsWith('SAVE-403')
+          ? errDetail.startsWith('SAVE-401') || errDetail.startsWith('SAVE-403')
             ? isAr ? 'انتهت جلسة الدخول — سجّل الخروج والدخول مجددًا ثم فعّل.' : 'Admin session expired — log out and back in, then enable.'
-            : isAr ? `تعذر الحفظ (${errDetail}) — ابعث هذا الرمز للدعم.` : `Could not save (${errDetail}) — send this code to support.`
+            : isAr ? `تعذر الحفظ (${errDetail}) — ابعث هذا السطر كاملًا.` : `Could not save (${errDetail}) — send this full line.`
           : null;
 
   const on = state === 'on';

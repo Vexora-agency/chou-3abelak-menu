@@ -14,7 +14,17 @@ export interface SubmitOrderPayload {
   website: string;
 }
 
-export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'): Promise<{ orderNumber: number | null; trackToken: string | null; blockedMessage: string | null }> {
+export interface SubmitOrderResult {
+  orderNumber: number | null;
+  trackToken: string | null;
+  blockedMessage: string | null;
+  /** Machine cause for UI + remote diagnosis (null = recorded OK). */
+  failure: null | 'timeout' | 'rate' | 'blocked' | 'invalid';
+}
+
+export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'): Promise<SubmitOrderResult> {
+  const fail = (failure: NonNullable<SubmitOrderResult['failure']>, blockedMessage: string | null = null): SubmitOrderResult =>
+    ({ orderNumber: null, trackToken: null, blockedMessage, failure });
   const send = async (timeoutMs: number) => {
     try {
       return await publicPostRaw('/api/orders', payload, timeoutMs);
@@ -31,17 +41,18 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
       // instead of a token-less WhatsApp message. HTTP errors never retry.
       res = await send(6000);
     }
-    if (!res) return { orderNumber: null, trackToken: null, blockedMessage: null };
+    if (!res) return fail('timeout');
     if (res.ok) {
       const data: unknown = await readJson(res);
       const orderNumber = isRecord(data) && typeof data.orderNumber === 'number' ? data.orderNumber : null;
       const trackToken = isRecord(data) && typeof data.trackToken === 'string' ? data.trackToken : null;
-      return { orderNumber, trackToken, blockedMessage: null };
+      if (!orderNumber) return fail('invalid');
+      return { orderNumber, trackToken, blockedMessage: null, failure: null };
     }
     if (res.status === 403) {
       const data: unknown = await readJson(res);
       const msg = isRecord(data) && isRecord(data.message) ? str(lang === 'ar' ? data.message.ar : data.message.en) : '';
-      return { orderNumber: null, trackToken: null, blockedMessage: msg || null };
+      return { orderNumber: null, trackToken: null, blockedMessage: msg || null, failure: 'blocked' };
     }
     if (res.status === 429) {
       // Too fast: show it and STOP (no numberless ghost message to the
@@ -52,10 +63,11 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
         blockedMessage: lang === 'ar'
           ? 'طلبات كثيرة بسرعة — انتظر دقيقة وحاول مجددًا'
           : 'Too many orders at once — wait a minute and try again',
+        failure: 'rate',
       };
     }
-    return { orderNumber: null, trackToken: null, blockedMessage: null };
+    return fail('invalid');
   } catch {
-    return { orderNumber: null, trackToken: null, blockedMessage: null };
+    return fail('timeout');
   }
 }

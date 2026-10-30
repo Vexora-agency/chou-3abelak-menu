@@ -242,6 +242,16 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         setErrorMsg(result.blockedMessage || (isAr ? 'الطلب غير متاح حالياً' : 'Ordering is currently unavailable'));
         return;
       }
+      if (result.failure === 'timeout' || result.failure === 'invalid') {
+        // The WhatsApp message still opens below (fail-open ordering), but
+        // the customer sees exactly why it carries no number — and the code
+        // in caps is the machine cause for remote diagnosis.
+        setErrorMsg(
+          result.failure === 'timeout'
+            ? (isAr ? 'انقطع الاتصال أثناء الإرسال (NET-TIMEOUT) — قد يكون طلبك محفوظًا: تحقق من الداشبورد قبل إعادة المحاولة' : 'Connection dropped while sending (NET-TIMEOUT) — your order may be saved: check the dashboard before retrying')
+            : (isAr ? 'رفض السيرفر الطلب (SRV-INVALID) — حدّث الصفحة وحاول مجددًا' : 'Server rejected the order (SRV-INVALID) — refresh and try again')
+        );
+      }
       orderNumber = result.orderNumber;
       trackToken = result.trackToken ?? null;
       if (result.orderNumber) {

@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Check, ChevronDown, Inbox, MapPin, MessageCircle, Phone, Store, X } from 'lucide-react';
+import { BellRing, Check, ChevronDown, Inbox, MapPin, MessageCircle, Phone, Store, X } from 'lucide-react';
 import { STR } from './ordersDashTypes';
 import type { Order, OrderStatus } from './ordersDashTypes';
 import { STATUS_STYLE, TYPE_ICON, digits, fmt, itemTitle, relTime } from './ordersDashUtils';
@@ -134,9 +134,11 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                         {o.notes && <p className="text-xs text-neutral-300 bg-black/50 rounded-xl border border-neutral-800 px-3 py-2"><b className="text-neutral-500">{t.notes}: </b>{o.notes}</p>}
 
                         <div className="flex flex-wrap gap-2 pt-1">
-                          {/* One-step flow: a new order goes straight to completed.
-                              ('confirmed' is only kept for old rows — the API still accepts it.) */}
-                          {(o.status === 'new' || o.status === 'confirmed') && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-10 px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5"><Check size={14} strokeWidth={3} />{t.complete}</button>}
+                          {/* Two-step kitchen flow: a new order is ACKNOWLEDGED first
+                              (stops the alarm + notifies the customer "received,
+                              on its way"), then completed on delivery. */}
+                          {o.status === 'new' && <button type="button" onClick={() => onStatusChange(o.id, 'confirmed')} className="btn-tactile h-10 px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5"><BellRing size={14} strokeWidth={2.5} />{t.ack}</button>}
+                          {o.status === 'confirmed' && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-10 px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5"><Check size={14} strokeWidth={3} />{t.complete}</button>}
                           {(o.status === 'completed' || o.status === 'cancelled') && <button type="button" onClick={() => onStatusChange(o.id, 'new')} className="btn-tactile h-10 px-4 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold">{t.reopen}</button>}
                           {(o.status === 'new' || o.status === 'confirmed') && <button type="button" onClick={() => onStatusChange(o.id, 'cancelled')} className="btn-tactile h-10 px-4 rounded-full border border-red-500/40 text-red-400 text-xs font-bold inline-flex items-center gap-1.5"><X size={14} />{t.cancel}</button>}
                           <a href={`https://wa.me/${digits(o.customer.phone)}`} target="_blank" rel="noopener noreferrer" className="btn-tactile h-10 px-4 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5"><MessageCircle size={14} className="text-[var(--primary)]" />{t.wa}</a>

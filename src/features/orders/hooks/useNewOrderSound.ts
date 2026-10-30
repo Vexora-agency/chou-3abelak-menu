@@ -61,3 +61,19 @@ export function useNewOrderSound(orderIds: string[], enabled: boolean) {
     if (orderIds.some((id) => !known.has(id))) playNewOrderBeep();
   }, [orderIds, enabled]);
 }
+
+/**
+ * Kitchen alarm: while `active` (unacknowledged new orders exist) AND the
+ * bell is on, beep every 3s until the owner acknowledges. Each ack (or
+ * cancel) re-evaluates: silence returns the moment no new order is left.
+ * Paused when the tab is hidden; cleaned up on unmount/toggle-off.
+ */
+export function useNewOrderAlarm(active: boolean, enabled: boolean) {
+  useEffect(() => {
+    if (!active || !enabled) return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'visible') playNewOrderBeep();
+    }, 3000);
+    return () => window.clearInterval(id);
+  }, [active, enabled]);
+}

@@ -66,8 +66,8 @@ export async function getVapidSettings(db, subject) {
 
 const STATUS_COPY = {
   confirmed: {
-    ar: (n) => `طلب #${n} اتأكد وبيتجهز 🔥`,
-    en: (n) => `Order #${n} confirmed — we are on it 🔥`,
+    ar: (n) => `تم استلام طلبك #${n} ✅ وهيوصلك في أقرب وقت 🛵`,
+    en: (n) => `Order #${n} received ✅ — arriving soon 🛵`,
   },
   completed: {
     ar: (n) => `طلب #${n} جاهز! 🎉`,

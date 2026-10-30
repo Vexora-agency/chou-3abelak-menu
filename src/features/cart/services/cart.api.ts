@@ -15,8 +15,22 @@ export interface SubmitOrderPayload {
 }
 
 export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'): Promise<{ orderNumber: number | null; trackToken: string | null; blockedMessage: string | null }> {
+  const send = async (timeoutMs: number) => {
+    try {
+      return await publicPostRaw('/api/orders', payload, timeoutMs);
+    } catch {
+      return null;
+    }
+  };
   try {
-    const res = await publicPostRaw('/api/orders', payload, 4000);
+    let res = await send(4000);
+    if (!res) {
+      // Transport failure only (timeout/offline blip): ONE retry with the
+      // SAME idemKey — idempotent-safe by construction, so a lost response
+      // (order recorded, reply dropped) still resolves to the same number
+      // instead of a token-less WhatsApp message. HTTP errors never retry.
+      res = await send(6000);
+    }
     if (!res) return { orderNumber: null, trackToken: null, blockedMessage: null };
     if (res.ok) {
       const data: unknown = await readJson(res);

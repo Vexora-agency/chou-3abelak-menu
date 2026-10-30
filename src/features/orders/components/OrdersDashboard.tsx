@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FC } from 'react';
 import type { Order, OrderItem, OrderStatus, OrderType, OrdersDashboardProps, Period } from './orders/ordersDashTypes';
 import { useOrdersDashClock } from '../hooks/useOrdersDashClock';
 import { useOrdersDashStats } from '../hooks/useOrdersDashStats';
-import { unlockOrderSound, useNewOrderSound } from '../hooks/useNewOrderSound';
+import { unlockOrderSound, useNewOrderAlarm, useNewOrderSound } from '../hooks/useNewOrderSound';
 import { OrdersDashChart, OrdersDashKpis, OrdersDashPeriodBar, OrdersDashTopItems } from './orders/OrdersDashPanels';
 import { OrdersDashList } from './orders/OrdersDashList';
 
@@ -37,6 +37,10 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
     }
   });
   useNewOrderSound(orders.map((o) => o.id), soundOn);
+  // Looping alarm while ANY order is still unacknowledged (status new).
+  // Acking (or cancelling) the last one flips `active` off and the
+  // interval cleans itself up — the owner never hunts for a stop button.
+  useNewOrderAlarm(orders.some((o) => o.status === 'new'), soundOn);
   useEffect(() => {
     const unlock = () => unlockOrderSound();
     window.addEventListener('pointerdown', unlock);

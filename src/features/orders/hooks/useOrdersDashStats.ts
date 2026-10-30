@@ -27,8 +27,17 @@ export function useOrdersDashStats({ orders, period, lang, now, filter, sel }: D
     const buckets = Array.from({ length: n }, () => ({ count: 0, revenue: 0, label: '', full: '' }));
     buckets.forEach((b, i) => {
       if (period === 'today') {
-        b.label = i % 6 === 0 ? String(i).padStart(2, '0') : '';
-        b.full = `${String(i).padStart(2, '0')}:00`;
+        // 12-hour clock, compact axis + full readout:
+        // EN "6p" / "6:00 PM" — AR "6م" / "6:00 م" (18:00 never shows).
+        const am = i < 12;
+        const h12 = i % 12 === 0 ? 12 : i % 12;
+        if (lang === 'ar') {
+          b.label = i % 6 === 0 ? `${h12}${am ? 'ص' : 'م'}` : '';
+          b.full = `${h12}:00 ${am ? 'ص' : 'م'}`;
+        } else {
+          b.label = i % 6 === 0 ? `${h12}${am ? 'a' : 'p'}` : '';
+          b.full = `${h12}:00 ${am ? 'AM' : 'PM'}`;
+        }
       } else {
         const d = new Date(start); d.setDate(d.getDate() + i);
         b.full = d.toLocaleDateString(loc(lang), { weekday: 'short', day: 'numeric', month: 'short' });

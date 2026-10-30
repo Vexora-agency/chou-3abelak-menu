@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { MenuSettings } from '@/src/types/menu';
 import { DIAL_CODES, OTHER_ISO, composeFull, splitDialCode } from '@/src/config/dialCodes';
 import { normalizeMapLocation, parseMapUrlCoords } from '@/src/utils/menuHelpers';
@@ -40,11 +40,20 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
   // Text address shown in the footer (Store Information). Resolvable from
   // the work location above: one on-demand lookup fills both languages.
   const addr = address || { en: '', ar: '' };
+  const hasAddr = !!(addr.en.trim() || addr.ar.trim());
   const locCoords = parseMapUrlCoords(mapUrl);
   const [geoState, setGeoState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
-  // Written-address fields stay hidden until there is something to show:
-  // existing saved text, a fresh fetch, or the manual toggle.
-  const [addrOpen, setAddrOpen] = useState(!!(addr.en.trim() || addr.ar.trim()));
+  // Folded always on mount: a saved address shows as one confirmation line
+  // (Edit reopens), empty shows the fetch/manual actions. The fields open
+  // only for review (after a fetch) or manual entry.
+  const [addrOpen, setAddrOpen] = useState(false);
+  // Last coords auto-fetched (mount never fetches — only NEW typing does),
+  // and whether the current text came from a fetch (safe to refresh) or
+  // from the owner's hand (never overwrite).
+  const lastAutoRef = useRef<string | null>(null);
+  const autoFilledRef = useRef(false);
+  const addrRef = useRef(addr);
+  addrRef.current = addr;
   // Machine-translate an English address to Arabic (free endpoints, best
   // effort — the owner reviews the result). Used only when Nominatim has
   // no Arabic name (e.g. London returns English for accept-language=ar).
@@ -106,12 +115,38 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
         ...prev,
         address: { en: en || prev.address?.en || '', ar: ar || prev.address?.ar || '' },
       }));
+      autoFilledRef.current = true;
       setAddrOpen(true);
       setGeoState('done');
     } catch {
       setGeoState('error');
     }
   };
+  // Auto-fetch: typing fresh coordinates fills the address by itself, no
+  // button press. Debounced; skips hand-typed text (never overwrite the
+  // owner's words) and skips the mount (existing coords are settled).
+  useEffect(() => {
+    const c = parseMapUrlCoords(mapUrl);
+    const key = c ? `${c.lat},${c.lng}` : '';
+    if (lastAutoRef.current === null) {
+      lastAutoRef.current = key;
+      return;
+    }
+    if (!key || key === lastAutoRef.current) return;
+    lastAutoRef.current = key;
+    if (addr.en.trim() || addr.ar.trim()) {
+      if (!autoFilledRef.current) return;
+    }
+    const t = window.setTimeout(() => {
+      // Re-check at fire time: hand-typed text in the meantime wins.
+      const a = addrRef.current;
+      if ((a.en.trim() || a.ar.trim()) && !autoFilledRef.current) return;
+      void fetchAddress();
+    }, 900);
+    return () => window.clearTimeout(t);
+    // fetchAddress reads live state; mapUrl/addr drive the schedule.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapUrl, addr.en, addr.ar]);
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
@@ -272,61 +307,89 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
           map has no Arabic name). */}
       <div>
         {!addrOpen ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {locCoords ? (
-              <button
-                type="button"
-                onClick={fetchAddress}
-                disabled={geoState === 'loading'}
-                className="h-9 px-4 rounded-full border border-[var(--primary)]/50 text-[var(--primary)] text-xs font-extrabold hover:bg-[var(--primary)] hover:text-[#0A0A0A] transition-colors disabled:opacity-50"
-              >
-                {geoState === 'loading'
-                  ? (isAr ? 'جارٍ جلب العنوان…' : 'Fetching address…')
-                  : (isAr ? 'جلب العنوان من الموقع' : 'Fetch address from location')}
-              </button>
-            ) : (
-              <p className="text-[11px] text-neutral-500" dir={isAr ? 'rtl' : 'ltr'}>
-                {isAr ? 'ضع رابطًا أو إحداثيات أعلاه لجلب العنوان تلقائيًا.' : 'Put a link or coordinates above to auto-fetch the address.'}
-              </p>
-            )}
+          hasAddr ? (
             <button
               type="button"
               onClick={() => setAddrOpen(true)}
-              className="h-9 px-4 rounded-full text-xs font-bold text-neutral-400 hover:text-[var(--primary)] transition-colors"
+              className="w-full flex items-center gap-2.5 rounded-xl bg-black border border-neutral-800 px-3 py-2.5 text-start hover:border-[var(--primary)]/50 transition-colors"
             >
-              {isAr ? 'أو اكتبه يدويًا' : 'or write it manually'}
-            </button>
-            {geoState === 'error' && (
-              <span className="text-[11px] text-amber-400">
-                {isAr ? 'تعذر الجلب — اكتب العنوان يدويًا.' : 'Could not fetch — type the address manually.'}
+              <span className="w-2 h-2 shrink-0 rounded-full bg-green-400" aria-hidden="true" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[11px] font-extrabold text-green-400">
+                  {isAr ? 'العنوان محفوظ ✓' : 'Address saved ✓'}
+                </span>
+                <span className="block text-xs text-neutral-300 truncate" dir="auto" title={isAr ? addr.ar || addr.en : addr.en || addr.ar}>
+                  {isAr ? addr.ar || addr.en : addr.en || addr.ar}
+                </span>
               </span>
-            )}
-          </div>
+              <span className="shrink-0 text-[11px] font-bold text-neutral-500 hover:text-[var(--primary)] transition-colors">
+                {isAr ? 'تعديل' : 'Edit'}
+              </span>
+            </button>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              {locCoords ? (
+                <span className="text-[11px] text-neutral-500" dir={isAr ? 'rtl' : 'ltr'}>
+                  {geoState === 'loading'
+                    ? (isAr ? 'جارٍ جلب العنوان تلقائيًا…' : 'Fetching the address automatically…')
+                    : (isAr ? 'سيُجلب العنوان تلقائيًا…' : 'The address will be fetched automatically…')}
+                </span>
+              ) : (
+                <p className="text-[11px] text-neutral-500" dir={isAr ? 'rtl' : 'ltr'}>
+                  {isAr ? 'ضع رابطًا أو إحداثيات أعلاه لجلب العنوان تلقائيًا.' : 'Put a link or coordinates above to auto-fetch the address.'}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => setAddrOpen(true)}
+                className="h-9 px-4 rounded-full text-xs font-bold text-neutral-400 hover:text-[var(--primary)] transition-colors"
+              >
+                {isAr ? 'أو اكتبه يدويًا' : 'or write it manually'}
+              </button>
+              {geoState === 'error' && (
+                <span className="text-[11px] text-amber-400">
+                  {isAr ? 'تعذر الجلب — اكتب العنوان يدويًا.' : 'Could not fetch — type the address manually.'}
+                </span>
+              )}
+            </div>
+          )
         ) : (
           <>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs text-neutral-400">
                 {isAr ? 'العنوان النصي (يظهر في الموقع)' : 'Written Address (shown on site)'}
               </label>
-              {locCoords && (
+              <span className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={fetchAddress}
-                  disabled={geoState === 'loading'}
-                  className="text-[11px] font-bold text-neutral-500 hover:text-[var(--primary)] transition-colors disabled:opacity-50"
+                  onClick={() => setAddrOpen(false)}
+                  className="text-[11px] font-bold text-neutral-500 hover:text-[var(--primary)] transition-colors"
                 >
-                  {geoState === 'loading'
-                    ? (isAr ? 'جارٍ الجلب…' : 'Fetching…')
-                    : (isAr ? '↻ إعادة الجلب من الموقع' : '↻ Re-fetch from location')}
+                  {isAr ? 'إخفاء' : 'Hide'}
                 </button>
-              )}
+                {locCoords && (
+                  <button
+                    type="button"
+                    onClick={fetchAddress}
+                    disabled={geoState === 'loading'}
+                    className="text-[11px] font-bold text-neutral-500 hover:text-[var(--primary)] transition-colors disabled:opacity-50"
+                  >
+                    {geoState === 'loading'
+                      ? (isAr ? 'جارٍ الجلب…' : 'Fetching…')
+                      : (isAr ? '↻ إعادة الجلب من الموقع' : '↻ Re-fetch from location')}
+                  </button>
+                )}
+              </span>
             </div>
             <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
               <input
                 type="text"
                 dir="ltr"
                 value={addr.en}
-                onChange={(e) => onUpdate((prev) => ({ ...prev, address: { en: e.target.value, ar: prev.address?.ar || '' } }))}
+                onChange={(e) => {
+                  autoFilledRef.current = false;
+                  onUpdate((prev) => ({ ...prev, address: { en: e.target.value, ar: prev.address?.ar || '' } }));
+                }}
                 placeholder="Gouraud Street, Mar Mikhael, Beirut"
                 className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] placeholder:text-neutral-600"
               />
@@ -334,7 +397,10 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
                 type="text"
                 dir="rtl"
                 value={addr.ar}
-                onChange={(e) => onUpdate((prev) => ({ ...prev, address: { en: prev.address?.en || '', ar: e.target.value } }))}
+                onChange={(e) => {
+                  autoFilledRef.current = false;
+                  onUpdate((prev) => ({ ...prev, address: { en: prev.address?.en || '', ar: e.target.value } }));
+                }}
                 placeholder="شارع غورو، مار مخايل، بيروت"
                 className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)] placeholder:text-neutral-600"
               />

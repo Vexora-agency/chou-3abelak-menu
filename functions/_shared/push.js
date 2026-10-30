@@ -142,7 +142,7 @@ function fmtMoney(n) {
  * OS re-blips instead of stacking) — the nag job reuses it every minute
  * until the order is acknowledged.
  */
-export async function notifyNewOrder(db, { storeName, orderNumber, total, currency, adminUrl, subject, tag }) {
+export async function notifyNewOrder(db, { storeName, orderNumber, total, currency, adminUrl, subject, tag, repeat = 1 }) {
   if (!Number.isInteger(orderNumber) || orderNumber <= 0) return { sent: 0 };
 
   let subs = [];
@@ -165,7 +165,12 @@ export async function notifyNewOrder(db, { storeName, orderNumber, total, curren
   const payload = { title, body, url: adminUrl };
   if (typeof tag === 'string' && tag) payload.tag = tag.slice(0, 64);
 
+  // Burst mode (nag path): the same notification re-fired N times back to
+  // back with renotify = N blips inside seconds instead of one — the closest
+  // a closed phone gets to a ringing alarm. Clamped 1..5; default single.
+  const bursts = Math.min(Math.max(Number.parseInt(repeat, 10) || 1, 1), 5);
   let sent = 0;
+  for (let r = 0; r < bursts; r++) {
   for (const s of subs) {
     if (!s || typeof s.endpoint !== 'string' || !s.endpoint.startsWith('https://')) continue;
     try {
@@ -184,6 +189,7 @@ export async function notifyNewOrder(db, { storeName, orderNumber, total, curren
     } catch {
       // Transient push-service failure: keep the subscription for next time.
     }
+  }
   }
   return { sent };
 }
@@ -223,6 +229,7 @@ export async function nagUnackedOrders(db, { storeName, currency, adminUrl, subj
         adminUrl,
         subject,
         tag: `new-order-${r.number}`,
+        repeat: 3,
       });
       if (out.sent > 0) nagged += 1;
     } catch {}

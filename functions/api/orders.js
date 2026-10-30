@@ -7,7 +7,7 @@
 
 import { jsonNoStore, readJsonBody } from '../_shared/session.js';
 import { mapOrderRow, validateOrderInput } from '../_shared/orders.js';
-import { newTrackToken } from '../_shared/push.js';
+import { newTrackToken, notifyNewOrder } from '../_shared/push.js';
 import { findOrderById, findOrderByIdemKey, insertOrderWithNumber, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
 import { getOrderingState } from '../_shared/status.js';
 
@@ -186,6 +186,28 @@ export async function onRequest(context) {
         JSON.stringify({ n: used + 1, reset: windowReset }),
         { expirationTtl: RATE_TTL_SEC }
       );
+    } catch {}
+    // Kitchen loop (owner side): a stored order pushes every admin-
+    // subscribed device. Best-effort only — push failure never touches the
+    // order or the customer response (payload: number + total, no PII).
+    try {
+      let origin = '';
+      try {
+        origin = new URL(request.url).origin;
+      } catch {}
+      const currency = menu?.settings?.currency;
+      const cur = currency && typeof currency === 'object'
+        ? String(currency.en || currency.ar || '') : '';
+      const nm = menu?.settings?.name;
+      const storeName = nm && typeof nm === 'object' ? String(nm.en || nm.ar || '') : '';
+      await notifyNewOrder(db, {
+        storeName,
+        orderNumber: created.num,
+        total: c.total,
+        currency: cur,
+        adminUrl: origin ? `${origin}/admin` : '',
+        subject: origin || undefined,
+      });
     } catch {}
   })();
   if (context.waitUntil) {

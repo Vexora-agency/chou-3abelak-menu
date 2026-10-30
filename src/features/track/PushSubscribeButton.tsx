@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { BellRing, BellOff, Loader2 } from 'lucide-react';
+import {
+  fetchVapidKey, ensureSW, getExistingSub, isIosDevice, isPushCapable,
+  subscribeDevice,
+} from '@/src/utils/webpush';
 
 interface PushSubscribeButtonProps {
   orderNumber: number;
@@ -9,16 +13,6 @@ interface PushSubscribeButtonProps {
 }
 
 type State = 'idle' | 'working' | 'subscribed' | 'denied' | 'unsupported' | 'ios' | 'error';
-
-const isIosDevice = () =>
-  /iphone|ipad|ipod/i.test(navigator.userAgent) ||
-  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-const isPushCapable = () =>
-  typeof window !== 'undefined' &&
-  'serviceWorker' in navigator &&
-  'PushManager' in window &&
-  typeof Notification !== 'undefined';
 
 /**
  * One-tap order updates: subscribes THIS device to THIS order (the tracking
@@ -34,30 +28,30 @@ export const PushSubscribeButton: React.FC<PushSubscribeButtonProps> = ({
   const isAr = lang === 'ar';
   const [state, setState] = useState<State>('idle');
 
+  const bind = async (endpoint: string, p256dh: string, auth: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/push-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint, p256dh, auth, orderNumber, trackToken }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
+
   // Already subscribed on this browser (e.g. a previous order)? Bind it to
   // this order silently — consent was given then.
   useEffect(() => {
     let stop = false;
     (async () => {
       try {
-        if (!isPushCapable()) return;
-        const reg = await navigator.serviceWorker.ready;
-        const sub = await reg.pushManager.getSubscription();
+        const sub = await getExistingSub();
         if (stop || !sub) return;
-        const json = sub.toJSON();
-        if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return;
-        const res = await fetch('/api/push-subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            endpoint: json.endpoint,
-            p256dh: json.keys.p256dh,
-            auth: json.keys.auth,
-            orderNumber,
-            trackToken,
-          }),
-        });
-        if (!stop && res.ok) setState('subscribed');
+        if (await bind(sub.endpoint, sub.p256dh, sub.auth)) {
+          if (!stop) setState('subscribed');
+        }
       } catch {}
     })();
     return () => {
@@ -74,35 +68,20 @@ export const PushSubscribeButton: React.FC<PushSubscribeButtonProps> = ({
     }
     setState('working');
     try {
-      await navigator.serviceWorker.register('/sw.js');
-      const keyRes = await fetch('/api/push-key');
-      if (!keyRes.ok) throw new Error('no-key');
-      const { publicKey } = (await keyRes.json()) as { publicKey?: string };
-      if (!publicKey) throw new Error('no-key');
-      const { subscribe } = await import('@mmmike/web-push/client');
-      const result = await subscribe(publicKey);
+      await ensureSW();
+      const key = await fetchVapidKey();
+      if (!key) throw new Error('no-key');
+      const result = await subscribeDevice(key);
       if (result.status === 'denied') {
         setState('denied');
         return;
       }
-      if (result.status !== 'subscribed') {
+      if (result.status !== 'subscribed' || !result.sub) {
         setState(isIosDevice() ? 'ios' : 'unsupported');
         return;
       }
-      const json = result.subscription.toJSON();
-      if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) throw new Error('bad-sub');
-      const res = await fetch('/api/push-subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          endpoint: json.endpoint,
-          p256dh: json.keys.p256dh,
-          auth: json.keys.auth,
-          orderNumber,
-          trackToken,
-        }),
-      });
-      setState(res.ok ? 'subscribed' : 'error');
+      const ok = await bind(result.sub.endpoint, result.sub.p256dh, result.sub.auth);
+      setState(ok ? 'subscribed' : 'error');
     } catch {
       setState('error');
     }

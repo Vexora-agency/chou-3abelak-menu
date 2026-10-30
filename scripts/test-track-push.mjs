@@ -1,6 +1,6 @@
-// Tracking tokens + VAPID lazy-gen unit tests (no infra).
+// Tracking tokens + VAPID lazy-gen + notify guards (no infra).
 // Usage: node scripts/test-track-push.mjs
-import { newTrackToken, getVapidSettings, notifyOrderStatus } from '../functions/_shared/push.js';
+import { newTrackToken, getVapidSettings, notifyOrderStatus, notifyNewOrder } from '../functions/_shared/push.js';
 
 let fails = 0;
 const check = (name, cond, extra = '') => {
@@ -83,6 +83,13 @@ function fakeDb() {
   check('unknown status no-op', (await notifyOrderStatus(api, { orderId: 'x', status: 'new', orderNumber: 1 })).sent === 0);
   check('missing orderId no-op', (await notifyOrderStatus(api, { status: 'confirmed', orderNumber: 1 })).sent === 0);
   check('no subs no-op', (await notifyOrderStatus(api, { orderId: 'x', status: 'confirmed', orderNumber: 1 })).sent === 0);
+}
+
+// ---- kitchen loop guards (admin subs table empty here) ----
+{
+  const { api } = fakeDb();
+  check('new-order bad number no-op', (await notifyNewOrder(api, { orderNumber: 0 })).sent === 0);
+  check('new-order no devices no-op', (await notifyNewOrder(api, { orderNumber: 1007, total: 350000, currency: 'LBP' })).sent === 0);
 }
 
 console.log(fails ? `\n${fails} FAILED` : '\nall green');

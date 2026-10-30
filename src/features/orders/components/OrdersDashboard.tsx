@@ -5,6 +5,7 @@ import { useOrdersDashStats } from '../hooks/useOrdersDashStats';
 import { playNewOrderBeep, unlockOrderSound, useNewOrderAlarm, useNewOrderSound } from '../hooks/useNewOrderSound';
 import { OrdersDashChart, OrdersDashKpis, OrdersDashPeriodBar, OrdersDashTopItems } from './orders/OrdersDashPanels';
 import { OrdersDashList } from './orders/OrdersDashList';
+import { KitchenPushCard } from './KitchenPushCard';
 
 export type { Order, OrderItem, OrderStatus, OrderType, Period };
 
@@ -82,6 +83,7 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
 
   return (
     <div className="space-y-4" dir={isAr ? 'rtl' : 'ltr'}>
+      <KitchenPushCard lang={lang} />
       <OrdersDashPeriodBar
         lang={lang}
         period={period}

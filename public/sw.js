@@ -25,5 +25,29 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const raw = event.notification.data && event.notification.data.url;
   const url = typeof raw === 'string' && raw ? raw : '/';
-  event.waitUntil(self.clients.openWindow(url));
+  event.waitUntil((async () => {
+    const target = new URL(url, self.location.origin).href;
+    // Reuse an open tab when it already shows the destination (kitchen
+    // tapping ten notifications must not open ten admin tabs).
+    try {
+      const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const c of all) {
+        if (c.url === target) {
+          await c.focus();
+          return;
+        }
+      }
+      for (const c of all) {
+        if (url.includes('/admin') && c.url.includes('/admin')) {
+          await c.focus();
+          return;
+        }
+        if (url.includes('track=') && c.url.includes('track=')) {
+          await c.focus();
+          return;
+        }
+      }
+    } catch (e) {}
+    await self.clients.openWindow(target);
+  })());
 });

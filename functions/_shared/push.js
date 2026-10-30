@@ -84,8 +84,7 @@ const STATUS_COPY = {
  * confirmed/completed/cancelled notify (a "new" order IS the customer's own
  * send). Gone subscriptions (404/410) are pruned; every other failure is
  * swallowed — notification must never break the admin action.
- */
-export async function notifyOrderStatus(db, { storeName, orderId, orderNumber, status, lang, trackUrl, subject }) {
+ */export async function notifyOrderStatus(db, { storeName, orderId, orderNumber, status, lang, trackUrl, subject }) {
   const copy = STATUS_COPY[status];
   if (!copy || !orderId) return { sent: 0 };
   const useAr = lang === 'ar';
@@ -118,6 +117,61 @@ export async function notifyOrderStatus(db, { storeName, orderId, orderNumber, s
       if (delivered === false) {
         try {
           await db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?1').bind(s.endpoint).run();
+        } catch {}
+      } else {
+        sent += 1;
+      }
+    } catch {
+      // Transient push-service failure: keep the subscription for next time.
+    }
+  }
+  return { sent };
+}
+
+function fmtMoney(n) {
+  const v = typeof n === 'number' && Number.isFinite(n) ? n : 0;
+  return Math.round(v).toLocaleString('en-US');
+}
+
+/**
+ * Kitchen loop (owner side): a freshly stored order notifies EVERY admin-
+ * subscribed device. Payload is deliberately PII-free (number + total only —
+ * names/phones/addresses open behind the admin login after the tap).
+ * Same best-effort contract: never breaks order creation.
+ */
+export async function notifyNewOrder(db, { storeName, orderNumber, total, currency, adminUrl, subject }) {
+  if (!Number.isInteger(orderNumber) || orderNumber <= 0) return { sent: 0 };
+
+  let subs = [];
+  try {
+    const res = await db
+      .prepare('SELECT endpoint, p256dh, auth FROM admin_push_subscriptions')
+      .all();
+    subs = (res && res.results) || [];
+  } catch {
+    return { sent: 0 };
+  }
+  if (!subs.length) return { sent: 0 };
+
+  const vapid = await getVapidSettings(db, subject);
+  if (!vapid) return { sent: 0 };
+
+  const title = typeof storeName === 'string' && storeName ? storeName : 'New order';
+  const money = currency ? ` · ${fmtMoney(total)} ${currency}` : '';
+  const body = `🔔 طلب جديد #${orderNumber}${money} · New order`;
+
+  let sent = 0;
+  for (const s of subs) {
+    if (!s || typeof s.endpoint !== 'string' || !s.endpoint.startsWith('https://')) continue;
+    try {
+      const delivered = await sendPushNotification(
+        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+        { title, body, url: adminUrl },
+        { publicKey: vapid.public_key, privateKey: vapid.private_key, subject: vapid.subject }
+      );
+      if (delivered === false) {
+        try {
+          await db.prepare('DELETE FROM admin_push_subscriptions WHERE endpoint = ?1').bind(s.endpoint).run();
         } catch {}
       } else {
         sent += 1;

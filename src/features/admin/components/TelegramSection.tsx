@@ -17,6 +17,8 @@ interface TelegramSectionProps {
 interface TgStatus {
   linked?: boolean;
   linkedAt?: string | null;
+  pairingPending?: boolean;
+  pairingExpiresAt?: string | null;
   botConfigured?: boolean;
   hasBotToken?: boolean;
   hasWebhookSecret?: boolean;
@@ -59,8 +61,26 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
       if (stop) return;
       await refresh();
     })();
+    // While a pairing is in progress, poll until the owner presses Start
+    // in Telegram — the pill flips to "linked" by itself, no refresh needed.
+    const timer = window.setInterval(() => {
+      if (stop) return;
+      void (async () => {
+        try {
+          const res = await adminFetch('/api/admin/telegram');
+          if (!res.ok || stop) return;
+          const data = (await res.json()) as TgStatus;
+          setStatus(data);
+          if (data.linked) {
+            setDeepLink(null);
+            setMsg({ kind: 'ok', text: isAr ? 'تم الربط بنجاح ✅' : 'Linked successfully ✅' });
+          }
+        } catch {}
+      })();
+    }, 5000);
     return () => {
       stop = true;
+      window.clearInterval(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminFetch]);
@@ -154,7 +174,7 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
           <button type="button" onClick={() => void link()} disabled={busy === 'code'}
             className="btn-tactile h-11 px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center gap-2 disabled:opacity-40">
             {busy === 'code' ? <Loader2 size={16} className="animate-spin" /> : <Send size={15} />}
-            {isAr ? 'ربط Telegram' : 'Link Telegram'}
+            {deepLink || status?.pairingPending ? (isAr ? 'رابط جديد' : 'New link') : (isAr ? 'ربط Telegram' : 'Link Telegram')}
           </button>
           {deepLink && (
             <a href={deepLink} target="_blank" rel="noreferrer"
@@ -163,6 +183,14 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
             </a>
           )}
         </div>
+      )}
+
+      {!status?.linked && !deepLink && status?.pairingPending && (
+        <p className="text-[11px] text-neutral-400">
+          {isAr
+            ? 'في رابط ربط نشط — افتح Telegram واضغط Start لإتمامه، أو أنشئ رابطًا جديدًا.'
+            : 'A pairing link is still active — press Start in Telegram to finish, or create a new link.'}
+        </p>
       )}
 
       {status?.linked && (

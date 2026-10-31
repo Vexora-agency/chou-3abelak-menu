@@ -18,6 +18,7 @@ import {
   isBotUsernameFormat,
   issuePairingCode,
   readLastTelegramNotification,
+  readPendingPairing,
   readTelegramLink,
   resolveBotUsername,
   saveTelegramBotUsername,
@@ -46,16 +47,20 @@ export async function onRequest(context) {
     let link;
     let botUsername;
     let lastNotification;
+    let pendingPairing = { pending: false, expiresAt: null };
     try {
       link = await readTelegramLink(db);
       botUsername = await resolveBotUsername(db, env);
       lastNotification = await readLastTelegramNotification(db);
+      if (!link) pendingPairing = await readPendingPairing(db);
     } catch {
       return jsonNoStore({ error: 'unavailable' }, 503);
     }
     return jsonNoStore({
       ok: true,
       linked: link !== null,
+      pairingPending: pendingPairing.pending,
+      pairingExpiresAt: pendingPairing.expiresAt,
       linkedAt: link ? link.linkedAt : null,
       botUsername,
       botConfigured: botUsername !== null,

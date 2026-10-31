@@ -13,6 +13,7 @@ import {
   newPairingCode,
   notifyNewOrderTelegram,
   readLastTelegramNotification,
+  readPendingPairing,
   resolveBotUsername,
   verifyWebhookSecret,
 } from '../functions/_shared/telegram.js';
@@ -130,6 +131,20 @@ ok('env username wins', await resolveBotUsername(dbWithD1Name, { TELEGRAM_BOT_US
 ok('d1 fallback used', await resolveBotUsername(dbWithD1Name, {}) === 'D1FallbackBot');
 ok('bad env falls back to d1', await resolveBotUsername(dbWithD1Name, { TELEGRAM_BOT_USERNAME: 'ab' }) === 'D1FallbackBot');
 ok('null when unconfigured', await resolveBotUsername(mockDb(false), {}) === null);
+
+// 7c. Pending-pairing flag survives refresh (count only — never the code).
+const dbPending = {
+  prepare() {
+    return {
+      bind() { return this; },
+      async first() { return { n: 2, exp: '2026-01-01T00:10:00.000Z' }; },
+    };
+  },
+};
+const pend = await readPendingPairing(dbPending);
+ok('pending flag true with expiry', pend.pending === true && pend.expiresAt === '2026-01-01T00:10:00.000Z');
+const pendNone = await readPendingPairing(mockDb(false));
+ok('pending flag false when none', pendNone.pending === false);
 
 // 8. View-button keyboard (URL — no callback, no auth surface).
 const kb = buildOrderKeyboard('https://example.com/admin/dashboard');

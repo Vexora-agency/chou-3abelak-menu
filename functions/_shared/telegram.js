@@ -219,6 +219,26 @@ export async function consumePairingCode(db, code, chatId) {
   }
 }
 
+/**
+ * Pending (live, unused) pairing info for the dashboard: lets a refresh
+ * restore the "link in progress" state WITHOUT ever exposing the raw code
+ * (only its hash is stored — the code itself is shown once at issue time).
+ */
+export async function readPendingPairing(db) {
+  try {
+    const row = await db
+      .prepare(
+        "SELECT COUNT(*) AS n, MAX(expires_at) AS exp FROM telegram_pairing_codes WHERE used_at IS NULL AND expires_at > ?1"
+      )
+      .bind(new Date().toISOString())
+      .first();
+    if (row && typeof row.n === 'number' && row.n > 0) {
+      return { pending: true, expiresAt: typeof row.exp === 'string' ? row.exp : null };
+    }
+  } catch {}
+  return { pending: false, expiresAt: null };
+}
+
 /* ---------- webhook verification ---------- */
 
 /**

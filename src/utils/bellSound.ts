@@ -4,19 +4,32 @@
  * and a long exponential decay: a warm "ding-ding", never a harsh beep.
  * Master gain is kept low on purpose.
  *
- * The deep autoplay problem this solves: on iOS Safari (and hardened
- * Chrome), an AudioContext BORN while suspended can stay stuck forever —
- * resume() on it is a silent no-op, so the first ring works (born in a
- * tap) and every later ring dies quietly ("plays once, then never").
- * The fix is not to nurse the stuck context but to BIRTH A FRESH ONE
- * inside every user gesture — a context created in a tap starts running.
- * Anything that still cannot play is queued by the caller (pending set
- * flushed on gestures/polls/visibility) instead of being dropped.
- * Never throws, never rejects.
+ * Why "plays once, then never" happens (documented platform behavior):
+ * - iOS Safari kills the AudioContext when the page loses focus (state
+ *   becomes "interrupted") and resume() afterwards is a documented no-op
+ *   (WebKit bugs 276016/281566 — resume() never resolves after background).
+ *   The ONLY documented recovery is birthing a brand-new AudioContext when
+ *   the page regains focus.
+ * - iOS resumes a context ONLY synchronously inside a UI-event call stack;
+ *   an awaited resume() from a poll does nothing (StackOverflow 57510426).
+ * - A context born while suspended tends to stay stuck; creating it inside
+ *   a real gesture starts it running.
+ *
+ * The design, from those facts:
+ * 1. Never birth a context before the first real user gesture (otherwise
+ *    the first context is doomed from birth).
+ * 2. Every gesture rebirths a stuck context (close + new, synchronously
+ *    in the handler) — plus the suspend-then-resume-with-delay trick that
+ *    WebKit reporters found unsticks backgrounded contexts.
+ * 3. pageshow (bfcache restore) and visibilitychange also rebirth/retry.
+ * 4. playBellChime() reports honestly; callers keep un-rung orders queued
+ *    and re-flush on every gesture/poll — a chime is delayed, never lost
+ *    (unless muted). Never throws, never rejects.
  */
 
 let ctx: AudioContext | null = null;
 let unlocked = false;
+let interacted = false;
 
 function audioCtor(): typeof AudioContext | null {
   try {
@@ -27,11 +40,23 @@ function audioCtor(): typeof AudioContext | null {
   }
 }
 
-/** Lazily create (or return) the shared context. May be suspended. */
+/** Attach the watchdog: a stuck context is dropped so the next birth is fresh. */
+function adopt(ac: AudioContext): AudioContext {
+  try {
+    ac.onstatechange = () => {
+      try {
+        if ((ac.state === 'interrupted' || ac.state === 'closed') && ctx === ac) {
+          ctx = null;
+        }
+      } catch {}
+    };
+  } catch {}
+  return ac;
+}
+
 function sharedContext(): AudioContext | null {
   try {
     if (ctx) {
-      // Dead contexts never recover — drop so the next birth is fresh.
       if (ctx.state === 'closed' || ctx.state === 'interrupted') {
         try {
           void ctx.close().catch(() => {});
@@ -41,9 +66,12 @@ function sharedContext(): AudioContext | null {
         return ctx;
       }
     }
+    // No doomed pre-gesture births: without a real interaction the new
+    // context would start suspended and likely stay stuck on iOS.
+    if (!interacted) return null;
     const AC = audioCtor();
     if (!AC) return null;
-    ctx = new AC();
+    ctx = adopt(new AC());
     return ctx;
   } catch {
     return null;
@@ -51,12 +79,13 @@ function sharedContext(): AudioContext | null {
 }
 
 /**
- * MUST run inside a user gesture: drops any stuck context and births a
- * fresh one, which starts running. Never recreates a healthy context
- * (a tap mid-ring must not cut the decay tail).
+ * MUST run synchronously inside a user gesture (or on regaining focus):
+ * drops any stuck context and births a fresh one, which starts running.
+ * Never recreates a healthy context (a tap must not cut the decay tail).
  */
 function ensureLiveInGesture(): void {
   try {
+    interacted = true;
     if (ctx && ctx.state === 'running') {
       try {
         void ctx.resume().catch(() => {});
@@ -71,7 +100,7 @@ function ensureLiveInGesture(): void {
     }
     const AC = audioCtor();
     if (!AC) return;
-    ctx = new AC();
+    ctx = adopt(new AC());
     if (ctx.state === 'suspended') {
       try {
         void ctx.resume().catch(() => {});
@@ -86,18 +115,24 @@ export function unlockBellAudio(): void {
   unlocked = true;
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   window.addEventListener('pointerdown', ensureLiveInGesture, { passive: true });
-  // touchstart fires before any click synthesis on iOS — earliest unlock.
+  // touchstart fires earliest on mobile; keydown covers desktop.
   window.addEventListener('touchstart', ensureLiveInGesture, { passive: true });
   window.addEventListener('touchend', ensureLiveInGesture, { passive: true });
   window.addEventListener('keydown', ensureLiveInGesture);
   window.addEventListener('focus', ensureLiveInGesture);
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      try {
-        ensureLiveInGesture();
-      } catch {}
-    }
-  });
+  const onVisible = () => {
+    if (document.visibilityState !== 'visible') return;
+    // Regaining focus after background: the old context is dead on iOS —
+    // birth a fresh one (documented WebKit recovery) and retry.
+    // visibilitychange is NOT a gesture, so also keep the poll/gesture
+    // flush path as the guaranteed delivery net.
+    try {
+      ensureLiveInGesture();
+    } catch {}
+  };
+  document.addEventListener('visibilitychange', onVisible);
+  // bfcache restore: JS state survived but the audio pipeline did not.
+  window.addEventListener('pageshow', onVisible);
 }
 
 function strike(ac: AudioContext, at: number, freq: number, volume: number): void {
@@ -131,10 +166,10 @@ function strikeNow(ac: AudioContext): void {
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
- * Ring the chime. Resolves true ONLY on a real strike. A suspended
- * context gets resume attempts (~1.2s budget); anything still blocked
- * resolves false so the caller keeps it queued — combined with
- * gesture-born contexts, the chime lands on the next tap at the latest.
+ * Ring the chime. Resolves true ONLY on a real strike.
+ * Retry path uses the suspend-then-resume-with-delay trick WebKit
+ * reporters found unblocks backgrounded contexts; anything still stuck
+ * resolves false so the caller keeps it queued. Never rejects.
  */
 export async function playBellChime(): Promise<boolean> {
   try {
@@ -157,7 +192,14 @@ export async function playBellChime(): Promise<boolean> {
         return false;
       }
     }
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) {
+      try {
+        // The documented unstick sequence: suspend first, then resume
+        // after a beat — a bare resume() on a backgrounded context
+        // is the call iOS ignores.
+        void ac.suspend().catch(() => {});
+      } catch {}
+      await sleep(200);
       try {
         void ac.resume().catch(() => {});
       } catch {}

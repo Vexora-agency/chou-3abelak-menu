@@ -148,9 +148,17 @@ export function saveCustomerOrder(n: number, t: string, nowMs: number = Date.now
   const at = new Date(Number.isFinite(nowMs) ? nowMs : Date.now()).toISOString();
   const raw = readRaw();
   const rest: unknown[] = Array.isArray(raw) ? raw : [];
+  const already = rest.some((v) => isStoredOrder(v) && v.n === n);
   const next = pruneOrders([{ n, t, at }, ...rest], nowMs);
   try {
     window.localStorage.setItem(CUSTOMER_ORDERS_KEY, JSON.stringify(next));
   } catch {}
+  // Wake the floating bell instantly (same-tab storage events don't fire).
+  // Brand-new orders only — re-saves never re-ring.
+  if (!already) {
+    try {
+      window.dispatchEvent(new Event('customer-orders-changed'));
+    } catch {}
+  }
   return next;
 }

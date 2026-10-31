@@ -190,7 +190,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
               </ol>
             )}
 
-            <div className="mt-2 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
+            <div className="mt-2 rounded-2xl border border-neutral-800 border-t-2 border-t-[var(--primary)] bg-neutral-900/60 p-4 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)]">
               {data.items.map((it, i) => (
                 <div key={i} className="flex justify-between gap-3 py-1.5 text-sm">
                   <span className="text-neutral-200">

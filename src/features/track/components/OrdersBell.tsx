@@ -64,7 +64,7 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
 
 const STATUS_STYLE: Record<string, string> = {
   new: 'text-amber-400 border-amber-800 bg-amber-950/60',
-  confirmed: 'text-sky-400 border-sky-800 bg-sky-950/60',
+  confirmed: 'text-[var(--primary)] border-[var(--primary)]/40 bg-[var(--primary)]/10',
   completed: 'text-green-400 border-green-800 bg-green-950/60',
   cancelled: 'text-red-400 border-red-800 bg-red-950/60',
   unknown: 'text-neutral-400 border-neutral-700 bg-black',
@@ -88,19 +88,28 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // Order numbers already seen: only a number appearing AFTER mount rings
   // (sound fires at order time only — a fresh order rings normally).
   const knownRef = useRef<Set<number> | null>(null);
+  const ringTimerRef = useRef(0);
+  const activeRef = useRef(false);
+
+  /** Visual swing only — never any sound (sound is order-time-only). */
+  const dance = (ms: number) => {
+    setRinging(true);
+    window.clearTimeout(ringTimerRef.current);
+    ringTimerRef.current = window.setTimeout(() => setRinging(false), ms);
+  };
 
   // Every setState below runs after an await (TrackView shape) so the
   // mount fetch never cascades renders.
   useEffect(() => {
     unlockBellAudio();
     let stop = false;
-    let ringTimer = 0;
     const tick = async () => {
       const list = loadCustomerOrders();
       const next = list.length ? await fetchOrderStates(list) : {};
       if (stop) return;
       // New arrivals (never seen since mount, not muted) → premium ring:
-      // chime + vibration + swing. Mount-time orders never ring.
+      // chime + vibration + swing. Mount-time orders never ring. Sound
+      // fires at order time ONLY — status polls stay silent.
       const known = knownRef.current;
       if (known) {
         const fresh = list.filter((o) => !known.has(o.n));
@@ -108,15 +117,12 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
         const audible = fresh.filter((o) => !loadMutedOrders().includes(o.n));
         if (audible.length > 0) {
           if (playBellChime()) vibrateBell();
-          setRinging(true);
-          window.clearTimeout(ringTimer);
-          ringTimer = window.setTimeout(() => {
-            if (!stop) setRinging(false);
-          }, 1800);
+          dance(2000);
         }
       } else {
         knownRef.current = new Set(list.map((o) => o.n));
       }
+      activeRef.current = Object.values(next).some((s) => s.status === 'new' || s.status === 'confirmed');
       setShelf(list);
       setStates(next);
       setLoading(false);
@@ -126,15 +132,29 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     const id = window.setInterval(() => {
       if (document.visibilityState === 'visible') void tick();
     }, 30000);
+    // Same-tab saves don't emit storage events — the store pings us.
+    const onLocal = () => void tick();
     const onStorage = () => void tick();
+    window.addEventListener('customer-orders-changed', onLocal);
     window.addEventListener('storage', onStorage);
     return () => {
       stop = true;
       window.clearInterval(id);
-      window.clearTimeout(ringTimer);
+      window.clearTimeout(ringTimerRef.current);
+      window.removeEventListener('customer-orders-changed', onLocal);
       window.removeEventListener('storage', onStorage);
     };
   }, []);
+
+  // Attention loop: while an order still needs the customer, the bell
+  // re-dances silently every few seconds. Sound stays order-time-only.
+  useEffect(() => {
+    if (open) return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'visible' && activeRef.current) dance(1700);
+    }, 9000);
+    return () => window.clearInterval(id);
+  }, [open ]);
 
   useEffect(() => {
     if (!open) return;
@@ -222,11 +242,14 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
             ) : (
               <div className="mt-2 space-y-2.5 max-h-[55vh] overflow-y-auto">
                 {orders.map((o) => (
-                  <div
-                    key={o.n}
-                    className={`rounded-2xl border p-3 ${darkMode ? 'border-neutral-800 bg-black/40' : 'border-neutral-200 bg-neutral-50'}`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
+                <div
+                  key={o.n}
+                  className={`relative overflow-hidden rounded-2xl border p-3 ${darkMode ? 'border-neutral-800 bg-black/40' : 'border-neutral-200 bg-neutral-50'}`}
+                >
+                  {(o.status === 'new' || o.status === 'confirmed') && (
+                    <span aria-hidden="true" className="absolute top-0 inset-x-10 h-[2px] rounded-full bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent" />
+                  )}
+                  <div className="flex items-center justify-between gap-2">
                       <span className="text-base font-black tabular-nums" dir="ltr">#{o.n}</span>
                       <div className="flex items-center gap-1.5">
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${STATUS_STYLE[o.status]}`}>

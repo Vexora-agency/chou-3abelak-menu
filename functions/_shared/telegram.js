@@ -431,18 +431,20 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
 
 /**
  * Order keyboard: row 1 = View (URL, opens the dashboard behind admin
- * login — zero auth surface); row 2 = Confirm / Cancel (callbacks, fully
- * validated server-side in handleOrderCallback). callback_data is capped by
- * Telegram at 64 bytes: prefix + 36-char order id fits.
+ * login — zero auth surface); row 2 = Received / Cancel (callbacks, fully
+ * validated server-side in handleOrderCallback). The old Confirm button
+ * was retired — the owner flow is now View → Received/Cancel. Old
+ * tg:cfm:* callbacks still validate (in-flight messages), they are just
+ * never sent anymore. callback_data is capped by Telegram at 64 bytes:
+ * prefix + 36-char order id fits.
  */
 export function buildOrderKeyboard(adminUrl, orderId) {
   const rows = [[{ text: '👁 عرض الطلب', url: String(adminUrl || '') }]];
   if (typeof orderId === 'string' && orderId) {
     rows.push([
-      { text: '✅ تأكيد', callback_data: `tg:cfm:${orderId}` },
+      { text: '📦 تم استلام طلبك', callback_data: `tg:rcv:${orderId}` },
       { text: '❌ إلغاء', callback_data: `tg:cnl:${orderId}` },
     ]);
-    rows.push([{ text: '📦 تم الاستلام', callback_data: `tg:rcv:${orderId}` }]);
   }
   return { inline_keyboard: rows };
 }

@@ -276,7 +276,7 @@ const s3 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-s2', s
 ok('sync skips pre-0015 rows silently', s3.sent === 0 && s3.reason === 'no_message');
 const nCalls = syncCalls.length;
 const s4 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-s1', status: 'new', adminUrl: 'https://x/admin/dashboard' });
-ok('reopen restores buttons', s4.sent === 1 && syncCalls.length === nCalls + 1 && syncCalls[syncCalls.length - 1].body.reply_markup.inline_keyboard.length === 3);
+ok('reopen restores buttons', s4.sent === 1 && syncCalls.length === nCalls + 1 && syncCalls[syncCalls.length - 1].body.reply_markup.inline_keyboard.length === 2);
 dbSync.ledger.set('ord-s3', { status: 'sent', order_number: 13, chat_id: 111, message_id: 23, message_text: '<b>طلب</b>\n\n✅ تم تأكيد الطلب' });
 const s5 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-s3', status: 'completed', adminUrl: '' });
 const editText3 = syncCalls.filter((c) => c.method === 'editMessageText').pop();
@@ -301,9 +301,10 @@ const ac3 = await notifyOwnerAutoCompleted(dbAuto, '', { orderNumber: 42, custom
 ok('auto-complete ping needs token', ac3.sent === 0);
 globalThis.fetch = prevFetch7g;
 
-// 8. Order keyboard: URL view + confirm/cancel + received (64-byte cap).
+// 8. Order keyboard: URL view + received/cancel (confirm retired, still parsed).
 const kb2 = buildOrderKeyboard('https://x/admin/dashboard', oid);
-ok('keyboard has view + actions + received', kb2.inline_keyboard.length === 3 && kb2.inline_keyboard[0][0].url === 'https://x/admin/dashboard');
+ok('keyboard has view + received + cancel', kb2.inline_keyboard.length === 2 && kb2.inline_keyboard[0][0].url === 'https://x/admin/dashboard');
+ok('no confirm button sent anymore', !JSON.stringify(kb2).includes('tg:cfm:') && parseOrderCallback(`tg:cfm:${oid}`)?.status === 'confirmed');
 const cbData = kb2.inline_keyboard[1].map((b) => b.callback_data);
 ok('callback data fits 64 bytes', cbData.every((d) => d.length <= 64 && parseOrderCallback(d) !== null));
 const kb = buildOrderKeyboard('https://example.com/admin/dashboard');

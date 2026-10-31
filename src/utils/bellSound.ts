@@ -1,56 +1,106 @@
 /**
  * Premium bell chime — synthesized with WebAudio, zero audio assets.
- * Two soft strikes (E6 + B6, just-intonation-ish fifth) with inharmonic
- * bell partials and a long exponential decay: a warm "ding-ding", never
- * a harsh beep. Master gain is kept low on purpose.
+ * Two soft strikes (E5 + B5, a gentle fifth) with inharmonic bell partials
+ * and a long exponential decay: a warm "ding-ding", never a harsh beep.
+ * Master gain is kept low on purpose.
  *
- * Autoplay rules: the context is created/resumed on the first user gesture
- * (sticky activation) — playBellChime() silently returns false when the
- * browser still blocks audio. Never throws, never rejects.
+ * The deep autoplay problem this solves: on iOS Safari (and hardened
+ * Chrome), an AudioContext BORN while suspended can stay stuck forever —
+ * resume() on it is a silent no-op, so the first ring works (born in a
+ * tap) and every later ring dies quietly ("plays once, then never").
+ * The fix is not to nurse the stuck context but to BIRTH A FRESH ONE
+ * inside every user gesture — a context created in a tap starts running.
+ * Anything that still cannot play is queued by the caller (pending set
+ * flushed on gestures/polls/visibility) instead of being dropped.
+ * Never throws, never rejects.
  */
 
 let ctx: AudioContext | null = null;
 let unlocked = false;
 
-function sharedContext(): AudioContext | null {
+function audioCtor(): typeof AudioContext | null {
   try {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    return AC ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Lazily create (or return) the shared context. May be suspended. */
+function sharedContext(): AudioContext | null {
+  try {
+    if (ctx) {
+      // Dead contexts never recover — drop so the next birth is fresh.
+      if (ctx.state === 'closed' || ctx.state === 'interrupted') {
+        try {
+          void ctx.close().catch(() => {});
+        } catch {}
+        ctx = null;
+      } else {
+        return ctx;
+      }
+    }
+    const AC = audioCtor();
     if (!AC) return null;
-    if (!ctx) ctx = new AC();
+    ctx = new AC();
     return ctx;
   } catch {
     return null;
   }
 }
 
-/** Call once from the app shell: unlocks audio on the first interaction. */
+/**
+ * MUST run inside a user gesture: drops any stuck context and births a
+ * fresh one, which starts running. Never recreates a healthy context
+ * (a tap mid-ring must not cut the decay tail).
+ */
+function ensureLiveInGesture(): void {
+  try {
+    if (ctx && ctx.state === 'running') {
+      try {
+        void ctx.resume().catch(() => {});
+      } catch {}
+      return;
+    }
+    if (ctx) {
+      try {
+        void ctx.close().catch(() => {});
+      } catch {}
+      ctx = null;
+    }
+    const AC = audioCtor();
+    if (!AC) return;
+    ctx = new AC();
+    if (ctx.state === 'suspended') {
+      try {
+        void ctx.resume().catch(() => {});
+      } catch {}
+    }
+  } catch {}
+}
+
+/** Call once from the app shell: keeps audio born fresh on every gesture. */
 export function unlockBellAudio(): void {
   if (unlocked) return;
   unlocked = true;
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
-  const unlock = () => {
-    try {
-      const ac = sharedContext();
-      if (ac && ac.state === 'suspended') void ac.resume().catch(() => {});
-    } catch {}
-  };
-  // touchend covers mobile Safari cases where pointerdown alone is not
-  // treated as a user gesture for AudioContext.
-  window.addEventListener('pointerdown', unlock, { passive: true });
-  window.addEventListener('touchend', unlock, { passive: true });
-  window.addEventListener('keydown', unlock);
+  window.addEventListener('pointerdown', ensureLiveInGesture, { passive: true });
+  // touchstart fires before any click synthesis on iOS — earliest unlock.
+  window.addEventListener('touchstart', ensureLiveInGesture, { passive: true });
+  window.addEventListener('touchend', ensureLiveInGesture, { passive: true });
+  window.addEventListener('keydown', ensureLiveInGesture);
+  window.addEventListener('focus', ensureLiveInGesture);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       try {
-        const ac = sharedContext();
-        if (ac && ac.state === 'suspended') void ac.resume().catch(() => {});
+        ensureLiveInGesture();
       } catch {}
     }
   });
 }
 
-function strike(at: number, freq: number, volume: number): void {
-  if (!ctx) return;
+function strike(ac: AudioContext, at: number, freq: number, volume: number): void {
   // Bell-ish partials: fundamental + inharmonic overtones, fast attack,
   // ~1.8s decay. All sine — smooth, no harsh harmonics.
   const partials: Array<[number, number]> = [
@@ -59,14 +109,14 @@ function strike(at: number, freq: number, volume: number): void {
     [5.43, 0.12],
   ];
   for (const [ratio, amp] of partials) {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
     osc.type = 'sine';
     osc.frequency.value = freq * ratio;
     gain.gain.setValueAtTime(0, at);
     gain.gain.linearRampToValueAtTime(volume * amp, at + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.8);
-    osc.connect(gain).connect(ctx.destination);
+    osc.connect(gain).connect(ac.destination);
     osc.start(at);
     osc.stop(at + 1.9);
   }
@@ -74,29 +124,23 @@ function strike(at: number, freq: number, volume: number): void {
 
 function strikeNow(ac: AudioContext): void {
   const now = ac.currentTime + 0.02;
-  strike(now, 659.25, 0.16); // E5
-  strike(now + 0.35, 987.77, 0.14); // B5 — a gentle fifth above
+  strike(ac, now, 659.25, 0.16); // E5
+  strike(ac, now + 0.35, 987.77, 0.14); // B5 — a gentle fifth above
 }
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
- * Ring the chime — with guaranteed delivery semantics.
- *
- * Autoplay policies (Chrome sticky activation, iOS Safari) keep the
- * AudioContext suspended until a user gesture unlocks it. A ring fired
- * from a background poll therefore usually meets a suspended context.
- * Instead of one hopeful retry, this waits for unlock (resume + short
- * polls, ~1.2s budget) and reports whether it REALLY struck. Callers keep
- * un-rung orders in a pending set and re-flush on every later gesture,
- * so a chime is never silently dropped: it plays on the next tap at the
- * latest — unless the order was muted. Never rejects.
+ * Ring the chime. Resolves true ONLY on a real strike. A suspended
+ * context gets resume attempts (~1.2s budget); anything still blocked
+ * resolves false so the caller keeps it queued — combined with
+ * gesture-born contexts, the chime lands on the next tap at the latest.
  */
 export async function playBellChime(): Promise<boolean> {
   try {
     const ac = sharedContext();
     if (!ac) return false;
-    // Read fresh each time (a function call defeats TS property narrowing —
+    // Read fresh each call (a function defeats TS property narrowing —
     // resume() genuinely flips suspended -> running at runtime).
     const stateOf = (): AudioContextState => {
       try {

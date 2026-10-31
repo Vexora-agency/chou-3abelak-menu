@@ -398,9 +398,12 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
                 ? 'سيُحفظ كبحث خرائط عن هذا الاسم (الرابط يعمل، بدون مسافة).'
                 : 'Will be saved as a Maps search for this name (link works, no distance).';
             }
+            // A direct link (often a short goo.gl link) carries no coords:
+            // say so plainly, or the owner expects the customer distance
+            // that can never appear.
             return isAr
-              ? 'رابط مباشر معتمد — زر الموقع في الموقع يفتحه.'
-              : 'Direct link recognized — the site Map button opens it.';
+              ? 'رابط مختصر معتمد — يفتح كزر، لكن بدون مسافة للزبون. لإظهار المسافة الصق رابطًا فيه إحداثيات (افتح موقعك في خرائط جوجل وانسخ الرابط الكامل).'
+              : 'Short link recognized — opens as a button, but no customer distance. To show distance, paste a link carrying coordinates (open your place in Google Maps and copy the full link).';
           })()}
         </p>
       </div>

@@ -15,6 +15,7 @@
     "test:client": "tsx scripts/test-safe-json.ts",
     "test:telegram": "node scripts/test-telegram.mjs",
     "test:digits": "tsx scripts/test-digits.ts",
+    "test:distance": "tsx scripts/test-distance.mjs",
     "test:customer-orders": "tsx scripts/test-customer-orders.mjs",
     "test:bell-sound": "tsx scripts/test-bell-sound.mjs",
     "test:customer-confirm": "node scripts/test-customer-confirm.mjs",

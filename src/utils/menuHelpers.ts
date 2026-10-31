@@ -116,6 +116,7 @@ export function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: 
 
 /** Extract `lat,lng` from a Google Maps URL in ANY common shape:
  *  bare "lat,lng" · ?q= / ?query= / ?api=1&query= · ?ll= / ?center= ·
+ *  directions ?destination= / ?origin= / ?saddr= / ?daddr= ·
  *  path "@lat,lng,zoom" (place/share URLs) · data "…!3dlat!4dlng".
  *  Short links (maps.app.goo.gl) carry no coords — null there (the link
  *  itself still works as a directions URL). Null when absent/invalid. */
@@ -133,8 +134,9 @@ export function parseMapUrlCoords(url: string | undefined): { lat: number; lng: 
   // Bare "lat,lng" typed by hand.
   let m = clean.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
   if (m) return pair(m[1], m[2]);
-  // Query params: ?q=lat,lng · ?query= · ?api=1&query= · ?ll= · ?center=.
-  m = clean.match(/[?&](?:q|query|ll|center)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  // Query params: ?q=lat,lng · ?query= · ?api=1&query= · ?ll= · ?center=
+  // · directions ?destination= / ?origin= / ?saddr= / ?daddr=.
+  m = clean.match(/[?&](?:q|query|ll|center|destination|origin|saddr|daddr)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
   if (m) return pair(m[1], m[2]);
   // Path "@lat,lng,…" (desktop place URLs and "share" links).
   m = clean.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)(?:,|$|[?/])/);

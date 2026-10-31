@@ -4,6 +4,7 @@
 // apply + the manual webhook checklist in the phase report — not here.
 import {
   buildDeepLink,
+  buildMapsLink,
   buildOrderKeyboard,
   callTelegramApi,
   escapeHtml,
@@ -121,6 +122,18 @@ const many = formatNewOrderMessage(
 );
 ok('long orders truncated with remainder', many.includes('أصناف أخرى') && many.length <= 4100);
 ok('empty items safe', formatNewOrderMessage({ type: 'pickup', name: 'X', phone: '1', items: [] }, 1, '').includes('#1'));
+
+// 7f. Maps link + bidi: precise coords link, address search fallback, isolates.
+const withLoc = { ...sampleCleaned, location: { lat: 33.8938, lng: 35.5018 } };
+const precise = buildMapsLink(withLoc);
+ok('precise maps link', precise && precise.precise === true && precise.url.includes('33.8938,35.5018'));
+const search = buildMapsLink(sampleCleaned);
+ok('address search fallback', search && search.precise === false && search.url.includes('query='));
+ok('no maps link without address', buildMapsLink({ type: 'delivery' }) === null && buildMapsLink({ type: 'pickup', address: 'x' }) === null);
+const locMsg = formatNewOrderMessage(withLoc, 1001, 'ل.ل');
+ok('message has pretty maps anchor', locMsg.includes('الموقع على الخريطة') && locMsg.includes('maps/search/?api=1&amp;query='));
+ok('bidi isolates wrap numbers', [...locMsg].some((c) => c.charCodeAt(0) === 0x2066) && [...locMsg].some((c) => c.charCodeAt(0) === 0x2069));
+ok('bold labels on important fields', locMsg.includes('<b>الزبون:</b>') && locMsg.includes('<b>الهاتف:</b>') && locMsg.includes('<b>العنوان:</b>') && locMsg.includes('<b>الإجمالي:'));  
 
 // 7b. Bot username resolution: env (developer) wins, D1 fallback, else null.
 const dbWithD1Name = {

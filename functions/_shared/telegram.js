@@ -331,23 +331,67 @@ function pickName(obj) {
 }
 
 /**
+ * Bidi isolation, explicit code points (minifier-safe, no invisible
+ * literals): LRI (U+2066) ... PDI (U+2069). Wraps every Latin/number run
+ * (phone, price, #number) so it stays glued LTR inside RTL text.
+ * Without this, Telegram renders mixed lines half-right/half-left —
+ * digits jump sides and the line looks broken. Telegram's HTML subset
+ * has no dir= support, so isolates are the fix.
+ */
+const BIDI_LRI = String.fromCharCode(0x2066);
+const BIDI_PDI = String.fromCharCode(0x2069);
+function bidi(s) {
+  return `${BIDI_LRI}${String(s ?? '')}${BIDI_PDI}`;
+}
+
+/**
+ * Map link for a delivery order. Precise coords link when the customer
+ * pinned the location; otherwise a Maps search of the written address.
+ * Rendered as a short pretty anchor (never a bare long URL).
+ * Returns { url, precise } or null.
+ */
+export function buildMapsLink(cleaned) {
+  if (!cleaned || cleaned.type !== 'delivery') return null;
+  if (cleaned.location && Number.isFinite(cleaned.location.lat) && Number.isFinite(cleaned.location.lng)) {
+    return {
+      url: `https://www.google.com/maps/search/?api=1&query=${cleaned.location.lat},${cleaned.location.lng}`,
+      precise: true,
+    };
+  }
+  if (typeof cleaned.address === 'string' && cleaned.address.trim()) {
+    return {
+      url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleaned.address.trim())}`,
+      precise: false,
+    };
+  }
+  return null;
+}
+
+/**
  * Format a saved order (cleaned shape from validateOrderInput) as an
- * HTML-parsed Telegram message. Arabic-first, all interpolated values
+ * HTML-parsed Telegram message. Arabic-first, bold labels for the
+ * important bits, every LTR run bidi-isolated, all interpolated values
  * escaped. Caps length defensively for Telegram's 4096-char limit.
  */
 export function formatNewOrderMessage(cleaned, orderNumber, currency) {
   const cur = typeof currency === 'string' && currency ? escapeHtml(currency) : '';
+  const money = (n) => (cur ? `${bidi(fmtMoney(n))} ${cur}` : bidi(fmtMoney(n)));
   const lines = [];
-  lines.push(`🆕 <b>طلب جديد #${Number.isInteger(orderNumber) ? orderNumber : '?'}</b>`);
+  lines.push(`🆕 <b>طلب جديد ${bidi(`#${Number.isInteger(orderNumber) ? orderNumber : '?'}`)}</b>`);
   const typeLabel = TYPE_LABEL[cleaned.type] || escapeHtml(String(cleaned.type || ''));
-  lines.push(`النوع: ${typeLabel}`);
-  lines.push(`الزبون: ${escapeHtml(cleaned.name || '-')}`);
-  lines.push(`الهاتف: <code>${escapeHtml(cleaned.phone || '-')}</code>`);
+  lines.push(`<b>النوع:</b> ${typeLabel}`);
+  lines.push(`<b>الزبون:</b> ${escapeHtml(cleaned.name || '-')}`);
+  lines.push(`<b>الهاتف:</b> <code>${bidi(escapeHtml(cleaned.phone || '-'))}</code>`);
   if (cleaned.type === 'delivery' && cleaned.address) {
-    lines.push(`العنوان: ${escapeHtml(cleaned.address)}`);
+    lines.push(`<b>العنوان:</b> ${escapeHtml(cleaned.address)}`);
+    const maps = buildMapsLink(cleaned);
+    if (maps) {
+      const anchor = maps.precise ? '📍 الموقع على الخريطة' : '📍 البحث عن العنوان على الخريطة';
+      lines.push(`<a href="${escapeHtml(maps.url)}">${anchor}</a>`);
+    }
   }
   if (cleaned.type === 'dinein' && cleaned.table) {
-    lines.push(`الطاولة: ${escapeHtml(cleaned.table)}`);
+    lines.push(`<b>الطاولة:</b> ${bidi(escapeHtml(cleaned.table))}`);
   }
   lines.push('');
   lines.push('<b>الأصناف:</b>');
@@ -366,20 +410,20 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
       }
     }
     const extra = extras.length ? ` (${extras.join('، ')})` : '';
-    lines.push(`• ${name}${extra} × ${qty} = ${fmtMoney(unit * qty)}${cur ? ' ' + cur : ''}`);
+    lines.push(`• ${name}${extra} × ${bidi(qty)} = ${money(unit * qty)}`);
   }
   if (items.length > shown.length) {
-    lines.push(`… +${items.length - shown.length} أصناف أخرى`);
+    lines.push(`… ${bidi(`+${items.length - shown.length}`)} أصناف أخرى`);
   }
   lines.push('');
-  lines.push(`المجموع الفرعي: ${fmtMoney(cleaned.subtotal)}${cur ? ' ' + cur : ''}`);
+  lines.push(`المجموع الفرعي: ${money(cleaned.subtotal)}`);
   if (cleaned.deliveryFee) {
-    lines.push(`التوصيل: ${fmtMoney(cleaned.deliveryFee)}${cur ? ' ' + cur : ''}`);
+    lines.push(`التوصيل: ${money(cleaned.deliveryFee)}`);
   }
-  lines.push(`<b>الإجمالي: ${fmtMoney(cleaned.total)}${cur ? ' ' + cur : ''}</b>`);
+  lines.push(`<b>الإجمالي: ${money(cleaned.total)}</b>`);
   if (cleaned.notes) {
     lines.push('');
-    lines.push(`📝 ملاحظات: ${escapeHtml(cleaned.notes)}`);
+    lines.push(`📝 <b>ملاحظات:</b> ${escapeHtml(cleaned.notes)}`);
   }
   const text = lines.join('\n');
   return text.length > 4000 ? text.slice(0, 4000) + '…' : text;

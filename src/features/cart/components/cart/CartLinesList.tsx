@@ -1,7 +1,7 @@
 import React from 'react';
 import { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { pickLangText } from '@/src/utils/menuHelpers';
-import { getVariant, lineMathText, featureName, unitPrice, formatPrice } from '@/src/utils/pricing';
+import { getVariant, featureName, unitPrice, formatPrice, normalizePricing, unitLabel } from '@/src/utils/pricing';
 import { Plus, Minus, Trash2, X } from 'lucide-react';
 
 interface CartLinesListProps {
@@ -31,15 +31,21 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
         // Base (size or fixed price) — shown next to the name so the full
         // math reads: small pizza 450,000 + cheese 30,000.
         const baseUnit = unitPrice(l.item, l.variantId);
+        let pricingUnit = 'pc';
+        try {
+          const pu = normalizePricing(l.item).unit;
+          if (typeof pu === 'string' && pu) pricingUnit = pu;
+        } catch {}
         return (
           <div
             key={l.key}
-            className={`flex items-center justify-between gap-3 p-3.5 rounded-xl border transition-colors ${
+            className={`p-3.5 rounded-xl border transition-colors ${
               darkMode
                 ? 'bg-[#1c1c1c] border-neutral-800 text-white'
                 : 'bg-neutral-100 border-neutral-200 text-[#0A0A0A]'
             }`}
           >
+           <div className="flex items-center justify-between gap-3">
             <div className="flex-1 min-w-0">
               <h4 className={`font-bold text-sm ${isAr ? 'leading-relaxed' : ''} ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
                 <span dir="auto">{pickLangText(l.item.name, lang)}</span>
@@ -86,20 +92,6 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                 </div>
               )}
 
-              {/* Line math pill: wraps inside its bubble on narrow phones
-                  (long unit words like "دستتين" + big totals overflowed it). */}
-              <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                <span
-                  className={`text-xs font-extrabold px-2.5 py-1 rounded-full shadow-xs tabular-nums max-w-full whitespace-normal break-words text-center leading-relaxed ${
-                    darkMode
-                      ? 'bg-[var(--primary)] text-[#0A0A0A]'
-                      : 'bg-[#0A0A0A] text-[var(--primary)]'
-                  }`}
-                  dir="ltr"
-                >
-                  {lineMathText(l.item, l.quantity, l.unit, lang)}
-                </span>
-              </div>
             </div>
 
             {/* Quantity Stepper & Remove */}
@@ -137,6 +129,19 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                 <Trash2 size={18} />
               </button>
             </div>
+           </div>
+           {/* Line math: full-width receipt line under the row — the old pill
+               squeezed beside the stepper and stacked ugly on narrow phones.
+               No heavy bubble: quiet text, strong total. */}
+           <p dir="ltr" className={`mt-2 text-xs tabular-nums break-words leading-relaxed ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
+             <span className={`font-extrabold ${darkMode ? 'text-white' : 'text-neutral-800'}`}>
+               {l.quantity} {unitLabel(pricingUnit, l.quantity, lang)}
+             </span>
+             {' × '}{formatPrice(l.unit)}{' = '}
+             <span className={`font-black ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`}>
+               {formatPrice(l.total)}
+             </span>
+           </p>
           </div>
         );
       })}

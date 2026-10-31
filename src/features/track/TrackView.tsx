@@ -134,9 +134,9 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
           <div className="text-center py-16">
             <XCircle size={40} className="mx-auto text-neutral-600" />
             <p className="mt-4 font-black text-lg">{isAr ? 'رابط التتبع غير صالح' : 'Invalid tracking link'}</p>
-            <p className="mt-1 text-sm text-neutral-400">
-              {isAr ? 'استخدم الرابط الكامل من رسالة الواتساب.' : 'Use the full link from the WhatsApp message.'}
-            </p>
+              <p className="mt-1 text-sm text-neutral-400">
+                {isAr ? 'استخدم رابط التتبع الكامل الخاص بطلبك.' : 'Use your order’s full tracking link.'}
+              </p>
           </div>
         ) : !data ? (
           <div className="flex justify-center py-16">

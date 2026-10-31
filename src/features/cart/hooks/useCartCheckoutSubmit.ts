@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { MenuData, CustomerDetails, ResolvedCartLine } from '@/src/types/menu';
-import { buildWhatsAppMessage, haversineMeters, parseMapUrlCoords, formatDistance } from '@/src/utils/menuHelpers';
+import { haversineMeters, parseMapUrlCoords, formatDistance } from '@/src/utils/menuHelpers';
 import { formatPrice, round2 } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
@@ -46,13 +46,11 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   });
 
   const [orderPrepared, setOrderPrepared] = useState(false);
-  // Cloud API delivered (no wa.me draft exists): confirmation screen variant.
-  const [apiSent, setApiSent] = useState(false);
   // Last placed order (number + tracking token) for the confirmation
   // screen: tracking link + push subscribe. Reset when the drawer closes.
   const [lastOrder, setLastOrder] = useState<{ number: number; trackToken: string | null } | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
-  // Honeypot state (always empty for real users; bots fill it).
+  // Honeypot state (always empty for real users, bots fill it).
   // NOTE: must stay above the `if (!isOpen)` early return — hooks order
   // must never change between renders or the drawer crashes open.
   const [honeypot, setHoneypot] = useState('');
@@ -81,9 +79,9 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     ? formatDistance(haversineMeters(location.lat, location.lng, restaurantCoords.lat, restaurantCoords.lng), lang)
     : null;
 
-  // Stable idempotency key for this drawer session: retries ("Re-open
-  // WhatsApp") reuse it so they never create a duplicate order; it resets
-  // when the drawer closes so the next checkout is a new order.
+  // Stable idempotency key for this drawer session: retries reuse it so
+  // they never create a duplicate order; it resets when the drawer closes
+  // so the next checkout is a new order.
   const idemKeyRef = useRef<string | null>(null);
 
   // In-flight guard (ref = synchronous, state = button skin): double-taps
@@ -91,11 +89,6 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // same-key submits can never race each other.
   const sendingRef = useRef(false);
   const [sending, setSending] = useState(false);
-
-  // Exact wa.me URL built by the first send. "Re-open WhatsApp" re-opens
-  // THIS and never POSTs again — so it can neither record a second order
-  // row nor message the kitchen an emptied cart.
-  const lastWaUrlRef = useRef<string | null>(null);
 
   const subtotal = lines.reduce((acc, l) => acc + l.total, 0);
   const liveState = resolveLiveOrdering(orderingState, menu, serverNow());
@@ -196,9 +189,6 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     // Record the order on the server BEFORE opening WhatsApp. Never blocks
     // the WhatsApp flow: any failure still opens WhatsApp immediately.
     // Transport lives in features/cart/services/cart.api.ts (single place).
-    let orderNumber: number | null = null;
-    let trackToken: string | null = null;
-    let sentVia: 'wa' | 'api' = 'wa';
     try {
       if (!idemKeyRef.current) {
         idemKeyRef.current =
@@ -236,8 +226,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         return;
       }
       if (result.failure === 'timeout' || result.failure === 'invalid') {
-        // The WhatsApp message still opens below (fail-open ordering), but
-        // the customer sees exactly why it carries no number — and the code
+        // Fail-open ordering: the order may still be saved below, but the
+        // customer sees exactly why it carries no number — and the code
         // in caps is the machine cause for remote diagnosis.
         setErrorMsg(
           result.failure === 'timeout'
@@ -245,73 +235,21 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
             : (isAr ? 'رفض السيرفر الطلب (SRV-INVALID) — حدّث الصفحة وحاول مجددًا' : 'Server rejected the order (SRV-INVALID) — refresh and try again')
         );
       }
-      orderNumber = result.orderNumber;
-      trackToken = result.trackToken ?? null;
-      sentVia = result.sentVia;
       if (result.orderNumber) {
         setLastOrder({ number: result.orderNumber, trackToken: result.trackToken ?? null });
-        // Shelf for the floating bell (48h, this device only). Needs the
+        // Shelf for the floating bell (12h, this device only). Needs the
         // token to fetch status / confirm receipt later.
         if (result.trackToken) saveCustomerOrder(result.orderNumber, result.trackToken);
       }
-    } catch {
-      orderNumber = null;
-    }
+    } catch {}
 
-    if (sentVia === 'api' && orderNumber) {
-      // Cloud API delivered it: no WhatsApp hop at all. Tracking + updates
-      // replace the wa.me draft (see confirmation screen); Re-open stays
-      // hidden because there is no draft to reopen.
-      setApiSent(true);
-      clearLocation();
-      if (clientConfig.cart?.clearAfterOrder) onOrderSuccess?.();
-      setOrderPrepared(true);
-      return;
-    }
-
-    // NOTE: trackUrl is deliberately NOT passed: WhatsApp unfurls any URL
-    // into a logo/title preview card and the owner wants a clean text-only
-    // message. Tracking stays one tap away on the confirmation screen
-    // (lastOrder -> Track button). Re-enable by passing trackUrl again —
-    // the builder + tests already support it.
-    const trackUrl = null;
-    const message = buildWhatsAppMessage(
-      menu,
-      lines.map((l) => ({ item: l.item, variantId: l.variantId, addonIds: l.addonIds, quantity: l.quantity })),
-      customer,
-      lang,
-      orderNumber,
-      location ? { lat: location.lat, lng: location.lng } : null,
-      distanceText,
-      trackUrl
-    );
-    const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
-    if (!whatsappNum) {
-      // No restaurant number (settings validation normally prevents this,
-      // but legacy data can lack it): the order above IS the record — say so
-      // plainly instead of opening a broken wa.me link.
-      setErrorMsg(orderNumber
-        ? (isAr ? `تم حفظ طلبك #${orderNumber}، لكن رقم واتساب المطعم غير مضبوط — اتصل بالمطعم لتأكيده.` : `Order #${orderNumber} saved, but the restaurant WhatsApp number is missing — please call to confirm.`)
-        : (isAr ? 'رقم واتساب المطعم غير مضبوط ولا يمكن فتح المحادثة — اتصل بالمطعم.' : 'Restaurant WhatsApp number is missing — please call the restaurant.'));
-      clearLocation();
-      if (clientConfig.cart?.clearAfterOrder) onOrderSuccess?.();
-      setOrderPrepared(true);
-      return;
-    }
-    const url = `https://wa.me/${whatsappNum}?text=${encodeURIComponent(message)}`;
-    lastWaUrlRef.current = url;
-
-    // Open WhatsApp
-    const opened = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!opened) {
-      window.location.href = url;
-    }
-
+    // In-site ordering: the saved server record IS the order — Telegram
+    // pings the owner automatically, so the customer never leaves the site.
     clearLocation();
-    // Talabat/Elmenus standard: the order is placed (WhatsApp opened), so
-    // the cart empties now — otherwise the next visit re-sends a duplicate.
-    // Runs only on the success path (validation/availability gates above
-    // return early). State clear re-persists via the cart hook's effect.
+    // Talabat/Elmenus standard: the order is placed, so the cart empties
+    // now — otherwise the next visit re-sends a duplicate. Runs only on
+    // the success path (validation/availability gates above return early).
+    // State clear re-persists via the cart hook's effect.
     if (clientConfig.cart?.clearAfterOrder) onOrderSuccess?.();
     setOrderPrepared(true);
   };
@@ -326,21 +264,6 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     } finally {
       sendingRef.current = false;
       setSending(false);
-    }
-  };
-
-  // Re-open re-opens the FIRST message only — zero server contact, zero new
-  // rows, zero ghost empty messages. Falls back to a fresh send when no
-  // message was ever built (e.g. hot-reload wiped the ref).
-  const reopenWhatsApp = () => {
-    const url = lastWaUrlRef.current;
-    if (!url) {
-      void handleSendOrder();
-      return;
-    }
-    const opened = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!opened) {
-      window.location.href = url;
     }
   };
 
@@ -369,16 +292,12 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     reopenText,
     orderPrepared,
     setOrderPrepared,
-    apiSent,
-    setApiSent,
     lastOrder,
     setLastOrder,
     errorMsg,
     setErrorMsg,
     idemKeyRef,
     sending,
-    lastWaUrlRef,
     handleSendOrder,
-    reopenWhatsApp,
   };
 }

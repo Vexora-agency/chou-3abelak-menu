@@ -173,22 +173,6 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         />
       </div>
 
-      <div className="flex items-start gap-2 pt-0.5">
-        <input
-          id="wa-updates"
-          type="checkbox"
-          checked={customer.whatsappUpdates === true}
-          onChange={(e) => setCustomer({ ...customer, whatsappUpdates: e.target.checked })}
-          className="w-4 h-4 mt-0.5 rounded text-[var(--primary)] focus:ring-[var(--primary)]"
-        />
-        <label
-          htmlFor="wa-updates"
-          className={`text-[11px] leading-relaxed ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}
-        >
-          {isAr ? 'أرسلوا لي تأكيد الطلب وحالته على واتساب' : 'Send me order confirmation and updates on WhatsApp'}
-        </label>
-      </div>
-
       {/* Honeypot: invisible to real users, bots fill it and get a fake success */}
       <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }}>
         <label>

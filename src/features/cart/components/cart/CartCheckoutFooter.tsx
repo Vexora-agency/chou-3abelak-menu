@@ -49,12 +49,12 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
                jumps and the CTA stays recognizable. */
             <>
               <Send size={18} className="opacity-60" />
-              <span>{isAr ? 'إرسال الطلب عبر واتساب' : 'Send Order on WhatsApp'}</span>
+              <span>{isAr ? 'إرسال الطلب' : 'Send Order'}</span>
             </>
           ) : (
             <>
               <Send size={18} />
-              <span>{sending ? (isAr ? 'جارٍ إرسال الطلب…' : 'Sending order…') : (isAr ? 'إرسال الطلب عبر واتساب' : 'Send Order on WhatsApp')}</span>
+              <span>{sending ? (isAr ? 'جارٍ إرسال الطلب…' : 'Sending order…') : (isAr ? 'إرسال الطلب' : 'Send Order')}</span>
             </>
           )}
         </button>

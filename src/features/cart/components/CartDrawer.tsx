@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { type OrderingStatus } from '@/src/utils/status';
-import { X, Send, CheckCircle2 } from 'lucide-react';
+import { X, CheckCircle2 } from 'lucide-react';
 import { useCartCheckoutSubmit } from '../hooks/useCartCheckoutSubmit';
 import { PushSubscribeButton } from '@/src/features/track/PushSubscribeButton';
 import { CartLinesList } from './cart/CartLinesList';
@@ -63,17 +63,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     reopenText,
     orderPrepared,
     setOrderPrepared,
-    apiSent,
-    setApiSent,
     lastOrder,
     setLastOrder,
     errorMsg,
     setErrorMsg,
     idemKeyRef,
     sending,
-    lastWaUrlRef,
     handleSendOrder,
-    reopenWhatsApp,
   } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart });
 
   // Lock body scroll when open (no state inside — rule-clean effect).
@@ -81,7 +77,6 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     document.body.style.overflow = isOpen ? 'hidden' : '';
     if (!isOpen) {
       idemKeyRef.current = null;
-      lastWaUrlRef.current = null;
     }
     return () => {
       document.body.style.overflow = '';
@@ -106,9 +101,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   // Reset transient checkout state whenever the drawer closes.
   // Render-phase adjustment (blessed pattern): guarded so it converges
   // immediately, and the closed drawer never flashes stale errors.
-  if (!isOpen && (orderPrepared || errorMsg !== '' || location !== null || lastOrder !== null || apiSent)) {
+  if (!isOpen && (orderPrepared || errorMsg !== '' || location !== null || lastOrder !== null)) {
     setOrderPrepared(false);
-    setApiSent(false);
     setErrorMsg('');
     setLastOrder(null);
     clearLocation();
@@ -178,18 +172,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <CheckCircle2 size={36} />
             </div>
             <h3 className={`text-xl font-black ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-              {apiSent
-                ? (isAr ? 'وصل طلبك للمطعم مباشرة!' : 'Your order reached the kitchen directly!')
-                : (isAr ? 'تم تجهيز طلبك بنجاح!' : 'Order prepared successfully!')}
+              {isAr ? 'وصل طلبك للمطعم!' : 'Your order is in!'}
             </h3>
             <p className={`text-sm max-w-xs mx-auto leading-relaxed ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>
-              {apiSent
-                ? (isAr
-                  ? 'أرسلنا طلبك للمطعم عبر واتساب تلقائيًا — لا حاجة لفتح واتساب. تتبعه بالأسفل.'
-                  : 'We sent your order to the kitchen over WhatsApp — no need to open WhatsApp. Track it below.')
-                : (isAr
-                  ? 'يرجى الضغط على زر "إرسال" داخل تطبيق واتساب لتأكيد الطلب مع المطعم.'
-                  : 'Please press "Send" in WhatsApp to confirm your order with the kitchen.')}
+              {isAr
+                ? 'تتبع طلبك لحظة بلحظة من الأسفل — سنعلمك بكل تحديث.'
+                : 'Track your order live below — we’ll ping you on every update.'}
             </p>
             {/* Send-failure honesty (plan §7): a DB/transport failure must
                 never look like a clean success — the cause shows HERE on the
@@ -224,17 +212,6 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               </div>
             )}
             <div className="pt-4 flex flex-col gap-2.5">
-              {/* No wa.me draft exists after an API send — nothing to reopen. */}
-              {!apiSent && (
-              <button
-                type="button"
-                onClick={() => reopenWhatsApp()}
-                className="btn-tactile h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:brightness-110"
-              >
-                <Send size={16} />
-                <span>{isAr ? 'إعادة فتح واتساب' : 'Re-open WhatsApp'}</span>
-              </button>
-              )}
               <button
                 type="button"
                 onClick={() => {

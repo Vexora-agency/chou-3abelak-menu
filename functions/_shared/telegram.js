@@ -109,6 +109,23 @@ export async function readTelegramBotUsername(db) {
     : null;
 }
 
+/**
+ * Resolve the public bot username. Priority:
+ *   1. TELEGRAM_BOT_USERNAME Pages variable (set once by the developer —
+ *      the owner never types or sees anything technical).
+ *   2. D1 service_config fallback (legacy manual save).
+ * Returns null when neither is configured.
+ */
+export async function resolveBotUsername(db, env) {
+  const fromEnv = env && typeof env.TELEGRAM_BOT_USERNAME === 'string' ? env.TELEGRAM_BOT_USERNAME.trim() : '';
+  if (isBotUsernameFormat(fromEnv)) return fromEnv;
+  try {
+    return await readTelegramBotUsername(db);
+  } catch {
+    return null;
+  }
+}
+
 export async function saveTelegramBotUsername(db, botUsername) {
   if (!isBotUsernameFormat(botUsername)) throw new Error('invalid_bot_username');
   const cfg = await readTelegramConfig(db);

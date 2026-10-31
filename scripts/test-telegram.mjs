@@ -13,6 +13,7 @@ import {
   newPairingCode,
   notifyNewOrderTelegram,
   readLastTelegramNotification,
+  resolveBotUsername,
   verifyWebhookSecret,
 } from '../functions/_shared/telegram.js';
 import { sha256Hex } from '../functions/_shared/access.js';
@@ -115,6 +116,20 @@ const many = formatNewOrderMessage(
 );
 ok('long orders truncated with remainder', many.includes('أصناف أخرى') && many.length <= 4100);
 ok('empty items safe', formatNewOrderMessage({ type: 'pickup', name: 'X', phone: '1', items: [] }, 1, '').includes('#1'));
+
+// 7b. Bot username resolution: env (developer) wins, D1 fallback, else null.
+const dbWithD1Name = {
+  prepare() {
+    return {
+      bind() { return this; },
+      async first() { return { value: JSON.stringify({ bot_username: 'D1FallbackBot' }) }; },
+    };
+  },
+};
+ok('env username wins', await resolveBotUsername(dbWithD1Name, { TELEGRAM_BOT_USERNAME: 'EnvSetBot' }) === 'EnvSetBot');
+ok('d1 fallback used', await resolveBotUsername(dbWithD1Name, {}) === 'D1FallbackBot');
+ok('bad env falls back to d1', await resolveBotUsername(dbWithD1Name, { TELEGRAM_BOT_USERNAME: 'ab' }) === 'D1FallbackBot');
+ok('null when unconfigured', await resolveBotUsername(mockDb(false), {}) === null);
 
 // 8. View-button keyboard (URL — no callback, no auth surface).
 const kb = buildOrderKeyboard('https://example.com/admin/dashboard');

@@ -18,8 +18,8 @@ import {
   isBotUsernameFormat,
   issuePairingCode,
   readLastTelegramNotification,
-  readTelegramBotUsername,
   readTelegramLink,
+  resolveBotUsername,
   saveTelegramBotUsername,
 } from '../../_shared/telegram.js';
 
@@ -48,7 +48,7 @@ export async function onRequest(context) {
     let lastNotification;
     try {
       link = await readTelegramLink(db);
-      botUsername = await readTelegramBotUsername(db);
+      botUsername = await resolveBotUsername(db, env);
       lastNotification = await readLastTelegramNotification(db);
     } catch {
       return jsonNoStore({ error: 'unavailable' }, 503);
@@ -58,6 +58,7 @@ export async function onRequest(context) {
       linked: link !== null,
       linkedAt: link ? link.linkedAt : null,
       botUsername,
+      botConfigured: botUsername !== null,
       hasBotToken: hasBotToken,
       hasWebhookSecret: hasWebhookSecret,
       pairingTtlSec: PAIRING_TTL_SEC,
@@ -102,15 +103,17 @@ export async function onRequest(context) {
   if (action === 'pair-code') {
     try {
       const { code, expiresAt } = await issuePairingCode(db);
-      const botUsername = await readTelegramBotUsername(db);
+      const botUsername = await resolveBotUsername(db, env);
       const deepLink = botUsername ? buildDeepLink(botUsername, code) : null;
+      if (!deepLink) {
+        return jsonNoStore({ error: 'bot_not_configured' }, 503);
+      }
       return jsonNoStore({
         ok: true,
         code,
         deepLink,
         expiresAt,
         ttlSec: PAIRING_TTL_SEC,
-        needsUsername: deepLink === null,
       });
     } catch {
       return jsonNoStore({ error: 'unavailable' }, 503);

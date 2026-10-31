@@ -67,36 +67,30 @@ export function loadCustomerOrders(nowMs: number = Date.now()): StoredCustomerOr
   return pruned;
 }
 
-const MUTED_KEY = 'customer_orders_muted_v1';
+const SOUND_KEY = 'customer_orders_sound_v1';
 
-/** Order numbers the customer muted (bell stays visual, chime off). */
-export function loadMutedOrders(): number[] {
+/**
+ * Global bell sound switch (one clear button in the panel header).
+ * OFF = the bell stays fully visual (badge + motion) but never chimes.
+ * Defaults ON — sound works unless the customer muted it.
+ */
+export function isSoundOff(): boolean {
   try {
-    const raw = window.localStorage.getItem(MUTED_KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((n): n is number => Number.isInteger(n) && (n as number) > 0);
+    const shelf = detailsShelf();
+    if (!shelf) return false;
+    return shelf.getItem(SOUND_KEY) === 'off';
   } catch {
-    return [];
+    return false;
   }
 }
 
-export function isOrderMuted(n: number, muted?: number[]): boolean {
-  const list = Array.isArray(muted) ? muted : loadMutedOrders();
-  return list.includes(n);
-}
-
-/** Toggle mute for one order. Returns true when it is now muted. */
-export function toggleOrderMuted(n: number): boolean {
-  if (!Number.isInteger(n) || n <= 0) return false;
-  const list = loadMutedOrders();
-  const i = list.indexOf(n);
-  if (i >= 0) list.splice(i, 1);
-  else list.push(n);
+export function setSoundOff(off: boolean): void {
   try {
-    window.localStorage.setItem(MUTED_KEY, JSON.stringify(list.slice(0, 50)));
+    const shelf = detailsShelf();
+    if (!shelf) return;
+    if (off) shelf.setItem(SOUND_KEY, 'off');
+    else shelf.removeItem(SOUND_KEY);
   } catch {}
-  return i < 0;
 }
 
 function detailsShelf(): Storage | null {

@@ -1,6 +1,6 @@
 // Customer order shelf: 12h window, validation, dedupe (pure logic).
 // Run: node scripts/test-customer-orders.mjs
-import { isStoredOrder, pruneOrders, CUSTOMER_ORDERS_TTL_MS, toggleOrderMuted, isOrderMuted, loadRememberedDetails, saveRememberedDetails, loadRung, markRung } from '../src/utils/customerOrders.ts';
+import { isStoredOrder, pruneOrders, CUSTOMER_ORDERS_TTL_MS, isSoundOff, setSoundOff, loadRememberedDetails, saveRememberedDetails, loadRung, markRung } from '../src/utils/customerOrders.ts';
 
 // In-memory localStorage stub (node has none).
 const mem = new Map();
@@ -42,9 +42,11 @@ ok('keeps valid, drops expired/malformed/dupes', pruned.length === 2 && pruned[0
 ok('12h ttl constant', CUSTOMER_ORDERS_TTL_MS === 12 * 3600 * 1000);
 ok('non-array safe', pruneOrders(null).length === 0 && pruneOrders('x').length === 0);
 
-ok('mute toggle guards bad input', toggleOrderMuted(-3) === false && toggleOrderMuted(0) === false);
-ok('mute toggle never crashes without storage', toggleOrderMuted(1001) === true);
-ok('isOrderMuted explicit list', isOrderMuted(7, [7, 9]) === true && isOrderMuted(8, [7, 9]) === false);
+ok('sound defaults on', isSoundOff() === false);
+setSoundOff(true);
+ok('sound switch persists off', isSoundOff() === true);
+setSoundOff(false);
+ok('sound switch persists on', isSoundOff() === false);
 
 ok('no saved details initially', loadRememberedDetails() === null);
 saveRememberedDetails({ name: 'Ali', phone: '70123456', remember: false });

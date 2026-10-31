@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { BellRing, BellOff, Volume2, Check, X, Loader2, PackageSearch, ExternalLink } from 'lucide-react';
+import { BellRing, Volume2, VolumeX, Check, X, Loader2, PackageSearch, ExternalLink } from 'lucide-react';
 import {
+  isSoundOff,
   loadCustomerOrders,
-  loadMutedOrders,
   loadRung,
   markRung,
-  toggleOrderMuted,
+  setSoundOff,
   type StoredCustomerOrder,
 } from '@/src/utils/customerOrders';
 import { formatPrice } from '@/src/utils/pricing';
@@ -85,7 +85,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   const [states, setStates] = useState<Record<number, BellOrder>>({});
   const [loading, setLoading] = useState(true);
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const [muted, setMuted] = useState<number[]>(() => loadMutedOrders());
+  const [soundOff, setSoundOffState] = useState<boolean>(() => isSoundOff());
   const [ringing, setRinging] = useState(false);
   // Order numbers already seen: only a number appearing AFTER mount rings
   // (sound fires at order time only — a fresh order rings normally).
@@ -107,11 +107,11 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // Every setState below runs after an await (TrackView shape) so the
   // mount fetch never cascades renders.
   // Try the pending chimes; clears on the first landed strike (one
-  // ding-ding per flush no matter how many orders queued).
+  // ding-ding per flush no matter how many orders queued). While the
+  // master switch is off the queue is dropped silently.
   const flushPendingSound = async () => {
     if (pendingSoundRef.current.size === 0) return;
-    const audible = [...pendingSoundRef.current].filter((n) => !loadMutedOrders().includes(n));
-    if (audible.length === 0) {
+    if (isSoundOff()) {
       pendingSoundRef.current.clear();
       return;
     }
@@ -127,19 +127,19 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       const list = loadCustomerOrders();
       const next = list.length ? await fetchOrderStates(list) : {};
       if (stop) return;
-      // New arrivals (never seen since mount, not muted) → premium ring:
-      // chime + vibration + swing. Mount-time orders never ring. Sound
-      // fires at order time ONLY — status polls stay silent.
+      // New arrivals (never seen since mount) → premium ring: chime +
+      // vibration + swing. Mount-time orders never ring. Sound fires at
+      // order time ONLY — status polls stay silent. The master switch
+      // gates everything: off = visual only, no chime, no queue.
       const known = knownRef.current;
       if (known) {
         const fresh = list.filter((o) => !known.has(o.n));
         for (const o of fresh) known.add(o.n);
-        const audible = fresh.filter((o) => !loadMutedOrders().includes(o.n));
-        if (audible.length > 0) {
+        if (fresh.length > 0 && !isSoundOff()) {
           // Vibration never waits on audio: even a blocked chime still
           // buzzes, so the new order is never missed silently.
           vibrateBell();
-          for (const o of audible) pendingSoundRef.current.add(o.n);
+          for (const o of fresh) pendingSoundRef.current.add(o.n);
           dance(2000);
           void flushPendingSound();
         }
@@ -148,17 +148,19 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
         // Catch-up on (re)mount: orders never rung on THIS device ring once
         // — this covers leaving the browser and coming back, even if the OS
         // killed the tab (a fresh mount would otherwise stay silent).
-        // Muted orders never enter the queue.
-        const rung = loadRung();
-        const missed = list.filter((o) => !rung.includes(o.n));
-        if (missed.length > 0) {
-          markRung(list.map((o) => o.n));
-          for (const o of missed) {
-            if (!loadMutedOrders().includes(o.n)) pendingSoundRef.current.add(o.n);
+        // Skipped entirely while the master switch is off.
+        if (!isSoundOff()) {
+          const rung = loadRung();
+          const missed = list.filter((o) => !rung.includes(o.n));
+          if (missed.length > 0) {
+            markRung(list.map((o) => o.n));
+            for (const o of missed) pendingSoundRef.current.add(o.n);
+            vibrateBell();
+            dance(2000);
+            void flushPendingSound();
           }
-          vibrateBell();
-          dance(2000);
-          void flushPendingSound();
+        } else {
+          markRung(list.map((o) => o.n));
         }
       }
       activeRef.current = Object.values(next).some((s) => s.status === 'new' || s.status === 'confirmed');
@@ -232,11 +234,18 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   const allTerminal = orders.length > 0 && orders.every((o) => o.status === 'completed' || o.status === 'cancelled');
   if (!shelf.length || allTerminal) return null;
 
-  const toggleMute = (n: number) => {
-    toggleOrderMuted(n);
-    // A newly muted order must never ring later: drop its queued chime.
-    pendingSoundRef.current.delete(n);
-    setMuted(loadMutedOrders());
+  // Master sound switch: off = visual bell only, never a chime.
+  // Unmuting plays a chime at once (a tap always unlocks audio).
+  const toggleSound = () => {
+    const off = !isSoundOff();
+    setSoundOff(off);
+    setSoundOffState(off);
+    if (off) {
+      pendingSoundRef.current.clear();
+    } else {
+      vibrateBell();
+      void playBellChime();
+    }
   };
 
   const activeCount = orders.filter((o) => o.status === 'new' || o.status === 'confirmed').length;
@@ -288,18 +297,23 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                   {isAr ? 'تظهر هنا لمدة 12 ساعة' : 'Kept here for 12 hours'}
                 </p>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    vibrateBell();
-                    void playBellChime();
-                  }}
-                  aria-label={isAr ? 'تجربة الصوت' : 'Test sound'}
-                  title={isAr ? 'تجربة الصوت' : 'Test sound'}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'text-neutral-400 hover:bg-white/10 hover:text-[var(--primary)]' : 'text-neutral-500 hover:bg-black/5 hover:text-black'}`}
+                  onClick={toggleSound}
+                  aria-pressed={!soundOff}
+                  aria-label={isAr ? 'كتم صوت الجرس' : 'Mute bell sound'}
+                  title={isAr ? 'كتم صوت الجرس' : 'Mute bell sound'}
+                  className={`btn-tactile h-9 px-4 rounded-full border text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors ${
+                    soundOff
+                      ? darkMode
+                        ? 'border-neutral-700 text-neutral-400 hover:text-white'
+                        : 'border-neutral-300 text-neutral-500 hover:text-black'
+                      : 'border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/10'
+                  }`}
                 >
-                  <Volume2 size={16} />
+                  {soundOff ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                  {isAr ? (soundOff ? 'الصوت مكتوم' : 'الصوت شغال') : (soundOff ? 'Muted' : 'Sound on')}
                 </button>
                 <button
                   type="button"
@@ -333,17 +347,6 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                           {o.status === 'completed' && <Check size={11} strokeWidth={3.5} aria-hidden="true" />}
                           {statusLabel(o.status)}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => toggleMute(o.n)}
-                          aria-label={muted.includes(o.n) ? (isAr ? 'تشغيل صوت هذا الطلب' : 'Unmute this order') : (isAr ? 'كتم صوت هذا الطلب' : 'Mute this order')}
-                          title={muted.includes(o.n) ? (isAr ? 'تشغيل الصوت' : 'Unmute') : (isAr ? 'كتم الصوت' : 'Mute')}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            darkMode ? 'text-neutral-400 hover:bg-white/10 hover:text-white' : 'text-neutral-500 hover:bg-black/5 hover:text-black'
-                          }`}
-                        >
-                          {muted.includes(o.n) ? <BellOff size={15} /> : <BellRing size={15} />}
-                        </button>
                       </div>
                     </div>
                     <p className={`mt-0.5 text-[11px] ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>

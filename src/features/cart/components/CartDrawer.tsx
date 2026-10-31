@@ -141,11 +141,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           }`}
         />
 
-        {/* Sticky header: the X close button stays reachable no matter how
-            far down the cart scrolls — no more hunting for it at the top. */}
+        {/* Header in normal flow: scrolls with the sheet, no sticky bar. */}
         <div
-          className={`sticky top-0 z-10 -mx-6 sm:-mx-8 px-6 sm:px-8 -mt-3 pt-3 pb-3 border-b flex justify-between items-center ${
-            darkMode ? 'bg-[#141414] border-neutral-800' : 'bg-white border-neutral-200'
+          className={`flex justify-between items-center pb-3 border-b ${
+            darkMode ? 'border-neutral-800' : 'border-neutral-200'
           }`}
         >
           <div>

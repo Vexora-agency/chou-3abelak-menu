@@ -45,8 +45,7 @@ export const OrdersDashPeriodBar: React.FC<OrdersDashPeriodBarProps> = ({ lang, 
         })}
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <span className="sm:hidden relative flex h-2 w-2" aria-hidden="true"><span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60 animate-ping" /><span className="relative inline-flex h-2 w-2 rounded-full bg-green-400" /></span>
-        <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-neutral-400" title={t.liveTip}>
+        <span className="inline-flex items-center gap-1.5 text-[11px] text-neutral-400" title={t.liveTip}>
           <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60 animate-ping" /><span className="relative inline-flex h-2 w-2 rounded-full bg-green-400" /></span>
           {t.live}
         </span>

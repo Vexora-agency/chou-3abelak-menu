@@ -402,11 +402,14 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
               darkMode ? 'bg-[#141414] border-neutral-700 text-white' : 'bg-white border-neutral-200 text-[#0A0A0A]'
             }`}
           >
+          {/* Fixed header: pinned above the scroll area on every browser.
+              (A sticky header inside the scroller proved unreliable on
+              phones — it scrolled away with the content.) */}
           <div
-            className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-5 sm:px-6 pt-3 pb-[max(1.75rem,env(safe-area-inset-bottom))] overflow-x-clip"
+            className={`shrink-0 px-5 sm:px-6 pt-3 border-b ${darkMode ? 'bg-[#141414] border-neutral-700' : 'bg-white border-neutral-200'}`}
           >
             <div aria-hidden="true" className={`mx-auto mb-2 h-1.5 w-12 rounded-full ${darkMode ? 'bg-neutral-700' : 'bg-neutral-300'}`} />
-            <div className={`sticky top-0 z-10 -mx-5 sm:-mx-6 px-5 sm:px-6 py-2 -mt-1 mb-1 flex items-center justify-between backdrop-blur-md ${darkMode ? 'bg-[#141414]/90' : 'bg-white/90'}`}>
+            <div className="py-2 flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-black">{isAr ? 'طلباتك' : 'Your orders'}</h2>
                 <p className="text-[11px] text-neutral-500">
@@ -442,7 +445,10 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                 </button>
               </div>
             </div>
-
+          </div>
+          <div
+            className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-5 sm:px-6 pt-3 pb-[max(1.75rem,env(safe-area-inset-bottom))] overflow-x-clip"
+          >
             {loading && !orders.length ? (
               <div className="flex justify-center py-8">
                 <Loader2 size={24} className="animate-spin text-[var(--primary)]" />

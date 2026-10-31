@@ -181,10 +181,12 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
 
   const activeCount = orders.filter((o) => o.status === 'new' || o.status === 'confirmed').length;
 
+  // new = placed, owner hasn't confirmed yet; confirmed = the kitchen
+  // confirmed receipt and is preparing; completed = delivered to you.
   const statusLabel = (s: string) =>
-    s === 'new' ? (isAr ? 'قيد التحضير' : 'Preparing')
-    : s === 'confirmed' ? (isAr ? 'في الطريق إليك' : 'On its way')
-    : s === 'completed' ? (isAr ? 'تم الاستلام ✅' : 'Received ✅')
+    s === 'new' ? (isAr ? 'بانتظار التأكيد' : 'Awaiting confirm')
+    : s === 'confirmed' ? (isAr ? 'قيد التحضير 🔥' : 'Being prepared')
+    : s === 'completed' ? (isAr ? 'تم التوصيل ✅' : 'Delivered ✅')
     : s === 'cancelled' ? (isAr ? 'ملغي' : 'Cancelled')
     : (isAr ? '…' : '…');
 

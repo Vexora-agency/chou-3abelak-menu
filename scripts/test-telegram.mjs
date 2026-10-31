@@ -301,10 +301,12 @@ const ac3 = await notifyOwnerAutoCompleted(dbAuto, '', { orderNumber: 42, custom
 ok('auto-complete ping needs token', ac3.sent === 0);
 globalThis.fetch = prevFetch7g;
 
-// 8. Order keyboard: URL view + received/cancel (confirm retired, still parsed).
+// 8. Order keyboard: URL view + owner-confirms-receipt (confirmed) + cancel.
 const kb2 = buildOrderKeyboard('https://x/admin/dashboard', oid);
-ok('keyboard has view + received + cancel', kb2.inline_keyboard.length === 2 && kb2.inline_keyboard[0][0].url === 'https://x/admin/dashboard');
-ok('no confirm button sent anymore', !JSON.stringify(kb2).includes('tg:cfm:') && parseOrderCallback(`tg:cfm:${oid}`)?.status === 'confirmed');
+ok('keyboard has view + confirm + cancel', kb2.inline_keyboard.length === 2 && kb2.inline_keyboard[0][0].url === 'https://x/admin/dashboard');
+ok('confirm means preparing, not delivered', JSON.stringify(kb2).includes(`tg:cfm:${oid}`) && !JSON.stringify(kb2).includes('tg:rcv:') && parseOrderCallback(`tg:cfm:${oid}`)?.status === 'confirmed');
+// Old in-flight tg:rcv callbacks still complete (never attached to new messages).
+ok('legacy rcv callback still completes', parseOrderCallback(`tg:rcv:${oid}`)?.status === 'completed');
 const cbData = kb2.inline_keyboard[1].map((b) => b.callback_data);
 ok('callback data fits 64 bytes', cbData.every((d) => d.length <= 64 && parseOrderCallback(d) !== null));
 const kb = buildOrderKeyboard('https://example.com/admin/dashboard');

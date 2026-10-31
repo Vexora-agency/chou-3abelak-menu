@@ -431,18 +431,21 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
 
 /**
  * Order keyboard: row 1 = View (URL, opens the dashboard behind admin
- * login — zero auth surface); row 2 = Received / Cancel (callbacks, fully
- * validated server-side in handleOrderCallback). The old Confirm button
- * was retired — the owner flow is now View → Received/Cancel. Old
- * tg:cfm:* callbacks still validate (in-flight messages), they are just
- * never sent anymore. callback_data is capped by Telegram at 64 bytes:
- * prefix + 36-char order id fits.
+ * login — zero auth surface); row 2 = Confirm-receipt / Cancel (callbacks,
+ * fully validated server-side in handleOrderCallback).
+ * "تم استلام طلبك" = the OWNER confirming receipt: the kitchen saw the
+ * order and is preparing it -> status `confirmed` (NOT delivered).
+ * Delivery is confirmed separately: the customer taps "received" in the
+ * bell/tracking (or the 12h auto-complete) -> `completed`. Old tg:rcv:*
+ * callbacks from already-sent messages still validate and complete —
+ * they are just never attached to NEW messages. callback_data is capped
+ * by Telegram at 64 bytes: prefix + 36-char order id fits.
  */
 export function buildOrderKeyboard(adminUrl, orderId) {
   const rows = [[{ text: '👁 عرض الطلب', url: String(adminUrl || '') }]];
   if (typeof orderId === 'string' && orderId) {
     rows.push([
-      { text: '📦 تم استلام طلبك', callback_data: `tg:rcv:${orderId}` },
+      { text: '✅ تم استلام طلبك', callback_data: `tg:cfm:${orderId}` },
       { text: '❌ إلغاء', callback_data: `tg:cnl:${orderId}` },
     ]);
   }
@@ -462,6 +465,7 @@ const TG_TRANSITIONS = {
   confirmed: ['cancelled', 'completed'],
 };
 
+const CONFIRMED_BANNER = '✅ تم استلام الطلب — جارٍ التحضير';
 const RECEIVED_BANNER = '📦 تم الاستلام';
 
 export function parseOrderCallback(data) {
@@ -662,7 +666,7 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
       return noop('write_failed');
     }
     const banner = parsed.status === 'confirmed'
-      ? '✅ تم تأكيد الطلب'
+      ? CONFIRMED_BANNER
       : parsed.status === 'completed' ? RECEIVED_BANNER : '❌ تم إلغاء الطلب';
     // Heal pre-0015 ledger rows: remember where this message lives so a
     // later dashboard change can sync back to it. updated_at untouched —

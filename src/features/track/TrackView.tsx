@@ -97,9 +97,9 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   }, [number, token]);
 
   const steps = [
-    { id: 'new', label: isAr ? 'استلمنا طلبك' : 'Order received', icon: Clock },
-    { id: 'confirmed', label: isAr ? 'تم الاستلام — في الطريق إليك' : 'Received — on its way', icon: Flame },
-    { id: 'completed', label: isAr ? 'جاهز' : 'Ready', icon: CheckCircle2 },
+    { id: 'new', label: isAr ? 'تم استلام طلبك' : 'Order received', icon: Clock },
+    { id: 'confirmed', label: isAr ? 'طلبك قيد التحضير' : 'Being prepared', icon: Flame },
+    { id: 'completed', label: isAr ? 'تم التوصيل' : 'Delivered', icon: CheckCircle2 },
   ];
   const stage = data?.status === 'completed' ? 2 : data?.status === 'confirmed' ? 1 : 0;
   const cancelled = data?.status === 'cancelled';

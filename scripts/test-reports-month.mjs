@@ -14,7 +14,7 @@ import {
   summarizeMonth,
 } from '../functions/_shared/reports.js';
 import { createAsserts } from './_helpers/shared.mjs';
-import { makeDB, makeKV, makeR2, MENU, SEP_ORDERS } from './_helpers/reports-cases.mjs';
+import { makeDB, makeKV, makeR2, MENU, SEP_ORDERS, item, mkOrder } from './_helpers/reports-cases.mjs';
 
 const { ok, summary } = createAsserts();
 
@@ -53,6 +53,24 @@ ok(s.peakHour === 20, `peak hour Beirut time (got ${s.peakHour})`);
 ok(s.topItems.length >= 1 && s.topItems[0].qty === 3 && s.topItems[0].name.en === 'Plain Zaatar', `top item ${JSON.stringify(s.topItems[0])}`);
 ok(gen.csvKey === 'reports/2026-09.csv', 'R2 key shape');
 
+/* ---------------- 2b. Revenue counts fulfilled orders only ---------------- */
+
+{
+  // A new + a confirmed September order must NOT move revenue/avg/orders —
+  // only completed counts (cancelled already excluded).
+  const extra = [
+    mkOrder(1010, '2026-09-20T12:00:00.000Z', 'new', 'delivery',
+      [item('zaatar', 'Plain Zaatar', 'زعتر سادة', 1, 150000)], 150000, 20000, 170000),
+    mkOrder(1011, '2026-09-21T12:00:00.000Z', 'confirmed', 'pickup',
+      [item('pepsi', 'Pepsi', 'بيبسي', 1, 30000)], 30000, 0, 30000),
+  ];
+  const env2 = { ORDERS_DB: makeDB([...SEP_ORDERS, ...extra], []), REPORTS: makeR2(), MENU_KV: makeKV(MENU) };
+  const gen2 = await generateMonthlyReport(env2, '2026-09');
+  const t2 = gen2.summary.totals;
+  ok(t2.orders === 3 && t2.revenue === 950000, `pipeline excluded from revenue (got ${t2.orders}/${t2.revenue})`);
+  ok(Math.abs(t2.avg - 950000 / 3) < 0.01, `avg over completed only (got ${t2.avg})`);
+}
+
 /* ---------------- 3. CSV ---------------- */
 
 const rows = [
@@ -87,6 +105,13 @@ ok(env.REPORTS.puts === putsBefore, 'no second R2 put on reuse');
   ];
   const p = summarizeMonth(mapped, 'Asia/Beirut', { orders: 0, revenue: 0 });
   ok(p.totals.orders === 1 && p.totals.revenue === 100 && p.totals.cancelled === 1, 'summarize excludes cancelled from totals');
+  const mixed = [
+    ...mapped,
+    { createdAt: '2026-09-12T19:05:00.000Z', status: 'new', type: 'delivery', total: 500, items: [] },
+    { createdAt: '2026-09-12T20:05:00.000Z', status: 'confirmed', type: 'pickup', total: 700, items: [] },
+  ];
+  const q = summarizeMonth(mixed, 'Asia/Beirut', { orders: 0, revenue: 0 });
+  ok(q.totals.orders === 1 && q.totals.revenue === 100 && Math.abs(q.totals.avg - 100) < 0.01, 'summarize excludes new/confirmed from revenue+avg');
   const empty = summarizeMonth([], 'Asia/Beirut', { orders: 0, revenue: 0 });
   ok(empty.totals.orders === 0 && empty.busiestDay === null && empty.peakHour === null && empty.topItems.length === 0, 'empty month summary');
 }

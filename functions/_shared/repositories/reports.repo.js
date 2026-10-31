@@ -49,9 +49,10 @@ export async function getReportSettingsRow(db) {
 /* ---------- Aggregation (canonical; ../reports-generation.js delegates) ---------- */
 
 export async function countRevenueByBounds(db, startISO, endISO) {
+  // Revenue baseline: fulfilled orders only (see summarizeMonth rule).
   return db
     .prepare(
-      "SELECT COUNT(*) AS c, COALESCE(SUM(total),0) AS rev FROM orders WHERE created_at >= ?1 AND created_at < ?2 AND status != 'cancelled'"
+      "SELECT COUNT(*) AS c, COALESCE(SUM(total),0) AS rev FROM orders WHERE created_at >= ?1 AND created_at < ?2 AND status = 'completed'"
     )
     .bind(startISO, endISO)
     .first();

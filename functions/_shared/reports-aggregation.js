@@ -33,9 +33,14 @@ function itemDisplayName(it, withBoth) {
  */
 export function summarizeMonth(rows, tz, prevAgg) {
   const live = rows.filter((o) => o.status !== 'cancelled');
-  const revenue = live.reduce((s, o) => s + (typeof o.total === 'number' ? o.total : 0), 0);
-  const orders = live.length;
-  const completed = live.filter((o) => o.status === 'completed').length;
+  // Revenue logic: money counts ONLY when the order is fulfilled (status
+  // completed). New/confirmed are pipeline — excluded from orders,
+  // revenue, avg, buckets and top items. Traffic-shape metrics below
+  // (types, busiest day, peak hour) intentionally stay on live demand.
+  const done = live.filter((o) => o.status === 'completed');
+  const revenue = done.reduce((s, o) => s + (typeof o.total === 'number' ? o.total : 0), 0);
+  const orders = done.length;
+  const completed = done.length;
   const cancelled = rows.filter((o) => o.status === 'cancelled').length;
 
   const types = { delivery: 0, pickup: 0, dinein: 0 };
@@ -52,6 +57,8 @@ export function summarizeMonth(rows, tz, prevAgg) {
     dayCounts.set(d, (dayCounts.get(d) || 0) + 1);
     const h = hour(o.createdAt);
     if (h >= 0 && h < 24) hourCounts[h] += 1;
+  }
+  for (const o of done) {
     for (const it of o.items || []) {
       const qty = typeof it.qty === 'number' ? it.qty : 0;
       if (!it || !it.id || qty <= 0) continue;

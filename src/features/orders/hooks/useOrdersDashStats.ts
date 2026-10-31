@@ -16,10 +16,13 @@ export function useOrdersDashStats({ orders, period, lang, now, filter, sel }: D
 
   const stats = useMemo(() => {
     const { start, end, prevStart, prevEnd, buckets: bucketCount } = windowFor(period, now);
-    const live = (o: Order) => o.status !== 'cancelled';
+    // Revenue logic: money counts ONLY when the order is fulfilled
+    // (status completed). New/confirmed are pipeline — visible via the
+    // pending badge and status filters, never in revenue/avg/count.
+    const done = (o: Order) => o.status === 'completed';
     const inPeriod = sorted.filter((o) => { const d = new Date(o.createdAt); return d >= start && d < end && d <= now; });
-    const inWin = inPeriod.filter(live);
-    const inPrev = sorted.filter((o) => { const d = new Date(o.createdAt); return d >= prevStart && d < prevEnd && live(o); });
+    const inWin = inPeriod.filter(done);
+    const inPrev = sorted.filter((o) => { const d = new Date(o.createdAt); return d >= prevStart && d < prevEnd && done(o); });
     const sum = (a: Order[]) => a.reduce((s, o) => s + o.total, 0);
     const revenue = sum(inWin), prevRevenue = sum(inPrev);
 

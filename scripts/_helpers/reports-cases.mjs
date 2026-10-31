@@ -69,7 +69,7 @@ export function makeDB(orderRows, reportRows) {
       return db.reports.find((r) => r.month === a[0]) || null;
     }
     if (sql.includes('COALESCE(SUM(total)')) {
-      const rows = db.orders.filter((o) => inBounds(o, a[0], a[1]) && o.status !== 'cancelled');
+      const rows = db.orders.filter((o) => inBounds(o, a[0], a[1]) && o.status === 'completed');
       return { c: rows.length, rev: rows.reduce((s, o) => s + o.total, 0) };
     }
     if (sql.includes('SELECT MIN(created_at)')) {

@@ -178,6 +178,16 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     // Same-tab saves don't emit storage events — the store pings us.
     const onLocal = () => void tick();
     const onStorage = () => void tick();
+    // Desktop tab switches / bfcache restores don't always fire
+    // visibilitychange first — belt and suspenders for the flush.
+    const onFocus = () => {
+      void tick();
+      void flushPendingSound();
+    };
+    const onPageShow = () => {
+      void tick();
+      void flushPendingSound();
+    };
     // Any real interaction may have just unlocked audio: flush chimes
     // that were queued while the context was suspended.
     const onGesture = () => void flushPendingSound();
@@ -192,6 +202,8 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     window.addEventListener('pointerdown', onGesture, { passive: true });
     window.addEventListener('touchend', onGesture, { passive: true });
     window.addEventListener('keydown', onGesture);
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('pageshow', onPageShow);
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       stop = true;
@@ -202,6 +214,8 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       window.removeEventListener('pointerdown', onGesture);
       window.removeEventListener('touchend', onGesture);
       window.removeEventListener('keydown', onGesture);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('pageshow', onPageShow);
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);

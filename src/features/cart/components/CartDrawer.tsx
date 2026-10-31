@@ -3,7 +3,6 @@ import { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { type OrderingStatus } from '@/src/utils/status';
 import { X, CheckCircle2 } from 'lucide-react';
 import { useCartCheckoutSubmit } from '../hooks/useCartCheckoutSubmit';
-import { PushSubscribeButton } from '@/src/features/track/PushSubscribeButton';
 import { CartLinesList } from './cart/CartLinesList';
 import { CustomerFormFields } from './cart/CustomerFormFields';
 import { OrderSummaryLines } from './cart/OrderSummaryLines';
@@ -172,7 +171,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <CheckCircle2 size={36} />
             </div>
             <h3 className={`text-xl font-black ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-              {isAr ? 'وصل طلبك للمطعم!' : 'Your order is in!'}
+              {isAr ? 'وصل طلبك!' : 'Your order is in!'}
             </h3>
             <p className={`text-sm max-w-xs mx-auto leading-relaxed ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>
               {isAr
@@ -187,28 +186,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 {errorMsg}
               </p>
             )}
-            {/* Order loop: live tracking + push updates for THIS order. */}
-            {lastOrder && (
+            {/* Order loop: live tracking for THIS order (push opt-in lives
+                on the tracking page, not here). */}
+            {lastOrder && lastOrder.trackToken && (
               <div className="pt-1 flex flex-col gap-2.5 max-w-xs mx-auto w-full">
-                {lastOrder.trackToken && (
-                  <a
-                    href={`/?track=${lastOrder.number}&t=${lastOrder.trackToken}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-tactile h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-sm inline-flex items-center justify-center gap-2 shadow-md hover:brightness-110"
-                  >
-                    <span className="tabular-nums" dir="ltr">#{lastOrder.number}</span>
-                    <span>{isAr ? 'تتبع طلبك لحظة بلحظة' : 'Track your order live'}</span>
-                  </a>
-                )}
-                {lastOrder.trackToken && (
-                  <PushSubscribeButton
-                    orderNumber={lastOrder.number}
-                    trackToken={lastOrder.trackToken}
-                    lang={lang}
-                    darkMode={darkMode}
-                  />
-                )}
+                <a
+                  href={`/?track=${lastOrder.number}&t=${lastOrder.trackToken}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-tactile h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-sm inline-flex items-center justify-center gap-2 shadow-md hover:brightness-110"
+                >
+                  <span className="tabular-nums" dir="ltr">#{lastOrder.number}</span>
+                  <span>{isAr ? 'تتبع طلبك لحظة بلحظة' : 'Track your order live'}</span>
+                </a>
               </div>
             )}
           </div>

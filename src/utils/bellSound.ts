@@ -157,13 +157,29 @@ function strike(ac: AudioContext, at: number, freq: number, volume: number): voi
   }
 }
 
-function strikeNow(ac: AudioContext): void {
-  const now = ac.currentTime + 0.02;
-  strike(ac, now, 659.25, 0.16); // E5
-  strike(ac, now + 0.35, 987.77, 0.14); // B5 — a gentle fifth above
-}
-
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * Full ding-ding with a mid-point guard: the second strike fires only
+ * while the context is still running. If it died mid-chime (background
+ * kill between the strikes), report failure so the caller retries the
+ * WHOLE chime later instead of leaving a lonely half-ding.
+ */
+async function strikeFull(ac: AudioContext, stateOf: () => AudioContextState): Promise<boolean> {
+  try {
+    strike(ac, ac.currentTime + 0.02, 659.25, 0.16); // E5
+  } catch {
+    return false;
+  }
+  await sleep(350);
+  if (stateOf() !== 'running') return false;
+  try {
+    strike(ac, ac.currentTime + 0.02, 987.77, 0.14); // B5 — a gentle fifth above
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Ring the chime. Resolves true ONLY on a real strike.
@@ -185,12 +201,7 @@ export async function playBellChime(): Promise<boolean> {
       }
     };
     if (stateOf() === 'running') {
-      try {
-        strikeNow(ac);
-        return true;
-      } catch {
-        return false;
-      }
+      return strikeFull(ac, stateOf);
     }
     for (let i = 0; i < 4; i++) {
       try {
@@ -205,12 +216,7 @@ export async function playBellChime(): Promise<boolean> {
       } catch {}
       await sleep(200);
       if (stateOf() === 'running') {
-        try {
-          strikeNow(ac);
-          return true;
-        } catch {
-          return false;
-        }
+        return strikeFull(ac, stateOf);
       }
     }
     return false;

@@ -15,7 +15,10 @@ const ok = (name, cond) => {
 
 unlockBellAudio(); // must be a safe no-op without DOM audio
 const r = await playBellChime();
-ok('no AudioContext resolves false', r === false);
+ok('no audio without DOM audio', r === false);
+const r2 = await playBellChime();
+const r3 = await playBellChime();
+ok('repeated calls stay safe + boolean', r2 === false && r3 === false);
 vibrateBell(); // must never throw without navigator.vibrate
 ok('vibrate is a safe no-op', true);
 

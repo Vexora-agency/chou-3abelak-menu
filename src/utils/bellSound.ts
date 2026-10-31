@@ -15,16 +15,19 @@
  * - A context born while suspended tends to stay stuck; creating it inside
  *   a real gesture starts it running.
  *
- * The design, from those facts:
- * 1. Never birth a context before the first real user gesture (otherwise
- *    the first context is doomed from birth).
- * 2. Every gesture rebirths a stuck context (close + new, synchronously
- *    in the handler) — plus the suspend-then-resume-with-delay trick that
- *    WebKit reporters found unsticks backgrounded contexts.
- * 3. pageshow (bfcache restore) and visibilitychange also rebirth/retry.
- * 4. playBellChime() reports honestly; callers keep un-rung orders queued
- *    and re-flush on every gesture/poll — a chime is delayed, never lost
- *    (unless muted). Never throws, never rejects.
+ * WHY TWO ENGINES (WebKit bug 237322, MDN, Apple forums): iOS routes Web
+ * Audio through the RINGER channel — with the silent switch ON, contexts
+ * report state "running" while producing absolute silence: no error, no
+ * warning, nothing to catch. HTML <audio> elements ride the MEDIA channel
+ * instead and keep playing even on silent. That is the documented "works
+ * once, then never" trap: the one audible ring happened while the switch
+ * was off. So the primary engine is an <audio> element with a
+ * runtime-generated WAV (silent-switch-proof), Web Audio stays as the
+ * fallback, and navigator.audioSession.type = 'playback' is requested
+ * where supported (Safari 16.4+, the documented one-line fix).
+ * playBellChime() resolves true ONLY on a real strike; anything else keeps
+ * the caller's pending queue, which re-flushes on every later gesture —
+ * a chime is delayed, never dropped (unless muted). Never throws.
  */
 
 let ctx: AudioContext | null = null;
@@ -109,11 +112,28 @@ function ensureLiveInGesture(): void {
   } catch {}
 }
 
+/**
+ * Ask for the playback audio session where supported (Safari 16.4+,
+ * feature-detected): the documented one-line fix that moves the page off
+ * the ringer-governed ambient category, so Web Audio is not muted by the
+ * silent switch. Silent no-op everywhere else.
+ */
+function requestPlaybackSession(): void {
+  try {
+    const nav = navigator as unknown as { audioSession?: { type?: string } };
+    if (nav && nav.audioSession && typeof nav.audioSession.type === 'string') {
+      nav.audioSession.type = 'playback';
+    }
+  } catch {}
+}
+
 /** Call once from the app shell: keeps audio born fresh on every gesture. */
 export function unlockBellAudio(): void {
   if (unlocked) return;
   unlocked = true;
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  requestPlaybackSession();
+  warmHtmlChime();
   window.addEventListener('pointerdown', ensureLiveInGesture, { passive: true });
   // touchstart fires earliest on mobile; keydown covers desktop.
   window.addEventListener('touchstart', ensureLiveInGesture, { passive: true });
@@ -181,14 +201,134 @@ async function strikeFull(ac: AudioContext, stateOf: () => AudioContextState): P
   }
 }
 
+/* ---------- HTML <audio> engine: silent-switch-proof ---------- */
+
+let chimeUrl: string | null = null;
+let chimeEl: HTMLAudioElement | null = null;
+
 /**
- * Ring the chime. Resolves true ONLY on a real strike.
- * Retry path uses the suspend-then-resume-with-delay trick WebKit
- * reporters found unblocks backgrounded contexts; anything still stuck
- * resolves false so the caller keeps it queued. Never rejects.
+ * Synthesize the same ding-ding as a 16-bit mono WAV data URI (runtime
+ * generated, zero assets): two strikes (E5 + B5) with inharmonic partials
+ * and exponential decay, ~1.7s total. An <audio> element rides the MEDIA
+ * channel, so unlike Web Audio it keeps playing with the ringer OFF.
+ */
+function buildChimeDataUri(): string | null {
+  try {
+    const rate = 22050;
+    const dur = 1.7;
+    const len = Math.floor(rate * dur);
+    const data = new Float32Array(len);
+    const addStrike = (startSec: number, freq: number, vol: number) => {
+      const partials: Array<[number, number]> = [[1, 1], [2.4, 0.35], [5.43, 0.12]];
+      const start = Math.floor(startSec * rate);
+      for (let i = 0; i < len - start; i++) {
+        const t = i / rate;
+        const env = Math.min(1, t / 0.012) * Math.exp(-t / 0.45);
+        let s = 0;
+        for (const [ratio, amp] of partials) s += Math.sin(2 * Math.PI * freq * ratio * t) * amp;
+        data[start + i] += (s * vol * env) / partials.length;
+      }
+    };
+    addStrike(0, 659.25, 0.5);
+    addStrike(0.35, 987.77, 0.42);
+    const bytes = new Uint8Array(44 + len * 2);
+    const view = new DataView(bytes.buffer);
+    const ascii = (off: number, s: string) => {
+      for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
+    };
+    ascii(0, 'RIFF');
+    view.setUint32(4, 36 + len * 2, true);
+    ascii(8, 'WAVE');
+    ascii(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, rate, true);
+    view.setUint32(28, rate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    ascii(36, 'data');
+    view.setUint32(40, len * 2, true);
+    for (let i = 0; i < len; i++) {
+      const v = Math.max(-1, Math.min(1, data[i]));
+      view.setInt16(44 + i * 2, Math.round(v * 32767), true);
+    }
+    let bin = '';
+    const CH = 8192;
+    for (let i = 0; i < bytes.length; i += CH) {
+      bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + CH)));
+    }
+    if (typeof btoa !== 'function') return null;
+    return `data:audio/wav;base64,${btoa(bin)}`;
+  } catch {
+    return null;
+  }
+}
+
+function chimeElement(): HTMLAudioElement | null {
+  try {
+    if (typeof Audio === 'undefined') return null;
+    if (!chimeEl) {
+      if (!chimeUrl) chimeUrl = buildChimeDataUri();
+      if (!chimeUrl) return null;
+      chimeEl = new Audio();
+      chimeEl.preload = 'auto';
+      chimeEl.src = chimeUrl;
+      try {
+        chimeEl.load();
+      } catch {}
+    }
+    return chimeEl;
+  } catch {
+    return null;
+  }
+}
+
+/** Pre-build the element inside a gesture so later plays start instantly. */
+function warmHtmlChime(): void {
+  try {
+    chimeElement();
+  } catch {}
+}
+
+/**
+ * Play via the <audio> element. Resolves true only when playback actually
+ * starts (play() resolves) — a rejection (no gesture yet, no decoder)
+ * resolves false so the caller keeps the chime queued.
+ */
+async function playHtmlChime(): Promise<boolean> {
+  try {
+    const el = chimeElement();
+    if (!el) return false;
+    try {
+      el.pause();
+    } catch {}
+    try {
+      el.currentTime = 0;
+    } catch {}
+    await el.play();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Ring the chime. HTML <audio> first (silent-switch-proof), Web Audio
+ * oscillators as the fallback. Resolves true ONLY on real playback;
+ * anything else resolves false so the caller keeps it queued and retries
+ * on the next gesture/poll. Retry path uses the suspend-then-resume-with-
+ * delay trick WebKit reporters found unblocks backgrounded contexts.
+ * Never rejects.
  */
 export async function playBellChime(): Promise<boolean> {
   try {
+    requestPlaybackSession();
+    try {
+      if (await playHtmlChime()) return true;
+    } catch {
+      // Fall through to the Web Audio engine below.
+    }
     const ac = sharedContext();
     if (!ac) return false;
     // Read fresh each call (a function defeats TS property narrowing —

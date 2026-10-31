@@ -8,10 +8,13 @@ import {
   callTelegramApi,
   escapeHtml,
   formatNewOrderMessage,
+  handleOrderCallback,
   isBotUsernameFormat,
   isPairingCodeFormat,
+  isTelegramTransitionAllowed,
   newPairingCode,
   notifyNewOrderTelegram,
+  parseOrderCallback,
   readLastTelegramNotification,
   readPendingPairing,
   resolveBotUsername,
@@ -146,7 +149,94 @@ ok('pending flag true with expiry', pend.pending === true && pend.expiresAt === 
 const pendNone = await readPendingPairing(mockDb(false));
 ok('pending flag false when none', pendNone.pending === false);
 
-// 8. View-button keyboard (URL — no callback, no auth surface).
+// 7d. Callback data: strict shape, 64-byte cap respected.
+const oid = '123e4567-e89b-12d3-a456-426614174000';
+ok('parse confirm', JSON.stringify(parseOrderCallback(`tg:cfm:${oid}`)) === JSON.stringify({ action: 'cfm', orderId: oid, status: 'confirmed' }));
+ok('parse cancel', parseOrderCallback(`tg:cnl:${oid}`)?.status === 'cancelled');
+ok('reject forged action', parseOrderCallback(`tg:done:${oid}`) === null);
+ok('reject long id', parseOrderCallback(`tg:cfm:${'x'.repeat(129)}`) === null);
+ok('reject non-string', parseOrderCallback(null) === null);
+ok('transitions new->confirmed/cancelled', isTelegramTransitionAllowed('new', 'confirmed') && isTelegramTransitionAllowed('new', 'cancelled'));
+ok('transitions confirmed->cancelled only', isTelegramTransitionAllowed('confirmed', 'cancelled') && !isTelegramTransitionAllowed('confirmed', 'confirmed'));
+ok('transitions terminal blocked', !isTelegramTransitionAllowed('completed', 'cancelled') && !isTelegramTransitionAllowed('cancelled', 'confirmed'));
+
+// 7e. Callback handling end-to-end (mocked D1 + Bot API).
+function orderDb(linked, initialStatus = 'new') {
+  const base = mockDb(linked);
+  const orders = new Map([['ord-1', {
+    id: 'ord-1', number: 1001, status: initialStatus, type: 'delivery',
+    customer_name: 'Ali', customer_phone: '96170', customer_address: null, customer_table: null,
+    notes: null, location_lat: null, location_lng: null,
+    items_json: '[]', subtotal: 100, delivery_fee: 0, total: 100, lang: 'ar',
+    track_token: 't'.repeat(32), created_at: 't', updated_at: 't',
+  }]]);
+  const db = {
+    ledger: base.ledger,
+    orders,
+    prepare(sql) {
+      const inner = base.prepare(sql);
+      return {
+        first(...a) {
+          if (sql.includes('FROM orders WHERE id')) {
+            return Promise.resolve(orders.get(a[0]) || null);
+          }
+          return inner.first(...a);
+        },
+        run(...a) { return inner.run(...a); },
+        all(...a) { return inner.all(...a); },
+        bind(...args) {
+          return {
+            first() {
+              if (sql.includes('FROM orders WHERE id')) {
+                return Promise.resolve(orders.get(args[0]) || null);
+              }
+              return base.prepare(sql).bind(...args).first();
+            },
+            async run() {
+              if (sql.includes('UPDATE orders SET status')) {
+                const row = orders.get(args[2]);
+                if (!row) return { meta: { changes: 0 } };
+                row.status = args[0];
+                row.updated_at = args[1];
+                return { meta: { changes: 1 } };
+              }
+              return base.prepare(sql).bind(...args).run();
+            },
+            async all() { return { results: [] }; },
+          };
+        },
+      };
+    },
+  };
+  return db;
+}
+const cbCalls = [];
+const realFetch2 = globalThis.fetch;
+globalThis.fetch = async (url, init) => {
+  const method = String(url).split('/').pop();
+  cbCalls.push({ method, body: JSON.parse(init.body) });
+  return { ok: true, status: 200, json: async () => ({ ok: true, result: true }) };
+};
+const cbBase = { callbackId: 'cb1', clickerId: 12345, chatId: 12345, messageId: 9, messageText: 'order' };
+const dbNew = orderDb(true, 'new');
+const okConfirm = await handleOrderCallback(dbNew, 'tok', { ...cbBase, data: `tg:cfm:ord-1` });
+ok('confirm new order', okConfirm.handled === true && okConfirm.status === 'confirmed' && dbNew.orders.get('ord-1').status === 'confirmed');
+ok('buttons frozen after action', cbCalls.some((c) => c.method === 'editMessageReplyMarkup'));
+const repeat = await handleOrderCallback(dbNew, 'tok', { ...cbBase, callbackId: 'cb2', data: `tg:cfm:ord-1` });
+ok('repeat confirm is noop', repeat.handled === true && repeat.noop === true && cbCalls.filter((c) => c.method === 'editMessageText').length === 1);
+const badTrans = await handleOrderCallback(orderDb(true, 'completed'), 'tok', { ...cbBase, callbackId: 'cb3', data: `tg:cfm:ord-1` });
+ok('terminal order rejected', badTrans.handled === false && badTrans.reason === 'bad_transition');
+const unlinked = await handleOrderCallback(orderDb(false), 'tok', { ...cbBase, callbackId: 'cb4', data: `tg:cfm:ord-1` });
+ok('stranger click rejected', unlinked.reason === 'unauthorized');
+const forged = await handleOrderCallback(orderDb(true), 'tok', { ...cbBase, callbackId: 'cb5', data: 'tg:done:ord-1' });
+ok('forged data rejected', forged.reason === 'bad_data');
+globalThis.fetch = realFetch2;
+
+// 8. Order keyboard: URL view + confirm/cancel callbacks (64-byte cap).
+const kb2 = buildOrderKeyboard('https://x/admin/dashboard', oid);
+ok('keyboard has view + actions', kb2.inline_keyboard.length === 2 && kb2.inline_keyboard[0][0].url === 'https://x/admin/dashboard');
+const cbData = kb2.inline_keyboard[1].map((b) => b.callback_data);
+ok('callback data fits 64 bytes', cbData.every((d) => d.length <= 64 && parseOrderCallback(d) !== null));
 const kb = buildOrderKeyboard('https://example.com/admin/dashboard');
 ok('keyboard url button', kb.inline_keyboard[0][0].url === 'https://example.com/admin/dashboard'
   && typeof kb.inline_keyboard[0][0].text === 'string');

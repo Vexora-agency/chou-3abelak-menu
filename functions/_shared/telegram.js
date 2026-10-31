@@ -30,6 +30,8 @@
 
 import { sha256Hex } from './access.js';
 import { safeCompareStrings } from './session.js';
+import { findOrderById, updateOrderStatus } from './repositories/orders.repo.js';
+import { notifyOrderStatus } from './push.js';
 
 export const TELEGRAM_CONFIG_KEY = 'telegram';
 export const PAIRING_TTL_SEC = 10 * 60;
@@ -383,11 +385,41 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
   return text.length > 4000 ? text.slice(0, 4000) + '…' : text;
 }
 
-/** Single View button (URL — opens the dashboard behind admin login). */
-export function buildOrderKeyboard(adminUrl) {
-  return {
-    inline_keyboard: [[{ text: '👁 عرض الطلب', url: String(adminUrl || '') }]],
-  };
+/**
+ * Order keyboard: row 1 = View (URL, opens the dashboard behind admin
+ * login — zero auth surface); row 2 = Confirm / Cancel (callbacks, fully
+ * validated server-side in handleOrderCallback). callback_data is capped by
+ * Telegram at 64 bytes: prefix + 36-char order id fits.
+ */
+export function buildOrderKeyboard(adminUrl, orderId) {
+  const rows = [[{ text: '👁 عرض الطلب', url: String(adminUrl || '') }]];
+  if (typeof orderId === 'string' && orderId) {
+    rows.push([
+      { text: '✅ تأكيد', callback_data: `tg:cfm:${orderId}` },
+      { text: '❌ إلغاء', callback_data: `tg:cnl:${orderId}` },
+    ]);
+  }
+  return { inline_keyboard: rows };
+}
+
+/* ---------- Phase 5: Confirm / Cancel callbacks ---------- */
+
+export const ORDER_ACTIONS = { cfm: 'confirmed', cnl: 'cancelled' };
+/** Telegram may only move orders forward along these edges (admin model subset). */
+const TG_TRANSITIONS = {
+  new: ['confirmed', 'cancelled'],
+  confirmed: ['cancelled'],
+};
+
+export function parseOrderCallback(data) {
+  if (typeof data !== 'string') return null;
+  const m = /^tg:(cfm|cnl):([A-Za-z0-9-]{1,128})$/.exec(data.trim());
+  if (!m) return null;
+  return { action: m[1], orderId: m[2], status: ORDER_ACTIONS[m[1]] };
+}
+
+export function isTelegramTransitionAllowed(from, to) {
+  return Array.isArray(TG_TRANSITIONS[from]) && TG_TRANSITIONS[from].includes(to);
 }
 
 const RETRY_DELAY_CAP_MS = 30 * 1000;
@@ -464,7 +496,7 @@ export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, 
       chat_id: link.chatId,
       text,
       parse_mode: 'HTML',
-      reply_markup: buildOrderKeyboard(adminUrl),
+      reply_markup: buildOrderKeyboard(adminUrl, orderId),
     };
 
     let attempts = 0;
@@ -488,6 +520,116 @@ export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, 
     return fail(String(res.error || 'send_failed').slice(0, 60));
   } catch {
     return fail('error');
+  }
+}
+
+/**
+ * Handle a Confirm/Cancel button press. NEVER throws — every failure path
+ * answers the callback (so the client spinner never hangs) and returns a
+ * reason. Validation order: linked chat → known action → order exists →
+ * idempotent repeat → allowed transition → write → announce.
+ *
+ * Only the linked owner chat can act (clicker AND message chat must equal
+ * the stored chat_id — usernames never trusted). Terminal states
+ * (confirmed/completed/cancelled) reject further Confirm presses; Cancel is
+ * allowed from new/confirmed only. The write goes through the same
+ * updateOrderStatus repository as the dashboard (one status model).
+ */
+export async function handleOrderCallback(db, token, { callbackId, clickerId, chatId, messageId, data, messageText }) {
+  const noop = (reason) => ({ handled: false, reason });
+  const answer = async (text) => {
+    if (!token || typeof callbackId !== 'string' || !callbackId) return;
+    try {
+      await callTelegramApi(token, 'answerCallbackQuery', {
+        callback_query_id: callbackId,
+        text: String(text || '').slice(0, 200),
+      });
+    } catch {}
+  };
+  try {
+    if (!db || !token) {
+      await answer('Unavailable — try again.');
+      return noop('misconfigured');
+    }
+    let link = null;
+    try {
+      link = await readTelegramLink(db);
+    } catch {
+      link = null;
+    }
+    if (!link || clickerId !== link.chatId || chatId !== link.chatId) {
+      await answer('Not linked.');
+      return noop('unauthorized');
+    }
+    const parsed = parseOrderCallback(data);
+    if (!parsed) {
+      await answer('Unknown action.');
+      return noop('bad_data');
+    }
+    let order = null;
+    try {
+      order = await findOrderById(db, parsed.orderId);
+    } catch {
+      order = null;
+    }
+    if (!order) {
+      await answer('Order not found.');
+      return noop('not_found');
+    }
+    const current = order.status;
+    if (current === parsed.status) {
+      await answer(parsed.status === 'confirmed' ? 'Already confirmed ✅' : 'Already cancelled.');
+      return { handled: true, noop: true, status: current };
+    }
+    if (!isTelegramTransitionAllowed(current, parsed.status)) {
+      await answer('This order can no longer be updated.');
+      return noop('bad_transition');
+    }
+    let updated = null;
+    try {
+      updated = await updateOrderStatus(db, parsed.orderId, parsed.status);
+    } catch {
+      updated = null;
+    }
+    if (!updated) {
+      await answer('Could not update — try again.');
+      return noop('write_failed');
+    }
+    const banner = parsed.status === 'confirmed' ? '✅ تم تأكيد الطلب' : '❌ تم إلغاء الطلب';
+    await answer(banner);
+    // Freeze the buttons (no double-tap) + stamp the status on the message.
+    try {
+      await callTelegramApi(token, 'editMessageReplyMarkup', {
+        chat_id: chatId,
+        message_id: messageId,
+        reply_markup: { inline_keyboard: [] },
+      });
+    } catch {}
+    try {
+      const base = typeof messageText === 'string' && messageText ? messageText : `طلب #${order.number ?? ''}`;
+      const stamped = `${base}\n\n${banner}`.slice(0, 4000);
+      await callTelegramApi(token, 'editMessageText', {
+        chat_id: chatId,
+        message_id: messageId,
+        text: stamped,
+        parse_mode: 'HTML',
+      });
+    } catch {}
+    // Owner -> customer loop (same as the dashboard PATCH path): best-effort.
+    try {
+      await notifyOrderStatus(db, {
+        storeName: '',
+        orderId: parsed.orderId,
+        orderNumber: order.number,
+        status: parsed.status,
+        lang: order.lang === 'ar' ? 'ar' : 'en',
+        trackUrl: '',
+        subject: undefined,
+      });
+    } catch {}
+    return { handled: true, status: parsed.status };
+  } catch {
+    return noop('error');
   }
 }
 

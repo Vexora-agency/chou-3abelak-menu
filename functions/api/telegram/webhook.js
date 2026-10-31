@@ -13,15 +13,16 @@
  * during an authenticated pairing flow. Usernames, first/last names, and any
  * client-supplied id are never trusted.
  *
- * Phase 4 (notifications + View/Accept/Reject buttons) is NOT in this file
- * yet: callback_query is answered gracefully with no state change so the
- * client never hangs on a spinner.
+ * Callback buttons (Confirm / Cancel) are validated in handleOrderCallback:
+ * linked chat only, order must exist, transition must be allowed, repeats
+ * are idempotent no-ops.
  */
 
 import { jsonNoStore, readJsonBody } from '../../_shared/session.js';
 import {
   callTelegramApi,
   consumePairingCode,
+  handleOrderCallback,
   isPairingCodeFormat,
   readTelegramLink,
   saveTelegramLink,
@@ -85,35 +86,25 @@ export async function onRequest(context) {
       await callTelegramApi(token, 'sendMessage', { chat_id: chatId, text });
     } catch {}
   };
-  const answerCallback = async (id, text) => {
-    if (!token || typeof id !== 'string' || !id) return;
-    try {
-      await callTelegramApi(token, 'answerCallbackQuery', { callback_query_id: id, text: String(text || '').slice(0, 200) });
-    } catch {}
-  };
-
-  // ---- callback_query: Phase 4 stub (no buttons sent yet). Linked chats
-  // get a graceful answer with NO state change; everyone else is ignored.
-  // Accept/Reject arrive in a later phase with per-order auth checks.
+  // ---- callback_query: Confirm / Cancel buttons. Fully validated in
+  // handleOrderCallback (linked chat, order exists, transition allowed).
   try {
     const cb = update.callback_query;
     if (cb && typeof cb === 'object') {
-      const fromChat = getChatId(cb.message);
-      const clicker = cb.from && Number.isInteger(cb.from.id) ? cb.from.id : null;
-      const link = await readTelegramLink(db);
-      if (link && clicker !== null && clicker === link.chatId && fromChat === link.chatId) {
-        await answerCallback(
-          typeof cb.id === 'string' ? cb.id : '',
-          'Order actions arrive in the next update.'
-        );
-      } else if (typeof cb.id === 'string' && cb.id) {
-        await answerCallback(cb.id, 'Not linked.');
-      }
+      const msg = cb.message && typeof cb.message === 'object' ? cb.message : null;
+      await handleOrderCallback(db, token, {
+        callbackId: typeof cb.id === 'string' ? cb.id : '',
+        clickerId: cb.from && Number.isInteger(cb.from.id) ? cb.from.id : null,
+        chatId: msg ? getChatId(msg) : null,
+        messageId: msg && Number.isInteger(msg.message_id) ? msg.message_id : null,
+        data: typeof cb.data === 'string' ? cb.data : '',
+        messageText: msg && typeof msg.text === 'string' ? msg.text : '',
+      });
       return jsonNoStore({ ok: true });
     }
   } catch {}
 
-  // ---- message handling: only /start matters in this phase.
+  // ---- message handling: only /start (pairing).
   try {
     const msg = update.message;
     if (!msg || typeof msg !== 'object') return jsonNoStore({ ok: true });

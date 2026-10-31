@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Clock, Flame, XCircle, ArrowLeft, BellRing, Loader2 } from 'lucide-react';
 import { formatPrice } from '@/src/utils/pricing';
 import { PushSubscribeButton } from './PushSubscribeButton';
+import { ReceivedButton } from './components/ReceivedButton';
 
 interface TrackViewProps {
   number: number;
@@ -210,6 +211,17 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
               </div>
             </div>
 
+            {(data.status === 'new' || data.status === 'confirmed') && (
+              <div className="mt-4">
+                <ReceivedButton
+                  number={data.number}
+                  token={token}
+                  lang={lang}
+                  darkMode
+                  onConfirmed={() => setData((d) => (d ? { ...d, status: 'completed' } : d))}
+                />
+              </div>
+            )}
             {!cancelled && (
               <div className="mt-4">
                 <PushSubscribeButton orderNumber={data.number} trackToken={token} lang={lang} darkMode />

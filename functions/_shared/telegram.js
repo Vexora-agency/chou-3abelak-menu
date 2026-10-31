@@ -795,6 +795,38 @@ export async function syncOrderStatusToTelegram(db, token, { orderId, status, ad
   }
 }
 
+/**
+ * Owner ping on customer self-confirm (bell / tracking page "received").
+ * Best-effort and silent — NEVER throws. Only the linked owner chat gets
+ * it (customer name goes to the owner only, never to a public surface).
+ */
+export async function notifyOwnerReceived(db, token, { orderNumber, customerName }) {
+  const skip = (reason) => ({ sent: 0, reason });
+  try {
+    if (!db || typeof token !== 'string' || !token) return skip('misconfigured');
+    if (!Number.isInteger(orderNumber)) return skip('bad_order');
+    let link = null;
+    try {
+      link = await readTelegramLink(db);
+    } catch {
+      return skip('link_unreadable');
+    }
+    if (!link) return skip('unlinked');
+    const name = typeof customerName === 'string' && customerName.trim()
+      ? escapeHtml(customerName.trim().slice(0, 60))
+      : 'الزبون';
+    const text = `📦 ${name} أكّد استلام الطلب ${bidi(`#${orderNumber}`)} بنجاح ✅`;
+    const res = await callTelegramApi(token, 'sendMessage', {
+      chat_id: link.chatId,
+      text,
+      parse_mode: 'HTML',
+    });
+    return res.ok ? { sent: 1 } : skip(String(res.error || 'send_failed').slice(0, 60));
+  } catch {
+    return skip('error');
+  }
+}
+
 /** Latest ledger row for the admin status view (or null). */
 export async function readLastTelegramNotification(db) {
   try {

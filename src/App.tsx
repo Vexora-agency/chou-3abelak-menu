@@ -32,6 +32,10 @@ const InvitePage = lazy(() =>
 const TrackView = lazy(() =>
   import('@/src/features/track/TrackView').then((m) => ({ default: m.TrackView }))
 );
+// Floating order bell (48h shelf): tiny, lives in the main chunk — it must
+// be present on the menu page itself. ReceivedButton stays out (only the
+// bell + tracking page pull it, via their own imports).
+import { OrdersBell } from '@/src/features/track/components/OrdersBell';
 import { WifiOff } from 'lucide-react';
 import { useShopCartState } from '@/src/features/cart';
 import { useOrderingState } from '@/src/features/orders';
@@ -414,6 +418,11 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           onOpenAdmin={adminUnlocked ? () => openAdmin() : undefined}
           lang={lang}
         />
+
+        {/* Floating order bell (48h shelf, ordering plans only) */}
+        {orderingOn && (
+          <OrdersBell lang={lang} darkMode={darkMode} />
+        )}
 
         {/* Floating Cart Bottom Bar (ordering plans only) */}
         {orderingOn && (

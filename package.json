@@ -15,6 +15,7 @@
     "test:client": "tsx scripts/test-safe-json.ts",
     "test:telegram": "node scripts/test-telegram.mjs",
     "test:digits": "tsx scripts/test-digits.ts",
+    "test:customer-orders": "tsx scripts/test-customer-orders.mjs",
     "test:whatsapp": "tsx scripts/test-whatsapp.ts",
     "test:dial": "tsx scripts/test-dial-codes.ts",
     "test:parity": "tsx scripts/test-parity.mjs",
@@ -23,7 +24,7 @@
     "test:access": "node scripts/test-access.mjs",
     "test:versions": "node scripts/test-versions.mjs",
     "test:import-matrix": "node scripts/test-import-matrix.mjs",
-    "test:all": "npm run test:client && npm run test:dial && npm run test:parity && npm run test:cart && npm run test:digits"
+    "test:all": "npm run test:client && npm run test:dial && npm run test:parity && npm run test:cart && npm run test:digits && npm run test:customer-orders"
   },
   "dependencies": {
     "@fontsource/cairo": "^5.3.0",

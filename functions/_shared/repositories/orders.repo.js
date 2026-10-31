@@ -13,6 +13,28 @@ export async function findOrderById(db, id) {
   return db.prepare('SELECT * FROM orders WHERE id = ?1').bind(id).first();
 }
 
+export async function findOrderByNumber(db, number) {
+  return db.prepare('SELECT * FROM orders WHERE number = ?1').bind(number).first();
+}
+
+/**
+ * Customer self-confirm receipt (bell / tracking page): token-gated
+ * capability (128-bit, unguessable — same trust as /api/track). Atomic:
+ * exactly one caller can flip new|confirmed -> completed; repeats and
+ * terminal states change nothing. Returns true only on a real flip.
+ */
+export async function completeOrderByTrackToken(db, number, token) {
+  const nowIso = new Date().toISOString();
+  const res = await db
+    .prepare(
+      "UPDATE orders SET status = 'completed', updated_at = ?3 WHERE number = ?1 AND track_token = ?2 AND status IN ('new','confirmed')"
+    )
+    .bind(number, token, nowIso)
+    .run();
+  const changed = res && res.meta ? res.meta.changes : 0;
+  return changed === 1;
+}
+
 /**
  * Atomic order-number allocation via the order_counter table
  * (migrations/0006_order_counter.sql). UPDATE ... RETURNING is ONE

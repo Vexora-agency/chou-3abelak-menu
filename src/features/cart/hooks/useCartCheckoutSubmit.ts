@@ -5,6 +5,7 @@ import { formatPrice, round2 } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
 import { phoneDigitsOnly } from '@/src/utils/digits';
+import { saveCustomerOrder } from '@/src/utils/customerOrders';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { formatMMSS } from '@/src/utils/countdown';
 import { clientConfig } from '@/src/config/client.config';
@@ -266,6 +267,9 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       sentVia = result.sentVia;
       if (result.orderNumber) {
         setLastOrder({ number: result.orderNumber, trackToken: result.trackToken ?? null });
+        // Shelf for the floating bell (48h, this device only). Needs the
+        // token to fetch status / confirm receipt later.
+        if (result.trackToken) saveCustomerOrder(result.orderNumber, result.trackToken);
       }
     } catch {
       orderNumber = null;

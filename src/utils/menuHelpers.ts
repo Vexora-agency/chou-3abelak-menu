@@ -5,15 +5,17 @@ export type { WhatsAppLine } from '@/src/utils/whatsapp';
 export { ensureSettingsBlocks } from '@/src/utils/menuValidation';
 
 /**
- * "13:05" (24h) -> "1:05 PM" / "1:05 مساءً", so AM/PM is never ambiguous.
- * Shared by the admin preview and every customer-facing hours line.
+ * "13:05" (24h) -> "1:05 PM" / "1:05 م", so AM/PM is never ambiguous.
+ * Arabic uses the short م/ص (not the long صباحاً/مساءً): compact on phones
+ * and the Levantine commercial convention. Shared by the admin preview
+ * and every customer-facing hours line.
  */
 export function formatTime12h(t: string, lang: 'en' | 'ar'): string {
   const m = /^(\d{1,2}):(\d{2})/.exec((t || '').trim());
   if (!m) return t || '--:--';
   const h = parseInt(m[1], 10) % 24;
   const isAr = lang === 'ar';
-  const suffix = h < 12 ? (isAr ? 'صباحاً' : 'AM') : (isAr ? 'مساءً' : 'PM');
+  const suffix = h < 12 ? (isAr ? 'ص' : 'AM') : (isAr ? 'م' : 'PM');
   const h12 = h % 12 === 0 ? 12 : h % 12;
   return `${h12}:${m[2]} ${suffix}`;
 }

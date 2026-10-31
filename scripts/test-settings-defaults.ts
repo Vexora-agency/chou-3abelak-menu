@@ -111,19 +111,23 @@ const baseMenu = (settings: unknown): MenuData => ({
 // 7. Hours display is derived from the real schedule, never static text.
 {
   ok(formatTime12h('13:05', 'en') === '1:05 PM', '12h en pm');
-  ok(formatTime12h('13:05', 'ar') === '1:05 مساءً', '12h ar pm');
+  ok(formatTime12h('13:05', 'ar') === '1:05 م', '12h ar pm (short م)');
+  ok(formatTime12h('09:00', 'ar') === '9:00 ص', '12h ar am (short ص)');
   ok(formatTime12h('00:00', 'en') === '12:00 AM', 'midnight en');
+  // The owner's example: open noon, close 1 AM — verified exact.
+  ok(formatTime12h('12:00', 'en') === '12:00 PM', 'noon en');
+  ok(formatTime12h('01:00', 'en') === '1:00 AM', '1am en');
   const sched = (o: unknown) => o as unknown as MenuData['settings'];
   const all = sched({ openTime: '09:00', closeTime: '22:00', workingDays: ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] });
   ok(formatHoursRange(all, 'en') === 'Daily · 9:00 AM – 10:00 PM', 'range en all-days');
-  ok(formatHoursRange(all, 'ar') === 'يومياً · من 9:00 صباحاً إلى 10:00 مساءً', 'range ar all-days');
+  ok(formatHoursRange(all, 'ar') === 'يومياً · من 9:00 ص إلى 10:00 م', 'range ar all-days');
   const some = sched({ openTime: '12:00', closeTime: '00:00', workingDays: ['sat', 'sun'] });
   ok(formatHoursRange(some, 'en').includes('Sat') && formatHoursRange(some, 'en').includes('12:00 PM'), 'range en subset days');
   // The storefront pill mirrors the edited schedule (the reported bug:
   // changing open/close left "Daily · 12:00 PM – 12:00 AM" frozen).
   const st = isOpenNow({ ...all, statusMode: 'open' } as unknown as MenuData['settings']);
   ok(st.isOpen === true && st.label.en.includes('9:00 AM') && st.label.en.includes('10:00 PM'), 'open pill follows edited hours');
-  ok(st.label.ar.includes('9:00 صباحاً') && st.label.ar.includes('10:00 مساءً'), 'open pill ar follows edited hours');
+  ok(st.label.ar.includes('9:00 ص') && st.label.ar.includes('10:00 م'), 'open pill ar follows edited hours');
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

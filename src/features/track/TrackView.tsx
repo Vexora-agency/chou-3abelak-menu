@@ -105,25 +105,30 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   const cancelled = data?.status === 'cancelled';
 
   return (
-    <div dir={isAr ? 'rtl' : 'ltr'} className="min-h-screen bg-[#0A0A0A] text-white flex flex-col items-center px-5 py-8">
+    <div dir={isAr ? 'rtl' : 'ltr'} className="min-h-dvh bg-[#0A0A0A] text-white flex flex-col items-center px-5 pb-[max(2rem,env(safe-area-inset-bottom))]">
       <div className="w-full max-w-[520px]">
-        <div className="flex items-center justify-between mb-6">
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-400 hover:text-[var(--primary)]"
-          >
-            <ArrowLeft size={14} className={isAr ? 'rotate-180' : ''} />
-            {isAr ? 'المنيو' : 'Menu'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setLang(isAr ? 'en' : 'ar')}
-            className="h-9 px-4 rounded-full border border-neutral-700 text-xs font-bold text-neutral-300 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-          >
-            {isAr ? 'EN' : 'عربي'}
-          </button>
+        {/* Sticky top bar: back-to-menu + language stay reachable no matter
+            how far down the order details scroll (mobile-first fix). */}
+        <div className="sticky top-0 z-20 -mx-5 px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-[#0A0A0A]/90 backdrop-blur-md">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 h-11 px-3 -ms-3 rounded-xl text-xs font-bold text-neutral-300 hover:text-[var(--primary)] active:text-[var(--primary)]"
+            >
+              <ArrowLeft size={16} className={isAr ? 'rotate-180' : ''} />
+              {isAr ? 'المنيو' : 'Menu'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang(isAr ? 'en' : 'ar')}
+              className="h-11 px-5 rounded-full border border-neutral-700 text-xs font-bold text-neutral-300 hover:border-[var(--primary)] hover:text-[var(--primary)] active:border-[var(--primary)]"
+            >
+              {isAr ? 'EN' : 'عربي'}
+            </button>
+          </div>
         </div>
+        <div className="pt-3">
 
         {missing ? (
           <div className="text-center py-16">
@@ -233,6 +238,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
             </p>
           </>
         )}
+        </div>
       </div>
     </div>
   );

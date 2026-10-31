@@ -67,7 +67,39 @@ export function loadCustomerOrders(nowMs: number = Date.now()): StoredCustomerOr
   return pruned;
 }
 
-/** Remember a fresh order (newest first, deduped by number, 48h window). */
+const MUTED_KEY = 'customer_orders_muted_v1';
+
+/** Order numbers the customer muted (bell stays visual, chime off). */
+export function loadMutedOrders(): number[] {
+  try {
+    const raw = window.localStorage.getItem(MUTED_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((n): n is number => Number.isInteger(n) && (n as number) > 0);
+  } catch {
+    return [];
+  }
+}
+
+export function isOrderMuted(n: number, muted?: number[]): boolean {
+  const list = Array.isArray(muted) ? muted : loadMutedOrders();
+  return list.includes(n);
+}
+
+/** Toggle mute for one order. Returns true when it is now muted. */
+export function toggleOrderMuted(n: number): boolean {
+  if (!Number.isInteger(n) || n <= 0) return false;
+  const list = loadMutedOrders();
+  const i = list.indexOf(n);
+  if (i >= 0) list.splice(i, 1);
+  else list.push(n);
+  try {
+    window.localStorage.setItem(MUTED_KEY, JSON.stringify(list.slice(0, 50)));
+  } catch {}
+  return i < 0;
+}
+
+/** Remember a fresh order (newest first, deduped by number, 12h window). */
 export function saveCustomerOrder(n: number, t: string, nowMs: number = Date.now()): StoredCustomerOrder[] {
   if (!Number.isInteger(n) || n <= 0 || typeof t !== 'string' || !TOKEN_RE.test(t)) {
     return loadCustomerOrders(nowMs);

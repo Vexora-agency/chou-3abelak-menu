@@ -1,7 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { BellRing, X, Loader2, PackageSearch, ExternalLink } from 'lucide-react';
-import { loadCustomerOrders, type StoredCustomerOrder } from '@/src/utils/customerOrders';
+import React, { useEffect, useRef, useState } from 'react';
+import { BellRing, BellOff, X, Loader2, PackageSearch, ExternalLink } from 'lucide-react';
+import {
+  loadCustomerOrders,
+  loadMutedOrders,
+  toggleOrderMuted,
+  type StoredCustomerOrder,
+} from '@/src/utils/customerOrders';
 import { formatPrice } from '@/src/utils/pricing';
+import { playBellChime, unlockBellAudio, vibrateBell } from '@/src/utils/bellSound';
 import { ReceivedButton } from './ReceivedButton';
 
 interface OrdersBellProps {
@@ -75,17 +81,42 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   const [shelf, setShelf] = useState<StoredCustomerOrder[]>(() => loadCustomerOrders());
   const [open, setOpen] = useState(false);
   const [states, setStates] = useState<Record<number, BellOrder>>({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [muted, setMuted] = useState<number[]>(() => loadMutedOrders());
+  const [ringing, setRinging] = useState(false);
+  // Order numbers already seen: only a number appearing AFTER mount rings
+  // (sound fires at order time only — a fresh order rings normally).
+  const knownRef = useRef<Set<number> | null>(null);
 
   // Every setState below runs after an await (TrackView shape) so the
   // mount fetch never cascades renders.
   useEffect(() => {
+    unlockBellAudio();
     let stop = false;
+    let ringTimer = 0;
     const tick = async () => {
       const list = loadCustomerOrders();
       const next = list.length ? await fetchOrderStates(list) : {};
       if (stop) return;
+      // New arrivals (never seen since mount, not muted) → premium ring:
+      // chime + vibration + swing. Mount-time orders never ring.
+      const known = knownRef.current;
+      if (known) {
+        const fresh = list.filter((o) => !known.has(o.n));
+        for (const o of fresh) known.add(o.n);
+        const audible = fresh.filter((o) => !loadMutedOrders().includes(o.n));
+        if (audible.length > 0) {
+          if (playBellChime()) vibrateBell();
+          setRinging(true);
+          window.clearTimeout(ringTimer);
+          ringTimer = window.setTimeout(() => {
+            if (!stop) setRinging(false);
+          }, 1800);
+        }
+      } else {
+        knownRef.current = new Set(list.map((o) => o.n));
+      }
       setShelf(list);
       setStates(next);
       setLoading(false);
@@ -100,6 +131,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     return () => {
       stop = true;
       window.clearInterval(id);
+      window.clearTimeout(ringTimer);
       window.removeEventListener('storage', onStorage);
     };
   }, []);
@@ -114,6 +146,11 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   }, [open ]);
 
   if (!shelf.length) return null;
+
+  const toggleMute = (n: number) => {
+    toggleOrderMuted(n);
+    setMuted(loadMutedOrders());
+  };
 
   const orders = shelf.map((o) => states[o.n] ?? { ...o, status: 'unknown' as const, total: null, itemsCount: null });
   const activeCount = orders.filter((o) => o.status === 'new' || o.status === 'confirmed').length;
@@ -134,7 +171,12 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
         aria-expanded={open}
         className="btn-tactile fixed bottom-[5.5rem] end-4 z-40 w-14 h-14 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-1 ring-white/20"
       >
-        <BellRing size={24} strokeWidth={2.5} />
+        {ringing && (
+          <span aria-hidden="true" className="anim-bell-glow absolute inset-0 rounded-full bg-[var(--primary)]" />
+        )}
+        <span className={ringing ? 'anim-bell-ring inline-flex' : 'inline-flex'}>
+          <BellRing size={24} strokeWidth={2.5} />
+        </span>
         {activeCount > 0 && (
           <span className="absolute -top-1 -start-1 min-w-6 h-6 px-1.5 rounded-full bg-red-600 text-white text-[11px] font-black flex items-center justify-center tabular-nums ring-2 ring-[#0A0A0A]">
             {activeCount}
@@ -180,9 +222,22 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-base font-black tabular-nums" dir="ltr">#{o.n}</span>
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${STATUS_STYLE[o.status]}`}>
-                        {statusLabel(o.status)}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${STATUS_STYLE[o.status]}`}>
+                          {statusLabel(o.status)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => toggleMute(o.n)}
+                          aria-label={muted.includes(o.n) ? (isAr ? 'تشغيل صوت هذا الطلب' : 'Unmute this order') : (isAr ? 'كتم صوت هذا الطلب' : 'Mute this order')}
+                          title={muted.includes(o.n) ? (isAr ? 'تشغيل الصوت' : 'Unmute') : (isAr ? 'كتم الصوت' : 'Mute')}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            darkMode ? 'text-neutral-400 hover:bg-white/10 hover:text-white' : 'text-neutral-500 hover:bg-black/5 hover:text-black'
+                          }`}
+                        >
+                          {muted.includes(o.n) ? <BellOff size={15} /> : <BellRing size={15} />}
+                        </button>
+                      </div>
                     </div>
                     <p className={`mt-0.5 text-[11px] ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
                       {timeAgo(o.at, isAr, nowMs)}

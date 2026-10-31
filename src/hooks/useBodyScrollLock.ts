@@ -48,13 +48,25 @@ function unlockBody(): void {
   if (locks <= 0) return;
   locks -= 1;
   if (locks === 0 && typeof document !== 'undefined' && typeof window !== 'undefined') {
+    // Dismiss a possibly-open keyboard FIRST: on phones it resizes the
+    // viewport mid-unlock, which reads as "jump up then back down".
+    try {
+      const ae = document.activeElement as HTMLElement | null;
+      if (ae && typeof ae.blur === 'function') ae.blur();
+    } catch {}
     const body = document.body;
     body.style.overflow = prevOverflow;
     body.style.overscrollBehavior = prevOverscroll;
     body.style.position = prevPosition;
     body.style.top = prevTop;
     body.style.width = prevWidth;
-    window.scrollTo(0, savedY);
+    // Instant, never smooth: the page has scroll-behavior:smooth, and an
+    // animated restore travels visibly up-then-down on close.
+    try {
+      window.scrollTo({ top: savedY, behavior: 'instant' as ScrollBehavior });
+    } catch {
+      window.scrollTo(0, savedY);
+    }
   }
 }
 

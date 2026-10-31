@@ -4,6 +4,7 @@ import { buildWhatsAppMessage, haversineMeters, parseMapUrlCoords, formatDistanc
 import { formatPrice, round2 } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
+import { phoneDigitsOnly } from '@/src/utils/digits';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { formatMMSS } from '@/src/utils/countdown';
 import { clientConfig } from '@/src/config/client.config';
@@ -181,7 +182,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       setErrorMsg(isAr ? 'يرجى إدخال الاسم (حرفان على الأقل)' : 'Please enter your name (2+ characters)');
       return;
     }
-    const phoneDigits = customer.phone.replace(/[^0-9]/g, '');
+    const phoneDigits = phoneDigitsOnly(customer.phone);
     if (phoneDigits.length < 6 || phoneDigits.length > 15) {
       setErrorMsg(isAr ? 'رقم الهاتف يجب أن يكون من 6 إلى 15 رقمًا (أرقام فقط)' : 'Phone must be 6–15 digits (numbers only)');
       return;

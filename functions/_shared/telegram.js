@@ -398,22 +398,29 @@ export function buildOrderKeyboard(adminUrl, orderId) {
       { text: '✅ تأكيد', callback_data: `tg:cfm:${orderId}` },
       { text: '❌ إلغاء', callback_data: `tg:cnl:${orderId}` },
     ]);
+    rows.push([{ text: '📦 تم الاستلام', callback_data: `tg:rcv:${orderId}` }]);
   }
   return { inline_keyboard: rows };
 }
 
 /* ---------- Phase 5: Confirm / Cancel callbacks ---------- */
 
-export const ORDER_ACTIONS = { cfm: 'confirmed', cnl: 'cancelled' };
-/** Telegram may only move orders forward along these edges (admin model subset). */
+export const ORDER_ACTIONS = { cfm: 'confirmed', cnl: 'cancelled', rcv: 'completed' };
+/**
+ * Telegram may only move orders forward along these edges (admin model
+ * subset — no new status: "received" IS completed). Terminal states
+ * (completed/cancelled) accept nothing further.
+ */
 const TG_TRANSITIONS = {
-  new: ['confirmed', 'cancelled'],
-  confirmed: ['cancelled'],
+  new: ['confirmed', 'cancelled', 'completed'],
+  confirmed: ['cancelled', 'completed'],
 };
+
+const RECEIVED_BANNER = '📦 تم الاستلام';
 
 export function parseOrderCallback(data) {
   if (typeof data !== 'string') return null;
-  const m = /^tg:(cfm|cnl):([A-Za-z0-9-]{1,128})$/.exec(data.trim());
+  const m = /^tg:(cfm|cnl|rcv):([A-Za-z0-9-]{1,128})$/.exec(data.trim());
   if (!m) return null;
   return { action: m[1], orderId: m[2], status: ORDER_ACTIONS[m[1]] };
 }
@@ -578,7 +585,10 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     }
     const current = order.status;
     if (current === parsed.status) {
-      await answer(parsed.status === 'confirmed' ? 'Already confirmed ✅' : 'Already cancelled.');
+      const already = parsed.status === 'confirmed'
+        ? 'Already confirmed ✅'
+        : parsed.status === 'completed' ? 'Already marked received 📦' : 'Already cancelled.';
+      await answer(already);
       return { handled: true, noop: true, status: current };
     }
     if (!isTelegramTransitionAllowed(current, parsed.status)) {
@@ -595,7 +605,9 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
       await answer('Could not update — try again.');
       return noop('write_failed');
     }
-    const banner = parsed.status === 'confirmed' ? '✅ تم تأكيد الطلب' : '❌ تم إلغاء الطلب';
+    const banner = parsed.status === 'confirmed'
+      ? '✅ تم تأكيد الطلب'
+      : parsed.status === 'completed' ? RECEIVED_BANNER : '❌ تم إلغاء الطلب';
     await answer(banner);
     // Freeze the buttons (no double-tap) + stamp the status on the message.
     try {

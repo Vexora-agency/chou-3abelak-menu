@@ -159,6 +159,8 @@ ok('reject non-string', parseOrderCallback(null) === null);
 ok('transitions new->confirmed/cancelled', isTelegramTransitionAllowed('new', 'confirmed') && isTelegramTransitionAllowed('new', 'cancelled'));
 ok('transitions confirmed->cancelled only', isTelegramTransitionAllowed('confirmed', 'cancelled') && !isTelegramTransitionAllowed('confirmed', 'confirmed'));
 ok('transitions terminal blocked', !isTelegramTransitionAllowed('completed', 'cancelled') && !isTelegramTransitionAllowed('cancelled', 'confirmed'));
+ok('parse received', parseOrderCallback(`tg:rcv:${oid}`)?.status === 'completed');
+ok('transitions to received', isTelegramTransitionAllowed('new', 'completed') && isTelegramTransitionAllowed('confirmed', 'completed') && !isTelegramTransitionAllowed('cancelled', 'completed'));
 
 // 7e. Callback handling end-to-end (mocked D1 + Bot API).
 function orderDb(linked, initialStatus = 'new') {
@@ -230,11 +232,18 @@ const unlinked = await handleOrderCallback(orderDb(false), 'tok', { ...cbBase, c
 ok('stranger click rejected', unlinked.reason === 'unauthorized');
 const forged = await handleOrderCallback(orderDb(true), 'tok', { ...cbBase, callbackId: 'cb5', data: 'tg:done:ord-1' });
 ok('forged data rejected', forged.reason === 'bad_data');
+const dbRecv = orderDb(true, 'confirmed');
+const received = await handleOrderCallback(dbRecv, 'tok', { ...cbBase, callbackId: 'cb6', data: `tg:rcv:ord-1` });
+ok('received marks completed', received.handled === true && received.status === 'completed' && dbRecv.orders.get('ord-1').status === 'completed');
+const receivedAgain = await handleOrderCallback(dbRecv, 'tok', { ...cbBase, callbackId: 'cb7', data: `tg:rcv:ord-1` });
+ok('repeat received is noop', receivedAgain.handled === true && receivedAgain.noop === true);
+const lateCancel = await handleOrderCallback(dbRecv, 'tok', { ...cbBase, callbackId: 'cb8', data: `tg:cnl:ord-1` });
+ok('cancel after completed rejected', lateCancel.handled === false && lateCancel.reason === 'bad_transition');
 globalThis.fetch = realFetch2;
 
-// 8. Order keyboard: URL view + confirm/cancel callbacks (64-byte cap).
+// 8. Order keyboard: URL view + confirm/cancel + received (64-byte cap).
 const kb2 = buildOrderKeyboard('https://x/admin/dashboard', oid);
-ok('keyboard has view + actions', kb2.inline_keyboard.length === 2 && kb2.inline_keyboard[0][0].url === 'https://x/admin/dashboard');
+ok('keyboard has view + actions + received', kb2.inline_keyboard.length === 3 && kb2.inline_keyboard[0][0].url === 'https://x/admin/dashboard');
 const cbData = kb2.inline_keyboard[1].map((b) => b.callback_data);
 ok('callback data fits 64 bytes', cbData.every((d) => d.length <= 64 && parseOrderCallback(d) !== null));
 const kb = buildOrderKeyboard('https://example.com/admin/dashboard');

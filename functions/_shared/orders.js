@@ -32,6 +32,21 @@ function cleanStr(v, max) {
 }
 
 /**
+ * Eastern Arabic (٠-٩) + Persian (۰-۹) numerals to Western digits.
+ * Mobile Arabic keyboards emit these by default; without this the digit
+ * filter below strips them and every Arabic-keyboard phone fails as
+ * invalid_phone even though the user typed a correct number.
+ */
+function westernDigits(v) {
+  if (typeof v !== 'string' || !v) return '';
+  return v.replace(/[٠-٩۰-۹]/g, (ch) => {
+    const code = ch.charCodeAt(0);
+    if (code >= 0x0660 && code <= 0x0669) return String(code - 0x0660);
+    return String(code - 0x06f0);
+  });
+}
+
+/**
  * Strict validation of a public order payload against the live menu.
  * NEVER trusts client prices or names — those always come from the menu.
  * Returns { ok, errors, cleaned } where cleaned is safe to store.
@@ -52,7 +67,7 @@ export function validateOrderInput(body, menu) {
   const name = cleanStr(c.name, 60);
   if (name.length < 2) errors.push('invalid_name');
 
-  const phoneDigits = typeof c.phone === 'string' ? c.phone.replace(/[^0-9]/g, '') : '';
+  const phoneDigits = westernDigits(typeof c.phone === 'string' ? c.phone : '').replace(/[^0-9]/g, '');
   if (phoneDigits.length < 6 || phoneDigits.length > 15) errors.push('invalid_phone');
 
   const address = cleanStr(c.address, 200);

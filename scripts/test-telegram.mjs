@@ -15,6 +15,7 @@ import {
   isTelegramTransitionAllowed,
   newPairingCode,
   notifyNewOrderTelegram,
+  notifyOwnerAutoCompleted,
   parseOrderCallback,
   readLastTelegramNotification,
   readPendingPairing,
@@ -282,6 +283,22 @@ const editText3 = syncCalls.filter((c) => c.method === 'editMessageText').pop();
 ok('no double banner on restamp', s5.sent === 1 && editText3.body.text.includes('📦 تم الاستلام') && !editText3.body.text.includes('تم تأكيد'));
 const s6 = await syncOrderStatusToTelegram(dbSync, '', { orderId: 'ord-s1', status: 'confirmed', adminUrl: '' });
 ok('sync without token skips', s6.sent === 0 && s6.reason === 'misconfigured');
+globalThis.fetch = prevFetch7g;
+
+// 7h. Owner ping on system auto-complete.
+const autoCalls = [];
+globalThis.fetch = async (url, init) => {
+  autoCalls.push({ method: String(url).split('/').pop(), body: JSON.parse(init.body) });
+  return { ok: true, status: 200, json: async () => ({ ok: true, result: true }) };
+};
+const dbAuto = mockDb(true);
+const ac1 = await notifyOwnerAutoCompleted(dbAuto, 'tok', { orderNumber: 42, customerName: 'Samir <x>' });
+ok('auto-complete ping sent', ac1.sent === 1 && autoCalls.length === 1 && autoCalls[0].body.text.includes('#42') && !autoCalls[0].body.text.includes('<x>'));
+ok('auto-complete ping goes to linked chat', autoCalls[0].body.chat_id === 12345);
+const ac2 = await notifyOwnerAutoCompleted(mockDb(false), 'tok', { orderNumber: 42, customerName: 'X' });
+ok('auto-complete ping skips unlinked', ac2.sent === 0 && ac2.reason === 'unlinked');
+const ac3 = await notifyOwnerAutoCompleted(dbAuto, '', { orderNumber: 42, customerName: 'X' });
+ok('auto-complete ping needs token', ac3.sent === 0);
 globalThis.fetch = prevFetch7g;
 
 // 8. Order keyboard: URL view + confirm/cancel + received (64-byte cap).

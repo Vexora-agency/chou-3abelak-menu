@@ -10,9 +10,23 @@
  * Effect: re-pushes unacknowledged orders (status new, 1–30 min old) with
  * their stable tag — a closed phone re-blips every minute until the owner
  * acks, instead of staying silent after the first ping. Best-effort only.
+ *
+ * Second effect (same pass, same auth): auto-completes CONFIRMED orders
+ * older than 12h whose customer never pressed "received" — the system
+ * marks them complete, stamps the Telegram message and pings the owner.
+ * Only confirmed (an unacked `new` order stays the owner's job). Also
+ * best-effort: failures are counted, never thrown.
  */
 import { jsonNoStore, readJsonBody, safeCompareStrings } from '../../_shared/session.js';
 import { nagUnackedOrders } from '../../_shared/push.js';
+import {
+  completeOrderByIdIfConfirmed,
+  findStaleConfirmedForAutoComplete,
+} from '../../_shared/repositories/orders.repo.js';
+import { notifyOwnerAutoCompleted, syncOrderStatusToTelegram } from '../../_shared/telegram.js';
+
+const AUTO_COMPLETE_AFTER_MS = 12 * 3600 * 1000;
+const AUTO_COMPLETE_BATCH = 20;
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -61,6 +75,7 @@ export async function onRequest(context) {
     cur = currency && typeof currency === 'object' ? String(currency.en || currency.ar || '') : '';
   } catch {}
 
+  let nagged = 0;
   try {
     const out = await nagUnackedOrders(db, {
       storeName,
@@ -68,8 +83,38 @@ export async function onRequest(context) {
       adminUrl: origin ? `${origin}/admin` : '',
       subject: origin || undefined,
     });
-    return jsonNoStore({ ok: true, nagged: out.nagged });
-  } catch {
-    return jsonNoStore({ error: 'unavailable' }, 503);
-  }
+    nagged = out.nagged;
+  } catch {}
+
+  // Auto-complete sweep: confirmed + older than 12h + customer silent.
+  let autoCompleted = 0;
+  try {
+    const cutoff = new Date(Date.now() - AUTO_COMPLETE_AFTER_MS).toISOString();
+    const candidates = await findStaleConfirmedForAutoComplete(db, cutoff, AUTO_COMPLETE_BATCH);
+    const token = env.TELEGRAM_BOT_TOKEN || null;
+    for (const cand of candidates) {
+      if (!cand || typeof cand.id !== 'string' || !cand.id) continue;
+      let flipped = false;
+      try {
+        flipped = await completeOrderByIdIfConfirmed(db, cand.id);
+      } catch {
+        flipped = false;
+      }
+      if (!flipped) continue;
+      autoCompleted += 1;
+      try {
+        await syncOrderStatusToTelegram(db, token, {
+          orderId: cand.id,
+          status: 'completed',
+          adminUrl: origin ? `${origin}/admin/dashboard` : '',
+        });
+        await notifyOwnerAutoCompleted(db, token, {
+          orderNumber: cand.number,
+          customerName: cand.customer_name,
+        });
+      } catch {}
+    }
+  } catch {}
+
+  return jsonNoStore({ ok: true, nagged, autoCompleted });
 }

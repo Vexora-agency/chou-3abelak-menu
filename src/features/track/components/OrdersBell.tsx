@@ -154,7 +154,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
               <div>
                 <h2 className="text-sm font-black">{isAr ? 'طلباتك' : 'Your orders'}</h2>
                 <p className={`text-[11px] ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
-                  {isAr ? 'تظهر هنا لمدة 48 ساعة' : 'Kept here for 48 hours'}
+                  {isAr ? 'تظهر هنا لمدة 12 ساعة' : 'Kept here for 12 hours'}
                 </p>
               </div>
               <button

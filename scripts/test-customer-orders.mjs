@@ -1,4 +1,4 @@
-// Customer order shelf: 48h window, validation, dedupe (pure logic).
+// Customer order shelf: 12h window, validation, dedupe (pure logic).
 // Run: node scripts/test-customer-orders.mjs
 import { isStoredOrder, pruneOrders, CUSTOMER_ORDERS_TTL_MS } from '../src/utils/customerOrders.ts';
 
@@ -31,7 +31,7 @@ const list = [
 ];
 const pruned = pruneOrders(list, NOW);
 ok('keeps valid, drops expired/malformed/dupes', pruned.length === 2 && pruned[0].n === 1 && pruned[1].n === 4);
-ok('48h ttl constant', CUSTOMER_ORDERS_TTL_MS === 48 * 3600 * 1000);
+ok('12h ttl constant', CUSTOMER_ORDERS_TTL_MS === 12 * 3600 * 1000);
 ok('non-array safe', pruneOrders(null).length === 0 && pruneOrders('x').length === 0);
 
 console.log(`customer-orders: ${pass} passed, ${fail} failed`);

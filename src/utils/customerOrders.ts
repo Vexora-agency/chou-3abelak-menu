@@ -1,9 +1,11 @@
 /**
  * Customer order shelf: every order placed on THIS device is remembered for
- * 48 hours so the floating bell can list it ("Track", "Received?") without
- * any account. Entries are { n: number, t: 32-hex token, at: ISO time }.
+ * 12 hours so the floating bell can list it ("Track", "Did you receive it?")
+ * without any account. Entries are { n: number, t: 32-hex token, at: ISO time }.
  * The token IS the capability (same as /api/track) — never display it,
  * only send it back to the two token-gated endpoints.
+ * 12h matches the auto-complete window: an unconfirmed order is marked
+ * complete by the system at 12h, so the shelf never outlives the question.
  */
 
 export interface StoredCustomerOrder {
@@ -13,7 +15,7 @@ export interface StoredCustomerOrder {
 }
 
 export const CUSTOMER_ORDERS_KEY = 'customer_orders_v1';
-export const CUSTOMER_ORDERS_TTL_MS = 48 * 3600 * 1000;
+export const CUSTOMER_ORDERS_TTL_MS = 12 * 3600 * 1000;
 
 const TOKEN_RE = /^[0-9a-f]{32}$/;
 

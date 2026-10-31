@@ -36,6 +36,35 @@ export async function completeOrderByTrackToken(db, number, token) {
 }
 
 /**
+ * Auto-complete sweep candidates: confirmed orders older than the cutoff
+ * (customer never pressed "received"). Only confirmed — a `new` order the
+ * owner never acked stays the owner's responsibility (the nag covers it).
+ * Bounded (oldest first) so a minute-cron pass stays cheap.
+ */
+export async function findStaleConfirmedForAutoComplete(db, cutoffIso, limit) {
+  const n = Number.isInteger(limit) ? Math.min(50, Math.max(1, limit)) : 20;
+  const res = await db
+    .prepare(
+      "SELECT id, number, customer_name FROM orders WHERE status = 'confirmed' AND created_at < ?1 ORDER BY created_at ASC LIMIT ?2"
+    )
+    .bind(cutoffIso, n)
+    .all();
+  return (res && res.results) || [];
+}
+
+/** Flip one order confirmed -> completed (race-safe; true only on flip). */
+export async function completeOrderByIdIfConfirmed(db, id) {
+  const res = await db
+    .prepare(
+      "UPDATE orders SET status = 'completed', updated_at = ?2 WHERE id = ?1 AND status = 'confirmed'"
+    )
+    .bind(id, new Date().toISOString())
+    .run();
+  const changed = res && res.meta ? res.meta.changes : 0;
+  return changed === 1;
+}
+
+/**
  * Atomic order-number allocation via the order_counter table
  * (migrations/0006_order_counter.sql). UPDATE ... RETURNING is ONE
  * statement, so concurrent inserts can never draw the same number —

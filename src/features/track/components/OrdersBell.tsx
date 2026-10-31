@@ -145,14 +145,20 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     return () => window.removeEventListener('keydown', onKey);
   }, [open ]);
 
-  if (!shelf.length) return null;
+  // The bell lives only while something needs attention: the moment every
+  // order on the shelf is completed/cancelled it vanishes at once (the
+  // confirm button already flips local state, so this is instant — the
+  // next poll just confirms it). Unknown (not yet fetched) counts as
+  // active so the bell never flickers on mount.
+  const orders = shelf.map((o) => states[o.n] ?? { ...o, status: 'unknown' as const, total: null, itemsCount: null });
+  const allTerminal = orders.length > 0 && orders.every((o) => o.status === 'completed' || o.status === 'cancelled');
+  if (!shelf.length || allTerminal) return null;
 
   const toggleMute = (n: number) => {
     toggleOrderMuted(n);
     setMuted(loadMutedOrders());
   };
 
-  const orders = shelf.map((o) => states[o.n] ?? { ...o, status: 'unknown' as const, total: null, itemsCount: null });
   const activeCount = orders.filter((o) => o.status === 'new' || o.status === 'confirmed').length;
 
   const statusLabel = (s: string) =>

@@ -45,7 +45,7 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                 : 'bg-neutral-100 border-neutral-200 text-[#0A0A0A]'
             }`}
           >
-           <div className="flex items-center justify-between gap-3">
+           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <h4 className={`font-bold text-sm ${isAr ? 'leading-relaxed' : ''} ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
                 <span dir="auto">{pickLangText(l.item.name, lang)}</span>
@@ -59,39 +59,6 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                   </span>
                 ) : null}
               </h4>
-              {l.addonIds.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-1.5">
-                  {l.addonIds.map((id) => (
-                    <span
-                      key={id}
-                      className={`inline-flex items-center gap-1.5 ps-3 pe-1.5 py-1.5 rounded-full text-xs font-bold border ${
-                        darkMode
-                          ? 'border-[var(--primary)]/30 bg-[var(--primary)]/5 text-[var(--primary)]'
-                          : 'border-[#8a6d00]/30 bg-[#8a6d00]/5 text-[#8a6d00]'
-                      }`}
-                    >
-                      <bdi>+ {featureName(menu, id, lang)}</bdi>
-                      <span className="tabular-nums opacity-80" dir="ltr">
-                        {formatPrice((l.item.addons || []).find((a) => a && a.featureId === id)?.price ?? 0)}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => onRemoveAddon(l.key, id)}
-                        className={`flex items-center justify-center w-8 h-8 min-w-[32px] min-h-[32px] rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
-                          darkMode
-                            ? 'hover:bg-red-500/20 hover:text-red-400'
-                            : 'hover:bg-red-500/10 hover:text-red-600'
-                        }`}
-                        title={isAr ? 'إزالة الإضافة من السطر' : 'Remove add-on from this line'}
-                        aria-label={`${isAr ? 'إزالة الإضافة' : 'Remove add-on'} ${featureName(menu, id, lang)}`}
-                      >
-                        <X size={14} strokeWidth={3} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-
             </div>
 
             {/* Quantity Stepper & Remove */}
@@ -129,7 +96,42 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                 <Trash2 size={18} />
               </button>
             </div>
-           </div>
+            </div>
+           {/* Add-on chips: full-width row of their own — they used to share
+               the narrow name column with the stepper beside it and visually
+               collided with it on small phones. */}
+           {l.addonIds.length > 0 && (
+             <div className="flex flex-wrap gap-1.5 mt-2">
+               {l.addonIds.map((id) => (
+                 <span
+                   key={id}
+                   className={`inline-flex items-center gap-1.5 ps-3 pe-1.5 py-1.5 rounded-full text-xs font-bold border max-w-full ${
+                     darkMode
+                       ? 'border-[var(--primary)]/30 bg-[var(--primary)]/5 text-[var(--primary)]'
+                       : 'border-[#8a6d00]/30 bg-[#8a6d00]/5 text-[#8a6d00]'
+                   }`}
+                 >
+                   <bdi className="min-w-0 break-words">+ {featureName(menu, id, lang)}</bdi>
+                   <span className="tabular-nums opacity-80 shrink-0" dir="ltr">
+                     {formatPrice((l.item.addons || []).find((a) => a && a.featureId === id)?.price ?? 0)}
+                   </span>
+                   <button
+                     type="button"
+                     onClick={() => onRemoveAddon(l.key, id)}
+                     className={`flex items-center justify-center w-8 h-8 min-w-[32px] min-h-[32px] rounded-full shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
+                       darkMode
+                         ? 'hover:bg-red-500/20 hover:text-red-400'
+                         : 'hover:bg-red-500/10 hover:text-red-600'
+                     }`}
+                     title={isAr ? 'إزالة الإضافة من السطر' : 'Remove add-on from this line'}
+                     aria-label={`${isAr ? 'إزالة الإضافة' : 'Remove add-on'} ${featureName(menu, id, lang)}`}
+                   >
+                     <X size={14} strokeWidth={3} />
+                   </button>
+                 </span>
+               ))}
+             </div>
+           )}
            {/* Line math: full-width receipt line under the row — the old pill
                squeezed beside the stepper and stacked ugly on narrow phones.
                No heavy bubble: quiet text, strong total. */}

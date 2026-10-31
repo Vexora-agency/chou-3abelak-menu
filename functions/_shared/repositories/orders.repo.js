@@ -37,8 +37,8 @@ export async function completeOrderByTrackToken(db, number, token) {
 
 /**
  * Auto-complete sweep candidates: confirmed orders older than the cutoff
- * (customer never pressed "received"). Only confirmed — a `new` order the
- * owner never acked stays the owner's responsibility (the nag covers it).
+ * (customer never pressed "received"). Only confirmed — an unacked `new`
+ * order stays the owner's responsibility (the nag covers it).
  * Bounded (oldest first) so a minute-cron pass stays cheap.
  */
 export async function findStaleConfirmedForAutoComplete(db, cutoffIso, limit) {
@@ -50,6 +50,57 @@ export async function findStaleConfirmedForAutoComplete(db, cutoffIso, limit) {
     .bind(cutoffIso, n)
     .all();
   return (res && res.results) || [];
+}
+
+/**
+ * Customer self-cancel: token-gated like the track page, atomic, and
+ * time-boxed. Only a FRESH `new` order flips — once the kitchen confirms
+ * (or the window lapses) the row is untouched and the caller gets `false`
+ * (answer: "too late, call us"). Returns true only on a real flip.
+ */
+export const CUSTOMER_CANCEL_WINDOW_MS = 2 * 60 * 1000;
+
+export async function cancelOrderByTrackToken(db, number, token, nowMs) {
+  const now = Number.isFinite(nowMs) ? nowMs : Date.now();
+  const cutoffIso = new Date(now - CUSTOMER_CANCEL_WINDOW_MS).toISOString();
+  const nowIso = new Date(now).toISOString();
+  const res = await db
+    .prepare(
+      "UPDATE orders SET status = 'cancelled', updated_at = ?4 WHERE number = ?1 AND track_token = ?2 AND status = 'new' AND created_at > ?3"
+    )
+    .bind(number, token, cutoffIso, nowIso)
+    .run();
+  const changed = res && res.meta ? res.meta.changes : 0;
+  return changed === 1;
+}
+
+/**
+ * Lock-notice sweep candidates: still-`new` orders past the customer
+ * cancel window that were Telegram-notified but never lock-noticed.
+ * Bounded (oldest first).
+ */
+export async function findUnackedForLockNotice(db, cutoffIso, limit) {
+  const n = Number.isInteger(limit) ? Math.min(50, Math.max(1, limit)) : 20;
+  const res = await db
+    .prepare(
+      `SELECT o.id, o.number, o.customer_name FROM orders o
+       INNER JOIN telegram_notifications t ON t.order_id = o.id
+       WHERE o.status = 'new' AND o.created_at < ?1
+         AND t.status = 'sent' AND t.locked_notified_at IS NULL
+       ORDER BY o.created_at ASC LIMIT ?2`
+    )
+    .bind(cutoffIso, n)
+    .all();
+  return (res && res.results) || [];
+}
+
+export async function markLockNotified(db, orderId) {
+  try {
+    await db
+      .prepare('UPDATE telegram_notifications SET locked_notified_at = ?2 WHERE order_id = ?1')
+      .bind(orderId, new Date().toISOString())
+      .run();
+  } catch {}
 }
 
 /** Flip one order confirmed -> completed (race-safe; true only on flip). */

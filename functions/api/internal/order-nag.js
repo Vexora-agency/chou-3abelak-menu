@@ -22,11 +22,17 @@ import { nagUnackedOrders } from '../../_shared/push.js';
 import {
   completeOrderByIdIfConfirmed,
   findStaleConfirmedForAutoComplete,
+  findUnackedForLockNotice,
+  markLockNotified,
 } from '../../_shared/repositories/orders.repo.js';
-import { notifyOwnerAutoCompleted, syncOrderStatusToTelegram } from '../../_shared/telegram.js';
+import { notifyOwnerAutoCompleted, notifyOwnerOrderLocked, syncOrderStatusToTelegram } from '../../_shared/telegram.js';
 
 const AUTO_COMPLETE_AFTER_MS = 12 * 3600 * 1000;
 const AUTO_COMPLETE_BATCH = 20;
+// Customer self-cancel window: 2 minutes from order creation. Past that,
+// still-`new` Telegram-notified orders get ONE "final, proceed" notice.
+const LOCK_NOTICE_AFTER_MS = 2 * 60 * 1000;
+const LOCK_NOTICE_BATCH = 20;
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -86,6 +92,28 @@ export async function onRequest(context) {
     nagged = out.nagged;
   } catch {}
 
+  // Lock-notice sweep: still-`new` and past the 2-minute customer-cancel
+  // window gets ONE "final, proceed" Telegram notice (marked, never repeated).
+  let lockNoticed = 0;
+  try {
+    const cutoff = new Date(Date.now() - LOCK_NOTICE_AFTER_MS).toISOString();
+    const candidates = await findUnackedForLockNotice(db, cutoff, LOCK_NOTICE_BATCH);
+    const token = env.TELEGRAM_BOT_TOKEN || null;
+    for (const cand of candidates) {
+      if (!cand || typeof cand.id !== 'string' || !cand.id) continue;
+      try {
+        await notifyOwnerOrderLocked(db, token, {
+          orderNumber: cand.number,
+          customerName: cand.customer_name,
+        });
+      } catch {}
+      try {
+        await markLockNotified(db, cand.id);
+      } catch {}
+      lockNoticed += 1;
+    }
+  } catch {}
+
   // Auto-complete sweep: confirmed + older than 12h + customer silent.
   let autoCompleted = 0;
   try {
@@ -116,5 +144,5 @@ export async function onRequest(context) {
     }
   } catch {}
 
-  return jsonNoStore({ ok: true, nagged, autoCompleted });
+  return jsonNoStore({ ok: true, nagged, autoCompleted, lockNoticed });
 }

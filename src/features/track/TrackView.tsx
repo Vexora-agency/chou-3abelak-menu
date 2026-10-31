@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Clock, CookingPot, XCircle, ArrowLeft, BellRing, Loader2 } from 'lucide-react';
 import { formatPrice } from '@/src/utils/pricing';
 import { ReceivedButton } from './components/ReceivedButton';
+import { CancelOrderButton } from './components/CancelOrderButton';
 
 interface TrackViewProps {
   number: number;
@@ -25,6 +26,7 @@ interface TrackData {
   deliveryFee: number;
   total: number;
   lang: 'en' | 'ar';
+  createdAt?: string;
 }
 
 const pick = (v: { en: string; ar: string } | undefined, lang: 'en' | 'ar') => {
@@ -227,6 +229,19 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
               </div>
             </div>
 
+            {data.status === 'new' && data.createdAt && (
+              <div className="mt-4">
+                <CancelOrderButton
+                  number={data.number}
+                  token={token}
+                  createdAt={data.createdAt}
+                  status={data.status}
+                  lang={lang}
+                  darkMode
+                  onCancelled={() => setData((d) => (d ? { ...d, status: 'cancelled' } : d))}
+                />
+              </div>
+            )}
             {(data.status === 'new' || data.status === 'confirmed') && (
               <div className="mt-4">
                 <ReceivedButton

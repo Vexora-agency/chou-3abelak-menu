@@ -460,10 +460,12 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
 
 /**
  * Order keyboard: row 1 = View (URL, opens the dashboard behind admin
- * login — zero auth surface); row 2 = Confirm-receipt / Cancel (callbacks,
+ * login — zero auth surface); row 2 = Start-preparing / Cancel (callbacks,
  * fully validated server-side in handleOrderCallback).
- * "تم استلام طلبك" = the OWNER confirming receipt: the kitchen saw the
- * order and is preparing it -> status `confirmed` (NOT delivered).
+ * "بدء التحضير" = the OWNER confirming receipt: the kitchen saw the
+ * order and is preparing it -> status `confirmed` (DB value kept;
+ * everywhere the customer looks it reads "قيد التحضير / Preparing",
+ * NOT delivered).
  * Delivery is confirmed separately: the customer taps "received" in the
  * bell/tracking (or the 12h auto-complete) -> `completed`. Old tg:rcv:*
  * callbacks from already-sent messages still validate and complete —
@@ -474,7 +476,7 @@ export function buildOrderKeyboard(adminUrl, orderId) {
   const rows = [[{ text: '👁 عرض الطلب', url: String(adminUrl || '') }]];
   if (typeof orderId === 'string' && orderId) {
     rows.push([
-      { text: '✅ تم استلام طلبك', callback_data: `tg:cfm:${orderId}` },
+      { text: '🔥 بدء التحضير', callback_data: `tg:cfm:${orderId}` },
       { text: '❌ إلغاء', callback_data: `tg:cnl:${orderId}` },
     ]);
   }
@@ -494,7 +496,7 @@ const TG_TRANSITIONS = {
   confirmed: ['cancelled', 'completed'],
 };
 
-const CONFIRMED_BANNER = '✅ تم استلام الطلب — جارٍ التحضير';
+const CONFIRMED_BANNER = '🔥 الطلب قيد التحضير';
 const RECEIVED_BANNER = '📦 تم الاستلام';
 
 export function parseOrderCallback(data) {
@@ -815,7 +817,7 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
 }
 
 const STATUS_BANNERS = {
-  confirmed: '✅ تم تأكيد الطلب',
+  confirmed: '🔥 الطلب قيد التحضير',
   completed: '📦 تم الاستلام',
   cancelled: '❌ تم إلغاء الطلب',
 };
@@ -823,7 +825,9 @@ const STATUS_BANNERS = {
 /** Strip a previously stamped status banner (lets 'new' restore cleanly). */
 function stripBanner(text) {
   let out = String(text ?? '');
-  for (const b of Object.values(STATUS_BANNERS)) {
+  // Legacy banners (pre-preparing wording) still strip cleanly on reopen.
+  const legacy = ['✅ تم تأكيد الطلب', '✅ تم استلام الطلب — جارٍ التحضير'];
+  for (const b of [...Object.values(STATUS_BANNERS), ...legacy]) {
     const tail = `\n\n${b}`;
     if (out.endsWith(tail)) out = out.slice(0, -tail.length);
   }
@@ -947,6 +951,69 @@ export async function notifyOwnerAutoCompleted(db, token, { orderNumber, custome
       ? escapeHtml(customerName.trim().slice(0, 60))
       : 'الزبون';
     const text = `⏰ النظام علّم الطلب ${bidi(`#${orderNumber}`)} (${name}) مكتمل تلقائيًا — مرت 12 ساعة بدون تأكيد استلام ✅`;
+    const res = await callTelegramApi(token, 'sendMessage', {
+      chat_id: link.chatId,
+      text,
+      parse_mode: 'HTML',
+    });
+    return res.ok ? { sent: 1 } : skip(String(res.error || 'send_failed').slice(0, 60));
+  } catch {
+    return skip('error');
+  }
+}
+
+/**
+ * Owner ping on CUSTOMER self-cancel (bell/tracking "cancel order").
+ * Best-effort and silent — NEVER throws. Mirror of notifyOwnerReceived.
+ */
+export async function notifyOwnerCustomerCancelled(db, token, { orderNumber, customerName }) {
+  const skip = (reason) => ({ sent: 0, reason });
+  try {
+    if (!db || typeof token !== 'string' || !token) return skip('misconfigured');
+    if (!Number.isInteger(orderNumber)) return skip('bad_order');
+    let link = null;
+    try {
+      link = await readTelegramLink(db);
+    } catch {
+      return skip('link_unreadable');
+    }
+    if (!link) return skip('unlinked');
+    const name = typeof customerName === 'string' && customerName.trim()
+      ? escapeHtml(customerName.trim().slice(0, 60))
+      : 'الزبون';
+    const text = `❌ ${name} ألغى الطلب ${bidi(`#${orderNumber}`)}`;
+    const res = await callTelegramApi(token, 'sendMessage', {
+      chat_id: link.chatId,
+      text,
+      parse_mode: 'HTML',
+    });
+    return res.ok ? { sent: 1 } : skip(String(res.error || 'send_failed').slice(0, 60));
+  } catch {
+    return skip('error');
+  }
+}
+
+/**
+ * Owner ping when the 2-minute customer-cancel window lapses with the
+ * order still `new`: the order is now final — proceed normally.
+ * Best-effort and silent — NEVER throws.
+ */
+export async function notifyOwnerOrderLocked(db, token, { orderNumber, customerName }) {
+  const skip = (reason) => ({ sent: 0, reason });
+  try {
+    if (!db || typeof token !== 'string' || !token) return skip('misconfigured');
+    if (!Number.isInteger(orderNumber)) return skip('bad_order');
+    let link = null;
+    try {
+      link = await readTelegramLink(db);
+    } catch {
+      return skip('link_unreadable');
+    }
+    if (!link) return skip('unlinked');
+    const name = typeof customerName === 'string' && customerName.trim()
+      ? escapeHtml(customerName.trim().slice(0, 60))
+      : 'الزبون';
+    const text = `🔒 الطلب ${bidi(`#${orderNumber}`)} (${name}) أصبح نهائيًا — انتهت مهلة الإلغاء، جاهز للتنفيذ ✅`;
     const res = await callTelegramApi(token, 'sendMessage', {
       chat_id: link.chatId,
       text,

@@ -237,7 +237,7 @@ let chimeEl: HTMLAudioElement | null = null;
  */
 function buildChimeDataUri(): string | null {
   try {
-    const rate = 22050;
+    const rate = 16000;
     const dur = 4.6;
     const len = Math.floor(rate * dur);
     const data = new Float32Array(len);

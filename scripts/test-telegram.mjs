@@ -16,6 +16,8 @@ import {
   newPairingCode,
   notifyNewOrderTelegram,
   notifyOwnerAutoCompleted,
+  notifyOwnerCustomerCancelled,
+  notifyOwnerOrderLocked,
   parseOrderCallback,
   readLastTelegramNotification,
   readPendingPairing,
@@ -294,7 +296,7 @@ const dbSync = mockDb(true);
 dbSync.ledger.set('ord-s1', { status: 'sent', order_number: 11, chat_id: 111, message_id: 22, message_text: '<b>طلب جديد #11</b>' });
 const s1 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-s1', status: 'confirmed', adminUrl: 'https://x/admin/dashboard' });
 const editText = syncCalls.find((c) => c.method === 'editMessageText');
-ok('sync stamps banner', s1.sent === 1 && editText && editText.body.text.includes('✅ تم تأكيد الطلب') && editText.body.text.includes('#11'));
+ok('sync stamps banner', s1.sent === 1 && editText && editText.body.text.includes('🔥 الطلب قيد التحضير') && editText.body.text.includes('#11'));
 ok('sync freezes buttons', syncCalls.some((c) => c.method === 'editMessageReplyMarkup' && c.body.reply_markup.inline_keyboard.length === 0));
 const s2 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'missing', status: 'confirmed', adminUrl: '' });
 ok('sync skips unknown order silently', s2.sent === 0 && s2.reason === 'no_message');
@@ -307,7 +309,7 @@ ok('reopen restores buttons', s4.sent === 1 && syncCalls.length === nCalls + 1 &
 dbSync.ledger.set('ord-s3', { status: 'sent', order_number: 13, chat_id: 111, message_id: 23, message_text: '<b>طلب</b>\n\n✅ تم تأكيد الطلب' });
 const s5 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-s3', status: 'completed', adminUrl: '' });
 const editText3 = syncCalls.filter((c) => c.method === 'editMessageText').pop();
-ok('no double banner on restamp', s5.sent === 1 && editText3.body.text.includes('📦 تم الاستلام') && !editText3.body.text.includes('تم تأكيد'));
+ok('no double banner on restamp', s5.sent === 1 && editText3.body.text.includes('📦 تم الاستلام') && !editText3.body.text.includes('قيد التحضير') && !editText3.body.text.includes('تم تأكيد'));
 const s6 = await syncOrderStatusToTelegram(dbSync, '', { orderId: 'ord-s1', status: 'confirmed', adminUrl: '' });
 ok('sync without token skips', s6.sent === 0 && s6.reason === 'misconfigured');
 globalThis.fetch = prevFetch7g;
@@ -326,6 +328,25 @@ const ac2 = await notifyOwnerAutoCompleted(mockDb(false), 'tok', { orderNumber: 
 ok('auto-complete ping skips unlinked', ac2.sent === 0 && ac2.reason === 'unlinked');
 const ac3 = await notifyOwnerAutoCompleted(dbAuto, '', { orderNumber: 42, customerName: 'X' });
 ok('auto-complete ping needs token', ac3.sent === 0);
+globalThis.fetch = prevFetch7g;
+
+// 7i. Owner pings for customer cancel + lock expiry.
+const cxCalls = [];
+globalThis.fetch = async (url, init) => {
+  cxCalls.push({ method: String(url).split('/').pop(), body: JSON.parse(init.body) });
+  return { ok: true, status: 200, json: async () => ({ ok: true, result: true }) };
+};
+const dbCx = mockDb(true);
+const cx1 = await notifyOwnerCustomerCancelled(dbCx, 'tok', { orderNumber: 55, customerName: 'Layla <x>' });
+ok('cancel ping sent', cx1.sent === 1 && cxCalls.length === 1 && cxCalls[0].body.chat_id === 12345 && cxCalls[0].body.text.includes('#55') && !cxCalls[0].body.text.includes('<x>'));
+const cx2 = await notifyOwnerCustomerCancelled(mockDb(false), 'tok', { orderNumber: 55, customerName: 'X' });
+ok('cancel ping skips unlinked', cx2.sent === 0 && cx2.reason === 'unlinked');
+const cx3 = await notifyOwnerCustomerCancelled(dbCx, '', { orderNumber: 55, customerName: 'X' });
+ok('cancel ping needs token', cx3.sent === 0);
+const lk1 = await notifyOwnerOrderLocked(dbCx, 'tok', { orderNumber: 77, customerName: 'Ali' });
+ok('lock ping sent', lk1.sent === 1 && cxCalls.length === 2 && cxCalls[1].body.text.includes('#77'));
+const lk2 = await notifyOwnerOrderLocked(dbCx, 'tok', { orderNumber: NaN, customerName: 'Ali' });
+ok('lock ping rejects bad order', lk2.sent === 0);
 globalThis.fetch = prevFetch7g;
 
 // 8. Order keyboard: URL view + owner-confirms-receipt (confirmed) + cancel.

@@ -38,7 +38,13 @@ export function isAudioLocked(): boolean {
   }
 }
 
-/** Two-tone kitchen bell, Web Audio only — zero assets, zero deps. */
+/**
+ * Kitchen bell: a 2-second chime, Web Audio only — zero assets, zero deps.
+ * Zero bytes over the network (smaller than any compressed MP3), so it
+ * never affects site speed: the tone is synthesized at play time.
+ * Pattern: 4 strikes over 2s (ding-ding-ding-ding), then 2s silence —
+ * the alarm interval below re-fires every 4s for a 15-minute session.
+ */
 export function playNewOrderBeep() {
   const ac = ensureCtx();
   if (!ac) return;
@@ -62,22 +68,29 @@ export function playNewOrderBeep() {
 function playOnce(ac: AudioContext) {
   try {
     const t = ac.currentTime;
-    [880, 1174.66].forEach((freq, i) => {
+    // 2-second chime: 4 strikes 0.5s apart, each with a ~0.45s decay tail.
+    // Total audible time ≈ 2s, then the caller leaves 2s of silence.
+    [880, 1174.66, 880, 1174.66].forEach((freq, i) => {
       const osc = ac.createOscillator();
       const gain = ac.createGain();
       osc.type = 'sine';
       osc.frequency.value = freq;
-      const at = t + i * 0.17;
+      const at = t + i * 0.5;
       gain.gain.setValueAtTime(0.0001, at);
       gain.gain.exponentialRampToValueAtTime(0.4, at + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.45);
       osc.connect(gain);
       gain.connect(ac.destination);
       osc.start(at);
-      osc.stop(at + 0.18);
+      osc.stop(at + 0.5);
     });
   } catch {}
 }
+
+/** Alarm session cap: 15 minutes per continuous unacknowledged period. */
+export const KITCHEN_ALARM_SESSION_MS = 15 * 60 * 1000;
+/** Chime (2s) + silence (2s) = one 4s cycle. */
+export const KITCHEN_ALARM_INTERVAL_MS = 4000;
 
 /**
  * Beeps when order ids appear that weren't in the previous poll. First load
@@ -96,16 +109,23 @@ export function useNewOrderSound(orderIds: string[], enabled: boolean) {
 
 /**
  * Kitchen alarm: while `active` (unacknowledged new orders exist) AND the
- * bell is on, beep every 3s until the owner acknowledges. Each ack (or
- * cancel) re-evaluates: silence returns the moment no new order is left.
+ * bell is on, play the 2s chime every 4s (2s sound + 2s silence) for at
+ * most 15 minutes per continuous session. Each ack (or cancel)
+ * re-evaluates: silence returns the moment no new order is left, and a
+ * fresh order after silence starts a new 15-minute session.
  * Paused when the tab is hidden; cleaned up on unmount/toggle-off.
  */
 export function useNewOrderAlarm(active: boolean, enabled: boolean) {
   useEffect(() => {
     if (!active || !enabled) return;
+    const sessionStart = Date.now();
+    // Immediate chime on session start so the owner hears it at once.
+    if (document.visibilityState === 'visible') playNewOrderBeep();
     const id = window.setInterval(() => {
-      if (document.visibilityState === 'visible') playNewOrderBeep();
-    }, 3000);
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - sessionStart > KITCHEN_ALARM_SESSION_MS) return;
+      playNewOrderBeep();
+    }, KITCHEN_ALARM_INTERVAL_MS);
     return () => window.clearInterval(id);
   }, [active, enabled]);
 }

@@ -11,6 +11,7 @@ import {
 import { formatPrice } from '@/src/utils/pricing';
 import { playBellChime, unlockBellAudio, vibrateBell } from '@/src/utils/bellSound';
 import { ReceivedButton } from './ReceivedButton';
+import { CancelOrderButton } from './CancelOrderButton';
 
 interface OrdersBellProps {
   lang: 'en' | 'ar';
@@ -21,6 +22,7 @@ interface BellOrder extends StoredCustomerOrder {
   status: 'new' | 'confirmed' | 'completed' | 'cancelled' | 'unknown';
   total: number | null;
   itemsCount: number | null;
+  createdAt: string | null;
 }
 
 function timeAgo(at: string, isAr: boolean, nowMs: number): string {
@@ -43,11 +45,11 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
       try {
         const res = await fetch(`/api/track?number=${o.n}&t=${encodeURIComponent(o.t)}`);
         if (!res.ok) {
-          next[o.n] = { ...o, status: 'unknown', total: null, itemsCount: null };
+          next[o.n] = { ...o, status: 'unknown', total: null, itemsCount: null, createdAt: null };
           return;
         }
         const d = (await res.json()) as {
-          status?: string; total?: number; items?: unknown[];
+          status?: string; total?: number; items?: unknown[]; createdAt?: string;
         };
         const st = d?.status;
         next[o.n] = {
@@ -55,9 +57,10 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
           status: st === 'new' || st === 'confirmed' || st === 'completed' || st === 'cancelled' ? st : 'unknown',
           total: typeof d?.total === 'number' ? d.total : null,
           itemsCount: Array.isArray(d?.items) ? d.items.length : null,
+          createdAt: typeof d?.createdAt === 'string' ? d.createdAt : null,
         };
       } catch {
-        next[o.n] = { ...o, status: 'unknown', total: null, itemsCount: null };
+        next[o.n] = { ...o, status: 'unknown', total: null, itemsCount: null, createdAt: null };
       }
     })
   );
@@ -78,7 +81,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 /**
  * Floating order bell: every order placed on this device stays reachable
- * for 48h ("Track live", "Did you receive it?") with zero accounts.
+ * for 12h ("Track live", "Did you receive it?") with zero accounts.
  * Signature touch: gold bell with a live count badge, opening a dark
  * bottom card in the brand's voice. Hidden when the shelf is empty.
  */
@@ -97,6 +100,9 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   const ringTimerRef = useRef(0);
   const activeRef = useRef(false);
   const lastChimeRef = useRef(0);
+  // Alarm session: continuous chiming runs at most 15 minutes per session;
+  // a fresh order starts a new session. 0 = no active session.
+  const alarmStartRef = useRef(0);
   // Orders whose chime could not play yet (context still locked). Flushed
   // on every later gesture/visibility/tick until one strike lands — the
   // sound is never dropped, only muted orders are skipped.
@@ -230,16 +236,24 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   }, []);
 
   // Attention loop: while an order still needs the customer, the bell
-  // re-dances silently every few seconds AND re-chimes on a slower beat
-  // (~every 27s) — like a real kitchen bell, it does not go quiet until
-  // the order is done or muted. Skipped while the panel is open.
+  // dances AND re-chimes every few seconds — like a real kitchen bell, it
+  // does not go quiet until the order is done or muted. A 15-minute
+  // session cap stops the alarm eventually; a fresh order starts a new one.
+  // Skipped while the panel is open (the customer is already looking).
   useEffect(() => {
     if (open) return;
     const id = window.setInterval(() => {
-      if (document.visibilityState !== 'visible' || !activeRef.current) return;
+      if (document.visibilityState !== 'visible') return;
+      if (!activeRef.current) {
+        alarmStartRef.current = 0;
+        return;
+      }
       dance(1700);
       if (isSoundOff()) return;
-      if (Date.now() - lastChimeRef.current < 25000) return;
+      const now = Date.now();
+      if (!alarmStartRef.current) alarmStartRef.current = now;
+      if (now - alarmStartRef.current > 15 * 60 * 1000) return;
+      if (now - lastChimeRef.current < 8000) return;
       vibrateBell();
       void playBellChime().then((ok) => {
         if (ok) {
@@ -250,7 +264,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       }).catch(() => {
         pendingSoundRef.current.add(0);
       });
-    }, 9000);
+    }, 8000);
     return () => window.clearInterval(id);
   }, [open ]);
 
@@ -268,7 +282,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // confirm button already flips local state, so this is instant — the
   // next poll just confirms it). Unknown (not yet fetched) counts as
   // active so the bell never flickers on mount.
-  const orders = shelf.map((o) => states[o.n] ?? { ...o, status: 'unknown' as const, total: null, itemsCount: null });
+  const orders = shelf.map((o) => states[o.n] ?? { ...o, status: 'unknown' as const, total: null, itemsCount: null, createdAt: null });
   const allTerminal = orders.length > 0 && orders.every((o) => o.status === 'completed' || o.status === 'cancelled');
   if (!shelf.length || allTerminal) return null;
 
@@ -401,6 +415,19 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                       )}
                     </p>
                     <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      {o.status === 'new' && (
+                        <CancelOrderButton
+                          number={o.n}
+                          token={o.t}
+                          createdAt={o.createdAt ?? o.at}
+                          status={o.status}
+                          lang={lang}
+                          darkMode={darkMode}
+                          onCancelled={() =>
+                            setStates((prev) => (prev[o.n] ? { ...prev, [o.n]: { ...prev[o.n], status: 'cancelled' } } : prev))
+                          }
+                        />
+                      )}
                       <a
                         href={`/?track=${o.n}&t=${encodeURIComponent(o.t)}`}
                         className={`h-9 px-4 rounded-full border text-xs font-extrabold inline-flex items-center gap-1.5 ${

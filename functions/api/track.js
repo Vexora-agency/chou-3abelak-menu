@@ -105,6 +105,8 @@ export async function onRequest(context) {
     deliveryFee: row.delivery_fee,
     total: row.total,
     lang: row.lang === 'ar' ? 'ar' : 'en',
+    // Server clock truth for the customer cancel countdown (2-min window).
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
   });
 }

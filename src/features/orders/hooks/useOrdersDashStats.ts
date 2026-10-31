@@ -67,7 +67,7 @@ export function useOrdersDashStats({ orders, period, lang, now, filter, sel }: D
   }, [sorted, period, lang, now]);
 
   const pendingCount = sorted.filter((o) => o.status === 'new').length;
-  const counts: Record<string, number> = { all: stats.inPeriod.length, new: 0, completed: 0, cancelled: 0 };
+  const counts: Record<string, number> = { all: stats.inPeriod.length, new: 0, confirmed: 0, completed: 0, cancelled: 0 };
   stats.inPeriod.forEach((o) => { if (counts[o.status] !== undefined) counts[o.status] += 1; });
   const list = stats.inPeriod.filter((o) => filter === 'all' || o.status === filter);
   const shownIdx = sel ?? stats.peak;

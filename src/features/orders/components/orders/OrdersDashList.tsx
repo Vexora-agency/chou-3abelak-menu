@@ -43,7 +43,7 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
     <motion.div {...rise(0.48)} id="orders-list" className="scroll-mt-4 pt-2">
       <h2 className={h2}>{t.recent}</h2>
       <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
-        {(['all', 'new', 'completed', 'cancelled'] as const).map((s) => {
+        {(['all', 'new', 'confirmed', 'completed', 'cancelled'] as const).map((s) => {
           const active = filter === s;
           return (
             <button key={s} type="button" onClick={() => { onFilterChange(s); }} aria-pressed={active}

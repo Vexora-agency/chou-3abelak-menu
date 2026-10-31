@@ -302,18 +302,17 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                   type="button"
                   onClick={toggleSound}
                   aria-pressed={!soundOff}
-                  aria-label={isAr ? 'كتم صوت الجرس' : 'Mute bell sound'}
-                  title={isAr ? 'كتم صوت الجرس' : 'Mute bell sound'}
-                  className={`btn-tactile h-9 px-4 rounded-full border text-xs font-extrabold inline-flex items-center gap-1.5 transition-colors ${
+                  aria-label={isAr ? (soundOff ? 'تشغيل صوت الجرس' : 'كتم صوت الجرس') : (soundOff ? 'Unmute bell' : 'Mute bell')}
+                  title={isAr ? (soundOff ? 'تشغيل الصوت' : 'كتم الصوت') : (soundOff ? 'Unmute' : 'Mute')}
+                  className={`btn-tactile w-9 h-9 rounded-full border flex items-center justify-center transition-colors ${
                     soundOff
-                      ? darkMode
-                        ? 'border-neutral-700 text-neutral-400 hover:text-white'
-                        : 'border-neutral-300 text-neutral-500 hover:text-black'
-                      : 'border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/10'
+                      ? 'border-red-800 text-red-400 bg-red-950/40 hover:text-red-300'
+                      : darkMode
+                        ? 'border-[var(--primary)]/60 text-[var(--primary)] bg-[var(--primary)]/10 hover:bg-[var(--primary)]/20'
+                        : 'border-neutral-300 text-neutral-700 hover:border-[var(--primary)] hover:text-black'
                   }`}
                 >
-                  {soundOff ? <VolumeX size={15} /> : <Volume2 size={15} />}
-                  {isAr ? (soundOff ? 'الصوت مكتوم' : 'الصوت شغال') : (soundOff ? 'Muted' : 'Sound on')}
+                  {soundOff ? <VolumeX size={16} /> : <Volume2 size={16} />}
                 </button>
                 <button
                   type="button"

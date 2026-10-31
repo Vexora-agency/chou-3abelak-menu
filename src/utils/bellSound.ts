@@ -195,10 +195,32 @@ async function strikeFull(ac: AudioContext, stateOf: () => AudioContextState): P
   if (stateOf() !== 'running') return false;
   try {
     strike(ac, ac.currentTime + 0.02, 987.77, 0.14); // B5 — a gentle fifth above
-    return true;
   } catch {
     return false;
   }
+  await sleep(350);
+  if (stateOf() !== 'running') return false;
+  try {
+    strike(ac, ac.currentTime + 0.02, 659.25, 0.14); // E5 again
+  } catch {
+    return false;
+  }
+  await sleep(350);
+  if (stateOf() !== 'running') return false;
+  try {
+    strike(ac, ac.currentTime + 0.02, 987.77, 0.12); // B5 again
+  } catch {
+    return false;
+  }
+  await sleep(350);
+  if (stateOf() !== 'running') return false;
+  try {
+    strike(ac, ac.currentTime + 0.02, 1318.5, 0.12); // E6 — the peak
+  } catch {
+    return false;
+  }
+  await sleep(350);
+  return stateOf() === 'running';
 }
 
 /* ---------- HTML <audio> engine: silent-switch-proof ---------- */
@@ -207,21 +229,22 @@ let chimeUrl: string | null = null;
 let chimeEl: HTMLAudioElement | null = null;
 
 /**
- * Synthesize the same ding-ding as a 16-bit mono WAV data URI (runtime
- * generated, zero assets): two strikes (E5 + B5) with inharmonic partials
- * and exponential decay, ~1.7s total. An <audio> element rides the MEDIA
- * channel, so unlike Web Audio it keeps playing with the ringer OFF.
+ * Synthesize the same TRIPLE ding-ding as a 16-bit mono WAV data URI
+ * (runtime generated, zero assets): three E5+B5 pairs with inharmonic
+ * partials and exponential decays, ~4.6s total. An <audio> element rides
+ * the MEDIA channel, so unlike Web Audio it keeps playing with the
+ * ringer OFF.
  */
 function buildChimeDataUri(): string | null {
   try {
     const rate = 22050;
-    const dur = 1.7;
+    const dur = 4.6;
     const len = Math.floor(rate * dur);
     const data = new Float32Array(len);
     const addStrike = (startSec: number, freq: number, vol: number) => {
       const partials: Array<[number, number]> = [[1, 1], [2.4, 0.35], [5.43, 0.12]];
       const start = Math.floor(startSec * rate);
-      for (let i = 0; i < len - start; i++) {
+      for (let i = 0; i + start < len; i++) {
         const t = i / rate;
         const env = Math.min(1, t / 0.012) * Math.exp(-t / 0.45);
         let s = 0;
@@ -229,8 +252,13 @@ function buildChimeDataUri(): string | null {
         data[start + i] += (s * vol * env) / partials.length;
       }
     };
-    addStrike(0, 659.25, 0.5);
-    addStrike(0.35, 987.77, 0.42);
+    // Triple ding-ding: three E5+B5 pairs, ~0.75s apart, matching the
+    // Web Audio engine's timing so both engines sound identical.
+    const pairs: Array<[number, number]> = [[659.25, 0.5], [987.77, 0.42]];
+    [0, 1.5, 3.0].forEach((base) => {
+      addStrike(base, pairs[0][0], pairs[0][1]);
+      addStrike(base + 0.35, pairs[1][0], pairs[1][1]);
+    });
     const bytes = new Uint8Array(44 + len * 2);
     const view = new DataView(bytes.buffer);
     const ascii = (off: number, s: string) => {
@@ -365,11 +393,11 @@ export async function playBellChime(): Promise<boolean> {
   }
 }
 
-/** Short double-tap vibration on new orders (mobile only, guarded). */
+/** Triple-buzz vibration matching the triple chime (mobile only, guarded). */
 export function vibrateBell(): void {
   try {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-      navigator.vibrate([70, 60, 70]);
+      navigator.vibrate([90, 70, 90, 70, 120]);
     }
   } catch {}
 }

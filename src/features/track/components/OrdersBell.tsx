@@ -90,6 +90,10 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   const knownRef = useRef<Set<number> | null>(null);
   const ringTimerRef = useRef(0);
   const activeRef = useRef(false);
+  // Orders whose chime could not play yet (context still locked). Flushed
+  // on every later gesture/visibility/tick until one strike lands — the
+  // sound is never dropped, only muted orders are skipped.
+  const pendingSoundRef = useRef<Set<number>>(new Set());
 
   /** Visual swing only — never any sound (sound is order-time-only). */
   const dance = (ms: number) => {
@@ -100,6 +104,20 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
 
   // Every setState below runs after an await (TrackView shape) so the
   // mount fetch never cascades renders.
+  // Try the pending chimes; clears on the first landed strike (one
+  // ding-ding per flush no matter how many orders queued).
+  const flushPendingSound = async () => {
+    if (pendingSoundRef.current.size === 0) return;
+    const audible = [...pendingSoundRef.current].filter((n) => !loadMutedOrders().includes(n));
+    if (audible.length === 0) {
+      pendingSoundRef.current.clear();
+      return;
+    }
+    try {
+      if (await playBellChime()) pendingSoundRef.current.clear();
+    } catch {}
+  };
+
   useEffect(() => {
     unlockBellAudio();
     let stop = false;
@@ -115,13 +133,14 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
         const fresh = list.filter((o) => !known.has(o.n));
         for (const o of fresh) known.add(o.n);
         const audible = fresh.filter((o) => !loadMutedOrders().includes(o.n));
-          if (audible.length > 0) {
-            // Vibration never waits on audio: even a blocked chime still
-            // buzzes, so the new order is never missed silently.
-            vibrateBell();
-            playBellChime();
-            dance(2000);
-          }
+        if (audible.length > 0) {
+          // Vibration never waits on audio: even a blocked chime still
+          // buzzes, so the new order is never missed silently.
+          vibrateBell();
+          for (const o of audible) pendingSoundRef.current.add(o.n);
+          dance(2000);
+          void flushPendingSound();
+        }
       } else {
         knownRef.current = new Set(list.map((o) => o.n));
       }
@@ -138,14 +157,31 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     // Same-tab saves don't emit storage events — the store pings us.
     const onLocal = () => void tick();
     const onStorage = () => void tick();
+    // Any real interaction may have just unlocked audio: flush chimes
+    // that were queued while the context was suspended.
+    const onGesture = () => void flushPendingSound();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void tick();
+        void flushPendingSound();
+      }
+    };
     window.addEventListener('customer-orders-changed', onLocal);
     window.addEventListener('storage', onStorage);
+    window.addEventListener('pointerdown', onGesture, { passive: true });
+    window.addEventListener('touchend', onGesture, { passive: true });
+    window.addEventListener('keydown', onGesture);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       stop = true;
       window.clearInterval(id);
       window.clearTimeout(ringTimerRef.current);
       window.removeEventListener('customer-orders-changed', onLocal);
       window.removeEventListener('storage', onStorage);
+      window.removeEventListener('pointerdown', onGesture);
+      window.removeEventListener('touchend', onGesture);
+      window.removeEventListener('keydown', onGesture);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 
@@ -179,6 +215,8 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
 
   const toggleMute = (n: number) => {
     toggleOrderMuted(n);
+    // A newly muted order must never ring later: drop its queued chime.
+    pendingSoundRef.current.delete(n);
     setMuted(loadMutedOrders());
   };
 
@@ -236,7 +274,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                   type="button"
                   onClick={() => {
                     vibrateBell();
-                    playBellChime();
+                    void playBellChime();
                   }}
                   aria-label={isAr ? 'تجربة الصوت' : 'Test sound'}
                   title={isAr ? 'تجربة الصوت' : 'Test sound'}

@@ -27,6 +27,7 @@ function sharedContext(): AudioContext | null {
 export function unlockBellAudio(): void {
   if (unlocked) return;
   unlocked = true;
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
   const unlock = () => {
     try {
       const ac = sharedContext();
@@ -71,38 +72,62 @@ function strike(at: number, freq: number, volume: number): void {
   }
 }
 
-/** Ring the chime. Returns true when a strike was scheduled. */
-export function playBellChime(): boolean {
+function strikeNow(ac: AudioContext): void {
+  const now = ac.currentTime + 0.02;
+  strike(now, 659.25, 0.16); // E5
+  strike(now + 0.35, 987.77, 0.14); // B5 — a gentle fifth above
+}
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * Ring the chime — with guaranteed delivery semantics.
+ *
+ * Autoplay policies (Chrome sticky activation, iOS Safari) keep the
+ * AudioContext suspended until a user gesture unlocks it. A ring fired
+ * from a background poll therefore usually meets a suspended context.
+ * Instead of one hopeful retry, this waits for unlock (resume + short
+ * polls, ~1.2s budget) and reports whether it REALLY struck. Callers keep
+ * un-rung orders in a pending set and re-flush on every later gesture,
+ * so a chime is never silently dropped: it plays on the next tap at the
+ * latest — unless the order was muted. Never rejects.
+ */
+export async function playBellChime(): Promise<boolean> {
   try {
     const ac = sharedContext();
     if (!ac) return false;
-    const strikeNow = () => {
+    // Read fresh each time (a function call defeats TS property narrowing —
+    // resume() genuinely flips suspended -> running at runtime).
+    const stateOf = (): AudioContextState => {
       try {
-        const now = ac.currentTime + 0.02;
-        strike(now, 659.25, 0.16); // E5
-        strike(now + 0.35, 987.77, 0.14); // B5 — a gentle fifth above
-      } catch {}
+        return ac.state;
+      } catch {
+        return 'suspended';
+      }
     };
-    if (ac.state === 'running') {
-      strikeNow();
-      return true;
-    }
-    // First-touch race: the context exists but is still suspended (common
-    // when the ring fires from a poll instead of a tap). Resume and retry
-    // shortly instead of dropping the chime forever.
-    try {
-      void ac.resume().catch(() => {});
-    } catch {}
-    window.setTimeout(() => {
+    if (stateOf() === 'running') {
       try {
-        if (ac.state === 'running') {
-          const now = ac.currentTime + 0.02;
-          strike(now, 659.25, 0.16);
-          strike(now + 0.35, 987.77, 0.14);
-        }
+        strikeNow(ac);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    for (let i = 0; i < 6; i++) {
+      try {
+        void ac.resume().catch(() => {});
       } catch {}
-    }, 450);
-    return true;
+      await sleep(200);
+      if (stateOf() === 'running') {
+        try {
+          strikeNow(ac);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+    }
+    return false;
   } catch {
     return false;
   }

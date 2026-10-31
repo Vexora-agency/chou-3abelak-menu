@@ -8,6 +8,7 @@
 import { jsonNoStore, readJsonBody } from '../_shared/session.js';
 import { mapOrderRow, validateOrderInput } from '../_shared/orders.js';
 import { newTrackToken, notifyNewOrder } from '../_shared/push.js';
+import { notifyNewOrderTelegram } from '../_shared/telegram.js';
 import {
   WA_CONFIG_KEY,
   WA_TOKEN_KEY,
@@ -306,6 +307,30 @@ export async function onRequest(context) {
         adminUrl: origin ? `${origin}/admin` : '',
         subject: origin || undefined,
         tag: `new-order-${created.num}`,
+      });
+    } catch {}
+    // Telegram owner loop: same best-effort contract — runs AFTER the
+    // order row is committed, inside waitUntil, never touches the order
+    // or the customer response. Deduped via the telegram_notifications
+    // ledger (Phase 4: View-button only, no Accept/Reject yet).
+    try {
+      const token = env.TELEGRAM_BOT_TOKEN || null;
+      let origin = '';
+      try {
+        origin = new URL(request.url).origin;
+      } catch {}
+      const currency = menu?.settings?.currency;
+      const cur = currency && typeof currency === 'object'
+        ? String(currency.en || currency.ar || '') : '';
+      const nm = menu?.settings?.name;
+      const storeName = nm && typeof nm === 'object' ? String(nm.en || nm.ar || '') : '';
+      await notifyNewOrderTelegram(db, token, {
+        orderId: created.id,
+        orderNumber: created.num,
+        cleaned: c,
+        storeName,
+        currency: cur,
+        adminUrl: origin ? `${origin}/admin/dashboard` : '',
       });
     } catch {}
   })();

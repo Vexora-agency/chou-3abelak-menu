@@ -210,6 +210,9 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       activeRef.current = Object.values(next).some((s) => s.status === 'new' || s.status === 'confirmed');
       setShelf(list);
       setStates(next);
+      // A brand-new order re-arms a muted bell (see saveCustomerOrder) —
+      // reflect it on the toggle so the icon never lies.
+      setSoundOffState(isSoundOff());
       setLoading(false);
       setNowMs(Date.now());
       // Retry anything still queued (audio may have unlocked since).

@@ -1,6 +1,6 @@
 // Customer order shelf: 12h window, validation, dedupe (pure logic).
 // Run: node scripts/test-customer-orders.mjs
-import { isStoredOrder, pruneOrders, CUSTOMER_ORDERS_TTL_MS, isSoundOff, setSoundOff, loadRememberedDetails, saveRememberedDetails, loadRung, markRung } from '../src/utils/customerOrders.ts';
+import { isStoredOrder, pruneOrders, CUSTOMER_ORDERS_TTL_MS, isSoundOff, setSoundOff, loadRememberedDetails, saveRememberedDetails, saveCustomerOrder, loadRung, markRung } from '../src/utils/customerOrders.ts';
 
 // In-memory localStorage stub (node has none).
 const mem = new Map();
@@ -9,6 +9,8 @@ globalThis.localStorage = {
   setItem: (k, v) => void mem.set(k, String(v)),
   removeItem: (k) => void mem.delete(k),
 };
+// saveCustomerOrder talks to window.localStorage + window.dispatchEvent.
+globalThis.window = { localStorage: globalThis.localStorage, dispatchEvent: () => true };
 
 let pass = 0;
 let fail = 0;
@@ -62,7 +64,20 @@ ok('rung starts empty', loadRung().length === 0);
 markRung([1001, 1002, -5, 1001]);
 const rung = loadRung();
 ok('rung roundtrips deduped + valid only', rung.length === 2 && rung.includes(1001) && rung.includes(1002));
+
+// A muted bell re-arms on every brand-new order: each order rings fresh.
+setSoundOff(true);
+saveCustomerOrder(2001, T, NOW);
+ok('new order unmutes the bell', isSoundOff() === false);
+setSoundOff(true);
+saveCustomerOrder(2001, T, NOW + 1000); // same order re-saved (retry)
+ok('re-save of the same order keeps the mute', isSoundOff() === true);
+setSoundOff(false);
+saveCustomerOrder(2002, T, NOW + 2000);
+ok('next new order rings again', isSoundOff() === false);
+
 delete globalThis.localStorage;
+delete globalThis.window;
 
 console.log(`customer-orders: ${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

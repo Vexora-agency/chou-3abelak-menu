@@ -72,7 +72,9 @@ const SOUND_KEY = 'customer_orders_sound_v1';
 /**
  * Global bell sound switch (one clear button in the panel header).
  * OFF = the bell stays fully visual (badge + motion) but never chimes.
- * Defaults ON — sound works unless the customer muted it.
+ * Defaults ON — sound works unless the customer muted it. A brand-new
+ * order re-arms the bell (see saveCustomerOrder): every order rings like
+ * a fresh one, a mute never leaks into the next order.
  */
 export function isSoundOff(): boolean {
   try {
@@ -178,6 +180,11 @@ export function saveCustomerOrder(n: number, t: string, nowMs: number = Date.now
   // Wake the floating bell instantly (same-tab storage events don't fire).
   // Brand-new orders only — re-saves never re-ring.
   if (!already) {
+    // A new order re-arms a muted bell: the customer muted the OLD order,
+    // this one deserves its chime. (Manual re-mute stays possible after.)
+    try {
+      setSoundOff(false);
+    } catch {}
     try {
       window.dispatchEvent(new Event('customer-orders-changed'));
     } catch {}

@@ -14,6 +14,7 @@ import { ShowMoreSection } from '../ShowMoreSection';
 import { AccessSection } from '../AccessSection';
 import { WhatsappApiSection } from '../WhatsappApiSection';
 import { TelegramSection } from '../TelegramSection';
+import { SoundsSection } from '../SoundsSection';
 import { AutoplaySection } from '../AutoplaySection';
 import { FeaturesSection } from '../FeaturesSection';
 
@@ -149,6 +150,19 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
 
       {featuresConfig.enableOrdering && (
         <TelegramSection lang={lang} adminFetch={adminFetch} onConfirm={onConfirm} />
+      )}
+
+      {featuresConfig.enableOrdering && (
+        <SoundsSection
+          sounds={menu.settings.sounds}
+          lang={lang}
+          onUpdate={(updater) =>
+            onUpdateMenu((m) => ({
+              ...m,
+              settings: { ...m.settings, sounds: updater({ sounds: m.settings.sounds }).sounds },
+            }))
+          }
+        />
       )}
 
       {featuresConfig.enableAnnouncements && (

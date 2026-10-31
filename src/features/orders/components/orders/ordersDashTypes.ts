@@ -35,6 +35,8 @@ export interface OrdersDashboardProps {
   loading?: boolean;
   onStatusChange: (id: string, status: OrderStatus) => void;
   onRefresh?: () => void;
+  /** Owner-picked kitchen chime id (one of the 5 library ids, unknown -> classic). */
+  kitchenSound?: string | null;
 }
 
 export type Period = 'today' | '7d' | 'month' | 'lastMonth';

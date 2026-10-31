@@ -148,6 +148,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
         loading={ordersLoading}
         onStatusChange={(id, s) => onOrderStatusChange(id, s)}
         onRefresh={() => onRefreshOrders()}
+        kitchenSound={menu.settings.sounds?.kitchen}
       />
       )}
       {dashView === 'reports' && showReports && reportSettings && (

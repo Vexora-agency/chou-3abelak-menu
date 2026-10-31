@@ -1,10 +1,10 @@
 /**
  * Premium bell chime — synthesized with WebAudio, zero audio assets.
- * The SAME 2-second chime as the admin kitchen bell (E5 + B5 alternating,
- * a gentle fifth, 4 strikes over 2s) with inharmonic bell partials and a
- * fast exponential decay: a warm "ding-ding-ding-ding", never a harsh
- * beep. Same sound, same mechanism (2s chime + 2s silence, 15-minute
- * session) on the menu page and in the dashboard.
+ * One of the 5 owner-picked patterns from bellPatterns.ts (default:
+ * classic E5 + B5), rendered with inharmonic bell partials and a fast
+ * exponential decay — never a harsh beep. Same library and same mechanism
+ * (2s chime + 2s silence, 30-minute session) on the menu page and in the
+ * dashboard; `sound` picks the pattern (unknown -> classic).
  * Master gain is kept low on purpose.
  *
  * Why "plays once, then never" happens (documented platform behavior):
@@ -32,6 +32,12 @@
  * the caller's pending queue, which re-flushes on every later gesture —
  * a chime is delayed, never dropped (unless muted). Never throws.
  */
+
+import {
+  bellPatternById,
+  bellPatternDuration,
+  type BellSoundId,
+} from '@/src/utils/bellPatterns';
 
 let ctx: AudioContext | null = null;
 let unlocked = false;
@@ -184,27 +190,27 @@ function strike(ac: AudioContext, at: number, freq: number, volume: number): voi
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
- * Full 2-second chime (same notes as the admin kitchen bell: E5 + B5
- * alternating, 4 strikes 0.5s apart) with a guard between strikes: a
- * strike fires only while the context is still running. If it died
- * mid-chime (background kill between the strikes), report failure so the
- * caller retries the WHOLE chime later instead of leaving a lonely
- * half-ding.
+ * Full chime for one pattern: each strike fires only while the context is
+ * still running. If it died mid-chime (background kill between the
+ * strikes), report failure so the caller retries the WHOLE chime later
+ * instead of leaving a lonely half-ding.
  */
-async function strikeFull(ac: AudioContext, stateOf: () => AudioContextState): Promise<boolean> {
-  const seq: Array<[number, number]> = [
-    [659.25, 0.16], // E5
-    [987.77, 0.14], // B5 — a gentle fifth above
-    [659.25, 0.14], // E5 again
-    [987.77, 0.12], // B5 again
-  ];
-  for (const [freq, vol] of seq) {
+async function strikeFull(
+  ac: AudioContext,
+  stateOf: () => AudioContextState,
+  sound?: BellSoundId | string | null,
+): Promise<boolean> {
+  const pattern = bellPatternById(sound);
+  const strikes = [...pattern.strikes].sort((a, b) => a.at - b.at);
+  for (let i = 0; i < strikes.length; i++) {
+    const s = strikes[i];
     try {
-      strike(ac, ac.currentTime + 0.02, freq, vol);
+      strike(ac, ac.currentTime + 0.02, s.freq, s.vol);
     } catch {
       return false;
     }
-    await sleep(500);
+    const next = strikes[i + 1];
+    await sleep(next ? Math.max(120, (next.at - s.at) * 1000) : 400);
     if (stateOf() !== 'running') return false;
   }
   return stateOf() === 'running';
@@ -212,21 +218,23 @@ async function strikeFull(ac: AudioContext, stateOf: () => AudioContextState): P
 
 /* ---------- HTML <audio> engine: silent-switch-proof ---------- */
 
-let chimeUrl: string | null = null;
-let chimeEl: HTMLAudioElement | null = null;
+// One cached WAV + element per pattern id (each ~40-80KB in memory, zero
+// bytes over the network — built lazily on first play).
+const chimeUrls = new Map<string, string>();
+const chimeEls = new Map<string, HTMLAudioElement>();
 
 /**
- * Synthesize the same 2-second chime as a 16-bit mono WAV data URI
- * (runtime generated, zero assets): E5 + B5 alternating, 4 strikes 0.5s
- * apart with inharmonic partials and fast decays, ~2.2s total (~70KB in
- * memory, zero bytes over the network). An <audio> element rides the
- * MEDIA channel, so unlike Web Audio it keeps playing with the ringer
- * OFF.
+ * Synthesize one pattern as a 16-bit mono WAV data URI (runtime
+ * generated, zero assets): the pattern's strikes with inharmonic partials
+ * and fast decays, ~2-2.7s total. An <audio> element rides the MEDIA
+ * channel, so unlike Web Audio it keeps playing with the ringer OFF.
+ * WAV gains run ~3x the Web Audio gains so both engines sound identical.
  */
-function buildChimeDataUri(): string | null {
+function buildChimeDataUri(sound?: BellSoundId | string | null): string | null {
   try {
+    const pattern = bellPatternById(sound);
     const rate = 16000;
-    const dur = 2.2;
+    const dur = bellPatternDuration(pattern);
     const len = Math.floor(rate * dur);
     const data = new Float32Array(len);
     const addStrike = (startSec: number, freq: number, vol: number) => {
@@ -240,15 +248,7 @@ function buildChimeDataUri(): string | null {
         data[start + i] += (s * vol * env) / partials.length;
       }
     };
-    // Same notes as the Web Audio engine (and the admin kitchen bell):
-    // E5 + B5 alternating every 0.5s, so both engines sound identical.
-    const seq: Array<[number, number, number]> = [
-      [0, 659.25, 0.5],
-      [0.5, 987.77, 0.42],
-      [1.0, 659.25, 0.5],
-      [1.5, 987.77, 0.42],
-    ];
-    for (const [at, freq, vol] of seq) addStrike(at, freq, vol);
+    for (const s of pattern.strikes) addStrike(s.at, s.freq, s.vol * 3);
     const bytes = new Uint8Array(44 + len * 2);
     const view = new DataView(bytes.buffer);
     const ascii = (off: number, s: string) => {
@@ -283,29 +283,36 @@ function buildChimeDataUri(): string | null {
   }
 }
 
-function chimeElement(): HTMLAudioElement | null {
+function chimeElement(sound?: BellSoundId | string | null): HTMLAudioElement | null {
   try {
     if (typeof Audio === 'undefined') return null;
-    if (!chimeEl) {
-      if (!chimeUrl) chimeUrl = buildChimeDataUri();
-      if (!chimeUrl) return null;
-      chimeEl = new Audio();
-      chimeEl.preload = 'auto';
-      chimeEl.src = chimeUrl;
+    const id = bellPatternById(sound).id;
+    let el = chimeEls.get(id) ?? null;
+    if (!el) {
+      let url = chimeUrls.get(id) ?? null;
+      if (!url) {
+        url = buildChimeDataUri(id);
+        if (!url) return null;
+        chimeUrls.set(id, url);
+      }
+      el = new Audio();
+      el.preload = 'auto';
+      el.src = url;
       try {
-        chimeEl.load();
+        el.load();
       } catch {}
+      chimeEls.set(id, el);
     }
-    return chimeEl;
+    return el;
   } catch {
     return null;
   }
 }
 
 /** Pre-build the element inside a gesture so later plays start instantly. */
-function warmHtmlChime(): void {
+function warmHtmlChime(sound?: BellSoundId | string | null): void {
   try {
-    chimeElement();
+    chimeElement(sound);
   } catch {}
 }
 
@@ -314,9 +321,9 @@ function warmHtmlChime(): void {
  * starts (play() resolves) — a rejection (no gesture yet, no decoder)
  * resolves false so the caller keeps the chime queued.
  */
-async function playHtmlChime(): Promise<boolean> {
+async function playHtmlChime(sound?: BellSoundId | string | null): Promise<boolean> {
   try {
-    const el = chimeElement();
+    const el = chimeElement(sound);
     if (!el) return false;
     try {
       el.pause();
@@ -339,11 +346,11 @@ async function playHtmlChime(): Promise<boolean> {
  * delay trick WebKit reporters found unblocks backgrounded contexts.
  * Never rejects.
  */
-export async function playBellChime(): Promise<boolean> {
+export async function playBellChime(sound?: BellSoundId | string | null): Promise<boolean> {
   try {
     requestPlaybackSession();
     try {
-      if (await playHtmlChime()) return true;
+      if (await playHtmlChime(sound)) return true;
     } catch {
       // Fall through to the Web Audio engine below.
     }
@@ -359,7 +366,7 @@ export async function playBellChime(): Promise<boolean> {
       }
     };
     if (stateOf() === 'running') {
-      return strikeFull(ac, stateOf);
+      return strikeFull(ac, stateOf, sound);
     }
     for (let i = 0; i < 4; i++) {
       try {
@@ -374,7 +381,7 @@ export async function playBellChime(): Promise<boolean> {
       } catch {}
       await sleep(200);
       if (stateOf() === 'running') {
-        return strikeFull(ac, stateOf);
+        return strikeFull(ac, stateOf, sound);
       }
     }
     return false;
@@ -383,7 +390,7 @@ export async function playBellChime(): Promise<boolean> {
   }
 }
 
-/** Triple-buzz vibration matching the triple chime (mobile only, guarded). */
+/** Buzz vibration matching the chime (mobile only, guarded). */
 export function vibrateBell(): void {
   try {
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {

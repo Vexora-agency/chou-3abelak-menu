@@ -9,6 +9,7 @@ import {
   type StoredCustomerOrder,
 } from '@/src/utils/customerOrders';
 import { formatPrice } from '@/src/utils/pricing';
+import { ALARM_INTERVAL_MS, ALARM_SESSION_MS } from '@/src/utils/bellPatterns';
 import { playBellChime, unlockBellAudio, vibrateBell } from '@/src/utils/bellSound';
 import { ReceivedButton } from './ReceivedButton';
 import { CancelOrderButton } from './CancelOrderButton';
@@ -100,13 +101,40 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   const ringTimerRef = useRef(0);
   const activeRef = useRef(false);
   const lastChimeRef = useRef(0);
-  // Alarm session: continuous chiming runs at most 15 minutes per session;
+  // Alarm session: continuous chiming runs at most 30 minutes per session;
   // a fresh order starts a new session. 0 = no active session.
   const alarmStartRef = useRef(0);
   // Orders whose chime could not play yet (context still locked). Flushed
   // on every later gesture/visibility/tick until one strike lands — the
   // sound is never dropped, only muted orders are skipped.
   const pendingSoundRef = useRef<Set<number>>(new Set());
+  // Owner-picked customer chime id (menu settings.sounds.customer).
+  const [customerSound, setCustomerSound] = useState<string>('classic');
+  const soundRef = useRef(customerSound);
+  soundRef.current = customerSound;
+
+  // Load the picked chime once + refresh every 5 min (the owner may change
+  // it mid-day in settings). Unknown ids fall back to classic in the engine.
+  useEffect(() => {
+    let stop = false;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/menu');
+        if (!res.ok || stop) return;
+        const m = (await res.json()) as { settings?: { sounds?: { customer?: unknown } } };
+        const s = m?.settings?.sounds?.customer;
+        if (!stop && typeof s === 'string' && s) setCustomerSound(s);
+      } catch {}
+    };
+    void load();
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void load();
+    }, 5 * 60 * 1000);
+    return () => {
+      stop = true;
+      window.clearInterval(id);
+    };
+  }, []);
 
   /** Visual swing only — never any sound (sound is order-time-only). */
   const dance = (ms: number) => {
@@ -127,7 +155,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       return;
     }
     try {
-      if (await playBellChime()) {
+      if (await playBellChime(soundRef.current)) {
         pendingSoundRef.current.clear();
         lastChimeRef.current = Date.now();
       }
@@ -238,7 +266,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // Attention loop (same mechanism as the admin kitchen bell): while an
   // order still needs the customer, the bell dances AND re-chimes on a 4s
   // cycle — 2s chime + 2s silence — like a real kitchen bell, it does not
-  // go quiet until the order is done or muted. A 15-minute session cap
+  // go quiet until the order is done or muted. A 30-minute session cap
   // stops the alarm eventually; a fresh order starts a new one.
   // Skipped while the panel is open (the customer is already looking).
   useEffect(() => {
@@ -253,10 +281,10 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       if (isSoundOff()) return;
       const now = Date.now();
       if (!alarmStartRef.current) alarmStartRef.current = now;
-      if (now - alarmStartRef.current > 15 * 60 * 1000) return;
+      if (now - alarmStartRef.current > ALARM_SESSION_MS) return;
       if (now - lastChimeRef.current < 3500) return;
       vibrateBell();
-      void playBellChime().then((ok) => {
+      void playBellChime(soundRef.current).then((ok) => {
         if (ok) {
           lastChimeRef.current = Date.now();
         } else {
@@ -265,7 +293,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       }).catch(() => {
         pendingSoundRef.current.add(0);
       });
-    }, 8000);
+    }, ALARM_INTERVAL_MS);
     return () => window.clearInterval(id);
   }, [open ]);
 
@@ -298,7 +326,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     } else {
       vibrateBell();
       dance(1700);
-      void playBellChime().then((ok) => {
+      void playBellChime(soundRef.current).then((ok) => {
         if (ok) lastChimeRef.current = Date.now();
       }).catch(() => {});
     }

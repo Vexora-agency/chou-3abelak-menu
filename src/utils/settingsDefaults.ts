@@ -10,6 +10,7 @@
  */
 
 import type { SocialPlatform } from '@/src/types/menu';
+import { isBellSoundId } from '@/src/utils/bellPatterns';
 
 export interface Bilingual {
   en: string;
@@ -113,6 +114,21 @@ export function tickerSpeedOrDefault(v: unknown): number {
 /** Featured-carousel interval seconds, 2..10, default 4. */
 export function autoplayIntervalOrDefault(v: unknown): number {
   return typeof v === 'number' && v >= 2 && v <= 10 ? Math.round(v) : 4;
+}
+
+export interface BellSounds {
+  kitchen: string;
+  customer: string;
+}
+
+/**
+ * Owner-picked bell chimes; unknown ids fall back to classic (the engines
+ * resolve unknown -> classic too, so an old client never goes silent).
+ */
+export function soundsOrDefault(v: unknown): BellSounds {
+  const r = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+  const pick = (x: unknown) => (isBellSoundId(typeof x === 'string' ? x.trim() : x) ? (x as string).trim() : 'classic');
+  return { kitchen: pick(r.kitchen), customer: pick(r.customer) };
 }
 
 /**

@@ -9,7 +9,7 @@ import { OrdersDashList } from './orders/OrdersDashList';
 export type { Order, OrderItem, OrderStatus, OrderType, Period };
 
 /* ---------- Main component ---------- */
-const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loading, onStatusChange, onRefresh }) => {  const isAr = lang === 'ar';
+const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loading, onStatusChange, onRefresh, kitchenSound }) => {  const isAr = lang === 'ar';
   // Owner decision: dashboard animations always play for every visitor.
   const reduce = false;
   const { now } = useOrdersDashClock();
@@ -35,11 +35,11 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
       return true;
     }
   });
-  useNewOrderSound(orders.map((o) => o.id), soundOn);
+  useNewOrderSound(orders.map((o) => o.id), soundOn, kitchenSound);
   // Looping alarm while ANY order is still unacknowledged (status new).
   // Acking (or cancelling) the last one flips `active` off and the
   // interval cleans itself up — the owner never hunts for a stop button.
-  useNewOrderAlarm(orders.some((o) => o.status === 'new'), soundOn);
+  useNewOrderAlarm(orders.some((o) => o.status === 'new'), soundOn, kitchenSound);
   useEffect(() => {
     // Every interaction flavor unlocks audio (mouse, touch, keyboard, tab
     // focus/return): the first gesture anywhere arms all future beeps.
@@ -67,7 +67,7 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
         // Proof-of-life: toggling on always beeps instantly, so the owner
         // can verify the speaker with one tap (and so can we, remotely).
         unlockOrderSound();
-        playNewOrderBeep();
+        playNewOrderBeep(kitchenSound);
       }
       return next;
     });

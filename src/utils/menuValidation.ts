@@ -8,6 +8,7 @@ import {
   isoDateOrNull,
   socialFlagsOrDefault,
   socialOrderOrDefault,
+  soundsOrDefault,
   statusModeOrDefault,
   tickerSpeedOrDefault,
   timezoneOrDefault,
@@ -60,6 +61,7 @@ export function ensureSettingsBlocks(menu: MenuData): MenuData {
       featuredAutoplayInterval: autoplayIntervalOrDefault(
         (s as unknown as { featuredAutoplayInterval?: unknown }).featuredAutoplayInterval
       ),
+      sounds: soundsOrDefault((s as unknown as { sounds?: unknown }).sounds),
       showMore: (() => {
         const sm = (s as unknown as { showMore?: unknown }).showMore;
         const o = sm && typeof sm === 'object' ? (sm as Record<string, unknown>) : {};

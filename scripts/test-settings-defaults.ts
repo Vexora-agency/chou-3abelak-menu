@@ -80,6 +80,16 @@ const baseMenu = (settings: unknown): MenuData => ({
   ok(out.settings.announcement.scroll === true, 'non-boolean scroll falls back to true');
 }
 
+// 5b. Bell chimes default to classic, keep valid ids, drop bogus ones.
+{
+  const out = ensureSettingsBlocks(baseMenu({}));
+  ok(out.settings.sounds.kitchen === 'classic' && out.settings.sounds.customer === 'classic', 'sounds default to classic');
+  const kept = ensureSettingsBlocks(baseMenu({ sounds: { kitchen: 'gong', customer: 'soft' } }));
+  ok(kept.settings.sounds.kitchen === 'gong' && kept.settings.sounds.customer === 'soft', 'sounds keep valid ids');
+  const bad = ensureSettingsBlocks(baseMenu({ sounds: { kitchen: 'hack', customer: 7 } }));
+  ok(bad.settings.sounds.kitchen === 'classic' && bad.settings.sounds.customer === 'classic', 'sounds reject bogus ids');
+}
+
 // 5. Input is never mutated.
 {
   const settings = {};

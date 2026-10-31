@@ -12,6 +12,7 @@ import {
   isoDateOrNull,
   socialFlagsOrDefault,
   socialOrderOrDefault,
+  soundsOrDefault,
   statusModeOrDefault,
   tickerSpeedOrDefault,
   timezoneOrDefault,
@@ -262,6 +263,7 @@ export function normalizeMenu<T>(menu: T): T {
     defaultLang: settings.defaultLang === 'ar' ? 'ar' : 'en',
     featuredAutoplay: settings.featuredAutoplay !== undefined ? Boolean(settings.featuredAutoplay) : true,
     featuredAutoplayInterval: autoplayIntervalOrDefault(settings.featuredAutoplayInterval),
+    sounds: soundsOrDefault((settings as Record<string, unknown>).sounds),
     ordering: {
       ...ordRaw,
       enabled: Boolean(ordRaw.enabled),

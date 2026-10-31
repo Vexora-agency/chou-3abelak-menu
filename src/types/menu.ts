@@ -183,6 +183,13 @@ export interface MenuSettings {  name: { en: string; ar: string };
   };
   featuredAutoplay: boolean;
   featuredAutoplayInterval: number;
+  /** Owner-picked bell chimes (one of the 5 ids in bellPatterns.ts). */
+  sounds: {
+    /** Kitchen alarm on the admin dashboard. */
+    kitchen: string;
+    /** Customer bell on the menu page. */
+    customer: string;
+  };
   badges: BadgeSettings;
   /** Feature library (names only — prices live per item). */
   featureDefs: FeatureDef[];

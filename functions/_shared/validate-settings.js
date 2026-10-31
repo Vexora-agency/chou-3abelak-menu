@@ -238,6 +238,14 @@ function validateSettings(s, errors) {
     ? Math.round(s.featuredAutoplayInterval)
     : 4;
 
+  // Bell chimes (owner-pickable, one of the 5 library ids; unknown ->
+  // classic so an old client never goes silent). Twin of the client's
+  // soundsOrDefault — keep the two in sync.
+  const SOUND_IDS = ['classic', 'triple', 'urgent', 'soft', 'gong'];
+  const sndRaw = s.sounds && typeof s.sounds === 'object' ? s.sounds : {};
+  const soundOr = (v) => (typeof v === 'string' && SOUND_IDS.includes(v.trim()) ? v.trim() : 'classic');
+  const sounds = { kitchen: soundOr(sndRaw.kitchen), customer: soundOr(sndRaw.customer) };
+
   // Smart badges windows (optional; safe defaults when missing)
   const bRaw = s.badges && typeof s.badges === 'object' ? s.badges : {};
   const intOr = (v, fb, min, max) => (Number.isInteger(v) && v >= min && v <= max ? v : fb);
@@ -284,6 +292,7 @@ function validateSettings(s, errors) {
     defaultLang,
     featuredAutoplay,
     featuredAutoplayInterval,
+    sounds,
     badges,
     showMore,
     featureDefs,

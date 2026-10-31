@@ -156,9 +156,11 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
           <X size={20} />
         </button>
 
-        {/* Header: Title and Price */}
-        <div className="flex justify-between items-start gap-4 pr-6">
-          <div>
+        {/* Header: Title and Price. The X sits absolute at the inline-end
+            corner, so the row reserves 56px on the END side (pe-14 works in
+            both LTR and RTL) — the price pill can never slide under it. */}
+        <div className="flex justify-between items-start gap-4 pe-14">
+          <div className="min-w-0 flex-1">
             <h3 dir="auto" className={`text-xl sm:text-2xl font-black leading-tight ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
               {headerTitle}
             </h3>

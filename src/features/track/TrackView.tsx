@@ -183,7 +183,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
             <p className="text-center text-xs font-bold text-neutral-500">
               {storeName || (isAr ? 'تتبع الطلب' : 'Order tracking')}
             </p>
-            <h1 className="text-center text-3xl font-black mt-1 tabular-nums" dir="ltr">
+            <h1 className="text-center text-2xl sm:text-3xl font-black mt-1 tabular-nums" dir="ltr">
               #{data.number}
             </h1>
 

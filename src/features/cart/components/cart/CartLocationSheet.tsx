@@ -19,9 +19,12 @@ export const CartLocationSheet: React.FC<CartLocationSheetProps> = ({
 }) => {
   const isAr = lang === 'ar';
   return (
-    <div className="absolute inset-0 z-[60] flex items-end justify-center" role="dialog" aria-modal="true" aria-label={isAr ? 'تحديد موقع التوصيل' : 'Pin delivery location'}>
+      <div className="absolute inset-0 z-[60] flex items-end justify-center" role="dialog" aria-modal="true" aria-label={isAr ? 'تحديد موقع التوصيل' : 'Pin delivery location'}>
       <div onClick={() => onCloseSheet(false)} className="absolute inset-0 bg-black/60 anim-fade-in" aria-hidden="true" />
-      <div className={`relative w-full rounded-t-[24px] p-5 pb-7 max-h-[92vh] max-h-[92dvh] overflow-y-auto overscroll-contain no-scrollbar anim-drawer-in shadow-2xl ${darkMode ? 'bg-[#141414] text-white border-t-2 border-[var(--primary)]' : 'bg-white text-[#0A0A0A] border-t-2 border-[var(--primary)]'}`}>
+      {/* Animation on the wrapper, scrolling on the inner div — the body
+          lock is held by the cart drawer underneath (shared counter). */}
+      <div className={`anim-drawer-in relative w-full max-h-[92vh] max-h-[92dvh] flex flex-col rounded-t-[24px] shadow-2xl overflow-hidden ${darkMode ? 'bg-[#141414] text-white border-t-2 border-[var(--primary)]' : 'bg-white text-[#0A0A0A] border-t-2 border-[var(--primary)]'}`}>
+      <div className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 p-5 pb-7 overflow-x-clip">
         <div className="w-11 h-1.5 rounded-full mx-auto mb-4 bg-neutral-400/50" />
         <div className="flex items-center justify-between gap-3 mb-4">
           <h3 className="text-base font-black">{isAr ? 'موقع التوصيل' : 'Delivery location'}</h3>
@@ -45,6 +48,7 @@ export const CartLocationSheet: React.FC<CartLocationSheetProps> = ({
           onPick={(lat, lng, accuracy, addressText) => onPick(lat, lng, accuracy, addressText)}
           onClose={() => onCloseSheet(!!location)}
         />
+      </div>
       </div>
     </div>
   );

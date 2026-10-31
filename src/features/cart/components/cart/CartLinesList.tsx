@@ -86,10 +86,11 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                 </div>
               )}
 
-              {/* Line math: 3 × 120,000 = 360,000 */}
-              <div className="flex items-center gap-2 mt-1.5">
+              {/* Line math pill: wraps inside its bubble on narrow phones
+                  (long unit words like "دستتين" + big totals overflowed it). */}
+              <div className="flex flex-wrap items-center gap-2 mt-1.5">
                 <span
-                  className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-xs tabular-nums ${
+                  className={`text-xs font-extrabold px-2.5 py-1 rounded-full shadow-xs tabular-nums max-w-full whitespace-normal break-words text-center leading-relaxed ${
                     darkMode
                       ? 'bg-[var(--primary)] text-[#0A0A0A]'
                       : 'bg-[#0A0A0A] text-[var(--primary)]'

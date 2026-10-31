@@ -52,6 +52,15 @@ input.no-focus-ring:focus-visible {
   outline: none;
 }
 
+/* Sheet scrollers on phones: momentum scrolling on old WebViews plus
+   contained overscroll so the gesture never leaks to the (locked) page.
+   Applied to every bottom-sheet inner scroll container. */
+.smooth-scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
+}
+
 /* Custom scrollbar hiding for horizontal chip nav */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

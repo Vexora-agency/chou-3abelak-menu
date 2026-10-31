@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { ShoppingBag, ArrowRight, ArrowLeft, Trash2, PauseCircle, MoonStar } from 'lucide-react';
 import { formatPrice } from '@/src/utils/pricing';
 import type { OrderingStatus } from '@/src/utils/status';
@@ -27,18 +28,18 @@ export const CartBar: React.FC<CartBarProps> = ({
   // Delete confirmation dialog (opens on trash tap)
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // Close the confirmation on Escape + lock background scroll while open
+  // Shared counter lock while the confirm dialog is open.
+  useBodyScrollLock(confirmOpen);
+
+  // Close the confirmation on Escape (scroll lock lives in the hook above).
   useEffect(() => {
     if (!confirmOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setConfirmOpen(false);
     };
     window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
     };
   }, [confirmOpen]);
 

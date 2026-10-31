@@ -63,7 +63,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
       <div className="flex items-baseline flex-wrap gap-x-2 gap-y-1">
         <span
           dir="auto"
-          className={`font-bold text-base min-w-0 break-words transition-transform group-hover:translate-x-1 ${
+          className={`font-bold text-[15px] min-[380px]:text-base min-w-0 break-words transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1 ${
             darkMode ? 'text-white' : 'text-[#0A0A0A]'
           }`}
         >
@@ -122,7 +122,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
       <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
         <span
           dir="auto"
-          className={`font-bold text-base min-w-0 flex-1 break-words transition-transform group-hover:translate-x-1 ${
+          className={`font-bold text-[15px] min-[380px]:text-base min-w-0 flex-1 break-words transition-transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1 ${
             darkMode ? 'text-white' : 'text-[#0A0A0A]'
           }`}
         >

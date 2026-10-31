@@ -113,7 +113,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
           <>
             <h3
               dir="auto"
-              className={`text-center font-black text-[22px] leading-[1.25] line-clamp-1 -rotate-2 ${
+              className={`text-center font-black text-[20px] min-[380px]:text-[22px] leading-[1.25] line-clamp-1 -rotate-2 ${
                 darkMode ? 'text-white' : 'text-[#0A0A0A]'
               }`}
             >
@@ -136,7 +136,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
           <div className="flex-1 flex items-center justify-center py-1">
             <h3
               dir="auto"
-              className={`text-center font-black text-[22px] leading-[1.25] line-clamp-3 -rotate-2 ${
+              className={`text-center font-black text-[20px] min-[380px]:text-[22px] leading-[1.25] line-clamp-3 -rotate-2 ${
                 darkMode ? 'text-white' : 'text-[#0A0A0A]'
               }`}
             >

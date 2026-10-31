@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { type OrderingStatus } from '@/src/utils/status';
 import { X, CheckCircle2 } from 'lucide-react';
@@ -71,15 +72,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     handleSendOrder,
   } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart });
 
-  // Lock body scroll when open (no state inside — rule-clean effect).
+  // Radical phone-scroll fix: shared counter lock (iOS-safe, nested-sheet
+  // aware) instead of a bare overflow flag that iOS Safari ignores.
+  useBodyScrollLock(isOpen);
   useEffect(() => {
-    document.body.style.overflow = isOpen ? 'hidden' : '';
     if (!isOpen) {
       idemKeyRef.current = null;
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [isOpen, idemKeyRef]);
 
   // Escape closes the topmost layer first (location sheet, then the
@@ -120,14 +119,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         aria-hidden="true"
       />
 
-      {/* Drawer on mobile, Centered Modal on Desktop */}
+      {/* Drawer on mobile, Centered Modal on Desktop.
+          The entrance animation lives on this wrapper — NEVER on the scroll
+          container below: transform-animated scrollers glitch on phones
+          (stuck scroll-up, rubber-band jumps). */}
+      <div
+        className={`anim-drawer-in relative z-10 w-full max-w-[540px] max-h-[92vh] max-h-[92dvh] flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
+          darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
+        }`}
+      >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={isAr ? 'سلة الطلبات وإتمام الشراء' : 'Order Checkout'}
-        className={`relative z-10 w-full max-w-[540px] max-h-[92vh] max-h-[92dvh] overflow-y-auto overscroll-contain no-scrollbar rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] px-6 sm:px-8 pt-4 sm:pt-6 pb-[max(2rem,env(safe-area-inset-bottom))] anim-drawer-in shadow-2xl transition-colors duration-200 [touch-action:pan-y] overflow-x-clip scroll-pb-32 ${
-          darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
-        }`}
+        className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-6 sm:px-8 pt-4 sm:pt-6 pb-[max(2rem,env(safe-area-inset-bottom))] overflow-x-clip scroll-pb-32"
       >
         {/* Drag Pill Handle (Mobile only) */}
         <div
@@ -143,7 +148,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           }`}
         >
           <div>
-            <h2 className={`text-xl font-black ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+            <h2 className={`text-lg sm:text-xl font-black ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
               {isAr ? 'سلة طلبك' : 'Your Order'}
             </h2>
             <p className={`text-xs mt-0.5 font-medium ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
@@ -251,33 +256,40 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               darkMode={darkMode}
             />
 
-            {/* Availability + Action Buttons */}
-            <CartCheckoutFooter
-              orderBlocked={orderBlocked}
-              blockedMsg={blockedMsg}
-              reopenText={reopenText}
-              lang={lang}
-              darkMode={darkMode}
-              sending={sending}
-              onSend={() => void handleSendOrder()}
-              onClearCart={handleClearCartWithLocation}
-            />
+            {/* Sticky action bar: Send stays reachable while the bill
+                scrolls underneath — the phone CTA never hides. */}
+            <div className={`sticky bottom-0 -mx-6 sm:-mx-8 px-6 sm:px-8 pt-2 pb-[env(safe-area-inset-bottom)] border-t backdrop-blur ${
+              darkMode ? 'bg-[#141414]/95 border-neutral-800' : 'bg-white/95 border-neutral-200'
+            }`}>
+              {/* Availability + Action Buttons */}
+              <CartCheckoutFooter
+                orderBlocked={orderBlocked}
+                blockedMsg={blockedMsg}
+                reopenText={reopenText}
+                lang={lang}
+                darkMode={darkMode}
+                sending={sending}
+                onSend={() => void handleSendOrder()}
+                onClearCart={handleClearCartWithLocation}
+              />
 
-            {/* Bottom Close — same contract as the item sheet: keep
-                shopping without touching the cart contents. */}
-            <button
-              type="button"
-              onClick={onClose}
-              className={`btn-tactile w-full h-11 rounded-full border text-sm font-semibold transition-colors ${
-                darkMode
-                  ? 'border-neutral-700 text-neutral-300 hover:bg-white/5'
-                  : 'border-neutral-300 text-neutral-700 hover:bg-black/5'
-              }`}
-            >
-              {isAr ? 'إغلاق' : 'Close'}
-            </button>
+              {/* Bottom Close — same contract as the item sheet: keep
+                  shopping without touching the cart contents. */}
+              <button
+                type="button"
+                onClick={onClose}
+                className={`btn-tactile w-full h-11 min-h-[44px] mt-2 rounded-full border text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                  darkMode
+                    ? 'border-neutral-700 text-neutral-300 hover:bg-white/5'
+                    : 'border-neutral-300 text-neutral-700 hover:bg-black/5'
+                }`}
+              >
+                {isAr ? 'إغلاق' : 'Close'}
+              </button>
+            </div>
           </div>
         )}
+      </div>
       </div>
 
       {/* Location picker sheet */}

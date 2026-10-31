@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { MenuData, MenuItem, CartLine } from '@/src/types/menu';
 import { X, Plus, Minus, Flame, Sparkles, Award } from 'lucide-react';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
@@ -54,6 +55,10 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
     }
   }
 
+  // Shared counter lock (iOS-safe) — replaces the bare overflow flag that
+  // iOS Safari ignores, which let the page scroll behind the sheet.
+  useBodyScrollLock(!!item);
+
   // Handle escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -61,11 +66,9 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
     };
     if (item) {
       window.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden';
     }
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
     };
   }, [item, onClose]);
 
@@ -122,14 +125,19 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         aria-hidden="true"
       />
 
-      {/* Drawer on mobile, Centered Modal on Desktop */}
+      {/* Drawer on mobile, Centered Modal on Desktop.
+          Entrance animation on the wrapper, scrolling on the inner div —
+          never both on one element (phone scroll glitches). */}
+      <div
+        className={`anim-slide-up relative z-10 w-full max-w-[520px] max-h-[92vh] max-h-[92dvh] flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
+          darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
+        }`}
+      >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={headerTitle}
-        className={`relative z-10 w-full max-w-[520px] max-h-[92vh] max-h-[92dvh] overflow-y-auto overscroll-contain no-scrollbar rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] px-6 sm:px-8 pt-4 sm:pt-6 pb-[max(2rem,env(safe-area-inset-bottom))] anim-slide-up shadow-2xl transition-colors duration-200 [touch-action:pan-y] overflow-x-clip ${
-          darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
-        }`}
+        className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-6 sm:px-8 pt-4 sm:pt-6 pb-[max(2rem,env(safe-area-inset-bottom))] overflow-x-clip"
       >
         {/* Drag Pill Handle (Mobile only) */}
         <div className={`w-11 h-1.5 rounded-full mx-auto mb-4 md:hidden ${darkMode ? 'bg-neutral-600' : 'bg-neutral-300'}`} />
@@ -151,7 +159,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         {/* Header: Title and Price */}
         <div className="flex justify-between items-start gap-4 pr-6">
           <div>
-            <h3 dir="auto" className={`text-2xl font-black leading-tight ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+            <h3 dir="auto" className={`text-xl sm:text-2xl font-black leading-tight ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
               {headerTitle}
             </h3>
             {/* Badges */}
@@ -290,7 +298,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className={`btn-tactile w-full h-11 rounded-full border text-sm font-semibold transition-colors ${
+            className={`btn-tactile w-full h-11 min-h-[44px] rounded-full border text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
               darkMode
                 ? 'border-neutral-700 text-neutral-300 hover:bg-white/5'
                 : 'border-neutral-300 text-neutral-700 hover:bg-black/5'
@@ -299,6 +307,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             {isAr ? 'إغلاق' : 'Close'}
           </button>
         </div>
+      </div>
       </div>
     </div>
   );

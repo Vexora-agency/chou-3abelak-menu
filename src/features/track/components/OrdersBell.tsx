@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { BellRing, Volume2, VolumeX, Check, X, Loader2, PackageSearch, ExternalLink } from 'lucide-react';
 import {
   isSoundOff,
@@ -297,19 +298,17 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     return () => window.clearInterval(id);
   }, [open ]);
 
+  // Shared counter lock (iOS-safe, nested-sheet aware).
+  useBodyScrollLock(open);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
     };
     window.addEventListener('keydown', onKey);
-    // Lock background scroll while the sheet is open (iOS rubber-banding
-    // + address-bar resize jank otherwise).
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
     };
   }, [open ]);
 
@@ -384,9 +383,12 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
         <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label={isAr ? 'طلباتك' : 'Your orders'}>
           <div className="absolute inset-0 bg-black/60 anim-fade-in" onClick={() => setOpen(false)} aria-hidden="true" />
           <div
-            className={`relative z-10 w-full max-w-md max-h-[78dvh] overflow-y-auto overscroll-contain rounded-t-[28px] border border-b-0 border-t-[3px] border-t-[var(--primary)] px-5 sm:px-6 pt-3 pb-[max(1.75rem,env(safe-area-inset-bottom))] shadow-2xl anim-drawer-in [touch-action:pan-y] ${
+            className={`anim-drawer-in relative z-10 w-full max-w-md max-h-[78dvh] flex flex-col rounded-t-[28px] border border-b-0 border-t-[3px] border-t-[var(--primary)] shadow-2xl overflow-hidden ${
               darkMode ? 'bg-[#141414] border-neutral-700 text-white' : 'bg-white border-neutral-200 text-[#0A0A0A]'
             }`}
+          >
+          <div
+            className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-5 sm:px-6 pt-3 pb-[max(1.75rem,env(safe-area-inset-bottom))] overflow-x-clip"
           >
             <div aria-hidden="true" className={`mx-auto mb-2 h-1.5 w-12 rounded-full ${darkMode ? 'bg-neutral-700' : 'bg-neutral-300'}`} />
             <div className={`sticky top-0 z-10 -mx-5 sm:-mx-6 px-5 sm:px-6 py-2 -mt-1 mb-1 flex items-center justify-between backdrop-blur-md ${darkMode ? 'bg-[#141414]/90' : 'bg-white/90'}`}>
@@ -503,6 +505,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                 ))}
               </div>
             )}
+          </div>
           </div>
         </div>
       )}

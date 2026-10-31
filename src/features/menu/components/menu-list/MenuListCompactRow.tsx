@@ -92,7 +92,7 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0">
-          <span dir="auto" className={`font-bold text-[15px] truncate transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+          <span dir="auto" className={`font-bold text-sm min-[380px]:text-[15px] truncate transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
             {pickLangText(item.name, lang)}
           </span>
           {effectiveBadges(menu, item).map((b) => (

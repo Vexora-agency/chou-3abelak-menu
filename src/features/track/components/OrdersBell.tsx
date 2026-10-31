@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { BellRing, BellOff, X, Loader2, PackageSearch, ExternalLink } from 'lucide-react';
+import { BellRing, BellOff, Volume2, Check, X, Loader2, PackageSearch, ExternalLink } from 'lucide-react';
 import {
   loadCustomerOrders,
   loadMutedOrders,
@@ -115,10 +115,13 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
         const fresh = list.filter((o) => !known.has(o.n));
         for (const o of fresh) known.add(o.n);
         const audible = fresh.filter((o) => !loadMutedOrders().includes(o.n));
-        if (audible.length > 0) {
-          if (playBellChime()) vibrateBell();
-          dance(2000);
-        }
+          if (audible.length > 0) {
+            // Vibration never waits on audio: even a blocked chime still
+            // buzzes, so the new order is never missed silently.
+            vibrateBell();
+            playBellChime();
+            dance(2000);
+          }
       } else {
         knownRef.current = new Set(list.map((o) => o.n));
       }
@@ -185,8 +188,8 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // confirmed receipt and is preparing; completed = delivered to you.
   const statusLabel = (s: string) =>
     s === 'new' ? (isAr ? 'بانتظار التأكيد' : 'Awaiting confirm')
-    : s === 'confirmed' ? (isAr ? 'قيد التحضير 🔥' : 'Being prepared')
-    : s === 'completed' ? (isAr ? 'تم التوصيل ✅' : 'Delivered ✅')
+    : s === 'confirmed' ? (isAr ? 'قيد التحضير' : 'Being prepared')
+    : s === 'completed' ? (isAr ? 'تم التوصيل' : 'Delivered')
     : s === 'cancelled' ? (isAr ? 'ملغي' : 'Cancelled')
     : (isAr ? '…' : '…');
 
@@ -213,28 +216,43 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={isAr ? 'طلباتك' : 'Your orders'}>
-          <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} aria-hidden="true" />
+        <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label={isAr ? 'طلباتك' : 'Your orders'}>
+          <div className="absolute inset-0 bg-black/60 anim-fade-in" onClick={() => setOpen(false)} aria-hidden="true" />
           <div
-            className={`absolute end-4 bottom-36 w-[calc(100%-2rem)] max-w-sm rounded-3xl border p-4 shadow-2xl anim-pop-in ${
+            className={`relative z-10 w-full max-w-md max-h-[78dvh] overflow-y-auto overscroll-contain rounded-t-[28px] border border-b-0 border-t-[3px] border-t-[var(--primary)] px-5 sm:px-6 pt-3 pb-[max(1.75rem,env(safe-area-inset-bottom))] shadow-2xl anim-drawer-in [touch-action:pan-y] ${
               darkMode ? 'bg-[#141414] border-neutral-700 text-white' : 'bg-white border-neutral-200 text-[#0A0A0A]'
             }`}
           >
-            <div className="flex items-center justify-between mb-1">
+            <div aria-hidden="true" className={`mx-auto mb-2 h-1.5 w-12 rounded-full ${darkMode ? 'bg-neutral-700' : 'bg-neutral-300'}`} />
+            <div className={`sticky top-0 z-10 -mx-5 sm:-mx-6 px-5 sm:px-6 py-2 -mt-1 mb-1 flex items-center justify-between backdrop-blur-md ${darkMode ? 'bg-[#141414]/90' : 'bg-white/90'}`}>
               <div>
                 <h2 className="text-sm font-black">{isAr ? 'طلباتك' : 'Your orders'}</h2>
-                <p className={`text-[11px] ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
+                <p className="text-[11px] text-neutral-500">
                   {isAr ? 'تظهر هنا لمدة 12 ساعة' : 'Kept here for 12 hours'}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label={isAr ? 'إغلاق' : 'Close'}
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'text-neutral-400 hover:bg-white/10' : 'text-neutral-500 hover:bg-black/5'}`}
-              >
-                <X size={16} />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    vibrateBell();
+                    playBellChime();
+                  }}
+                  aria-label={isAr ? 'تجربة الصوت' : 'Test sound'}
+                  title={isAr ? 'تجربة الصوت' : 'Test sound'}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'text-neutral-400 hover:bg-white/10 hover:text-[var(--primary)]' : 'text-neutral-500 hover:bg-black/5 hover:text-black'}`}
+                >
+                  <Volume2 size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label={isAr ? 'إغلاق' : 'Close'}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'text-neutral-400 hover:bg-white/10' : 'text-neutral-500 hover:bg-black/5'}`}
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             {loading && !orders.length ? (
@@ -242,7 +260,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                 <Loader2 size={24} className="animate-spin text-[var(--primary)]" />
               </div>
             ) : (
-              <div className="mt-2 space-y-2.5 max-h-[55vh] overflow-y-auto">
+              <div className="mt-2 space-y-2.5 pb-1">
                 {orders.map((o) => (
                 <div
                   key={o.n}
@@ -254,7 +272,8 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                   <div className="flex items-center justify-between gap-2">
                       <span className="text-base font-black tabular-nums" dir="ltr">#{o.n}</span>
                       <div className="flex items-center gap-1.5">
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${STATUS_STYLE[o.status]}`}>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${STATUS_STYLE[o.status]}`}>
+                          {o.status === 'completed' && <Check size={11} strokeWidth={3.5} aria-hidden="true" />}
                           {statusLabel(o.status)}
                         </span>
                         <button

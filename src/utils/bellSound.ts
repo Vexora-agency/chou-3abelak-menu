@@ -12,13 +12,12 @@
 let ctx: AudioContext | null = null;
 let unlocked = false;
 
-function ensureContext(): AudioContext | null {
+function sharedContext(): AudioContext | null {
   try {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return null;
     if (!ctx) ctx = new AC();
-    if (ctx.state === 'suspended') void ctx.resume().catch(() => {});
-    return ctx.state === 'running' ? ctx : null;
+    return ctx;
   } catch {
     return null;
   }
@@ -30,15 +29,20 @@ export function unlockBellAudio(): void {
   unlocked = true;
   const unlock = () => {
     try {
-      ensureContext();
+      const ac = sharedContext();
+      if (ac && ac.state === 'suspended') void ac.resume().catch(() => {});
     } catch {}
   };
-  window.addEventListener('pointerdown', unlock, { once: true, passive: true });
-  window.addEventListener('keydown', unlock, { once: true });
+  // touchend covers mobile Safari cases where pointerdown alone is not
+  // treated as a user gesture for AudioContext.
+  window.addEventListener('pointerdown', unlock, { passive: true });
+  window.addEventListener('touchend', unlock, { passive: true });
+  window.addEventListener('keydown', unlock);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       try {
-        ensureContext();
+        const ac = sharedContext();
+        if (ac && ac.state === 'suspended') void ac.resume().catch(() => {});
       } catch {}
     }
   });
@@ -67,14 +71,37 @@ function strike(at: number, freq: number, volume: number): void {
   }
 }
 
-/** Ring the chime. Returns true when it actually played. */
+/** Ring the chime. Returns true when a strike was scheduled. */
 export function playBellChime(): boolean {
   try {
-    const ac = ensureContext();
+    const ac = sharedContext();
     if (!ac) return false;
-    const now = ac.currentTime;
-    strike(now, 659.25, 0.16); // E5
-    strike(now + 0.35, 987.77, 0.14); // B5 — a gentle fifth above
+    const strikeNow = () => {
+      try {
+        const now = ac.currentTime + 0.02;
+        strike(now, 659.25, 0.16); // E5
+        strike(now + 0.35, 987.77, 0.14); // B5 — a gentle fifth above
+      } catch {}
+    };
+    if (ac.state === 'running') {
+      strikeNow();
+      return true;
+    }
+    // First-touch race: the context exists but is still suspended (common
+    // when the ring fires from a poll instead of a tap). Resume and retry
+    // shortly instead of dropping the chime forever.
+    try {
+      void ac.resume().catch(() => {});
+    } catch {}
+    window.setTimeout(() => {
+      try {
+        if (ac.state === 'running') {
+          const now = ac.currentTime + 0.02;
+          strike(now, 659.25, 0.16);
+          strike(now + 0.35, 987.77, 0.14);
+        }
+      } catch {}
+    }, 450);
     return true;
   } catch {
     return false;

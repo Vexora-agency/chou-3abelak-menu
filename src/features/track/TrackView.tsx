@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, Flame, XCircle, ArrowLeft, BellRing, Loader2 } from 'lucide-react';
+import { CheckCircle2, Clock, CookingPot, XCircle, ArrowLeft, BellRing, Loader2 } from 'lucide-react';
 import { formatPrice } from '@/src/utils/pricing';
-import { PushSubscribeButton } from './PushSubscribeButton';
 import { ReceivedButton } from './components/ReceivedButton';
 
 interface TrackViewProps {
@@ -38,8 +37,20 @@ const pick = (v: { en: string; ar: string } | undefined, lang: 'en' | 'ar') => {
  * needed. Polls the token-gated /api/track every 7s while visible — the
  * owner's dashboard status tap is what moves this timeline.
  */
+/** Site language preference (same key the storefront writes). */
+function siteLang(): 'en' | 'ar' | null {
+  try {
+    const v = window.localStorage.getItem('menu_lang_v1');
+    return v === 'en' || v === 'ar' ? v : null;
+  } catch {
+    return null;
+  }
+}
+
 export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) => {
-  const [lang, setLang] = useState<'en' | 'ar'>('ar');
+  // Follow the site language when set; otherwise fall back to the order's.
+  // (The manual toggle below always wins for this visit.)
+  const [lang, setLang] = useState<'en' | 'ar'>(() => siteLang() ?? 'ar');
   const [data, setData] = useState<TrackData | null>(null);
   const [missing, setMissing] = useState(false);
   const [storeName, setStoreName] = useState('');
@@ -80,10 +91,10 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
           return;
         }
         if (!res.ok) return;
-        const d = (await res.json()) as TrackData & { ok?: boolean };
-        if (stop || !d || d.ok === false) return;
-        setData(d);
-        if (d.lang === 'ar' || d.lang === 'en') setLang(d.lang);
+          const d = (await res.json()) as TrackData & { ok?: boolean };
+          if (stop || !d || d.ok === false) return;
+          setData(d);
+          if (!siteLang() && (d.lang === 'ar' || d.lang === 'en')) setLang(d.lang);
       } catch {}
     };
     void tick();
@@ -98,7 +109,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
 
   const steps = [
     { id: 'new', label: isAr ? 'تم استلام طلبك' : 'Order received', icon: Clock },
-    { id: 'confirmed', label: isAr ? 'طلبك قيد التحضير' : 'Being prepared', icon: Flame },
+    { id: 'confirmed', label: isAr ? 'طلبك قيد التحضير' : 'Being prepared', icon: CookingPot },
     { id: 'completed', label: isAr ? 'تم التوصيل' : 'Delivered', icon: CheckCircle2 },
   ];
   const stage = data?.status === 'completed' ? 2 : data?.status === 'confirmed' ? 1 : 0;
@@ -225,11 +236,6 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                   darkMode
                   onConfirmed={() => setData((d) => (d ? { ...d, status: 'completed' } : d))}
                 />
-              </div>
-            )}
-            {!cancelled && (
-              <div className="mt-4">
-                <PushSubscribeButton orderNumber={data.number} trackToken={token} lang={lang} darkMode />
               </div>
             )}
             <p className="mt-4 text-center text-[11px] text-neutral-600 inline-flex items-center gap-1 justify-center w-full">

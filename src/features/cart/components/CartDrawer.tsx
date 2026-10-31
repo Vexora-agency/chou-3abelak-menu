@@ -195,7 +195,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     href={`/?track=${lastOrder.number}&t=${lastOrder.trackToken}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn-tactile h-11 px-5 rounded-full border border-[var(--primary)] text-[var(--primary)] text-xs font-extrabold inline-flex items-center justify-center gap-2 hover:bg-[var(--primary)] hover:text-[#0A0A0A] transition-colors"
+                    className="btn-tactile h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-sm inline-flex items-center justify-center gap-2 shadow-md hover:brightness-110"
                   >
                     <span className="tabular-nums" dir="ltr">#{lastOrder.number}</span>
                     <span>{isAr ? 'تتبع طلبك لحظة بلحظة' : 'Track your order live'}</span>
@@ -211,22 +211,6 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 )}
               </div>
             )}
-            <div className="pt-4 flex flex-col gap-2.5">
-              <button
-                type="button"
-                onClick={() => {
-                  onClearCart();
-                  onClose();
-                }}
-                className={`h-11 rounded-full border text-xs font-semibold transition-colors ${
-                  darkMode
-                    ? 'border-neutral-700 text-neutral-300 hover:bg-white/5'
-                    : 'border-neutral-300 text-neutral-700 hover:bg-black/5'
-                }`}
-              >
-                {isAr ? 'مسح السلة وإغلاق' : 'Clear cart and close'}
-              </button>
-            </div>
           </div>
         ) : lines.length === 0 ? (
           <div className="py-12 text-center">

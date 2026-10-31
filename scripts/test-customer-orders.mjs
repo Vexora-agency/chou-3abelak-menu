@@ -1,6 +1,6 @@
 // Customer order shelf: 12h window, validation, dedupe (pure logic).
 // Run: node scripts/test-customer-orders.mjs
-import { isStoredOrder, pruneOrders, CUSTOMER_ORDERS_TTL_MS, toggleOrderMuted, isOrderMuted, loadRememberedDetails, saveRememberedDetails } from '../src/utils/customerOrders.ts';
+import { isStoredOrder, pruneOrders, CUSTOMER_ORDERS_TTL_MS, toggleOrderMuted, isOrderMuted, loadRememberedDetails, saveRememberedDetails, loadRung, markRung } from '../src/utils/customerOrders.ts';
 
 // In-memory localStorage stub (node has none).
 const mem = new Map();
@@ -56,6 +56,10 @@ ok('checked persists details', loaded !== null && loaded.name === 'Ali');
 ok('second visit loads checked', loaded !== null && loaded.remember === true);
 saveRememberedDetails({ name: 'Ali', phone: '70123456', remember: false });
 ok('unchecking erases on purpose', loadRememberedDetails() === null);
+ok('rung starts empty', loadRung().length === 0);
+markRung([1001, 1002, -5, 1001]);
+const rung = loadRung();
+ok('rung roundtrips deduped + valid only', rung.length === 2 && rung.includes(1001) && rung.includes(1002));
 delete globalThis.localStorage;
 
 console.log(`customer-orders: ${pass} passed, ${fail} failed`);

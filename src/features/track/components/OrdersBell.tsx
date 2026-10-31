@@ -3,6 +3,8 @@ import { BellRing, BellOff, Volume2, Check, X, Loader2, PackageSearch, ExternalL
 import {
   loadCustomerOrders,
   loadMutedOrders,
+  loadRung,
+  markRung,
   toggleOrderMuted,
   type StoredCustomerOrder,
 } from '@/src/utils/customerOrders';
@@ -143,12 +145,29 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
         }
       } else {
         knownRef.current = new Set(list.map((o) => o.n));
+        // Catch-up on (re)mount: orders never rung on THIS device ring once
+        // — this covers leaving the browser and coming back, even if the OS
+        // killed the tab (a fresh mount would otherwise stay silent).
+        // Muted orders never enter the queue.
+        const rung = loadRung();
+        const missed = list.filter((o) => !rung.includes(o.n));
+        if (missed.length > 0) {
+          markRung(list.map((o) => o.n));
+          for (const o of missed) {
+            if (!loadMutedOrders().includes(o.n)) pendingSoundRef.current.add(o.n);
+          }
+          vibrateBell();
+          dance(2000);
+          void flushPendingSound();
+        }
       }
       activeRef.current = Object.values(next).some((s) => s.status === 'new' || s.status === 'confirmed');
       setShelf(list);
       setStates(next);
       setLoading(false);
       setNowMs(Date.now());
+      // Retry anything still queued (audio may have unlocked since).
+      void flushPendingSound();
     };
     void tick();
     const id = window.setInterval(() => {

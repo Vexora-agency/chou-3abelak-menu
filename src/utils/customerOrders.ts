@@ -140,6 +140,34 @@ export function saveRememberedDetails<T extends { remember?: boolean }>(customer
   } catch {}
 }
 
+const RUNG_KEY = 'customer_orders_rung_v1';
+
+/** Order numbers that already rang (persisted — survives reloads/tab kills). */
+export function loadRung(): number[] {
+  try {
+    const shelf = detailsShelf();
+    if (!shelf) return [];
+    const raw = shelf.getItem(RUNG_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((n): n is number => Number.isInteger(n) && (n as number) > 0);
+  } catch {
+    return [];
+  }
+}
+
+/** Mark orders as rung (deduped, capped). */
+export function markRung(numbers: number[]): void {
+  try {
+    const shelf = detailsShelf();
+    if (!shelf) return;
+    const valid = numbers.filter((n) => Number.isInteger(n) && n > 0);
+    const merged = [...new Set([...loadRung(), ...valid])].slice(-100);
+    shelf.setItem(RUNG_KEY, JSON.stringify(merged));
+  } catch {}
+}
+
 /** Remember a fresh order (newest first, deduped by number, 12h window). */
 export function saveCustomerOrder(n: number, t: string, nowMs: number = Date.now()): StoredCustomerOrder[] {
   if (!Number.isInteger(n) || n <= 0 || typeof t !== 'string' || !TOKEN_RE.test(t)) {

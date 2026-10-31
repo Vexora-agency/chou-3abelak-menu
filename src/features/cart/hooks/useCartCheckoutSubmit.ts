@@ -5,7 +5,7 @@ import { formatPrice, round2 } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
 import { phoneDigitsOnly } from '@/src/utils/digits';
-import { saveCustomerOrder } from '@/src/utils/customerOrders';
+import { loadRememberedDetails, saveCustomerOrder, saveRememberedDetails } from '@/src/utils/customerOrders';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { formatMMSS } from '@/src/utils/countdown';
 import { clientConfig } from '@/src/config/client.config';
@@ -27,33 +27,22 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   const isAr = lang === 'ar';
   const ordering = menu.settings.ordering;
 
-  // Retrieve remembered customer details if available (delivery only)
+  // Retrieve remembered customer details if available (delivery only).
+  // A saved record means the box was checked, so it loads checked —
+  // the box stays on until the customer unchecks it themself.
   const [customer, setCustomer] = useState<CustomerDetails>(() => {
-    try {
-      const saved = localStorage.getItem('customer_details_v1');
-      if (saved) {
-        const parsed = JSON.parse(saved) as Partial<CustomerDetails>;
-        return {
-          name: '',
-          phone: '',
-          address: '',
-          tableNumber: '',
-          notes: '',
-          ...parsed,
-          orderType: 'delivery' as const,
-          remember: false,
-        };
-      }
-    } catch {}
-    return {
+    const base = {
       name: '',
       phone: '',
       address: '',
       tableNumber: '',
       notes: '',
-      orderType: 'delivery',
+      orderType: 'delivery' as const,
       remember: false,
     };
+    const remembered = loadRememberedDetails();
+    if (remembered) return { ...base, ...(remembered as Partial<CustomerDetails>) };
+    return base;
   });
 
   const [orderPrepared, setOrderPrepared] = useState(false);
@@ -201,14 +190,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       return;
     }
 
-    // Save remember details
-    try {
-      if (customer.remember) {
-        localStorage.setItem('customer_details_v1', JSON.stringify(customer));
-      } else {
-        localStorage.removeItem('customer_details_v1');
-      }
-    } catch {}
+    // Save remember details (checked = persist, unchecked = erase).
+    saveRememberedDetails(customer);
 
     // Record the order on the server BEFORE opening WhatsApp. Never blocks
     // the WhatsApp flow: any failure still opens WhatsApp immediately.

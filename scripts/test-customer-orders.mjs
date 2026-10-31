@@ -1,6 +1,14 @@
 // Customer order shelf: 12h window, validation, dedupe (pure logic).
 // Run: node scripts/test-customer-orders.mjs
-import { isStoredOrder, pruneOrders, CUSTOMER_ORDERS_TTL_MS, toggleOrderMuted, isOrderMuted } from '../src/utils/customerOrders.ts';
+import { isStoredOrder, pruneOrders, CUSTOMER_ORDERS_TTL_MS, toggleOrderMuted, isOrderMuted, loadRememberedDetails, saveRememberedDetails } from '../src/utils/customerOrders.ts';
+
+// In-memory localStorage stub (node has none).
+const mem = new Map();
+globalThis.localStorage = {
+  getItem: (k) => (mem.has(k) ? mem.get(k) : null),
+  setItem: (k, v) => void mem.set(k, String(v)),
+  removeItem: (k) => void mem.delete(k),
+};
 
 let pass = 0;
 let fail = 0;
@@ -37,6 +45,18 @@ ok('non-array safe', pruneOrders(null).length === 0 && pruneOrders('x').length =
 ok('mute toggle guards bad input', toggleOrderMuted(-3) === false && toggleOrderMuted(0) === false);
 ok('mute toggle never crashes without storage', toggleOrderMuted(1001) === true);
 ok('isOrderMuted explicit list', isOrderMuted(7, [7, 9]) === true && isOrderMuted(8, [7, 9]) === false);
+
+ok('no saved details initially', loadRememberedDetails() === null);
+saveRememberedDetails({ name: 'Ali', phone: '70123456', remember: false });
+ok('unchecked erases details', loadRememberedDetails() === null);
+saveRememberedDetails({ name: 'Ali', phone: '70123456', remember: true });
+const loaded = loadRememberedDetails();
+ok('checked persists details', loaded !== null && loaded.name === 'Ali');
+// THE BUG: second visit must load CHECKED, or the next submit wipes storage.
+ok('second visit loads checked', loaded !== null && loaded.remember === true);
+saveRememberedDetails({ name: 'Ali', phone: '70123456', remember: false });
+ok('unchecking erases on purpose', loadRememberedDetails() === null);
+delete globalThis.localStorage;
 
 console.log(`customer-orders: ${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

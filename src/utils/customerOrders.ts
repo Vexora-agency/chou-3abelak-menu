@@ -99,6 +99,47 @@ export function toggleOrderMuted(n: number): boolean {
   return i < 0;
 }
 
+function detailsShelf(): Storage | null {
+  try {
+    const s = (globalThis as unknown as { localStorage?: Storage }).localStorage;
+    return s ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Remembered checkout details ("remember me on this device").
+ * Presence of a saved record MEANS the box was checked — so loading
+ * always returns remember:true. Forcing false here was the "second visit
+ * wipes everything" bug: unchecked box + submit = removeItem.
+ */
+const DETAILS_KEY = 'customer_details_v1';
+
+export function loadRememberedDetails(): Record<string, unknown> | null {
+  try {
+    const shelf = detailsShelf();
+    if (!shelf) return null;
+    const raw = shelf.getItem(DETAILS_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    return { ...(parsed as Record<string, unknown>), remember: true };
+  } catch {
+    return null;
+  }
+}
+
+/** Persist on submit when checked; erase when the customer unchecked. */
+export function saveRememberedDetails<T extends { remember?: boolean }>(customer: T): void {
+  try {
+    const shelf = detailsShelf();
+    if (!shelf) return;
+    if (customer.remember) shelf.setItem(DETAILS_KEY, JSON.stringify(customer));
+    else shelf.removeItem(DETAILS_KEY);
+  } catch {}
+}
+
 /** Remember a fresh order (newest first, deduped by number, 12h window). */
 export function saveCustomerOrder(n: number, t: string, nowMs: number = Date.now()): StoredCustomerOrder[] {
   if (!Number.isInteger(n) || n <= 0 || typeof t !== 'string' || !TOKEN_RE.test(t)) {

@@ -1,7 +1,7 @@
 // Bell chime contract: without WebAudio (node) it resolves false and never
 // rejects; with a suspended context it keeps retrying instead of dropping.
 // Run: npm run test-bell-sound
-import { playBellChime, vibrateBell, unlockBellAudio } from '../src/utils/bellSound.ts';
+import { playBellChime, stopBellChime, vibrateBell, unlockBellAudio } from '../src/utils/bellSound.ts';
 import { ALARM_INTERVAL_MS, ALARM_SESSION_MS, BELL_SOUNDS, bellPatternById, bellPatternDuration, isBellSoundId } from '../src/utils/bellPatterns.ts';
 
 let pass = 0;
@@ -22,6 +22,9 @@ const r3 = await playBellChime();
 ok('repeated calls stay safe + boolean', r2 === false && r3 === false);
 vibrateBell(); // must never throw without navigator.vibrate
 ok('vibrate is a safe no-op', true);
+stopBellChime(); // silencing with nothing in flight must never throw
+ok('stop is a safe no-op', true);
+ok('still false after stop', (await playBellChime()) === false);
 
 // Sound library: exactly 5 sane patterns + safe fallback.
 ok('five sounds in the library', BELL_SOUNDS.length === 5 && new Set(BELL_SOUNDS.map((p) => p.id)).size === 5);

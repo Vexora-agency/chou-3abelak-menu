@@ -34,6 +34,7 @@
  */
 
 import {
+  BELL_SOUNDS,
   bellPatternById,
   bellPatternDuration,
   type BellSoundId,
@@ -42,6 +43,27 @@ import {
 let ctx: AudioContext | null = null;
 let unlocked = false;
 let interacted = false;
+// Chime generation: bumped by stopBellChime() so strikes scheduled but not
+// yet fired (or an <audio>.play() still awaiting) abort instead of ringing
+// as a ghost AFTER the bell vanished (order completed mid-chime).
+let chimeEpoch = 0;
+
+/**
+ * Silence any in-flight chime immediately: pauses every cached <audio>
+ * element and invalidates strikes still queued between WebAudio strikes.
+ * Idempotent — safe to call on unmount and on terminal transitions.
+ * Never throws.
+ */
+export function stopBellChime(): void {
+  chimeEpoch += 1;
+  try {
+    for (const el of chimeEls.values()) {
+      try {
+        el.pause();
+      } catch {}
+    }
+  } catch {}
+}
 
 function audioCtor(): typeof AudioContext | null {
   try {
@@ -201,8 +223,11 @@ async function strikeFull(
   sound?: BellSoundId | string | null,
 ): Promise<boolean> {
   const pattern = bellPatternById(sound);
+  const epoch = chimeEpoch;
+  const dead = () => chimeEpoch !== epoch || stateOf() !== 'running';
   const strikes = [...pattern.strikes].sort((a, b) => a.at - b.at);
   for (let i = 0; i < strikes.length; i++) {
+    if (dead()) return false;
     const s = strikes[i];
     try {
       strike(ac, ac.currentTime + 0.02, s.freq, s.vol);
@@ -211,9 +236,9 @@ async function strikeFull(
     }
     const next = strikes[i + 1];
     await sleep(next ? Math.max(120, (next.at - s.at) * 1000) : 400);
-    if (stateOf() !== 'running') return false;
+    if (dead()) return false;
   }
-  return stateOf() === 'running';
+  return !dead();
 }
 
 /* ---------- HTML <audio> engine: silent-switch-proof ---------- */
@@ -309,10 +334,22 @@ function chimeElement(sound?: BellSoundId | string | null): HTMLAudioElement | n
   }
 }
 
-/** Pre-build the element inside a gesture so later plays start instantly. */
+/**
+ * Pre-build the elements inside a gesture so later plays start instantly
+ * (zero first-chime delay). Warms ALL 5 patterns — each is ~40-80KB once,
+ * so the owner's picked chime never pays synthesis cost on first ring.
+ */
 function warmHtmlChime(sound?: BellSoundId | string | null): void {
   try {
-    chimeElement(sound);
+    if (sound) {
+      chimeElement(sound);
+      return;
+    }
+    for (const p of BELL_SOUNDS) {
+      try {
+        chimeElement(p.id);
+      } catch {}
+    }
   } catch {}
 }
 
@@ -325,6 +362,7 @@ async function playHtmlChime(sound?: BellSoundId | string | null): Promise<boole
   try {
     const el = chimeElement(sound);
     if (!el) return false;
+    const epoch = chimeEpoch;
     try {
       el.pause();
     } catch {}
@@ -332,6 +370,14 @@ async function playHtmlChime(sound?: BellSoundId | string | null): Promise<boole
       el.currentTime = 0;
     } catch {}
     await el.play();
+    // Stopped while play() was awaiting (order completed mid-chime):
+    // silence at once instead of ringing as a ghost.
+    if (chimeEpoch !== epoch) {
+      try {
+        el.pause();
+      } catch {}
+      return false;
+    }
     return true;
   } catch {
     return false;

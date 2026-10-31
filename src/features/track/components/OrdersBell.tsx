@@ -11,7 +11,7 @@ import {
 } from '@/src/utils/customerOrders';
 import { formatPrice } from '@/src/utils/pricing';
 import { ALARM_INTERVAL_MS, ALARM_SESSION_MS } from '@/src/utils/bellPatterns';
-import { playBellChime, unlockBellAudio, vibrateBell } from '@/src/utils/bellSound';
+import { playBellChime, stopBellChime, unlockBellAudio, vibrateBell } from '@/src/utils/bellSound';
 import { ReceivedButton } from './ReceivedButton';
 import { CancelOrderButton } from './CancelOrderButton';
 
@@ -254,6 +254,10 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       stop = true;
+      // Unmounting = bell gone: kill any chime already in flight so no
+      // ghost rings after the orders resolve.
+      stopBellChime();
+      pendingSoundRef.current.clear();
       window.clearInterval(id);
       window.clearTimeout(ringTimerRef.current);
       window.removeEventListener('customer-orders-changed', onLocal);
@@ -322,6 +326,14 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // active so the bell never flickers on mount.
   const orders = shelf.map((o) => states[o.n] ?? { ...o, status: 'unknown' as const, total: null, itemsCount: null, createdAt: null });
   const allTerminal = orders.length > 0 && orders.every((o) => o.status === 'completed' || o.status === 'cancelled');
+  // The moment everything resolves, drop the queued chimes and silence any
+  // in-flight one: nothing may ring after the bell is gone (ghost-chime
+  // bug — a chime started seconds before the last poll must not finish).
+  useEffect(() => {
+    if (!allTerminal) return;
+    pendingSoundRef.current.clear();
+    stopBellChime();
+  }, [allTerminal]);
   // Never unmount mid-use: if the last order resolves while the panel is
   // open, keep the shell so focus and scroll are not lost to <body>.
   if ((!shelf.length || allTerminal) && !open) return null;

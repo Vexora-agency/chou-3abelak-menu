@@ -268,6 +268,19 @@ const rrow = {
 const rebuilt = await rebuildOrderMessage(mockDb(true), undefined, rrow);
 ok('rebuild keeps exact-pin maps link', !!rebuilt && rebuilt.includes('www.google.com/maps?q=33.9,35.5&amp;z=18') && rebuilt.includes('#4242'));
 ok('rebuild null-safe', await rebuildOrderMessage(null, null, null) === null);
+// Rebuild after Confirm must keep the picker address + delivery fee line
+// (a delivery_fee/deliveryFee name mismatch used to drop the fee line).
+const rrow2 = {
+  id: 'ord-y', number: 4243, status: 'new', type: 'delivery',
+  customer_name: 'Omar', customer_phone: '70222',
+  customer_address: 'Zahle, Main Rd 12',
+  customer_table: null, notes: null, location_lat: 33.9, location_lng: 35.5,
+  items_json: '[]', subtotal: 350000, delivery_fee: 30000, total: 380000, lang: 'ar',
+};
+const rebuilt2 = await rebuildOrderMessage(mockDb(true), undefined, rrow2);
+ok('rebuild keeps picker address', !!rebuilt2 && rebuilt2.includes('Zahle, Main Rd 12'));
+ok('rebuild keeps delivery fee line', !!rebuilt2 && rebuilt2.includes('30,000'));
+ok('confirm stamps preparing banner', !!stamped && stamped.body.text.includes('🔥 الطلب قيد التحضير'));
 const repeat = await handleOrderCallback(dbNew, 'tok', { ...cbBase, callbackId: 'cb2', data: `tg:cfm:ord-1` });
 ok('repeat confirm is noop', repeat.handled === true && repeat.noop === true && cbCalls.filter((c) => c.method === 'editMessageText').length === 1);
 const badTrans = await handleOrderCallback(orderDb(true, 'completed'), 'tok', { ...cbBase, callbackId: 'cb3', data: `tg:cfm:ord-1` });
@@ -353,6 +366,7 @@ globalThis.fetch = prevFetch7g;
 const kb2 = buildOrderKeyboard('https://x/admin/dashboard', oid);
 ok('keyboard has view + confirm + cancel', kb2.inline_keyboard.length === 2 && kb2.inline_keyboard[0][0].url === 'https://x/admin/dashboard');
 ok('confirm means preparing, not delivered', JSON.stringify(kb2).includes(`tg:cfm:${oid}`) && !JSON.stringify(kb2).includes('tg:rcv:') && parseOrderCallback(`tg:cfm:${oid}`)?.status === 'confirmed');
+ok('confirm button reads preparing', kb2.inline_keyboard[1][0].text.includes('التحضير') && kb2.inline_keyboard[1][0].callback_data === `tg:cfm:${oid}`);
 // Old in-flight tg:rcv callbacks still complete (never attached to new messages).
 ok('legacy rcv callback still completes', parseOrderCallback(`tg:rcv:${oid}`)?.status === 'completed');
 const cbData = kb2.inline_keyboard[1].map((b) => b.callback_data);

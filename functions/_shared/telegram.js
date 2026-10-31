@@ -655,7 +655,9 @@ export async function rebuildOrderMessage(db, env, order) {
       notes: order.notes || null,
       items,
       subtotal: order.subtotal,
-      delivery_fee: order.delivery_fee,
+      // camelCase: formatNewOrderMessage reads deliveryFee (snake_case here
+      // used to silently drop the delivery line after Confirm was pressed).
+      deliveryFee: order.delivery_fee,
       total: order.total,
       lang: order.lang,
       location: (order.location_lat !== null && order.location_lat !== undefined &&

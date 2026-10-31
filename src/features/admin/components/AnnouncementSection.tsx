@@ -187,7 +187,7 @@ function ScheduleField({
       {iso && Number.isFinite(Date.parse(iso)) && (
         <p className="text-[11px] text-neutral-600 mt-0.5 tabular-nums" dir="ltr" style={{ textAlign: isAr ? 'right' : 'left' }}>
           {isAr
-            ? `= ${toDatetimeLocalValue(timezone, iso).replace('T', ' ')} بتوقيت المطعم`
+            ? `= ${toDatetimeLocalValue(timezone, iso).replace('T', ' ')} بتوقيت المتجر`
             : `= ${toDatetimeLocalValue(timezone, iso).replace('T', ' ')} business time`}
         </p>
       )}

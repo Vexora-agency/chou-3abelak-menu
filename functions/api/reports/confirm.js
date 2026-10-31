@@ -12,7 +12,7 @@ function page(ok, logoUrl) {
   const title = ok ? 'Email confirmed / تم تأكيد البريد' : 'Link invalid or expired / الرابط غير صالح أو منتهي';
   const body = ok
     ? '<p>Monthly reports will now be sent to your confirmed address.</p><p dir="rtl">ستصلك التقارير الشهرية على عنوانك المؤكد من الآن.</p>'
-    : '<p>This confirmation link is invalid or has expired. Ask the restaurant admin to send a new one from Dashboard → Reports.</p><p dir="rtl">رابط التأكيد غير صالح أو انتهت صلاحيته. اطلب من مدير المطعم إرسال رابط جديد من لوحة التحكم ثم التقارير.</p>';
+    : '<p>This confirmation link is invalid or has expired. Ask the store admin to send a new one from Dashboard → Reports.</p><p dir="rtl">رابط التأكيد غير صالح أو انتهت صلاحيته. اطلب من مدير المتجر إرسال رابط جديد من لوحة التحكم ثم التقارير.</p>';
   const logo = logoUrl
     ? `<img src="${logoUrl}" width="180" alt="Chou 3abelak" style="display:block;margin:0 auto 4px;border:0;max-width:180px;height:auto;">`
     : '';

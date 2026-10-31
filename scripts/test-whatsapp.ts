@@ -75,7 +75,7 @@ ok(en.includes('*Total: 450,000 LBP*'), 'en bold total');
 ok(en.includes('Name: Mina') && en.includes('Phone: +96170123456'), 'en customer');
 ok(en.includes('Address: Hamra St'), 'en address');
 ok(en.includes('https://www.google.com/maps?q=33.9,35.5'), 'en maps link');
-ok(en.includes('Distance from restaurant: ≈ 2.3 km'), 'en distance');
+ok(en.includes('Distance from our location: ≈ 2.3 km'), 'en distance');
 ok(en.includes('Notes: No onions'), 'en notes');
 ok(en.includes('📌 Call on arrival'), 'en store note');
 
@@ -88,7 +88,7 @@ ok(ar.includes('*الإضافات:* *إضافة خضرة* (+30,000)'), 'ar bold 
 ok(ar.includes('الأصناف: 2 (3 قطع)'), 'ar count');
 ok(ar.includes('*المجموع: 350,000 ل.ل*'), 'ar bold subtotal');
 ok(ar.includes('*الإجمالي النهائي: 450,000 ل.ل*'), 'ar bold total');
-ok(ar.includes('المسافة من المطعم: ≈ 2.3 كم'), 'ar distance');
+ok(ar.includes('المسافة من موقعنا: ≈ 2.3 كم'), 'ar distance');
 ok(ar.includes('ل.ل'), 'ar currency present');
 
 // ---- spicy: badge OR option -> (*حار*) after title, never an addon line ----

@@ -33,7 +33,7 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
           {isAr ? 'تم تأكيد الاستلام — بالعافية!' : 'Receipt confirmed — enjoy!'}
         </p>
         <p className={`mt-0.5 text-[11px] ${darkMode ? 'text-green-500' : 'text-green-600'}`}>
-          {isAr ? 'وصل خبر للمطعم إن طلبك استلمته' : 'The restaurant now knows you got your order'}
+          {isAr ? 'تم إرسال تأكيد الاستلام بنجاح' : 'Receipt confirmation sent'}
         </p>
       </div>
     );

@@ -108,7 +108,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   }, [number, token]);
 
   const steps = [
-    { id: 'new', label: isAr ? 'بانتظار استلام المطعم' : 'Awaiting restaurant', icon: Clock },
+    { id: 'new', label: isAr ? 'بانتظار التأكيد' : 'Awaiting confirmation', icon: Clock },
     { id: 'confirmed', label: isAr ? 'طلبك قيد التحضير' : 'Being prepared', icon: CookingPot },
     { id: 'completed', label: isAr ? 'تم التوصيل' : 'Delivered', icon: CheckCircle2 },
   ];

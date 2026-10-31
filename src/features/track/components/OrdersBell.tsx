@@ -64,12 +64,16 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
   return next;
 }
 
+/**
+ * Status chips: every state carries an explicit light AND dark treatment.
+ * (The old single-theme red washed out on white backgrounds.)
+ */
 const STATUS_STYLE: Record<string, string> = {
-  new: 'text-amber-400 border-amber-800 bg-amber-950/60',
-  confirmed: 'text-[var(--primary)] border-[var(--primary)]/40 bg-[var(--primary)]/10',
-  completed: 'text-green-400 border-green-800 bg-green-950/60',
-  cancelled: 'text-red-400 border-red-800 bg-red-950/60',
-  unknown: 'text-neutral-400 border-neutral-700 bg-black',
+  new: 'text-amber-700 border-amber-300 bg-amber-100 dark:text-amber-400 dark:border-amber-800 dark:bg-amber-950/60',
+  confirmed: 'text-yellow-800 border-yellow-500 bg-yellow-100 dark:text-[var(--primary)] dark:border-[var(--primary)]/40 dark:bg-[var(--primary)]/10',
+  completed: 'text-green-700 border-green-300 bg-green-50 dark:text-green-400 dark:border-green-800 dark:bg-green-950/60',
+  cancelled: 'text-red-700 border-red-300 bg-red-50 dark:text-red-400 dark:border-red-800 dark:bg-red-950/60',
+  unknown: 'text-neutral-500 border-neutral-300 bg-neutral-100 dark:text-neutral-400 dark:border-neutral-700 dark:bg-black',
 };
 
 /**
@@ -266,10 +270,10 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
 
   // new = placed, owner hasn't confirmed yet; confirmed = the kitchen
   // confirmed receipt and is preparing; completed = delivered to you.
-  // new = placed but the restaurant has NOT picked it up yet;
+  // new = placed but not yet confirmed by the business;
   // confirmed = the kitchen received it and is preparing it.
   const statusLabel = (s: string) =>
-    s === 'new' ? (isAr ? 'بانتظار استلام المطعم' : 'Awaiting restaurant')
+    s === 'new' ? (isAr ? 'بانتظار التأكيد' : 'Awaiting confirmation')
     : s === 'confirmed' ? (isAr ? 'قيد التحضير' : 'Being prepared')
     : s === 'completed' ? (isAr ? 'تم التوصيل' : 'Delivered')
     : s === 'cancelled' ? (isAr ? 'ملغي' : 'Cancelled')

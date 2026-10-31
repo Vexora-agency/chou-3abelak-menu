@@ -602,6 +602,55 @@ export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, 
 }
 
 /**
+ * Rebuild the full order message (with HTML links) from the DB row.
+ * Needed because Telegram hands callbacks only the PLAIN text of the
+ * message — re-stamping that would permanently kill the maps link and
+ * bold formatting. Rebuilding from the saved order keeps every tap target
+ * alive after an action. env is optional (currency falls back to '').
+ * Returns the HTML text or null when the row cannot be rebuilt.
+ */
+export async function rebuildOrderMessage(db, env, order) {
+  try {
+    if (!db || !order || typeof order !== 'object') return null;
+    let items = [];
+    try {
+      const parsed = JSON.parse(order.items_json || '[]');
+      if (Array.isArray(parsed)) items = parsed;
+    } catch {
+      return null;
+    }
+    let currency = '';
+    try {
+      const kv = env && env.MENU_KV ? env.MENU_KV : null;
+      const menu = kv ? await kv.get('menu', { type: 'json' }) : null;
+      const cur = menu && menu.settings && menu.settings.currency;
+      if (cur && typeof cur === 'object') currency = String(cur.en || cur.ar || '');
+    } catch {}
+    const cleaned = {
+      type: order.type,
+      name: order.customer_name || '',
+      phone: order.customer_phone || '',
+      address: order.customer_address || null,
+      table: order.customer_table || null,
+      notes: order.notes || null,
+      items,
+      subtotal: order.subtotal,
+      delivery_fee: order.delivery_fee,
+      total: order.total,
+      lang: order.lang,
+      location: (order.location_lat !== null && order.location_lat !== undefined &&
+        order.location_lng !== null && order.location_lng !== undefined)
+        ? { lat: order.location_lat, lng: order.location_lng }
+        : null,
+    };
+    if (!Number.isInteger(order.number)) return null;
+    return formatNewOrderMessage(cleaned, order.number, currency);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Handle a Confirm/Cancel button press. NEVER throws — every failure path
  * answers the callback (so the client spinner never hangs) and returns a
  * reason. Validation order: linked chat → known action → order exists →
@@ -613,7 +662,7 @@ export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, 
  * allowed from new/confirmed only. The write goes through the same
  * updateOrderStatus repository as the dashboard (one status model).
  */
-export async function handleOrderCallback(db, token, { callbackId, clickerId, chatId, messageId, data, messageText }) {
+export async function handleOrderCallback(db, token, { callbackId, clickerId, chatId, messageId, data, messageText, env }) {
   const noop = (reason) => ({ handled: false, reason });
   const answer = async (text) => {
     if (!token || typeof callbackId !== 'string' || !callbackId) return;
@@ -679,8 +728,19 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     const banner = parsed.status === 'confirmed'
       ? CONFIRMED_BANNER
       : parsed.status === 'completed' ? RECEIVED_BANNER : '❌ تم إلغاء الطلب';
+    // Rebuild the FULL message (with HTML links) from the DB row: the
+    // callback only carries plain text, and re-stamping that would kill
+    // the maps link and all formatting. Falls back to plain text only
+    // when the rebuild fails.
+    let rebuilt = null;
+    try {
+      rebuilt = await rebuildOrderMessage(db, env, order);
+    } catch {
+      rebuilt = null;
+    }
     // Heal pre-0015 ledger rows: remember where this message lives so a
-    // later dashboard change can sync back to it. updated_at untouched —
+    // later dashboard change can sync back to it. Store the rebuilt HTML
+    // (links intact), never the plain callback text. updated_at untouched —
     // the admin "last notification" view keeps send order.
     try {
       await db
@@ -691,7 +751,9 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
           parsed.orderId,
           Number.isInteger(chatId) ? chatId : null,
           Number.isInteger(messageId) ? messageId : null,
-          typeof messageText === 'string' && messageText ? messageText.slice(0, 4000) : null
+          typeof rebuilt === 'string' && rebuilt
+            ? rebuilt.slice(0, 4000)
+            : (typeof messageText === 'string' && messageText ? messageText.slice(0, 4000) : null)
         )
         .run();
     } catch {}
@@ -705,7 +767,9 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
       });
     } catch {}
     try {
-      const base = typeof messageText === 'string' && messageText ? messageText : `طلب #${order.number ?? ''}`;
+      const base = typeof rebuilt === 'string' && rebuilt
+        ? rebuilt
+        : (typeof messageText === 'string' && messageText ? messageText : `طلب #${order.number ?? ''}`);
       const stamped = `${base}\n\n${banner}`.slice(0, 4000);
       await callTelegramApi(token, 'editMessageText', {
         chat_id: chatId,

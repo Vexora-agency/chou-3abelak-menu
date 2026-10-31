@@ -128,7 +128,7 @@ export const WhatsappApiSection: React.FC<WhatsappApiSectionProps> = ({ lang, ad
           ? `فشل الاختبار (${data?.error || res.status})${data?.detail ? `: ${data.detail}` : ''}`
           : `Test failed (${data?.error || res.status})${data?.detail ? `: ${data.detail}` : ''}`);
       } else {
-        say('ok', isAr ? 'وصلت رسالة الاختبار لرقم المطعم — تحقق من واتساب.' : 'Test message delivered — check WhatsApp.');
+        say('ok', isAr ? 'وصلت رسالة الاختبار للرقم المستلم — تحقق من واتساب.' : 'Test message delivered — check WhatsApp.');
       }
     } catch {
       say('err', isAr ? 'تعذر الاختبار.' : 'Could not test.');
@@ -174,7 +174,7 @@ export const WhatsappApiSection: React.FC<WhatsappApiSectionProps> = ({ lang, ad
             placeholder="123456789012345" className={`${field} tabular-nums`} />
         </div>
         <div>
-          <label className={lbl}>{isAr ? 'رقم المطعم المستلم (دولي)' : 'Owner recipient (international)'}</label>
+          <label className={lbl}>{isAr ? 'رقم المستلم (دولي)' : 'Owner recipient (international)'}</label>
           <input value={cfg.ownerRecipient} dir="ltr" inputMode="tel"
             onChange={(e) => set('ownerRecipient', e.target.value.replace(/[^0-9]/g, '').slice(0, 15))}
             placeholder="96170123456" className={`${field} tabular-nums`} />

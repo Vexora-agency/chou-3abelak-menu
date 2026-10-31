@@ -91,10 +91,10 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
             </p>
           </div>
 
-          {/* Col 2: Restaurant Hours & Location */}
+          {/* Col 2: Hours & Location */}
           <div className="space-y-3.5 text-xs text-neutral-300">
             <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--primary)] mb-2">
-              {isAr ? 'معلومات المطعم' : 'Store Information'}
+              {isAr ? 'معلومات المتجر' : 'Store Information'}
             </h3>
 
             <div className="flex items-center gap-3">
@@ -196,7 +196,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors"
             >
               <Shield size={12} />
-              <span>{isAr ? 'لوحة التحكم للمطعم' : 'Admin Portal'}</span>
+              <span>{isAr ? 'لوحة التحكم' : 'Admin Portal'}</span>
             </button>
           )}
           </div>

@@ -112,9 +112,9 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           <div className={`mt-1.5 flex items-center gap-2 text-[11px] font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
             <MapPin size={13} className="shrink-0" />
             <span className="truncate">
-              {isAr
-                ? `تم تحديد الموقع${distanceText ? ` · على بعد ${distanceText} من المطعم` : ''}`
-                : `Location pinned${distanceText ? ` · ${distanceText} from restaurant` : ''}`}
+                {isAr
+                  ? `تم تحديد الموقع${distanceText ? ` · على بعد ${distanceText} من موقعنا` : ''}`
+                  : `Location pinned${distanceText ? ` · ${distanceText} from our location` : ''}`}
             </span>
             <a
               href={`https://www.google.com/maps?q=${location.lat},${location.lng}`}

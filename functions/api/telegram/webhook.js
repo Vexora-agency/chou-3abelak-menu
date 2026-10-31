@@ -99,6 +99,7 @@ export async function onRequest(context) {
         messageId: msg && Number.isInteger(msg.message_id) ? msg.message_id : null,
         data: typeof cb.data === 'string' ? cb.data : '',
         messageText: msg && typeof msg.text === 'string' ? msg.text : '',
+        env,
       });
       return jsonNoStore({ ok: true });
     }

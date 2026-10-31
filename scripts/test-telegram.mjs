@@ -19,6 +19,7 @@ import {
   parseOrderCallback,
   readLastTelegramNotification,
   readPendingPairing,
+  rebuildOrderMessage,
   resolveBotUsername,
   syncOrderStatusToTelegram,
   verifyWebhookSecret,
@@ -243,6 +244,18 @@ const dbNew = orderDb(true, 'new');
 const okConfirm = await handleOrderCallback(dbNew, 'tok', { ...cbBase, data: `tg:cfm:ord-1` });
 ok('confirm new order', okConfirm.handled === true && okConfirm.status === 'confirmed' && dbNew.orders.get('ord-1').status === 'confirmed');
 ok('buttons frozen after action', cbCalls.some((c) => c.method === 'editMessageReplyMarkup'));
+const stamped = cbCalls.find((c) => c.method === 'editMessageText');
+ok('stamped message keeps html (links survive)', !!stamped && stamped.body.text.includes('<b>') && stamped.body.parse_mode === 'HTML');
+// Rebuild from the DB row keeps the exact-pin maps link after confirm.
+const rrow = {
+  id: 'ord-x', number: 4242, status: 'new', type: 'delivery',
+  customer_name: 'Layla', customer_phone: '70111', customer_address: '15 شارع الحمرا',
+  customer_table: null, notes: null, location_lat: 33.9, location_lng: 35.5,
+  items_json: '[]', subtotal: 0, delivery_fee: 0, total: 0, lang: 'ar',
+};
+const rebuilt = await rebuildOrderMessage(mockDb(true), undefined, rrow);
+ok('rebuild keeps exact-pin maps link', !!rebuilt && rebuilt.includes('www.google.com/maps?q=33.9,35.5&amp;z=18') && rebuilt.includes('#4242'));
+ok('rebuild null-safe', await rebuildOrderMessage(null, null, null) === null);
 const repeat = await handleOrderCallback(dbNew, 'tok', { ...cbBase, callbackId: 'cb2', data: `tg:cfm:ord-1` });
 ok('repeat confirm is noop', repeat.handled === true && repeat.noop === true && cbCalls.filter((c) => c.method === 'editMessageText').length === 1);
 const badTrans = await handleOrderCallback(orderDb(true, 'completed'), 'tok', { ...cbBase, callbackId: 'cb3', data: `tg:cfm:ord-1` });

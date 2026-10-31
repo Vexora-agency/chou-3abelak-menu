@@ -131,7 +131,7 @@ export function buildWhatsAppMessage(
   const typeMap = {
     delivery: isAr ? '🛵 توصيل إلى المنزل' : '🛵 Delivery',
     pickup: isAr ? '🛍️ استلام من الفرع' : '🛍️ Takeaway / Pickup',
-    dinein: isAr ? '🍽️ تناول في المطعم' : '🍽️ Dine-in'
+    dinein: isAr ? '🍽️ تناول في المكان' : '🍽️ Dine-in'
   };
 
   linesOut.push(isAr ? `نوع الطلب: ${typeMap[customer.orderType]}` : `Order Type: ${typeMap[customer.orderType]}`);
@@ -153,7 +153,7 @@ export function buildWhatsAppMessage(
     const link = `https://www.google.com/maps?q=${location.lat},${location.lng}`;
     linesOut.push(isAr ? `الموقع: ${link}` : `Location: ${link}`);
     if (distanceText && distanceText.trim()) {
-      linesOut.push(isAr ? `المسافة من المطعم: ${distanceText.trim()}` : `Distance from restaurant: ${distanceText.trim()}`);
+      linesOut.push(isAr ? `المسافة من موقعنا: ${distanceText.trim()}` : `Distance from our location: ${distanceText.trim()}`);
     }
   }
 

@@ -14,7 +14,7 @@ interface IdentitySectionProps extends IdentityValues {
   onUpdate: (updater: (prev: IdentityValues) => IdentityValues) => void;
 }
 
-/** Restaurant Identity card of the admin Settings tab. */
+/** Store Identity card of the admin Settings tab. */
 export const IdentitySection: React.FC<IdentitySectionProps> = ({
   name,
   tagline,
@@ -244,7 +244,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
-        {isAr ? 'بيانات المطعم' : 'Restaurant Identity'}
+        {isAr ? 'بيانات المتجر' : 'Store Identity'}
       </h2>
 
       <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">

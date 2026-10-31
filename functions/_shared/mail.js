@@ -67,12 +67,12 @@ export async function sendEmail(env, { to, subject, html, text, attachments, ide
 
 /** Confirmation-link email: same brand shell as the monthly report email
  *  (black logo band, gold accents, white card, black footer) so the two are
- *  visibly from the same restaurant. Bilingual EN block + AR block, each with
- *  its own button. Dark-mode force-light roles included like the report mail. */
+ *  visibly from the same store. Bilingual EN block + AR block, each with
+ *  its own button. Dark-mode force-light rules included like the report mail. */
 export function confirmEmailContent(confirmUrl, siteName) {
   const safe = String(confirmUrl || '');
   const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const name = String(siteName || 'our restaurant');
+  const name = String(siteName || 'our store');
   let logo = '';
   try {
     const origin = new URL(safe).origin;

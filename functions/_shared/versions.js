@@ -148,7 +148,7 @@ export async function setAutoBackup(env, state) {
 
 /** Small bilingual body for the weekly backup email (attachment carries it). */
 export function weeklyBackupEmail(dateStr, siteName) {
-  const nm = String(siteName || 'your restaurant');
+  const nm = String(siteName || 'your store');
   const safe = nm.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   return {
     subject: `Weekly backup ${dateStr} / نسخة أسبوعية ${dateStr}`,

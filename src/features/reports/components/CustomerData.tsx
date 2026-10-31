@@ -110,7 +110,12 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
     await runSearch(digits);
   };
 
-  const wordNeed = isAr ? 'حذف' : 'DELETE';
+  // Each action has its OWN confirm word (the label tells which one) —
+  // typing DELETE must never confirm an export. The word resets whenever
+  // the action changes so a stale word can never slip through.
+  const wordNeed = mode === 'anonymize'
+    ? (isAr ? 'إخفاء' : 'ANONYMIZE')
+    : mode === 'delete' ? (isAr ? 'حذف' : 'DELETE') : (isAr ? 'تصدير' : 'EXPORT');
   const doAction = async () => {
     setBusy(true);
     setMsg(null);
@@ -208,7 +213,7 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
                   { k: 'export', icon: Download, a: t.exp, b: t.expD },
                 ] as const).map((m) => (
                   <label key={m.k} className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer ${mode === m.k ? 'border-[var(--primary)]/60 bg-[var(--primary)]/[0.05]' : 'border-neutral-800'}`}>
-                    <input type="radio" name="cd-mode" checked={mode === m.k} onChange={() => setMode(m.k)} className="mt-1 accent-[var(--primary)]" />
+                    <input type="radio" name="cd-mode" checked={mode === m.k} onChange={() => { setMode(m.k); setWord(''); }} className="mt-1 accent-[var(--primary)]" />
                     <span><b className="flex items-center gap-1.5 text-[13px]"><m.icon size={14} className="text-[var(--primary)]" />{m.a}</b>
                       <span className="block text-[11px] text-neutral-400 mt-0.5">{m.b}</span></span>
                   </label>

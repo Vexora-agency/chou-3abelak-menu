@@ -96,6 +96,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   const knownRef = useRef<Set<number> | null>(null);
   const ringTimerRef = useRef(0);
   const activeRef = useRef(false);
+  const lastChimeRef = useRef(0);
   // Orders whose chime could not play yet (context still locked). Flushed
   // on every later gesture/visibility/tick until one strike lands — the
   // sound is never dropped, only muted orders are skipped.
@@ -120,7 +121,10 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       return;
     }
     try {
-      if (await playBellChime()) pendingSoundRef.current.clear();
+      if (await playBellChime()) {
+        pendingSoundRef.current.clear();
+        lastChimeRef.current = Date.now();
+      }
     } catch {}
   };
 
@@ -132,9 +136,10 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       const next = list.length ? await fetchOrderStates(list) : {};
       if (stop) return;
       // New arrivals (never seen since mount) → premium ring: chime +
-      // vibration + swing. Mount-time orders never ring. Sound fires at
-      // order time ONLY — status polls stay silent. The master switch
-      // gates everything: off = visual only, no chime, no queue.
+      // vibration + swing. Mount-time orders never ring here (catch-up
+      // below covers them). The attention loop keeps re-chiming while
+      // orders stay active. The master switch gates everything: off =
+      // visual only, no chime, no queue.
       const known = knownRef.current;
       if (known) {
         const fresh = list.filter((o) => !known.has(o.n));
@@ -225,11 +230,26 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   }, []);
 
   // Attention loop: while an order still needs the customer, the bell
-  // re-dances silently every few seconds. Sound stays order-time-only.
+  // re-dances silently every few seconds AND re-chimes on a slower beat
+  // (~every 27s) — like a real kitchen bell, it does not go quiet until
+  // the order is done or muted. Skipped while the panel is open.
   useEffect(() => {
     if (open) return;
     const id = window.setInterval(() => {
-      if (document.visibilityState === 'visible' && activeRef.current) dance(1700);
+      if (document.visibilityState !== 'visible' || !activeRef.current) return;
+      dance(1700);
+      if (isSoundOff()) return;
+      if (Date.now() - lastChimeRef.current < 25000) return;
+      vibrateBell();
+      void playBellChime().then((ok) => {
+        if (ok) {
+          lastChimeRef.current = Date.now();
+        } else {
+          pendingSoundRef.current.add(0);
+        }
+      }).catch(() => {
+        pendingSoundRef.current.add(0);
+      });
     }, 9000);
     return () => window.clearInterval(id);
   }, [open ]);
@@ -255,14 +275,17 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // Master sound switch: off = visual bell only, never a chime.
   // Unmuting plays a chime at once (a tap always unlocks audio).
   const toggleSound = () => {
-    const off = !isSoundOff();
+    const off = !soundOff;
     setSoundOff(off);
     setSoundOffState(off);
     if (off) {
       pendingSoundRef.current.clear();
     } else {
       vibrateBell();
-      void playBellChime();
+      dance(1700);
+      void playBellChime().then((ok) => {
+        if (ok) lastChimeRef.current = Date.now();
+      }).catch(() => {});
     }
   };
 

@@ -44,7 +44,7 @@ export async function onRequest(context) {
   const mode = body.mode === 'delete' || body.mode === 'export' ? body.mode : 'anonymize';
   if (q.length < 6) return jsonNoStore({ ok: false, error: 'bad_request' }, 400);
   if (!(await checkAdminPassword(env, body.password))) return jsonNoStore({ ok: false, error: 'invalid_password' }, 403);
-  if (!confirmWordOk(body.confirm)) return jsonNoStore({ ok: false, error: 'confirmation_required' }, 400);
+  if (!confirmWordOk(body.confirm, mode)) return jsonNoStore({ ok: false, error: 'confirmation_required' }, 400);
 
   let rows;
   try {

@@ -80,9 +80,19 @@ export async function auditCustomerAction(env, { who, action, mode, count, phone
   }
 }
 
-export const CONFIRM_WORDS = ['DELETE', 'حذف'];
+/**
+ * Per-action confirm words: each destructive/regulatory action has its OWN
+ * word, shown in the UI label ("Type X to confirm"). Typing DELETE must
+ * never confirm an export, and vice versa — the word is the last guard.
+ */
+export const CONFIRM_WORDS = {
+  anonymize: ['ANONYMIZE', 'إخفاء'],
+  delete: ['DELETE', 'حذف'],
+  export: ['EXPORT', 'تصدير'],
+};
 
-export function confirmWordOk(s) {
+export function confirmWordOk(s, mode) {
+  const list = (mode && CONFIRM_WORDS[mode]) || CONFIRM_WORDS.anonymize;
   const v = typeof s === 'string' ? s.trim() : '';
-  return CONFIRM_WORDS.includes(v) || CONFIRM_WORDS.includes(v.toUpperCase());
+  return list.includes(v) || list.includes(v.toUpperCase());
 }

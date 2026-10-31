@@ -257,10 +257,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               darkMode={darkMode}
             />
 
-            {/* Sticky action bar: Send stays reachable while the bill
-                scrolls underneath — the phone CTA never hides. */}
-            <div className={`sticky bottom-0 -mx-6 sm:-mx-8 px-6 sm:px-8 pt-2 pb-[env(safe-area-inset-bottom)] border-t backdrop-blur ${
-              darkMode ? 'bg-[#141414]/95 border-neutral-800' : 'bg-white/95 border-neutral-200'
+            {/* Action bar in normal flow: scrolls with the bill, found
+                at the end — no floating bar covering content. */}
+            <div className={`mt-2 border-t pt-3 ${
+              darkMode ? 'border-neutral-800' : 'border-neutral-200'
             }`}>
               {/* Availability + Action Buttons */}
               <CartCheckoutFooter

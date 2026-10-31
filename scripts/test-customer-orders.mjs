@@ -1,6 +1,6 @@
 // Customer order shelf: 12h window, validation, dedupe (pure logic).
 // Run: node scripts/test-customer-orders.mjs
-import { isStoredOrder, pruneOrders, CUSTOMER_ORDERS_TTL_MS, isSoundOff, setSoundOff, loadRememberedDetails, saveRememberedDetails, saveCustomerOrder, loadRung, markRung } from '../src/utils/customerOrders.ts';
+import { isStoredOrder, pruneOrders, CUSTOMER_ORDERS_TTL_MS, isSoundOff, setSoundOff, loadRememberedDetails, saveRememberedDetails, saveCustomerOrder, loadPinnedLocation, savePinnedLocation, loadRung, markRung } from '../src/utils/customerOrders.ts';
 
 // In-memory localStorage stub (node has none).
 const mem = new Map();
@@ -75,6 +75,17 @@ ok('re-save of the same order keeps the mute', isSoundOff() === true);
 setSoundOff(false);
 saveCustomerOrder(2002, T, NOW + 2000);
 ok('next new order rings again', isSoundOff() === false);
+
+// Remembered pin: a repeat order re-sends the validated pin, never none.
+ok('no pin initially', loadPinnedLocation() === null);
+savePinnedLocation({ lat: 33.9, lng: 35.5, accuracy: 25 });
+const pin = loadPinnedLocation();
+ok('pin roundtrips', pin !== null && pin.lat === 33.9 && pin.lng === 35.5 && pin.accuracy === 25);
+savePinnedLocation({ lat: 999, lng: 0, accuracy: 1 });
+ok('out-of-range pin rejected', loadPinnedLocation() === null);
+savePinnedLocation({ lat: 33.9, lng: 35.5, accuracy: 25 });
+savePinnedLocation(null);
+ok('null forgets the pin', loadPinnedLocation() === null);
 
 delete globalThis.localStorage;
 delete globalThis.window;

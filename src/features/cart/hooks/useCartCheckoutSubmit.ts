@@ -5,7 +5,7 @@ import { formatPrice, round2 } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
 import { phoneDigitsOnly } from '@/src/utils/digits';
-import { loadRememberedDetails, saveCustomerOrder, saveRememberedDetails } from '@/src/utils/customerOrders';
+import { loadPinnedLocation, loadRememberedDetails, saveCustomerOrder, savePinnedLocation, saveRememberedDetails } from '@/src/utils/customerOrders';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { formatMMSS } from '@/src/utils/countdown';
 import { clientConfig } from '@/src/config/client.config';
@@ -58,7 +58,18 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // Shared delivery location (React state only — never persisted, never
   // logged). Cleared when the cart closes/clears or after an order is sent.
   // Detection + picking live in the LocationPicker sheet below.
-  const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  // Shared delivery location: restored from the remembered pin (same
+  // lifetime as "remember my details") so a repeat order sends the exact
+  // same validated pin without re-picking. Text + pin travel as a pair —
+  // editing the address by hand drops the pin (see the address field).
+  // Detection + picking live in the LocationPicker sheet below.
+  const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(() => {
+    try {
+      return loadPinnedLocation();
+    } catch {
+      return null;
+    }
+  });
   const [locSheetOpen, setLocSheetOpen] = useState(false);
   // Last address WE auto-filled from the picker (or the coords fallback).
   // A re-pin overwrites the field only when it is empty or still holds our
@@ -68,10 +79,18 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // picks were ignored — the "address is wrong" bug.
   const lastAutoFillRef = useRef<string | null>(null);
   const COORDS_RE = /^-?\d{1,3}\.\d{1,5},\s*-?\d{1,3}\.\d{1,5}$/;
-  const clearLocation = () => { setLocation(null); };
+  const clearLocation = () => {
+    setLocation(null);
+    try {
+      savePinnedLocation(null);
+    } catch {}
+  };
   const closeLocSheet = (keep: boolean) => { if (!keep) clearLocation(); setLocSheetOpen(false); };
   const handleMapPick = (lat: number, lng: number, accuracy: number, addressText: string | null) => {
     setLocation({ lat, lng, accuracy });
+    try {
+      savePinnedLocation({ lat, lng, accuracy });
+    } catch {}
     const fill = addressText && addressText.trim() ? addressText.trim().slice(0, 200) : `${lat}, ${lng}`;
     const prevFill = lastAutoFillRef.current;
     lastAutoFillRef.current = fill;
@@ -200,6 +219,13 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
 
     // Save remember details (checked = persist, unchecked = erase).
     saveRememberedDetails(customer);
+    // Unchecked = store nothing at all: forget the pin together with the
+    // details (the pin in flight is still sent with THIS order below).
+    if (!customer.remember) {
+      try {
+        savePinnedLocation(null);
+      } catch {}
+    }
 
     // Record the order on the server BEFORE opening WhatsApp. Never blocks
     // the WhatsApp flow: any failure still opens WhatsApp immediately.

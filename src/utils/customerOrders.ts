@@ -136,6 +136,55 @@ export function saveRememberedDetails<T extends { remember?: boolean }>(customer
   } catch {}
 }
 
+/**
+ * Remembered map pin ("remember me on this device" covers it too).
+ * The pin is NEVER sent without its address text and vice versa: they are
+ * validated as a pair at pick time. Stored separately from the customer
+ * blob so a stale pin can never hide inside remembered details.
+ * `{ lat, lng, accuracy }` or null. No TTL — it lives exactly as long as
+ * the remembered details (erased together when the box is unchecked).
+ */
+const PIN_KEY = 'customer_location_v1';
+
+export interface PinnedLocation {
+  lat: number;
+  lng: number;
+  accuracy: number;
+}
+
+function isPinnedLocation(v: unknown): v is PinnedLocation {
+  if (!v || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  return (
+    typeof o.lat === 'number' && Number.isFinite(o.lat) && o.lat >= -90 && o.lat <= 90 &&
+    typeof o.lng === 'number' && Number.isFinite(o.lng) && o.lng >= -180 && o.lng <= 180 &&
+    typeof o.accuracy === 'number' && Number.isFinite(o.accuracy) && o.accuracy >= 0
+  );
+}
+
+export function loadPinnedLocation(): PinnedLocation | null {
+  try {
+    const shelf = detailsShelf();
+    if (!shelf) return null;
+    const raw = shelf.getItem(PIN_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return isPinnedLocation(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Persist the picked pin (or null to forget it). Never throws. */
+export function savePinnedLocation(loc: PinnedLocation | null): void {
+  try {
+    const shelf = detailsShelf();
+    if (!shelf) return;
+    if (!loc) shelf.removeItem(PIN_KEY);
+    else shelf.setItem(PIN_KEY, JSON.stringify({ lat: loc.lat, lng: loc.lng, accuracy: loc.accuracy }));
+  } catch {}
+}
+
 const RUNG_KEY = 'customer_orders_rung_v1';
 
 /** Order numbers that already rang (persisted — survives reloads/tab kills). */

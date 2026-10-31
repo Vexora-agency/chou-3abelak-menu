@@ -86,7 +86,13 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           <input
             type="text"
             value={customer.address} dir={isAr ? 'rtl' : 'ltr'}
-            onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
+            onChange={(e) => {
+              // Hand-typed text breaks the validated text+pin pair: drop the
+              // pin so a stale point can never ride with a new address.
+              // (Picker auto-fills set state directly and keep the pin.)
+              if (location) onClearLocation();
+              setCustomer({ ...customer, address: e.target.value });
+            }}
             placeholder={isAr ? 'المنطقة والشارع ورقم العمارة… أو حدد موقعك بالدبوس' : 'Area, street, building… or pin your location'}
             maxLength={200}
             autoComplete="street-address"

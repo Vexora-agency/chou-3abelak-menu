@@ -235,10 +235,11 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     };
   }, []);
 
-  // Attention loop: while an order still needs the customer, the bell
-  // dances AND re-chimes every few seconds — like a real kitchen bell, it
-  // does not go quiet until the order is done or muted. A 15-minute
-  // session cap stops the alarm eventually; a fresh order starts a new one.
+  // Attention loop (same mechanism as the admin kitchen bell): while an
+  // order still needs the customer, the bell dances AND re-chimes on a 4s
+  // cycle — 2s chime + 2s silence — like a real kitchen bell, it does not
+  // go quiet until the order is done or muted. A 15-minute session cap
+  // stops the alarm eventually; a fresh order starts a new one.
   // Skipped while the panel is open (the customer is already looking).
   useEffect(() => {
     if (open) return;
@@ -248,12 +249,12 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
         alarmStartRef.current = 0;
         return;
       }
-      dance(1700);
+      dance(2000);
       if (isSoundOff()) return;
       const now = Date.now();
       if (!alarmStartRef.current) alarmStartRef.current = now;
       if (now - alarmStartRef.current > 15 * 60 * 1000) return;
-      if (now - lastChimeRef.current < 8000) return;
+      if (now - lastChimeRef.current < 3500) return;
       vibrateBell();
       void playBellChime().then((ok) => {
         if (ok) {
@@ -323,7 +324,11 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
         onClick={() => setOpen((v) => !v)}
         aria-label={isAr ? 'طلباتك' : 'Your orders'}
         aria-expanded={open}
-        className="btn-tactile fixed bottom-[5.5rem] end-4 z-40 w-14 h-14 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-1 ring-white/20"
+        className={`btn-tactile fixed bottom-[5.5rem] end-4 z-40 w-14 h-14 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center ${
+          darkMode
+            ? 'shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-1 ring-white/20'
+            : 'shadow-[0_10px_28px_-6px_rgba(0,0,0,0.35)] ring-2 ring-[#0A0A0A]/15'
+        }`}
       >
         {ringing && (
           <span aria-hidden="true" className="anim-bell-glow absolute inset-0 rounded-full bg-[var(--primary)]" />
@@ -363,10 +368,12 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                   title={isAr ? (soundOff ? 'تشغيل الصوت' : 'كتم الصوت') : (soundOff ? 'Unmute' : 'Mute')}
                   className={`btn-tactile w-9 h-9 rounded-full border flex items-center justify-center transition-colors ${
                     soundOff
-                      ? 'border-red-800 text-red-400 bg-red-950/40 hover:text-red-300'
+                      ? (darkMode
+                        ? 'border-red-800 text-red-400 bg-red-950/40 hover:text-red-300'
+                        : 'border-red-300 text-red-600 bg-red-50 hover:bg-red-100')
                       : darkMode
                         ? 'border-[var(--primary)]/60 text-[var(--primary)] bg-[var(--primary)]/10 hover:bg-[var(--primary)]/20'
-                        : 'border-neutral-300 text-neutral-700 hover:border-[var(--primary)] hover:text-black'
+                        : 'border-[var(--primary)] text-[#0A0A0A] bg-[var(--primary)]/15 hover:bg-[var(--primary)]/30'
                   }`}
                 >
                   {soundOff ? <VolumeX size={16} /> : <Volume2 size={16} />}

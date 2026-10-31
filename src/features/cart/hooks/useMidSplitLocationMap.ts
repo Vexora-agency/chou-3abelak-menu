@@ -21,16 +21,26 @@ export async function reverseGeocode(lat: number, lng: number, lang: 'en' | 'ar'
   }
 }
 
-/** House number + road + district + city — the deliverable address. */
+/** Place + road + district + city — the deliverable address.
+ * Key coverage is deliberately wide: Lebanese OSM data often tags roads
+ * as footway/residential and districts as borough/hamlet — the narrow
+ * lookup used to return just "Beirut" (the "wrong address" bug). A nearby
+ * named place (shop/amenity/building) is kept as a landmark prefix: the
+ * kitchen delivers faster with "near X" than with a bare road. */
 export function formatNominatim(data: unknown): string | null {
   if (!data || typeof data !== 'object') return null;
   const d = data as { address?: Record<string, string>; display_name?: string; name?: string };
   const addr = d.address && typeof d.address === 'object' ? d.address : null;
   if (addr) {
-    const road = [addr.house_number, addr.road || addr.street || addr.pedestrian].filter((p) => typeof p === 'string' && p.trim()).join(' ');
-    const district = addr.suburb || addr.neighbourhood || addr.quarter || addr.city_district || '';
-    const city = addr.city || addr.town || addr.village || addr.state || '';
-    const full = [road, district, city].filter((p) => p && p.trim()).join(', ');
+    const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+    const road = [addr.house_number, addr.road || addr.street || addr.pedestrian || addr.footway || addr.residential || addr.cycleway || addr.path || '']
+      .map(str).filter(Boolean).join(' ');
+    const district = str(addr.suburb || addr.neighbourhood || addr.quarter || addr.city_district || addr.borough || addr.municipality || addr.hamlet || addr.subdivision);
+    const city = str(addr.city || addr.town || addr.village || addr.municipality || addr.county || addr.state_district || addr.state);
+    // Landmark: the named feature itself (building/shop) when it is not
+    // already the road — "near X" is what the driver actually needs.
+    const place = str(d.name || addr.amenity || addr.shop || addr.building || addr.leisure);
+    const full = [place && place !== road ? place : '', road, district, city].map(str).filter(Boolean).join(', ');
     if (full) return full;
   }
   if (typeof d.display_name === 'string' && d.display_name.trim()) {
@@ -83,7 +93,9 @@ export function useMidSplitLocationMap(
       alive = false;
       window.clearTimeout(timer);
     };
+    // lang included: switching language re-looks-up the preview in the new
+    // language instead of showing a stale one.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [point, ready]);
+  }, [point, ready, lang]);
   return { addrPreview, addrLoading, previewKey };
 }

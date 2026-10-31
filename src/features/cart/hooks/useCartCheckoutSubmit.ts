@@ -60,14 +60,29 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // Detection + picking live in the LocationPicker sheet below.
   const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [locSheetOpen, setLocSheetOpen] = useState(false);
+  // Last address WE auto-filled from the picker (or the coords fallback).
+  // A re-pin overwrites the field only when it is empty or still holds our
+  // own previous auto-fill — genuinely typed text (building, floor,
+  // landmark) is never destroyed. Without this, a first wrong auto-fill
+  // (coarse fix) stuck forever: the field was non-empty so later correct
+  // picks were ignored — the "address is wrong" bug.
+  const lastAutoFillRef = useRef<string | null>(null);
+  const COORDS_RE = /^-?\d{1,3}\.\d{1,5},\s*-?\d{1,3}\.\d{1,5}$/;
   const clearLocation = () => { setLocation(null); };
   const closeLocSheet = (keep: boolean) => { if (!keep) clearLocation(); setLocSheetOpen(false); };
   const handleMapPick = (lat: number, lng: number, accuracy: number, addressText: string | null) => {
     setLocation({ lat, lng, accuracy });
+    const fill = addressText && addressText.trim() ? addressText.trim().slice(0, 200) : `${lat}, ${lng}`;
+    const prevFill = lastAutoFillRef.current;
+    lastAutoFillRef.current = fill;
     setCustomer((prev) => {
-      if (prev.address.trim()) return prev;
-      const fill = addressText && addressText.trim() ? addressText.trim().slice(0, 200) : `${lat}, ${lng}`;
-      return { ...prev, address: fill };
+      const cur = prev.address.trim();
+      // Empty, our own previous auto-fill, or a bare coords fallback:
+      // refresh with the new pick so a wrong auto-fill never sticks.
+      if (!cur || cur === prevFill || COORDS_RE.test(cur)) return { ...prev, address: fill };
+      // Genuinely typed text (building, floor, landmark): keep it — the
+      // exact pin + maps link still travel with the order for the kitchen.
+      return prev;
     });
     setLocSheetOpen(false);
   };

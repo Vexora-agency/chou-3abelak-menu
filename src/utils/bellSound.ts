@@ -1,7 +1,10 @@
 /**
  * Premium bell chime — synthesized with WebAudio, zero audio assets.
- * Two soft strikes (E5 + B5, a gentle fifth) with inharmonic bell partials
- * and a long exponential decay: a warm "ding-ding", never a harsh beep.
+ * The SAME 2-second chime as the admin kitchen bell (E5 + B5 alternating,
+ * a gentle fifth, 4 strikes over 2s) with inharmonic bell partials and a
+ * fast exponential decay: a warm "ding-ding-ding-ding", never a harsh
+ * beep. Same sound, same mechanism (2s chime + 2s silence, 15-minute
+ * session) on the menu page and in the dashboard.
  * Master gain is kept low on purpose.
  *
  * Why "plays once, then never" happens (documented platform behavior):
@@ -157,7 +160,8 @@ export function unlockBellAudio(): void {
 
 function strike(ac: AudioContext, at: number, freq: number, volume: number): void {
   // Bell-ish partials: fundamental + inharmonic overtones, fast attack,
-  // ~1.8s decay. All sine — smooth, no harsh harmonics.
+  // ~0.45s decay (same envelope as the admin kitchen bell so both sound
+  // identical). All sine — smooth, no harsh harmonics.
   const partials: Array<[number, number]> = [
     [1, 1],
     [2.4, 0.35],
@@ -170,56 +174,39 @@ function strike(ac: AudioContext, at: number, freq: number, volume: number): voi
     osc.frequency.value = freq * ratio;
     gain.gain.setValueAtTime(0, at);
     gain.gain.linearRampToValueAtTime(volume * amp, at + 0.012);
-    gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.8);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.45);
     osc.connect(gain).connect(ac.destination);
     osc.start(at);
-    osc.stop(at + 1.9);
+    osc.stop(at + 0.5);
   }
 }
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
- * Full ding-ding with a mid-point guard: the second strike fires only
- * while the context is still running. If it died mid-chime (background
- * kill between the strikes), report failure so the caller retries the
- * WHOLE chime later instead of leaving a lonely half-ding.
+ * Full 2-second chime (same notes as the admin kitchen bell: E5 + B5
+ * alternating, 4 strikes 0.5s apart) with a guard between strikes: a
+ * strike fires only while the context is still running. If it died
+ * mid-chime (background kill between the strikes), report failure so the
+ * caller retries the WHOLE chime later instead of leaving a lonely
+ * half-ding.
  */
 async function strikeFull(ac: AudioContext, stateOf: () => AudioContextState): Promise<boolean> {
-  try {
-    strike(ac, ac.currentTime + 0.02, 659.25, 0.16); // E5
-  } catch {
-    return false;
+  const seq: Array<[number, number]> = [
+    [659.25, 0.16], // E5
+    [987.77, 0.14], // B5 — a gentle fifth above
+    [659.25, 0.14], // E5 again
+    [987.77, 0.12], // B5 again
+  ];
+  for (const [freq, vol] of seq) {
+    try {
+      strike(ac, ac.currentTime + 0.02, freq, vol);
+    } catch {
+      return false;
+    }
+    await sleep(500);
+    if (stateOf() !== 'running') return false;
   }
-  await sleep(350);
-  if (stateOf() !== 'running') return false;
-  try {
-    strike(ac, ac.currentTime + 0.02, 987.77, 0.14); // B5 — a gentle fifth above
-  } catch {
-    return false;
-  }
-  await sleep(350);
-  if (stateOf() !== 'running') return false;
-  try {
-    strike(ac, ac.currentTime + 0.02, 659.25, 0.14); // E5 again
-  } catch {
-    return false;
-  }
-  await sleep(350);
-  if (stateOf() !== 'running') return false;
-  try {
-    strike(ac, ac.currentTime + 0.02, 987.77, 0.12); // B5 again
-  } catch {
-    return false;
-  }
-  await sleep(350);
-  if (stateOf() !== 'running') return false;
-  try {
-    strike(ac, ac.currentTime + 0.02, 1318.5, 0.12); // E6 — the peak
-  } catch {
-    return false;
-  }
-  await sleep(350);
   return stateOf() === 'running';
 }
 
@@ -229,16 +216,17 @@ let chimeUrl: string | null = null;
 let chimeEl: HTMLAudioElement | null = null;
 
 /**
- * Synthesize the same TRIPLE ding-ding as a 16-bit mono WAV data URI
- * (runtime generated, zero assets): three E5+B5 pairs with inharmonic
- * partials and exponential decays, ~4.6s total. An <audio> element rides
- * the MEDIA channel, so unlike Web Audio it keeps playing with the
- * ringer OFF.
+ * Synthesize the same 2-second chime as a 16-bit mono WAV data URI
+ * (runtime generated, zero assets): E5 + B5 alternating, 4 strikes 0.5s
+ * apart with inharmonic partials and fast decays, ~2.2s total (~70KB in
+ * memory, zero bytes over the network). An <audio> element rides the
+ * MEDIA channel, so unlike Web Audio it keeps playing with the ringer
+ * OFF.
  */
 function buildChimeDataUri(): string | null {
   try {
     const rate = 16000;
-    const dur = 4.6;
+    const dur = 2.2;
     const len = Math.floor(rate * dur);
     const data = new Float32Array(len);
     const addStrike = (startSec: number, freq: number, vol: number) => {
@@ -246,19 +234,21 @@ function buildChimeDataUri(): string | null {
       const start = Math.floor(startSec * rate);
       for (let i = 0; i + start < len; i++) {
         const t = i / rate;
-        const env = Math.min(1, t / 0.012) * Math.exp(-t / 0.45);
+        const env = Math.min(1, t / 0.012) * Math.exp(-t / 0.18);
         let s = 0;
         for (const [ratio, amp] of partials) s += Math.sin(2 * Math.PI * freq * ratio * t) * amp;
         data[start + i] += (s * vol * env) / partials.length;
       }
     };
-    // Triple ding-ding: three E5+B5 pairs, ~0.75s apart, matching the
-    // Web Audio engine's timing so both engines sound identical.
-    const pairs: Array<[number, number]> = [[659.25, 0.5], [987.77, 0.42]];
-    [0, 1.5, 3.0].forEach((base) => {
-      addStrike(base, pairs[0][0], pairs[0][1]);
-      addStrike(base + 0.35, pairs[1][0], pairs[1][1]);
-    });
+    // Same notes as the Web Audio engine (and the admin kitchen bell):
+    // E5 + B5 alternating every 0.5s, so both engines sound identical.
+    const seq: Array<[number, number, number]> = [
+      [0, 659.25, 0.5],
+      [0.5, 987.77, 0.42],
+      [1.0, 659.25, 0.5],
+      [1.5, 987.77, 0.42],
+    ];
+    for (const [at, freq, vol] of seq) addStrike(at, freq, vol);
     const bytes = new Uint8Array(44 + len * 2);
     const view = new DataView(bytes.buffer);
     const ascii = (off: number, s: string) => {

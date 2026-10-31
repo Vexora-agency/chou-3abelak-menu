@@ -59,6 +59,26 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   const [currency, setCurrency] = useState('LBP');
   const isAr = lang === 'ar';
 
+  // Always enter at the top: a reload restores the old scroll position and
+  // a bfcache return lands mid-page — the tracking page must start at its
+  // header. Restores the browser default on unmount so menu navigation
+  // keeps its native behavior.
+  useEffect(() => {
+    let prev: ScrollRestoration = 'auto';
+    try {
+      if ('scrollRestoration' in window.history) {
+        prev = window.history.scrollRestoration;
+        window.history.scrollRestoration = 'manual';
+      }
+    } catch {}
+    window.scrollTo(0, 0);
+    return () => {
+      try {
+        if ('scrollRestoration' in window.history) window.history.scrollRestoration = prev;
+      } catch {}
+    };
+  }, [number, token]);
+
   useEffect(() => {
     let stop = false;
     const loadMenu = async () => {
@@ -194,8 +214,8 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                           <span className={`w-0.5 flex-1 min-h-[22px] ${i < stage ? 'bg-[var(--primary)]' : 'bg-neutral-800'}`} />
                         )}
                       </div>
-                      <div className="pb-6 pt-1.5">
-                        <p className={`text-sm font-black ${done ? 'text-white' : 'text-neutral-600'}`}>{s.label}</p>
+                      <div className="pb-6 pt-1.5 min-w-0">
+                        <p className={`text-sm font-black break-words ${done ? 'text-white' : 'text-neutral-600'}`}>{s.label}</p>
                       </div>
                     </li>
                   );
@@ -206,7 +226,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
             <div className="mt-2 rounded-2xl border border-neutral-800 border-t-2 border-t-[var(--primary)] bg-neutral-900/60 p-4 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)]">
               {data.items.map((it, i) => (
                 <div key={i} className="flex justify-between gap-3 py-1.5 text-sm">
-                  <span className="text-neutral-200">
+                  <span className="min-w-0 flex-1 break-words text-neutral-200">
                     <b className="tabular-nums">{it.qty}x </b>
                     {pick(it.name, lang)}
                     {it.variantName && <span className="text-neutral-400"> ({pick(it.variantName, lang)})</span>}

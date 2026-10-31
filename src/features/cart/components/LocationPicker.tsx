@@ -75,7 +75,11 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   }, [point]);
   // Set once the customer drags/taps: background refinements must never yank
   // a hand-placed pin. Reset when "My location" is explicitly tapped.
+  // Mirrored into state so the weak-fix warning renders live (an auto fix
+  // worse than 250m must be visibly flagged BEFORE confirming — a wrong
+  // street silently previewed is the "wrong address" bug).
   const manualRef = useRef(false);
+  const [manual, setManual] = useState(false);
   // Guards overlapping detect() runs (open auto-fix vs. button taps).
   const seqRef = useRef(0);
   const { addrPreview, addrLoading, previewKey } = useMidSplitLocationMap(point, ready, lang);
@@ -107,6 +111,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         marker.on('dragend', () => {
           const p = marker.getLatLng();
           manualRef.current = true;
+          setManual(true);
           setDetecting(false);
           setLocError(null);
           setPoint({ lat: round5(p.lat), lng: round5(p.lng), accuracy: 100 });
@@ -114,6 +119,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         map.on('click', (e: Leaflet.LeafletMouseEvent) => {
           marker.setLatLng(e.latlng);
           manualRef.current = true;
+          setManual(true);
           setDetecting(false);
           setLocError(null);
           setPoint({ lat: round5(e.latlng.lat), lng: round5(e.latlng.lng), accuracy: 100 });
@@ -159,6 +165,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     const seq = ++seqRef.current;
     if (userTap) {
       manualRef.current = false;
+      setManual(false);
       setLocError(null);
     }
     setDetecting(true);
@@ -313,7 +320,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
       {addrWarn && (
         <p className="text-[11px] font-bold text-amber-500">{t.addrFail}</p>
       )}
-      {point && armedFor === `${point.lat},${point.lng}` && (
+      {point && (armedFor === `${point.lat},${point.lng}` || (!manual && point.accuracy > POOR_ACC_M)) && (
         <p role="alert" className="text-[11px] font-bold text-amber-500">
           {t.poorAcc} <span dir="ltr" className="tabular-nums">±{Math.round(point.accuracy)}m</span>
         </p>

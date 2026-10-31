@@ -152,3 +152,8 @@ Nothing left in DNS. Remaining, in order:
   snapshot, screenshot) instead of guessing at rendered output.
 - Unit-test fakes live inside `scripts/test-reports.mjs` (fake D1/R2/KV);
   route-level checks for confirm/scheduler live in temp scripts (not repo).
+- STANDING OWNER INSTRUCTION (Oct 2026): after finishing a work batch,
+  ALWAYS commit + push to `main` without being asked. Stage task files
+  only; never commit secrets, `.dev.vars`, Boosthis kit files (`lib/`,
+  `BOOSTHIS_*`, shim, `_middleware.js`), or local-only ids
+  (`wrangler.toml` database_id).

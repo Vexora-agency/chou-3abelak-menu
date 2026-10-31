@@ -3,6 +3,7 @@
 import React from 'react';
 import type { MenuSettings } from '@/src/types/menu';
 import { toDatetimeLocalValue, parseDatetimeLocal, toDatetimeLocalDeviceValue, deviceWallPartsToUTC } from '@/src/utils/tz';
+import { formatTime12h } from '@/src/utils/menuHelpers';
 import { serverNow } from '@/src/utils/serverTime';
 import { announcementStatus, annSpeed } from '@/src/utils/announcement';
 import { useTickerLoop } from '@/src/hooks/useTickerLoop';
@@ -184,12 +185,19 @@ function ScheduleField({
         ))}
       </div>
       {hint && <p className="text-xs text-neutral-500 mt-1 tabular-nums">{hint}</p>}
-      {iso && Number.isFinite(Date.parse(iso)) && (
-        <p className="text-xs text-neutral-500 mt-0.5 tabular-nums">
-          <span dir="ltr">= {toDatetimeLocalValue(timezone, iso).replace('T', ' ')}</span>{' '}
-          <span dir="auto">{isAr ? 'بتوقيت المتجر' : 'business time'}</span>
-        </p>
-      )}
+      {iso && Number.isFinite(Date.parse(iso)) && (() => {
+        // Business wall-clock in 12-hour form ("2026-01-01 1:00 PM"),
+        // never raw 24h "13:00".
+        const raw = toDatetimeLocalValue(timezone, iso);
+        const datePart = raw.slice(0, 10);
+        const timePart = formatTime12h(raw.slice(11, 16), lang);
+        return (
+          <p className="text-xs text-neutral-500 mt-0.5 tabular-nums">
+            <span dir="ltr">= {datePart} {timePart}</span>{' '}
+            <span dir="auto">{isAr ? 'بتوقيت المتجر' : 'business time'}</span>
+          </p>
+        );
+      })()}
     </div>
   );
 }

@@ -81,7 +81,7 @@ const csv = buildCSV(rows, 'Asia/Beirut');
 ok(csv.charCodeAt(0) === 0xfeff, 'CSV starts with UTF-8 BOM');
 const lines = csv.replace(/^\uFEFF/, '').trim().split('\n');
 ok(lines[0] === 'order_number,date,time,type,status,items,subtotal,delivery_fee,total', 'CSV header columns');
-ok(lines[1].startsWith('1001,2026-09-12,20:05,'), `CSV Beirut date/time, got ${lines[1].slice(0, 24)}`);
+  ok(lines[1].startsWith('1001,2026-09-12,8:05 PM,'), `CSV Beirut date/12h-time, got ${lines[1].slice(0, 28)}`);
 ok(lines[2].includes('"Veggie Pizza, Large ""Special"" / بيتزا (Large / كبير) x 1"'), `CSV escaping + variant + both languages, got ${lines[2]}`);
 ok(csv.includes('زعتر سادة') && csv.includes('بيتزا'), 'CSV keeps Arabic text');
 for (const pii of ['John Doe', '70123456', 'Hamra', 'no onions', 'customer', 'phone', 'address', 'notes']) {

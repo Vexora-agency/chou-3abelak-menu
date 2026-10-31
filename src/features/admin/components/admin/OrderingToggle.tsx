@@ -28,9 +28,9 @@ const STR = {
     pauseFor: 'لكم من الوقت تريد الإيقاف؟', m30: '30 دقيقة', h1: 'ساعة', h2: 'ساعتان', until: 'حتى أستأنف', cancel: 'إلغاء', resume: 'استئناف الآن', resumesIn: 'تستأنف بعد', elapsed: 'متوقف منذ', manual: 'تبقى متوقفة حتى تستأنفها', segOn: 'نستقبل', segOff: 'إيقاف', done: 'تم التحديث' },
 } as const;
 
-/** Local time formatted in the business timezone (device-clock independent via clockOffsetMs). */
+/** Local time formatted in the business timezone (device-clock independent via clockOffsetMs). Explicit 12-hour: locale defaults vary, "13:00" must never render. */
 function formatTime(ms: number, timezone: string, lang: 'en' | 'ar'): string {
-  return new Date(ms).toLocaleTimeString(lang === 'ar' ? 'ar-u-nu-latn' : 'en-US', { hour: '2-digit', minute: '2-digit', timeZone: timezone });
+  return new Date(ms).toLocaleTimeString(lang === 'ar' ? 'ar-u-nu-latn' : 'en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: timezone });
 }
 
 /** Admin pause control: segmented Accepting/Paused switch, duration picker,

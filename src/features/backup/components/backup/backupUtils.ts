@@ -2,7 +2,8 @@ import { STR } from './backupStrings';
 
 export const card = 'p-4 sm:p-5 rounded-2xl bg-neutral-900 border border-neutral-800';
 export const loc = (l: 'en' | 'ar') => (l === 'ar' ? 'ar-u-nu-latn' : 'en-US');
-export const fmtDate = (iso: string, l: 'en' | 'ar') => new Date(iso).toLocaleString(loc(l), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+// Explicit 12-hour: locale defaults vary and "13:00" must never render.
+export const fmtDate = (iso: string, l: 'en' | 'ar') => new Date(iso).toLocaleString(loc(l), { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
 export function rel(iso: string | undefined, l: 'en' | 'ar') {
   if (!iso) return '';
   const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);

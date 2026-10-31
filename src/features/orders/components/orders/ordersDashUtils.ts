@@ -58,7 +58,8 @@ export function relTime(iso: string, lang: 'en' | 'ar', now: Date) {  const t = 
   if (mins < 1) return t.now;
   if (mins < 60) return t.min(mins);
   if (mins < 60 * 12) return t.hr(Math.floor(mins / 60));
-  return d.toLocaleString(loc(lang), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  // Explicit 12-hour: locale defaults vary and "13:00" must never render.
+  return d.toLocaleString(loc(lang), { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 /* ---------- Small pieces ---------- */

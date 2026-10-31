@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Archive, CalendarClock, Check, Clock, Download, FileText, Loader2, Mail, Send, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { formatTime12h } from '@/src/utils/menuHelpers';
 
 export interface ReportSettings {
   enabled: boolean;
@@ -109,7 +110,8 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
     const now = new Date();
     const first = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     const prev = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    return t.next(`${first.toLocaleDateString(loc(lang), { day: 'numeric', month: 'long' })}, ${sendTime} (${timezone})`, monthName(prev, lang));
+    // Scheduled wall-clock in 12-hour form ("5:00 AM (UTC)"), never raw "05:00".
+    return t.next(`${first.toLocaleDateString(loc(lang), { day: 'numeric', month: 'long' })}, ${formatTime12h(sendTime, lang)} (${timezone})`, monthName(prev, lang));
   }, [lang, sendTime, timezone, t]);
 
   const rise = (delay: number) => ({

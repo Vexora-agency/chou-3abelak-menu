@@ -84,9 +84,9 @@ const MSG = {
     en: 'Online ordering is currently disabled.',
     ar: 'الطلب أونلاين غير متاح حالياً.',
   },
-  closedWithTime: (time) => ({
-    en: `We are closed now. We open at ${time}.`,
-    ar: `نحن مغلقون الآن. نفتح الساعة ${time}.`,
+  closedWithTime: (hour, minute) => ({
+    en: `We are closed now. We open at ${fmt12h(hour, minute, 'en')}.`,
+    ar: `نحن مغلقون الآن. نفتح الساعة ${fmt12h(hour, minute, 'ar')}.`,
   }),
   closedPlain: { en: 'We are closed now.', ar: 'نحن مغلقون الآن.' },
 };
@@ -97,8 +97,17 @@ function pickText(v) {
   return { en, ar };
 }
 
-function fmtHM(hour, minute) {
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+/**
+ * "13:05" -> "1:05 PM" / "1:05 م" — every human clock string in the system
+ * is 12-hour (short Levantine م/ص in Arabic), mirroring the client's
+ * formatTime12h. Never emits 13:00-style 24h text.
+ */
+function fmt12h(hour, minute, lang) {
+  const h = ((Number(hour) % 24) + 24) % 24;
+  const m = String(Number(minute)).padStart(2, '0');
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  if (lang === 'ar') return `${h12}:${m} ${h < 12 ? 'ص' : 'م'}`;
+  return `${h12}:${m} ${h < 12 ? 'AM' : 'PM'}`;
 }
 
 /**
@@ -192,7 +201,7 @@ export function getOrderingState(settings, nowMs = Date.now()) {
   if (reopensAt !== null) {
     const rp = tzParts(timezone, reopensAt);
     out.reopensAt = new Date(reopensAt).toISOString();
-    out.message = MSG.closedWithTime(fmtHM(rp.hour, rp.minute));
+    out.message = MSG.closedWithTime(rp.hour, rp.minute);
   }
   return out;
 }

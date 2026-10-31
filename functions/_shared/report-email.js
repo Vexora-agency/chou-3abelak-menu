@@ -109,7 +109,16 @@ export function renderMonthlyReportEmail(d, lang = 'en') {
 
   const hl = [];
   if (d.busiestDay) hl.push([t.busiestDay, new Date(d.busiestDay.date + 'T12:00:00Z').toLocaleDateString(locale(l), { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' }), `${num(d.busiestDay.orders)} ${t.ordersWord}`]);
-  if (d.peakHour !== null && d.peakHour !== undefined) hl.push([t.peakHour, `${String(d.peakHour).padStart(2, '0')}:00 – ${String((d.peakHour + 1) % 24).padStart(2, '0')}:00`, '']);
+  if (d.peakHour !== null && d.peakHour !== undefined) {
+    // 12-hour range in both languages ("2:00 – 3:00 PM" / "2:00 – 3:00 م"),
+    // never 24h "14:00 – 15:00".
+    const hr = (x) => {
+      const hh = ((Number(x) % 24) + 24) % 24;
+      const h12 = hh % 12 === 0 ? 12 : hh % 12;
+      return isAr ? `${h12}:00 ${hh < 12 ? 'ص' : 'م'}` : `${h12}:00 ${hh < 12 ? 'AM' : 'PM'}`;
+    };
+    hl.push([t.peakHour, `${hr(d.peakHour)} – ${hr(d.peakHour + 1)}`, '']);
+  }
   if (best) hl.push([t.bestSeller, best, d.topItems[0] ? `${num(d.topItems[0].qty)} ${t.sold}` : '']);
   const hlHtml = hl.map(([a, b, c]) => `<tr><td style="padding:10px 0;border-bottom:1px solid ${LINE};"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
       <td class="em-tgrey" style="font-size:12px;color:${GREY};text-align:${align};" width="38%">${esc(a)}</td>

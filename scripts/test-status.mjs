@@ -53,6 +53,9 @@ const base = () => ({
   const st = getOrderingState(base(), night);
   ok(st.state === 'closed' && typeof st.reopensAt === 'string', `closed at night + reopensAt (${st.state})`);
   ok(st.message.en.includes('We open at'), 'closed message has time');
+  // Closed message is 12-hour in both languages — never "13:00"-style 24h.
+  ok(/1[12]:00 (AM|PM)/.test(st.message.en) && !/\b(1[3-9]|2[0-3]):\d\d\b/.test(st.message.en), `closed EN is 12h (${st.message.en})`);
+  ok(/[صم]/.test(st.message.ar) && !/\b(1[3-9]|2[0-3]):\d\d\b/.test(st.message.ar), `closed AR is 12h (${st.message.ar})`);
   // overnight range 22:00-04:00: 02:00 open, 05:00 closed
   const s = base();
   s.openTime = '22:00';

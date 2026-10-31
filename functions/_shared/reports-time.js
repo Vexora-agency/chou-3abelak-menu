@@ -94,6 +94,13 @@ export function dayOfMonthInTZ(timeZone, nowMs = Date.now()) {
 export function makeTZExtractors(timeZone) {
   const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' });
   const hourFmt = new Intl.DateTimeFormat('en-US', { timeZone, hour: '2-digit', hourCycle: 'h23' });
+  // Human CSV clock in 12-hour form ("8:05 PM", never "20:05"): the time
+  // column is read by the owner in Excel, not parsed by machines.
+  const fmt12 = (h24, mi) => {
+    const hh = ((Number(h24) % 24) + 24) % 24;
+    const h12 = hh % 12 === 0 ? 12 : hh % 12;
+    return `${h12}:${String(mi).padStart(2, '0')} ${hh < 12 ? 'AM' : 'PM'}`;
+  };
   return {
     day(iso) {
       return dayFmt.format(new Date(iso));
@@ -103,7 +110,7 @@ export function makeTZExtractors(timeZone) {
     },
     dateTime(iso) {
       const d = new Date(iso);
-      return { date: dayFmt.format(d), time: `${String(Number(hourFmt.format(d))).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}` };
+      return { date: dayFmt.format(d), time: fmt12(Number(hourFmt.format(d)), d.getUTCMinutes()) };
     },
   };
 }

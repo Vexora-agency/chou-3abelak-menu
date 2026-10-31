@@ -18,6 +18,7 @@ import {
   readLastTelegramNotification,
   readPendingPairing,
   resolveBotUsername,
+  syncOrderStatusToTelegram,
   verifyWebhookSecret,
 } from '../functions/_shared/telegram.js';
 import { sha256Hex } from '../functions/_shared/access.js';
@@ -241,6 +242,35 @@ const lateCancel = await handleOrderCallback(dbRecv, 'tok', { ...cbBase, callbac
 ok('cancel after completed rejected', lateCancel.handled === false && lateCancel.reason === 'bad_transition');
 globalThis.fetch = realFetch2;
 
+// 7g. Site -> Telegram sync (dashboard change stamps the same message).
+const prevFetch7g = globalThis.fetch;
+const syncCalls = [];
+globalThis.fetch = async (url, init) => {
+  syncCalls.push({ method: String(url).split('/').pop(), body: JSON.parse(init.body) });
+  return { ok: true, status: 200, json: async () => ({ ok: true, result: true }) };
+};
+const dbSync = mockDb(true);
+dbSync.ledger.set('ord-s1', { status: 'sent', order_number: 11, chat_id: 111, message_id: 22, message_text: '<b>طلب جديد #11</b>' });
+const s1 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-s1', status: 'confirmed', adminUrl: 'https://x/admin/dashboard' });
+const editText = syncCalls.find((c) => c.method === 'editMessageText');
+ok('sync stamps banner', s1.sent === 1 && editText && editText.body.text.includes('✅ تم تأكيد الطلب') && editText.body.text.includes('#11'));
+ok('sync freezes buttons', syncCalls.some((c) => c.method === 'editMessageReplyMarkup' && c.body.reply_markup.inline_keyboard.length === 0));
+const s2 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'missing', status: 'confirmed', adminUrl: '' });
+ok('sync skips unknown order silently', s2.sent === 0 && s2.reason === 'no_message');
+dbSync.ledger.set('ord-s2', { status: 'sent', order_number: 12, chat_id: null, message_id: null, message_text: null });
+const s3 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-s2', status: 'cancelled', adminUrl: '' });
+ok('sync skips pre-0015 rows silently', s3.sent === 0 && s3.reason === 'no_message');
+const nCalls = syncCalls.length;
+const s4 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-s1', status: 'new', adminUrl: 'https://x/admin/dashboard' });
+ok('reopen restores buttons', s4.sent === 1 && syncCalls.length === nCalls + 1 && syncCalls[syncCalls.length - 1].body.reply_markup.inline_keyboard.length === 3);
+dbSync.ledger.set('ord-s3', { status: 'sent', order_number: 13, chat_id: 111, message_id: 23, message_text: '<b>طلب</b>\n\n✅ تم تأكيد الطلب' });
+const s5 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-s3', status: 'completed', adminUrl: '' });
+const editText3 = syncCalls.filter((c) => c.method === 'editMessageText').pop();
+ok('no double banner on restamp', s5.sent === 1 && editText3.body.text.includes('📦 تم الاستلام') && !editText3.body.text.includes('تم تأكيد'));
+const s6 = await syncOrderStatusToTelegram(dbSync, '', { orderId: 'ord-s1', status: 'confirmed', adminUrl: '' });
+ok('sync without token skips', s6.sent === 0 && s6.reason === 'misconfigured');
+globalThis.fetch = prevFetch7g;
+
 // 8. Order keyboard: URL view + confirm/cancel + received (64-byte cap).
 const kb2 = buildOrderKeyboard('https://x/admin/dashboard', oid);
 ok('keyboard has view + actions + received', kb2.inline_keyboard.length === 3 && kb2.inline_keyboard[0][0].url === 'https://x/admin/dashboard');
@@ -282,7 +312,7 @@ function mockDb(linked) {
             async first() {
               if (sql.includes('FROM telegram_notifications') && sql.includes('order_id')) {
                 const row = self.ledger.get(args[0]);
-                return row ? { status: row.status } : null;
+                return row ? { ...row } : null;
               }
               if (sql.includes('SELECT value FROM service_config')) {
                 return linked ? { value: JSON.stringify({ chat_id: 12345, linked_at: '2026-01-01' }) } : null;

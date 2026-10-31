@@ -7,6 +7,7 @@ import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/ses
 import { featureOffResponse, hasFeature } from '../../../_shared/plan.js';
 import { updateOrderStatus } from '../../../_shared/repositories/orders.repo.js';
 import { notifyOrderStatus } from '../../../_shared/push.js';
+import { syncOrderStatusToTelegram } from '../../../_shared/telegram.js';
 
 const STATUSES = ['new', 'confirmed', 'completed', 'cancelled'];
 
@@ -58,12 +59,12 @@ export async function onRequest(context) {
     // subscribed with the order's tracking link, pruned when gone.
     if (order.trackToken && order.number) {
       const done = (async () => {
+        let origin = '';
         try {
-          let origin = '';
+          origin = new URL(request.url).origin;
+        } catch {}
+        try {
           let storeName = '';
-          try {
-            origin = new URL(request.url).origin;
-          } catch {}
           try {
             const kv = env.MENU_KV || null;
             const menu = kv ? await kv.get('menu', { type: 'json' }) : null;
@@ -78,6 +79,17 @@ export async function onRequest(context) {
             lang: order.lang === 'ar' ? 'ar' : 'en',
             trackUrl: origin ? `${origin}/?track=${order.number}&t=${order.trackToken}` : '',
             subject: origin || undefined,
+          });
+        } catch {}
+        // Two-way sync (site -> Telegram): stamp the same order message the
+        // owner got at order time. Best-effort only — never delays or breaks
+        // the admin action.
+        try {
+          const token = env.TELEGRAM_BOT_TOKEN || null;
+          await syncOrderStatusToTelegram(db, token, {
+            orderId: id,
+            status,
+            adminUrl: origin ? `${origin}/admin/dashboard` : '',
           });
         } catch {}
       })();

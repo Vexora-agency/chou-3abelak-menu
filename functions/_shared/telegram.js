@@ -457,13 +457,17 @@ async function writeLedger(db, row) {
   }
 }
 
-async function stampLedger(db, orderId, status, attempts, lastError, sent) {
+async function stampLedger(db, orderId, status, attempts, lastError, sent, refs) {
   try {
+    const r = refs && typeof refs === 'object' ? refs : {};
+    const chatId = Number.isInteger(r.chatId) ? r.chatId : null;
+    const messageId = Number.isInteger(r.messageId) ? r.messageId : null;
+    const messageText = typeof r.messageText === 'string' && r.messageText ? r.messageText.slice(0, 4000) : null;
     await db
       .prepare(
-        'UPDATE telegram_notifications SET status = ?2, attempts = ?3, last_error = ?4, updated_at = ?5, sent_at = ?6 WHERE order_id = ?1'
+        'UPDATE telegram_notifications SET status = ?2, attempts = ?3, last_error = ?4, updated_at = ?5, sent_at = ?6, chat_id = COALESCE(?7, chat_id), message_id = COALESCE(?8, message_id), message_text = COALESCE(?9, message_text) WHERE order_id = ?1'
       )
-      .bind(orderId, status, attempts, lastError, new Date().toISOString(), sent ? new Date().toISOString() : null)
+      .bind(orderId, status, attempts, lastError, new Date().toISOString(), sent ? new Date().toISOString() : null, chatId, messageId, messageText)
       .run();
   } catch {}
 }
@@ -520,7 +524,13 @@ export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, 
       attempts += 1;
     }
     if (res.ok) {
-      await stampLedger(db, orderId, 'sent', attempts, null, true);
+      const sentMsg = res.result && typeof res.result === 'object' ? res.result : null;
+      const sentId = sentMsg && Number.isInteger(sentMsg.message_id) ? sentMsg.message_id : null;
+      await stampLedger(db, orderId, 'sent', attempts, null, true, {
+        chatId: link.chatId,
+        messageId: sentId,
+        messageText: text,
+      });
       return { sent: 1 };
     }
     await stampLedger(db, orderId, 'failed', attempts, String(res.error || 'send_failed').slice(0, 200), false);
@@ -608,6 +618,22 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     const banner = parsed.status === 'confirmed'
       ? '✅ تم تأكيد الطلب'
       : parsed.status === 'completed' ? RECEIVED_BANNER : '❌ تم إلغاء الطلب';
+    // Heal pre-0015 ledger rows: remember where this message lives so a
+    // later dashboard change can sync back to it. updated_at untouched —
+    // the admin "last notification" view keeps send order.
+    try {
+      await db
+        .prepare(
+          'UPDATE telegram_notifications SET chat_id = COALESCE(chat_id, ?2), message_id = COALESCE(message_id, ?3), message_text = COALESCE(message_text, ?4) WHERE order_id = ?1'
+        )
+        .bind(
+          parsed.orderId,
+          Number.isInteger(chatId) ? chatId : null,
+          Number.isInteger(messageId) ? messageId : null,
+          typeof messageText === 'string' && messageText ? messageText.slice(0, 4000) : null
+        )
+        .run();
+    } catch {}
     await answer(banner);
     // Freeze the buttons (no double-tap) + stamp the status on the message.
     try {
@@ -642,6 +668,86 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     return { handled: true, status: parsed.status };
   } catch {
     return noop('error');
+  }
+}
+
+const STATUS_BANNERS = {
+  confirmed: '✅ تم تأكيد الطلب',
+  completed: '📦 تم الاستلام',
+  cancelled: '❌ تم إلغاء الطلب',
+};
+
+/** Strip a previously stamped status banner (lets 'new' restore cleanly). */
+function stripBanner(text) {
+  let out = String(text ?? '');
+  for (const b of Object.values(STATUS_BANNERS)) {
+    const tail = `\n\n${b}`;
+    if (out.endsWith(tail)) out = out.slice(0, -tail.length);
+  }
+  return out;
+}
+
+/**
+ * Site -> Telegram sync: a dashboard status change stamps the SAME order
+ * message the owner got at order time (two-way sync with the buttons).
+ * Best-effort and silent — NEVER throws, NEVER blocks the dashboard action:
+ *   - no ledger row / no message refs (pre-0015 message, unlinked chat,
+ *     deleted message) -> skipped with a reason, no error surfaced.
+ *   - confirmed/completed/cancelled -> banner stamped + buttons frozen.
+ *   - new (reopened) -> buttons restored so the owner can act again.
+ */
+export async function syncOrderStatusToTelegram(db, token, { orderId, status, adminUrl }) {
+  const skip = (reason) => ({ sent: 0, reason });
+  try {
+    if (!db || typeof token !== 'string' || !token) return skip('misconfigured');
+    if (typeof orderId !== 'string' || !orderId) return skip('bad_order');
+    if (typeof status !== 'string' || !(status === 'new' || STATUS_BANNERS[status])) return skip('bad_status');
+    let row = null;
+    try {
+      row = await db
+        .prepare('SELECT chat_id, message_id, message_text FROM telegram_notifications WHERE order_id = ?1')
+        .bind(orderId)
+        .first();
+    } catch {
+      return skip('ledger_unreadable');
+    }
+    if (!row || !Number.isInteger(row.chat_id) || !Number.isInteger(row.message_id)) {
+      return skip('no_message');
+    }
+    const chatId = row.chat_id;
+    const messageId = row.message_id;
+    if (status === 'new') {
+      try {
+        await callTelegramApi(token, 'editMessageReplyMarkup', {
+          chat_id: chatId,
+          message_id: messageId,
+          reply_markup: buildOrderKeyboard(adminUrl, orderId),
+        });
+      } catch {}
+      return { sent: 1 };
+    }
+    const banner = STATUS_BANNERS[status];
+    const base = stripBanner(typeof row.message_text === 'string' && row.message_text ? row.message_text : '');
+    if (base) {
+      try {
+        await callTelegramApi(token, 'editMessageText', {
+          chat_id: chatId,
+          message_id: messageId,
+          text: `${base}\n\n${banner}`.slice(0, 4000),
+          parse_mode: 'HTML',
+        });
+      } catch {}
+    }
+    try {
+      await callTelegramApi(token, 'editMessageReplyMarkup', {
+        chat_id: chatId,
+        message_id: messageId,
+        reply_markup: { inline_keyboard: [] },
+      });
+    } catch {}
+    return { sent: 1 };
+  } catch {
+    return skip('error');
   }
 }
 

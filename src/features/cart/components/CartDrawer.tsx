@@ -132,19 +132,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={isAr ? 'سلة الطلبات وإتمام الشراء' : 'Order Checkout'}
-        className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-6 sm:px-8 pt-4 sm:pt-6 pb-[max(2rem,env(safe-area-inset-bottom))] overflow-x-clip scroll-pb-32"
+        className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-6 sm:px-8 pt-3 pb-[max(2rem,env(safe-area-inset-bottom))] overflow-x-clip scroll-pb-32"
       >
         {/* Drag Pill Handle (Mobile only) */}
         <div
-          className={`w-11 h-1.5 rounded-full mx-auto mb-4 md:hidden ${
+          className={`w-11 h-1.5 rounded-full mx-auto mb-3 md:hidden ${
             darkMode ? 'bg-neutral-600' : 'bg-neutral-300'
           }`}
         />
 
-        {/* Header */}
+        {/* Sticky header: the X close button stays reachable no matter how
+            far down the cart scrolls — no more hunting for it at the top. */}
         <div
-          className={`flex justify-between items-center pb-3 border-b ${
-            darkMode ? 'border-neutral-800' : 'border-neutral-200'
+          className={`sticky top-0 z-10 -mx-6 sm:-mx-8 px-6 sm:px-8 -mt-3 pt-3 pb-3 border-b flex justify-between items-center ${
+            darkMode ? 'bg-[#141414] border-neutral-800' : 'bg-white border-neutral-200'
           }`}
         >
           <div>

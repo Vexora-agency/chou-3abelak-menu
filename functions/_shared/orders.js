@@ -79,7 +79,10 @@ export function validateOrderInput(body, menu) {
   const notes = cleanStr(body.notes, 200);
 
   // Optional delivery coordinates: finite numbers in range, rounded to
-  // 5 decimals. Only for delivery; ignored for other types.
+  // 5 decimals. Only for delivery; ignored for other types. Accuracy
+  // (meters, from the OS fix) rides along when sane — downstream uses it
+  // to distrust coarse cell-tower fixes instead of mislabeling them
+  // "precise". Never blocks the order; never stored (transient hint).
   let location = null;
   if (type === 'delivery' && body.location && typeof body.location === 'object') {
     const lat = typeof body.location.lat === 'number' ? body.location.lat : NaN;
@@ -87,7 +90,12 @@ export function validateOrderInput(body, menu) {
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
       errors.push('invalid_location');
     } else {
+      const rawAcc = body.location.accuracy;
+      const acc = typeof rawAcc === 'number' && Number.isFinite(rawAcc) && rawAcc >= 0 && rawAcc <= 100000
+        ? Math.round(rawAcc)
+        : null;
       location = { lat: Math.round(lat * 1e5) / 1e5, lng: Math.round(lng * 1e5) / 1e5 };
+      if (acc !== null) location.accuracy = acc;
     }
   }
 

@@ -345,33 +345,48 @@ function bidi(s) {
 }
 
 /**
+ * Accuracy bar for a DELIVERY pin, in meters (delivery apps treat a
+ * cell-tower fix ~300m+ as unusable and GPS/WiFi ~5-100m as good).
+ * A pin WORSE than this is never presented as "exact" — it falls back
+ * to the written address (or an explicitly approximate pin).
+ */
+export const MAPS_ACCURACY_OK_M = 250;
+
+/**
  * Map link for a delivery order.
- * - Pinned location -> EXACT pin URL (`maps?q=lat,lng&z=18`), never the
- *   `search/?api=1&query=` form: search snaps the pin to the nearest
- *   named place and its address card reads WRONG (the reported bug).
- *   Same form as the customer-facing link in the checkout sheet.
- * - No pin -> address-text search, honestly labeled approximate (a
- *   free-text search can resolve to the wrong street).
+ * - Pinned location with a GOOD fix -> EXACT pin URL (`maps?q=lat,lng&z=18`),
+ *   never the `search/?api=1&query=` form: search snaps the pin to the
+ *   nearest named place and its address card reads WRONG (the reported
+ *   bug). Same form as the customer-facing link in the checkout sheet.
+ * - Coarse fix (cell tower, urban canyon) or no pin -> address-text search
+ *   (or the raw pin as last resort), honestly labeled approximate.
  * Rendered as a short pretty anchor (never a bare long URL).
  * Returns { url, precise } or null.
  */
 export function buildMapsLink(cleaned) {
   if (!cleaned || cleaned.type !== 'delivery') return null;
-  if (
-    cleaned.location &&
-    typeof cleaned.location.lat === 'number' && Number.isFinite(cleaned.location.lat) &&
-    typeof cleaned.location.lng === 'number' && Number.isFinite(cleaned.location.lng) &&
-    cleaned.location.lat >= -90 && cleaned.location.lat <= 90 &&
-    cleaned.location.lng >= -180 && cleaned.location.lng <= 180
-  ) {
+  const loc = cleaned.location;
+  const hasCoords = loc &&
+    typeof loc.lat === 'number' && Number.isFinite(loc.lat) &&
+    typeof loc.lng === 'number' && Number.isFinite(loc.lng) &&
+    loc.lat >= -90 && loc.lat <= 90 && loc.lng >= -180 && loc.lng <= 180;
+  const acc = hasCoords && typeof loc.accuracy === 'number' && Number.isFinite(loc.accuracy) ? loc.accuracy : null;
+  const sharp = hasCoords && (acc === null || acc <= MAPS_ACCURACY_OK_M);
+  if (sharp) {
     return {
-      url: `https://www.google.com/maps?q=${cleaned.location.lat},${cleaned.location.lng}&z=18`,
+      url: `https://www.google.com/maps?q=${loc.lat},${loc.lng}&z=18`,
       precise: true,
     };
   }
   if (typeof cleaned.address === 'string' && cleaned.address.trim()) {
     return {
       url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleaned.address.trim())}`,
+      precise: false,
+    };
+  }
+  if (hasCoords) {
+    return {
+      url: `https://www.google.com/maps?q=${loc.lat},${loc.lng}&z=15`,
       precise: false,
     };
   }
@@ -397,7 +412,10 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
     lines.push(`<b>العنوان:</b> ${escapeHtml(cleaned.address)}`);
     const maps = buildMapsLink(cleaned);
     if (maps) {
-      const anchor = maps.precise ? '📍 الموقع الدقيق على الخريطة' : '🔍 بحث تقريبي عن العنوان';
+      const hasAddress = typeof cleaned.address === 'string' && cleaned.address.trim() !== '';
+      const anchor = maps.precise
+        ? '📍 الموقع الدقيق على الخريطة'
+        : hasAddress ? '🔍 بحث تقريبي عن العنوان' : '📍 موقع تقريبي — تحقق مع الزبون';
       lines.push(`<a href="${escapeHtml(maps.url)}">${anchor}</a>`);
     }
   }

@@ -23,6 +23,8 @@ const STR = {
     manual: 'Enter address manually',
     denied: 'Location is blocked — allow it in the browser settings, or pin manually.',
     failed: 'Could not detect you — drag the pin or type the address.',
+    confirmAnyway: 'Confirm anyway - tap again',
+    poorAcc: 'Weak fix - the pin may be far off. Drag it to correct, or tap confirm again to use it as-is.',
     unsupported: 'This browser has no location service — drag the pin to set your point.',
   },
   ar: {
@@ -35,6 +37,8 @@ const STR = {
     denied: 'الموقع محظور — اسمح به من إعدادات المتصفح أو حدد بالدبوس.',
     failed: 'تعذر تحديد موقعك — اسحب الدبوس أو اكتب العنوان.',
     unsupported: 'هذا المتصفح بلا خدمة موقع — اسحب الدبوس لتحديد نقطتك.',
+    confirmAnyway: 'تأكيد رغم ذلك — اضغط مجددًا',
+    poorAcc: 'الدقة ضعيفة — قد تكون النقطة بعيدة. اسحب الدبوس للتصحيح، أو اضغط التأكيد مجددًا للاستخدام كما هي.',
   },
 } as const;
 
@@ -51,6 +55,13 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   const [detecting, setDetecting] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [addrWarn, setAddrWarn] = useState(false);
+  // Two-tap guard: an AUTO fix worse than POOR_ACC_M could be a cell-tower
+  // fix kilometers away — the first tap only arms FOR THAT EXACT point,
+  // the second confirms. A moved pin invalidates the arm automatically
+  // (armedFor stops matching). Hand-placed pins skip the guard entirely:
+  // the human already verified.
+  const [armedFor, setArmedFor] = useState<string | null>(null);
+  const POOR_ACC_M = 250;
   // Human-readable detect outcome (never silent: weak browsers may lack the
   // API entirely or never answer — both used to leave a dead spinner).
   const [locError, setLocError] = useState<string | null>(null);
@@ -233,6 +244,12 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
 
   const confirm = async () => {
     if (!point || confirming) return;
+    const key = `${point.lat},${point.lng}`;
+    if (!manualRef.current && point.accuracy > POOR_ACC_M && armedFor !== key) {
+      setArmedFor(key);
+      return;
+    }
+    setArmedFor(null);
     setConfirming(true);
     setAddrWarn(false);
     // Reuse the live preview when it already matches this exact point,
@@ -296,14 +313,19 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
       {addrWarn && (
         <p className="text-[11px] font-bold text-amber-500">{t.addrFail}</p>
       )}
+      {point && armedFor === `${point.lat},${point.lng}` && (
+        <p role="alert" className="text-[11px] font-bold text-amber-500">
+          {t.poorAcc} <span dir="ltr" className="tabular-nums">±{Math.round(point.accuracy)}m</span>
+        </p>
+      )}
 
       <button
         type="button"
         onClick={() => void confirm()}
         disabled={!point || confirming}
-        className="btn-tactile w-full h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black text-sm disabled:opacity-50"
+        className={`btn-tactile w-full h-12 rounded-full font-black text-sm disabled:opacity-50 ${point && armedFor === `${point.lat},${point.lng}` ? 'bg-amber-400 text-[#0A0A0A]' : 'bg-[var(--primary)] text-[#0A0A0A]'}`}
       >
-        {confirming ? <Loader2 size={17} className="animate-spin mx-auto" /> : t.confirm}
+        {confirming ? <Loader2 size={17} className="animate-spin mx-auto" /> : (point && armedFor === `${point.lat},${point.lng}` ? t.confirmAnyway : t.confirm)}
       </button>
       <button
         type="button"

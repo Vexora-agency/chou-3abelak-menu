@@ -134,6 +134,16 @@ ok('out-of-range coords rejected', buildMapsLink({ type: 'delivery', location: {
 const search = buildMapsLink(sampleCleaned);
 ok('address search fallback', search && search.precise === false && search.url.includes('query='));
 ok('no maps link without address', buildMapsLink({ type: 'delivery' }) === null && buildMapsLink({ type: 'pickup', address: 'x' }) === null);
+// Coarse fixes are NEVER presented as exact: address present -> address
+// search; no address -> explicitly approximate pin.
+const coarseWithAddr = buildMapsLink({ ...withLoc, location: { lat: 33.8938, lng: 35.5018, accuracy: 2500 } });
+ok('coarse fix downgraded to address search', coarseWithAddr && coarseWithAddr.precise === false && coarseWithAddr.url.includes('search/?api=1'));
+const coarseNoAddr = buildMapsLink({ type: 'delivery', address: '  ', location: { lat: 33.9, lng: 35.5, accuracy: 3000 } });
+ok('coarse fix without address stays approximate pin', coarseNoAddr && coarseNoAddr.precise === false && coarseNoAddr.url.includes('maps?q='));
+const goodAcc = buildMapsLink({ type: 'delivery', address: 'x', location: { lat: 33.9, lng: 35.5, accuracy: 30 } });
+ok('good fix stays exact pin', goodAcc && goodAcc.precise === true && goodAcc.url.includes('&z=18'));
+const coarseMsg = formatNewOrderMessage({ ...sampleCleaned, location: { lat: 33.9, lng: 35.5, accuracy: 3000 } }, 1001, '');
+ok('coarse message warns instead of claiming exact', coarseMsg.includes('تقريبي') && !coarseMsg.includes('الموقع الدقيق'));
 const locMsg = formatNewOrderMessage(withLoc, 1001, 'ل.ل');
 ok('message has pretty maps anchor', locMsg.includes('الموقع الدقيق على الخريطة') && locMsg.includes('maps?q=33.8938,35.5018&amp;z=18'));
 const searchMsg = formatNewOrderMessage(sampleCleaned, 1001, 'ل.ل');

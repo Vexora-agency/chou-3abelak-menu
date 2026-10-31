@@ -128,11 +128,15 @@ ok('empty items safe', formatNewOrderMessage({ type: 'pickup', name: 'X', phone:
 const withLoc = { ...sampleCleaned, location: { lat: 33.8938, lng: 35.5018 } };
 const precise = buildMapsLink(withLoc);
 ok('precise maps link', precise && precise.precise === true && precise.url.includes('33.8938,35.5018'));
+ok('precise link is an exact pin, not a search', precise.url.includes('maps?q=') && !precise.url.includes('search'));
+ok('out-of-range coords rejected', buildMapsLink({ type: 'delivery', location: { lat: 500, lng: 10 } }) === null);
 const search = buildMapsLink(sampleCleaned);
 ok('address search fallback', search && search.precise === false && search.url.includes('query='));
 ok('no maps link without address', buildMapsLink({ type: 'delivery' }) === null && buildMapsLink({ type: 'pickup', address: 'x' }) === null);
 const locMsg = formatNewOrderMessage(withLoc, 1001, 'ل.ل');
-ok('message has pretty maps anchor', locMsg.includes('الموقع على الخريطة') && locMsg.includes('maps/search/?api=1&amp;query='));
+ok('message has pretty maps anchor', locMsg.includes('الموقع الدقيق على الخريطة') && locMsg.includes('maps?q=33.8938,35.5018&amp;z=18'));
+const searchMsg = formatNewOrderMessage(sampleCleaned, 1001, 'ل.ل');
+ok('fallback link labeled approximate', searchMsg.includes('بحث تقريبي عن العنوان'));
 ok('bidi isolates wrap numbers', [...locMsg].some((c) => c.charCodeAt(0) === 0x2066) && [...locMsg].some((c) => c.charCodeAt(0) === 0x2069));
 ok('bold labels on important fields', locMsg.includes('<b>الزبون:</b>') && locMsg.includes('<b>الهاتف:</b>') && locMsg.includes('<b>العنوان:</b>') && locMsg.includes('<b>الإجمالي:'));  
 

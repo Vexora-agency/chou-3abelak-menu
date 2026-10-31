@@ -345,16 +345,27 @@ function bidi(s) {
 }
 
 /**
- * Map link for a delivery order. Precise coords link when the customer
- * pinned the location; otherwise a Maps search of the written address.
+ * Map link for a delivery order.
+ * - Pinned location -> EXACT pin URL (`maps?q=lat,lng&z=18`), never the
+ *   `search/?api=1&query=` form: search snaps the pin to the nearest
+ *   named place and its address card reads WRONG (the reported bug).
+ *   Same form as the customer-facing link in the checkout sheet.
+ * - No pin -> address-text search, honestly labeled approximate (a
+ *   free-text search can resolve to the wrong street).
  * Rendered as a short pretty anchor (never a bare long URL).
  * Returns { url, precise } or null.
  */
 export function buildMapsLink(cleaned) {
   if (!cleaned || cleaned.type !== 'delivery') return null;
-  if (cleaned.location && Number.isFinite(cleaned.location.lat) && Number.isFinite(cleaned.location.lng)) {
+  if (
+    cleaned.location &&
+    typeof cleaned.location.lat === 'number' && Number.isFinite(cleaned.location.lat) &&
+    typeof cleaned.location.lng === 'number' && Number.isFinite(cleaned.location.lng) &&
+    cleaned.location.lat >= -90 && cleaned.location.lat <= 90 &&
+    cleaned.location.lng >= -180 && cleaned.location.lng <= 180
+  ) {
     return {
-      url: `https://www.google.com/maps/search/?api=1&query=${cleaned.location.lat},${cleaned.location.lng}`,
+      url: `https://www.google.com/maps?q=${cleaned.location.lat},${cleaned.location.lng}&z=18`,
       precise: true,
     };
   }
@@ -386,7 +397,7 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
     lines.push(`<b>العنوان:</b> ${escapeHtml(cleaned.address)}`);
     const maps = buildMapsLink(cleaned);
     if (maps) {
-      const anchor = maps.precise ? '📍 الموقع على الخريطة' : '📍 البحث عن العنوان على الخريطة';
+      const anchor = maps.precise ? '📍 الموقع الدقيق على الخريطة' : '🔍 بحث تقريبي عن العنوان';
       lines.push(`<a href="${escapeHtml(maps.url)}">${anchor}</a>`);
     }
   }

@@ -252,8 +252,10 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
 
   // new = placed, owner hasn't confirmed yet; confirmed = the kitchen
   // confirmed receipt and is preparing; completed = delivered to you.
+  // new = placed but the restaurant has NOT picked it up yet;
+  // confirmed = the kitchen received it and is preparing it.
   const statusLabel = (s: string) =>
-    s === 'new' ? (isAr ? 'بانتظار التأكيد' : 'Awaiting confirm')
+    s === 'new' ? (isAr ? 'بانتظار استلام المطعم' : 'Awaiting restaurant')
     : s === 'confirmed' ? (isAr ? 'قيد التحضير' : 'Being prepared')
     : s === 'completed' ? (isAr ? 'تم التوصيل' : 'Delivered')
     : s === 'cancelled' ? (isAr ? 'ملغي' : 'Cancelled')

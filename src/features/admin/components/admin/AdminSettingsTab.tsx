@@ -130,7 +130,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
       {featuresConfig.enableOrdering && (
       <OrderingSection
         ordering={menu.settings.ordering}
-        currency={menu.settings.currency.en}
+        currency={menu.settings.currency[lang] || menu.settings.currency.en}
         lang={lang}
         whatsapp={menu.settings.whatsapp || ''}
         adminFetch={adminFetch}

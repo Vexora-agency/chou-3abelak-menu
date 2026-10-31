@@ -43,7 +43,8 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
           placeholder={isAr ? 'مثال: أحمد محمد' : 'e.g. John Doe'}
           maxLength={40}
-          className={`w-full h-11 px-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
+          autoComplete="name"
+          className={`w-full h-11 px-3.5 rounded-xl border text-base focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
             darkMode
               ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-500'
               : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400 shadow-xs'
@@ -61,11 +62,13 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           type="tel"
           inputMode="tel"
           autoComplete="tel"
-          value={customer.phone} dir={isAr ? 'rtl' : 'ltr'}
+          value={customer.phone} dir="ltr"
+          style={{ textAlign: isAr ? 'right' : 'left' }}
           onChange={(e) => setCustomer({ ...customer, phone: cleanPhoneInput(e.target.value) })}
           placeholder={isAr ? 'مثال: 70123456' : '+961 70 123 456'}
           maxLength={20}
-          className={`w-full h-11 px-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
+          enterKeyHint="next"
+          className={`w-full h-11 px-3.5 rounded-xl border text-base tabular-nums focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
             darkMode
               ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-500'
               : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400 shadow-xs'
@@ -86,7 +89,9 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
             placeholder={isAr ? 'المنطقة والشارع ورقم العمارة… أو حدد موقعك بالدبوس' : 'Area, street, building… or pin your location'}
             maxLength={200}
-            className={`w-full h-11 px-3.5 pe-11 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
+            autoComplete="street-address"
+            enterKeyHint="next"
+            className={`w-full h-11 px-3.5 pe-12 rounded-xl border text-base focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
               darkMode
                 ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-500'
                 : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400 shadow-xs'
@@ -98,20 +103,20 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               onClick={onOpenLocSheet}
               title={isAr ? 'افتح الخريطة لتحديد موقعك' : 'Open the map to pin your location'}
               aria-label={isAr ? 'افتح الخريطة لتحديد موقعك' : 'Open the map to pin your location'}
-              className={`absolute end-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+              className={`absolute end-0.5 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                 darkMode
                   ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
                   : 'text-[#8a6d00] hover:bg-[var(--primary)]/15'
               }`}
             >
-              <MapPin size={17} />
+              <MapPin size={20} />
             </button>
           )}
         </div>
         {location && (
-          <div className={`mt-1.5 flex items-center gap-2 text-[11px] font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+          <div className={`mt-1.5 flex items-center flex-wrap gap-x-2 gap-y-1 text-xs font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
             <MapPin size={13} className="shrink-0" />
-            <span className="truncate">
+            <span className="flex-1 min-w-0 basis-0 truncate" dir="auto">
                 {isAr
                   ? `تم تحديد الموقع${distanceText ? ` · على بعد ${distanceText} من موقعنا` : ''}`
                   : `Location pinned${distanceText ? ` · ${distanceText} from our location` : ''}`}
@@ -120,7 +125,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               href={`https://www.google.com/maps?q=${location.lat},${location.lng}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 underline underline-offset-2 hover:text-[var(--primary)]"
+              className="shrink-0 underline underline-offset-4 hover:text-[var(--primary)] inline-flex items-center min-h-[44px] px-1"
             >
               {isAr ? 'الخريطة' : 'Maps'}
             </a>
@@ -129,24 +134,24 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
                 {isAr ? 'تقريبي — اكتب العنوان أيضاً' : 'Rough — also write the address'}
               </span>
             )}
-            <span className="flex gap-1 shrink-0 ms-auto">
+            <span className="flex gap-2 shrink-0 ms-auto">
               <button
                 type="button"
                 onClick={onOpenLocSheet}
                 aria-label={isAr ? 'إعادة تحديد الموقع' : 'Re-pin location'}
                 title={isAr ? 'إعادة تحديد الموقع' : 'Re-pin location'}
-                className={`w-7 h-7 rounded-full border flex items-center justify-center ${darkMode ? 'border-neutral-700 text-neutral-300' : 'border-neutral-300 text-neutral-600'}`}
+                className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 text-neutral-300' : 'border-neutral-300 text-neutral-600'}`}
               >
-                <Navigation size={12} />
+                <Navigation size={16} />
               </button>
               <button
                 type="button"
                 onClick={onClearLocation}
                 aria-label={isAr ? 'إزالة الموقع' : 'Remove location'}
                 title={isAr ? 'إزالة الموقع' : 'Remove location'}
-                className={`w-7 h-7 rounded-full flex items-center justify-center ${darkMode ? 'text-neutral-400 hover:text-red-400' : 'text-neutral-500 hover:text-red-600'}`}
+                className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${darkMode ? 'text-neutral-400 hover:text-red-400' : 'text-neutral-500 hover:text-red-600'}`}
               >
-                <X size={13} />
+                <X size={16} />
               </button>
             </span>
           </div>
@@ -165,7 +170,8 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           onChange={(e) => setCustomer({ ...customer, notes: e.target.value })}
           placeholder={isAr ? 'بدون بصل، صوص إضافي...' : 'No onions, extra sauce...'}
           maxLength={200}
-          className={`w-full h-11 px-3.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
+          enterKeyHint="done"
+          className={`w-full h-11 px-3.5 rounded-xl border text-base focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
             darkMode
               ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-500'
               : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400 shadow-xs'
@@ -188,17 +194,17 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         </label>
       </div>
 
-      <div className="flex items-center gap-2 pt-1">
+      <div className="flex items-center gap-3 pt-1 min-h-[44px]">
         <input
           id="remember-details"
           type="checkbox"
           checked={customer.remember}
           onChange={(e) => setCustomer({ ...customer, remember: e.target.checked })}
-          className="w-4 h-4 rounded text-[var(--primary)] focus:ring-[var(--primary)]"
+          className="w-6 h-6 shrink-0 rounded text-[var(--primary)] focus:ring-[var(--primary)]"
         />
         <label
           htmlFor="remember-details"
-          className={`text-xs select-none cursor-pointer font-bold ${
+          className={`text-sm py-2 flex-1 select-none cursor-pointer font-bold ${
             darkMode ? 'text-neutral-300' : 'text-neutral-700'
           }`}
         >

@@ -58,12 +58,12 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={isAr ? 'بحث في الوجبات...' : 'Search items...'}
-          className="h-10 px-3 rounded-lg bg-neutral-900 border border-neutral-700 text-xs w-full min-w-0 basis-full min-[560px]:w-auto min-[560px]:flex-1"
+          className="h-11 min-h-[44px] px-3 rounded-lg bg-neutral-900 border border-neutral-700 text-sm w-full min-w-0 basis-full min-[560px]:w-auto min-[560px]:flex-1"
         />
         <select
           value={categoryFilter}
           onChange={(e) => onCategoryFilterChange(e.target.value)}
-          className="h-10 px-2.5 rounded-lg bg-neutral-900 border border-neutral-700 text-xs flex-1 min-w-0 max-w-full"
+          className="h-11 min-h-[44px] px-2.5 rounded-lg bg-neutral-900 border border-neutral-700 text-xs flex-1 min-w-0 max-w-full"
         >
           <option value="all">{isAr ? 'كل الأقسام' : 'All Categories'}</option>
           {menu.categories.map((c) => (
@@ -75,7 +75,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
         <select
           value={badgeFilter}
           onChange={(e) => onBadgeFilterChange(e.target.value as ItemBadgeFilter)}
-          className="h-10 px-2.5 rounded-lg bg-neutral-900 border border-neutral-700 text-xs flex-1 min-w-0 max-w-full"
+          className="h-11 min-h-[44px] px-2.5 rounded-lg bg-neutral-900 border border-neutral-700 text-xs flex-1 min-w-0 max-w-full"
           aria-label={isAr ? 'فلترة بالشارة' : 'Filter by badge'}
         >
           <option value="all">{isAr ? 'كل الشارات' : 'All Badges'}</option>
@@ -87,7 +87,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
         <button
           type="button"
           onClick={onAdd}
-          className="btn-tactile h-10 px-3.5 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-xs flex items-center justify-center gap-1 shadow-md basis-full min-[560px]:basis-auto"
+          className="btn-tactile h-11 min-h-[44px] px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-xs flex items-center justify-center gap-1 shadow-md basis-full min-[560px]:basis-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
         >
           <Plus size={14} />
           <span>{isAr ? 'إضافة وجبة' : 'Add Item'}</span>

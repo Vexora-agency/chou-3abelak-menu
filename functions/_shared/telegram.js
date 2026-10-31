@@ -29,6 +29,7 @@
  */
 
 import { sha256Hex } from './access.js';
+import { unitLabel } from './pricing.js';
 import { safeCompareStrings } from './session.js';
 import { findOrderById, updateOrderStatus } from './repositories/orders.repo.js';
 import { notifyOrderStatus } from './push.js';
@@ -430,6 +431,14 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
     const name = escapeHtml(pickName(it.name) || it.id || 'صنف');
     const qty = Number.isFinite(it.qty) ? it.qty : 0;
     const unit = typeof it.unitPrice === 'number' ? it.unitPrice : 0;
+    // Pricing unit word ("2 دستتين", not bare "× 2") — old rows without a
+    // stored unit fall back to the bare quantity, never a wrong word.
+    let qtyWord = bidi(qty);
+    try {
+      if (typeof it.unit === 'string' && it.unit) {
+        qtyWord = `${bidi(qty)} ${escapeHtml(unitLabel(it.unit, qty, 'ar'))}`;
+      }
+    } catch {}
     const extras = [];
     if (it.variantName && pickName(it.variantName)) extras.push(escapeHtml(pickName(it.variantName)));
     if (Array.isArray(it.addonNames)) {
@@ -439,7 +448,7 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
       }
     }
     const extra = extras.length ? ` (${extras.join('، ')})` : '';
-    lines.push(`• ${name}${extra} × ${bidi(qty)} = ${money(unit * qty)}`);
+    lines.push(`• ${name}${extra} × ${qtyWord} = ${money(unit * qty)}`);
   }
   if (items.length > shown.length) {
     lines.push(`… ${bidi(`+${items.length - shown.length}`)} أصناف أخرى`);

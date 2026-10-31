@@ -282,9 +282,9 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           type="button"
           onClick={() => detect(true)}
           disabled={detecting}
-          className={`shrink-0 h-9 px-3 rounded-full border text-[11px] font-bold inline-flex items-center gap-1.5 disabled:opacity-60 ${darkMode ? 'border-neutral-700 text-neutral-200' : 'border-neutral-300 text-neutral-700'}`}
+          className={`shrink-0 h-11 min-h-[44px] px-4 rounded-full border text-xs font-bold inline-flex items-center gap-2 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 text-neutral-200' : 'border-neutral-300 text-neutral-700'}`}
         >
-          {detecting ? <Loader2 size={13} className="animate-spin" /> : <Navigation size={13} />}
+          {detecting ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
           {t.locate}
         </button>
       </div>
@@ -310,18 +310,18 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
       </div>
 
       {tilesFailed && (
-        <p className="text-[11px] font-bold text-amber-500">{t.mapFail}</p>
+        <p role="status" className="text-xs font-bold text-amber-500">{t.mapFail}</p>
       )}
       {locError && (
-        <p className="text-[11px] font-bold text-amber-500">{locError}</p>
+        <p role="status" className="text-xs font-bold text-amber-500">{locError}</p>
       )}
 
       <LocationAddressPreview point={point} addrLoading={addrLoading} addrPreview={addrPreview} darkMode={darkMode} isAr={isAr} />
       {addrWarn && (
-        <p className="text-[11px] font-bold text-amber-500">{t.addrFail}</p>
+        <p role="status" className="text-xs font-bold text-amber-500">{t.addrFail}</p>
       )}
       {point && (armedFor === `${point.lat},${point.lng}` || (!manual && point.accuracy > POOR_ACC_M)) && (
-        <p role="alert" className="text-[11px] font-bold text-amber-500">
+        <p role="alert" className="text-xs font-bold text-amber-500">
           {t.poorAcc} <span dir="ltr" className="tabular-nums">±{Math.round(point.accuracy)}m</span>
         </p>
       )}
@@ -337,11 +337,11 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
       <button
         type="button"
         onClick={onClose}
-        className={`w-full h-10 rounded-full text-xs font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}
+        className={`w-full h-11 min-h-[44px] rounded-full text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}
       >
         {t.manual}
       </button>
-      <style>{`.loc-div-icon{background:none;border:none;}.leaflet-container{font:inherit;background:${darkMode ? '#141414' : '#f0ede6'};}.leaflet-control-attribution{font-size:9px;}.leaflet-touch .leaflet-bar a{width:38px;height:38px;line-height:38px;}.leaflet-touch .leaflet-control-zoom{margin-top:10px;margin-left:10px;}`}</style>
+      <style>{`.loc-div-icon{background:none;border:none;}.leaflet-container{font:inherit;background:${darkMode ? '#141414' : '#f0ede6'};}.leaflet-control-attribution{font-size:9px;}.leaflet-touch .leaflet-bar a{width:44px!important;height:44px!important;line-height:44px!important;font-size:22px;}.leaflet-touch .leaflet-control-zoom{margin-top:10px;margin-left:10px;}`}</style>
     </div>
   );
 };

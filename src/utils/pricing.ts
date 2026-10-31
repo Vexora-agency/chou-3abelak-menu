@@ -205,11 +205,15 @@ export function formatPrice(n: number, currency?: string | { code?: string; deci
   return code ? `${formatted} ${code}` : formatted;
 }
 
+// Arabic counted noun: 1 = singular, 2 = dual (oblique ين — the UI always
+// renders the numeral before it, e.g. "2 قطعتين"), 3-10 = plural,
+// 11+ = singular again (tamyiiz: "11 قطعة"). `one` doubles as the 11+
+// form — intentional, do NOT "fix" to plural.
 function arabicCount(qty: number, one: string, two: string, few: string): string {
   if (qty === 1) return one;
   if (qty === 2) return two;
   if (qty >= 3 && qty <= 10) return few;
-  return one;
+  return one; // 11+ → singular, intentional
 }
 
 /** Localized unit word for a quantity. Unknown units echo back. */
@@ -217,13 +221,13 @@ export function unitLabel(unit: string, qty: number, lang: 'en' | 'ar'): string 
   const q = typeof qty === 'number' ? qty : 1;
   if (lang === 'ar') {
     switch (unit) {
-      case 'pc': return arabicCount(q, 'قطعة', 'قطعتان', 'قطع');
-      case 'portion': return 'حصة';
-      case 'dozen': return arabicCount(q, 'دزينة', 'دزينتان', 'دزينات');
-      case 'box': return 'علبة';
-      case 'bottle': return 'زجاجة';
-      case 'glass': return 'كاسة';
-      case 'kg': return 'كغ';
+      case 'pc': return arabicCount(q, 'قطعة', 'قطعتين', 'قطع');
+      case 'portion': return arabicCount(q, 'حصة', 'حصتين', 'حصص');
+      case 'dozen': return arabicCount(q, 'دستة', 'دستتين', 'دستات');
+      case 'box': return arabicCount(q, 'علبة', 'علبتين', 'علب');
+      case 'bottle': return arabicCount(q, 'زجاجة', 'زجاجتين', 'زجاجات');
+      case 'glass': return arabicCount(q, 'كأس', 'كأسين', 'كؤوس');
+      case 'kg': return 'كغ'; // abbreviation — invariant by design
       default: return typeof unit === 'string' ? unit : '';
     }
   }

@@ -215,7 +215,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         {/* Top Tag Badge */}
         <div className="relative flex justify-between items-start">
           <span
-            className={`inline-block px-3 py-1 rounded-full text-[11px] font-extrabold tracking-wider uppercase ${
+            className={`inline-block px-3 py-1 rounded-full text-[11px] font-extrabold ${isAr ? '' : 'tracking-wider uppercase'} ${
               isYellowCard
                 ? 'bg-[#0A0A0A] text-[var(--primary)]'
                 : 'bg-[var(--primary)] text-[#0A0A0A]'
@@ -252,7 +252,8 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                     </h3>
                             {pickLangText(item.description, lang).trim() ? (
                               <p
-                                className={`text-xs mt-0.5 line-clamp-1 ${
+                                dir="auto"
+                                className={`text-xs mt-0.5 line-clamp-1 ${isAr ? 'leading-relaxed' : ''} ${
                                   isYellowCard ? 'text-black/75' : 'text-neutral-400'
                                 }`}
                               >
@@ -262,11 +263,12 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           </div>
 
           <div
-            className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-black shadow-sm ${
+            className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-black shadow-sm tabular-nums ${
               isYellowCard
                 ? 'bg-[#0A0A0A] text-[var(--primary)]'
                 : 'bg-[var(--primary)] text-[#0A0A0A]'
             }`}
+            dir="ltr"
           >
             {priceLabel(item, lang, currency)}
           </div>
@@ -314,7 +316,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             <button
               type="button"
               onClick={() => goTo(index - 1)}
-              className="absolute start-1.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/55 text-white backdrop-blur flex items-center justify-center hover:bg-black/75 transition-colors"
+              className="absolute start-1.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/55 text-white backdrop-blur flex items-center justify-center hover:bg-black/75 transition-colors after:absolute after:-inset-2 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               aria-label={isAr ? 'السابق' : 'Previous slide'}
             >
               <ChevronLeft size={16} className="rtl:rotate-180" />
@@ -322,7 +324,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             <button
               type="button"
               onClick={() => goTo(index + 1)}
-              className="absolute end-1.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/55 text-white backdrop-blur flex items-center justify-center hover:bg-black/75 transition-colors"
+              className="absolute end-1.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/55 text-white backdrop-blur flex items-center justify-center hover:bg-black/75 transition-colors after:absolute after:-inset-2 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               aria-label={isAr ? 'التالي' : 'Next slide'}
             >
               <ChevronRight size={16} className="rtl:rotate-180" />
@@ -341,13 +343,19 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
               aria-selected={idx === index}
               aria-label={`${isAr ? 'شريحة' : 'Slide'} ${idx + 1}`}
               onClick={() => goTo(idx)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-11 min-h-[44px] px-2.5 inline-flex items-center rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                 idx === index
                   // Active: gold on dark, solid black on light (owner call).
-                  ? darkMode ? 'w-6 bg-[var(--primary)]' : 'w-6 bg-[#0A0A0A]'
-                  : darkMode ? 'w-1.5 bg-white/25 hover:bg-white/40' : 'w-1.5 bg-black/20 hover:bg-black/40'
+                  ? darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'
+                  : darkMode ? 'text-white/25 hover:text-white/40' : 'text-black/20 hover:text-black/40'
               }`}
-            />
+            >
+              <span className={`block h-1.5 rounded-full transition-all duration-300 ${
+                idx === index
+                  ? darkMode ? 'w-6 bg-[var(--primary)]' : 'w-6 bg-[#0A0A0A]'
+                  : darkMode ? 'w-1.5 bg-current' : 'w-1.5 bg-current'
+              }`} />
+            </button>
           ))}
         </div>
       )}

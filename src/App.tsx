@@ -215,7 +215,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-white text-center" style={{ background: themeConfig.colors.background }}>
         <div className="w-16 h-16 rounded-full border-4 border-t-transparent animate-spin mb-4" style={{ borderColor: themeConfig.colors.primary, borderTopColor: 'transparent' }} />
-        <h2 className="text-xl font-bold tracking-wide">{clientConfig.companyNameEn} · {clientConfig.companyNameAr}</h2>
+        <h2 className="text-xl font-bold">{clientConfig.companyNameEn} · {clientConfig.companyNameAr}</h2>
         <p className="text-xs text-neutral-400 mt-1">Loading delicious menu...</p>
       </div>
     );
@@ -324,13 +324,13 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
       aria-hidden="true"
     />
     <div
-      className={`min-h-screen transition-colors duration-300 font-sans ${
+      className={`min-h-screen min-h-dvh transition-colors duration-300 font-sans ${
         darkMode ? 'bg-[#0A0A0A] text-white' : 'bg-[#0A0A0A]'
       }`}
     >
       {/* Responsive Luxury Canvas: fluid on mobile, expanding gracefully on tablet/desktop */}
       <div
-        className={`w-full min-h-screen mx-auto flex flex-col overflow-x-clip transition-colors duration-300 relative ${
+        className={`w-full min-h-screen min-h-dvh mx-auto flex flex-col overflow-x-hidden overflow-x-clip transition-colors duration-300 relative ${
           darkMode ? 'bg-[#0A0A0A] text-white' : 'bg-[#FFFFFF] text-[#0A0A0A]'
         }`}
       >

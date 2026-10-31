@@ -27,14 +27,19 @@ export const CartBar: React.FC<CartBarProps> = ({
   // Delete confirmation dialog (opens on trash tap)
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // Close the confirmation on Escape
+  // Close the confirmation on Escape + lock background scroll while open
   useEffect(() => {
     if (!confirmOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setConfirmOpen(false);
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
   }, [confirmOpen]);
 
   const handleConfirmDelete = () => {
@@ -56,7 +61,7 @@ export const CartBar: React.FC<CartBarProps> = ({
   return (
     <aside
       aria-label={isAr ? 'شريط سلة الطلبات' : 'Cart overview bar'}
-      className="fixed bottom-4 left-0 right-0 z-30 px-4 flex flex-col items-center gap-1.5 pointer-events-none"
+      className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-0 right-0 z-30 px-4 flex flex-col items-center gap-1.5 pointer-events-none"
     >
       {blocked && statusText ? (
         <div role="status" className="pointer-events-auto flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/80 border border-neutral-700 text-[11px] font-bold text-neutral-200">
@@ -80,23 +85,23 @@ export const CartBar: React.FC<CartBarProps> = ({
             <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center font-black">
               <ShoppingBag size={17} className="stroke-[2.5]" />
             </div>
-            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0A0A0A]">
-              {totalCount}
+            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[11px] font-black min-w-5 h-5 px-1 rounded-full flex items-center justify-center border-2 border-[#0A0A0A] tabular-nums">
+              {totalCount > 99 ? '99+' : totalCount}
             </span>
           </div>
 
           <div>
-            <div className="text-xs text-neutral-400 font-medium leading-tight">
+            <div className={`text-xs text-neutral-400 font-medium ${isAr ? 'leading-relaxed' : 'leading-tight'}`}>
               {isAr ? 'إجمالي الطلب' : 'Your Order'}
             </div>
-            <div className="text-base font-extrabold text-[var(--primary)] whitespace-nowrap leading-tight">
+            <div className="text-base font-extrabold text-[var(--primary)] whitespace-nowrap leading-tight tabular-nums" dir="ltr">
               {formatPrice(totalPrice, currency)}
             </div>
           </div>
         </div>
 
         {/* Right: quick delete + CTA */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={(e) => {
@@ -105,11 +110,11 @@ export const CartBar: React.FC<CartBarProps> = ({
             }}
             aria-label={isAr ? 'إفراغ السلة' : 'Clear cart'}
             title={isAr ? 'حذف السلة' : 'Clear cart'}
-            className="max-[379px]:hidden w-9 h-9 flex-shrink-0 rounded-full text-red-500/70 hover:text-red-500 hover:bg-red-500/10 flex items-center justify-center transition-all active:scale-90"
+            className="max-[379px]:hidden w-11 h-11 min-w-[44px] min-h-[44px] flex-shrink-0 rounded-full text-red-500/70 hover:text-red-500 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 flex items-center justify-center transition-all active:scale-90"
           >
-            <Trash2 size={15} />
+            <Trash2 size={18} />
           </button>
-          <div className="flex items-center gap-1.5 whitespace-nowrap text-[11px] sm:text-xs font-bold uppercase tracking-wide bg-[var(--primary)] text-[#0A0A0A] px-3.5 sm:px-4 py-2 rounded-full shadow-sm">
+          <div className={`flex items-center gap-1.5 whitespace-nowrap text-xs font-bold bg-[var(--primary)] text-[#0A0A0A] px-3.5 sm:px-4 py-2 min-h-[44px] rounded-full shadow-sm ${isAr ? '' : 'uppercase tracking-wide'}`}>
             <span>{isAr ? 'معاينة الطلب' : 'View Order'}</span>
             {isAr ? <ArrowLeft size={14} className="stroke-[3]" /> : <ArrowRight size={14} className="stroke-[3]" />}
           </div>
@@ -119,7 +124,7 @@ export const CartBar: React.FC<CartBarProps> = ({
       {/* Delete confirmation dialog */}
       {confirmOpen && (
         <div
-          className="pointer-events-auto fixed inset-0 z-[60] flex items-center justify-center p-4"
+          className="pointer-events-auto fixed inset-0 z-[60] flex items-center justify-center p-4 overscroll-contain"
           role="alertdialog"
           aria-modal="true"
           aria-label={isAr ? 'تأكيد حذف السلة' : 'Confirm clear cart'}

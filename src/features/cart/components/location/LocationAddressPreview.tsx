@@ -19,7 +19,7 @@ export const LocationAddressPreview: React.FC<LocationAddressPreviewProps> = ({
     <>
       {/* Live address preview: exactly what Confirm will write. Move the
           pin until this reads correctly — this is a real order. */}
-      <div className={`rounded-xl border p-3 min-h-[58px] ${darkMode ? 'border-neutral-700 bg-black/40' : 'border-neutral-300 bg-neutral-100'}`}>
+      <div role="status" aria-live="polite" className={`rounded-xl border p-3 min-h-[58px] break-words overflow-wrap:anywhere ${darkMode ? 'border-neutral-700 bg-black/40' : 'border-neutral-300 bg-neutral-100'}`}>
         {!point ? (
           <p className={`text-xs ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
             {isAr ? 'حرّك الدبوس أو اضغط على الخريطة…' : 'Move the pin or tap the map…'}

@@ -125,7 +125,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={isAr ? 'سلة الطلبات وإتمام الشراء' : 'Order Checkout'}
-        className={`relative z-10 w-full max-w-[540px] max-h-[92vh] overflow-y-auto overscroll-contain no-scrollbar rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] px-6 sm:px-8 pt-4 sm:pt-6 pb-8 anim-drawer-in shadow-2xl transition-colors duration-200 [touch-action:pan-y] overflow-x-clip ${
+        className={`relative z-10 w-full max-w-[540px] max-h-[92vh] max-h-[92dvh] overflow-y-auto overscroll-contain no-scrollbar rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] px-6 sm:px-8 pt-4 sm:pt-6 pb-[max(2rem,env(safe-area-inset-bottom))] anim-drawer-in shadow-2xl transition-colors duration-200 [touch-action:pan-y] overflow-x-clip scroll-pb-32 ${
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
       >
@@ -147,20 +147,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               {isAr ? 'سلة طلبك' : 'Your Order'}
             </h2>
             <p className={`text-xs mt-0.5 font-medium ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-              {lines.length} {isAr ? 'أصناف مختارة' : 'items selected'}
+              <bdi className="tabular-nums">{lines.length}</bdi> {isAr ? (lines.length === 1 ? 'صنف مختار' : lines.length === 2 ? 'صنفان مختاران' : 'أصناف مختارة') : 'items selected'}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+            className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
               darkMode
                 ? 'bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700'
                 : 'bg-neutral-100 text-neutral-700 hover:text-black hover:bg-neutral-200'
             }`}
             aria-label="Close"
           >
-            <X size={18} />
+            <X size={20} />
           </button>
         </div>
 

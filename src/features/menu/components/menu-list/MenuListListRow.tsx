@@ -60,9 +60,10 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
           description, so the + never dangles on an empty row) */}
       {pickLangText(item.description, lang).trim() ? (
       <>
-      <div className="flex items-baseline gap-2">
+      <div className="flex items-baseline flex-wrap gap-x-2 gap-y-1">
         <span
-          className={`font-bold text-base transition-transform group-hover:translate-x-1 ${
+          dir="auto"
+          className={`font-bold text-base min-w-0 break-words transition-transform group-hover:translate-x-1 ${
             darkMode ? 'text-white' : 'text-[#0A0A0A]'
           }`}
         >
@@ -73,7 +74,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         {effectiveBadges(menu, item).map((b) => (
           <span
             key={b}
-            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]"
+            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]"
           >
             {b === 'spicy' && <Flame size={10} className="fill-[var(--primary)]" />}
             {b === 'top' && <Award size={10} className="fill-[var(--primary)]" />}
@@ -89,7 +90,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         )}
 
         {/* Price Pill */}
-        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[var(--primary)] text-[#0A0A0A] shadow-sm flex-shrink-0 group-hover:scale-105 transition-transform">
+        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[var(--primary)] text-[#0A0A0A] shadow-sm flex-shrink-0 tabular-nums group-hover:scale-105 transition-transform" dir="ltr">
           {priceLabel(item, lang, currency)}
         </span>
       </div>
@@ -118,9 +119,10 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
       ) : (
       /* No description: single balanced row — name left,
          price + action right, no empty second row. */
-      <div className="flex items-center gap-2">
+      <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
         <span
-          className={`font-bold text-base min-w-0 flex-1 truncate transition-transform group-hover:translate-x-1 ${
+          dir="auto"
+          className={`font-bold text-base min-w-0 flex-1 break-words transition-transform group-hover:translate-x-1 ${
             darkMode ? 'text-white' : 'text-[#0A0A0A]'
           }`}
         >
@@ -145,7 +147,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
           </span>
         )}
 
-        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[var(--primary)] text-[#0A0A0A] shadow-sm flex-shrink-0 transition-transform group-hover:scale-105">
+        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[var(--primary)] text-[#0A0A0A] shadow-sm flex-shrink-0 tabular-nums transition-transform group-hover:scale-105" dir="ltr">
           {priceLabel(item, lang, currency)}
         </span>
 

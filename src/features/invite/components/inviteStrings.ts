@@ -51,7 +51,7 @@ export const ISTR: Record<LoginLang, InviteStrings> = {
     password: 'كلمة السر الجديدة',
     confirm: 'تأكيد كلمة السر',
     forAccount: 'لهذا الحساب',
-    policy12: '١٢ حرفًا على الأقل',
+    policy12: '12 حرفًا على الأقل',
     policyMatch: 'التطابق',
     remember: 'تذكرني',
     forgot: 'نسيت كلمة السر؟',

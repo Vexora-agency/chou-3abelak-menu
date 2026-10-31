@@ -92,13 +92,13 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0">
-          <span className={`font-bold text-[15px] truncate transition-transform group-hover:translate-x-0.5 ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+          <span dir="auto" className={`font-bold text-[15px] truncate transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
             {pickLangText(item.name, lang)}
           </span>
           {effectiveBadges(menu, item).map((b) => (
             <span
               key={b}
-              className="inline-flex shrink-0 items-center gap-0.5 px-1.5 py-px rounded-full text-[9px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]"
+              className="inline-flex shrink-0 items-center gap-0.5 px-1.5 py-px rounded-full text-[10px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]"
             >
                 {b === 'spicy' && <Flame size={9} className="fill-[var(--primary)]" />}
                 {b === 'top' && <Award size={9} className="fill-[var(--primary)]" />}
@@ -115,7 +115,8 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
         {pickLangText(item.description, lang).trim() ? (
           <p
             title={pickLangText(item.description, lang)}
-            className={`text-xs truncate mt-0.5 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}
+            dir="auto"
+            className={`text-xs truncate mt-0.5 ${isAr ? 'leading-relaxed' : ''} ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}
           >
             {pickLangText(item.description, lang)}
           </p>

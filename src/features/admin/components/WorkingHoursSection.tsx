@@ -32,7 +32,7 @@ export const WorkingHoursSection: React.FC<WorkingHoursSectionProps> = ({
   const isAr = lang === 'ar';
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-      <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
+      <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
         {isAr ? 'مواعيد العمل والحالة' : 'Working Hours & Status'}
       </h2>
 
@@ -108,7 +108,7 @@ export const WorkingHoursSection: React.FC<WorkingHoursSectionProps> = ({
                 }}
                 aria-pressed={on}
                 title={isAr ? d.ar : d.en}
-                className={`h-9 min-w-[52px] px-3 rounded-full text-xs font-bold border-[1.5px] transition-all btn-tactile ${
+                className={`h-11 min-h-[44px] min-w-[52px] px-4 rounded-full text-xs font-bold border-[1.5px] transition-all btn-tactile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                   on
                     ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
                     : 'bg-transparent text-neutral-400 border-neutral-700 hover:border-neutral-500'

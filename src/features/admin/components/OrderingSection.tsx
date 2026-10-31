@@ -30,7 +30,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div>
-        <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
+        <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
           {isAr ? 'إعدادات الطلبات' : 'Ordering System'}
         </h2>
         <p className="text-[11px] text-neutral-500 mt-0.5">
@@ -54,7 +54,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
           role="switch"
           aria-checked={!!ordering.minOrderEnabled}
           onClick={() => onUpdate((prev) => ({ ...prev, minOrderEnabled: !prev.minOrderEnabled }))}
-          className="w-full flex items-center justify-between gap-3 text-start"
+          className="w-full flex items-center justify-between gap-3 text-start min-h-[44px] rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
         >
           <span>
             <span className="block text-xs font-bold">
@@ -82,13 +82,13 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
         </button>
         {ordering.minOrderEnabled && (
           <div className="anim-fade-in">
-            <label className="block text-xs text-neutral-400 mb-1">Min Order ({currency})</label>
+            <label className="block text-xs text-neutral-400 mb-1">{isAr ? `الحد الأدنى للطلب (${currency})` : `Min Order (${currency})`}</label>
             <input
               type="number"
               step="any"
               value={ordering.minOrder}
               onChange={(e) => onUpdate((prev) => ({ ...prev, minOrder: Number(e.target.value) }))}
-              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
+              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
             />
           </div>
         )}
@@ -101,7 +101,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
           role="switch"
           aria-checked={!!ordering.deliveryFeeEnabled}
           onClick={() => onUpdate((prev) => ({ ...prev, deliveryFeeEnabled: !prev.deliveryFeeEnabled }))}
-          className="w-full flex items-center justify-between gap-3 text-start"
+          className="w-full flex items-center justify-between gap-3 text-start min-h-[44px] rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
         >
           <span>
             <span className="block text-xs font-bold">
@@ -129,13 +129,13 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
         </button>
         {ordering.deliveryFeeEnabled && (
           <div className="anim-fade-in">
-            <label className="block text-xs text-neutral-400 mb-1">Delivery Fee ({currency})</label>
+            <label className="block text-xs text-neutral-400 mb-1">{isAr ? `رسوم التوصيل (${currency})` : `Delivery Fee (${currency})`}</label>
             <input
               type="number"
               step="any"
               value={ordering.deliveryFee}
               onChange={(e) => onUpdate((prev) => ({ ...prev, deliveryFee: Number(e.target.value) }))}
-              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
+              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
             />
           </div>
         )}
@@ -148,7 +148,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
           role="switch"
           aria-checked={!!ordering.paused}
           onClick={() => onUpdate((prev) => applyDraftPause(prev, !prev.paused, new Date().toISOString()))}
-          className="w-full flex items-center justify-between gap-3 text-start"
+          className="w-full flex items-center justify-between gap-3 text-start min-h-[44px] rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
         >
           <span>
             <span className="block text-xs font-bold">
@@ -212,7 +212,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
           role="switch"
           aria-checked={!!ordering.acceptWhenClosed}
           onClick={() => onUpdate((prev) => ({ ...prev, acceptWhenClosed: !prev.acceptWhenClosed }))}
-          className="w-full flex items-center justify-between gap-3 text-start"
+          className="w-full flex items-center justify-between gap-3 text-start min-h-[44px] rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
         >
           <span>
             <span className="block text-xs font-bold">

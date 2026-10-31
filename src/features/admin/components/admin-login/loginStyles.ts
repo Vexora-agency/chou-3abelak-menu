@@ -1,5 +1,6 @@
 export const inputCls = (hasError: boolean): string =>
-  `login-field peer w-full h-14 rounded-2xl bg-black/45 border ps-12 pe-4 pt-5 text-[15px] text-white placeholder:text-transparent outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-[var(--primary)] focus:bg-black/60 focus:ring-4 focus:ring-[var(--primary)]/15 disabled:opacity-60 ${
+  // text-[16px]: iOS Safari auto-zooms any field under 16px on focus.
+  `login-field peer w-full h-14 rounded-2xl bg-black/45 border ps-12 pe-4 pt-5 text-[16px] text-white placeholder:text-transparent outline-none transition-[border-color,box-shadow,background-color] duration-200 focus:border-[var(--primary)] focus:bg-black/60 focus:ring-4 focus:ring-[var(--primary)]/15 disabled:opacity-60 ${
     hasError ? 'border-red-400/70' : 'border-white/15'
   }`;
 

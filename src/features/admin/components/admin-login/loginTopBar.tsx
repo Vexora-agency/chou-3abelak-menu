@@ -40,7 +40,7 @@ export function LoginTopBar({ t, lang, onBack, onToggleLang, rise }: LoginTopBar
               key={code}
               type="button"
               onClick={active ? undefined : onToggleLang}
-              className={`relative min-w-[48px] h-9 px-3 rounded-full text-xs font-bold transition-colors ${
+              className={`relative min-w-[48px] h-11 min-h-[44px] px-3 rounded-full text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                 active ? 'text-[#0A0A0A]' : 'text-white/75 hover:text-white'
               }`}
               aria-label={code === 'en' ? STR.en.switchTo : STR.ar.switchTo}

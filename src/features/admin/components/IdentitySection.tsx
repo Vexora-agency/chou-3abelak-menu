@@ -243,7 +243,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
   }, [mapUrl, addr.en, addr.ar]);
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-      <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
+      <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
         {isAr ? 'بيانات المتجر' : 'Store Identity'}
       </h2>
 
@@ -443,7 +443,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
                     <button
                       type="button"
                       onClick={() => void resolveTyped()}
-                      className="h-9 px-4 rounded-full border border-[var(--primary)]/50 text-[var(--primary)] text-xs font-extrabold hover:bg-[var(--primary)] hover:text-[#0A0A0A] transition-colors"
+                      className="h-11 min-h-[44px] px-5 rounded-full border border-[var(--primary)]/50 text-[var(--primary)] text-xs font-extrabold hover:bg-[var(--primary)] hover:text-[#0A0A0A] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                     >
                       {isAr ? 'تحويل الآن' : 'Convert now'}
                     </button>
@@ -463,7 +463,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
               <button
                 type="button"
                 onClick={() => setAddrOpen(true)}
-                className="h-9 px-4 rounded-full text-xs font-bold text-neutral-400 hover:text-[var(--primary)] transition-colors"
+                className="h-11 min-h-[44px] px-4 rounded-full text-xs font-bold text-neutral-400 hover:text-[var(--primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
               >
                 {isAr ? 'أو اكتبه يدويًا' : 'or write it manually'}
               </button>

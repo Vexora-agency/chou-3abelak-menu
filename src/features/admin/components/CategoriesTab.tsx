@@ -31,7 +31,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
   return (
     <div className="space-y-4 stagger">
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
+        <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
           {categories.length} {isAr ? 'أقسام مضافة' : 'Categories'}
         </h2>
         <button
@@ -89,7 +89,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
                     c.id === cat.id ? { ...c, name: { ...c.name, en: e.target.value } } : c
                   ))
                 }
-                className="h-9 px-2.5 rounded bg-black border border-neutral-700 text-xs text-white"
+                className="h-11 min-h-[44px] px-2.5 rounded bg-black border border-neutral-700 text-sm text-white"
                 placeholder="Category (EN)"
               />
               <input
@@ -101,7 +101,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
                     c.id === cat.id ? { ...c, name: { ...c.name, ar: e.target.value } } : c
                   ))
                 }
-                className="h-9 px-2.5 rounded bg-black border border-neutral-700 text-xs text-white"
+                className="h-11 min-h-[44px] px-2.5 rounded bg-black border border-neutral-700 text-sm text-white"
                 placeholder="القسم (عربي)"
               />
             </div>

@@ -110,7 +110,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({
     <div
       dir={isAr ? 'rtl' : 'ltr'}
       lang={lang}
-      className="relative isolate min-h-[100dvh] overflow-hidden bg-[#0A0A0A] text-white flex flex-col items-center justify-center px-5 py-24 sm:py-16"
+      className="relative isolate min-h-[100dvh] overflow-y-auto bg-[#0A0A0A] text-white flex flex-col items-center justify-start sm:justify-center px-5 py-10 sm:py-16"
     >
       <LoginAtmosphere reduce={reduce} />
       <LoginTopBar t={t} lang={lang} onBack={onBack} onToggleLang={onToggleLang} rise={rise} />

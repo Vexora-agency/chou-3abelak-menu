@@ -4,6 +4,7 @@ import { BellRing, Check, ChevronDown, Inbox, MapPin, MessageCircle, Phone, Stor
 import { STR } from './ordersDashTypes';
 import type { Order, OrderStatus } from './ordersDashTypes';
 import { STATUS_STYLE, TYPE_ICON, digits, fmt, itemTitle, relTime } from './ordersDashUtils';
+import { unitLabel } from '@/src/utils/pricing';
 import { card } from './OrdersDashBits';
 
 interface OrdersDashListProps {
@@ -47,7 +48,7 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
           const active = filter === s;
           return (
             <button key={s} type="button" onClick={() => { onFilterChange(s); }} aria-pressed={active}
-              className={`shrink-0 h-8 px-3 rounded-full text-xs font-bold border transition-colors ${active ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]' : 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:border-neutral-600'}`}>
+              className={`shrink-0 h-11 min-h-[44px] px-4 rounded-full text-xs font-bold border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${active ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]' : 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:border-neutral-600'}`}>
               {t[s]} <span className={`ms-1 tabular-nums ${active ? 'text-[#0A0A0A]/70' : 'text-neutral-500'}`}>{counts[s]}</span>
             </button>
           );
@@ -82,8 +83,8 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                       <b className="text-sm tabular-nums" dir="ltr">#{o.number}</b>
                       <span className="text-sm font-semibold truncate">{o.customer.name}</span>
                     </span>
-                    <span className="block text-[11px] text-neutral-500 truncate mt-0.5">
-                      {relTime(o.createdAt, lang, now)} · {o.items.map((it) => `${it.qty}× ${itemTitle(it, lang)}`).join(', ')}
+                    <span className="block text-[11px] text-neutral-500 truncate mt-0.5" dir="auto">
+                      <bdi>{relTime(o.createdAt, lang, now)}</bdi> · {o.items.map((it) => `${it.qty}× ${typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, lang)} ` : ''}${itemTitle(it, lang)}`).join(isAr ? '، ' : ', ')}
                     </span>
                   </span>
                   <span className="shrink-0 text-end">
@@ -105,8 +106,8 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                           <p className={`text-[11px] font-bold text-neutral-500 ${isAr ? '' : 'uppercase tracking-wide'}`}>{t.itemsLabel}</p>
                           {o.items.map((it, idx) => (
                             <div key={`${it.id}-${idx}`} className="flex justify-between gap-3">
-                              <span><b className="tabular-nums">{it.qty}×</b> {itemTitle(it, lang)}</span>
-                              <span className="text-neutral-400 tabular-nums whitespace-nowrap" dir="ltr">{fmt(it.qty)} × {fmt(it.unitPrice)} = {fmt(it.qty * it.unitPrice)}</span>
+                              <span className="min-w-0 flex-1 break-words"><bdi className="tabular-nums" dir="ltr">{it.qty}×</bdi> {typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, lang)} ` : ''}<span dir="auto">{itemTitle(it, lang)}</span></span>
+                              <span className="text-neutral-400 tabular-nums whitespace-nowrap shrink-0" dir="ltr">{fmt(it.qty)} × {fmt(it.unitPrice)} = {fmt(it.qty * it.unitPrice)}</span>
                             </div>
                           ))}
                           <div className="pt-1.5 border-t border-neutral-800 space-y-1 text-xs text-neutral-400">
@@ -116,9 +117,9 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                           </div>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                          <div className="flex items-center gap-2 text-neutral-300"><Phone size={14} className="text-[var(--primary)] shrink-0" /><span dir="ltr">{o.customer.phone}</span></div>
+                          <div className="flex items-center gap-2 text-neutral-300 min-w-0"><Phone size={14} className="text-[var(--primary)] shrink-0" /><span dir="ltr" className="tabular-nums truncate">{o.customer.phone}</span></div>
                           {(o.customer.address || o.customer.table) && (
-                            <div className="flex items-center gap-2 text-neutral-300"><MapPin size={14} className="text-[var(--primary)] shrink-0" /><span>{o.customer.address ?? `${t.table} ${o.customer.table}`}</span></div>
+                            <div className="flex items-center gap-2 text-neutral-300 min-w-0"><MapPin size={14} className="text-[var(--primary)] shrink-0" /><span dir="auto" className="truncate">{o.customer.address ?? `${t.table} ${o.customer.table}`}</span></div>
                           )}
                           {o.location && Number.isFinite(o.location.lat) && Number.isFinite(o.location.lng) && (
                             <a
@@ -137,12 +138,12 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                           {/* Two-step kitchen flow: a new order is ACKNOWLEDGED first
                               (stops the alarm + notifies the customer "received,
                               on its way"), then completed on delivery. */}
-                          {o.status === 'new' && <button type="button" onClick={() => onStatusChange(o.id, 'confirmed')} className="btn-tactile h-10 px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5"><BellRing size={14} strokeWidth={2.5} />{t.ack}</button>}
-                          {o.status === 'confirmed' && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-10 px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5"><Check size={14} strokeWidth={3} />{t.complete}</button>}
-                          {(o.status === 'completed' || o.status === 'cancelled') && <button type="button" onClick={() => onStatusChange(o.id, 'new')} className="btn-tactile h-10 px-4 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold">{t.reopen}</button>}
-                          {(o.status === 'new' || o.status === 'confirmed') && <button type="button" onClick={() => onStatusChange(o.id, 'cancelled')} className="btn-tactile h-10 px-4 rounded-full border border-red-500/40 text-red-400 text-xs font-bold inline-flex items-center gap-1.5"><X size={14} />{t.cancel}</button>}
-                          <a href={`https://wa.me/${digits(o.customer.phone)}`} target="_blank" rel="noopener noreferrer" className="btn-tactile h-10 px-4 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5"><MessageCircle size={14} className="text-[var(--primary)]" />{t.wa}</a>
-                          <a href={`tel:+${digits(o.customer.phone)}`} className="btn-tactile h-10 px-4 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5"><Phone size={14} className="text-[var(--primary)]" />{t.call}</a>
+                          {o.status === 'new' && <button type="button" onClick={() => onStatusChange(o.id, 'confirmed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><BellRing size={14} strokeWidth={2.5} />{t.ack}</button>}
+                          {o.status === 'confirmed' && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Check size={14} strokeWidth={3} />{t.complete}</button>}
+                          {(o.status === 'completed' || o.status === 'cancelled') && <button type="button" onClick={() => onStatusChange(o.id, 'new')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">{t.reopen}</button>}
+                          {(o.status === 'new' || o.status === 'confirmed') && <button type="button" onClick={() => onStatusChange(o.id, 'cancelled')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-red-500/40 text-red-400 text-xs font-bold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"><X size={14} />{t.cancel}</button>}
+                          <a href={`https://wa.me/${digits(o.customer.phone)}`} target="_blank" rel="noopener noreferrer" className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><MessageCircle size={14} className="text-[var(--primary)]" />{t.wa}</a>
+                          <a href={`tel:+${digits(o.customer.phone)}`} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Phone size={14} className="text-[var(--primary)]" />{t.call}</a>
                         </div>
                       </div>
                     </motion.div>

@@ -63,16 +63,16 @@ const lines: WhatsAppLine[] = [
 
 // ---- EN ----
 const en = buildWhatsAppMessage(menu, lines, customer, 'en', 1007, { lat: 33.9, lng: 35.5 }, '≈ 2.3 km');
-ok(en.includes('🍔 Order #1007 — Chou 3abelak'), 'en header+number');
-ok(en.includes('2x *Plain Zaatar (Mashrouha)*'), 'en bold title+variant');
-ok(en.includes('*Add-ons:* *Extra vegetables* (+30,000)'), 'en bold addons line with price');
+ok(en.includes('🍔 Order') && en.includes('#1007') && en.includes('Chou 3abelak'), 'en header+number');
+ok(en.includes('× pcs *Plain Zaatar (Mashrouha)*'), 'en qty+unit bold title+variant');
+ok(en.includes('*Add-ons:* *Extra vegetables* (+') && en.includes('30,000'), 'en bold addons line with price');
 ok(!en.includes('+ Extra vegetables'), 'en no legacy plus-join');
 ok(en.includes('2 × 150,000 = 300,000'), 'en math line', en.split('\n').slice(2, 6).join('|'));
-ok(en.includes('Items: 2 (3 pcs)'), 'en count line');
+ok(en.includes('Items:') && en.includes('pcs'), 'en count line with unit');
 ok(en.includes('*Subtotal: 350,000 LBP*'), 'en bold subtotal');
 ok(en.includes('Delivery Fee: 100,000'), 'en fee');
 ok(en.includes('*Total: 450,000 LBP*'), 'en bold total');
-ok(en.includes('Name: Mina') && en.includes('Phone: +96170123456'), 'en customer');
+ok(en.includes('Name: Mina') && en.includes('Phone:') && en.includes('+96170123456'), 'en customer');
 ok(en.includes('Address: Hamra St'), 'en address');
 ok(en.includes('https://www.google.com/maps?q=33.9,35.5'), 'en maps link');
 ok(en.includes('Distance from our location: ≈ 2.3 km'), 'en distance');
@@ -82,10 +82,10 @@ ok(en.includes('📌 Call on arrival'), 'en store note');
 // ---- AR ----
 const arCustomer = { ...customer, name: 'مينا', address: 'شارع الحمرا', notes: 'بدون بصل' };
 const ar = buildWhatsAppMessage(menu, lines, arCustomer, 'ar', 1007, { lat: 33.9, lng: 35.5 }, '≈ 2.3 كم');
-ok(ar.includes('🍔 طلب #1007 — شو عبالك'), 'ar header+number');
-ok(ar.includes('زعتر سادة') && ar.includes('مشروحة'), 'ar title');
-ok(ar.includes('*الإضافات:* *إضافة خضرة* (+30,000)'), 'ar bold addons line');
-ok(ar.includes('الأصناف: 2 (3 قطع)'), 'ar count');
+ok(ar.includes('🍔 طلب') && ar.includes('#1007') && ar.includes('شو عبالك'), 'ar header+number');
+ok(ar.includes('زعتر سادة') && ar.includes('مشروحة') && ar.includes('قطعتين'), 'ar title with unit');
+ok(ar.includes('*الإضافات:* *إضافة خضرة* (+') && ar.includes('30,000'), 'ar bold addons line');
+ok(ar.includes('الأصناف:') && ar.includes('قطع'), 'ar count with unit');
 ok(ar.includes('*المجموع: 350,000 ل.ل*'), 'ar bold subtotal');
 ok(ar.includes('*الإجمالي النهائي: 450,000 ل.ل*'), 'ar bold total');
 ok(ar.includes('المسافة من موقعنا: ≈ 2.3 كم'), 'ar distance');
@@ -111,9 +111,9 @@ ok(hot2.includes('1 × 80,000 = 80,000'), 'en free spicy keeps math', hot2.split
 
 // ---- tracking link: appended when known, absent when not ----
 const tr = buildWhatsAppMessage(menu, lines, customer, 'en', 1007, null, null, 'https://site.test/?track=1007&t=' + 'a'.repeat(32));
-ok(tr.includes('📍 Track your order live: https://site.test/?track=1007&t=' + 'a'.repeat(32)), 'en tracking link');
+ok(tr.includes('📍 Track your order live:') && tr.includes('https://site.test/?track=1007&t=' + 'a'.repeat(32)), 'en tracking link on own line');
 const arTr = buildWhatsAppMessage(menu, lines, arCustomer, 'ar', 1007, null, null, 'https://site.test/?track=1007&t=' + 'b'.repeat(32));
-ok(arTr.includes('📍 تتبع طلبك لحظة بلحظة: https://site.test/'), 'ar tracking link');
+ok(arTr.includes('📍 تتبع طلبك لحظة بلحظة:') && arTr.includes('https://site.test/?track=1007&t=' + 'b'.repeat(32)), 'ar tracking link on own line');
 ok(!en.includes('📍') && !ar.includes('📍'), 'no tracking line without url');
 
 // ---- fee off / no location / no number ----
@@ -140,9 +140,9 @@ const many: WhatsAppLine[] = Array.from({ length: 60 }, (_, i) => ({
 }));
 const big = buildWhatsAppMessage(menu, many, customer, 'en', 2001, null, null);
 ok(big.length <= 1400 + 60, 'truncated near cap', String(big.length));
-ok(!big.endsWith('...') || big.includes('order #2001'), 'marker references order');
+ok(!big.endsWith('...') || big.includes('#2001'), 'marker references order');
 ok(big.split('\n').every((l) => l.length < 1400), 'no single mutated line');
-const linesKept = big.split('\n').filter((l) => l.startsWith('1x *Juice Item'));
+const linesKept = big.split('\n').filter((l) => l.includes('*Juice Item'));
 ok(linesKept.length > 0 && linesKept.length < 60, 'items cut, marker present', `${linesKept.length}/60`);
 
 // ---- truncation: WITHOUT number -> never cut (integrity over convenience) ----

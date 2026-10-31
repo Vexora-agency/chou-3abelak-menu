@@ -51,8 +51,8 @@ export const VariantPicker: React.FC<VariantPickerProps> = ({
               }`}
             >
               {active && <Check size={13} strokeWidth={3} />}
-              <span>{featureName(menu, v.featureId, lang)}</span>
-              <span className="tabular-nums opacity-80">+{formatPrice(v.price, currency)}</span>
+              <span dir="auto">{featureName(menu, v.featureId, lang)}</span>
+              <span className="tabular-nums opacity-80" dir="ltr">+{formatPrice(v.price, currency)}</span>
             </button>
           );
         })}

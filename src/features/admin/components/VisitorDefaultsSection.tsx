@@ -19,7 +19,7 @@ export const VisitorDefaultsSection: React.FC<VisitorDefaultsSectionProps> = ({
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div>
-        <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
+        <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
           {isAr ? 'الوضع الافتراضي للزوار الجدد' : 'New Visitor Defaults'}
         </h2>
         <p className="text-[11px] text-neutral-500 mt-0.5">

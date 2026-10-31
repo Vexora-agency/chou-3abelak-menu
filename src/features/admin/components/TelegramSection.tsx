@@ -63,8 +63,9 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
     })();
     // While a pairing is in progress, poll until the owner presses Start
     // in Telegram — the pill flips to "linked" by itself, no refresh needed.
+    // Idle-tab and already-linked polls are skipped (battery + data).
     const timer = window.setInterval(() => {
-      if (stop) return;
+      if (stop || document.visibilityState !== 'visible') return;
       void (async () => {
         try {
           const res = await adminFetch('/api/admin/telegram');
@@ -77,7 +78,7 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
           }
         } catch {}
       })();
-    }, 5000);
+    }, 15000);
     return () => {
       stop = true;
       window.clearInterval(timer);
@@ -153,7 +154,7 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
+          <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
             {isAr ? 'إشعارات الطلبات' : 'Order notifications'}
           </h2>
           <p className="text-[11px] text-neutral-500 mt-0.5">

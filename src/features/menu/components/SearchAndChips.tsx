@@ -105,7 +105,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
   };
 
   const fadeFrom = darkMode ? 'from-[#0A0A0A]' : 'from-white';
-  const arrowBtn = `absolute top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border transition active:scale-90 anim-fade-in ${
+  const arrowBtn = `absolute top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border transition active:scale-90 anim-fade-in after:absolute after:-inset-2 after:content-[""] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
     darkMode
       ? 'bg-[#1c1c1c]/95 text-[var(--primary)] border-white/15'
       : 'bg-white text-[#0A0A0A] border-black/10'
@@ -129,7 +129,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={isAr ? 'ابحث في المنيو...' : 'Search the menu...'}
-            className={`w-full h-12 rounded-full border-[1.5px] text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${
+            className={`w-full h-12 rounded-full border-[1.5px] text-base transition-all focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${
               isAr ? 'pr-11 pl-10' : 'pl-11 pr-10'
             } ${
               darkMode
@@ -141,7 +141,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
             <button
               type="button"
               onClick={() => onSearchChange('')}
-              className={`absolute ${isAr ? 'left-3' : 'right-3'} p-1 rounded-full transition-colors ${
+              className={`absolute ${isAr ? 'left-1' : 'right-1'} w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                 darkMode ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-black'
               }`}
               aria-label={isAr ? 'مسح البحث' : 'Clear search'}
@@ -200,7 +200,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
             <>
               <div
                 aria-hidden="true"
-                className={`pointer-events-none absolute top-0 bottom-0 start-0 w-12 bg-gradient-to-r rtl:bg-gradient-to-l ${fadeFrom} to-transparent`}
+                className={`pointer-events-none absolute top-0 bottom-0 start-0 w-8 bg-gradient-to-r rtl:bg-gradient-to-l ${fadeFrom} to-transparent`}
               />
               <button
                 type="button"
@@ -217,7 +217,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
             <>
               <div
                 aria-hidden="true"
-                className={`pointer-events-none absolute top-0 bottom-0 end-0 w-12 bg-gradient-to-l rtl:bg-gradient-to-r ${fadeFrom} to-transparent`}
+                className={`pointer-events-none absolute top-0 bottom-0 end-0 w-8 bg-gradient-to-l rtl:bg-gradient-to-r ${fadeFrom} to-transparent`}
               />
               <button
                 type="button"
@@ -248,7 +248,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
                   key={`badge-${id}`}
                   type="button"
                   onClick={() => onToggleBadge(id)}
-                  className={`relative flex-shrink-0 h-9 px-3.5 rounded-full text-xs transition-colors btn-tactile border-[1.5px] flex items-center gap-1.5 ${
+                  className={`relative flex-shrink-0 h-11 min-h-[44px] px-4 rounded-full text-xs transition-colors btn-tactile border-[1.5px] flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                     isSelected
                       ? 'bg-[var(--primary)] text-[#0A0A0A] font-bold border-[var(--primary)]'
                       : darkMode

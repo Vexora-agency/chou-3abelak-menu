@@ -80,8 +80,8 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
         type="button"
         onClick={() => void confirm()}
         disabled={busy}
-        className={`btn-tactile inline-flex items-center gap-1.5 rounded-full font-extrabold disabled:opacity-50 ${
-          compact ? 'h-9 px-4 text-xs' : 'h-10 px-5 text-sm'
+        className={`btn-tactile inline-flex items-center gap-1.5 rounded-full font-extrabold disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 ${
+          compact ? 'h-11 min-h-[44px] px-5 text-xs' : 'h-12 min-h-[48px] px-6 text-sm'
         } bg-[var(--primary)] text-[#0A0A0A]`}
       >
         {busy ? <Loader2 size={15} className="animate-spin" /> : <PackageCheck size={15} />}

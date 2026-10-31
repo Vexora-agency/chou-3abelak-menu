@@ -193,12 +193,12 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
                   <div key={r.id} className="rounded-xl border border-neutral-800 bg-black/40 p-3 flex items-center gap-3">
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2 flex-wrap">
-                        <b className="text-sm tabular-nums">#{r.number}</b>
+                        <b className="text-sm tabular-nums" dir="ltr">#{r.number}</b>
                         {r.anonymized && <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-neutral-800 text-neutral-400">{t.anonymized}</span>}
                       </span>
-                      <span className="block text-xs text-neutral-300 mt-0.5">{r.name} · <span dir="ltr">{r.phone}</span></span>
-                      <span className="block text-[11px] text-neutral-500 mt-0.5 tabular-nums">
-                        {new Date(r.createdAt).toLocaleDateString(loc(lang), { day: 'numeric', month: 'short' })} · {r.total} {currency} · {r.status}
+                      <span className="block text-xs text-neutral-300 mt-0.5"><span dir="auto">{r.name}</span> · <span dir="ltr" className="tabular-nums">{r.phone}</span></span>
+                      <span className="block text-xs text-neutral-500 mt-0.5">
+                        <bdi>{new Date(r.createdAt).toLocaleDateString(loc(lang), { day: 'numeric', month: 'short' })}</bdi> · <span dir="ltr" className="tabular-nums">{r.total}</span> <span dir="auto">{currency}</span> · <bdi>{r.status}</bdi>
                       </span>
                     </span>
                   </div>

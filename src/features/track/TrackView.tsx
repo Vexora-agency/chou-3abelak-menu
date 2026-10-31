@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Clock, CookingPot, XCircle, ArrowLeft, BellRing, Loader2 } from 'lucide-react';
-import { formatPrice } from '@/src/utils/pricing';
+import { formatPrice, unitLabel } from '@/src/utils/pricing';
 import { ReceivedButton } from './components/ReceivedButton';
 import { CancelOrderButton } from './components/CancelOrderButton';
+import { PushSubscribeButton } from './PushSubscribeButton';
 
 interface TrackViewProps {
   number: number;
@@ -13,6 +14,8 @@ interface TrackViewProps {
 interface TrackItem {
   qty: number;
   unitPrice: number;
+  /** Pricing unit id (absent on orders placed before units shipped). */
+  unit?: string;
   name: { en: string; ar: string };
   variantName?: { en: string; ar: string };
   addonNames?: { en: string; ar: string }[];
@@ -227,7 +230,8 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
               {data.items.map((it, i) => (
                 <div key={i} className="flex justify-between gap-3 py-1.5 text-sm">
                   <span className="min-w-0 flex-1 break-words text-neutral-200">
-                    <b className="tabular-nums">{it.qty}x </b>
+                    <bdi className="tabular-nums" dir="ltr">{it.qty} × </bdi>
+                    {typeof it.unit === 'string' && it.unit ? <span>{unitLabel(it.unit, it.qty, lang)} </span> : null}
                     {pick(it.name, lang)}
                     {it.variantName && <span className="text-neutral-400"> ({pick(it.variantName, lang)})</span>}
                     {it.addonNames && it.addonNames.length > 0 && (
@@ -273,9 +277,19 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                 />
               </div>
             )}
-            <p className="mt-4 text-center text-[11px] text-neutral-600 inline-flex items-center gap-1 justify-center w-full">
-              <BellRing size={12} />
-              {isAr ? 'الصفحة تتحدث تلقائيًا — خليها مفتوحة.' : 'This page updates itself — keep it open.'}
+            {(data.status === 'new' || data.status === 'confirmed') && (
+              <div className="mt-3">
+                <PushSubscribeButton
+                  orderNumber={data.number}
+                  trackToken={token}
+                  lang={lang}
+                  darkMode
+                />
+              </div>
+            )}
+            <p className="mt-4 text-center text-xs text-neutral-600 flex flex-wrap items-center gap-1 justify-center w-full">
+              <BellRing size={12} className="shrink-0" />
+              <span className="min-w-0 break-words">{isAr ? 'الصفحة تتحدث تلقائيًا — خليها مفتوحة.' : 'This page updates itself — keep it open.'}</span>
             </p>
           </>
         )}

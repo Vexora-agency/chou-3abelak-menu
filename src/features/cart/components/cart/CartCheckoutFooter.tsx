@@ -62,7 +62,7 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
         <button
           type="button"
           onClick={onClearCart}
-          className={`w-full h-10 rounded-full text-xs font-bold transition-colors ${
+          className={`w-full h-11 min-h-[44px] rounded-full text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
             darkMode
               ? 'text-neutral-400 hover:text-red-400'
               : 'text-neutral-600 hover:text-red-600'
@@ -70,9 +70,9 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
         >
           {isAr ? 'إفراغ السلة' : 'Clear Cart'}
         </button>
-        <p className={`text-center text-[11px] leading-relaxed ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
+        <p className={`text-center text-xs leading-relaxed ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
           {isAr ? 'اسمك وهاتفك وعنوانك تُستخدم فقط لتجهيز طلبك. ' : 'Your name, phone and address are used only to prepare your order. '}
-          <a href="privacy" className="underline underline-offset-2 font-bold hover:text-[var(--primary)]">
+          <a href="/privacy" className="underline underline-offset-4 font-bold hover:text-[var(--primary)] inline-flex items-center min-h-[44px] px-1 -my-3">
             {isAr ? 'الخصوصية' : 'Privacy'}
           </a>
         </p>

@@ -146,7 +146,7 @@ export const WhatsappApiSection: React.FC<WhatsappApiSectionProps> = ({ lang, ad
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
+          <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
             {isAr ? 'إرسال واتساب التلقائي (API)' : 'Automatic WhatsApp sending (API)'}
           </h2>
           <p className="text-[11px] text-neutral-500 mt-0.5">

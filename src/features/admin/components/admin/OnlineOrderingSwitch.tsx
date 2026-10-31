@@ -69,7 +69,15 @@ export const OnlineOrderingSwitch: React.FC<OnlineOrderingSwitchProps> = ({
 
   return (
     <div className="rounded-xl border p-3.5 bg-black/40 border-neutral-800">
-      <div className="flex items-center gap-3">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={enabled}
+        disabled={busy}
+        onClick={() => void handleToggle()}
+        aria-label={isAr ? 'تشغيل أو إيقاف الطلب أونلاين' : 'Turn online ordering on or off'}
+        className="w-full flex items-center gap-3 min-h-[44px] text-start rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60"
+      >
         <span className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center ${enabled ? 'bg-green-500/15 text-green-400' : 'bg-neutral-800 text-neutral-400'}`}>
           <Power size={18} />
         </span>
@@ -81,25 +89,20 @@ export const OnlineOrderingSwitch: React.FC<OnlineOrderingSwitchProps> = ({
               : (isAr ? 'المفتاح الرئيسي — لا يستطيع العملاء الطلب وهو متوقف.' : 'Master switch — customers cannot order while it is off.')}
           </span>
         </span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={enabled}
-          disabled={busy}
-          onClick={() => void handleToggle()}
-          aria-label={isAr ? 'تشغيل أو إيقاف الطلب أونلاين' : 'Turn online ordering on or off'}
-          className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${enabled ? 'bg-[var(--primary)]' : 'bg-neutral-700'} disabled:opacity-60`}
+        <span
+          aria-hidden="true"
+          className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${enabled ? 'bg-[var(--primary)]' : 'bg-neutral-700'}`}
         >
           <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${enabled ? (isAr ? 'left-0.5' : 'left-5') : (isAr ? 'left-5' : 'left-0.5')}`} />
-        </button>
-      </div>
+        </span>
+      </button>
       {!enabled && !hasWhatsapp && (
-        <p className="mt-2.5 text-[11px] font-bold text-amber-300">
-          {isAr ? 'أضف رقم واتساب دولياً بدون صفر البداية (الهوية، مثال: 96170123456) — بدونه لا يمكن التفعيل.' : 'Add an international WhatsApp number with no leading zero (Identity, e.g. 96170123456) — enabling requires it.'}
+        <p className="mt-2.5 text-xs font-bold text-amber-300">
+          {isAr ? 'أضف رقم واتساب دولياً بدون صفر البداية (الهوية، مثال: ' : 'Add an international WhatsApp number with no leading zero (Identity, e.g. '}<span dir="ltr" className="tabular-nums">96170123456</span>{isAr ? ') — بدونه لا يمكن التفعيل.' : ') — enabling requires it.'}
         </p>
       )}
       {err && (
-        <p className="mt-2.5 text-[11px] font-bold text-red-400" role="alert">{err}</p>
+        <p className="mt-2.5 text-xs font-bold text-red-400" role="alert">{err}</p>
       )}
     </div>
   );

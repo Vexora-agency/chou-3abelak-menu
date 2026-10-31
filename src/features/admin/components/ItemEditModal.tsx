@@ -68,9 +68,9 @@ export const ItemEditModal: React.FC<ItemEditModalProps> = ({
         type="button"
         onClick={() => onClose()}
         aria-label={isAr ? 'إغلاق' : 'Close'}
-        className="p-2 -m-1 text-neutral-400 hover:text-white rounded-full"
+        className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-neutral-400 hover:text-white rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
       >
-        <X size={18} />
+        <X size={20} />
       </button>
     </div>
 

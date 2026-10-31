@@ -121,7 +121,7 @@ export const PushSubscribeButton: React.FC<PushSubscribeButtonProps> = ({
         type="button"
         onClick={() => void onTap()}
         disabled={state === 'working'}
-        className={`btn-tactile w-full h-11 px-5 rounded-full border text-xs font-extrabold inline-flex items-center justify-center gap-2 transition-colors ${
+        className={`btn-tactile w-full h-12 min-h-[48px] px-5 rounded-full border text-xs font-extrabold inline-flex items-center justify-center gap-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 ${
           darkMode
             ? 'border-[var(--primary)]/60 text-[var(--primary)] hover:bg-[var(--primary)] hover:text-[#0A0A0A]'
             : 'border-[#0A0A0A] text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-[var(--primary)]'
@@ -131,9 +131,9 @@ export const PushSubscribeButton: React.FC<PushSubscribeButtonProps> = ({
         {isAr ? 'نبّهني بحالة الطلب' : 'Notify me on updates'}
       </button>
       {note && (
-        <p className={`mt-1.5 text-[11px] text-center flex items-center justify-center gap-1 ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
-          <BellOff size={11} />
-          {note}
+        <p className={`mt-1.5 text-xs text-center flex items-center justify-center gap-1 ${isAr ? 'leading-relaxed' : ''} ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
+          <BellOff size={14} className="shrink-0" />
+          <span className="min-w-0 break-words">{note}</span>
         </p>
       )}
     </div>

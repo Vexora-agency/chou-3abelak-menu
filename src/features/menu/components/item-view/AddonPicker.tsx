@@ -51,8 +51,8 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
               }`}
             >
               {active && <Check size={13} strokeWidth={3} />}
-              <span>{featureName(menu, a.featureId, lang)}</span>
-              <span className="tabular-nums opacity-80">
+              <span dir="auto">{featureName(menu, a.featureId, lang)}</span>
+              <span className="tabular-nums opacity-80" dir="ltr">
                 {free ? (isAr ? 'مجاناً' : 'Free') : `+${formatPrice(a.price, currency)}`}
               </span>
             </button>

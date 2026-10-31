@@ -1,5 +1,15 @@
 import { CustomerDetails, MenuData, MenuItem } from '@/src/types/menu';
-import { formatPrice, perUnitPrice, getVariant, featureName, lineMathText, round2 } from '@/src/utils/pricing';
+import { formatPrice, perUnitPrice, getVariant, featureName, lineMathText, normalizePricing, round2, unitLabel } from '@/src/utils/pricing';
+
+/**
+ * Bidi isolation for plain-text messages (WhatsApp has no HTML): wraps
+ * every Latin/number run in LRI (U+2066) ... PDI (U+2069) so quantities,
+ * prices and order numbers keep their order inside Arabic sentences.
+ * Same trick as telegram.js bidi().
+ */
+const LRI = '\u2066';
+const PDI = '\u2069';
+const bidi = (s: string | number) => `${LRI}${String(s)}${PDI}`;
 
 /**
  * Bilingual text picker with automatic fallback: if the requested language
@@ -59,21 +69,21 @@ export function buildWhatsAppMessage(
   const numberedHeader =
     typeof orderNumber === 'number'
       ? isAr
-        ? `🍔 طلب #${orderNumber} — ${storeName}`
-        : `🍔 Order #${orderNumber} — ${storeName}`
+        ? `🍔 طلب ${bidi(`#${orderNumber}`)} — ${storeName}`
+        : `🍔 Order ${bidi(`#${orderNumber}`)} — ${storeName}`
       : header;
 
   const linesOut: string[] = [numberedHeader, '-------------------------'];
 
-  // Per-line format (WhatsApp *bold*):
-  //   2x *Name (Variant)* (*حار*)
+  // Per-line format (WhatsApp *bold*), quantity isolated for bidi:
+  //   2 × دستتين *Name (Variant)* (*حار*)
   //      *الإضافات:* *إضافة خضرة* (+30,000)
   //      2 × 150,000 = 300,000 LBP
   // Heat is NEVER an add-on line: a spicy badge OR the spicy add-on both
   // render as (*حار*) right after the title (they mean the same thing).
   let subtotal = 0;
   let lineCount = 0;
-  let pieceCount = 0;
+  const unitTotals = new Map<string, number>();
   for (const line of lines) {
     const { item, quantity } = line;
     if (!item || !Number.isInteger(quantity) || quantity <= 0) continue;
@@ -86,18 +96,27 @@ export function buildWhatsAppMessage(
     const lineTotalValue = quantity * unit;
     subtotal += lineTotalValue;
     lineCount += 1;
-    pieceCount += quantity;
+    // Per-unit totals ("2 دستتين، 1 علبة") — summing bare quantities
+    // across dozen/pc/box lines would print a lying total.
+    try {
+      const u = normalizePricing(item).unit || 'pc';
+      unitTotals.set(u, (unitTotals.get(u) || 0) + quantity);
+    } catch {}
     const ids = Array.isArray(line.addonIds) ? line.addonIds : [];
     const isHot = (item.badges || []).includes('spicy') || ids.includes('spicy');
     const name = pickLangText(item.name, lang);
     const variant = getVariant(item, line.variantId);
     const title = variant ? `${name} (${featureName(menu, line.variantId as string, lang)})` : name;
-    linesOut.push(`${quantity}x *${title}*${isHot ? ` (*${badgeLabel('spicy', lang)}*)` : ''}`);
+    let unitWord = '';
+    try {
+      unitWord = ` ${unitLabel(normalizePricing(item).unit || 'pc', quantity, lang)}`;
+    } catch {}
+    linesOut.push(`${bidi(quantity)} ×${unitWord} *${title}*${isHot ? ` (*${badgeLabel('spicy', lang)}*)` : ''}`);
     const addonBits = ids
       .filter((id) => id !== 'spicy')
       .map((id) => {
         const def = (item.addons || []).find((a) => a && a.featureId === id);
-        const tag = def && def.price > 0 ? `+${formatPrice(def.price)}` : (isAr ? 'مجاناً' : 'Free');
+        const tag = def && def.price > 0 ? `+${bidi(formatPrice(def.price))}` : (isAr ? 'مجاناً' : 'Free');
         return `*${featureName(menu, id, lang)}* (${tag})`;
       });
     if (addonBits.length) {
@@ -107,8 +126,11 @@ export function buildWhatsAppMessage(
   }
 
   linesOut.push('-------------------------');
+  const unitSummary = [...unitTotals.entries()]
+    .map(([u, q]) => `${bidi(q)} ${unitLabel(u, q, lang)}`)
+    .join(isAr ? '، ' : ', ');
   linesOut.push(
-    isAr ? `الأصناف: ${lineCount} (${pieceCount} قطع)` : `Items: ${lineCount} (${pieceCount} pcs)`
+    isAr ? `الأصناف: ${bidi(lineCount)} (${unitSummary})` : `Items: ${bidi(lineCount)} (${unitSummary})`
   );
   linesOut.push(isAr ? `*المجموع: ${formatPrice(subtotal, currency)}*` : `*Subtotal: ${formatPrice(subtotal, currency)}*`);
 
@@ -121,10 +143,13 @@ export function buildWhatsAppMessage(
     linesOut.push(isAr ? `*الإجمالي النهائي: ${formatPrice(subtotal + fee, currency)}*` : `*Total: ${formatPrice(subtotal + fee, currency)}*`);
   }
 
-  // Live tracking: the same link the confirmation screen shows. Plain URL
-  // (no bold) so WhatsApp's link preview + tap-to-open stay clean.
+  // Live tracking: the same link the confirmation screen shows. Label on
+  // its own line + bare URL on the next: a bare URL inside an Arabic
+  // sentence wraps and its Latin run splits — alone it stays LTR-clean.
+  // Plain URL (no bold) so WhatsApp's link preview + tap-to-open stay clean.
   if (trackUrl && trackUrl.trim()) {
-    linesOut.push(isAr ? `📍 تتبع طلبك لحظة بلحظة: ${trackUrl.trim()}` : `📍 Track your order live: ${trackUrl.trim()}`);
+    linesOut.push(isAr ? '📍 تتبع طلبك لحظة بلحظة:' : '📍 Track your order live:');
+    linesOut.push(trackUrl.trim());
   }
 
   linesOut.push('-------------------------');
@@ -139,7 +164,7 @@ export function buildWhatsAppMessage(
     linesOut.push(isAr ? `الاسم: ${customer.name.trim()}` : `Name: ${customer.name.trim()}`);
   }
   if (customer.phone.trim()) {
-    linesOut.push(isAr ? `الهاتف: ${customer.phone.trim()}` : `Phone: ${customer.phone.trim()}`);
+    linesOut.push(isAr ? `الهاتف: ${bidi(customer.phone.trim())}` : `Phone: ${bidi(customer.phone.trim())}`);
   }
 
   if (customer.orderType === 'delivery' && customer.address.trim()) {
@@ -151,14 +176,15 @@ export function buildWhatsAppMessage(
   // rides right below it — the kitchen's delivery-time estimate.
   if (customer.orderType === 'delivery' && location && Number.isFinite(location.lat) && Number.isFinite(location.lng)) {
     const link = `https://www.google.com/maps?q=${location.lat},${location.lng}`;
-    linesOut.push(isAr ? `الموقع: ${link}` : `Location: ${link}`);
+    linesOut.push(isAr ? 'الموقع:' : 'Location:');
+    linesOut.push(link);
     if (distanceText && distanceText.trim()) {
       linesOut.push(isAr ? `المسافة من موقعنا: ${distanceText.trim()}` : `Distance from our location: ${distanceText.trim()}`);
     }
   }
 
   if (customer.orderType === 'dinein' && customer.tableNumber.trim()) {
-    linesOut.push(isAr ? `رقم الطاولة: ${customer.tableNumber.trim()}` : `Table #: ${customer.tableNumber.trim()}`);
+    linesOut.push(isAr ? `رقم الطاولة: ${bidi(customer.tableNumber.trim())}` : `Table #: ${bidi(customer.tableNumber.trim())}`);
   }
 
   if (customer.notes.trim()) {
@@ -183,8 +209,8 @@ export function buildWhatsAppMessage(
     fullMsg =
       kept +
       (isAr
-        ? `\n… (الباقي محفوظ في الطلب #${orderNumber})`
-        : `\n… (rest saved under order #${orderNumber})`);
+        ? `\n… (الباقي محفوظ في الطلب ${bidi(`#${orderNumber}`)})`
+        : `\n… (rest saved under order ${bidi(`#${orderNumber}`)})`);
   }
   return fullMsg;
 }

@@ -57,7 +57,7 @@ export const SoundsSection: React.FC<SoundsSectionProps> = ({ sounds, lang, onUp
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div>
-        <span className="block text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
+        <span className={`block text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
           {isAr ? 'أصوات الجرس' : 'Bell sounds'}
         </span>
         <span className="block text-[11px] text-neutral-500 mt-0.5">
@@ -74,8 +74,8 @@ export const SoundsSection: React.FC<SoundsSectionProps> = ({ sounds, lang, onUp
                 <Icon size={16} />
               </span>
               <div className="min-w-0">
-                <p className="text-xs font-black text-white leading-tight">{g.title}</p>
-                <p className="text-[11px] text-neutral-500 leading-tight">{g.desc}</p>
+                <p className="text-xs font-black text-white leading-snug">{g.title}</p>
+                <p className={`text-[11px] text-neutral-500 ${isAr ? 'leading-relaxed' : 'leading-snug'}`}>{g.desc}</p>
               </div>
             </div>
             <div className="space-y-1.5" role="radiogroup" aria-label={g.title}>
@@ -114,7 +114,7 @@ export const SoundsSection: React.FC<SoundsSectionProps> = ({ sounds, lang, onUp
                       disabled={busy}
                       aria-label={`${isAr ? 'جرّب' : 'Preview'} ${isAr ? p.name.ar : p.name.en}`}
                       title={isAr ? 'جرّب الصوت' : 'Preview sound'}
-                      className="btn-tactile shrink-0 w-9 h-9 rounded-full border border-[var(--primary)]/50 text-[var(--primary)] flex items-center justify-center hover:bg-[var(--primary)]/10 disabled:opacity-60"
+                      className="btn-tactile shrink-0 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border border-[var(--primary)]/50 text-[var(--primary)] flex items-center justify-center hover:bg-[var(--primary)]/10 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                     >
                       {busy ? <BellRing size={15} className="animate-pulse" /> : <Play size={15} className="ms-0.5" />}
                     </button>

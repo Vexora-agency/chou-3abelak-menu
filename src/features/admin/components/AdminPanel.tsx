@@ -199,7 +199,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   }, [report]);
 
   return (
-      <div className="min-h-screen bg-[#0A0A0A] text-white p-4 sm:p-6 md:p-8 pb-24 font-sans max-w-4xl mx-auto overflow-x-clip">
+      <div className="min-h-screen min-h-dvh bg-[#0A0A0A] text-white p-4 sm:p-6 md:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] font-sans max-w-4xl mx-auto overflow-x-hidden overflow-x-clip">
       <AdminTopBar
         lang={lang}
         onClose={onClose}

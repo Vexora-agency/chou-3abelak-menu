@@ -157,7 +157,7 @@ function ScheduleField({
             const p = parseDatetimeLocal(e.target.value);
             onPick(p ? deviceWallPartsToUTC(p) : null);
           }}
-          className="w-full min-w-0 max-w-[280px] h-10 ps-3 pe-9 rounded-xl bg-black border border-neutral-700 text-sm tabular-nums text-neutral-100 focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/40 outline-none [color-scheme:dark] transition-colors"
+          className="w-full min-w-0 max-w-[280px] h-11 min-h-[44px] ps-3 pe-11 rounded-xl bg-black border border-neutral-700 text-base tabular-nums text-neutral-100 focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/40 outline-none [color-scheme:dark] transition-colors"
         />
         {iso && (
           <button
@@ -165,30 +165,29 @@ function ScheduleField({
             onClick={() => onPick(null)}
             aria-label={isAr ? 'مسح التاريخ' : 'Clear date'}
             title={isAr ? 'مسح التاريخ' : 'Clear date'}
-            className="absolute end-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-neutral-800 border border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500 text-xs leading-none transition-colors"
+            className="absolute end-1 top-1/2 -translate-y-1/2 w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-neutral-800 border border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500 text-sm leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
           >
             ×
           </button>
         )}
       </div>
-      <div className="flex flex-wrap gap-1.5 mt-1.5">
+      <div className="flex flex-wrap gap-2 mt-1.5">
         {presets.map((p) => (
           <button
             key={p.key}
             type="button"
             onClick={() => onPick(p.deltaMs === null ? null : new Date(Date.now() + p.deltaMs).toISOString())}
-            className="px-2.5 h-7 rounded-full bg-neutral-900 border border-neutral-700 text-[11px] font-bold text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/60 active:scale-95 transition-all"
+            className="px-4 h-11 min-h-[44px] rounded-full bg-neutral-900 border border-neutral-700 text-xs font-bold text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/60 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] transition-all"
           >
             {p.label}
           </button>
         ))}
       </div>
-      {hint && <p className="text-[11px] text-neutral-500 mt-1 tabular-nums">{hint}</p>}
+      {hint && <p className="text-xs text-neutral-500 mt-1 tabular-nums">{hint}</p>}
       {iso && Number.isFinite(Date.parse(iso)) && (
-        <p className="text-[11px] text-neutral-600 mt-0.5 tabular-nums" dir="ltr" style={{ textAlign: isAr ? 'right' : 'left' }}>
-          {isAr
-            ? `= ${toDatetimeLocalValue(timezone, iso).replace('T', ' ')} بتوقيت المتجر`
-            : `= ${toDatetimeLocalValue(timezone, iso).replace('T', ' ')} business time`}
+        <p className="text-xs text-neutral-500 mt-0.5 tabular-nums">
+          <span dir="ltr">= {toDatetimeLocalValue(timezone, iso).replace('T', ' ')}</span>{' '}
+          <span dir="auto">{isAr ? 'بتوقيت المتجر' : 'business time'}</span>
         </p>
       )}
     </div>
@@ -207,7 +206,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div>
-        <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
+        <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
           {isAr ? 'شريط الإعلان' : 'Announcement banner'}
         </h2>
         <p className="text-[11px] text-neutral-500 mt-0.5">
@@ -283,7 +282,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
               value={announcement.text.en}
               maxLength={140}
               onChange={(e) => onUpdate((prev) => ({ ...prev, text: { ...prev.text, en: e.target.value } }))}
-              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
+              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base focus:border-[var(--primary)]"
             />
           </div>
           <div>
@@ -297,7 +296,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
               value={announcement.text.ar}
               maxLength={140}
               onChange={(e) => onUpdate((prev) => ({ ...prev, text: { ...prev.text, ar: e.target.value } }))}
-              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
+              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base focus:border-[var(--primary)]"
             />
           </div>
         </div>
@@ -340,7 +339,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
           return (
             <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-2.5 space-y-1">
               {hints.map((h, i) => (
-                <p key={i} className="text-[11px] font-bold text-red-400">{h}</p>
+                <p key={i} className={`text-xs font-bold text-red-400 ${isAr ? 'leading-relaxed' : ''}`}>{h}</p>
               ))}
             </div>
           );

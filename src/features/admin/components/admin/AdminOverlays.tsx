@@ -47,17 +47,17 @@ export const AdminOverlays: React.FC<AdminOverlaysProps> = ({
     <>
       {/* STICKY BOTTOM SAVE BAR (hidden while auto-save is on) */}
       {dirty && !autoSave && (
-        <div className="fixed bottom-4 left-0 right-0 z-40 px-4 flex justify-center">
-          <div className="w-full max-w-[500px] bg-[#141414] border-2 border-[var(--primary)] rounded-full p-2 px-5 flex items-center justify-between shadow-2xl">
-            <div className="flex items-center gap-2 text-xs text-amber-400 font-bold">
-              <AlertTriangle size={16} />
-              <span>{isAr ? 'لديك تعديلات غير محفوظة!' : 'Unsaved changes!'}</span>
+        <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-0 right-0 z-40 px-4 flex justify-center">
+          <div className="w-full max-w-[500px] bg-[#141414] border-2 border-[var(--primary)] rounded-3xl sm:rounded-full p-2 px-4 flex items-center justify-between gap-2 flex-wrap shadow-2xl">
+            <div className="flex items-center gap-2 text-xs text-amber-400 font-bold min-w-0">
+              <AlertTriangle size={16} className="shrink-0" />
+              <span className="break-words">{isAr ? 'لديك تعديلات غير محفوظة!' : 'Unsaved changes!'}</span>
             </div>
 
             <button
               type="button"
               onClick={() => onSave()}
-              className="btn-tactile px-5 py-2 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black text-xs flex items-center gap-1.5 shadow-md"
+              className="btn-tactile px-5 min-h-[44px] inline-flex items-center rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black text-xs gap-1.5 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
             >
               <Save size={15} />
               <span>{isAr ? 'حفظ التعديلات' : 'Save Changes'}</span>
@@ -68,13 +68,13 @@ export const AdminOverlays: React.FC<AdminOverlaysProps> = ({
 
       {/* UNDO TOAST (8s after a trash delete) */}
       {undoToast && (
-        <div className="fixed bottom-4 left-0 right-0 z-40 px-4 flex justify-center" role="status">
-          <div className="w-full max-w-[500px] bg-[#141414] border border-neutral-700 rounded-full p-2 ps-5 flex items-center justify-between gap-3 shadow-2xl">
-            <span className="text-xs font-bold text-neutral-200 truncate">{undoToast.label}</span>
+        <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-0 right-0 z-40 px-4 flex justify-center" role="status">
+          <div className="w-full max-w-[500px] bg-[#141414] border border-neutral-700 rounded-3xl sm:rounded-full p-2 ps-4 flex items-center justify-between gap-3 shadow-2xl">
+            <span className="text-xs font-bold text-neutral-200 truncate min-w-0" dir="auto">{undoToast.label}</span>
             <button
               type="button"
               onClick={() => onUndo(undoToast.undo)}
-              className="btn-tactile shrink-0 px-5 py-2 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black text-xs"
+              className="btn-tactile shrink-0 px-5 min-h-[44px] inline-flex items-center rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
             >
               {isAr ? 'تراجع' : 'Undo'}
             </button>

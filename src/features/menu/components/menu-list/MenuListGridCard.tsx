@@ -97,7 +97,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
             so it always balances diagonally against the + button. Tilted. */}
         <div className={`relative flex items-center gap-2 mb-2 h-[18px] ${sectionMark ? 'justify-between' : 'justify-end'}`}>
           {badges.length > 0 && (
-            <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-wide bg-[#0A0A0A] text-[var(--primary)] border-[1.5px] border-[var(--primary)] shadow-lg -rotate-3 ${sectionMark ? '' : 'absolute -top-[7px] -start-1 z-10'}`}>
+            <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border-[1.5px] border-[var(--primary)] shadow-lg -rotate-3 ${isAr ? '' : 'tracking-wide'} ${sectionMark ? '' : 'absolute -top-[7px] -start-1 z-10'}`}>
               {badgeLabel(badges[0], lang)}
             </span>
           )}
@@ -112,6 +112,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
         {descText ? (
           <>
             <h3
+              dir="auto"
               className={`text-center font-black text-[22px] leading-[1.25] line-clamp-1 -rotate-2 ${
                 darkMode ? 'text-white' : 'text-[#0A0A0A]'
               }`}
@@ -121,7 +122,8 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
 
             {/* Reserved 2-line description slot: uniform grid, no voids. */}
             <p
-              className={`text-center text-[11px] mt-1 line-clamp-2 min-h-[2.6em] ${
+              dir="auto"
+              className={`text-center text-[11px] mt-1 line-clamp-2 min-h-[2.6em] ${isAr ? 'leading-relaxed' : ''} ${
                 darkMode ? 'text-neutral-400' : 'text-neutral-600'
               }`}
             >
@@ -133,6 +135,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
              slightly tilted instead of an empty void. Same footprint. */
           <div className="flex-1 flex items-center justify-center py-1">
             <h3
+              dir="auto"
               className={`text-center font-black text-[22px] leading-[1.25] line-clamp-3 -rotate-2 ${
                 darkMode ? 'text-white' : 'text-[#0A0A0A]'
               }`}
@@ -147,7 +150,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
       <div className={`relative flex justify-between items-center mt-3 pt-2 border-t border-dashed ${
         darkMode ? 'border-neutral-800' : 'border-neutral-200'
       }`}>
-        <span className={`font-extrabold text-sm ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`}>
+        <span className={`font-extrabold text-sm tabular-nums ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`} dir="ltr">
           {priceLabel(item, lang, currency)}
         </span>
 

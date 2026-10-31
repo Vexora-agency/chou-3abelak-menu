@@ -42,7 +42,7 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
         className="w-full flex items-center justify-between gap-3 text-start"
       >
         <span>
-          <span className="block text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider">
+          <span className={`block text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
             {isAr ? 'تحريك قسم المميز تلقائياً' : 'Featured Carousel Autoplay'}
           </span>
           <span className="block text-[11px] text-neutral-500 mt-0.5">

@@ -16,6 +16,15 @@ html {
   font-family: 'Poppins', system-ui, -apple-system, sans-serif;
 }
 
+/* Motion-sensitive users: instant jumps only. Brand animations themselves
+   stay always-on per owner decision (see App.tsx MotionConfig) — only the
+   scroll animation, which fights iOS momentum scrolling, is gated here. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 html[dir="rtl"], [dir="rtl"] {
   font-family: 'Cairo', 'Poppins', system-ui, -apple-system, sans-serif;
 }

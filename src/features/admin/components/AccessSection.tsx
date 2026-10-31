@@ -77,7 +77,7 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }
     ev.preventDefault();
     const username = name.trim().toLowerCase();
     if (!/^[a-z0-9][a-z0-9_-]{1,30}$/.test(username)) {
-      setFormErr(isAr ? 'من ٢ إلى ٣١ حرفًا: أحرف صغيرة وأرقام و - و _' : '2-31 chars: lowercase, digits, - or _');
+      setFormErr(isAr ? 'من 2 إلى 31 حرفًا: أحرف صغيرة وأرقام و - و _' : '2-31 chars: lowercase, digits, - or _');
       return;
     }
     setBusy(true);
@@ -186,7 +186,7 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div>
-        <h2 className="text-sm font-extrabold text-[var(--primary)] uppercase tracking-wider flex items-center gap-2">
+        <h2 className={`text-sm font-extrabold text-[var(--primary)] flex items-center gap-2 ${isAr ? '' : 'uppercase tracking-wider'}`}>
           <KeyRound size={15} />
           {isAr ? 'دخول العملاء' : 'Client Access'}
         </h2>
@@ -205,19 +205,19 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }
           onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 31))}
           placeholder={isAr ? 'اسم الدخول، مثال: layali' : 'Login name, e.g. layali'}
           aria-label={isAr ? 'اسم دخول العميل' : 'Client login name'}
-          className="flex-1 min-w-0 h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm tabular-nums focus:border-[var(--primary)] placeholder:text-neutral-600 outline-none"
+          className="flex-1 min-w-0 h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)] placeholder:text-neutral-600 outline-none"
         />
         <button
           type="submit"
           disabled={busy || name.trim().length < 2}
-          className="btn-tactile h-10 px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold hover:brightness-110 disabled:opacity-40 flex items-center gap-1.5 whitespace-nowrap"
+          className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold hover:brightness-110 disabled:opacity-40 flex items-center gap-1.5 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
         >
           <Plus size={15} className="stroke-[3]" />
           {busy ? '…' : isAr ? 'إنشاء رابط' : 'Create link'}
         </button>
       </form>
       {formErr ? (
-        <p className="text-[11px] text-amber-400" role="alert">{formErr}</p>
+        <p className="text-xs text-amber-400" role="alert">{formErr}</p>
       ) : null}
 
       {fresh ? (
@@ -232,12 +232,12 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }
               dir="ltr"
               value={fresh.link}
               onFocus={(e) => e.target.select()}
-              className="flex-1 min-w-0 h-10 px-3 rounded-lg bg-neutral-900 border border-neutral-700 text-xs tabular-nums text-neutral-200 outline-none"
+              className="flex-1 min-w-0 h-11 min-h-[44px] px-3 rounded-lg bg-neutral-900 border border-neutral-700 text-xs tabular-nums text-neutral-200 outline-none"
             />
             <button
               type="button"
               onClick={() => void copy()}
-              className="h-10 px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold hover:brightness-110 flex items-center gap-1.5 whitespace-nowrap"
+              className="h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold hover:brightness-110 flex items-center gap-1.5 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
             >
               {copied ? <Check size={15} className="stroke-[3]" /> : <Copy size={15} />}
               {copied ? (isAr ? 'تم' : 'Copied') : (isAr ? 'نسخ' : 'Copy')}
@@ -245,15 +245,15 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }
           </div>
           <p className="text-[10px] text-neutral-500">
             {isAr
-              ? `صالح ٧٢ ساعة (حتى ${fresh.expiresAt.slice(0, 10)}) — يُستخدم مرة واحدة ثم يموت.`
-              : `Valid 72 hours (until ${fresh.expiresAt.slice(0, 10)}) — single-use, then dead.`}
+              ? <>صالح 72 ساعة (حتى <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>) — يُستخدم مرة واحدة ثم يموت.</>
+              : <>Valid 72 hours (until <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>) — single-use, then dead.</>}
           </p>
         </div>
       ) : null}
 
       {/* Live logins: disable locks out now (sessions die too), delete removes all. */}
       <div>
-        <h3 className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-400 mb-2">
+        <h3 className={`text-[11px] font-extrabold text-neutral-400 mb-2 ${isAr ? '' : 'uppercase tracking-wider'}`}>
           {isAr ? 'حسابات الدخول' : 'Logins'}
         </h3>
         {clients.length ? (
@@ -312,7 +312,7 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }
 
       {/* Pending invite links. */}
       <div>
-        <h3 className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-400 mb-2">
+        <h3 className={`text-[11px] font-extrabold text-neutral-400 mb-2 ${isAr ? '' : 'uppercase tracking-wider'}`}>
           {isAr ? 'روابط الدعوة' : 'Invite links'}
         </h3>
         {rows.length ? (

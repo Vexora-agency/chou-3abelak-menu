@@ -112,7 +112,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
           <button
             type="button"
           onClick={() => onRefreshOrders()}
-          className="px-3 py-1.5 rounded-full bg-red-500/20 hover:bg-red-500/30 transition-colors"
+          className="px-5 h-11 min-h-[44px] inline-flex items-center rounded-full bg-red-500/20 hover:bg-red-500/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
           >
             {isAr ? 'إعادة المحاولة' : 'Retry'}
           </button>
@@ -129,7 +129,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
                 role="tab"
                 aria-selected={active}
                 onClick={() => onDashViewChange(v)}
-                className={`relative shrink-0 px-4 h-8 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${active ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
+                className={`relative shrink-0 px-4 h-11 min-h-[44px] inline-flex items-center rounded-full text-xs font-bold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${active ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
               >
                 {active && <motion.span layoutId="dash-view" className="absolute inset-0 rounded-full bg-[var(--primary)] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
                 <span className="relative z-10">

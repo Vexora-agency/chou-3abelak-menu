@@ -70,7 +70,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
       aria-hidden={hidden || undefined}
       className="ann-unit flex shrink-0 items-center"
     >
-      <span dir={isAr ? 'rtl' : 'ltr'} className="text-[13px] font-extrabold tracking-wide leading-snug whitespace-nowrap">
+      <span dir={isAr ? 'rtl' : 'ltr'} className={`text-[13px] font-extrabold whitespace-nowrap ${isAr ? 'leading-relaxed' : 'tracking-wide leading-snug'}`}>
         {text}
       </span>
       <span aria-hidden="true" className="mx-6 text-[10px] opacity-50 select-none">
@@ -89,7 +89,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
           animate={{ height: 'auto', opacity: scrollHidden ? 0 : 1, y: scrollHidden ? '-110%' : '0%', pointerEvents: scrollHidden ? 'none' : 'auto' }}
           exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="overflow-hidden bg-[var(--primary)] text-[#0A0A0A] sticky top-0 z-50 shadow-[0_1px_0_rgba(0,0,0,0.12)]"
+          className="overflow-hidden bg-[var(--primary)] text-[#0A0A0A] sticky top-0 z-50 shadow-[0_1px_0_rgba(0,0,0,0.12)] pt-[env(safe-area-inset-top)]"
         >
           {marquee ? (
             <div
@@ -111,7 +111,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
             </div>
           ) : (
             <div className="px-3 py-1.5 max-w-5xl mx-auto">
-              <p dir={isAr ? 'rtl' : 'ltr'} className="text-center text-[13px] font-extrabold tracking-wide leading-snug line-clamp-2">
+              <p dir={isAr ? 'rtl' : 'ltr'} className={`text-center text-[13px] font-extrabold line-clamp-2 ${isAr ? 'leading-relaxed' : 'tracking-wide leading-snug'}`}>
                 {text}
               </p>
             </div>

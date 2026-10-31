@@ -4,6 +4,8 @@ export type OrderType = 'delivery' | 'pickup' | 'dinein';
 
 export interface OrderItem {
   id: string;
+  /** Pricing unit id (absent on orders placed before units shipped). */
+  unit?: string;
   name: { en: string; ar: string };
   variantId?: string;
   variantName?: { en: string; ar: string };

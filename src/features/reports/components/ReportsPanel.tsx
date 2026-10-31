@@ -245,19 +245,19 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
                     : r.emailStatus === 'failed' ? <span className="text-[10px] font-bold text-red-400">{t.failed}</span>
                     : <span className="text-[10px] font-bold text-neutral-500">{t.notEmailed}</span>}
                 </span>
-                <span className="block text-[11px] text-neutral-400 mt-0.5 tabular-nums" dir={isAr ? 'rtl' : 'ltr'}>
-                  {fmt(r.orders)} {t.orders} · {fmtCompact(r.revenue)} {currency} · {t.avg} {fmtCompact(r.avg)}
+                <span className="block text-xs text-neutral-400 mt-0.5">
+                  <span dir="ltr" className="tabular-nums">{fmt(r.orders)}</span> {t.orders} · <span dir="ltr" className="tabular-nums">{fmtCompact(r.revenue)}</span> <span dir="auto">{currency}</span> · {t.avg} <span dir="ltr" className="tabular-nums">{fmtCompact(r.avg)}</span>
                 </span>
               </span>
               <button type="button" disabled={!r.csvAvailable} onClick={() => onDownload(r.month)} aria-label={`${t.csv} ${monthName(r.month, lang)}`}
-                className="btn-tactile shrink-0 h-10 px-3.5 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5 hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40">
+                className="btn-tactile shrink-0 h-11 min-h-[44px] px-4 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5 hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">
                 <Download size={14} />{t.csv}
               </button>
             </motion.div>
           ))}
         </div>
         {reports.length > limit && (
-          <button type="button" onClick={() => setLimit((l) => l + 6)} className="btn-tactile mt-3 w-full h-10 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold hover:bg-white/5">{t.showOlder(reports.length - limit)}</button>
+          <button type="button" onClick={() => setLimit((l) => l + 6)} className="btn-tactile mt-3 w-full h-11 min-h-[44px] rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">{t.showOlder(reports.length - limit)}</button>
         )}
       </motion.div>
 

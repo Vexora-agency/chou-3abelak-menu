@@ -127,7 +127,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={headerTitle}
-        className={`relative z-10 w-full max-w-[520px] max-h-[92vh] overflow-y-auto overscroll-contain no-scrollbar rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] px-6 sm:px-8 pt-4 sm:pt-6 pb-8 anim-slide-up shadow-2xl transition-colors duration-200 [touch-action:pan-y] overflow-x-clip ${
+        className={`relative z-10 w-full max-w-[520px] max-h-[92vh] max-h-[92dvh] overflow-y-auto overscroll-contain no-scrollbar rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] px-6 sm:px-8 pt-4 sm:pt-6 pb-[max(2rem,env(safe-area-inset-bottom))] anim-slide-up shadow-2xl transition-colors duration-200 [touch-action:pan-y] overflow-x-clip ${
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
       >
@@ -138,20 +138,20 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className={`absolute top-4 right-5 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+          className={`absolute top-3 end-4 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
             darkMode
               ? 'bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700'
               : 'bg-neutral-100 text-neutral-700 hover:text-black hover:bg-neutral-200'
           }`}
           aria-label={isAr ? 'إغلاق' : 'Close modal'}
         >
-          <X size={18} />
+          <X size={20} />
         </button>
 
         {/* Header: Title and Price */}
         <div className="flex justify-between items-start gap-4 pr-6">
           <div>
-            <h3 className={`text-2xl font-black leading-tight ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+            <h3 dir="auto" className={`text-2xl font-black leading-tight ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
               {headerTitle}
             </h3>
             {/* Badges */}
@@ -175,7 +175,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             </div>
           </div>
 
-          <div className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-lg font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap">
+          <div className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-lg font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap tabular-nums" dir="ltr">
             {headerPrice ?? priceLabel(item, lang, currency)}
           </div>
         </div>
@@ -207,25 +207,25 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   <span className={`font-bold text-sm ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
                     {isAr ? 'الكمية:' : 'Quantity:'}
                   </span>
-                  <div className="flex items-center gap-2 bg-[var(--primary)] text-[#0A0A0A] rounded-full p-1 shadow-sm">
+                  <div className="flex items-center gap-1.5 bg-[var(--primary)] text-[#0A0A0A] rounded-full p-1 shadow-sm">
                     <button
                       type="button"
                       onClick={() => stepQty(-1)}
-                      className="w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center font-bold text-[#0A0A0A]"
+                      className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-black/10 hover:bg-black/20 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] flex items-center justify-center font-bold text-[#0A0A0A]"
                       aria-label={isAr ? 'إنقاص' : 'Decrease'}
                     >
-                      <Minus size={16} className="stroke-[3]" />
+                      <Minus size={18} className="stroke-[3]" />
                     </button>
-                    <span className="font-black text-base px-2 min-w-[24px] text-center text-[#0A0A0A] tabular-nums">
+                    <span className="font-black text-base px-2 min-w-[28px] text-center text-[#0A0A0A] tabular-nums" dir="ltr">
                       {qty}
                     </span>
                     <button
                       type="button"
                       onClick={() => stepQty(1)}
-                      className="w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center font-bold text-[#0A0A0A]"
+                      className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-black/10 hover:bg-black/20 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] flex items-center justify-center font-bold text-[#0A0A0A]"
                       aria-label={isAr ? 'زيادة' : 'Increase'}
                     >
-                      <Plus size={16} className="stroke-[3]" />
+                      <Plus size={18} className="stroke-[3]" />
                     </button>
                   </div>
                 </div>
@@ -260,23 +260,23 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                 <span className="font-bold text-sm px-4">
                   {isAr ? 'الكمية في السلة:' : 'In your cart:'}
                 </span>
-                <div className="flex items-center gap-2 bg-[var(--primary)] text-[#0A0A0A] rounded-full p-1 shadow-sm">
+                <div className="flex items-center gap-1.5 bg-[var(--primary)] text-[#0A0A0A] rounded-full p-1 shadow-sm shrink-0">
                   <button
                     type="button"
                     onClick={() => onUpdateLine(singleKey, -1)}
-                    className="w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center font-bold text-[#0A0A0A]"
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-black/10 hover:bg-black/20 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] flex items-center justify-center font-bold text-[#0A0A0A]"
                   >
-                    <Minus size={16} className="stroke-[3]" />
+                    <Minus size={18} className="stroke-[3]" />
                   </button>
-                  <span className="font-black text-base px-2 min-w-[24px] text-center text-[#0A0A0A]">
+                  <span className="font-black text-base px-2 min-w-[28px] text-center text-[#0A0A0A] tabular-nums" dir="ltr">
                     {singleQty}
                   </span>
                   <button
                     type="button"
                     onClick={() => onUpdateLine(singleKey, 1)}
-                    className="w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center font-bold text-[#0A0A0A]"
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-black/10 hover:bg-black/20 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] flex items-center justify-center font-bold text-[#0A0A0A]"
                   >
-                    <Plus size={16} className="stroke-[3]" />
+                    <Plus size={18} className="stroke-[3]" />
                   </button>
                 </div>
               </div>

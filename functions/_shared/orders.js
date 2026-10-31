@@ -11,6 +11,7 @@ import {
   itemAddons,
   lineTotal,
   normalizeMenu,
+  normalizePricing,
   round2,
 } from './pricing.js';
 
@@ -185,6 +186,13 @@ export function validateOrderInput(body, menu) {
         break;
       }
 
+      // Pricing unit travels with the line so Telegram / tracking /
+      // the dashboard can render "2 دستتين" instead of a bare "2x".
+      let pricingUnit = 'pc';
+      try {
+        const pu = normalizePricing(found).unit;
+        if (typeof pu === 'string' && pu) pricingUnit = pu;
+      } catch {}
       const entry = {
         id: found.id,
         name: {
@@ -192,6 +200,7 @@ export function validateOrderInput(body, menu) {
           ar: typeof found.name?.ar === 'string' ? found.name.ar : '',
         },
         qty,
+        unit: pricingUnit,
         unitPrice: unit,
       };
       if (variantId) {

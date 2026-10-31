@@ -91,9 +91,8 @@ export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
         type="button"
         onClick={() => void cancel()}
         disabled={busy}
-        aria-live="polite"
-        aria-label={`${isAr ? 'إلغاء الطلب' : 'Cancel order'} ${fmtCountdown(left)}`}
-        className={`btn-tactile relative overflow-hidden w-full h-11 px-5 rounded-full text-white text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-md hover:brightness-110 disabled:opacity-60 ${
+        aria-label={isAr ? 'إلغاء الطلب' : 'Cancel order'}
+        className={`btn-tactile relative overflow-hidden w-full h-12 min-h-[48px] px-5 rounded-full text-white text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-md hover:brightness-110 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 ${
           urgent && !busy ? 'bg-red-700 animate-pulse' : 'bg-red-600'
         }`}
       >

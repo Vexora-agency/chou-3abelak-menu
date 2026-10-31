@@ -303,7 +303,14 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       if (e.key === 'Escape') setOpen(false);
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    // Lock background scroll while the sheet is open (iOS rubber-banding
+    // + address-bar resize jank otherwise).
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
   }, [open ]);
 
   // The bell lives only while something needs attention: the moment every
@@ -313,7 +320,9 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // active so the bell never flickers on mount.
   const orders = shelf.map((o) => states[o.n] ?? { ...o, status: 'unknown' as const, total: null, itemsCount: null, createdAt: null });
   const allTerminal = orders.length > 0 && orders.every((o) => o.status === 'completed' || o.status === 'cancelled');
-  if (!shelf.length || allTerminal) return null;
+  // Never unmount mid-use: if the last order resolves while the panel is
+  // open, keep the shell so focus and scroll are not lost to <body>.
+  if ((!shelf.length || allTerminal) && !open) return null;
 
   // Master sound switch: off = visual bell only, never a chime.
   // Unmuting plays a chime at once (a tap always unlocks audio).
@@ -352,7 +361,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
         onClick={() => setOpen((v) => !v)}
         aria-label={isAr ? 'طلباتك' : 'Your orders'}
         aria-expanded={open}
-        className={`btn-tactile fixed bottom-[5.5rem] end-4 z-40 w-14 h-14 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center ${
+        className={`btn-tactile fixed bottom-[max(5.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] end-4 z-40 w-14 h-14 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 ${
           darkMode
             ? 'shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-1 ring-white/20'
             : 'shadow-[0_10px_28px_-6px_rgba(0,0,0,0.35)] ring-2 ring-[#0A0A0A]/15'
@@ -387,14 +396,14 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                   {isAr ? 'تظهر هنا لمدة 12 ساعة' : 'Kept here for 12 hours'}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={toggleSound}
                   aria-pressed={!soundOff}
                   aria-label={isAr ? (soundOff ? 'تشغيل صوت الجرس' : 'كتم صوت الجرس') : (soundOff ? 'Unmute bell' : 'Mute bell')}
                   title={isAr ? (soundOff ? 'تشغيل الصوت' : 'كتم الصوت') : (soundOff ? 'Unmute' : 'Mute')}
-                  className={`btn-tactile w-9 h-9 rounded-full border flex items-center justify-center transition-colors ${
+                  className={`btn-tactile w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                     soundOff
                       ? (darkMode
                         ? 'border-red-800 text-red-400 bg-red-950/40 hover:text-red-300'
@@ -410,7 +419,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label={isAr ? 'إغلاق' : 'Close'}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'text-neutral-400 hover:bg-white/10' : 'text-neutral-500 hover:bg-black/5'}`}
+                  className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'text-neutral-400 hover:bg-white/10' : 'text-neutral-500 hover:bg-black/5'}`}
                 >
                   <X size={16} />
                 </button>
@@ -434,16 +443,16 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                   <div className="flex items-center justify-between gap-2">
                       <span className="text-base font-black tabular-nums" dir="ltr">#{o.n}</span>
                       <div className="flex items-center gap-1.5">
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${STATUS_STYLE[o.status]}`}>
+                        <span className={`text-xs font-black px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${STATUS_STYLE[o.status]}`}>
                           {o.status === 'completed' && <Check size={11} strokeWidth={3.5} aria-hidden="true" />}
                           {statusLabel(o.status)}
                         </span>
                       </div>
                     </div>
-                    <p className={`mt-0.5 text-[11px] ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
-                      {timeAgo(o.at, isAr, nowMs)}
+                    <p className={`mt-0.5 text-xs tabular-nums ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
+                      <bdi>{timeAgo(o.at, isAr, nowMs)}</bdi>
                       {typeof o.itemsCount === 'number' && typeof o.total === 'number' && (
-                        <span> · <span className="tabular-nums">{o.itemsCount}</span> {isAr ? 'أصناف' : 'items'} · <span className="tabular-nums" dir="ltr">{formatPrice(o.total)}</span></span>
+                        <span> · <bdi className="tabular-nums" dir="ltr">{o.itemsCount}</bdi> {isAr ? 'أصناف' : 'items'} · <span className="tabular-nums" dir="ltr">{formatPrice(o.total)}</span></span>
                       )}
                       {o.status === 'unknown' && (
                         <span className="inline-flex items-center gap-1 ms-1"><PackageSearch size={11} />{isAr ? 'تعذر التحديث' : 'unreachable'}</span>
@@ -465,7 +474,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                       )}
                       <a
                         href={`/?track=${o.n}&t=${encodeURIComponent(o.t)}`}
-                        className={`h-9 px-4 rounded-full border text-xs font-extrabold inline-flex items-center gap-1.5 ${
+                        className={`h-11 min-h-[44px] px-5 rounded-full border text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                           darkMode ? 'border-neutral-700 text-neutral-200 hover:border-[var(--primary)] hover:text-[var(--primary)]' : 'border-neutral-300 text-neutral-700 hover:border-[var(--primary)]'
                         }`}
                       >

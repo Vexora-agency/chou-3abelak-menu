@@ -288,7 +288,9 @@ export const MenuList: React.FC<MenuListProps> = ({
             ? 'grid grid-cols-1 md:grid-cols-2 gap-x-10'
             : kind === 'list'
               ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-4'
-              : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5';
+              // Single column under 360px: two 133px cards squeeze Arabic
+              // names + price + action at 320px — one readable column wins.
+              : 'grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5';
         const total = catItems.length;
         // Snap the window to FULL rows of this section's live grid: on a
         // 5-column desktop grid initial 12 → 15, batch 8 → 10, so no orphan
@@ -428,8 +430,10 @@ export const MenuList: React.FC<MenuListProps> = ({
             ))}
           </div>
         );
+        // scroll-mt clears the sticky stack (banner + two chip rows ≈150px)
+        // so the anchored header never hides underneath after chip taps.
         return (
-          <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-16 menu-section">
+          <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-[160px] menu-section">
             {/* Category Header */}
             <MenuListSectionHeader title={isAr ? cat.name.ar : cat.name.en} darkMode={darkMode} count={catItems.length} />
             {/* One grid per section: compact/list/cards differ only by the

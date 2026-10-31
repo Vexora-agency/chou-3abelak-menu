@@ -133,9 +133,10 @@ ok(unitLabel('pc', 1, 'en') === 'pc' && unitLabel('pc', 3, 'en') === 'pcs', 'EN 
 ok(unitLabel('dozen', 1, 'en') === 'dozen' && unitLabel('dozen', 2, 'en') === 'dozens', 'EN dozen');
 ok(unitLabel('dozen', 3, 'en') === 'dozens' && unitLabel('glass', 2, 'en') === 'glasses', 'EN plurals');
 ok(unitLabel('kg', 5, 'en') === 'kg', 'kg invariable');
-ok(unitLabel('pc', 1, 'ar') === 'قطعة' && unitLabel('pc', 2, 'ar') === 'قطعتان' && unitLabel('pc', 5, 'ar') === 'قطع', 'AR pc forms');
-ok(unitLabel('dozen', 1, 'ar') === 'دزينة' && unitLabel('dozen', 2, 'ar') === 'دزينتان' && unitLabel('dozen', 4, 'ar') === 'دزينات', 'AR dozen forms');
-ok(unitLabel('portion', 2, 'ar') === 'حصة' && unitLabel('box', 1, 'ar') === 'علبة', 'AR others');
+ok(unitLabel('pc', 1, 'ar') === 'قطعة' && unitLabel('pc', 2, 'ar') === 'قطعتين' && unitLabel('pc', 5, 'ar') === 'قطع' && unitLabel('pc', 11, 'ar') === 'قطعة', 'AR pc forms');
+ok(unitLabel('dozen', 1, 'ar') === 'دستة' && unitLabel('dozen', 2, 'ar') === 'دستتين' && unitLabel('dozen', 4, 'ar') === 'دستات' && unitLabel('dozen', 12, 'ar') === 'دستة', 'AR dozen forms');
+ok(unitLabel('portion', 2, 'ar') === 'حصتين' && unitLabel('portion', 5, 'ar') === 'حصص' && unitLabel('box', 2, 'ar') === 'علبتين' && unitLabel('box', 4, 'ar') === 'علب', 'AR portion/box forms');
+ok(unitLabel('bottle', 2, 'ar') === 'زجاجتين' && unitLabel('glass', 2, 'ar') === 'كأسين' && unitLabel('glass', 5, 'ar') === 'كؤوس' && unitLabel('kg', 3, 'ar') === 'كغ', 'AR bottle/glass/kg forms');
 
 // legacy normalization: old numeric price -> portion pricing
 const legacy = normalizeMenu({ items: [{ id: 'x', categoryId: 'c', price: 250 }], settings: { ordering: {} } });

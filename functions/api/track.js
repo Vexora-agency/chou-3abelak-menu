@@ -70,6 +70,8 @@ export async function onRequest(context) {
         const out = {
           qty: typeof it.qty === 'number' ? it.qty : 0,
           unitPrice: typeof it.unitPrice === 'number' ? it.unitPrice : 0,
+          // Pricing unit for "2 دستتين" (absent on pre-unit rows → omitted).
+          ...(typeof it.unit === 'string' && it.unit ? { unit: it.unit.slice(0, 16) } : {}),
           name: {
             en: typeof it.name?.en === 'string' ? it.name.en : '',
             ar: typeof it.name?.ar === 'string' ? it.name.ar : '',

@@ -1,7 +1,8 @@
 /**
  * POST /api/admin/import/apply { token, includeSettings } — two-step
  * import, step 2. Single-use token (deleted first), session-bound, rate
- * limited (5/hour). Snapshots the live menu first (source 'import').
+ * limited (10/hour shared — 5 proved too tight while troubleshooting).
+ * Snapshots the live menu first (source 'import').
  *
  * Unsigned files change items/categories/addonGroups ONLY — settings,
  * ordering and contact data are never touched. includeSettings is honored
@@ -83,6 +84,28 @@ export async function onRequest(context) {
     await env.MENU_KV.delete(IMPORT_KEY(token));
   } catch {}
 
+  // Unsigned files must NEVER grow the feature library: validation
+  // auto-creates defs for unknown ids, so strip them (and legacy
+  // addonGroups, which also mint defs) BEFORE validate. Known = the live
+  // library only. Empty live library = cannot judge → skip stripping.
+  const liveDefs = current && current.settings && Array.isArray(current.settings.featureDefs)
+    ? current.settings.featureDefs : [];
+  const knownIds = new Set(liveDefs.map((d) => d && d.id).filter((x) => typeof x === 'string' && x));
+  const stripUnknownFeatures = (items) => (Array.isArray(items) ? items : []).map((it) => {
+    if (!it || typeof it !== 'object') return it;
+    const out = { ...it };
+    if (Array.isArray(out.variants)) {
+      out.variants = out.variants.filter((v) => v && knownIds.has(v.featureId || v.id));
+      if (out.defaultVariant && !out.variants.some((v) => v && (v.featureId || v.id) === out.defaultVariant)) {
+        delete out.defaultVariant;
+      }
+    }
+    if (Array.isArray(out.addons)) {
+      out.addons = out.addons.filter((a) => a && knownIds.has(a.featureId));
+    }
+    return out;
+  });
+
   let merged;
   try {
     if (staged.kind === 'csv') {
@@ -92,11 +115,14 @@ export async function onRequest(context) {
       if (staged.signed && includeSettings) {
         merged = staged.doc;
       } else {
+        const rawItems = Array.isArray(staged.doc.items) ? staged.doc.items : current.items;
         merged = {
           ...current,
           categories: Array.isArray(staged.doc.categories) ? staged.doc.categories : current.categories,
-          items: Array.isArray(staged.doc.items) ? staged.doc.items : current.items,
-          addonGroups: Array.isArray(staged.doc.addonGroups) ? staged.doc.addonGroups : current.addonGroups,
+          items: knownIds.size > 0 ? stripUnknownFeatures(rawItems) : rawItems,
+          // Legacy addonGroups mint library defs on validate — unsigned
+          // files keep the live groups, never the file's.
+          addonGroups: current.addonGroups,
         };
       }
     } else {
@@ -105,6 +131,16 @@ export async function onRequest(context) {
     const v = validateMenu(merged);
     if (!v.ok) return jsonNoStore({ ok: false, error: 'validation_error', message: v.errors.join('; ') }, 400);
     merged = v.value;
+    if (!(staged.signed && includeSettings) && staged.kind === 'json') {
+      // Belt and suspenders: the library stays exactly live for unsigned
+      // files even if validation invented anything on the way through.
+      try {
+        merged.settings.featureDefs = liveDefs;
+        if (current && current.settings && Array.isArray(current.settings.featureGroups)) {
+          merged.settings.featureGroups = current.settings.featureGroups;
+        }
+      } catch {}
+    }
   } catch {
     return jsonNoStore({ ok: false, error: 'bad_request' }, 400);
   }
@@ -113,13 +149,21 @@ export async function onRequest(context) {
   try {
     await snapshotMenu(env, { prevDoc: current, incomingDoc: merged, source: 'import', actor });
   } catch {}
+  // Expected-version guard AFTER the burn: a concurrent save in the tiny
+  // window 409s instead of being silently overwritten (token is spent, so
+  // the owner re-analyzes and presses Apply again).
   let written;
   try {
-    written = await writeMenuVersioned(env, merged);
+    written = await writeMenuVersioned(env, merged, baseVersion);
   } catch {
     return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
   }
-  if (!written.ok) return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
+  if (!written.ok) {
+    if (written.conflict) {
+      return jsonNoStore({ ok: false, error: 'conflict', version: written.current ? written.current.version : undefined }, 409);
+    }
+    return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
+  }
   await purgePublicMenu(request);
   try {
     const ni = Array.isArray(merged.items) ? merged.items.length : 0;

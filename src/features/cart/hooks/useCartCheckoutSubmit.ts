@@ -135,10 +135,12 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     ? Date.parse(liveState.reopensAt)
     : NaN;
   const pausedLive = Number.isFinite(pausedDeadline) && pausedDeadline > serverNow();
-  const [nowMs, setNowMs] = useState(() => Date.now());
+  // Server clock (not the device clock): the deadline is a server ISO
+  // instant, so a wrong phone clock must not skew the countdown.
+  const [nowMs, setNowMs] = useState(() => serverNow());
   useEffect(() => {
     if (!pausedLive) return;
-    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    const id = window.setInterval(() => setNowMs(serverNow()), 1000);
     return () => window.clearInterval(id);
   }, [pausedLive]);
   let reopenText = '';

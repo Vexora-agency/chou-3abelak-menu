@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { MenuSettings } from '@/src/types/menu';
 import { BELL_SOUNDS, bellPatternById, type BellSoundId } from '@/src/utils/bellPatterns';
-import { playNewOrderBeep, unlockOrderSound } from '@/src/features/orders/hooks/useNewOrderSound';
+import { playNewOrderBeep, unlockOrderSound } from '@/src/features/orders';
 import { playBellChime } from '@/src/utils/bellSound';
 import { BellRing, Play, Store, ChefHat } from 'lucide-react';
 

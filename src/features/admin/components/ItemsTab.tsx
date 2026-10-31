@@ -2,6 +2,7 @@ import React from 'react';
 import { Award, ChevronDown, ChevronUp, Copy, Flame, Plus, Sparkles, Trash2 } from 'lucide-react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import { normalizePricing, priceLabel } from '@/src/utils/pricing';
+import { effectiveBadges } from '@/src/utils/pricing-badges';
 import { Pager } from './Pager';
 
 export type ItemBadgeFilter = 'all' | 'new' | 'spicy' | 'top';
@@ -97,15 +98,22 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
       {/* Items List */}
       <div className="space-y-2.5">
         {(() => {
+          // Badge filter + search mirror the storefront (effectiveBadges =
+          // stored ∪ auto-NEW, name + description) so admin finds exactly
+          // what customers see.
           const filtered = menu.items.filter((i) => {
             if (categoryFilter !== 'all' && i.categoryId !== categoryFilter) return false;
-            if (badgeFilter !== 'all' && !i.badges.includes(badgeFilter)) return false;
+            if (badgeFilter !== 'all' && !effectiveBadges(menu, i).includes(badgeFilter)) return false;
             if (!search) return true;
+            const q = search.toLowerCase();
             return (
-              i.name.en.toLowerCase().includes(search.toLowerCase()) ||
-              i.name.ar.toLowerCase().includes(search.toLowerCase())
+              i.name.en.toLowerCase().includes(q) ||
+              i.name.ar.toLowerCase().includes(q) ||
+              (typeof i.description?.en === 'string' && i.description.en.toLowerCase().includes(q)) ||
+              (typeof i.description?.ar === 'string' && i.description.ar.toLowerCase().includes(q))
             );
           });
+          const listFiltered = categoryFilter !== 'all' || badgeFilter !== 'all' || !!search;
           const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
           const safe = Math.max(0, Math.min(page, Math.max(0, pageCount - 1)));
           const shown = filtered.slice(safe * pageSize, safe * pageSize + pageSize);
@@ -121,21 +129,21 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                   className="flex-1 min-w-0 cursor-pointer"
                 >
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-sm text-white truncate">
+                  <span className="font-bold text-sm text-white truncate" dir="auto">
                     {isAr ? item.name.ar : item.name.en}
                   </span>
-                  {/* Badges — same icons as the customer menu */}
-                  {item.badges.includes('new') && (
+                  {/* Badges — effective set (stored ∪ auto-NEW), same icons as the customer menu */}
+                  {effectiveBadges(menu, item).includes('new') && (
                     <span title={isAr ? 'جديد' : 'New'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]">
                       <Sparkles size={10} />
                     </span>
                   )}
-                  {item.badges.includes('spicy') && (
+                  {effectiveBadges(menu, item).includes('spicy') && (
                     <span title={isAr ? 'حار' : 'Spicy'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]">
                       <Flame size={10} />
                     </span>
                   )}
-                  {item.badges.includes('top') && (
+                  {effectiveBadges(menu, item).includes('top') && (
                     <span title={isAr ? 'الأكثر طلباً' : 'Top'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]">
                       <Award size={10} />
                     </span>
@@ -177,11 +185,15 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                   {item.available ? (isAr ? 'متوفر' : 'In Stock') : (isAr ? 'نافذ' : 'Out')}
                 </button>
 
-                {/* Move Up/Down */}
+                {/* Move Up/Down — disabled while filtered: reordering acts
+                    on the master array, which would look like random jumps
+                    inside a search/filter view. */}
                 <button
                   type="button"
                   onClick={() => onMove(item.id, 'up')}
-                  className="p-2 text-neutral-400 hover:text-white"
+                  disabled={listFiltered}
+                  title={listFiltered ? (isAr ? 'ألغِ البحث/الفلتر للتحريك' : 'Clear search/filter to reorder') : undefined}
+                  className="relative p-2 text-neutral-400 hover:text-white disabled:opacity-30 after:absolute after:-inset-2 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded"
                   aria-label={isAr ? 'تحريك لأعلى' : 'Move up'}
                 >
                   <ChevronUp size={14} />
@@ -189,7 +201,9 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                 <button
                   type="button"
                   onClick={() => onMove(item.id, 'down')}
-                  className="p-2 text-neutral-400 hover:text-white"
+                  disabled={listFiltered}
+                  title={listFiltered ? (isAr ? 'ألغِ البحث/الفلتر للتحريك' : 'Clear search/filter to reorder') : undefined}
+                  className="relative p-2 text-neutral-400 hover:text-white disabled:opacity-30 after:absolute after:-inset-2 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded"
                   aria-label={isAr ? 'تحريك لأسفل' : 'Move down'}
                 >
                   <ChevronDown size={14} />
@@ -199,7 +213,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                 <button
                   type="button"
                   onClick={() => onDuplicate(item)}
-                  className="p-2 text-neutral-400 hover:text-[var(--primary)]"
+                  className="relative p-2 text-neutral-400 hover:text-[var(--primary)] after:absolute after:-inset-2 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded"
                   title="Duplicate"
                 >
                   <Copy size={14} />
@@ -209,7 +223,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                 <button
                   type="button"
                   onClick={() => onDelete(item.id)}
-                  className="p-2 text-neutral-400 hover:text-red-400"
+                  className="relative p-2 text-neutral-400 hover:text-red-400 after:absolute after:-inset-2 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded"
                   title="Delete"
                 >
                   <Trash2 size={14} />

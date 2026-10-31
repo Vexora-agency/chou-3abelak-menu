@@ -14,10 +14,11 @@ export async function onRequest(context) {
   }
   let settings = null;
   try {
-    // cacheTtl: polls hit this every few seconds while paused — the state it
-    // computes changes on minute scales, so a short edge cache cuts repeated
-    // KV reads without ever serving a stale open/closed flip.
-    const menu = env.MENU_KV ? await env.MENU_KV.get('menu', { type: 'json', cacheTtl: 30 }) : null;
+    // cacheTtl 5: polls hit this every 3s while paused and the owner
+    // expects pause/resume to surface within seconds — a 30s edge cache
+    // served stale flips (pause stayed invisible). 5s still cuts most
+    // repeated KV reads; the endpoint is tiny.
+    const menu = env.MENU_KV ? await env.MENU_KV.get('menu', { type: 'json', cacheTtl: 5 }) : null;
     settings = (menu && menu.settings) || null;
   } catch {}
   if (!settings) {

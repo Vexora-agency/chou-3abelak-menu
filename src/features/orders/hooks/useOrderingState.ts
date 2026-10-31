@@ -23,7 +23,7 @@ export function useOrderingState() {
   // Ordering availability refreshes with the menu and on a self-scheduling
   // poller: the effect itself only starts async work, all setStates happen
   // after awaits (no cascading render by construction). Cadence adapts to
-  // the state (5 s while paused, 60 s when open — see pollIntervalMs), so a
+  // the state (3 s while paused, 60 s when open — see pollIntervalMs), so a
   // resume surfaces in seconds instead of up to a minute.
   // Return-to-tab refreshes (visibility/pageshow/focus) keep this channel in
   // lockstep with the menu channel: without them an already-open page shows

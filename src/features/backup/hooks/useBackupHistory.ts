@@ -45,8 +45,16 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
   const [backupStatus, setBackupStatus] = useState<{ lastBackupAt?: string; autoWeekly: boolean; destination?: string }>({ autoWeekly: false });
   const [undoToast, setUndoToast] = useState<{ label: string; undo: () => void } | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
+  // Load failure signal: an empty timeline must read as "failed to load",
+  // never as "no history". Shown as a banner + Retry on the backup tab.
+  const [backupError, setBackupError] = useState(false);
   const undoTimer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(undoTimer.current), []);
+  // Live version ref: the 8s undo toast closes over delete-time renders,
+  // but the restore must send TODAY's baseVersion (post-refresh), or every
+  // toast undo 409s by construction.
+  const menuVersionRef = useRef(menuVersion);
+  menuVersionRef.current = menuVersion;
 
   const showUndoToast = useCallback((label: string, undo: () => void) => {
     setUndoToast({ label, undo });
@@ -78,7 +86,10 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
         const td: unknown = await readJson(t);
         setTrash(isRecord(td) && Array.isArray(td.trash) ? (td.trash as TrashEntry[]) : []);
       }
-    } catch {}
+      setBackupError(false);
+    } catch {
+      setBackupError(true);
+    }
   }, [adminFetch]);
 
   const fetchActivity = useCallback(async () => {
@@ -123,7 +134,9 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
       const res = await adminFetch(`/api/admin/trash/${encodeURIComponent(trashId)}/restore`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseVersion: menuVersion }),
+        // Live ref, not the render-time prop: the undo toast outlives the
+        // refresh that bumped the version, and a stale baseVersion 409s.
+        body: JSON.stringify({ baseVersion: menuVersionRef.current }),
       });
       const data: unknown = await readJson(res);
       if (!res.ok || !isRecord(data) || !data.ok) {
@@ -137,11 +150,13 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
     } catch {
       return { ok: false, conflict: false };
     }
-  }, [adminFetch, menuVersion, refreshMenuFromServer, clearUndoToast]);
+  }, [adminFetch, refreshMenuFromServer, clearUndoToast]);
 
   const onLoadChanges = useCallback(async (versionId: string) => {
     const r = await adminFetch(`/api/admin/versions/${encodeURIComponent(versionId)}/changes?lang=${lang}`);
-    if (!r.ok) return { changes: [], comparedTo: 'live' as const };
+    // A failed load must NOT masquerade as "no differences": the owner
+    // could otherwise restore blind. The modal shows error + Retry.
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const d: unknown = await readJson(r);
     return {
       changes: isRecord(d) && Array.isArray(d.changes) ? (d.changes as Change[]) : [],
@@ -289,7 +304,7 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
   }, [adminFetch, fetchBackupData]);
 
   return {
-    versions, trash, backupStatus, undoToast, showUndoToast, clearUndoToast,
+    versions, trash, backupStatus, backupError, undoToast, showUndoToast, clearUndoToast,
     activity, fetchActivity, fetchBackupData, refreshMenuFromServer, handleRestoreTrashById,
     onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport,
     onRestoreTrash, onDeleteForever, onToggleAuto, isOwner,

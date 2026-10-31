@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { MenuData } from '@/src/types/menu';
 import { isOpenNow, buildMapUrl } from '@/src/utils/menuHelpers';
+import { serverNow } from '@/src/utils/serverTime';
 import type { OrderingStatus } from '@/src/utils/status';
 import { useHeaderIntroEngine } from '@/src/hooks/useHeaderIntroEngine';
 import { useHeaderMotion } from '@/src/hooks/useHeaderMotion';
@@ -39,7 +40,11 @@ export const Header: React.FC<HeaderProps> = ({
   // they cost zero compositing / main-thread time during scroll.
   const [engineDone, setEngineDone] = useState(false);
 
-  const status = isOpenNow(menu.settings);
+  const status = isOpenNow(
+    menu.settings,
+    serverNow(),
+    orderingState && typeof orderingState.reopensAt === 'string' ? orderingState.reopensAt : null,
+  );
 
   useHeaderIntroEngine(canvasRef, smokeCanvasRef, headerRef, setHasEnded, setEngineDone);
 

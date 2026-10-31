@@ -64,7 +64,7 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
                     socialEnabled: { ...prev.socialEnabled, [network]: !prev.socialEnabled?.[network] },
                   }))
                 }
-                className="flex-1 flex items-center justify-between gap-3 text-start"
+                className="flex-1 flex items-center justify-between gap-3 text-start min-h-[44px] rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
               >
                 <span className="text-xs font-bold">{label}</span>
                 <span className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${on ? 'bg-[var(--primary)]' : 'bg-neutral-700'}`}>
@@ -82,7 +82,7 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
                   disabled={idx === 0}
                   aria-label={isAr ? `حرّك ${label} لأعلى` : `Move ${label} up`}
                   title={isAr ? 'لأعلى' : 'Move up'}
-                  className="w-7 h-7 rounded-lg bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/60 disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center justify-center"
+                  className="relative w-7 h-7 rounded-lg bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/60 disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center justify-center after:absolute after:-inset-2 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 >
                   <ArrowUp size={14} />
                 </button>
@@ -92,7 +92,7 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
                   disabled={idx === order.length - 1}
                   aria-label={isAr ? `حرّك ${label} لأسفل` : `Move ${label} down`}
                   title={isAr ? 'لأسفل' : 'Move down'}
-                  className="w-7 h-7 rounded-lg bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/60 disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center justify-center"
+                  className="relative w-7 h-7 rounded-lg bg-neutral-800 border border-neutral-700 text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)]/60 disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center justify-center after:absolute after:-inset-2 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 >
                   <ArrowDown size={14} />
                 </button>
@@ -111,8 +111,13 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
                   }))
                 }
                 placeholder={network === 'whatsapp' ? 'https://wa.me/…' : `https://${network}.com/…`}
-                className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
+                className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base focus:border-[var(--primary)]"
               />
+              {on && !!(social?.[network] || '').trim() && !/^\s*https:\/\//i.test(social?.[network] || '') && (
+                <p className="text-[11px] text-amber-400/90 font-bold mt-1.5" role="alert">
+                  {isAr ? 'الرابط يجب أن يبدأ بـ https:// وإلا رفض الحفظ' : 'Link must start with https:// or saving rejects it'}
+                </p>
+              )}
               {linkHint && (
                 <p className="text-[11px] text-neutral-500 mt-1">{linkHint}</p>
               )}

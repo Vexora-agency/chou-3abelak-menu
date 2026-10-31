@@ -155,11 +155,15 @@ export function normalizeMenu(menu) {
           })
           .filter(Boolean);
       }
-      // New per-item add-ons pass through (drop malformed rows)
+      // New per-item add-ons pass through (drop malformed rows).
+      // The pre-selected flag survives: dropping `default` here wiped the
+      // star on every reload (and the next save made it permanent).
       if (Array.isArray(copy.addons)) {
         copy.addons = copy.addons
           .filter((a) => a && typeof a === 'object' && typeof a.featureId === 'string' && a.featureId)
-          .map((a) => ({ featureId: a.featureId, price: a.price }));
+          .map((a) => (a.default === true
+            ? { featureId: a.featureId, price: a.price, default: true }
+            : { featureId: a.featureId, price: a.price }));
       }
       // Explicit default survives only when it points at a size
       if (typeof copy.defaultVariant === 'string' && copy.defaultVariant) {

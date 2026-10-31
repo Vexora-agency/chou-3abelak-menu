@@ -33,7 +33,7 @@ export const ItemPricingFields: React.FC<ItemPricingFieldsProps> = ({
               })
             }
             placeholder={isAr ? 'فارغ = مجاناً (أو أضف مقاسات تحت)' : 'Empty = free (or add sizes below)'}
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm"
+            className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums"
           />
           {(item.pricing.price === undefined || item.pricing.price === 0) && (
             <p className="text-[11px] font-bold text-emerald-400 mt-1">
@@ -43,10 +43,11 @@ export const ItemPricingFields: React.FC<ItemPricingFieldsProps> = ({
         </div>
       )}
 
-      {/* Min / Max (step is fixed at 1). The show-unit toggle lives under Unit above. */}
-      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
+      {/* Min / Step / Max grid (same int ≥ 1 guards as the saver). */}
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-3">
         {([
           { k: 'minQty', label: isAr ? 'أقل كمية' : 'Min qty' },
+          { k: 'step', label: isAr ? 'الخطوة' : 'Step' },
           { k: 'maxQty', label: isAr ? 'أقصى كمية' : 'Max qty' },
         ] as const).map((f) => (
           <div key={f.k}>
@@ -54,6 +55,7 @@ export const ItemPricingFields: React.FC<ItemPricingFieldsProps> = ({
             <input
               type="number"
               step={1}
+              min={1}
               value={item.pricing[f.k] ?? ''}
               onChange={(e) =>
                 onChange({
@@ -61,7 +63,7 @@ export const ItemPricingFields: React.FC<ItemPricingFieldsProps> = ({
                   pricing: { ...normalizePricing(item), [f.k]: e.target.value === '' ? undefined : Number(e.target.value) },
                 })
               }
-              className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm"
+              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums"
             />
           </div>
         ))}

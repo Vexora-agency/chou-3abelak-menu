@@ -89,7 +89,7 @@ export async function onRequest(context) {
   }
 
   const restored = await restoreValidatedMenu(env, request, {
-    doc: next, prevDoc: menu, source: 'manual', expectedVersion: baseVersion,
+    doc: next, prevDoc: menu, source: 'restore', expectedVersion: baseVersion,
   });
   if (restored.res) return restored.res;
   try {

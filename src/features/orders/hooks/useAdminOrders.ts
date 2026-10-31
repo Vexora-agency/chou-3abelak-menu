@@ -40,6 +40,21 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
         if (prev.length > 0 && freshIds.length > 0 && typeof document !== 'undefined') {
           document.title = `(${freshIds.length}) ${isAr ? 'طلبات جديدة' : 'New orders'}`;
         }
+        // Skip no-op polls: a new array identity with identical content
+        // re-runs layout/count-up/chart animations under the owner's finger.
+        // (Orders are immutable except status/total, so those + id suffice.)
+        if (prev.length === list.length && freshIds.length === 0) {
+          let same = true;
+          for (let i = 0; i < list.length; i++) {
+            const a = prev[i];
+            const b = list[i];
+            if (!a || !b || a.id !== b.id || a.status !== b.status || a.total !== b.total) {
+              same = false;
+              break;
+            }
+          }
+          if (same) return prev;
+        }
         return list;
       });
       if (!silent) setOrdersLoading(false);

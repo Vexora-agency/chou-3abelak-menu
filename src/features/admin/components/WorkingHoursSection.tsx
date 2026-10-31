@@ -1,21 +1,12 @@
 import React from 'react';
 import type { MenuSettings } from '@/src/types/menu';
+import { formatTime12h } from '@/src/utils/menuHelpers';
 
 type WorkingHoursValues = Pick<MenuSettings, 'statusMode' | 'openTime' | 'closeTime' | 'workingDays'>;
 
 interface WorkingHoursSectionProps extends WorkingHoursValues {
   lang: 'en' | 'ar';
   onUpdate: (updater: (prev: WorkingHoursValues) => WorkingHoursValues) => void;
-}
-
-// "13:05" (24h) -> "1:05 PM" / "1:05 مساءً", so AM/PM is never ambiguous
-function formatTime12h(t: string, isAr: boolean): string {
-  const m = /^(\d{1,2}):(\d{2})/.exec((t || '').trim());
-  if (!m) return t || '--:--';
-  const h = parseInt(m[1], 10) % 24;
-  const suffix = h < 12 ? (isAr ? 'صباحاً' : 'AM') : (isAr ? 'مساءً' : 'PM');
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${m[2]} ${suffix}`;
 }
 
 const ALL_DAYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
@@ -74,8 +65,8 @@ export const WorkingHoursSection: React.FC<WorkingHoursSectionProps> = ({
       {/* Live AM/PM preview so open/close are never ambiguous */}
       <p className="text-xs font-bold text-[var(--primary)]">
         {isAr
-          ? `يفتح ${formatTime12h(openTime, true)} – يغلق ${formatTime12h(closeTime, true)}`
-          : `Opens ${formatTime12h(openTime, false)} – Closes ${formatTime12h(closeTime, false)}`}
+          ? `يفتح ${formatTime12h(openTime, 'ar')} – يغلق ${formatTime12h(closeTime, 'ar')}`
+          : `Opens ${formatTime12h(openTime, 'en')} – Closes ${formatTime12h(closeTime, 'en')}`}
       </p>
 
       {/* Working days: tap to include/exclude a day */}

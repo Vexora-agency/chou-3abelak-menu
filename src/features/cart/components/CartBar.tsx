@@ -51,13 +51,16 @@ export const CartBar: React.FC<CartBarProps> = ({
   if (totalCount === 0) return null;
 
   const blocked = orderingState && orderingState.state !== 'open';
+  // Every blocked state shows the SERVER's own message (it carries the
+  // reason + reopen time) — no more generic text hiding the real cause.
   const statusText = !orderingState || orderingState.state === 'open'
     ? ''
-    : orderingState.state === 'paused'
-      ? (isAr ? 'الطلبات متوقفة مؤقتاً' : 'Orders paused')
-      : orderingState.state === 'closed'
-        ? (orderingState.message[lang] || (isAr ? 'مغلق حالياً' : 'Currently closed'))
-        : (isAr ? 'الطلب غير متاح حالياً' : 'Ordering unavailable');
+    : (orderingState.message && (orderingState.message[lang] || orderingState.message.en)) ||
+      (orderingState.state === 'paused'
+        ? (isAr ? 'الطلبات متوقفة مؤقتاً' : 'Orders paused')
+        : orderingState.state === 'closed'
+          ? (isAr ? 'مغلق حالياً' : 'Currently closed')
+          : (isAr ? 'الطلب غير متاح حالياً' : 'Ordering unavailable'));
 
   return (
     <aside

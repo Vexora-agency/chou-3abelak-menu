@@ -62,8 +62,13 @@ export async function onRequest(context) {
   if (!secret || !presented || !safeCompareStrings(presented, secret)) {
     return jsonNoStore({ error: 'not_found' }, 404);
   }
-  // The whole scheduled job (email + retention) belongs to monthlyReports.
-  if (!hasFeature(env, 'monthlyReports')) return jsonNoStore({ error: 'not_found' }, 404);
+  // Each block below is gated on its OWN feature: the monthly email on
+  // monthlyReports, the weekly backup + housekeeping on backups. Gating the
+  // whole job on monthlyReports silently killed weekly backups for any plan
+  // split that has backups without reports.
+  const reportsOn = hasFeature(env, 'monthlyReports');
+  const backupsOn = hasFeature(env, 'backups');
+  if (!reportsOn && !backupsOn) return jsonNoStore({ error: 'not_found' }, 404);
   if (!env.ORDERS_DB) return jsonNoStore({ error: 'unavailable' }, 503);
 
   // ---- (a) previous-month email ----
@@ -71,6 +76,8 @@ export async function onRequest(context) {
   const month = prevMonth(currentMonthInTZ(timezone, Date.now()));
   let emailed = false;
   let attempts = 0;
+
+  if (reportsOn) {
 
   // The previous month is complete on/after day 1 (guard reads naturally).
   if (dayOfMonthInTZ(timezone, Date.now()) >= 1) {
@@ -129,9 +136,11 @@ export async function onRequest(context) {
       }
     }
   }
+  } // end reportsOn
 
   // ---- (b) weekly automatic backup (Mondays, business timezone) ----
   let weekly = { sent: false };
+  if (backupsOn) {
   try {
     const auto = await getAutoBackup(env);
     if (auto.enabled && weekdayInTZ(timezone, Date.now()) === 1) {
@@ -183,22 +192,31 @@ export async function onRequest(context) {
   } catch {
     weekly = { sent: false };
   }
+  } // end backupsOn
 
   // ---- (c) retention + history housekeeping ----
+  // Retention serves the reports data lifecycle; version/trash pruning
+  // serves backups. Each runs only under its own feature.
   let retention;
-  try {
-    retention = await runRetention(env);
-  } catch {
-    retention = { error: 'unavailable' };
+  if (reportsOn) {
+    try {
+      retention = await runRetention(env);
+    } catch {
+      retention = { error: 'unavailable' };
+    }
+  } else {
+    retention = { skipped: 'reports_off' };
   }
   let prunedVersions = 0;
   let trashPurged = 0;
-  try {
-    prunedVersions = await pruneVersions(env);
-  } catch {}
-  try {
-    trashPurged = await purgeTrash(env);
-  } catch {}
+  if (backupsOn) {
+    try {
+      prunedVersions = await pruneVersions(env);
+    } catch {}
+    try {
+      trashPurged = await purgeTrash(env);
+    } catch {}
+  }
 
   return jsonNoStore({ ok: true, month, emailed, attempts, retention, weekly, prunedVersions, trashPurged });
 }

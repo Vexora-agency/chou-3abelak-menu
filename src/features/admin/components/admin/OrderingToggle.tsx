@@ -82,10 +82,12 @@ const OrderingToggle: React.FC<OrderingToggleProps> = ({ lang, state, resumesAt,
         </span>
         <div className="flex p-1 rounded-full bg-black border border-neutral-800" role="group" aria-label={t.accepting}>
           {([['on', t.segOn], ['off', t.segOff]] as const).map(([k, label]) => {
-            const active = (k === 'off') === paused;
+            // Master-off kills both segments: neither may look active, and
+            // the pause picker must not open while ordering is disabled.
+            const active = !disabled && (k === 'off') === paused;
             return (
-              <button key={k} type="button" disabled={busy} aria-pressed={active}
-                onClick={() => { if (k === 'off') { if (!paused) setChoosing((v) => !v); } else if (paused) void doResume(); }}
+              <button key={k} type="button" disabled={busy || disabled} aria-pressed={active} title={disabled ? t.subOffline : undefined}
+                onClick={() => { if (disabled) return; if (k === 'off') { if (!paused) setChoosing((v) => !v); } else if (paused) void doResume(); }}
                 className={`relative px-5 h-11 min-h-[44px] inline-flex items-center rounded-full text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${active ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}>
                 {active && <motion.span layoutId="ordering-seg" className={`absolute inset-0 rounded-full ${paused ? 'bg-amber-300' : 'bg-[var(--primary)]'}`} transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
                 <span className="relative z-10">{label}</span>

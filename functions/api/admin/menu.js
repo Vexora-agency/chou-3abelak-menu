@@ -7,7 +7,7 @@
 import { validateMenu } from '../../_shared/validate.js';
 import { jsonNoStore } from '../../_shared/session.js';
 import { applyPlanToSettings } from '../../_shared/plan.js';
-import { getActor, migrateLegacyBackup, purgePublicMenu, snapshotMenu } from '../../_shared/versions.js';
+import { getActor, migrateLegacyBackup, purgePublicMenu, snapshotMenu, writeMenuVersioned } from '../../_shared/versions.js';
 import { diffMenus, summarizeChanges } from '../../_shared/diff.js';
 import { logActivity } from '../../_shared/activity.js';
 
@@ -157,12 +157,25 @@ export async function onRequest(context) {
       } catch {}
     }
 
-    // Increment version & update timestamp
-    validatedDoc.version = (currentStored ? currentStored.version : 0) + 1;
-    validatedDoc.updatedAt = new Date().toISOString();
-
+    // Atomic write with a second version check: two tabs saving within
+    // milliseconds re-read here, so the loser gets a 409 instead of
+    // silently overwriting (the pre-check above alone left that race).
+    let savedDoc = null;
     if (env.MENU_KV) {
-      await env.MENU_KV.put('menu', JSON.stringify(validatedDoc));
+      const written = await writeMenuVersioned(env, validatedDoc, parsed.version);
+      if (!written.ok) {
+        const latest = written.current || null;
+        return jsonNoStore({
+          error: 'conflict',
+          message: 'Conflict: Document version mismatch. Please reload the latest menu.',
+          latest,
+        }, 409);
+      }
+      savedDoc = written.doc;
+    } else {
+      validatedDoc.version = (currentStored ? currentStored.version : 0) + 1;
+      validatedDoc.updatedAt = new Date().toISOString();
+      savedDoc = validatedDoc;
     }
 
     // 7. Invalidate caches.default for public menu (shared helper — every
@@ -171,7 +184,7 @@ export async function onRequest(context) {
 
     // 8. Activity log (best-effort; never fails the save).
     try {
-      const s = summarizeChanges(diffMenus(currentStored || {}, validatedDoc));
+      const s = summarizeChanges(diffMenus(currentStored || {}, savedDoc || validatedDoc));
       const bits = [];
       if (s.added) bits.push(`${s.added} added`);
       if (s.removed) bits.push(`${s.removed} removed`);
@@ -185,7 +198,7 @@ export async function onRequest(context) {
       });
     } catch {}
 
-    return jsonNoStore(validatedDoc);
+    return jsonNoStore(savedDoc || validatedDoc);
   }
 
   return jsonNoStore({ error: 'method_not_allowed', message: 'Method Not Allowed' }, 405, { Allow: 'GET, PUT' });

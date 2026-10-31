@@ -114,24 +114,56 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
         {...rise(intro + 0.2)}
         className="glass-pill inline-flex items-center gap-2.5 mt-4 rounded-full py-1.5 px-4 text-xs font-medium text-white"
       >
-        {orderingState && orderingState.state === 'paused' ? (
-          <>
-            <span className="relative flex h-2 w-2" aria-hidden="true">
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-orange-400" />
-            </span>
-            <span>{isAr ? 'الطلبات متوقفة مؤقتاً' : 'Orders paused'}</span>
-          </>
-        ) : (
-          <>
-            <span className="relative flex h-2 w-2" aria-hidden="true">
-              {status.isOpen && (
-                <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--primary)] opacity-70 animate-ping" />
-              )}
-              <span className={`relative inline-flex h-2 w-2 rounded-full ${status.isOpen ? 'bg-[var(--primary)]' : 'bg-red-500'}`} />
-            </span>
-            <span>{isAr ? status.label.ar : status.label.en}</span>
-          </>
-        )}
+        {(() => {
+          // Every state gets its own truthful face: a disabled store must
+          // never wear the green "open" pill, and a closed one shows the
+          // server's own message (with reopen time) instead of a guess.
+          const live = orderingState && typeof orderingState.state === 'string' ? orderingState.state : null;
+          const srvMsg = orderingState && orderingState.message && typeof orderingState.message === 'object'
+            ? (orderingState.message[lang] || orderingState.message.en || '')
+            : '';
+          if (live === 'paused') {
+            return (
+              <>
+                <span className="relative flex h-2 w-2" aria-hidden="true">
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-orange-400" />
+                </span>
+                <span>{isAr ? 'الطلبات متوقفة مؤقتاً' : 'Orders paused'}</span>
+              </>
+            );
+          }
+          if (live === 'disabled') {
+            return (
+              <>
+                <span className="relative flex h-2 w-2" aria-hidden="true">
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                </span>
+                <span>{srvMsg || (isAr ? 'الطلب غير متاح حالياً' : 'Ordering unavailable')}</span>
+              </>
+            );
+          }
+          if (live === 'closed') {
+            return (
+              <>
+                <span className="relative flex h-2 w-2" aria-hidden="true">
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                </span>
+                <span>{srvMsg || (isAr ? status.label.ar : status.label.en)}</span>
+              </>
+            );
+          }
+          return (
+            <>
+              <span className="relative flex h-2 w-2" aria-hidden="true">
+                {status.isOpen && (
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--primary)] opacity-70 animate-ping" />
+                )}
+                <span className={`relative inline-flex h-2 w-2 rounded-full ${status.isOpen ? 'bg-[var(--primary)]' : 'bg-red-500'}`} />
+              </span>
+              <span>{isAr ? status.label.ar : status.label.en}</span>
+            </>
+          );
+        })()}
       </motion.div>
     </div>
   );

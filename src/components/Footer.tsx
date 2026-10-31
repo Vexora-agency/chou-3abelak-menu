@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MenuData } from '@/src/types/menu';
 import { Clock, MapPin, Phone, ArrowUp, Instagram, Facebook, MessageCircle, Shield } from 'lucide-react';
-import { sanitizeUrl, buildMapUrl, looksLikeMapInput } from '@/src/utils/menuHelpers';
+import { sanitizeUrl, buildMapUrl, looksLikeMapInput, formatHoursRange } from '@/src/utils/menuHelpers';
 import { aboutOrDefault, socialOrderOrDefault } from '@/src/utils/settingsDefaults';
 import type { SocialPlatform } from '@/src/types/menu';
 
@@ -101,7 +101,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
               <span className="w-8 h-8 rounded-full bg-[#1C1C1C] text-[var(--primary)] flex items-center justify-center flex-shrink-0">
                 <Clock size={16} />
               </span>
-              <span>{isAr ? menu.settings.hoursText.ar : menu.settings.hoursText.en}</span>
+              <span dir="auto">{formatHoursRange(menu.settings, lang)}</span>
             </div>
 
             {/* Written address (hidden when empty — the Map button below

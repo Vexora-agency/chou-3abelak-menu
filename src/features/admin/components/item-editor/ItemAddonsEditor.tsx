@@ -1,7 +1,7 @@
 import React from 'react';
 import { Flame, Plus, Trash2, X, Star } from 'lucide-react';
 import type { FeatureGroup, ItemAddon, MenuData, MenuItem } from '@/src/types/menu';
-import { featuresByGroup } from '@/src/utils/pricing';
+import { featureName, featuresByGroup } from '@/src/utils/pricing';
 
 interface ItemAddonsEditorProps {
   item: MenuItem;
@@ -85,10 +85,17 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
               list[ai] = { ...list[ai], featureId: e.target.value };
               onChange({ ...item, addons: list });
             }}
-              className="w-full min-w-0 h-9 px-2 rounded-lg bg-black border border-neutral-700 text-xs"
+              className="w-full min-w-0 h-11 min-h-[44px] px-2 rounded-lg bg-black border border-neutral-700 text-xs"
               aria-label={isAr ? 'الميزة' : 'Feature'}
             >
               {gid ? null : <option value="">—</option>}
+              {/* Orphan id (legacy/import, not in the library): show it so
+                  the row never renders blank and forces a re-pick. */}
+              {a.featureId && !(menu.settings.featureDefs || []).some((d) => d.id === a.featureId) && (
+                <option value={a.featureId}>
+                  {featureName(menu, a.featureId, lang)} ({isAr ? 'غير مسجل' : 'unlisted'})
+                </option>
+              )}
               {ownFeats ? (
                 <optgroup label={isAr ? (ownGroup?.name.ar ?? '') : (ownGroup?.name.en ?? '')}>
                   {ownFeats.map((d) => (

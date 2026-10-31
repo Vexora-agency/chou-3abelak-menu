@@ -1,6 +1,6 @@
 import React from 'react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
-import { featureName, formatPrice, priceLabel, unitLabel } from '@/src/utils/pricing';
+import { featureName, formatPrice, isValidQty, lineTotal, priceLabel, unitLabel } from '@/src/utils/pricing';
 
 interface ItemCalcPreviewProps {
   item: MenuItem;
@@ -153,13 +153,23 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
           />
           {isAr ? '→ الإجمالي' : '→ total'}
         </label>
-        <span className="font-extrabold text-white tabular-nums">
+        <span className="font-extrabold text-white tabular-nums" dir="ltr">
           {(() => {
-            const vs = item.variants || [];
-            const firstSize = (item.defaultVariant && vs.find((v) => v.featureId === item.defaultVariant)) || vs[0];
-            const base = firstSize ? firstSize.price : item.pricing.price;
-            if (!Number.isInteger(calcQty) || calcQty <= 0 || typeof base !== 'number' || !Number.isFinite(base)) return '—';
-            return formatPrice((base) * calcQty, menu.settings.currency[lang] || menu.settings.currency.en);
+            // Same math the customer pays: default variant + pre-selected
+            // (default-on) add-ons through the shared lineTotal, with the
+            // grid rules enforced. The old preview ignored add-ons and the
+            // grid, disagreeing with the checkout whenever they existed.
+            try {
+              if (!isValidQty(item, calcQty)) return '—';
+              const vs = item.variants || [];
+              const variantId = (item.defaultVariant && vs.some((v) => v.featureId === item.defaultVariant))
+                ? item.defaultVariant
+                : vs[0]?.featureId;
+              const addonIds = (item.addons || []).filter((a) => a && a.default === true).map((a) => a.featureId);
+              return formatPrice(lineTotal(item, { variantId, addonIds, qty: calcQty }), menu.settings.currency[lang] || menu.settings.currency.en);
+            } catch {
+              return '—';
+            }
           })()}
         </span>
       </div>

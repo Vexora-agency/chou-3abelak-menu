@@ -159,6 +159,9 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
                 ? (isAr ? 'متوقف — لن تصل طلبات جديدة' : 'Paused — no new orders')
                 : (isAr ? 'يستقبل الطلبات' : 'Accepting orders')}
             </span>
+            <span className="block text-[10px] text-neutral-600 mt-0.5">
+              {isAr ? 'يُطبق عند الحفظ (تلقائي خلال ثانية تقريبًا)' : 'Applies on save (autosaves in ~1s)'}
+            </span>
           </span>
           <span
             className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${
@@ -185,7 +188,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
                   maxLength={160}
                   onChange={(e) => onUpdate((prev) => ({ ...prev, pausedMessage: { ...prev.pausedMessage, en: e.target.value } }))}
                   placeholder="We are not taking orders right now…"
-                  className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
+                  className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base focus:border-[var(--primary)]"
                 />
               </div>
               <div>
@@ -197,7 +200,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
                   maxLength={160}
                   onChange={(e) => onUpdate((prev) => ({ ...prev, pausedMessage: { ...prev.pausedMessage, ar: e.target.value } }))}
                   placeholder="لا نستقبل الطلبات حالياً…"
-                  className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
+                  className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base focus:border-[var(--primary)]"
                 />
               </div>
             </div>

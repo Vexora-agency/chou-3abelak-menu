@@ -63,9 +63,12 @@ interface BackupPanelProps {
   /** Owner signal: pills + auto-backup switch render only for the owner.
    *  Clients see plain rows (all theirs) and never learn of the master. */
   isOwner: boolean;
+  /** History/trash failed to load (vs genuinely empty) + retry. */
+  loadError: boolean;
+  onRetryLoad: () => void;
 }
 
-const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status, reportsOn, menuVersion, onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport, onRestoreTrash, onDeleteForever, onToggleAuto, activity, isOwner }) => {
+const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status, reportsOn, menuVersion, onLoadChanges, onRestoreVersion, onExport, onAnalyzeImport, onApplyImport, onRestoreTrash, onDeleteForever, onToggleAuto, activity, isOwner, loadError, onRetryLoad }) => {
   // Owner decision: animations always run (never honor reduced-motion).
   const t = STR[lang]; const isAr = lang === 'ar'; const reduce = false;
   const [tab, setTab] = useState<'history' | 'export' | 'import' | 'trash'>('history');
@@ -91,7 +94,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
   };
   const [actFilter, setActFilter] = useState<'all' | 'saves' | 'deletes' | 'restores' | 'imports'>('all');
   const [limit, setLimit] = useState(6);
-  const [modal, setModal] = useState<{ v: VersionEntry; changes: Change[] | null; comparedTo: 'live' | 'version'; baseVersion: number } | null>(null);
+  const [modal, setModal] = useState<{ v: VersionEntry; changes: Change[] | null; loadFailed: boolean; comparedTo: 'live' | 'version'; baseVersion: number } | null>(null);
   const [busy, setBusy] = useState(false);
   // Single-writer discipline: while ANY menu mutation is in flight, every
   // other mutation button locks. Reads (review open, export, navigation)
@@ -140,10 +143,17 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
     // be live when you press restore — anything newer 409s instead of
     // silently overwriting).
     const base = menuVersion;
-    setModal({ v, changes: null, comparedTo: 'live', baseVersion: base });
-    const loaded = await onLoadChanges(v.id);
-    if (reviewTicket.current !== ticket) return;
-    setModal({ v, changes: loaded.changes, comparedTo: loaded.comparedTo, baseVersion: base });
+    setModal({ v, changes: null, loadFailed: false, comparedTo: 'live', baseVersion: base });
+    try {
+      const loaded = await onLoadChanges(v.id);
+      if (reviewTicket.current !== ticket) return;
+      setModal({ v, changes: loaded.changes, loadFailed: false, comparedTo: loaded.comparedTo, baseVersion: base });
+    } catch {
+      if (reviewTicket.current !== ticket) return;
+      // Load failure is NOT "no differences" — show error + Retry and keep
+      // Restore disabled until real changes load (no blind restores).
+      setModal({ v, changes: null, loadFailed: true, comparedTo: 'live', baseVersion: base });
+    }
   };
   const doRestore = async () => {
     if (!modal || opBusy) return;
@@ -186,7 +196,9 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
 
   const analyze = async (file: File | undefined) => {
     if (!file) return; setBusy(true); setApplied(false); setTyped(''); setIncludeSettings(false);
-    try { setAnalysis(await onAnalyzeImport(file)); } finally { setBusy(false); }
+    // The alert is already shown inside onAnalyzeImport — swallow here so a
+    // failed analysis never surfaces as an unhandled rejection.
+    try { setAnalysis(await onAnalyzeImport(file)); } catch { /* alerted upstream */ } finally { setBusy(false); }
   };
   const canSettings = analysis?.signed === true && analysis.hasSettingsChanges;
   const visibleChanges = analysis ? analysis.changes.filter((c) => includeSettings || c.scope !== 'settings') : [];
@@ -243,6 +255,12 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
       {tab === 'history' && (
         <motion.div key="h" {...rise(0)} className={card}>
           <p className="text-xs leading-relaxed text-neutral-400">{t.histIntro}</p>
+          {loadError && (
+            <div className="mt-2.5 flex items-center justify-between gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-3" role="alert">
+              <span className="text-xs font-bold text-red-300">{isAr ? 'تعذر تحميل السجل — تحقق من الاتصال وحاول مجددًا.' : 'Could not load history — check connection and retry.'}</span>
+              <button type="button" onClick={onRetryLoad} className="btn-tactile shrink-0 h-11 px-5 rounded-full bg-red-500/20 text-red-200 text-xs font-extrabold hover:bg-red-500/30">{isAr ? 'إعادة المحاولة' : 'Retry'}</button>
+            </div>
+          )}
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {([
               ['all', t.fAll],
@@ -256,7 +274,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
                 type="button"
                 onClick={() => setActFilter(k)}
                 aria-pressed={actFilter === k}
-                className={`h-8 px-3.5 rounded-full text-[11px] font-bold border transition-colors ${actFilter === k ? 'bg-[var(--primary)] border-[var(--primary)] text-[#0A0A0A]' : 'bg-transparent border-neutral-700 text-neutral-400 hover:border-neutral-500 hover:text-white'}`}
+                className={`h-11 min-h-[44px] px-4 rounded-full text-xs font-bold border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${actFilter === k ? 'bg-[var(--primary)] border-[var(--primary)] text-[#0A0A0A]' : 'bg-transparent border-neutral-700 text-neutral-400 hover:border-neutral-500 hover:text-white'}`}
               >
                 {label}
               </button>
@@ -407,11 +425,11 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
                   <span className="w-9 h-9 shrink-0 rounded-xl bg-black border border-neutral-800 text-neutral-400 flex items-center justify-center"><Trash2 size={16} /></span>
                   <span className="min-w-0 flex-1"><b className="block text-sm truncate">{isAr ? x.name.ar : x.name.en}</b>
                     <span className="text-[11px] text-neutral-500">{x.kind === 'item' ? t.item : t.category} · {rel(x.deletedAt, lang)} · {t.purge(x.purgeInDays)}</span></span>
-                    <span className="flex gap-1.5 shrink-0">
-                      <button type="button" onClick={() => void doUndoTrash(x.id)} disabled={busyUndoId === x.id || opBusy} className="btn-tactile h-9 px-3 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1 disabled:opacity-50">{busyUndoId === x.id ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}{t.restoreItem}</button>
-                    <button type="button" disabled={opBusy} onClick={() => { if (opBusy) return; if (sure === x.id) { setSure(null); void runOp(() => onDeleteForever(x.id)); } else setSure(x.id); }} onBlur={() => setSure(null)}
-                      className={`btn-tactile h-9 px-3 rounded-full border text-xs font-bold ${sure === x.id ? 'border-red-400 bg-red-500/15 text-red-300' : 'border-neutral-700 text-neutral-400'}`}>{sure === x.id ? t.sure : <Trash2 size={13} aria-label={t.deleteForever} />}</button>
-                  </span>
+                      <span className="flex gap-1.5 shrink-0">
+                        <button type="button" onClick={() => void doUndoTrash(x.id)} disabled={busyUndoId === x.id || opBusy} className="btn-tactile h-11 min-h-[44px] px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">{busyUndoId === x.id ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}{t.restoreItem}</button>
+                      <button type="button" disabled={opBusy} onClick={() => { if (opBusy) return; if (sure === x.id) { setSure(null); void runOp(() => onDeleteForever(x.id)); } else setSure(x.id); }} onBlur={() => setSure(null)}
+                        className={`btn-tactile h-11 min-h-[44px] px-4 rounded-full border text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${sure === x.id ? 'border-red-400 bg-red-500/15 text-red-300' : 'border-neutral-700 text-neutral-400'}`}>{sure === x.id ? t.sure : <Trash2 size={13} aria-label={t.deleteForever} />}</button>
+                      </span>
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -423,14 +441,19 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
         {modal && (
           <Modal onClose={() => !busy && setModal(null)} label={t.restoreTitle}>
             <div className="flex items-start justify-between gap-3"><h3 className="text-lg font-extrabold">{t.restoreTitle}</h3>
-              <button type="button" onClick={() => setModal(null)} aria-label={t.close} className="w-9 h-9 rounded-full border border-neutral-700 flex items-center justify-center text-neutral-400"><X size={16} /></button></div>
+              <button type="button" onClick={() => setModal(null)} aria-label={t.close} className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border border-neutral-700 flex items-center justify-center text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><X size={18} /></button></div>
             <p className="mt-1 text-xs text-neutral-400">{fmtDate(modal.v.createdAt, lang)} · {t.src[modal.v.source]}</p>
             <p className="mt-4 mb-2 text-xs font-semibold text-neutral-300">{modal.comparedTo === 'version' ? t.stepSub : t.restoreSub}</p>
-            {modal.changes === null ? <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-[var(--primary)]" /></div>
+            {modal.changes === null ? (modal.loadFailed ? (
+              <div className="py-6 text-center">
+                <p className="text-xs font-bold text-red-400" role="alert">{isAr ? 'تعذر تحميل الفروق — لا تسترجع عميانيًا.' : 'Could not load differences — do not restore blind.'}</p>
+                <button type="button" onClick={() => void openRestore(modal.v)} className="btn-tactile mt-3 h-11 px-6 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold hover:border-[var(--primary)] hover:text-[var(--primary)]">{isAr ? 'إعادة المحاولة' : 'Retry'}</button>
+              </div>
+            ) : <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-[var(--primary)]" /></div>)
               : modal.changes.length ? <ChangeList changes={modal.changes} lang={lang} /> : <p className="text-xs text-neutral-500 py-3">{t.noChanges}</p>}
             <p className="mt-4 flex gap-2 rounded-xl bg-green-500/[0.07] border border-green-500/25 p-3 text-xs text-green-300"><ShieldCheck size={15} className="shrink-0 mt-px" />{t.safetyCopy}</p>
             <div className="mt-4 flex gap-2.5">
-              <button type="button" disabled={busy || opBusy || modal.changes === null} onClick={() => void doRestore()} className="btn-tactile flex-1 h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center justify-center gap-2 disabled:opacity-50">
+              <button type="button" disabled={busy || opBusy || modal.changes === null || modal.loadFailed} onClick={() => void doRestore()} className="btn-tactile flex-1 h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center justify-center gap-2 disabled:opacity-50">
                 {busy ? <><Loader2 size={16} className="animate-spin" />{t.restoring}</> : <><RotateCcw size={15} />{t.confirmRestore}</>}</button>
               <button type="button" disabled={busy} onClick={() => setModal(null)} className="btn-tactile h-12 px-5 rounded-full border border-neutral-700 text-neutral-300 text-sm font-bold">{t.cancel}</button>
             </div>

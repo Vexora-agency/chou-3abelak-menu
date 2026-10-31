@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import type { MenuData } from '@/src/types/menu';
 import { OrdersDashboard, type Order, type OrderStatus } from '@/src/features/orders';
@@ -86,6 +86,18 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   };
   const handlePause = (minutes: number | null) => sendPause(minutes === null ? { minutes: null } : { minutes });
   const handleResume = () => sendPause({ resume: true });
+  // While paused, refresh the menu on a slow cadence: a timed pause that
+  // expires with the dashboard idle must flip to open by itself instead of
+  // sticking on amber with a 0:00 countdown. (The cached menu never ages
+  // on its own — only a refetch moves it.)
+  useEffect(() => {
+    if (!paused) return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void onMenuRefreshed();
+    }, 15000);
+    return () => window.clearInterval(id);
+  }, [paused, onMenuRefreshed]);
+
   // Server-clock correction snapshot (initializer runs once: rule-clean,
   // strictly better than the old code which had no correction at all).
   const [clockOffsetMs] = useState(() => serverNow() - Date.now());

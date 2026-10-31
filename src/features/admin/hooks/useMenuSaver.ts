@@ -115,13 +115,21 @@ export function useMenuSaver({ initialMenu, onSaveMenu, isAr, savePaused: savePa
     // screen keeps the admin's raw text (filled values appear after reload).
     // Adopt the authoritative version so the next save never 409s.
     const result = await onSaveMenu(updated, source);
-    if (result) {
+    if (result && result.saved) {
       setMenu((prev) => ({ ...prev, version: result.doc.version, updatedAt: result.doc.updatedAt }));
-      if (result.saved) onSaved();
+      onSaved();
       setDirty(false);
       return result.doc.version;
     }
-    setDirty(false);
+    // Failure: NEVER mark clean. A 409 carries the winning doc — adopt it
+    // as the new truth (the alert already told the owner to reload), so
+    // later trash/restore/import ops use the real baseVersion instead of a
+    // stale one. A validation/network failure (null) keeps the local draft
+    // dirty so nothing is silently lost.
+    if (result && result.doc) {
+      setMenu(result.doc);
+      setDirty(false);
+    }
     return null;
   };
 

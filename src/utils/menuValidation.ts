@@ -62,6 +62,13 @@ export function ensureSettingsBlocks(menu: MenuData): MenuData {
         (s as unknown as { featuredAutoplayInterval?: unknown }).featuredAutoplayInterval
       ),
       sounds: soundsOrDefault((s as unknown as { sounds?: unknown }).sounds),
+      badges: (() => {
+        const b = (s as unknown as { badges?: unknown }).badges;
+        const o = b && typeof b === 'object' ? (b as Record<string, unknown>) : {};
+        const intOr = (v: unknown, fb: number, min: number, max: number) =>
+          Number.isInteger(v) && (v as number) >= min && (v as number) <= max ? (v as number) : fb;
+        return { newDays: intOr(o.newDays, 14, 1, 365), topDays: intOr(o.topDays, 30, 1, 365), topCount: intOr(o.topCount, 6, 1, 50) };
+      })(),
       showMore: (() => {
         const sm = (s as unknown as { showMore?: unknown }).showMore;
         const o = sm && typeof sm === 'object' ? (sm as Record<string, unknown>) : {};

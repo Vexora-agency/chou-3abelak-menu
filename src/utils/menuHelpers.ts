@@ -4,13 +4,65 @@ export { pickLangText, badgeLabel, buildWhatsAppMessage } from '@/src/utils/what
 export type { WhatsAppLine } from '@/src/utils/whatsapp';
 export { ensureSettingsBlocks } from '@/src/utils/menuValidation';
 
-export function isOpenNow(settings: MenuData['settings']): { isOpen: boolean; label: { en: string; ar: string } } {
+/**
+ * "13:05" (24h) -> "1:05 PM" / "1:05 مساءً", so AM/PM is never ambiguous.
+ * Shared by the admin preview and every customer-facing hours line.
+ */
+export function formatTime12h(t: string, lang: 'en' | 'ar'): string {
+  const m = /^(\d{1,2}):(\d{2})/.exec((t || '').trim());
+  if (!m) return t || '--:--';
+  const h = parseInt(m[1], 10) % 24;
+  const isAr = lang === 'ar';
+  const suffix = h < 12 ? (isAr ? 'صباحاً' : 'AM') : (isAr ? 'مساءً' : 'PM');
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${m[2]} ${suffix}`;
+}
+
+const DAY_ORDER = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] as const;
+const DAY_SHORT: Record<string, { en: string; ar: string }> = {
+  sat: { en: 'Sat', ar: 'السبت' },
+  sun: { en: 'Sun', ar: 'الأحد' },
+  mon: { en: 'Mon', ar: 'الاثنين' },
+  tue: { en: 'Tue', ar: 'الثلاثاء' },
+  wed: { en: 'Wed', ar: 'الأربعاء' },
+  thu: { en: 'Thu', ar: 'الخميس' },
+  fri: { en: 'Fri', ar: 'الجمعة' },
+};
+
+/**
+ * The live hours range, derived from the ACTUAL settings — never a stale
+ * free-text field. "Daily · 12:00 PM – 12:00 AM" when all 7 days are on,
+ * otherwise the selected days + range. Changing open/close/days in
+ * Working Hours & Status changes every customer-facing line at once
+ * (status pill + footer), guaranteed.
+ */
+export function formatHoursRange(settings: MenuData['settings'], lang: 'en' | 'ar'): string {
+  const isAr = lang === 'ar';
+  const days = Array.isArray(settings.workingDays) && settings.workingDays.length
+    ? [...settings.workingDays]
+    : [...DAY_ORDER];
+  const all = DAY_ORDER.every((d) => days.includes(d));
+  const daysPart = all
+    ? (isAr ? 'يومياً' : 'Daily')
+    : days
+      .filter((d) => DAY_SHORT[d])
+      .sort((a, b) => DAY_ORDER.indexOf(a as typeof DAY_ORDER[number]) - DAY_ORDER.indexOf(b as typeof DAY_ORDER[number]))
+      .map((d) => (isAr ? DAY_SHORT[d].ar : DAY_SHORT[d].en))
+      .join(isAr ? '، ' : ', ') || (isAr ? 'يومياً' : 'Daily');
+  const open = formatTime12h(settings.openTime || '12:00', lang);
+  const close = formatTime12h(settings.closeTime || '00:00', lang);
+  return isAr
+    ? `${daysPart} · من ${open} إلى ${close}`
+    : `${daysPart} · ${open} – ${close}`;
+}
+
+export function isOpenNow(settings: MenuData['settings'], nowMs?: number, reopensAt?: string | null): { isOpen: boolean; label: { en: string; ar: string } } {
   if (settings.statusMode === 'open') {
     return {
       isOpen: true,
       label: {
-        en: `Open now · ${settings.hoursText.en || 'Welcome'}`,
-        ar: `مفتوح الآن · ${settings.hoursText.ar || 'أهلاً بكم'}`
+        en: `Open now · ${formatHoursRange(settings, 'en')}`,
+        ar: `مفتوح الآن · ${formatHoursRange(settings, 'ar')}`
       }
     };
   }
@@ -27,7 +79,9 @@ export function isOpenNow(settings: MenuData['settings']): { isOpen: boolean; la
   // Auto mode
   try {
     const tz = settings.timezone || 'Asia/Beirut';
-    const now = new Date();
+    // Server-corrected clock when the caller passes one (header pill):
+    // a wrong phone clock must not flip open/closed against the server.
+    const now = new Date(Number.isFinite(nowMs) ? (nowMs as number) : Date.now());
     // Current weekday in the restaurant timezone (sat..fri keys)
     let dayKey = '';
     try {
@@ -39,11 +93,26 @@ export function isOpenNow(settings: MenuData['settings']): { isOpen: boolean; la
       ? settings.workingDays
       : ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
     if (dayKey && !workingDays.includes(dayKey)) {
+      // Prefer the server's real reopen instant (already rolled to the next
+      // working day) over today's opening time when the caller knows it.
+      let reopenPartEn: string | null = null;
+      let reopenPartAr: string | null = null;
+      if (reopensAt) {
+        const ms = Date.parse(reopensAt);
+        if (Number.isFinite(ms)) {
+          try {
+            const dayEn = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(new Date(ms));
+            const dayArMap: Record<string, string> = { Sat: 'السبت', Sun: 'الأحد', Mon: 'الاثنين', Tue: 'الثلاثاء', Wed: 'الأربعاء', Thu: 'الخميس', Fri: 'الجمعة' };
+            reopenPartEn = `${dayEn} ${formatTime12h(settings.openTime || '12:00', 'en')}`;
+            reopenPartAr = `${dayArMap[dayEn] || dayEn} ${formatTime12h(settings.openTime || '12:00', 'ar')}`;
+          } catch {}
+        }
+      }
       return {
         isOpen: false,
         label: {
-          en: `Closed today · Opens ${settings.openTime || '12:00'}`,
-          ar: `مغلق اليوم · يفتح ${settings.openTime || '12:00'}`,
+          en: `Closed today · Opens ${reopenPartEn || formatTime12h(settings.openTime || '12:00', 'en')}`,
+          ar: `مغلق اليوم · يفتح ${reopenPartAr || formatTime12h(settings.openTime || '12:00', 'ar')}`,
         },
       };
     }
@@ -78,16 +147,16 @@ export function isOpenNow(settings: MenuData['settings']): { isOpen: boolean; la
     return {
       isOpen,
       label: {
-        en: isOpen ? `Open now · ${settings.hoursText.en}` : `Closed · Opens at ${settings.openTime}`,
-        ar: isOpen ? `مفتوح الآن · ${settings.hoursText.ar}` : `مغلق · يفتح في ${settings.openTime}`
+        en: isOpen ? `Open now · ${formatHoursRange(settings, 'en')}` : `Closed · Opens at ${formatTime12h(settings.openTime || '12:00', 'en')}`,
+        ar: isOpen ? `مفتوح الآن · ${formatHoursRange(settings, 'ar')}` : `مغلق · يفتح في ${formatTime12h(settings.openTime || '12:00', 'ar')}`
       }
     };
   } catch {
     return {
       isOpen: true,
       label: {
-        en: `Open · ${settings.hoursText?.en || '12:00 PM – 12:00 AM'}`,
-        ar: `مفتوح · ${settings.hoursText?.ar || '12:00 ظهراً – 12:00 صباحاً'}`
+        en: `Open · ${formatHoursRange(settings, 'en')}`,
+        ar: `مفتوح · ${formatHoursRange(settings, 'ar')}`
       }
     };
   }

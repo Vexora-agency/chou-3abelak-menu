@@ -32,7 +32,8 @@ export async function onRequest(context) {
       if (rs && rs.verified && rs.email) destination = rs.email;
     } catch {}
     return jsonNoStore({
-      versions: all,
+      // Newest-first from listVersions: index 0 IS the live doc.
+      versions: all.map((v, i) => ({ ...v, current: i === 0 })),
       status: { lastBackupAt: auto.lastBackupAt || undefined, autoWeekly: auto.enabled, destination },
       isOwner: true,
     });
@@ -49,8 +50,9 @@ export async function onRequest(context) {
     }
   } catch {}
   if (!sub) return jsonNoStore({ error: 'forbidden' }, 403);
+  const own = all.filter((v) => v && v.actor === sub);
   return jsonNoStore({
-    versions: all.filter((v) => v && v.actor === sub),
+    versions: own.map((v, i) => ({ ...v, current: i === 0 })),
     status: { autoWeekly: false },
     isOwner: false,
   });

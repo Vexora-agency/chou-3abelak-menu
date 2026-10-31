@@ -333,6 +333,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           onToggleAuto={backup.onToggleAuto}
           activity={backup.activity}
           isOwner={backup.isOwner}
+          loadError={backup.backupError}
+          onRetryLoad={() => void backup.fetchBackupData()}
       />
       )}
 

@@ -17,6 +17,9 @@ export const FEATURES = {
   // Order recording views + customer data tool (recording itself always runs
   // so an upgrade unlocks history; the privacy page itself is public).
   orderLogging: ['pro'],
+  // NOTE — no `ordering` entry on purpose: order TAKING stays open on every
+  // plan (fail-open ordering is a feature, not a leak — a fresh deploy must
+  // accept orders before SITE_PLAN is set). Only the views above are gated.
   // Backup & history: versions, trash listing, import/export/print, auto
   // weekly mail, activity feed. (Trash delete-with-undo + restore-by-id stay
   // open on every plan: they are safety, not premium.)

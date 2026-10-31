@@ -189,13 +189,17 @@ export function normalizeMenu<T>(menu: T): T {
           })
           .filter(Boolean);
       }
-      // New per-item add-ons pass through (drop malformed rows)
+      // New per-item add-ons pass through (drop malformed rows).
+      // The pre-selected flag survives: dropping `default` here wiped the
+      // ★ on every reload (and the next save made it permanent).
       if (Array.isArray(copy.addons)) {
         copy.addons = (copy.addons as unknown[])
           .filter((a) => a && typeof a === 'object' && typeof (a as Record<string, unknown>).featureId === 'string' && (a as Record<string, unknown>).featureId)
           .map((a) => {
             const aa = a as Record<string, unknown>;
-            return { featureId: aa.featureId, price: aa.price };
+            return aa.default === true
+              ? { featureId: aa.featureId, price: aa.price, default: true }
+              : { featureId: aa.featureId, price: aa.price };
           });
       }
       // Explicit default survives only when it points at a size

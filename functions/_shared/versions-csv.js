@@ -55,6 +55,17 @@ function csvCell(v) {
   return /["\n\r,']/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
+/**
+ * Inverse of the csvCell guard above: our own exports prefix a single `'`
+ * before = + - @ | % (and tab/CR). Strip exactly that on import so the
+ * guard quote never becomes data. Anything else starting with `'` is a
+ * real name and stays untouched.
+ */
+function unguardCell(s) {
+  if (typeof s !== 'string') return s;
+  return /^'[=+\-@|%\t\r]/.test(s) ? s.slice(1) : s;
+}
+
 function featureNameOf(menu, fid, lang) {
   try {
     const defs = (menu && menu.settings && menu.settings.featureDefs) || [];
@@ -199,8 +210,8 @@ export function applyCSVToMenu(current, csvText) {
       continue;
     }
     const avail = cAvail >= 0 ? parseAvail(r[cAvail]) : null;
-    const ne = cNameEn >= 0 ? (r[cNameEn] || '').trim() : '';
-    const na = cNameAr >= 0 ? (r[cNameAr] || '').trim() : '';
+    const ne = cNameEn >= 0 ? unguardCell((r[cNameEn] || '').trim()) : '';
+    const na = cNameAr >= 0 ? unguardCell((r[cNameAr] || '').trim()) : '';
     const varId = cVar >= 0 ? (r[cVar] || '').trim() : '';
     const existing = byId.get(id);
     if (existing) {

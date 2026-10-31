@@ -87,6 +87,12 @@ export function useAdminCatalog({
       alert(isAr ? 'يرجى إدخال اسم الوجبة' : 'Item name is required');
       return;
     }
+    // The server rejects unknown/empty categoryId with a generic 400 — catch
+    // it here with a field-level message instead of a cryptic save failure.
+    if (!editingItem.categoryId || !(menu.categories || []).some((c) => c.id === editingItem.categoryId)) {
+      alert(isAr ? 'اختر قسماً موجوداً للوجبة قبل الحفظ' : 'Pick an existing category for this item before saving');
+      return;
+    }
     const rawPricing = editingItem.pricing && typeof editingItem.pricing === 'object'
       ? editingItem.pricing
       : { unit: 'pc' as const, minQty: 1, step: 1, maxQty: 50, showUnit: false };
@@ -180,8 +186,12 @@ export function useAdminCatalog({
   };
 
   const handleDuplicateItem = (item: MenuItem) => {
+    // Fresh identity AND fresh NEW-window: copying addedAt would inherit the
+    // original's "new" badge timing instead of starting the clone's own.
+    const { addedAt: _droppedAddedAt, ...rest } = item;
+    void _droppedAddedAt;
     const duplicated: MenuItem = {
-      ...item,
+      ...rest,
       id: `i_${Date.now().toString(36)}`,
       name: {
         en: `${item.name.en} (Copy)`,

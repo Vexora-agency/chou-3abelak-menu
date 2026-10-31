@@ -74,18 +74,8 @@ export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
   // values untypable ("20" snaps back at the "2"). Raw ints are stored; the
   // server clamps to 4..50 on save and the storefront clamps on read, so an
   // out-of-range draft can never leak anywhere visible.
-  const setNum = (key: 'initial' | 'batch', fb: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    const v = raw.trim() === '' ? fb : Math.round(Number(raw));
-    const stored = Number.isInteger(v) ? v : fb;
-    onUpdate((prev) => ({
-      ...prev,
-      showMore: {
-        initial: key === 'initial' ? stored : (Number.isInteger(prev.showMore?.initial) ? (prev.showMore as { initial: number }).initial : 12),
-        batch: key === 'batch' ? stored : (Number.isInteger(prev.showMore?.batch) ? (prev.showMore as { batch: number }).batch : 8),
-      },
-    }));
-  };
+  // (A previous setNum helper committed on every keystroke and is deleted —
+  // the draft/commit pair above replaced it.)
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div>
@@ -114,7 +104,7 @@ export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
             onKeyDown={(e) => {
               if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
             }}
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
+            className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
           />
         </div>
         <div>
@@ -132,7 +122,7 @@ export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
             onKeyDown={(e) => {
               if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
             }}
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
+            className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
           />
         </div>
       </div>

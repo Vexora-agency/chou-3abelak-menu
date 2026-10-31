@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 import type { FeatureGroup, MenuData, MenuItem } from '@/src/types/menu';
-import { featuresByGroup } from '@/src/utils/pricing';
+import { featureName, featuresByGroup } from '@/src/utils/pricing';
 
 interface ItemVariantsEditorProps {
   item: MenuItem;
@@ -73,10 +73,17 @@ export const ItemVariantsEditor: React.FC<ItemVariantsEditorProps> = ({
               vs[vi] = { ...vs[vi], featureId: e.target.value };
               onChange({ ...item, variants: vs });
             }}
-              className="w-full min-w-0 h-9 px-2 rounded-lg bg-black border border-neutral-700 text-xs"
+              className="w-full min-w-0 h-11 min-h-[44px] px-2 rounded-lg bg-black border border-neutral-700 text-xs"
               aria-label={isAr ? 'الميزة' : 'Feature'}
             >
               {vInSizes ? null : <option value="">—</option>}
+              {/* Orphan id (legacy/import, not in the library): show it so
+                  the row never renders blank and forces a re-pick. */}
+              {v.featureId && !(menu.settings.featureDefs || []).some((d) => d.id === v.featureId) && (
+                <option value={v.featureId}>
+                  {featureName(menu, v.featureId, lang)} ({isAr ? 'غير مسجل' : 'unlisted'})
+                </option>
+              )}
               {vInSizes && sizesSection ? (
                 <optgroup label={isAr ? sizesSection.name.ar : sizesSection.name.en}>
                   {sizeOpts.map((d) => (

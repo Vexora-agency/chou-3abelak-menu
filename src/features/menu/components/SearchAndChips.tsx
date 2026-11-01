@@ -52,9 +52,21 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
     const inner = catInnerRef.current;
     if (!outer || !inner) return;
     let ticking = false;
+    // The scroller box never moves when it scrolls internally (scroll offset
+    // shifts the children rects, not the container rect), and vertical page
+    // scroll never changes its left/right edges — so the container edges are
+    // cached and invalidated only on resize/RO. Hot scroll frames then read
+    // just the two edge children (2 rects instead of 3), all reads batched
+    // before the setState writes below — no interleaved read-after-write.
+    let cachedEdges: { left: number; right: number } | null = null;
     const update = () => {
       ticking = false;
-      const cont = outer.getBoundingClientRect();
+      let edges = cachedEdges;
+      if (!edges) {
+        const c = outer.getBoundingClientRect();
+        edges = { left: c.left, right: c.right };
+        cachedEdges = edges;
+      }
       const kids = inner.children;
       if (!kids.length) {
         setCanPrev(false);
@@ -65,11 +77,15 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
       const first = (kids[0] as HTMLElement).getBoundingClientRect();
       const last = (kids[kids.length - 1] as HTMLElement).getBoundingClientRect();
       if (isAr) {
-        setCanPrev(first.right > cont.right + SLOP);
-        setCanNext(last.left < cont.left - SLOP);
+        const nextPrev = first.right > edges.right + SLOP;
+        const nextNext = last.left < edges.left - SLOP;
+        setCanPrev((p) => (p === nextPrev ? p : nextPrev));
+        setCanNext((n) => (n === nextNext ? n : nextNext));
       } else {
-        setCanPrev(first.left < cont.left - SLOP);
-        setCanNext(last.right > cont.right + SLOP);
+        const nextPrev = first.left < edges.left - SLOP;
+        const nextNext = last.right > edges.right + SLOP;
+        setCanPrev((p) => (p === nextPrev ? p : nextPrev));
+        setCanNext((n) => (n === nextNext ? n : nextNext));
       }
     };
     const requestUpdate = () => {
@@ -78,6 +94,12 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
         requestAnimationFrame(update);
       }
     };
+    // Cold path: container geometry may have changed — drop the cache so the
+    // next frame re-reads it once alongside the children rects.
+    const requestRefresh = () => {
+      cachedEdges = null;
+      requestUpdate();
+    };
     // First measure on idle (settled tree, ~free reads), 1.5 s ceiling — see
     // scheduleIdle: these reads on the dirty post-mount tree forced a
     // full-page synchronous layout on low-end phones. Arrows appear a beat
@@ -85,14 +107,14 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
     // Later updates (scroll/resize/observer) already run on clean trees.
     const cancelIdle = scheduleIdle(update, 1500);
     outer.addEventListener('scroll', requestUpdate, { passive: true });
-    window.addEventListener('resize', requestUpdate);
-    const ro = new ResizeObserver(requestUpdate);
+    window.addEventListener('resize', requestRefresh);
+    const ro = new ResizeObserver(requestRefresh);
     ro.observe(outer);
     ro.observe(inner);
     return () => {
       cancelIdle();
       outer.removeEventListener('scroll', requestUpdate);
-      window.removeEventListener('resize', requestUpdate);
+      window.removeEventListener('resize', requestRefresh);
       ro.disconnect();
     };
   }, [isAr, chips.length]);

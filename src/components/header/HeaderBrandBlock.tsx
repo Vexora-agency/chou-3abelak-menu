@@ -47,14 +47,19 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
         style={{ isolation: 'isolate', backgroundColor: 'transparent' }}
       >
         {/* Final 100% Transparent PNG shown once animation completes (1440x532 HD) */}
-        {/* WebP srcset (same artwork, ~80% smaller): 880w covers phones at
-            DPR 3, 1440w desktops. PNG src stays as the legacy fallback.
-            fetchpriority=high: this is the LCP image. */}
+        {/* WebP srcset (same artwork, ~80% smaller): 480w covers DPR 1,
+            880w DPR 2, 1440w DPR 3. src is the smallest WebP (not PNG) so
+            legacy / no-srcset clients download ~42 KiB less.
+            sizes mirrors the container (px-5/sm:px-8/md:px-12 accounted):
+            mobile is min(100vw-40px, 320px) -> split at 360px where
+            100vw-40px hits 320px; sm/md are always capped.
+            fetchpriority=high + loading=eager: this is the LCP image. */}
         <img
-          src="/assets/logo-final.png"
+          src="/assets/logo-final-480.webp"
           srcSet="/assets/logo-final-480.webp 480w, /assets/logo-final-880.webp 880w, /assets/logo-final-1440.webp 1440w"
-          sizes="(max-width: 640px) 320px, (max-width: 768px) 380px, 440px"
+          sizes="(max-width: 360px) calc(100vw - 40px), (max-width: 640px) 320px, (max-width: 768px) 380px, 440px"
           fetchPriority="high"
+          loading="eager"
           alt={pickLangText(menu.settings.name, lang)}
           className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-700 pointer-events-none ${
             hasEnded ? 'opacity-100' : 'opacity-0'

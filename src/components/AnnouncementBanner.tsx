@@ -37,6 +37,10 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
     if (!show) return;
     let lastY = window.scrollY;
     let ticking = false;
+    // Change-guarded: the dead-zone ([-4, 4]) is preserved exactly — React
+    // bails out on identical values, but skipping the setState call avoids
+    // scheduling a render at all on every scroll frame.
+    let hidden = false;
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
@@ -45,8 +49,17 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
         const y = window.scrollY;
         const dy = y - lastY;
         lastY = y;
-        if (y > 140 && dy > 4) setScrollHidden(true);
-        else if (dy < -4 || y <= 140) setScrollHidden(false);
+        if (y > 140 && dy > 4) {
+          if (!hidden) {
+            hidden = true;
+            setScrollHidden(true);
+          }
+        } else if (dy < -4 || y <= 140) {
+          if (hidden) {
+            hidden = false;
+            setScrollHidden(false);
+          }
+        }
       });
     };
     window.addEventListener('scroll', onScroll, { passive: true });

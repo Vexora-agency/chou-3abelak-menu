@@ -16,9 +16,26 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
   const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setShowBackToTop(window.scrollY > 400);
+    // rAF-throttled + change-guarded: scrollY is a free read (never forces
+    // layout), but the old handler called setState on every scroll event.
+    // Coalesce to one check per frame and skip renders when the >400
+    // threshold hasn't crossed — identical visuals, ~zero scroll cost.
+    let ticking = false;
+    let visible = window.scrollY > 400;
+    const update = () => {
+      ticking = false;
+      const next = window.scrollY > 400;
+      if (next !== visible) {
+        visible = next;
+        setShowBackToTop(next);
+      }
     };
+    const handleScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    };
+    update();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);

@@ -1,5 +1,6 @@
 import { useState, useEffect, Suspense, lazy, useRef } from 'react';
-import { MenuItem } from '@/src/types/menu';
+import { MenuData, MenuItem } from '@/src/types/menu';
+import { normalizeMenu } from '@/src/utils/pricing';
 import { clientConfig } from '@/src/config/client.config';
 import { themeConfig } from '@/src/config/theme.config';
 import { featuresConfig } from '@/src/config/features.config';
@@ -42,6 +43,58 @@ import { useOrderingState } from '@/src/features/orders';
 import { useAppPrefs } from '@/src/hooks/useAppPrefs';
 import { MotionConfig } from 'motion/react';
 
+/**
+ * Static shell menu: brand identity from clientConfig + safe defaults for
+ * everything else (via normalizeMenu), zero items. Lets the header/hero and
+ * footer paint on the very first frame instead of waiting ~900 ms for
+ * /api/menu — the LCP logo is a static asset, it never needed the network.
+ * version 0 + epoch date guarantee the real doc always wins the swap in
+ * useMenuLoader (same version/updatedAt rule as the background refresh).
+ */
+const staticFallbackMenu: MenuData = normalizeMenu({
+  version: 0,
+  updatedAt: '1970-01-01T00:00:00.000Z',
+  settings: {
+    name: { en: clientConfig.companyNameEn, ar: clientConfig.companyNameAr },
+    tagline: { en: '', ar: '' },
+    currency: { en: 'LBP', ar: 'ل.ل' },
+    defaultTheme: 'dark',
+    defaultLang: 'en',
+    ordering: { enabled: false },
+  },
+  categories: [],
+  items: [],
+} as unknown as MenuData);
+
+/**
+ * Menu-section skeleton: reserves the <main> slot while /api/menu is in
+ * flight. Header/hero + footer above/below it are already the real thing
+ * (static shell), so only the menu sections shimmer — the page never shows
+ * a full-screen spinner that blocks LCP.
+ */
+function MenuSectionsSkeleton({ lang, darkMode }: { lang: 'en' | 'ar'; darkMode: boolean }) {
+  const pulse = darkMode ? 'bg-neutral-800' : 'bg-neutral-200';
+  const label = lang === 'ar' ? 'جارٍ تحميل القائمة…' : 'Loading menu…';
+  return (
+    <div className="px-5 sm:px-8 md:px-12 pt-6 pb-10" role="status" aria-label={label}>
+      <span className="sr-only">{label}</span>
+      <div aria-hidden="true">
+        <div className={`h-12 rounded-full ${pulse} animate-pulse mb-4`} />
+        <div className="flex gap-2 mb-6">
+          {[96, 72, 120, 84].map((w) => (
+            <div key={w} className={`h-9 rounded-full ${pulse} animate-pulse`} style={{ width: w }} />
+          ))}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {Array.from({ length: 8 }, (_, i) => (
+            <div key={i} className={`rounded-2xl ${pulse} animate-pulse`} style={{ height: 180 }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Splash while the admin chunk loads or the session is being checked (same look). */
 function AdminLoadingSplash() {
   return (
@@ -60,7 +113,9 @@ function AdminLoadingSplash() {
 }
 
 export default function App() {  const { menu, setMenu, loading } = useMenuLoader();
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isOffline, setIsOffline] = useState(
+    () => typeof navigator !== 'undefined' && !navigator.onLine
+  );
   const { orderingState } = useOrderingState();
   const {
     showAdmin, openAdmin, adminUnlocked, authStatus, setAuthStatus,
@@ -75,6 +130,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   // menu one. Swapped live — the share sheet reads the DOM at tap time, and
   // the fresh filename defeats any cached old manifest.
   useEffect(() => {
+    if (typeof document === 'undefined') return;
     const href = showAdmin ? '/manifest-admin.webmanifest' : '/manifest.webmanifest';
     let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
     if (!link) {
@@ -97,6 +153,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   const pageHeightRef = useRef(1);
   const measuredRef = useRef(false);
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
     let raf = 0;
     let running = false;
     let current = 0;
@@ -148,9 +205,18 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
         update();
       });
     };
+    // Resize/load/fonts invalidate the cached page height. Coalesced to one
+    // measure per frame: back-to-back resize events share a single
+    // scrollHeight read instead of forcing a layout per event.
+    let resizeTicking = false;
     const onResize = () => {
-      measure();
-      update();
+      if (resizeTicking) return;
+      resizeTicking = true;
+      requestAnimationFrame(() => {
+        resizeTicking = false;
+        measure();
+        update();
+      });
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onResize);
@@ -200,6 +266,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
 
   // Online / Offline listener
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
     window.addEventListener('online', handleOnline);
@@ -210,21 +277,16 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     };
   }, []);
 
-  // Skeleton Loader while menu initial fetch happens (white-label: logo + colors from config)
-  if (loading || !menu) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-white text-center" style={{ background: themeConfig.colors.background }}>
-        <div className="w-16 h-16 rounded-full border-4 border-t-transparent animate-spin mb-4" style={{ borderColor: themeConfig.colors.primary, borderTopColor: 'transparent' }} />
-        <h2 className="text-xl font-bold">{clientConfig.companyNameEn} · {clientConfig.companyNameAr}</h2>
-        <p className="text-xs text-neutral-400 mt-1">Loading delicious menu...</p>
-      </div>
-    );
-  }
+  // DOM-safe route parsing (standalone pages need no menu data, so they
+  // resolve BEFORE any menu gate — the storefront shell below paints
+  // instantly while /api/menu is still in flight).
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
+  const searchString = typeof window !== 'undefined' ? window.location.search : '';
 
   // One-time client invite (/invite/<token>): standalone page, needs no
   // menu data and shares no state with the storefront or the admin.
   // A bare /invite shows the same page in its invalid state (never the menu).
-  const inviteMatch = /^\/invite(?:\/([^/]+))?\/?$/.exec(window.location.pathname);
+  const inviteMatch = /^\/invite(?:\/([^/]+))?\/?$/.exec(pathname);
   if (inviteMatch) {
     return (
       <Suspense fallback={<AdminLoadingSplash />}>
@@ -235,7 +297,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
 
   // Customer order tracking (?track=N&t=token): standalone page, needs no
   // menu data and shares no state with the storefront or the admin.
-  const trackQ = new URLSearchParams(window.location.search);
+  const trackQ = new URLSearchParams(searchString);
   const trackN = Number.parseInt(trackQ.get('track') || '', 10);
   const trackT = (trackQ.get('t') || '').trim();
   if (Number.isInteger(trackN) && trackN > 0 && /^[0-9a-f]{32}$/.test(trackT)) {
@@ -245,7 +307,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           number={trackN}
           token={trackT}
           onBack={() => {
-            window.location.href = '/';
+            if (typeof window !== 'undefined') window.location.href = '/';
           }}
         />
       </Suspense>
@@ -254,10 +316,15 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
 
   // Admin View (gated by /admin path + cookie session)
   if (showAdmin) {
+    // The admin console needs the real doc (edits + version fencing), so it
+    // keeps its splash — only the storefront shell renders menu-less.
+    if (loading || !menu) {
+      return <AdminLoadingSplash />;
+    }
     // TEMPORARY local preview shortcut (?dev-admin): compiled out of
-    // production builds (import.meta.env.DEV is statically false there),
-    // so it can never reach customers. REMOVE BEFORE COMMIT.
-    if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('dev-admin')) {
+    // production builds (import.meta.env.DEV is statically false there), so it
+    // can never reach customers. REMOVE BEFORE COMMIT.
+    if (import.meta.env.DEV && new URLSearchParams(searchString).has('dev-admin')) {
       return (
         <Suspense fallback={<AdminLoadingSplash />}>
           <AdminPanel
@@ -301,17 +368,23 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     );
   }
 
+  // Static shell until the real doc lands: header/hero + footer paint on the
+  // first frame (LCP logo is a static asset), only the menu sections below
+  // wait behind the skeleton. resolveLiveOrdering needs a MenuData — the
+  // shell carries safe defaults, the real doc swaps in with identical rules.
+  const menuReady = !loading && !!menu;
+  const displayMenu: MenuData = menu ?? staticFallbackMenu;
   const isAr = lang === 'ar';
-  const currency = isAr ? menu.settings.currency.ar : menu.settings.currency.en;
+  const currency = isAr ? displayMenu.settings.currency.ar : displayMenu.settings.currency.en;
   // Menu-only mode (starter): no cart, no checkout, no item modal — the menu
   // is display-only with a call CTA. Gated in one place, passed down.
   const orderingOn = featuresConfig.enableOrdering;
-  const featuredItems = menu.items.filter((i) => i.featured && i.available);
+  const featuredItems = displayMenu.items.filter((i) => i.featured && i.available);
   // Live endpoint state wins; the menu-derived state is the fail-open
   // fallback when the endpoint is unreachable (an outage never stops orders).
   // resolveLiveOrdering additionally discards a provably-stale paused value
   // so bar and drawer flip in the same second the deadline passes.
-  const liveOrderingState: OrderingStatus | null = resolveLiveOrdering(orderingState, menu, serverNow());
+  const liveOrderingState: OrderingStatus | null = resolveLiveOrdering(orderingState, displayMenu, serverNow());
 
   return (
     <MotionConfig reducedMotion="never">
@@ -349,9 +422,9 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           <AnnouncementBanner settings={menu.settings} lang={lang} />
         )}
 
-        {/* Hero Header */}
+        {/* Hero Header (static shell: paints instantly, no menu wait) */}
         <Header
-          menu={menu}
+          menu={displayMenu}
           lang={lang}
           onToggleLang={() => setLang(lang === 'en' ? 'ar' : 'en')}
           darkMode={darkMode}
@@ -361,60 +434,68 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           orderingEnabled={orderingOn}
         />
 
-        {/* Main Content Area */}
+        {/* Main Content Area: skeleton reserves the slot until the real doc
+            lands; search/chips/carousel/list mount only with real data so no
+            filter state or animation ever re-runs on the swap. */}
         <main className="flex-1">
-          {/* Overlapping Search and Sticky Category Chips */}
-          <SearchAndChips
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            categories={menu.categories}
-            selectedCategory={selectedCategory}
-            onSelectCategory={selectCategory}
-            selectedBadge={selectedBadge}
-            onToggleBadge={toggleBadge}
-            lang={lang}
-            darkMode={darkMode}
-          />
+          {!menuReady ? (
+            <MenuSectionsSkeleton lang={lang} darkMode={darkMode} />
+          ) : (
+            <>
+              {/* Overlapping Search and Sticky Category Chips */}
+              <SearchAndChips
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                categories={menu.categories}
+                selectedCategory={selectedCategory}
+                onSelectCategory={selectCategory}
+                selectedBadge={selectedBadge}
+                onToggleBadge={toggleBadge}
+                lang={lang}
+                darkMode={darkMode}
+              />
 
-          {/* Featured Horizontal Carousel (visible when 'all' is selected and no search) */}
-          {selectedCategory === 'all' && !searchQuery.trim() && !selectedBadge && (
-            <FeaturedCarousel
-              key={featuredItems.map((i) => i.id).join('|')}
-              items={featuredItems}
-              menu={menu}
-              onOpenItem={setActiveItem}
-              onAddToCart={handleAddItem}
-              currency={currency}
-              lang={lang}
-              darkMode={darkMode}
-              autoplay={menu.settings.featuredAutoplay !== false}
-              autoplayInterval={menu.settings.featuredAutoplayInterval || 4}
-              orderingEnabled={orderingOn}
-            />
+              {/* Featured Horizontal Carousel (visible when 'all' is selected and no search) */}
+              {selectedCategory === 'all' && !searchQuery.trim() && !selectedBadge && (
+                <FeaturedCarousel
+                  key={featuredItems.map((i) => i.id).join('|')}
+                  items={featuredItems}
+                  menu={menu}
+                  onOpenItem={setActiveItem}
+                  onAddToCart={handleAddItem}
+                  currency={currency}
+                  lang={lang}
+                  darkMode={darkMode}
+                  autoplay={menu.settings.featuredAutoplay !== false}
+                  autoplayInterval={menu.settings.featuredAutoplayInterval || 4}
+                  orderingEnabled={orderingOn}
+                />
+              )}
+
+              {/* Menu Items List and Categorized Grids */}
+              <MenuList
+                categories={menu.categories}
+                items={menu.items}
+                menu={menu}
+                selectedCategory={selectedCategory}
+                searchQuery={searchQuery}
+                selectedBadge={selectedBadge}
+                cart={cart}
+                onAddItem={handleAddItem}
+                onUpdateLine={handleUpdateLine}
+                onOpenItem={orderingOn ? setActiveItem : () => {}}
+                currency={currency}
+                lang={lang}
+                darkMode={darkMode}
+                orderingEnabled={orderingOn}
+              />
+            </>
           )}
-
-          {/* Menu Items List and Categorized Grids */}
-          <MenuList
-            categories={menu.categories}
-            items={menu.items}
-            menu={menu}
-            selectedCategory={selectedCategory}
-            searchQuery={searchQuery}
-            selectedBadge={selectedBadge}
-            cart={cart}
-            onAddItem={handleAddItem}
-            onUpdateLine={handleUpdateLine}
-            onOpenItem={orderingOn ? setActiveItem : () => {}}
-            currency={currency}
-            lang={lang}
-            darkMode={darkMode}
-            orderingEnabled={orderingOn}
-          />
         </main>
 
-        {/* Footer */}
+        {/* Footer (static shell: paints instantly, no menu wait) */}
         <Footer
-          menu={menu}
+          menu={displayMenu}
           onOpenAdmin={adminUnlocked ? () => openAdmin() : undefined}
           lang={lang}
         />
@@ -441,7 +522,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
         {orderingOn && (
         <ItemDetailsModal
           item={activeItem}
-          menu={menu}
+          menu={displayMenu}
           onClose={() => setActiveItem(null)}
           cart={cart}
           onAddItem={handleAddItem}
@@ -458,7 +539,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
         <CartDrawer
           isOpen={isCartOpen}
           onClose={() => setIsCartOpen(false)}
-          menu={menu}
+          menu={displayMenu}
           lines={cartLines}
           onUpdateLine={handleUpdateLine}
           onRemoveLine={handleRemoveLine}

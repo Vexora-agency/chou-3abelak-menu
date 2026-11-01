@@ -71,11 +71,19 @@ export function useTickerLoop(active: boolean, text: string, speed: number) {
     if (box && ro) ro.observe(box);
     // A new viewport (rotation/resize) needs a new measurement: unfreeze,
     // re-measure, and freeze again — one clean restart, which is expected.
+    // Coalesced to one compute per frame: a resize burst shares a single
+    // clientWidth/offsetWidth read pair instead of one pair per event.
+    let viewportTicking = false;
     const onViewport = () => {
-      if (!alive) return;
-      frozen.current = false;
-      compute();
-      frozen.current = true;
+      if (!alive || viewportTicking) return;
+      viewportTicking = true;
+      requestAnimationFrame(() => {
+        viewportTicking = false;
+        if (!alive) return;
+        frozen.current = false;
+        compute();
+        frozen.current = true;
+      });
     };
     window.addEventListener('resize', onViewport);
     window.addEventListener('orientationchange', onViewport);

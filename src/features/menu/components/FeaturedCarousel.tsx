@@ -79,13 +79,37 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   const [stepPx, setStepPx] = useState(0);
   const gapPx = visible > 1 ? 16 : 0; // md:gap-4
   useEffect(() => {
+    // rAF-coalesced + change-guarded: a resize burst shares one width read,
+    // and identical widths skip the setState entirely. The track is also
+    // observed (card widths are container-driven — fonts/images settling
+    // changes them without any window resize). Initial measure stays
+    // synchronous so the first paint carries the correct --sx.
+    let ticking = false;
+    let last = -1;
     const measure = () => {
       const first = trackRef.current?.children[0] as HTMLElement | undefined;
-      setStepPx(first ? first.getBoundingClientRect().width + gapPx : 0);
+      const next = first ? first.getBoundingClientRect().width + gapPx : 0;
+      if (next !== last) {
+        last = next;
+        setStepPx(next);
+      }
+    };
+    const requestMeasure = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        measure();
+      });
     };
     measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
+    const ro = trackRef.current ? new ResizeObserver(requestMeasure) : null;
+    if (trackRef.current && ro) ro.observe(trackRef.current);
+    window.addEventListener('resize', requestMeasure);
+    return () => {
+      window.removeEventListener('resize', requestMeasure);
+      ro?.disconnect();
+    };
   }, [gapPx, count]);
 
   // Resizing across the md breakpoint can strand the index past the end —

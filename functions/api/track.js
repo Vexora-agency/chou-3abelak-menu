@@ -6,6 +6,14 @@
  * oracle). No auth session needed: the token IS the capability.
  */
 import { jsonNoStore } from '../_shared/session.js';
+import { checkRateLimit, rateKey } from '../_shared/access.js';
+
+// Polling math: the bell re-checks each order every 30s, so a customer
+// with a few orders stays far below this. 120 hits / 5 min per IP only
+// bites scrapers — and a 429 here fails soft client-side (unknown state,
+// retried on the next tick), never a dead page.
+const TRACK_MAX = 120;
+const TRACK_TTL_SEC = 5 * 60;
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -13,6 +21,9 @@ export async function onRequest(context) {
   if (request.method !== 'GET') {
     return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'GET' });
   }
+
+  const rl = await checkRateLimit(env.MENU_KV || null, rateKey('track', request), TRACK_MAX, TRACK_TTL_SEC);
+  if (!rl.ok) return jsonNoStore({ error: 'rate_limited' }, 429);
 
   const db = env.ORDERS_DB || null;
   if (!db) {

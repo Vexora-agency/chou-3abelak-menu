@@ -35,6 +35,20 @@
 ## DOING
 - [ ] Await owner: (1) Generate_pass.txt removal approval, (2) review + push `maintenance/phase-0` yourself, (3) answers to overview §8 (Q3-Q12)
 
+
+## DONE � Boosthis removal (branch `maintenance/remove-boosthis`, NEVER push; owner reviews)
+- [x] PHASE A inventory (read-only): Boosthis = Veqtara telemetry kit (vitals/traces/snapshots, owner-only bubble). 3 measurement-only touchpoints: functions/_middleware.js (all-routes wrapper), scheduler/src/index.js (cron wrapper), src/types/boosthis-runtime-web.shim.ts (types only, nothing imports runtime). Vendored lib/ 152 files/~64.5k lines + 7x BOOSTHIS_* docs. Zero entanglement: no pricing/order/validator/plan/auth/DB (migrations clean, no KV keys, seed clean, public/ clean, no UI strings EN/AR). GATE -> PROCEED.
+- [x] C1 (8d51eee): scheduler unwrap + edge-middleware drop. NOTE: functions/_middleware.js was never tracked (never-commit rule) - deleted from disk, no commit possible. FLAGGED FOR REVIEW: all-routes wrapper removal (responses identical, measurement only).
+- [x] C2 (disk-only, uncommittable): deleted lib/, 7x BOOSTHIS_*, shim; tsconfig edit reverted local-only mods back to committed state (no diff).
+- [x] C4 (a0db478): .env.example VITE_BOOSTHIS block removed + legacy-tolerance test (settings with boosthis: block -> no-throw, defaults applied).
+- [x] C5: skipped - DB not involved. Next free migration number verified: 0018 (unused).
+- [x] C6: skipped - README/privacy.html/llms.txt contain zero boosthis matches, nothing to rewrite.
+- [x] (a) (980c6d0): adopted pending package.json scripts cleanup (test:whatsapp/test:dial gone - files confirmed absent; test:all rebuilt). Scripts section only.
+- [x] (b) (81b4b49): deleted unreferenced public/assets/aistudio/ (frozen AI-Studio preview; zero code refs; contained WhatsApp CTAs, no boosthis).
+- [x] (c): eslint problems from 59df5ad LISTED ONLY, untouched: ItemDetailsModal.tsx:111,113 (useGuardedText after early return - conditional hooks), useGuardedText.ts:18 (ref written during render).
+- [x] Verify (isolated worktree Temp/opencode/rb-verify): tsc clean; depcruise 0 violations (330/982); suites settings 39/0 (+2 new), parity 82/0, safe-json 23/0, cart 20/0; prod build -> Temp/opencode/rb-dist green with ZERO boosthis matches in JS/CSS/HTML.
+- [x] Final sweep: 8 remaining tracked matches, all justified (agent.md rule text; package.json+lock dep entries per no-dep-changes rule; scheduler explanatory comment; tolerance-test subject; audit record; historical project-discovery logs).
+- [ ] Await owner: review + push maintenance/remove-boosthis yourself. Interference note: a second session flipped the main worktree HEAD repeatedly (step-1 <-> remove-boosthis) mid-run; verification was done in an isolated worktree - see results.md section 13.
 ## TODO — roadmap (NOT started, no fixes proposed)
 - [ ] Maintainability: god-file splits (in-code TODOs), full `strict: true`, eslint within budget
 - [ ] Scalability: quota monitoring, KV-write-per-order reduction, per-client paid-plan trigger

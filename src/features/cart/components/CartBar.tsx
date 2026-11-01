@@ -80,11 +80,11 @@ export const CartBar: React.FC<CartBarProps> = ({
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') onOpenCart();
         }}
-        className="pointer-events-auto w-full max-w-[480px] sm:max-w-lg md:max-w-xl h-14 bg-[#0A0A0A] border-2 border-[var(--primary)] text-white rounded-full px-5 sm:px-6 flex items-center justify-between gap-2 shadow-2xl cursor-pointer hover:scale-[1.01] active:scale-[0.98] transition-transform anim-cart-bar"
+        className="pointer-events-auto w-full max-w-[480px] sm:max-w-lg md:max-w-xl h-14 bg-[#0A0A0A] border-2 border-[var(--primary)] text-white rounded-full px-4 sm:px-6 flex items-center justify-between gap-1.5 sm:gap-2 shadow-2xl cursor-pointer hover:scale-[1.01] active:scale-[0.98] transition-transform anim-cart-bar"
         aria-live="polite"
       >
         {/* Left: Bag Icon & Item Count */}
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div className="relative">
             <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center font-black">
               <ShoppingBag size={17} className="stroke-[2.5]" />
@@ -98,14 +98,14 @@ export const CartBar: React.FC<CartBarProps> = ({
             <div className={`text-xs text-neutral-400 font-medium ${isAr ? 'leading-relaxed' : 'leading-tight'}`}>
               {isAr ? 'إجمالي الطلب' : 'Your Order'}
             </div>
-            <div className="text-base font-extrabold text-[var(--primary)] whitespace-nowrap leading-tight tabular-nums" dir="ltr">
+            <div className="text-sm sm:text-base font-extrabold text-[var(--primary)] whitespace-nowrap leading-tight tabular-nums" dir="ltr">
               {formatPrice(totalPrice, currency)}
             </div>
           </div>
         </div>
 
         {/* Right: quick delete + CTA */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           <button
             type="button"
             onClick={(e) => {
@@ -118,7 +118,7 @@ export const CartBar: React.FC<CartBarProps> = ({
           >
             <Trash2 size={18} />
           </button>
-          <div className={`flex items-center gap-1.5 whitespace-nowrap text-xs font-bold bg-[var(--primary)] text-[#0A0A0A] px-3.5 sm:px-4 py-2 min-h-[44px] rounded-full shadow-sm ${isAr ? '' : 'uppercase tracking-wide'}`}>
+          <div className={`flex items-center gap-1 sm:gap-1.5 whitespace-nowrap text-[11px] sm:text-xs font-bold bg-[var(--primary)] text-[#0A0A0A] px-3 sm:px-4 py-2 min-h-[44px] rounded-full shadow-sm ${isAr ? '' : 'uppercase tracking-wide'}`}>
             <span>{isAr ? 'معاينة الطلب' : 'View Order'}</span>
             {isAr ? <ArrowLeft size={14} className="stroke-[3]" /> : <ArrowRight size={14} className="stroke-[3]" />}
           </div>

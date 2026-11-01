@@ -38,7 +38,7 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
       // Transport failure only (timeout/offline blip): ONE retry with the
       // SAME idemKey — idempotent-safe by construction, so a lost response
       // (order recorded, reply dropped) still resolves to the same number
-      // instead of a token-less WhatsApp message. HTTP errors never retry.
+      // instead of a number-less error. HTTP errors never retry.
       res = await send(6000);
     }
     if (!res) return fail('timeout');

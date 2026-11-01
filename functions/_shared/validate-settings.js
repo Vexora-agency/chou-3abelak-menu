@@ -88,7 +88,7 @@ function validateSettings(s, errors) {
   }
 
   // Social
-  const SOCIAL_NETWORKS = ['instagram', 'facebook', 'whatsapp'];
+  const SOCIAL_NETWORKS = ['instagram', 'facebook'];
   const social = {};
   if (s.social && typeof s.social === 'object') {
     SOCIAL_NETWORKS.forEach((network) => {
@@ -121,7 +121,6 @@ function validateSettings(s, errors) {
   const socialEnabled = {
     instagram: socialEnabledRaw.instagram !== false,
     facebook: socialEnabledRaw.facebook !== false,
-    whatsapp: socialEnabledRaw.whatsapp !== false,
   };
 
   const about = validateBilingualOpt(s.about, 300);

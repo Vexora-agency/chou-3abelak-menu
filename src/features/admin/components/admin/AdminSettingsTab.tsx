@@ -12,7 +12,6 @@ import { VisitorDefaultsSection } from '../VisitorDefaultsSection';
 import { SmartBadgesSection } from '../SmartBadgesSection';
 import { ShowMoreSection } from '../ShowMoreSection';
 import { AccessSection } from '../AccessSection';
-import { WhatsappApiSection } from '../WhatsappApiSection';
 import { TelegramSection } from '../TelegramSection';
 import { SoundsSection } from '../SoundsSection';
 import { AutoplaySection } from '../AutoplaySection';
@@ -46,7 +45,6 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         tagline={menu.settings.tagline}
         about={menu.settings.about}
         phone={menu.settings.phone}
-        whatsapp={menu.settings.whatsapp}
         mapUrl={menu.settings.mapUrl}
         address={menu.settings.address}
         currency={menu.settings.currency}
@@ -59,7 +57,6 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
               tagline: s.tagline,
               about: s.about,
               phone: s.phone,
-              whatsapp: s.whatsapp,
               mapUrl: s.mapUrl,
               address: s.address,
               currency: s.currency,
@@ -74,7 +71,6 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         socialEnabled={menu.settings.socialEnabled}
         lang={lang}
         order={socialOrderOrDefault(menu.settings.socialOrder)}
-        whatsappNumber={menu.settings.whatsapp || ''}
         onMove={(key, dir) => {
           const order = socialOrderOrDefault(menu.settings.socialOrder);
           const idx = order.indexOf(key);
@@ -132,7 +128,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         ordering={menu.settings.ordering}
         currency={menu.settings.currency[lang] || menu.settings.currency.en}
         lang={lang}
-        whatsapp={menu.settings.whatsapp || ''}
+        phone={menu.settings.phone || ''}
         adminFetch={adminFetch}
         onMenuRefreshed={onMenuRefreshed}
         onUpdate={(updater) =>
@@ -142,10 +138,6 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           }))
         }
       />
-      )}
-
-      {featuresConfig.enableOrdering && (
-        <WhatsappApiSection lang={lang} adminFetch={adminFetch} />
       )}
 
       {featuresConfig.enableOrdering && (

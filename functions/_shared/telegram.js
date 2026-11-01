@@ -14,8 +14,8 @@
  *  - Bot credentials live in Cloudflare Pages secrets (TELEGRAM_BOT_TOKEN,
  *    TELEGRAM_WEBHOOK_SECRET) — never in D1, KV, or source control.
  *    The link itself (chat_id + bot_username, non-secret) lives in
- *    service_config under TELEGRAM_CONFIG_KEY, same as the WhatsApp
- *    config (migration 0012 pattern).
+ *    service_config under TELEGRAM_CONFIG_KEY (service_config/service_secrets
+ *    pattern from migration 0011/0012).
  *
  * Delivery contract (for Phase 4; ledger table ships in migration 0014):
  *  - telegram_notifications.order_id PK is the dedupe key: a repeated

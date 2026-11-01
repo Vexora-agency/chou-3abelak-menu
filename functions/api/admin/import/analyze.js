@@ -48,7 +48,7 @@ async function sessionSub(request, env) {
 
 const WARN = {
   en: {
-    unsigned: 'This file is not signed by this site: business settings (phone, WhatsApp, ordering) will be ignored.',
+    unsigned: 'This file is not signed by this site: business settings (phone, ordering) will be ignored.',
     csvSkipped: (n) => `${n} spreadsheet row(s) were skipped (unknown item, bad price, or missing category).`,
     csvAdded: (n) => `${n} new item(s) will be added (their categories already exist).`,
     settingsOnlySigned: 'Business settings in this file will be ignored unless it is signed.',
@@ -57,7 +57,7 @@ const WARN = {
     featuresNeedSigned: 'New features only persist in a SIGNED file applied with "replace business settings".',
   },
   ar: {
-    unsigned: 'هذا الملف غير موقّع من هذا الموقع: سيتم تجاهل إعدادات العمل (الهاتف وواتساب والطلب).',
+    unsigned: 'هذا الملف غير موقّع من هذا الموقع: سيتم تجاهل إعدادات العمل (الهاتف والطلب).',
     csvSkipped: (n) => `تم تخطي ${n} من صفوف الجدول (صنف غير معروف أو سعر خاطئ أو قسم مفقود).`,
     csvAdded: (n) => `ستُضاف ${n} أصناف جديدة (أقسامها موجودة بالفعل).`,
     settingsOnlySigned: 'سيتم تجاهل إعدادات العمل في هذا الملف ما لم يكن موقّعاً.',

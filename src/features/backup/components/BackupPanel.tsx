@@ -17,7 +17,7 @@ export interface Change {
   scope: 'item' | 'category' | 'settings';
   label: string;
   detail?: string; // e.g. "Price 580,000 -> 600,000"
-  sensitive?: boolean; // phone, WhatsApp, ordering, plan...
+  sensitive?: boolean; // phone, ordering, plan...
 }
 export interface VersionEntry {
   id: string;

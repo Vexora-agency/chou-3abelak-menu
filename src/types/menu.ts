@@ -108,13 +108,12 @@ export interface Category {
 }
 
 /** Social platforms shown in "Connect with Us" (admin-reorderable). */
-export type SocialPlatform = 'instagram' | 'facebook' | 'whatsapp';
+export type SocialPlatform = 'instagram' | 'facebook';
 
 export interface MenuSettings {  name: { en: string; ar: string };
   tagline: { en: string; ar: string };
   logoText: string;
   phone: string;
-  whatsapp: string;
   mapUrl: string;
   address: { en: string; ar: string };
   hoursText: { en: string; ar: string };
@@ -126,12 +125,10 @@ export interface MenuSettings {  name: { en: string; ar: string };
   social: {
     instagram?: string;
     facebook?: string;
-    whatsapp?: string;
   };
   socialEnabled: {
     instagram: boolean;
     facebook: boolean;
-    whatsapp: boolean;
   };
   /** Display order of the social platforms (admin-reorderable). */
   socialOrder: SocialPlatform[];
@@ -242,6 +239,4 @@ export interface CustomerDetails {
   notes: string;
   orderType: OrderType;
   remember: boolean;
-  /** Opt-in: WhatsApp order confirmations (used only if the restaurant enabled the Cloud API sender). */
-  whatsappUpdates?: boolean;
 }

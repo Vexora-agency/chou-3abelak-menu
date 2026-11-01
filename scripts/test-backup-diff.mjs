@@ -48,11 +48,11 @@ const { ok, summary } = createAsserts();
   ok(ch.some((x) => x.detail === 'Name: Pies → Pies!'), 'renamed category');
   // sensitive settings
   const d = JSON.parse(JSON.stringify(a));
-  d.settings.whatsapp = '96170999999';
+  d.settings.phone = '+96170999999';
   d.settings.ordering.enabled = true;
   d.settings.timezone = 'UTC';
   ch = diffMenus(a, d, 'en');
-  ok(ch.some((x) => x.label === 'WhatsApp number' && x.sensitive), 'whatsapp sensitive');
+  ok(ch.some((x) => x.label === 'Phone number' && x.sensitive), 'phone sensitive');
   ok(ch.some((x) => x.label === 'Online ordering' && x.sensitive), 'ordering sensitive');
   ok(ch.some((x) => x.label === 'Timezone' && x.sensitive), 'timezone sensitive');
   // cap at 500

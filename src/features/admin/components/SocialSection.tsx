@@ -7,7 +7,6 @@ type SocialValues = Pick<MenuSettings, 'social' | 'socialEnabled'>;
 interface SocialSectionProps extends SocialValues {
   lang: 'en' | 'ar';
   order: SocialPlatform[];
-  whatsappNumber: string;
   onMove: (key: SocialPlatform, dir: 'up' | 'down') => void;
   onUpdate: (updater: (prev: SocialValues) => SocialValues) => void;
 }
@@ -15,7 +14,6 @@ interface SocialSectionProps extends SocialValues {
 const LABELS: Record<SocialPlatform, string> = {
   instagram: 'Instagram',
   facebook: 'Facebook',
-  whatsapp: 'WhatsApp',
 };
 
 /** Social Media card of the admin Settings tab (toggle + link per platform, reorderable). */
@@ -24,12 +22,10 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
   socialEnabled,
   lang,
   order,
-  whatsappNumber,
   onMove,
   onUpdate,
 }) => {
   const isAr = lang === 'ar';
-  const waDigits = (whatsappNumber || '').replace(/[^0-9]/g, '');
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div>
@@ -44,12 +40,6 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
       {order.map((network, idx) => {
         const on = !!socialEnabled?.[network];
         const label = LABELS[network];
-        const linkHint =
-          network === 'whatsapp' && !(social?.[network] || '').trim() && waDigits
-            ? isAr
-              ? `فارغ = يستخدم رقم الواتساب المحفوظ (wa.me/${waDigits})`
-              : `Empty = uses the saved WhatsApp number (wa.me/${waDigits})`
-            : null;
         return (
           <div key={network} className="rounded-xl border border-neutral-800 bg-black/40 p-3 space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -110,7 +100,7 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
                     social: { ...prev.social, [network]: e.target.value },
                   }))
                 }
-                placeholder={network === 'whatsapp' ? 'https://wa.me/…' : `https://${network}.com/…`}
+                placeholder={`https://${network}.com/…`}
                 className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base focus:border-[var(--primary)]"
               />
               {on && !!(social?.[network] || '').trim() && !/^\s*https:\/\//i.test(social?.[network] || '') && (
@@ -118,10 +108,7 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
                   {isAr ? 'الرابط يجب أن يبدأ بـ https:// وإلا رفض الحفظ' : 'Link must start with https:// or saving rejects it'}
                 </p>
               )}
-              {linkHint && (
-                <p className="text-[11px] text-neutral-500 mt-1">{linkHint}</p>
-              )}
-              {on && !(social?.[network] || '').trim() && !linkHint && (
+              {on && !(social?.[network] || '').trim() && (
                 <p className="text-[11px] text-amber-400/90 font-bold mt-1.5">
                   {isAr ? 'مفعّل لكن بدون رابط — لن يظهر في الموقع قبل لصق الرابط' : 'On but linkless — it will stay hidden until you paste the link'}
                 </p>

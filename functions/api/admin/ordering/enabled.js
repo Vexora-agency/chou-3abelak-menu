@@ -2,8 +2,8 @@
  * POST /api/admin/ordering/enabled — master online-ordering switch.
  * Body { enabled: boolean }. Read-modify-write of the menu with retry on
  * version conflict (3 attempts); changes ONLY settings.ordering.enabled,
- * goes through strict validation (which requires a WhatsApp number when
- * enabling — the write is rejected otherwise), and snapshots the previous
+ * goes through strict validation (which requires a contact phone number
+ * when enabling — the write is rejected otherwise), and snapshots the previous
  * version (source 'manual').
  * Admin session + X-Requested-With + same Origin required.
  */

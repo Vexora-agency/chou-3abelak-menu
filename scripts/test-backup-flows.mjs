@@ -58,12 +58,12 @@ async function seedMenu(env, menu) {
   ok(after.items.find((it) => it.id === 'zaatar').pricing.price === 180000, 'applied price persisted');
 }
 {
-  // tampered file becomes unsigned; whatsapp can never change through it
+  // tampered file becomes unsigned; business contact settings can never change through it
   const env = ENV();
   await seedMenu(env, makeMenu());
   const { backupEnvelope, signPayload } = await import('../functions/_shared/versions.js');
   const menu = makeMenu();
-  menu.settings.whatsapp = '96170000000';
+  menu.settings.phone = '+96170000000';
   const payload = backupEnvelope({ menu, siteId: 'site1', exportedAt: '2026-02-01T00:00:00.000Z' });
   const sig = await signPayload(env, payload);
   const tampered = { ...payload, sig };
@@ -74,7 +74,8 @@ async function seedMenu(env, menu) {
   const ap = await apply(env, { token: a.data.token, includeSettings: true });
   ok(ap.data.ok === true, 'unsigned apply works for items');
   const after = await env.MENU_KV.get('menu', { type: 'json' });
-  ok(after.settings.whatsapp === '96170123456', 'UNSIGNED FILE CAN NEVER CHANGE WHATSAPP');
+  ok(after.settings.phone === '70123456', 'UNSIGNED FILE CAN NEVER CHANGE PHONE');
+  ok(after.settings.whatsapp === undefined, 'legacy whatsapp field stripped on apply');
   ok(after.items.find((it) => it.id === 'zaatar').pricing.price === 190000, 'unsigned item change applies');
 }
 {

@@ -24,7 +24,6 @@ const L = {
     addonGroups: 'Add-on groups',
     groupsCount: (a, b) => `${a} → ${b} groups`,
     phone: 'Phone number',
-    whatsapp: 'WhatsApp number',
     mapUrl: 'Map link',
     currencyEn: 'Currency (EN)',
     currencyAr: 'Currency (AR)',
@@ -53,7 +52,6 @@ ar: {
     addonGroups: 'مجموعات الإضافات',
     groupsCount: (a, b) => `${a} ← ${b} مجموعات`,
     phone: 'رقم الهاتف',
-    whatsapp: 'رقم واتساب',
     mapUrl: 'رابط الخريطة',
     currencyEn: 'العملة (EN)',
     currencyAr: 'العملة (AR)',
@@ -73,7 +71,7 @@ ar: {
   },
 };
 
-const SENSITIVE_RE = /whatsapp|phone|mapurl|ordering|currency|timezone|plan/i;
+const SENSITIVE_RE = /phone|mapurl|ordering|currency|timezone|plan/i;
 
 const fmtMoney = (n) =>
   typeof n === 'number' && Number.isFinite(n) ? Math.round(n).toLocaleString('en-US') : '—';
@@ -237,7 +235,6 @@ export function diffMenus(a, b, lang = 'en') {
   const oB = (sB.ordering && typeof sB.ordering === 'object' ? sB.ordering : {});
   const paths = [
     ['phone', sA.phone, sB.phone],
-    ['whatsapp', sA.whatsapp, sB.whatsapp],
     ['mapUrl', sA.mapUrl, sB.mapUrl],
     ['currencyEn', sA.currency && sA.currency.en, sB.currency && sB.currency.en],
     ['currencyAr', sA.currency && sA.currency.ar, sB.currency && sB.currency.ar],

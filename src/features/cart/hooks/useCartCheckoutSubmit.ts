@@ -17,9 +17,9 @@ interface UseCartCheckoutSubmitArgs {
   lang: 'en' | 'ar';
   currency: string;
   orderingState?: OrderingStatus | null;
-  /** Called after an order is successfully sent (WhatsApp opened). The
-   *  owner wires the cart owner's clear; gated by client.config
-   *  cart.clearAfterOrder so white-labels can opt out. */
+/** Called after an order is successfully recorded. The
+ *  owner wires the cart owner's clear; gated by client.config
+ *  cart.clearAfterOrder so white-labels can opt out. */
   onOrderSuccess?: () => void;
 }
 
@@ -163,8 +163,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     setErrorMsg('');
 
     // Submit-time availability check: ask the server first (2.5 s timeout).
-    // A non-open answer stops everything and WhatsApp never opens. When the
-    // call fails, fall back to the last known menu state (fail open).
+    // A non-open answer stops everything here. When the call fails, fall
+    // back to the last known menu state (fail open).
     try {
       const controller = new AbortController();
       const timer = window.setTimeout(() => controller.abort(), 2500);
@@ -196,7 +196,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     // Strict customer validation — mirrors the server (validateOrderInput)
     // EXACTLY, so a bad field can never "still send": name 2+ chars,
     // phone 6–15 digits, delivery address required. Anything else stops
-    // here with a specific message and WhatsApp never opens.
+    // here with a specific message.
     if (customer.name.trim().length < 2) {
       setErrorMsg(isAr ? 'يرجى إدخال الاسم (حرفان على الأقل)' : 'Please enter your name (2+ characters)');
       return;
@@ -229,9 +229,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       } catch {}
     }
 
-    // Record the order on the server BEFORE opening WhatsApp. Never blocks
-    // the WhatsApp flow: any failure still opens WhatsApp immediately.
-    // Transport lives in features/cart/services/cart.api.ts (single place).
+    // Record the order on the server. Transport lives in
+    // features/cart/services/cart.api.ts (single place).
     try {
       if (!idemKeyRef.current) {
         idemKeyRef.current =
@@ -263,18 +262,19 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       );
       if (result.blockedMessage) {
         // Server-side availability gate (paused/closed/disabled): show the
-        // message and never open WhatsApp.
+        // message and stop here.
         setErrorMsg(result.blockedMessage || (isAr ? 'الطلب غير متاح حالياً' : 'Ordering is currently unavailable'));
         return;
       }
       if (result.failure === 'timeout' || result.failure === 'invalid') {
         // Fail-open ordering: the order may still be saved below, but the
         // customer sees exactly why it carries no number — and the code
-        // in caps is the machine cause for remote diagnosis.
+        // in caps is the machine cause for remote diagnosis. A retry reuses
+        // the same idempotency key, so it can never double-record.
         setErrorMsg(
           result.failure === 'timeout'
-            ? (isAr ? 'انقطع الاتصال أثناء الإرسال (NET-TIMEOUT) — قد يكون طلبك محفوظًا: تحقق من الداشبورد قبل إعادة المحاولة' : 'Connection dropped while sending (NET-TIMEOUT) — your order may be saved: check the dashboard before retrying')
-            : (isAr ? 'رفض السيرفر الطلب (SRV-INVALID) — حدّث الصفحة وحاول مجددًا' : 'Server rejected the order (SRV-INVALID) — refresh and try again')
+          ? (isAr ? 'انقطع الاتصال أثناء الإرسال (NET-TIMEOUT) — قد يكون طلبك محفوظًا: تحقق من الداشبورد قبل إعادة المحاولة' : 'Connection dropped while sending (NET-TIMEOUT) — your order may be saved: check the dashboard before retrying')
+          : (isAr ? 'رفض السيرفر الطلب (SRV-INVALID) — حدّث الصفحة وحاول مجددًا' : 'Server rejected the order (SRV-INVALID) — refresh and try again')
         );
       }
       if (result.orderNumber) {

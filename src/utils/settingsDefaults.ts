@@ -53,7 +53,6 @@ export function workingDaysOrAll(v: unknown): string[] {
 export interface SocialFlags {
   instagram: boolean;
   facebook: boolean;
-  whatsapp: boolean;
 }
 
 /** Social visibility flags; anything but explicit `false` means on. */
@@ -62,12 +61,11 @@ export function socialFlagsOrDefault(v: unknown): SocialFlags {
   return {
     instagram: r.instagram !== false,
     facebook: r.facebook !== false,
-    whatsapp: r.whatsapp !== false,
   };
 }
 
 /** Canonical social platform order (admin-reorderable in settings). */
-export const SOCIAL_PLATFORMS = ['instagram', 'facebook', 'whatsapp'] as const;
+export const SOCIAL_PLATFORMS = ['instagram', 'facebook'] as const;
 
 /** Display order of the social platforms; unknown keys dropped, missing ones appended. */
 export function socialOrderOrDefault(v: unknown): SocialPlatform[] {

@@ -123,8 +123,8 @@ this pass except the separately-approved tamper guard (see §6).
 | 9 | Login brute force | FINE | 5/15min/IP → 429 | — | none needed |
 | 10 | SSRF (user-URL fetch) | N/A | outbound fetches go to fixed hosts (Telegram/Resend/JWKS); map/geo fetches are client-side | — | — |
 | 11 | File uploads | N/A | none found in routes or UI | — | — |
-| 12 | Public-GET rate limits | WEAK | `track.js`, `ordering-state.js`, `menu.js` have no limiter | cache-burn noise only | apply existing `hitRateLimit` to `track.js` |
-| 13 | History secret scan | CANNOT VERIFY | needs gitleaks/trufflehog run | unknown | run scanner, then close |
+| 12 | Public-GET rate limits | FIXED 2026-11-01 | `track.js` now `checkRateLimit` 120/5min/IP → 429 (`functions/api/track.js:8-27`); both clients fail soft (`OrdersBell.tsx:50`, `TrackView.tsx:90,118`) | — | verify live 429 with a bounded loop on staging |
+| 13 | History secret scan | CLOSED 2026-11-01 | gitleaks 8.28.0: 238 commits, 3.84 MB, **2 hits — both false positives** (test fixtures `'test-backup-secret-1234567890'` / `'other-secret-…'` in `scripts/test-backup*.mjs:70,78`, HMAC-mismatch test data). Raw: `raw/gitleaks.json`. npm audit prod deps: **0 vulns** (`raw/npm-audit.json`) | none | no rotation needed; keep scanner in CI backlog |
 
 **Exploitable now:** none found. **Weak:** #12. **Fine:** rest.
 

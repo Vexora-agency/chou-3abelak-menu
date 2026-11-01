@@ -64,6 +64,28 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
               address: s.address,
               currency: s.currency,
             });
+            // Auto-fill Social → WhatsApp from the Identity number: typing
+            // the number writes https://wa.me/<digits> into the social field
+            // by itself. A hand-typed custom link is never overwritten — only
+            // an empty field (or a previous auto-fill from the old number)
+            // syncs. Clearing the number clears a previous auto-fill.
+            const oldDigits = (s.whatsapp || '').replace(/[^0-9]/g, '');
+            const newDigits = (next.whatsapp || '').replace(/[^0-9]/g, '');
+            const currentSocial = (s.social?.whatsapp || '').trim();
+            const prevAuto = oldDigits ? `https://wa.me/${oldDigits}` : '';
+            const nextAuto = newDigits ? `https://wa.me/${newDigits}` : '';
+            if (!nextAuto && prevAuto && currentSocial === prevAuto) {
+              return {
+                ...m,
+                settings: { ...m.settings, ...next, social: { ...m.settings.social, whatsapp: '' } },
+              };
+            }
+            if (nextAuto && (!currentSocial || (prevAuto && currentSocial === prevAuto)) && currentSocial !== nextAuto) {
+              return {
+                ...m,
+                settings: { ...m.settings, ...next, social: { ...m.settings.social, whatsapp: nextAuto } },
+              };
+            }
             return { ...m, settings: { ...m.settings, ...next } };
           })
         }

@@ -352,16 +352,6 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
               ? <>Stored international: <b className="text-neutral-300 tabular-nums">+{waComposed}</b></>
               : (isAr ? 'اختر الدولة ثم اكتب الرقم المحلي.' : 'Pick the country, then type the local number.')}
           </p>
-          {waComposed && (
-            <a
-              href={`https://wa.me/${waComposed}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline underline-offset-4"
-            >
-              {isAr ? 'تجربة المحادثة' : 'Test chat'}
-            </a>
-          )}
         </div>
       </div>
 

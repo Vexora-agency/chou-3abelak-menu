@@ -48,6 +48,21 @@
       <img src="/assets/logo-final-480.webp" alt="" width="220" height="81" style="width:200px;height:auto;animation:boot-pulse 1.4s ease-in-out infinite;" />
       <style>@keyframes boot-pulse{0%,100%{opacity:1}50%{opacity:.55}}</style>
     </div>
+    <!-- Dead-bundle guard: if the JS never mounts (stale cached HTML pointing
+         at a purged asset, or a blocked download), the splash would sit black
+         forever. React always paints instantly now, so an empty #root after
+         10 s means the bundle is dead — reload once to fetch a fresh copy. -->
+    <script>
+      setTimeout(function () {
+        try {
+          var root = document.getElementById('root');
+          if (root && root.childNodes.length === 0 && !sessionStorage.getItem('boot-retry')) {
+            sessionStorage.setItem('boot-retry', '1');
+            location.reload();
+          }
+        } catch (e) {}
+      }, 10000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

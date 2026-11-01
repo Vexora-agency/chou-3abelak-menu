@@ -36,7 +36,7 @@
 - [ ] Await owner: (1) Generate_pass.txt removal approval, (2) review + push `maintenance/phase-0` yourself, (3) answers to overview §8 (Q3-Q12)
 
 
-## DONE � Boosthis removal (branch `maintenance/remove-boosthis`, NEVER push; owner reviews)
+## DONE � Boosthis removal (branch `maintenance/remove-boosthis`, NEVER push; owner reviews)
 - [x] PHASE A inventory (read-only): Boosthis = Veqtara telemetry kit (vitals/traces/snapshots, owner-only bubble). 3 measurement-only touchpoints: functions/_middleware.js (all-routes wrapper), scheduler/src/index.js (cron wrapper), src/types/boosthis-runtime-web.shim.ts (types only, nothing imports runtime). Vendored lib/ 152 files/~64.5k lines + 7x BOOSTHIS_* docs. Zero entanglement: no pricing/order/validator/plan/auth/DB (migrations clean, no KV keys, seed clean, public/ clean, no UI strings EN/AR). GATE -> PROCEED.
 - [x] C1 (8d51eee): scheduler unwrap + edge-middleware drop. NOTE: functions/_middleware.js was never tracked (never-commit rule) - deleted from disk, no commit possible. FLAGGED FOR REVIEW: all-routes wrapper removal (responses identical, measurement only).
 - [x] C2 (disk-only, uncommittable): deleted lib/, 7x BOOSTHIS_*, shim; tsconfig edit reverted local-only mods back to committed state (no diff).
@@ -52,7 +52,20 @@
 ## TODO — roadmap (NOT started, no fixes proposed)
 - [ ] Maintainability: god-file splits (in-code TODOs), full `strict: true`, eslint within budget
 - [ ] Scalability: quota monitoring, KV-write-per-order reduction, per-client paid-plan trigger
-- [ ] Testability: framework + coverage, pre-existing suite failures (features/sound/backup harnesses)
-- [ ] Operability: CI, staging, health endpoint, error tracking, unified `_headers`, dev-admin grep gate
+- [ ] Testability: framework + coverage (pre-existing harness failures FIXED in step-1 T1)
+- [ ] Operability: error tracking beyond logs (see results.md §12), unified `_headers` DONE (T3), dev-admin grep gate DONE in CI (T2), CI DONE (T2), staging DONE docs-only (T6), health endpoint DONE (T4)
 - [ ] Extensibility: order-type registry, notifier abstraction, clone-drift process
 - [ ] RF-13: cross-account deploy-credential story (later phase)
+
+## DONE — Step 1 safety net (branch `maintenance/step-1`, dedicated clone D:/Chou 3abelak, NEVER push; owner merges)
+- [x] T0 (392390d): rebased onto remove-boosthis tip; re-verified test:all exit 0, tsc clean, depcruise 0 violations (330/982) → raw/14-step1-reverify.txt
+- [x] T1 (7e6425c + evidence 13-step1-triage.txt): triaged all failing suites as STALE (fake-DB track_token shift; per-action confirm words; retired two-tone engine → pattern engine; missing owner session in flows harness). test:all green exit 0; test:live defined (excluded).
+- [x] T2 (5e47469): CI `.github/workflows/ci.yml` (PR+push, contents:read, 3 pinned SHAs, npm ci+cache, tsc, depcruise, test:all, temp-dir build + bundle grep, gitleaks, advisory eslint). actionlint v1.7.12 clean.
+- [x] T3 (fbc0af8 + 1c9a5e6): root _headers deleted; public/_headers single source; scripts/test-headers.mjs (20 checks) in test:all.
+- [x] T4 (15702b3): GET /api/health (shallow) + ?deep=1 (single SELECT 1, no KV/writes); 9 tests. Pinger math: 5-min ping = 288 req/day (0.3% of 100k); deep = 288 rows/day (0.006% of 5M).
+- [x] T5 (5c1051e): request-id middleware + structured _shared/log.js (zero-dep, no PII); 12 tests. No SDK added.
+- [x] T6 (538ab95): docs/STAGING.md + [env.preview] overrides (placeholder ids — fill per account); dashboard hand-do list inside.
+- [x] T7 (ccb6e86): backup inventory + docs/RESTORE.md (KV/D1/R2/secrets matrix, Time Travel procedures, drill checklist — drill NOT run).
+- [x] T8-docs (82d0266): README quick start, .dev.vars.example, CONTRIBUTING.md, PR template, 4 ADRs.
+- [x] T9 (a155167): new-dev drill from temp clone — clone ~10s, npm ci 166s, test:all 65s exit 0, build 10s exit 0; fixed 2 README gaps (branch checkout note, wrangler download note).
+- [x] Interference resolved: dedicated clone has no other session; guard held all run (branch step-1, HEAD stable per command).

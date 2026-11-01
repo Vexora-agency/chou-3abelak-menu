@@ -31,3 +31,33 @@ Scope: remove the project's Boosthis integration (measurement kit). Untouched by
 Commits (this branch): 8d51eee C1 scheduler unwrap + middleware drop (FLAGGED FOR REVIEW); 980c6d0 (a) package.json scripts cleanup (scripts section only); a0db478 C4 env-docs block + legacy-tolerance test; 81b4b49 (b) aistudio deletion. C2/C6 disk-or-nothing (kit/docs/shim were never tracked; README/privacy/llms.txt had zero matches). C5 skipped (next free migration 0018, unused). (c) eslint vs 59df5ad: 3 errors listed, files untouched (ItemDetailsModal.tsx:111,113 conditional hooks; useGuardedText.ts:18 render-time ref write).
 Deleted tests: NONE (zero boosthis tests exist; suite deltas: settings 37->39 with 2 new tolerance assertions, all other suites unchanged). Before/after: settings 37/0->39/0, parity 82/0=, safe-json 23/0=, cart 20/0=. tsc clean; depcruise 0 violations (330 modules/982 deps); eslint on touched sources clean (scripts excluded from config); full-repo eslint count unstable - see interference note. Prod build into Temp/opencode/rb-dist: green, ZERO boosthis-variant matches in JS/CSS/HTML. Final sweep: 8 tracked matches, each justified in TASKS.md.
 BLOCKING/OBSERVED: a second session shares this worktree and flipped HEAD between step-1 and remove-boosthis repeatedly mid-run (one of my commits briefly landed on step-1 as 9ee041b; cherry-picked back as a0db478). All verification was therefore executed in an isolated worktree (Temp/opencode/rb-verify, node_modules junctioned). Recommend: coordinate worktree access before review/push.
+
+## 14. Step-1 safety net (branch `maintenance/step-1`, dedicated clone D:/Chou 3abelak; commits T0+tasks below)
+- T0 re-verify (392390d): test:all exit 0, tsc clean, depcruise 0 violations → raw/14-step1-reverify.txt.
+- T1 triage (7e6425c + raw/13): all 4 failing suites were STALE TESTs (evidence: d190a30, ff29759, 7a219e2/c0946e6/0be640c+bellPatterns, acce2c1) — fixed, zero real bugs.
+- T2 CI (5e47469): `.github/workflows/ci.yml` (verify/depcruise/test:all/temp-build+grep/gitleaks/advisory-eslint; 3 pinned SHAs, actionlint v1.7.12 clean). No deploy steps. NOTE: `test:dial`/`test:whatsapp` scripts removed; dangling-script issue from §12 resolved.
+- T3 (fbc0af8 + 1c9a5e6): root `_headers` deleted; `public/_headers` single source; 20-check contract test in test:all. Full root-vs-public diff in final report.
+- T4 (15702b3): `GET /api/health` + `?deep=1` (single SELECT 1); 9 tests. No version/config leakage; no-store.
+- T5 (5c1051e): request-id middleware + structured `_shared/log.js` (zero-dep, PII-free); 12 tests. Failures now visible as JSON lines instead of silent 500s.
+- T6 (538ab95): `docs/STAGING.md` + `[env.preview]` overrides (placeholder ids); preview = per-branch deploys with SEPARATE bindings.
+- T7 (ccb6e86): backup inventory + `docs/RESTORE.md` (KV/D1/R2/secrets matrix, Time Travel procedures, drill checklist — drill NOT run).
+- T8-docs (82d0266): README quick start, `.dev.vars.example`, CONTRIBUTING.md, PR template, 4 ADRs (clone-per-account; telegram-only; fail-closed gating; free-plan quotas).
+- T9 (a155167): new-dev drill from temp clone — clone ~10s, `npm ci` 166s, `test:all` 65s exit 0, `npm run build` 10s exit 0, wrangler resolves in 21s. Fixed 2 README gaps (branch checkout note, wrangler download note).
+
+## 15. Observability evaluation (docs fetched 2026-11-01) + proposal
+- Workers Logs (new product): free 200k events/day, 3-day retention, dashboard queryable, JSON auto-indexed — https://developers.cloudflare.com/workers/observability/logs/workers-logs/ . From Dec 1 2026: unified observability pricing (free 0.5 GB/day, 7-day retention) — https://developers.cloudflare.com/observability/pricing/ .
+- Pages Functions logs: stream-only (dashboard tail / `wrangler pages deployment tail`), NOT stored, max 10 viewers, no logs if >100 rps/5min — https://developers.cloudflare.com/pages/functions/debugging-and-logging/ .
+- Logpush: PAID ONLY (Workers Logpush) — https://developers.cloudflare.com/workers/observability/logs/logpush/ . Tail Workers: extra worker = extra complexity. Workers Issues: groups failures (available in platform).
+- Proposal (implemented T5, no SDK): zero-dependency structured error logs + request id (middleware echoes `x-request-id`; failures log one JSON line; hot paths log nothing → ~zero of the 200k/day budget). Trade-off accepted: no post-mortem without someone watching tail / opening dashboard; no alerting. If paging or history is later required: add Logpush-to-R2 (paid) or a third-party error tracker — DESCRIBED ONLY, waiting for owner approval (no SDK added).
+- Current gap this closes: before T5 the app had ONE console.* in all of functions/+src — every uncaught exception was a silent 500.
+
+## 16. External pinger quota math + owner hand-do list
+- Pinger every 5 min = 12/hour = 288/day. Shallow: 288 Workers requests/day = 0.3% of the 100k/day free budget; zero D1/KV/R2. Deep (`?deep=1`): +288 D1 queries/day × ~1 row read = 288 rows/day = 0.006% of the 5M/day budget; zero writes. Recommendation: shallow every 5 min (uptime), deep every 30–60 min or on-demand (dependency check).
+- Owner hand-do (nothing below was done by the agent — all require dashboard/GitHub/human access):
+  1. GitHub: review + merge `maintenance/step-1` yourself; in repo Settings → Actions: leave as-is (CI only, no secrets needed); optional: require the `verify` job as a branch-protection check.
+  2. Cloudflare per client account: create preview D1/KV/R2 + bind under the Preview tab (NOT Production); set preview env vars (fake secrets); confirm which config wins (file vs dashboard) and record it in docs/STAGING.md.
+  3. R2: apply the 37-month lifecycle backstop on `reports/` (recommended, unverified).
+  4. Access (optional): gate preview deployments to the team.
+  5. Restore drill on STAGING once: follow docs/RESTORE.md checklist; fill the drill log; do NOT claim it done until every box is ticked by hand.
+  6. Decide on third-party error tracking (Sentry-style) if paging/history is wanted — none added.
+  7. Run migration 0017 per client explicitly (from the WhatsApp removal); run `test:live` before first real deploy (needs :3000 + seed orders and emulator D1 state).

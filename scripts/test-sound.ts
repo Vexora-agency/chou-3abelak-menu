@@ -38,14 +38,33 @@ let pass = 0, fail = 0;
 const ok = (c: boolean, n: string, x = '') => { if (c) { pass++; console.log('PASS', n); } else { fail++; console.log('FAIL', n, x); } };
 
 const { playNewOrderBeep, unlockOrderSound, isAudioLocked } = await import('@/src/features/orders/hooks/useNewOrderSound');
+const { bellPatternById } = await import('@/src/utils/bellPatterns');
 
 // Suspended ctx: schedules anyway + asks resume (browser decides).
+// Engine contract (bellPatterns.ts + useNewOrderSound.ts): the default
+// (classic) pattern renders every strike with 3 partial oscillators each;
+// every oscillator is stopped (+0.5s). Retired two-tone expectations
+// (880Hz + 1174.66Hz @+0.17s) belonged to the pre-library engine.
+const classic = bellPatternById(undefined);
+const EXPECTED_STARTS = classic.strikes.length * 3;
 playNewOrderBeep();
 ok(calls.includes('ctx.resume'), 'resume requested when suspended');
-ok(calls.some((c) => c === 'osc.start@10.00 f=880'), 'first tone 880Hz scheduled', calls.join('|'));
-ok(calls.some((c) => c === 'osc.start@10.17 f=1174.66'), 'second tone scheduled +0.17s', calls.join('|'));
-ok(calls.filter((c) => c === 'gain.connect->destination').length === 2, 'both tones reach speakers');
-ok(calls.filter((c) => c.startsWith('osc.stop')).length === 2, 'oscillators stopped (no leak)');
+ok(
+  calls.some((c) => c === `osc.start@10.00 f=${classic.strikes[0].freq}`),
+  'first pattern strike scheduled',
+  calls.join('|')
+);
+ok(
+  calls.filter((c) => c.startsWith('osc.start')).length === EXPECTED_STARTS,
+  `all ${classic.strikes.length} strikes rendered (${EXPECTED_STARTS} partials)`,
+  calls.join('|')
+);
+ok(calls.filter((c) => c === 'gain.connect->destination').length === EXPECTED_STARTS, 'every partial reaches speakers');
+{
+  const starts = calls.filter((c) => c.startsWith('osc.start')).length;
+  const stops = calls.filter((c) => c.startsWith('osc.stop')).length;
+  ok(starts === stops && starts === EXPECTED_STARTS, 'oscillators stopped (no leak)');
+}
 
 // Unlock path (dashboard toggle / first tap = real gesture).
 calls.length = 0;
@@ -68,8 +87,11 @@ const first = calls.filter((c) => c.startsWith('osc.start')).length;
 await new Promise((r) => setTimeout(r, 300));
 (globalThis as unknown as { __gesture: boolean }).__gesture = true; // unlock lands
 await new Promise((r) => setTimeout(r, 600));
+// Bounded ladder (600ms + 2500ms retries, replay only when running):
+// the 600ms retry replays the full chime once, the 2500ms one is still
+// pending at assertion time.
 const total = calls.filter((c) => c.startsWith('osc.start')).length;
-ok(first === 2 && total === 4, 'ladder replays once unlocked', `${first}->${total}`);
+ok(first === EXPECTED_STARTS && total === 2 * EXPECTED_STARTS, 'ladder replays once unlocked', `${first}->${total}`);
 (globalThis as unknown as { __gesture: boolean }).__gesture = false;
 
 // Lock sensor for the dashboard hint.

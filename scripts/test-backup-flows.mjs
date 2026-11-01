@@ -17,12 +17,19 @@ import { onRequest as printReq } from '../functions/api/admin/backup/print.js';
 import { onRequest as menuReq } from '../functions/api/admin/menu.js';
 import { createAsserts, makeKV, makeReq, readJson } from './_helpers/shared.mjs';
 import { makeMenu } from './_helpers/backup-fixture.mjs';
+import { createSessionToken } from '../functions/_shared/session.js';
 
 const { ok, summary } = createAsserts();
-const req = makeReq;
+// Admin routes beyond PUT /api/admin/menu enforce an owner session in-route
+// (per-actor history since acce2c1); the middleware that provides it in
+// production is bypassed by direct onRequest calls, so the harness mints
+// one — same pattern as scripts/test-versions.mjs.
+const SECRET = new Uint8Array(32).map((_, i) => (i * 7 + 3) & 0xff);
+const OWNER_COOKIE = `__Host-admin-session=${await createSessionToken(SECRET, 'admin', 3600)}`;
+const req = (method, url, init) => makeReq(method, url, { ...(init || {}), headers: { Cookie: OWNER_COOKIE, ...((init && init.headers) || {}) } });
 const json = readJson;
 
-const ENV = () => ({ MENU_KV: makeKV(), BACKUP_SECRET: 'test-backup-secret-1234567890', SITE_PLAN: 'pro' });
+const ENV = () => ({ MENU_KV: makeKV(), BACKUP_SECRET: 'test-backup-secret-1234567890', SITE_PLAN: 'pro', SESSION_SECRET: Buffer.from(SECRET).toString('base64') });
 
 /* ---------------- 4. Import: signed apply, tamper, unsigned guard ---------------- */
 

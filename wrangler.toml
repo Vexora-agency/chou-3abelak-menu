@@ -25,3 +25,22 @@ binding = "REPORTS"
 # throwaway bucket; production binds the real bucket (created once with
 # `wrangler r2 bucket create chou-3abelak-reports`) in the dashboard.
 bucket_name = "chou-3abelak-reports"
+
+# Preview (staging) overrides: separate resources so preview deployments
+# can NEVER touch production data. See docs/STAGING.md. The dashboard
+# Preview-tab bindings are the operational source of truth; this block
+# documents the same mapping for CLI deploys and records intent in git.
+# Create once per account, then fill in the real ids (also dashboard).
+[[env.preview.d1_databases]]
+binding = "ORDERS_DB"
+database_name = "chou-3abelak-orders-preview"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[env.preview.kv_namespaces]]
+binding = "MENU_KV"
+id = "00000000000000000000000000000000"
+
+[[env.preview.r2_buckets]]
+binding = "REPORTS"
+bucket_name = "chou-3abelak-reports-preview"

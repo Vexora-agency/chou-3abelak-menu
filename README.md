@@ -66,19 +66,21 @@ A fast, bilingual (English & Arabic with full RTL), high-performance restaurant 
 
 ---
 
-## 🚀 Running Locally
+## 🚀 Quick start (new machine → green tests in minutes)
 
-### 1. In AI Studio / Vite Development:
-The dev server runs live on port 3000:
 ```bash
-npm run dev
+git clone <repo-url> && cd chou-3abelak-menu
+npm ci            # one-time, ~2-4 min
+npm run test:all  # must be green (excludes test:live, which needs a server/emulator)
+npm run build
+cp .dev.vars.example .dev.vars   # fake local secrets (git-ignored, never commit)
+npx wrangler pages dev ./dist --port 3000
 ```
 
-### 2. With Cloudflare Pages (Wrangler):
-One port for site + API (or double-click `serve-local.bat`, which builds first):
-```bash
-npx wrangler pages dev ./dist --port 3000 --kv MENU_KV --d1 ORDERS_DB --binding ALLOW_LOCAL_DEV=1
-```
+Open http://localhost:3000. Admin login locally uses the fake `.dev.vars`
+credentials. Do NOT add `--kv/--d1/--binding` flags: they shadow the
+`wrangler.toml` bindings with empty ones (blank menu + 503s on D1 routes).
+Plain `npm run dev` (Vite only, no API) also works for UI-only changes.
 
 ---
 

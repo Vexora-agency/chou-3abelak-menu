@@ -1,0 +1,28 @@
+# Local-only secrets — FAKE VALUES ONLY. Copy to `.dev.vars` (git-ignored, never commit).
+# Production values live in the Cloudflare dashboard per client account, never here.
+ALLOW_LOCAL_DEV=1
+
+# --- Admin login (generate locally; nothing here is a real credential) ---
+# 1) node scripts/hash-password.mjs "YourStrongPasswordHere" -> paste below
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD_HASH=pbkdf2$260000$<saltB64-from-script>$<hashB64-from-script>
+# 2) node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+SESSION_SECRET=<base64-of-32-plus-random-bytes>
+
+# --- Reports / backup / audit / scheduler (local test values) ---
+SITE_PLAN=pro
+RESEND_API_KEY=re_testkey
+MAIL_FROM_DOMAIN_EMAIL=reports@example.test
+REPLY_TO=owner@example.test
+SITE_URL=http://localhost:3000
+CRON_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+PII_RETENTION_DAYS=90
+ORDER_RETENTION_MONTHS=13
+REPORT_RETENTION_MONTHS=36
+BACKUP_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+AUDIT_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# --- Telegram owner notifications (local test values) ---
+TELEGRAM_BOT_TOKEN=test-token
+TELEGRAM_BOT_USERNAME=TestRestaurantBot
+TELEGRAM_WEBHOOK_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef

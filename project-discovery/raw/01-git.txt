@@ -1,0 +1,42 @@
+# 01-git — history, contributors, status (2026-11-01)
+
+## git log --oneline -20 (HEAD first)
+098049c bell mounts only while customer has orders, never in background
+c129ea2 fix jsx quote break in trash hit-area class
+9fb42bd trash back on every screen: compact draw, full-size hit area
+0be640c never steal background music: audio session only at real chime
+d159317 cart bar drops redundant trash, clearing lives in drawer
+65dcf1f dismiss finished-or-orphan orders so the bell never lingers
+1b57041 sticky sheet headers with in-flow close, same viewport pin for cart
+8665236 bottom sheet pinned to visible viewport, clears home indicator
+f717d22 kill 503, allow analytics, serialize admin saves with conflict banner
+b756e81 stop list jolt on open: drop phantom layout animation on rows
+(older: see git log; cadence ~25-60 commits/day 2026-10-28..11-01)
+
+## git shortlog -sne HEAD
+226  Vexora Agency <info@vexora.agency>
+4    Mina Nageh <info@vexora.agency>
+=> same email address => effectively ONE human (bus factor 1). EVIDENCE: identical <info@vexora.agency>.
+
+## Total commits: ~230 in 10 days. First commit: 2026-10-22 90074e4 "Initial commit".
+Not shallow (Test-Path .git/shallow = False). History starts 2026-10-22 => repo was (re-)initialized; hotspot analysis covers 10 days only.
+count-objects warnings: several dangling .pack idx warnings (GC noise, no data loss observed).
+
+## git status --short --branch
+## main...origin/main
+ M scheduler/src/index.js
+ M tsconfig.json
+ M wrangler.toml
+?? BOOSTHIS_CHECKSUMS.txt / BOOSTHIS_DESIGN.md / BOOSTHIS_INSTALL.md / BOOSTHIS_INSTALL.web.md / BOOSTHIS_LICENSE.txt / BOOSTHIS_PRIVACY.md / BOOSTHIS_TERMS.md
+?? functions/_middleware.js
+?? lib/
+?? scripts/load/results/k6-summary.json
+?? security-audit/
+?? src/types/boosthis-runtime-web.shim.ts
+(.dev.vars exists on disk but NOT listed => ignored, see below.)
+
+## git check-ignore -v .dev.vars
+.gitignore:10:.dev.vars  .dev.vars   => IGNORED (correct). Contents never read/printed.
+
+## Hotspots (all-time = 10 days, blank-path rows are merge noise)
+src/App.tsx 36 | src/features/track/components/OrdersBell.tsx 25 | package.json 20 | src/components/Footer.tsx 19 | src/features/menu/components/MenuList.tsx 18 | functions/_shared/telegram.js 17 | src/features/admin/components/IdentitySection.tsx 17 | src/features/cart/hooks/useCartCheckoutSubmit.ts 17 | src/features/cart/components/CartDrawer.tsx 16 | scripts/test-telegram.mjs 15 | src/features/track/TrackView.tsx 15 | src/components/Header.tsx 15 | index.html 14 | functions/api/admin/menu.js 13

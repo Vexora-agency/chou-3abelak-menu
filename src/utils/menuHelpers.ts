@@ -1,8 +1,36 @@
 import { MenuData } from '@/src/types/menu';
 
-export { pickLangText, badgeLabel, buildWhatsAppMessage } from '@/src/utils/whatsapp';
-export type { WhatsAppLine } from '@/src/utils/whatsapp';
 export { ensureSettingsBlocks } from '@/src/utils/menuValidation';
+
+/**
+ * Bilingual text picker with automatic fallback: if the requested language
+ * is empty, the other language is used instead. Generic text helper, used
+ * across menu/cart/admin UI.
+ */
+export function pickLangText(
+  v: { en: string; ar: string } | undefined | null,
+  lang: 'en' | 'ar'
+): string {
+  if (!v) return '';
+  const primary = (lang === 'ar' ? v.ar : v.en) || '';
+  if (primary.trim()) return primary;
+  return (lang === 'ar' ? v.en : v.ar) || '';
+}
+
+/**
+ * Smart-badge label in the UI language. Badge keys are stored in English
+ * ('top' | 'new' | 'spicy'); Arabic visitors see Arabic words.
+ */
+export function badgeLabel(key: string, lang: 'en' | 'ar'): string {
+  const k = (key || '').toLowerCase();
+  if (lang === 'ar') {
+    if (k === 'top') return 'الأكثر طلباً';
+    if (k === 'spicy') return 'حار';
+    if (k === 'new') return 'جديد';
+    return key;
+  }
+  return key.toUpperCase();
+}
 
 /**
  * "13:05" (24h) -> "1:05 PM" / "1:05 م", so AM/PM is never ambiguous.

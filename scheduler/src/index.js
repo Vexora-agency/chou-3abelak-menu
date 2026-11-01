@@ -14,7 +14,12 @@
  */
 
 export default {
-  async scheduled(event, env, ctx) {
+  // Measurement wrapper removed with the Boosthis kit
+  // (maintenance/remove-boosthis): the cron handler runs directly.
+  scheduled,
+};
+
+async function scheduled(event, env, ctx) {
     let sites = [];
     try {
       const raw = typeof env.CLIENT_ENDPOINTS === 'string' ? env.CLIENT_ENDPOINTS : '[]';
@@ -27,8 +32,7 @@ export default {
       if (!url || !secret) continue;
       ctx.waitUntil(callSite(url, secret, event.cron));
     }
-  },
-};
+}
 
 async function callSite(url, secret, cron) {
   const ctrl = new AbortController();

@@ -1,6 +1,6 @@
 // Route tests for Backup & History: import token single-use/expiry,
 // restore safety snapshot, trash restore, autosave coalescing,
-// unsigned-can-never-touch-WhatsApp. Pure split of test-backup.mjs.
+// unsigned-can-never-touch-contact-settings. Pure split of test-backup.mjs.
 // Run: node scripts/test-backup-flows.mjs
 import { getSiteId } from '../functions/_shared/versions.js';
 import { onRequest as analyzeReq } from '../functions/api/admin/import/analyze.js';
@@ -17,12 +17,19 @@ import { onRequest as printReq } from '../functions/api/admin/backup/print.js';
 import { onRequest as menuReq } from '../functions/api/admin/menu.js';
 import { createAsserts, makeKV, makeReq, readJson } from './_helpers/shared.mjs';
 import { makeMenu } from './_helpers/backup-fixture.mjs';
+import { createSessionToken } from '../functions/_shared/session.js';
 
 const { ok, summary } = createAsserts();
-const req = makeReq;
+// Admin routes beyond PUT /api/admin/menu enforce an owner session in-route
+// (per-actor history since acce2c1); the middleware that provides it in
+// production is bypassed by direct onRequest calls, so the harness mints
+// one — same pattern as scripts/test-versions.mjs.
+const SECRET = new Uint8Array(32).map((_, i) => (i * 7 + 3) & 0xff);
+const OWNER_COOKIE = `__Host-admin-session=${await createSessionToken(SECRET, 'admin', 3600)}`;
+const req = (method, url, init) => makeReq(method, url, { ...(init || {}), headers: { Cookie: OWNER_COOKIE, ...((init && init.headers) || {}) } });
 const json = readJson;
 
-const ENV = () => ({ MENU_KV: makeKV(), BACKUP_SECRET: 'test-backup-secret-1234567890', SITE_PLAN: 'pro' });
+const ENV = () => ({ MENU_KV: makeKV(), BACKUP_SECRET: 'test-backup-secret-1234567890', SITE_PLAN: 'pro', SESSION_SECRET: Buffer.from(SECRET).toString('base64') });
 
 /* ---------------- 4. Import: signed apply, tamper, unsigned guard ---------------- */
 
@@ -58,12 +65,12 @@ async function seedMenu(env, menu) {
   ok(after.items.find((it) => it.id === 'zaatar').pricing.price === 180000, 'applied price persisted');
 }
 {
-  // tampered file becomes unsigned; whatsapp can never change through it
+  // tampered file becomes unsigned; business contact settings can never change through it
   const env = ENV();
   await seedMenu(env, makeMenu());
   const { backupEnvelope, signPayload } = await import('../functions/_shared/versions.js');
   const menu = makeMenu();
-  menu.settings.whatsapp = '96170000000';
+  menu.settings.phone = '+96170000000';
   const payload = backupEnvelope({ menu, siteId: 'site1', exportedAt: '2026-02-01T00:00:00.000Z' });
   const sig = await signPayload(env, payload);
   const tampered = { ...payload, sig };
@@ -74,6 +81,7 @@ async function seedMenu(env, menu) {
   const ap = await apply(env, { token: a.data.token, includeSettings: true });
   ok(ap.data.ok === true, 'unsigned apply works for items');
   const after = await env.MENU_KV.get('menu', { type: 'json' });
+  ok(after.settings.phone === '70123456', 'UNSIGNED FILE CAN NEVER CHANGE PHONE');
   ok(after.settings.whatsapp === '96170123456', 'UNSIGNED FILE CAN NEVER CHANGE WHATSAPP');
   ok(after.items.find((it) => it.id === 'zaatar').pricing.price === 190000, 'unsigned item change applies');
 }

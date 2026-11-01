@@ -11,5 +11,7 @@ Apply remote: `npx wrangler d1 migrations apply ORDERS_DB --remote` (needs the r
 | `0004_orders_nullable_pii.sql` | PII columns nullable (retention NULLs them — must stay nullable) |
 | `0005_location_phone_norm.sql` | `location_lat/lng` + `phone_norm` + index + backfill |
 | `0006_order_counter.sql` | `order_counter` table + seed 1000 + fast-forward to `MAX(number)` (atomic order numbers via `UPDATE ... RETURNING`) |
+| `0007_*` … `0016_*` | client access, push, service secrets, WhatsApp/Telegram config, tracking (see filenames) |
+| `0017_whatsapp_removal.sql` | WhatsApp removal: deletes `wa-api` config + token rows. NOT yet applied — run explicitly per client. Keeps `orders.sent_via`. |
 
-Rules: additive only, never edit an applied migration — add a new `0006_*.sql` (see `docs/ADD_NEW_FEATURE.md` step 1).
+Rules: additive only, never edit an applied migration — add a new `00NN_*.sql` with the next free number (see `docs/ADD_NEW_FEATURE.md` step 1).

@@ -1,0 +1,26 @@
+# 02-loc — size (PowerShell Get-ChildItem + Get-Content line counts, node_modules excluded)
+
+## App scope (chou-3abelak-menu-main): 323 files, 39,565 lines
+src:        165 files, 23,017 lines  (.ts 80 / .tsx 90 / .css 4)
+functions:   91 files, 11,010 lines  (.js 93 total incl. scheduler-adjacent)
+scheduler:    2 files,     61 lines
+migrations: 16 files,    281 lines  (15 .sql + README)
+scripts:     49 files,  5,196 lines  (.mjs 37)
+
+## Sidecars (separate, NOT in app metrics)
+tour-export:   18 non-node files, 5,828 lines (static export/debug tooling)
+remotion-video: 44 files, 167,809 lines (includes vendored skill docs; video-tour generator, unrelated to serving)
+
+## 12 largest app files
+998  functions/_shared/telegram.js
+573  src/features/admin/components/IdentitySection.tsx
+571  src/App.tsx
+546  src/features/track/components/OrdersBell.tsx
+452  scripts/test-telegram.mjs
+447  src/features/backup/components/BackupPanel.tsx
+436  src/utils/bellSound.ts
+433  src/features/menu/components/MenuList.tsx
+424  src/features/admin/components/AnnouncementSection.tsx
+370  src/features/menu/components/FeaturedCarousel.tsx
+350  src/features/admin/components/AdminPanel.tsx
+339  src/features/admin/components/AccessSection.tsx

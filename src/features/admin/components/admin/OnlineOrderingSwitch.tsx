@@ -59,7 +59,7 @@ export const OnlineOrderingSwitch: React.FC<OnlineOrderingSwitchProps> = ({
         kind === 'session'
           ? (isAr ? 'انتهت الجلسة. سجل الدخول مجدداً ثم حاول.' : 'Session expired. Log in again, then retry.')
           : kind === 'whatsapp'
-          ? (isAr ? 'تعذر التفعيل — الرقم يجب أن يكون دولياً بدون صفر البداية (مثال: 96170123456).' : 'Could not enable — the number must be international with no leading zero (e.g. 96170123456).')
+          ? (isAr ? 'تعذر التفعيل — تحقق من الرقمين في قسم الهوية: هاتف صالح (مثال: +96170123456) ورقم واتساب دولي بدون صفر البداية (مثال: 96170123456).' : 'Could not enable — check both numbers in Identity: a callable phone (e.g. +96170123456) and an international WhatsApp number with no leading zero (e.g. 96170123456).')
           : (isAr ? 'تعذر الحفظ. حاول مجدداً.' : 'Could not save. Please try again.')
       );
     } finally {

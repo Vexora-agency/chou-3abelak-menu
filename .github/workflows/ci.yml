@@ -1,0 +1,84 @@
+# CI — safety net. PR + push. No deploy steps (deploys happen only via the
+# Cloudflare Pages dashboard git integration, reviewed by the owner).
+# Pinned actions (SHAs verified 2026-11-01 via api.github.com, all commits
+# PGP-verified by GitHub):
+#   actions/checkout@v4        11d5960a326750d5838078e36cf38b85af677262 (2026-07-16)
+#   actions/setup-node@v4       49933ea5288caeca8642d1e84afbd3f7d6820020 (2025-04-02)
+#   gitleaks/gitleaks-action   ff98106e4c7b2bc287b24eaf42907196329070c7 (2025-04-17)
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main, maintenance]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install (clean, lockfile)
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck (tsc --noEmit)
+        run: npx tsc --noEmit
+
+      - name: Circular deps + feature isolation (depcruise)
+        run: npx depcruise src functions scheduler scripts --output-type err-long
+
+      - name: Test suite (test:all, must be green)
+        run: npm run test:all
+
+      - name: Production build (temp dir only, never dist/)
+        run: npx vite build --outDir "$RUNNER_TEMP/chou-dist" --emptyOutDir
+
+      - name: Bundle grep (forbidden strings must not ship)
+        # dev-admin backdoor, build-stamp comments, removed WhatsApp automation
+        # surface (waapi/sentVia). The customer-facing wa.me buttons are
+        # restored (owner decision), so wa.me is allowed again.
+        run: |
+          if grep -riE 'dev-admin|REMOVE BEFORE COMMIT|waapi|sentVia' "$RUNNER_TEMP/chou-dist/assets" "$RUNNER_TEMP/chou-dist/index.html"; then
+            echo 'FORBIDDEN STRING IN BUNDLE' >&2
+            exit 1
+          fi
+          echo 'bundle grep clean'
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  lint-report:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install (clean, lockfile)
+        run: npm ci --no-audit --no-fund
+      - name: ESLint (advisory only — prints problem count, never blocks)
+        run: |
+          npx eslint . > /tmp/eslint.txt 2>&1 || true
+          tail -2 /tmp/eslint.txt
+          echo "--- problem count vs budget: 99 problems (86 errors, 13 warnings) on 2026-11-01 ---"

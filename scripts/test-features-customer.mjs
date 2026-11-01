@@ -56,14 +56,14 @@ const json = readJson;
   // missing confirmation word
   const w2 = await action({ phone: '70123456', mode: 'anonymize', password: 'test-pass-9', confirm: 'yes' });
   ok(w2.status === 400, 'confirmation word required');
-  // anonymize
-  const a = await action({ phone: '70123456', mode: 'anonymize', password: 'test-pass-9', confirm: 'DELETE' });
+  // anonymize (per-action words since ff29759: ANONYMIZE, not DELETE)
+  const a = await action({ phone: '70123456', mode: 'anonymize', password: 'test-pass-9', confirm: 'ANONYMIZE' });
   ok(a.status === 200 && a.data.ok && a.data.count === 2, 'anonymize works');
   const o1 = db.orders.find((o) => o.id === 'o1');
   ok(o1.customer_name === null && o1.phone_norm === null && o1.location_lat === null && o1.pii_purged_at !== null, 'anonymize NULLs PII + location + marks');
   ok(db.orders.find((o) => o.id === 'o3').customer_name === 'John Doe', 'other numbers untouched');
   // export CSV (on remaining number)
-  const e = await action({ phone: '70999999', mode: 'export', password: 'test-pass-9', confirm: 'حذف' });
+  const e = await action({ phone: '70999999', mode: 'export', password: 'test-pass-9', confirm: 'تصدير' });
   ok(e.status === 200 && e.csvBytes[0] === 0xef && e.csvBytes[1] === 0xbb && e.csvBytes[2] === 0xbf, 'export CSV with BOM bytes');
   ok(e.csv.includes('70999999') && e.csv.split('\n')[0].startsWith('order_id,'), 'export has full fields');
   // delete

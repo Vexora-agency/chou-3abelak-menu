@@ -12,7 +12,6 @@ import { VisitorDefaultsSection } from '../VisitorDefaultsSection';
 import { SmartBadgesSection } from '../SmartBadgesSection';
 import { ShowMoreSection } from '../ShowMoreSection';
 import { AccessSection } from '../AccessSection';
-import { WhatsappApiSection } from '../WhatsappApiSection';
 import { TelegramSection } from '../TelegramSection';
 import { SoundsSection } from '../SoundsSection';
 import { AutoplaySection } from '../AutoplaySection';
@@ -164,10 +163,6 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           }))
         }
       />
-      )}
-
-      {featuresConfig.enableOrdering && (
-        <WhatsappApiSection lang={lang} adminFetch={adminFetch} />
       )}
 
       {featuresConfig.enableOrdering && (

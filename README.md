@@ -1,6 +1,6 @@
-# Chou 3abelak (شو عبالك) — Fast Restaurant Menu & WhatsApp Ordering
+# Chou 3abelak (شو عبالك) — Fast Restaurant Menu & Online Ordering
 
-A fast, bilingual (English & Arabic with full RTL), high-performance restaurant menu website built with modern UI design, animated hero video branding, real-time live search, and a zero-friction WhatsApp ordering cart system.
+A fast, bilingual (English & Arabic with full RTL), high-performance restaurant menu website built with modern UI design, animated hero video branding, real-time live search, and a zero-friction online ordering cart system.
 
 ---
 
@@ -37,7 +37,7 @@ A fast, bilingual (English & Arabic with full RTL), high-performance restaurant 
 │   │                              # state lives in features/*/hooks/.
 │   ├── /utils/ (13 files)         # pricing.ts + pricing-menu.ts + pricing-badges.ts (must stay
 │   │                              # identical to functions/_shared/pricing*.js), status.ts
-│   │                              # (mirrors _shared/status.js), safeJson, tz, whatsapp, …
+│   │                              # (mirrors _shared/status.js), safeJson, tz, …
 │   ├── /types/menu.ts             # Domain types (must stay in sync with
 │   │                              # functions/_shared/validate*.js + menu.seed.json)
 │   ├── App.tsx                    # Thin assembly: imports screens/state from
@@ -66,19 +66,22 @@ A fast, bilingual (English & Arabic with full RTL), high-performance restaurant 
 
 ---
 
-## 🚀 Running Locally
+## 🚀 Quick start (new machine → green tests in minutes)
 
-### 1. In AI Studio / Vite Development:
-The dev server runs live on port 3000:
 ```bash
-npm run dev
+git clone <repo-url> && cd chou-3abelak-menu
+git checkout <branch-under-review>  # main once merged; feature branches are previewed, never pushed to main
+npm ci            # one-time, ~2-4 min (esbuild postinstall warnings are harmless)
+npm run test:all  # must be green, ~1 min (excludes test:live, which needs a server/emulator)
+npm run build     # ~10 s
+cp .dev.vars.example .dev.vars   # fake local secrets (git-ignored, never commit)
+npx wrangler pages dev ./dist --port 3000   # first run downloads wrangler (~20 s)
 ```
 
-### 2. With Cloudflare Pages (Wrangler):
-One port for site + API (or double-click `serve-local.bat`, which builds first):
-```bash
-npx wrangler pages dev ./dist --port 3000 --kv MENU_KV --d1 ORDERS_DB --binding ALLOW_LOCAL_DEV=1
-```
+Open http://localhost:3000. Admin login locally uses the fake `.dev.vars`
+credentials. Do NOT add `--kv/--d1/--binding` flags: they shadow the
+`wrangler.toml` bindings with empty ones (blank menu + 503s on D1 routes).
+Plain `npm run dev` (Vite only, no API) also works for UI-only changes.
 
 ---
 
@@ -115,7 +118,7 @@ npx wrangler pages dev ./dist --port 3000 --kv MENU_KV --d1 ORDERS_DB --binding 
   - Add button `(+)` smoothly transitions to `[- qty +]` stepper.
   - Floating bottom bar appears with animated bounce and live price total.
   - Checkout drawer calculates delivery fee and validates minimum order amount.
-  - Generates properly encoded, sanitized WhatsApp message with order details.
+  - Checkout records the order server-side and shows the live tracking link.
 - [x] **Admin Portal:**
   - Accessible via top gear icon or footer link.
   - Edit restaurant name, hours, contact info, and ordering toggles.
@@ -128,7 +131,7 @@ npx wrangler pages dev ./dist --port 3000 --kv MENU_KV --d1 ORDERS_DB --binding 
 
 ## ⚠️ Remaining Operational Considerations
 
-- **WhatsApp Destination:** In `/public/menu.seed.json` and admin settings, replace the placeholder phone number (`+201000000000` / `201000000000`) with your restaurant's active WhatsApp business number.
+- **Contact number:** In `/public/menu.seed.json` and admin settings, replace the placeholder phone number (`+201000000000` / `201000000000`) with the restaurant's real contact number (Call button, and required to enable ordering).
 
 ---
 
@@ -204,7 +207,7 @@ Set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET` (mark all as **Sec
 
 Dashboard → **Reports** tab (Overview | Reports switch) shows one card per month
 plus the current month live, a CSV download per month, the report-email
-settings (address + confirmation, language), a test mail button, and the data
+settings (address + confirmation, language), and the data
 retention summary. Everything below is gated behind the `monthlyReports`
 feature: on any other plan every new route answers **404**. Set the plan with
 the `SITE_PLAN` env var (`starter` when unset).
@@ -276,14 +279,13 @@ retention only runs in the daily job.
 | 1 | Unset `SITE_PLAN`, restart dev | All `/api/admin/report-*`, `/api/admin/reports*`, `/api/internal/run-reports` → 404; Reports switch hidden |
 | 2 | `SITE_PLAN=pro`, change email, save | `verificationSent:false` without Resend key; DB holds only a 64-hex token hash, `verified=0`, expiry ~48 h |
 | 3 | `GET /api/reports/confirm?token=…` | 200 generic page, no address shown; second use → invalid page; `verified=1`, hash cleared |
-| 4 | Test mail before/after verifying | 400 `not_verified`, then graceful `mail_unconfigured` without a key; 4th call in an hour → 429 |
-| 5 | `POST /api/internal/run-reports` twice | First generates + attempts=1; second attempts=2 (mail fails without key); wrong secret → 404 |
-| 6 | Set `emailed_at`, run again | Attempts unchanged (exactly-once skip), retention still runs |
+| 4 | `POST /api/internal/run-reports` twice | First generates + attempts=1; second attempts=2 (mail fails without key); wrong secret → 404 |
+| 5 | Set `emailed_at`, run again | Attempts unchanged (exactly-once skip), retention still runs |
 | 7 | Old orders in unreported vs reported months | Unreported keep PII; reported get NULLed (needs migration `0004`) |
 | 8 | `node scripts/test-reports.mjs` | All checks pass (DST bounds incl. Beirut Mar/Oct transitions, CSV BOM/Arabic/PII-free) |
 
 Remaining risk: actual Resend delivery needs a real `RESEND_API_KEY` + verified
-sending domain — use the in-panel **test mail** button once DNS is live.
+sending domain — verify with the first scheduled monthly run (the manual test-mail endpoint was removed).
 
 ---
 
@@ -310,13 +312,13 @@ with Undo), plus a weekly automatic email backup.
   stages to KV `import:<token>` (15-min TTL, single use, session-bound);
   `POST /api/admin/import/apply` snapshots first, then writes. Unsigned
   files can only change items/categories/addonGroups — settings, ordering
-  and WhatsApp are never touched. Rate limit: 5 applies/hour.
+  and contact details are never touched. Rate limit: 5 applies/hour.
 - Weekly backup: enable it in Backup → Export; every Monday the daily job
   emails the signed JSON to the verified report address and keeps 12 copies
   in R2 (`backups/`).
 - Local verify: `node scripts/test-backup.mjs` (70 checks: diffs, tampered
   signatures, CSV round trip in Arabic, token single-use/expiry, restore
-  safety copy, trash, autosave coalescing, unsigned-can-never-touch-WhatsApp).
+  safety copy, trash, autosave coalescing, unsigned-can-never-touch-contact-settings).
 
 Production env (in addition to the report vars): `BACKUP_SECRET` (Secret,
 32 random hex bytes — generate with
@@ -338,7 +340,7 @@ Production env (in addition to the report vars): `BACKUP_SECRET` (Secret,
   check exists.
 - **Share location (delivery only):** tap-to-run geolocation (never on page
   load, state only, cleared after send/close), link built only from rounded
-  numbers, one line in the WhatsApp message + stored columns
+  numbers, one line in the stored order record + stored columns
   (`location_lat/lng`, NULLed by retention, never in the monthly CSV, Maps
   button in order details). Requires `Permissions-Policy: geolocation=(self)`
   in `public/_headers` (camera/mic stay disabled); no CSP change needed.

@@ -1,0 +1,18 @@
+# 05-tests — custom script suite (no framework, no coverage report)
+
+36 files matching scripts/test-*.{mjs,ts}. No vitest/jest/playwright config at root. Assertions are hand-rolled ok()/check() with process exit codes.
+
+## Locality review (read-only: scanned for fetch/http/D1/KV/wrangler usage)
+- Pure local (fake KV/DB shims, fake URLs like https://x, https://site.test): test-plan, test-parity, test-pricing, test-backup*, test-features*, test-reports*, test-import-*, test-status, test-versions, test-telegram (pure helpers), test-whatsapp*, test-cart-isolation, test-customer-*, test-digits/dial/distance/sound/bell/track-push/access.
+- SKIPPED (not run — require live environment, per instructions):
+  - scripts/test-launch-features.ts — fetches http://127.0.0.1:3000 (needs dev server + seeded test orders test-cd-9x)
+  - scripts/test-sql-performance.mjs — requires local D1 emulator state (.wrangler/state/v3/d1); read-only VACUUM of emulator file but needs `pages dev` to have run
+
+## Runs executed 2026-11-01
+- node scripts/test-plan.mjs => 46 passed, 0 failed
+- npx --no-install tsx scripts/test-parity.mjs => 82 passed, 0 failed ("Parity OK — FE and BE agree")
+  (NOTE: must run via tsx, NOT node — node run fails with ERR_MODULE_NOT_FOUND on .ts import. package.json already uses tsx. EVIDENCE of runner pitfall, not a code bug.)
+- node scripts/test-pricing.mjs => 91 passed, 1 failed: "FAIL zero variant price rejected did not throw" (pre-existing validation gap — see RF-01)
+
+## Coverage of critical flows (by script presence, not measured)
+auth/session: test-access.mjs | orders/pricing: test-pricing, test-parity, test-customer-orders, test-customer-confirm | reports: test-reports*.mjs (4 files) | backup/import: test-backup*, test-import-* | whatsapp/telegram/push: dedicated scripts | retention: test-reports-retention.mjs

@@ -23,7 +23,7 @@ change** (both white-label configurable, see below).
 | Server-side cart | None — `functions/api/cart/*` does not exist | glob empty; transport (`services/cart.api.ts:19`) only `POST /api/orders` |
 | What server stores | One-shot order snapshot (items/prices recomputed from live menu) | `functions/api/orders.js:98-107`, repo INSERT |
 | TTL / expiry | 7-day sliding window (`cart_timestamp_v1`, refreshed on every save; stale carts dropped on load) | `useShopCartState.ts` (`CART_TS_KEY`, `CART_EXPIRY_DAYS`), window from `client.config.ts cart.expiryDays` |
-| Auto-clear after order | **Yes** — on the WhatsApp-opened success path the hook calls `onOrderSuccess` (wired to the cart owner's clear); validation/availability gates return early so failed sends keep the cart | `useCartCheckoutSubmit.ts:234-239`, `CartDrawer.tsx:69` (`onOrderSuccess: onClearCart`), kill-switch `client.config.ts cart.clearAfterOrder` |
+| Auto-clear after order | **Yes** — on the recorded-order success path the hook calls `onOrderSuccess` (wired to the cart owner's clear); validation/availability gates return early so failed sends keep the cart | `useCartCheckoutSubmit.ts:234-239`, `CartDrawer.tsx:69` (`onOrderSuccess: onClearCart`), kill-switch `client.config.ts cart.clearAfterOrder` |
 | Related keys (same scoping) | `customer_details_v1` (only if "remember me"), `menu_cache_v3`, `menu_lang_v1`, `menu_theme_v1` | `useCartCheckoutSubmit.ts:24,167,169`, `useMenuLoader.ts:19`, `useAppPrefs.ts:8,17` |
 
 ## Manual test checklist (5 minutes, no tools)
@@ -35,7 +35,7 @@ change** (both white-label configurable, see below).
 - [ ] **Same-device sharing:** hand the phone to someone else → they see the
       cart (expected: no login exists; use "Clear cart and close" to reset).
 - [ ] **After order:** send an order → cart is EMPTY (auto-cleared on the
-      WhatsApp-opened success path; failed/ blocked sends keep the cart).
+      recorded-order success path; failed/ blocked sends keep the cart).
 - [ ] **Expiry:** add item → DevTools → set `cart_timestamp_v1` to 8 days
       ago → reload → cart is EMPTY. Repeat with 6 days ago → cart STAYS.
 - [ ] **Kill-switch:** set `cart.clearAfterOrder: false` in

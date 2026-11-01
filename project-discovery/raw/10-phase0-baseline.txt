@@ -1,0 +1,13 @@
+# Phase-0 BASELINE (branch maintenance/phase-0, before any change, 2026-11-01)
+Runners: .mjs via node unless @/src alias needed (then tsx); .ts via tsx. Matches package.json where defined.
+Skipped (need live env): test-launch-features.ts (:3000 + seed orders), test-sql-performance.mjs (emulator state).
+
+PASS: plan 46/0 | parity 82/0 | backup-diff 42/0 | cart-isolation 20/0 | customer-confirm 14/0 | customer-orders 25/0 | reports 44/0+18/0 | reports-month 44/0 | retention 18/0 | report-email 29/0 | telegram 104/0 | backup-csv 22/0 | client-pricing 20/0 | dial 35/0 | digits 11/0 | safe-json 23/0 | settings-defaults 37/0 | whatsapp 40/0 | bell-sound 11/0 | distance 14/0 | status 61/0 | access/import-matrix/versions/track-push/whatsapp-api/customer-orders ok-lines (exit 0)
+PRE-EXISTING FAILURES (must match post-change):
+- test-pricing.mjs: 91 passed, 1 failed ("zero variant price rejected did not throw") [RF-01]
+- test-features-orders.mjs: 20 passed, 1 failed ("location + phone_norm stored")
+- test-features-customer.mjs (via test-features.mjs): FAIL anonymize works / anonymize NULLs PII+location+marks / export CSV with BOM bytes
+- test-sound.ts: 4 passed, 5 failed
+- test-backup.mjs: prints "42 passed, 0 failed" then crashes TypeError (reading 'length')
+- test-backup-flows.mjs: crashes TypeError at test-backup-flows.mjs:128
+Rule: post-change runs must show IDENTICAL results (no regressions, no silent fixes).

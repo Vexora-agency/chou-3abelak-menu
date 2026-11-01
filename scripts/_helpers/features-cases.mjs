@@ -69,7 +69,10 @@ export function makeDB(orderRows) {
   }
   function qRun(sql, a) {
     if (sql.startsWith('INSERT INTO orders')) {
-      const cols = ['id', 'number', 'idem_key', 'created_at', 'updated_at', 'status', 'type', 'customer_name', 'customer_phone', 'phone_norm', 'customer_address', 'customer_table', 'notes', 'location_lat', 'location_lng', 'items_json', 'subtotal', 'delivery_fee', 'total', 'lang'];
+      // Mirrors the real INSERT column order in repositories/orders.repo.js
+      // (track_token included since d190a30 — the fake drifted without it,
+      // shifting every later column by one).
+      const cols = ['id', 'number', 'idem_key', 'track_token', 'created_at', 'updated_at', 'status', 'type', 'customer_name', 'customer_phone', 'phone_norm', 'customer_address', 'customer_table', 'notes', 'location_lat', 'location_lng', 'items_json', 'subtotal', 'delivery_fee', 'total', 'lang'];
       const row = {};
       cols.forEach((c, i) => { row[c] = a[i] === undefined ? null : a[i]; });
       row.pii_purged_at = null;

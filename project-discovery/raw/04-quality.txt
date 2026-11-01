@@ -1,0 +1,21 @@
+# 04-quality — typecheck, lint, isolation, TODOs (2026-11-01)
+
+## npx --no-install tsc --noEmit => CLEAN (no output, exit True)
+Note: tsconfig has strictNullChecks:true but NOT full "strict":true (tsconfig.json:29).
+
+## npx --no-install eslint . => NOT RUN (timed out at 120s tool cap on first attempt; not retried to avoid burning the session)
+Config exists and is read-only safe: eslint.config.mjs (type-aware for src/**, core rules for functions/scripts).
+
+## npx --no-install depcruise src functions scheduler scripts --output-type err-long
+"no dependency violations found (373 modules, 1076 dependencies cruised)"
+=> zero circular dependencies; feature-barrel isolation rules hold (as of 2026-11-01).
+
+## npx --no-install depcruise src/features (isolation sample) => exit True (dependency list only, no errors)
+
+## TODO/FIXME/HACK/XXX scan (Select-String over src,functions,scheduler,migrations,scripts): 5 hits
+1. src/features/admin/components/AnnouncementSection.tsx:1 — TODO(maint): 418 lines, split proposal (self-documented size flag)
+2. src/features/backup/components/BackupPanel.tsx:1 — TODO(maint): 355 lines, split proposal (self-documented)
+3-5. False positives inside test string literals (test-bell-sound.mjs:37 'hack', test-plan.mjs:67 'HACK', test-settings-defaults.ts:89 'hack')
+=> Real code TODOs: 2, both component-split notes, both in admin/backup UI.
+
+## jscpd / knip / depcheck / radon / vulture => NOT RUN (not installed; npx fetch from outside repo declined to protect reproducibility; duplication assessed manually — see PROJECT_OVERVIEW red flags + extensibility §10)

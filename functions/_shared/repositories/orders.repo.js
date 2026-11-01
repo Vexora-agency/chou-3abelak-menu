@@ -168,16 +168,6 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
   return { id, num };
 }
 
-/** Stamp the delivery channel after a Cloud API send (best-effort). */
-export async function markOrderSentVia(db, id, via) {
-  try {
-    await db
-      .prepare('UPDATE orders SET sent_via = ?1 WHERE id = ?2')
-      .bind(via, id)
-      .run();
-  } catch {}
-}
-
 /**
  * Allowlist of window WHERE templates — the ONLY strings that may reach the
  * SQL below. listOrders() throws on anything else, so a caller-supplied

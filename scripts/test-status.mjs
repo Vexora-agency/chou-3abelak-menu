@@ -175,22 +175,37 @@ function minMenu() {
   m.settings.ordering.paused = true;
   m.settings.ordering.pausedUntil = 'not-a-date';
   ok(validateMenu(m).ok === false, 'invalid pausedUntil rejected');
+  // Ordering guards (WhatsApp restored, owner decision): enabling needs
+  // BOTH a callable phone (Call button) AND an international WhatsApp
+  // number (header/footer wa.me buttons).
   const mw = minMenu();
   mw.settings.ordering.enabled = true;
-  ok(validateMenu(mw).ok === false, 'enabling without whatsapp rejected');
+  ok(validateMenu(mw).ok === false, 'enabling without contact phone rejected');
   const mw2 = minMenu();
   mw2.settings.ordering.enabled = true;
-  mw2.settings.whatsapp = '96170123456';
-  const vw2 = validateMenu(mw2);
-  ok(vw2.ok && vw2.value.settings.ordering.enabled === true, 'enabling with whatsapp kept');
-  const mw3 = minMenu();
-  mw3.settings.ordering.enabled = true;
-  mw3.settings.whatsapp = '+961 70-123 456';
-  ok(validateMenu(mw3).ok === true, 'formatted whatsapp normalized and accepted');
-  const mw4 = minMenu();
-  mw4.settings.ordering.enabled = true;
-  mw4.settings.whatsapp = '070123456';
-  ok(validateMenu(mw4).ok === false, 'leading-zero number rejected');
+  mw2.settings.phone = '+96170123456';
+  ok(validateMenu(mw2).ok === false, 'enabling with phone but no WhatsApp rejected');
+  const mw2b = minMenu();
+  mw2b.settings.ordering.enabled = true;
+  mw2b.settings.phone = '+96170123456';
+  mw2b.settings.whatsapp = '96170123456';
+  const vw2 = validateMenu(mw2b);
+  ok(vw2.ok && vw2.value.settings.ordering.enabled === true, 'enabling with phone + WhatsApp kept');
+  ok(vw2.ok && vw2.value.settings.whatsapp === '96170123456', 'WhatsApp number persisted in cleaned settings');
+  const mwBad = minMenu();
+  mwBad.settings.ordering.enabled = true;
+  mwBad.settings.phone = '12';
+  ok(validateMenu(mwBad).ok === false, 'short phone number rejected');
+  // WhatsApp restored (owner decision): a backup carrying a
+  // settings.whatsapp field must validate, and the field must be
+  // persisted in the cleaned settings — never rejected, never stripped.
+  const mwLegacy = minMenu();
+  mwLegacy.settings.ordering.enabled = true;
+  mwLegacy.settings.phone = '+961 70-123 456';
+  mwLegacy.settings.whatsapp = '96170123456';
+  const vLegacy = validateMenu(mwLegacy);
+  ok(vLegacy.ok === true, 'whatsapp field tolerated');
+  ok(vLegacy.ok && vLegacy.value.settings.whatsapp === '96170123456', 'whatsapp field persisted in cleaned settings');
   const m2 = minMenu();
   m2.settings.ordering.pausedUntil = new Date(Date.now() + 3600e3).toISOString();
   m2.settings.ordering.pausedMessage = { en: 'x'.repeat(200), ar: '' };

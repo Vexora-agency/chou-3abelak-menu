@@ -249,7 +249,6 @@ export function validateOrderInput(body, menu) {
       address: address || null,
       table: table || null,
       notes: notes || null,
-      whatsappUpdates: body.whatsappUpdates === true,
       location,
       items: resolved,
       subtotal,

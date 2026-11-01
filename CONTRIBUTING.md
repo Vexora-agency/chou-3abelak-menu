@@ -3,8 +3,9 @@
 ## Branching
 
 - `main` deploys to production on push (Pages git integration). **Never push
-  directly to `main`.** Work on `maintenance/<topic>` or `feature/<topic>`
-  branches; the owner reviews and pushes/merges.
+  directly to `main`.** All development happens on the single permanent
+  branch `maintenance`; the owner merges `maintenance` into `main` (via
+  Pull Request) when a batch is verified on the staging preview.
 - One small commit per task with a clear message (`step-1: … (TN)` style).
   Never mix a fix with a refactor in one commit.
 

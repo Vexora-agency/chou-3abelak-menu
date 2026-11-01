@@ -13,6 +13,25 @@ interface MenuSaverOptions {
 export function useMenuSaver({ initialMenu, onSaveMenu, isAr, savePaused: savePausedRef, onSaved }: MenuSaverOptions) {
   const [menu, setMenu] = useState<MenuData>(() => ensureSettingsBlocks(initialMenu));
   const [dirty, setDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveConflict, setSaveConflict] = useState(false);
+
+  // Fresh-state mirror: queued/trailing saves must build from the LATEST
+  // draft, never from the closure of the render that scheduled them.
+  // (Synced in an effect — never assigned inside a state updater.)
+  const menuRef = useRef(menu);
+  useEffect(() => {
+    menuRef.current = menu;
+  }, [menu]);
+
+  // Save serialization: overlapping PUTs carry the same base version, so
+  // the loser 409s and the old handler discarded its draft (the off-by-one
+  // hours lag). At most one PUT is ever in flight; a second request sets a
+  // trailing flag and waits for the drain instead of firing immediately.
+  const savingRef = useRef(false);
+  const pendingRef = useRef<null | 'manual' | 'autosave'>(null);
+  const drainWaiters = useRef<Array<() => void>>([]);
+  const lastResultRef = useRef<number | null>(null);
 
   // Auto-save: when ON, every change is saved automatically after a short
   // pause, so the "unsaved changes" bar never appears. Persisted per device.
@@ -36,48 +55,50 @@ export function useMenuSaver({ initialMenu, onSaveMenu, isAr, savePaused: savePa
     });
   };
 
-  const handleSave = async (source: 'manual' | 'autosave' = 'manual'): Promise<number | null> => {
+  // One serialized PUT built from the freshest draft. Validation alerts
+  // fire only for manual saves — an autosave loop must never alert every
+  // 1.2 s on a persistently invalid draft (it stays dirty and retries).
+  const runSave = async (source: 'manual' | 'autosave'): Promise<number | null> => {
+    const snapshot = menuRef.current;
+    const deny = (msgAr: string, msgEn: string): null => {
+      if (source === 'manual') alert(isAr ? msgAr : msgEn);
+      return null;
+    };
     // Client-side validations below return early on problems
     const seenGrp = new Set<string>();
-    for (const g of menu.settings.featureGroups || []) {
+    for (const g of snapshot.settings.featureGroups || []) {
       if (!g.id.trim() || seenGrp.has(g.id.trim())) {
-        alert(isAr ? 'معرّفات الأقسام يجب أن تكون فريدة وغير فارغة' : 'Section ids must be unique and non-empty');
-        return null;
+        return deny('معرّفات الأقسام يجب أن تكون فريدة وغير فارغة', 'Section ids must be unique and non-empty');
       }
       seenGrp.add(g.id.trim());
     }
     const seenFeat = new Set<string>();
-    for (const f of menu.settings.featureDefs || []) {
+    for (const f of snapshot.settings.featureDefs || []) {
       if (!f.id.trim() || seenFeat.has(f.id.trim())) {
-        alert(isAr ? 'معرّفات الميزات يجب أن تكون فريدة وغير فارغة' : 'Feature ids must be unique and non-empty');
-        return null;
+        return deny('معرّفات الميزات يجب أن تكون فريدة وغير فارغة', 'Feature ids must be unique and non-empty');
       }
       seenFeat.add(f.id.trim());
-      if (!(menu.settings.featureGroups || []).some((g) => g.id === f.groupId)) {
-        alert(isAr ? `الميزة "${f.name.en || f.id}" بدون قسم صالح` : `Feature "${f.name.en || f.id}" has no valid section`);
-        return null;
+      if (!(snapshot.settings.featureGroups || []).some((g) => g.id === f.groupId)) {
+        return deny(`الميزة "${f.name.en || f.id}" بدون قسم صالح`, `Feature "${f.name.en || f.id}" has no valid section`);
       }
     }
     // Announcement guards mirror the server validator (validate.js) so a bad
     // schedule is caught here with a clear message instead of a raw 400.
-    const annSave = menu.settings.announcement;
+    const annSave = snapshot.settings.announcement;
     if (annSave?.enabled && !annSave.text.en.trim() && !annSave.text.ar.trim()) {
-      alert(isAr ? 'شريط الإعلان مفعّل لكن بدون نص — اكتب نصاً بإحدى اللغتين أو أطفئ الشريط' : 'The banner is on but has no text — write text in at least one language or turn it off');
-      return null;
+      return deny('شريط الإعلان مفعّل لكن بدون نص — اكتب نصاً بإحدى اللغتين أو أطفئ الشريط', 'The banner is on but has no text — write text in at least one language or turn it off');
     }
     if (annSave?.startsAt && annSave?.expiresAt) {
       const s = Date.parse(annSave.startsAt);
       const e = Date.parse(annSave.expiresAt);
       if (Number.isFinite(s) && Number.isFinite(e) && e <= s) {
-        alert(isAr ? 'تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء' : 'Ends must be after Starts');
-        return null;
+        return deny('تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء', 'Ends must be after Starts');
       }
     }
     if (annSave?.expiresAt) {
       const e = Date.parse(annSave.expiresAt);
       if (Number.isFinite(e) && e > Date.now() + 365 * 86400000) {
-        alert(isAr ? 'تاريخ الانتهاء يجب أن يكون خلال 365 يوماً' : 'Ends must be within 365 days');
-        return null;
+        return deny('تاريخ الانتهاء يجب أن يكون خلال 365 يوماً', 'Ends must be within 365 days');
       }
     }
     // Send the CURRENT version; the server assigns version+1 on success.
@@ -88,29 +109,29 @@ export function useMenuSaver({ initialMenu, onSaveMenu, isAr, savePaused: savePa
       ar: v.ar.trim() ? v.ar : v.en,
     });
     const normalized: MenuData = {
-      ...menu,
+      ...snapshot,
       settings: {
-        ...menu.settings,
-        name: fillBi(menu.settings.name),
-        tagline: fillBi(menu.settings.tagline),
-        address: fillBi(menu.settings.address),
+        ...snapshot.settings,
+        name: fillBi(snapshot.settings.name),
+        tagline: fillBi(snapshot.settings.tagline),
+        address: fillBi(snapshot.settings.address),
         // hoursText is a legacy display field: always recompute it from the
         // SAVED open/close/days so it can never contradict the header pill
         // (which derives the same range via formatHoursRange).
         hoursText: {
-          en: formatHoursRange(menu.settings, 'en'),
-          ar: formatHoursRange(menu.settings, 'ar'),
+          en: formatHoursRange(snapshot.settings, 'en'),
+          ar: formatHoursRange(snapshot.settings, 'ar'),
         },
-        currency: fillBi(menu.settings.currency),
-        about: fillBi(menu.settings.about),
-        featureDefs: (menu.settings.featureDefs || []).map((f) => ({ ...f, name: fillBi(f.name) })),
+        currency: fillBi(snapshot.settings.currency),
+        about: fillBi(snapshot.settings.about),
+        featureDefs: (snapshot.settings.featureDefs || []).map((f) => ({ ...f, name: fillBi(f.name) })),
       },
-      items: menu.items.map((i) => ({
+      items: snapshot.items.map((i) => ({
         ...i,
         name: fillBi(i.name),
         description: fillBi(i.description),
       })),
-      categories: menu.categories.map((c) => ({ ...c, name: fillBi(c.name) })),
+      categories: snapshot.categories.map((c) => ({ ...c, name: fillBi(c.name) })),
     };
     const updated = {
       ...normalized,
@@ -125,18 +146,58 @@ export function useMenuSaver({ initialMenu, onSaveMenu, isAr, savePaused: savePa
       setMenu((prev) => ({ ...prev, version: result.doc.version, updatedAt: result.doc.updatedAt }));
       onSaved();
       setDirty(false);
+      setSaveConflict(false);
       return result.doc.version;
     }
-    // Failure: NEVER mark clean. A 409 carries the winning doc — adopt it
-    // as the new truth (the alert already told the owner to reload), so
-    // later trash/restore/import ops use the real baseVersion instead of a
-    // stale one. A validation/network failure (null) keeps the local draft
-    // dirty so nothing is silently lost.
+    // 409: adopt ONLY the winner's version/updatedAt — never its fields.
+    // The local draft (the user's latest edits) stays on screen AND stays
+    // dirty, so nothing is silently lost and the next save (auto or manual)
+    // retries on the fresh base instead of 409ing again. No blind auto-retry
+    // here: a second tab may own the conflicting change, and re-sending our
+    // full doc over it would silently erase their work.
     if (result && result.doc) {
-      setMenu(result.doc);
-      setDirty(false);
+      setMenu((prev) => ({ ...prev, version: result.doc.version, updatedAt: result.doc.updatedAt }));
+      setDirty(true);
+      setSaveConflict(true);
     }
     return null;
+  };
+
+  // Serialized entry point: at most one PUT in flight. A save requested
+  // while one runs coalesces into a single trailing run built from the
+  // freshest draft (never a second PUT on the same base version), and
+  // waiters (flushDirty) get the FINAL outcome, not an intermediate one.
+  const handleSave = async (source: 'manual' | 'autosave' = 'manual'): Promise<number | null> => {
+    if (savingRef.current) {
+      pendingRef.current = source;
+      await new Promise<void>((resolve) => {
+        drainWaiters.current.push(resolve);
+      });
+      return lastResultRef.current;
+    }
+    savingRef.current = true;
+    setIsSaving(true);
+    try {
+      let result = await runSave(source);
+      while (pendingRef.current) {
+        const next = pendingRef.current;
+        pendingRef.current = null;
+        // Restore/import/trash refreshes pause all saving — a trailing run
+        // must not slip through and race the refresh.
+        if (savePausedRef.current) break;
+        result = await runSave(next);
+      }
+      lastResultRef.current = result;
+      return result;
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
+      const waiters = drainWaiters.current;
+      drainWaiters.current = [];
+      for (const w of waiters) {
+        try { w(); } catch {}
+      }
+    }
   };
 
   // Keep a ref to the latest save so the auto-save timer never uses stale state
@@ -160,18 +221,25 @@ export function useMenuSaver({ initialMenu, onSaveMenu, isAr, savePaused: savePa
   }, [autoSave, dirty, menu, savePausedRef]);
 
   // Flush unsaved edits first so server-side ops never discard them.
-  // Returns the current server version, or null when saving failed.
+  // Returns the FINAL server version after any in-flight AND trailing
+  // saves drain — never an intermediate one — or null when saving failed.
   const flushDirty = useCallback(async (): Promise<number | null> => {
-    if (!dirty) return menu.version;
-    return handleSave();
+    if (!dirty && !savingRef.current) return menuRef.current.version;
+    return handleSaveRef.current('manual');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dirty, menu.version]);
+  }, []);
 
   // Adopt the authoritative menu after restore/import/trash ops.
   const replaceMenu = useCallback((doc: MenuData) => {
+    pendingRef.current = null;
     setMenu(doc);
     setDirty(false);
+    setSaveConflict(false);
   }, []);
 
-  return { menu, updateMenu, dirty, handleSave, flushDirty, replaceMenu, autoSave, setAutoSave };
+  const dismissConflict = useCallback(() => {
+    setSaveConflict(false);
+  }, []);
+
+  return { menu, updateMenu, dirty, handleSave, flushDirty, replaceMenu, autoSave, setAutoSave, isSaving, saveConflict, dismissConflict };
 }

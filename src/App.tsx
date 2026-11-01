@@ -122,7 +122,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     handleLoginSubmit, handleLogout, closeAdmin,
   } = useAdminSaveAuth();
   const { lang, setLang, darkMode, setDarkMode } = useAppPrefs(menu);
-  const handleSaveMenuFromAdmin = useAdminSaveMenu(setMenu);
+  const handleSaveMenuFromAdmin = useAdminSaveMenu(setMenu, lang === 'ar');
 
   // Boot splash served its purpose (first React paint is on screen) — stays
   // synchronous with this effect so a slow device never sits on the splash.

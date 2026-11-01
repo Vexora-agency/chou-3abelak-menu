@@ -5,8 +5,14 @@ import { adminFetch } from '@/src/lib/api-client';
 // Sends the admin's filled copy to the server and resolves with the
 // authoritative doc. The admin screen keeps its raw text on screen
 // (autofill appears after reload); only the version is adopted there.
-export function useAdminSaveMenu(setMenu: (menu: MenuData) => void) {
+export function useAdminSaveMenu(setMenu: (menu: MenuData) => void, isAr = false) {
   const handleSaveMenuFromAdmin = (newMenu: MenuData, source?: 'manual' | 'autosave'): Promise<AdminSaveResult | null> => {
+    // Alerts are manual-only: an autosave loop must never pop an alert on
+    // every retry. Autosave failures stay visible via the conflict banner
+    // (409) or simply stay dirty and retry (network/validation).
+    const tell = (msgAr: string, msgEn: string) => {
+      if (source !== 'autosave') window.alert(isAr ? msgAr : msgEn);
+    };
     // Send to the backend and surface any failure instead of hiding it (single api-client)
     return adminFetch(`/api/admin/menu${source === 'autosave' ? '?source=autosave' : ''}`, {
       method: 'PUT',
@@ -41,16 +47,20 @@ export function useAdminSaveMenu(setMenu: (menu: MenuData) => void) {
               latest = data.latest as unknown as MenuData;
             }
           } catch {}
-          window.alert('The menu was changed somewhere else. Reload the page and try again.');
+          tell(
+            'تعارض حفظ — تغييرك الأخير محفوظ على هذا الجهاز ولم يُفقَد. أعد المحاولة.',
+            'Save conflict — your latest change is kept on this device. Try saving again.'
+          );
           return latest ? { doc: latest, saved: false } : null;
         }
-        window.alert(
+        tell(
+          `فشل الحفظ (${res.status}). التغيير ظاهر على هذا الجهاز فقط.\n${detail.slice(0, 160)}`,
           `Save failed (${res.status}). The change is visible only on this device.\n${detail.slice(0, 160)}`
         );
         return null;
       })
       .catch((): AdminSaveResult | null => {
-        window.alert('Network error: the change was NOT saved to the server.');
+        tell('خطأ شبكة: لم يُحفظ التغيير على الخادم.', 'Network error: the change was NOT saved to the server.');
         return null;
       });
   };

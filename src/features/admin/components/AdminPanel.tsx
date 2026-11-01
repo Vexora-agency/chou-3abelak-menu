@@ -85,6 +85,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const { adminFetch, savePaused } = useAdminApi();
   const {
     menu, updateMenu, dirty, handleSave, flushDirty, replaceMenu, autoSave, setAutoSave,
+    isSaving, saveConflict, dismissConflict,
   } = useMenuSaver({ initialMenu, onSaveMenu, isAr, savePaused, onSaved: flashSaved });
   const {
     orders, ordersLoading, ordersError, fetchOrders, handleOrderStatusChange,
@@ -343,6 +344,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         dirty={dirty}
         autoSave={autoSave}
         onSave={() => void handleSave()}
+        isSaving={isSaving}
+        saveConflict={saveConflict}
+        onDismissConflict={dismissConflict}
         undoToast={backup.undoToast}
         onUndo={(u) => { backup.clearUndoToast(); u(); }}
         confirmBox={confirmBox}

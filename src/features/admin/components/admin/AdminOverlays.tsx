@@ -16,6 +16,9 @@ interface AdminOverlaysProps {
   dirty: boolean;
   autoSave: boolean;
   onSave: () => void;
+  isSaving: boolean;
+  saveConflict: boolean;
+  onDismissConflict: () => void;
   undoToast: { label: string; undo: () => void } | null;
   onUndo: (undo: () => void) => void;
   confirmBox: ConfirmBox | null;
@@ -35,7 +38,7 @@ interface AdminOverlaysProps {
 
 /** Floating save bar, undo toast, confirm dialog, item editor modal. */
 export const AdminOverlays: React.FC<AdminOverlaysProps> = ({
-  lang, dirty, autoSave, onSave,
+  lang, dirty, autoSave, onSave, isSaving, saveConflict, onDismissConflict,
   undoToast, onUndo,
   confirmBox, onDismissConfirm,
   editingItem, isNewItem, menu, calcQty, pickingAddonSec,
@@ -57,11 +60,46 @@ export const AdminOverlays: React.FC<AdminOverlaysProps> = ({
             <button
               type="button"
               onClick={() => onSave()}
-              className="btn-tactile px-5 min-h-[44px] inline-flex items-center rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black text-xs gap-1.5 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+              disabled={isSaving}
+              className="btn-tactile px-5 min-h-[44px] inline-flex items-center rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black text-xs gap-1.5 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60"
             >
               <Save size={15} />
-              <span>{isAr ? 'حفظ التعديلات' : 'Save Changes'}</span>
+              <span>{isSaving ? (isAr ? 'جارٍ الحفظ…' : 'Saving…') : (isAr ? 'حفظ التعديلات' : 'Save Changes')}</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* SAVE-CONFLICT BANNER: a 409 kept the draft (dirty) and rebased
+          only its version. Stays until the next successful save or manual
+          dismiss — the autosave bar above hides when autoSave is on, so a
+          conflict would otherwise be invisible. */}
+      {saveConflict && (
+        <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-0 right-0 z-40 px-4 flex justify-center" role="alert">
+          <div className="w-full max-w-[500px] bg-[#141414] border-2 border-red-500/60 rounded-3xl sm:rounded-full p-2 px-4 flex items-center justify-between gap-2 flex-wrap shadow-2xl">
+            <div className="flex items-center gap-2 text-xs text-red-300 font-bold min-w-0">
+              <AlertTriangle size={16} className="shrink-0" />
+              <span className="break-words">{isAr ? 'تعارض حفظ — تغييرك محفوظ هنا ولم يُفقَد.' : 'Save conflict — your change is kept here.'}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => onSave()}
+                disabled={isSaving}
+                className="btn-tactile px-5 min-h-[44px] inline-flex items-center rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black text-xs gap-1.5 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60"
+              >
+                <Save size={15} />
+                <span>{isAr ? 'إعادة المحاولة' : 'Retry'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onDismissConflict()}
+                aria-label={isAr ? 'إغلاق' : 'Dismiss'}
+                className="w-11 h-11 min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         </div>
       )}

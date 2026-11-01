@@ -14,13 +14,17 @@ export async function onRequest(context) {
   }
   let settings = null;
   try {
-    // cacheTtl 5: polls hit this every 3s while paused and the owner
-    // expects pause/resume to surface within seconds — a 30s edge cache
-    // served stale flips (pause stayed invisible). 5s still cuts most
-    // repeated KV reads; the endpoint is tiny.
-    const menu = env.MENU_KV ? await env.MENU_KV.get('menu', { type: 'json', cacheTtl: 5 }) : null;
+    // cacheTtl 30 is the platform minimum (anything lower throws and this
+    // endpoint 503s on every request — do not lower it). 30s still cuts
+    // most repeated KV reads; the endpoint is tiny. True seconds-fresh
+    // flips would need a write-time purge, not a shorter TTL.
+    const menu = env.MENU_KV ? await env.MENU_KV.get('menu', { type: 'json', cacheTtl: 30 }) : null;
     settings = (menu && menu.settings) || null;
-  } catch {}
+  } catch (e) {
+    // Silent catch hid a total outage (invalid TTL 503d every poll).
+    // Log server-side only — never leaks to the client body.
+    try { console.error('[ordering-state] menu read failed', e); } catch {}
+  }
   if (!settings) {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }

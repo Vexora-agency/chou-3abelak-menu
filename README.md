@@ -1,6 +1,6 @@
-# Chou 3abelak (شو عبالك) — Fast Restaurant Menu & WhatsApp Ordering
+# Chou 3abelak (شو عبالك) — Fast Restaurant Menu & Online Ordering
 
-A fast, bilingual (English & Arabic with full RTL), high-performance restaurant menu website built with modern UI design, animated hero video branding, real-time live search, and a zero-friction WhatsApp ordering cart system.
+A fast, bilingual (English & Arabic with full RTL), high-performance restaurant menu website built with modern UI design, animated hero video branding, real-time live search, and a zero-friction online ordering cart system.
 
 ---
 
@@ -37,7 +37,7 @@ A fast, bilingual (English & Arabic with full RTL), high-performance restaurant 
 │   │                              # state lives in features/*/hooks/.
 │   ├── /utils/ (13 files)         # pricing.ts + pricing-menu.ts + pricing-badges.ts (must stay
 │   │                              # identical to functions/_shared/pricing*.js), status.ts
-│   │                              # (mirrors _shared/status.js), safeJson, tz, whatsapp, …
+│   │                              # (mirrors _shared/status.js), safeJson, tz, …
 │   ├── /types/menu.ts             # Domain types (must stay in sync with
 │   │                              # functions/_shared/validate*.js + menu.seed.json)
 │   ├── App.tsx                    # Thin assembly: imports screens/state from
@@ -115,7 +115,7 @@ npx wrangler pages dev ./dist --port 3000 --kv MENU_KV --d1 ORDERS_DB --binding 
   - Add button `(+)` smoothly transitions to `[- qty +]` stepper.
   - Floating bottom bar appears with animated bounce and live price total.
   - Checkout drawer calculates delivery fee and validates minimum order amount.
-  - Generates properly encoded, sanitized WhatsApp message with order details.
+  - Checkout records the order server-side and shows the live tracking link.
 - [x] **Admin Portal:**
   - Accessible via top gear icon or footer link.
   - Edit restaurant name, hours, contact info, and ordering toggles.
@@ -128,7 +128,7 @@ npx wrangler pages dev ./dist --port 3000 --kv MENU_KV --d1 ORDERS_DB --binding 
 
 ## ⚠️ Remaining Operational Considerations
 
-- **WhatsApp Destination:** In `/public/menu.seed.json` and admin settings, replace the placeholder phone number (`+201000000000` / `201000000000`) with your restaurant's active WhatsApp business number.
+- **Contact number:** In `/public/menu.seed.json` and admin settings, replace the placeholder phone number (`+201000000000` / `201000000000`) with the restaurant's real contact number (Call button, and required to enable ordering).
 
 ---
 
@@ -310,13 +310,13 @@ with Undo), plus a weekly automatic email backup.
   stages to KV `import:<token>` (15-min TTL, single use, session-bound);
   `POST /api/admin/import/apply` snapshots first, then writes. Unsigned
   files can only change items/categories/addonGroups — settings, ordering
-  and WhatsApp are never touched. Rate limit: 5 applies/hour.
+  and contact details are never touched. Rate limit: 5 applies/hour.
 - Weekly backup: enable it in Backup → Export; every Monday the daily job
   emails the signed JSON to the verified report address and keeps 12 copies
   in R2 (`backups/`).
 - Local verify: `node scripts/test-backup.mjs` (70 checks: diffs, tampered
   signatures, CSV round trip in Arabic, token single-use/expiry, restore
-  safety copy, trash, autosave coalescing, unsigned-can-never-touch-WhatsApp).
+  safety copy, trash, autosave coalescing, unsigned-can-never-touch-contact-settings).
 
 Production env (in addition to the report vars): `BACKUP_SECRET` (Secret,
 32 random hex bytes — generate with
@@ -338,7 +338,7 @@ Production env (in addition to the report vars): `BACKUP_SECRET` (Secret,
   check exists.
 - **Share location (delivery only):** tap-to-run geolocation (never on page
   load, state only, cleared after send/close), link built only from rounded
-  numbers, one line in the WhatsApp message + stored columns
+  numbers, one line in the stored order record + stored columns
   (`location_lat/lng`, NULLed by retention, never in the monthly CSV, Maps
   button in order details). Requires `Permissions-Policy: geolocation=(self)`
   in `public/_headers` (camera/mic stay disabled); no CSP change needed.

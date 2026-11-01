@@ -88,7 +88,7 @@ p{margin:0;color:var(--mut);font-size:14px;white-space:pre-line}
     <section class="contact" data-sec="contact">
       <h2 data-i18n="contactT"></h2>
       <p id="contactName"></p>
-      <div class="actions"><a class="btn ghost" id="callBtn" hidden></a><a class="btn solid" id="waBtn" target="_blank" rel="noopener noreferrer" hidden></a></div>
+      <div class="actions"><a class="btn ghost" id="callBtn" hidden></a></div>
     </section>
   </main>
 
@@ -100,25 +100,25 @@ p{margin:0;color:var(--mut);font-size:14px;white-space:pre-line}
       back: 'Back to menu', title: 'Privacy', sub: 'How {name} handles your information when you order.',
       collectT: 'What we collect', collectL: ['Your name and phone number, so we can confirm and deliver your order.', 'Your delivery address, and your location only if you choose to share it.', 'What you ordered, the total and the time of the order.', 'Any note you write for the restaurant.'],
       whyT: 'Why we use it', whyL: ['To prepare, confirm and deliver your order.', 'To contact you about that order if needed.', 'To produce anonymous statistics, such as how many orders we receive. These never include your name, phone or address.'],
-      storeT: 'How it is sent and stored', storeSent: 'When you tap Send, your order is written as a WhatsApp message to the restaurant. WhatsApp\u2019s own privacy policy applies to that message.',
-      storeSaved: 'A copy of the order is stored on the restaurant\u2019s account at Cloudflare, our hosting provider. Only the restaurant\u2019s staff can see it.', storeNone: 'This website does not store your order. It is only sent to the restaurant through WhatsApp.',
+      storeT: 'How it is sent and stored', storeSent: 'When you tap Send, your order is sent to the restaurant so the kitchen can prepare it.',
+      storeSaved: 'A copy of the order is stored on the restaurant\u2019s account at Cloudflare, our hosting provider. Only the restaurant\u2019s staff can see it.', storeNone: 'This website does not store your order. It is only sent to the restaurant.',
       keepT: 'How long we keep it', keepPii: 'Your name, phone, address, location and notes are removed {piiDays} days after the order.', keepRec: 'Anonymous order records (items and totals only) are kept for up to {orderMonths} months for statistics.', keepNone: 'Nothing is kept on this website after you leave it.',
       deviceT: 'On your device', deviceL: ['We store your cart, language and theme choice in your browser so the site works as you expect.', 'We do not use advertising or tracking cookies.'],
       thirdT: 'Other services', thirdL: ['Cloudflare hosts this website.', 'Google Fonts delivers the text fonts.'],
       rightsT: 'Your choices', rightsL: ['You can ask the restaurant to delete or anonymize your order details, or to give you a copy of them.', 'Contact us using the details below and mention the phone number you used.'],
-      extraT: 'Notes from the restaurant', contactT: 'Contact the restaurant', call: 'Call', wa: 'WhatsApp', year: '\u00a9 {year} {name}',
+      extraT: 'Notes from the restaurant', contactT: 'Contact the restaurant', call: 'Call', year: '\u00a9 {year} {name}',
     },
     ar: {
       back: 'العودة إلى المنيو', title: 'الخصوصية', sub: 'كيف يتعامل {name} مع معلوماتك عند الطلب.',
       collectT: 'ما الذي نجمعه', collectL: ['اسمك ورقم هاتفك، لنؤكد طلبك ونوصله إليك.', 'عنوان التوصيل، وموقعك فقط إذا اخترت مشاركته.', 'ما طلبته والإجمالي ووقت الطلب.', 'أي ملاحظة تكتبها للمطعم.'],
       whyT: 'لماذا نستخدمها', whyL: ['لتجهيز طلبك وتأكيده وتوصيله.', 'للتواصل معك بخصوص هذا الطلب عند الحاجة.', 'لإعداد إحصائيات مجهولة الهوية، مثل عدد الطلبات التي نستقبلها. ولا تحتوي أبداً على اسمك أو هاتفك أو عنوانك.'],
-      storeT: 'كيف تُرسل وتُخزَّن', storeSent: 'عندما تضغط إرسال، يُكتب طلبك كرسالة واتساب إلى المطعم. وتنطبق سياسة خصوصية واتساب نفسها على هذه الرسالة.',
-      storeSaved: 'تُخزَّن نسخة من الطلب في حساب المطعم لدى Cloudflare، مزوّد الاستضافة لدينا. ولا يراها إلا موظفو المطعم.', storeNone: 'لا يخزّن هذا الموقع طلبك. يُرسل فقط إلى المطعم عبر واتساب.',
+      storeT: 'كيف تُرسل وتُخزَّن', storeSent: 'عندما تضغط إرسال، يُرسل طلبك إلى المطعم لتجهيزه.',
+      storeSaved: 'تُخزَّن نسخة من الطلب في حساب المطعم لدى Cloudflare، مزوّد الاستضافة لدينا. ولا يراها إلا موظفو المطعم.', storeNone: 'لا يخزّن هذا الموقع طلبك. يُرسل فقط إلى المطعم.',
       keepT: 'كم من الوقت نحتفظ بها', keepPii: 'يُحذف اسمك وهاتفك وعنوانك وموقعك وملاحظاتك بعد {piiDays} يوماً من الطلب.', keepRec: 'تُحفظ سجلات الطلبات مجهولة الهوية (الأصناف والإجماليات فقط) حتى {orderMonths} شهراً للإحصائيات.', keepNone: 'لا يُحفظ شيء في هذا الموقع بعد مغادرتك له.',
       deviceT: 'على جهازك', deviceL: ['نخزّن سلتك واللغة والمظهر الذي اخترته في متصفحك ليعمل الموقع كما تتوقع.', 'لا نستخدم ملفات تعريف الارتباط للإعلانات أو التتبع.'],
       thirdT: 'خدمات أخرى', thirdL: ['تستضيف Cloudflare هذا الموقع.', 'تقدّم Google Fonts خطوط النصوص.'],
       rightsT: 'خياراتك', rightsL: ['يمكنك أن تطلب من المطعم حذف بيانات طلبك أو إخفاء هويتها، أو تزويدك بنسخة منها.', 'تواصل معنا عبر البيانات أدناه واذكر رقم الهاتف الذي استخدمته.'],
-      extraT: 'ملاحظات من المطعم', contactT: 'تواصل مع المطعم', call: 'اتصال', wa: 'واتساب', year: '\u00a9 {year} {name}',
+      extraT: 'ملاحظات من المطعم', contactT: 'تواصل مع المطعم', call: 'اتصال', year: '\u00a9 {year} {name}',
     },
   };
   var info = { piiDays: 90, orderMonths: 13, hasOrderRecords: true };
@@ -145,10 +145,9 @@ p{margin:0;color:var(--mut);font-size:14px;white-space:pre-line}
     var txt = extra && (extra[lang] || extra.en);
     var sec = $('#extra'); if (txt) { $('#extraP').textContent = String(txt).slice(0, 1000); sec.hidden = false; } else { sec.hidden = true; }
     $('#contactName').textContent = vals.name;
-    var phone = digits(menu && menu.settings && menu.settings.phone), wa = digits(menu && menu.settings && menu.settings.whatsapp);
-    var call = $('#callBtn'), wab = $('#waBtn');
+    var phone = digits(menu && menu.settings && menu.settings.phone);
+    var call = $('#callBtn');
     if (phone) { call.href = 'tel:+' + phone; call.textContent = t.call + ' +' + phone; call.hidden = false; } else call.hidden = true;
-    if (wa) { wab.href = 'https://wa.me/' + wa; wab.textContent = t.wa; wab.hidden = false; } else wab.hidden = true;
     $('#year').textContent = fill(t.year, vals);
     document.querySelectorAll('[data-lang]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === lang)); });
   }

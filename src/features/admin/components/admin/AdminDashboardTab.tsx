@@ -29,7 +29,6 @@ interface AdminDashboardTabProps {
   reportSched: { sendTime: string; timezone: string };
   onSaveReportSettings: (s: { enabled: boolean; email: string; language: 'en' | 'ar' }) => Promise<{ ok: boolean; verificationSent?: boolean } | { ok: boolean }>;
   onResendVerification: () => Promise<void>;
-  onSendTestReport: () => Promise<{ ok: boolean }>;
   onDownloadReport: (month: string) => void;
   onSearchCustomers: (phone: string) => Promise<{ results: CustomerResult[]; count: number }>;
   onCustomerAction: (args: { phone: string; mode: string; password: string; confirm: string }) => Promise<{ ok: boolean; mode?: string; count?: number; error?: string } | { ok: boolean; error: string }>;
@@ -43,7 +42,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   onOrderStatusChange, onRefreshOrders,
   reportsOn, customersOn, dashView, onDashViewChange,
   reportSettings, reportRows, retentionCfg, reportSched,
-  onSaveReportSettings, onResendVerification, onSendTestReport, onDownloadReport,
+  onSaveReportSettings, onResendVerification, onDownloadReport,
   onSearchCustomers, onCustomerAction,
   adminFetch, onMenuRefreshed,
 }) => {
@@ -174,7 +173,6 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
           timezone={reportSched.timezone}
           onSaveSettings={onSaveReportSettings}
           onResendVerification={onResendVerification}
-          onSendTest={onSendTestReport}
           onDownload={(m) => onDownloadReport(m)}
         />
       )}

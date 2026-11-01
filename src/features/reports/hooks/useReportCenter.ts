@@ -108,18 +108,6 @@ export function useReportCenter({ isAr, activeTab, adminFetch }: ReportCenterOpt
     } catch {}
   };
 
-  const handleSendTestReport = async (): Promise<{ ok: boolean; error?: string }> => {
-    try {
-      const res = await adminFetch('/api/admin/report-settings/test', { method: 'POST' });
-      const data: unknown = await readJson(res);
-      const error = isRecord(data) && typeof data.error === 'string' ? data.error : undefined;
-      if (res.ok && isRecord(data) && data.ok) return { ok: true as const };
-      return { ok: false as const, error };
-    } catch {
-      return { ok: false as const };
-    }
-  };
-
   const handleDownloadReport = async (month: string) => {
     try {
       const res = await adminFetch(`/api/admin/reports/${encodeURIComponent(month)}.csv`);
@@ -179,7 +167,7 @@ export function useReportCenter({ isAr, activeTab, adminFetch }: ReportCenterOpt
   return {
     dashView, setDashView, customersOn, reportsOn, reportSettings, reportRows,
     retentionCfg, reportSched, fetchReportData,
-    handleSaveReportSettings, handleResendVerification, handleSendTestReport,
+    handleSaveReportSettings, handleResendVerification,
     handleDownloadReport, searchCustomers, handleCustomerAction,
   };
 }

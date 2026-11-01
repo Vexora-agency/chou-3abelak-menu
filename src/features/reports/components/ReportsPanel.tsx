@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Archive, CalendarClock, Check, Clock, Download, FileText, Loader2, Mail, Send, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { Archive, CalendarClock, Check, Clock, Download, FileText, Loader2, Mail, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { formatTime12h } from '@/src/utils/menuHelpers';
 
 export interface ReportSettings {
@@ -32,7 +32,6 @@ interface ReportsPanelProps {
   timezone: string; // 'Asia/Beirut'
   onSaveSettings: (s: { enabled: boolean; email: string; language: 'en' | 'ar' }) => Promise<{ ok: boolean; verificationSent?: boolean; error?: string }>;
   onResendVerification: () => Promise<void>;
-  onSendTest: () => Promise<{ ok: boolean; error?: string }>;
   onDownload: (month: string) => void;
 }
 
@@ -41,12 +40,7 @@ const STR = {
     emailTitle: 'Monthly report by email', enable: 'Send me a monthly report', email: 'Report email',
     emailHint: 'We send a confirmation link first. Reports go only to a confirmed address.',
     language: 'Email language', verified: 'Confirmed', pending: 'Waiting for confirmation', resend: 'Resend link', notSet: 'No email yet',
-    save: 'Save', saving: 'Saving…', saved: 'Saved', test: 'Send test email', testing: 'Sending…', testSent: 'Test sent',
-    testErrRate: 'Too many test emails — wait up to an hour and try again.',
-    testErrNoEmail: 'Set a report email first.',
-    testErrNotVerified: 'Confirm your email first (open the link we sent).',
-    testErrMail: 'Email service failed — try again later.',
-    testErrGeneric: 'Sending failed — try again.',
+    save: 'Save', saving: 'Saving…', saved: 'Saved',
     next: (d: string, m: string) => `Next report: ${d} at the scheduled time, covering ${m}.`,
     invalid: 'Please enter a valid email address.',
     sentConfirm: (e: string) => `Confirmation link sent to ${e}. Open it to start receiving reports.`,
@@ -61,12 +55,7 @@ const STR = {
     emailTitle: 'التقرير الشهري بالبريد', enable: 'أرسل لي تقريراً شهرياً', email: 'بريد التقرير',
     emailHint: 'نرسل رابط تأكيد أولاً. لا تصل التقارير إلا لعنوان مؤكد.',
     language: 'لغة الرسالة', verified: 'مؤكد', pending: 'بانتظار التأكيد', resend: 'إعادة إرسال الرابط', notSet: 'لا يوجد بريد بعد',
-    save: 'حفظ', saving: 'جارٍ الحفظ…', saved: 'تم الحفظ', test: 'إرسال رسالة تجريبية', testing: 'جارٍ الإرسال…', testSent: 'تم الإرسال',
-    testErrRate: 'رسائل تجريبية كثيرة — انتظر حتى ساعة وحاول مجدداً.',
-    testErrNoEmail: 'ضع بريد التقرير أولاً.',
-    testErrNotVerified: 'أكّد بريدك أولاً (افتح الرابط المرسل).',
-    testErrMail: 'خدمة البريد فشلت — حاول لاحقاً.',
-    testErrGeneric: 'فشل الإرسال — حاول مجدداً.',
+    save: 'حفظ', saving: 'جارٍ الحفظ…', saved: 'تم الحفظ',
     next: (d: string, m: string) => `التقرير القادم: ${d} في الوقت المحدد، ويغطي ${m}.`,
     invalid: 'أدخل بريداً إلكترونياً صحيحاً.',
     sentConfirm: (e: string) => `أرسلنا رابط التأكيد إلى ${e}. افتحه لتبدأ باستلام التقارير.`,
@@ -86,7 +75,7 @@ const loc = (l: 'en' | 'ar') => (l === 'ar' ? 'ar-u-nu-latn' : 'en-US');
 const monthName = (ym: string, l: 'en' | 'ar') => { const [y, m] = ym.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleDateString(loc(l), { month: 'long', year: 'numeric' }); };
 const validEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s.trim());
 
-const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, reports, retention, sendTime, timezone, onSaveSettings, onResendVerification, onSendTest, onDownload }) => {
+const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, reports, retention, sendTime, timezone, onSaveSettings, onResendVerification, onDownload }) => {
   const t = STR[lang];
   const isAr = lang === 'ar';
   // Owner decision: animations always run (never honor reduced-motion).
@@ -94,7 +83,7 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
   const [enabled, setEnabled] = useState(settings.enabled);
   const [email, setEmail] = useState(settings.email);
   const [mailLang, setMailLang] = useState<'en' | 'ar'>(settings.language);
-  const [busy, setBusy] = useState<'save' | 'test' | 'resend' | null>(null);
+  const [busy, setBusy] = useState<'save' | 'resend' | null>(null);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [limit, setLimit] = useState(6);
   const timer = useRef<number | undefined>(undefined);
@@ -133,22 +122,6 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
     await onResendVerification();
     setBusy(null);
     flash({ kind: 'ok', text: t.sentConfirm(settings.email) });
-  };
-
-  const sendTest = async () => {
-    setBusy('test');
-    const r = await onSendTest();
-    setBusy(null);
-    if (r.ok) {
-      flash({ kind: 'ok', text: t.testSent });
-      return;
-    }
-    const text = r.error === 'rate_limited' ? t.testErrRate
-      : r.error === 'no_email' ? t.testErrNoEmail
-      : r.error === 'not_verified' ? t.testErrNotVerified
-      : r.error === 'mail_unconfigured' || r.error === 'mail_failed' ? t.testErrMail
-      : t.testErrGeneric;
-    flash({ kind: 'err', text });
   };
 
   const status = !settings.email ? 'none' : settings.verified ? 'verified' : 'pending';
@@ -210,11 +183,6 @@ const ReportsPanel: React.FC<ReportsPanelProps> = ({ lang, currency, settings, r
             <button type="button" onClick={() => void save()} disabled={!dirty || busy === 'save'}
               className="btn-tactile h-11 px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
               {busy === 'save' ? <><Loader2 size={16} className="animate-spin" />{t.saving}</> : <><Check size={16} strokeWidth={3} />{t.save}</>}
-            </button>
-            <button type="button" disabled={status !== 'verified' || dirty || busy === 'test'}
-              onClick={() => void sendTest()}
-              className="btn-tactile h-11 px-5 rounded-full border border-neutral-700 text-neutral-200 text-sm font-bold inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
-              {busy === 'test' ? <><Loader2 size={16} className="animate-spin" />{t.testing}</> : <><Send size={15} className="text-[var(--primary)]" />{t.test}</>}
             </button>
           </div>
 

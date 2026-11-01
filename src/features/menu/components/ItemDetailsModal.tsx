@@ -114,6 +114,8 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
     }
   }
   // Both money displays are tamper-guarded: external DOM edits snap back.
+  // (Hooks must stay above the early return — see the Rules-of-Hooks note
+  // at the top of this block; the unguarded variant crashes the whole app.)
   const headerPriceText = item ? (headerPrice ?? priceLabel(item, lang, currency)) : '';
   const headerPriceRef = useGuardedText<HTMLDivElement>(headerPriceText);
   const addTotalText = liveTotal !== null ? `· ${formatPrice(liveTotal, currency)}` : '';

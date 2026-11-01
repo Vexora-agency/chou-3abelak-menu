@@ -207,7 +207,7 @@ Set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET` (mark all as **Sec
 
 Dashboard → **Reports** tab (Overview | Reports switch) shows one card per month
 plus the current month live, a CSV download per month, the report-email
-settings (address + confirmation, language), a test mail button, and the data
+settings (address + confirmation, language), and the data
 retention summary. Everything below is gated behind the `monthlyReports`
 feature: on any other plan every new route answers **404**. Set the plan with
 the `SITE_PLAN` env var (`starter` when unset).
@@ -279,14 +279,13 @@ retention only runs in the daily job.
 | 1 | Unset `SITE_PLAN`, restart dev | All `/api/admin/report-*`, `/api/admin/reports*`, `/api/internal/run-reports` → 404; Reports switch hidden |
 | 2 | `SITE_PLAN=pro`, change email, save | `verificationSent:false` without Resend key; DB holds only a 64-hex token hash, `verified=0`, expiry ~48 h |
 | 3 | `GET /api/reports/confirm?token=…` | 200 generic page, no address shown; second use → invalid page; `verified=1`, hash cleared |
-| 4 | Test mail before/after verifying | 400 `not_verified`, then graceful `mail_unconfigured` without a key; 4th call in an hour → 429 |
-| 5 | `POST /api/internal/run-reports` twice | First generates + attempts=1; second attempts=2 (mail fails without key); wrong secret → 404 |
-| 6 | Set `emailed_at`, run again | Attempts unchanged (exactly-once skip), retention still runs |
+| 4 | `POST /api/internal/run-reports` twice | First generates + attempts=1; second attempts=2 (mail fails without key); wrong secret → 404 |
+| 5 | Set `emailed_at`, run again | Attempts unchanged (exactly-once skip), retention still runs |
 | 7 | Old orders in unreported vs reported months | Unreported keep PII; reported get NULLed (needs migration `0004`) |
 | 8 | `node scripts/test-reports.mjs` | All checks pass (DST bounds incl. Beirut Mar/Oct transitions, CSV BOM/Arabic/PII-free) |
 
 Remaining risk: actual Resend delivery needs a real `RESEND_API_KEY` + verified
-sending domain — use the in-panel **test mail** button once DNS is live.
+sending domain — verify with the first scheduled monthly run (the manual test-mail endpoint was removed).
 
 ---
 

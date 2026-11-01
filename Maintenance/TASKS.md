@@ -57,7 +57,12 @@
 - [ ] Extensibility: order-type registry, notifier abstraction, clone-drift process
 - [ ] RF-13: cross-account deploy-credential story (later phase)
 
-## DONE — Step 1 safety net (branch `maintenance/step-1`, dedicated clone D:/Chou 3abelak, NEVER push; owner merges)
+## DONE — Repo cleanup: GitHub is now exactly 2 branches (2026-11-01)
+- remote `maintenance/remove-boosthis` DELETED from GitHub (verified: tip fbc164d fully contained in step-1, zero unique commits — lossless).
+- GitHub now: `main` + `maintenance/step-1` only. Local `origin/*` tracking refs for deleted/exclusive branches left untouched (C:\ repo not mine to modify).
+- step-1 pushed to GitHub through black-screen fix (96f75e6): triggers fresh preview build so staging serves the fix. Untouched: main (never), production bindings/data.
+
+## DONE — Step 1 safety net (branch `maintenance/step-1`, dedicated clone D:/Chou 3abelak; owner merges)
 - [x] T0 (392390d): rebased onto remove-boosthis tip; re-verified test:all exit 0, tsc clean, depcruise 0 violations (330/982) → raw/14-step1-reverify.txt
 - [x] T1 (7e6425c + evidence 13-step1-triage.txt): triaged all failing suites as STALE (fake-DB track_token shift; per-action confirm words; retired two-tone engine → pattern engine; missing owner session in flows harness). test:all green exit 0; test:live defined (excluded).
 - [x] T2 (5e47469): CI `.github/workflows/ci.yml` (PR+push, contents:read, 3 pinned SHAs, npm ci+cache, tsc, depcruise, test:all, temp-dir build + bundle grep, gitleaks, advisory eslint). actionlint v1.7.12 clean.

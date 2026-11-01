@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MenuData } from '@/src/types/menu';
-import { Clock, MapPin, Phone, ArrowUp, Instagram, Facebook, Shield } from 'lucide-react';
+import { Clock, MapPin, Phone, ArrowUp, Instagram, Facebook, MessageCircle, Shield } from 'lucide-react';
 import { sanitizeUrl, buildMapUrl, looksLikeMapInput, formatHoursRange } from '@/src/utils/menuHelpers';
 import { aboutOrDefault, socialOrderOrDefault } from '@/src/utils/settingsDefaults';
 import type { SocialPlatform } from '@/src/types/menu';
@@ -47,16 +47,23 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
   const phoneDigits = (menu.settings.phone || '').replace(/[^0-9]/g, '');
   const phoneLink = phoneDigits ? `tel:+${phoneDigits}` : 'tel:+96170123456';
   const mapLink = buildMapUrl(menu.settings);
-  const socialOn = menu.settings.socialEnabled || { instagram: true, facebook: true };
+  const socialOn = menu.settings.socialEnabled || { instagram: true, facebook: true, whatsapp: true };
   const socialOrder = socialOrderOrDefault(menu.settings.socialOrder);
+  const waDigits = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
 
   const platformMeta: Record<SocialPlatform, { label: string; Icon: typeof Instagram }> = {
     instagram: { label: 'Instagram', Icon: Instagram },
     facebook: { label: 'Facebook', Icon: Facebook },
+    whatsapp: { label: 'WhatsApp', Icon: MessageCircle },
   };
 
   /** Resolved link for a platform, or null when nothing to show. */
   const socialUrl = (key: SocialPlatform): string | null => {
+    if (key === 'whatsapp') {
+      const custom = (menu.settings.social?.whatsapp || '').trim();
+      if (custom) return sanitizeUrl(custom) === '#' ? null : sanitizeUrl(custom);
+      return waDigits ? `https://wa.me/${waDigits}` : null;
+    }
     const raw = (menu.settings.social?.[key] || '').trim();
     if (!raw) return null;
     const url = sanitizeUrl(raw);

@@ -49,7 +49,7 @@ export interface NormalizedPricing {
   showUnit: boolean;
 }
 
-/** Control characters (would break CSV/message lines) — a custom label containing any falls back. */
+/** Control characters (would break CSV/WhatsApp lines) — a custom label containing any falls back. */
 function hasControlChars(s: string): boolean {
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i);
@@ -257,6 +257,7 @@ export function normalizeMenu<T>(menu: T): T {
     social: {
       ...(typeof socialRaw.instagram === 'string' && socialRaw.instagram ? { instagram: socialRaw.instagram } : {}),
       ...(typeof socialRaw.facebook === 'string' && socialRaw.facebook ? { facebook: socialRaw.facebook } : {}),
+      ...(typeof socialRaw.whatsapp === 'string' && socialRaw.whatsapp ? { whatsapp: socialRaw.whatsapp } : {}),
     },
     socialEnabled: socialFlagsOrDefault(settings.socialEnabled),
     socialOrder: socialOrderOrDefault((settings as { socialOrder?: unknown }).socialOrder),

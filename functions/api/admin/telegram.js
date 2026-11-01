@@ -1,7 +1,7 @@
 /**
  * Admin Telegram integration: GET status / POST pair-code|save-username|disconnect.
- * ADMIN SESSION REQUIRED (directory middleware) + checkApiHeaders.
- * Phase 2+3 scope: pairing ONLY — no order changes.
+ * ADMIN SESSION REQUIRED (directory middleware) + checkApiHeaders, same as
+ * the WhatsApp endpoint. Phase 2+3 scope: pairing ONLY — no order changes.
  *
  * Secrets (TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET) are Cloudflare Pages
  * secrets (env), never stored in D1. GET exposes presence flags only.

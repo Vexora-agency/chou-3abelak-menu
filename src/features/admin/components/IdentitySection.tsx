@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { MenuSettings } from '@/src/types/menu';
+import { DIAL_CODES, OTHER_ISO, composeFull, splitDialCode } from '@/src/config/dialCodes';
 import { normalizeMapLocation, parseMapUrlCoords, looksLikeMapInput } from '@/src/utils/menuHelpers';
+import { CountryCodePicker } from './CountryCodePicker';
 
 type IdentityValues = Pick<
   MenuSettings,
-  'name' | 'tagline' | 'about' | 'phone' | 'mapUrl' | 'address' | 'currency'
+  'name' | 'tagline' | 'about' | 'phone' | 'whatsapp' | 'mapUrl' | 'address' | 'currency'
 >;
 
 interface IdentitySectionProps extends IdentityValues {
@@ -18,6 +20,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
   tagline,
   about,
   phone,
+  whatsapp,
   mapUrl,
   address,
   currency,
@@ -25,6 +28,15 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
   onUpdate,
 }) => {
   const isAr = lang === 'ar';
+  // WhatsApp picker (Google-style): country combo + national number input.
+  // Stored value stays a single full-international digit string, so every
+  // consumer (validation, wa.me links, dashboard) works unchanged.
+  const waSplit = splitDialCode(whatsapp);
+  const setWa = (iso: string, national: string) => {
+    const entry = DIAL_CODES.find((c) => c.iso === iso);
+    onUpdate((prev) => ({ ...prev, whatsapp: composeFull(entry ? entry.code : '', national) }));
+  };
+  const waComposed = (whatsapp || '').replace(/\D/g, '');
   // Text address shown in the footer (Store Information). Resolvable from
   // the work location above: one on-demand lookup fills both languages.
   const addr = address || { en: '', ar: '' };
@@ -304,6 +316,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
       </div>
 
       <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
+        {/* Phone takes the full row: side-by-side would squeeze the picker below. */}
         <div className="col-span-2">
           <label className="block text-xs text-neutral-400 mb-1">Phone</label>
           <input
@@ -313,6 +326,32 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             onChange={(e) => onUpdate((prev) => ({ ...prev, phone: e.target.value }))}
             className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           />
+        </div>
+        <div className="col-span-2">
+          <label className="block text-xs text-neutral-400 mb-1">WhatsApp number</label>
+          <div className="flex gap-2" dir="ltr">
+            <CountryCodePicker
+              value={waSplit.iso}
+              onChange={(iso) => setWa(iso, waSplit.national)}
+              lang={lang}
+            />
+            <input
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={waSplit.national}
+              onChange={(e) => setWa(waSplit.iso, e.target.value)}
+              placeholder={waSplit.iso === OTHER_ISO ? '96170123456' : '70 123 456'}
+              aria-label="WhatsApp number without country code"
+              dir="ltr"
+              className="flex-1 min-w-0 h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
+            />
+          </div>
+          <p className="text-[11px] text-neutral-500 mt-1" dir="ltr">
+            {waComposed
+              ? <>Stored international: <b className="text-neutral-300 tabular-nums">+{waComposed}</b></>
+              : (isAr ? 'اختر الدولة ثم اكتب الرقم المحلي.' : 'Pick the country, then type the local number.')}
+          </p>
         </div>
       </div>
 

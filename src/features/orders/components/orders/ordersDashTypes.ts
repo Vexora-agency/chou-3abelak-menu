@@ -56,7 +56,7 @@ export const STR = {
     itemsLabel: 'Items', phone: 'Phone', address: 'Address', table: 'Table', notes: 'Notes', openMaps: 'Open in Maps',
     subtotal: 'Subtotal', fee: 'Delivery fee', total: 'Total',
     complete: 'Mark completed', cancel: 'Cancel order', reopen: 'Reopen', ack: 'Start preparing',
-    call: 'Call', now: 'Just now',
+    wa: 'WhatsApp', call: 'Call', now: 'Just now',
     min: (n: number) => `${n} min ago`, hr: (n: number) => `${n}h ago`,
   },
   ar: {
@@ -71,7 +71,7 @@ export const STR = {
     itemsLabel: 'الأصناف', phone: 'الهاتف', address: 'العنوان', table: 'الطاولة', notes: 'ملاحظات', openMaps: 'فتح في الخرائط',
     subtotal: 'المجموع الفرعي', fee: 'رسوم التوصيل', total: 'الإجمالي',
     complete: 'تم التسليم', cancel: 'إلغاء الطلب', reopen: 'إعادة فتح', ack: 'بدء التحضير',
-    call: 'اتصال', now: 'الآن',
+    wa: 'واتساب', call: 'اتصال', now: 'الآن',
     min: (n: number) => `قبل ${n} د`, hr: (n: number) => `قبل ${n} س`,
   },
 } as const;

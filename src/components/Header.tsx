@@ -17,6 +17,8 @@ interface HeaderProps {
   onToggleDarkMode: () => void;
   onOpenAdmin?: () => void;
   orderingState?: OrderingStatus | null;
+  /** Menu-only mode (starter): WhatsApp CTA hidden, Call becomes primary. */
+  orderingEnabled?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -27,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleDarkMode,
   onOpenAdmin,
   orderingState,
+  orderingEnabled = true,
 }) => {
   const { parY, glowY, intro, rise } = useHeaderMotion();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -46,6 +49,8 @@ export const Header: React.FC<HeaderProps> = ({
   useHeaderIntroEngine(canvasRef, smokeCanvasRef, headerRef, setHasEnded, setEngineDone);
 
   const phoneLink = `tel:${menu.settings.phone || '+96170123456'}`;
+  const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
+  const whatsappLink = `https://wa.me/${whatsappNum || '96170123456'}`;
   const mapLink = buildMapUrl(menu.settings);
 
   return (
@@ -85,13 +90,16 @@ export const Header: React.FC<HeaderProps> = ({
         engineDone={engineDone}
       />
 
-      {/* Actions: Call is the primary call to action, Map is secondary. */}
+      {/* Actions: WhatsApp is the primary call to action, Call and Map are secondary
+          (menu-only starter: WhatsApp hidden, Call promoted to primary) */}
       <HeaderActions
         phoneLink={phoneLink}
+        whatsappLink={whatsappLink}
         mapLink={mapLink}
         lang={lang}
         rise={rise}
         intro={intro}
+        orderingEnabled={orderingEnabled}
       />
     </header>
   );

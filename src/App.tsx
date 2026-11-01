@@ -471,6 +471,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           onToggleDarkMode={() => setDarkMode(!darkMode)}
           onOpenAdmin={adminUnlocked ? () => openAdmin() : undefined}
           orderingState={liveOrderingState}
+          orderingEnabled={orderingOn}
         />
 
         {/* Main Content Area: skeleton reserves the slot until the real doc

@@ -2,7 +2,7 @@
  * Settings-block validation for restaurant menu documents.
  * Single consumer: the validate.js orchestrator.
  */
-import { stripControls, validateBilingual, validateBilingualOpt, TIME_REGEX, PHONE_REGEX } from './validate-core.js';
+import { stripControls, validateBilingual, validateBilingualOpt, TIME_REGEX, PHONE_REGEX, WHATSAPP_REGEX } from './validate-core.js';
 import { buildFeatureLibrary } from './validate-feature-library.js';
 
 /**
@@ -49,10 +49,9 @@ function validateSettings(s, errors) {
     errors.push('settings.phone must contain only digits, +, spaces, and dashes');
   }
 
-  // Legacy tolerance (owner decision, WhatsApp removal): old menu docs,
-  // imports and backups may carry settings.whatsapp. It is silently
-  // ignored here (never copied to cleanSettings, never an error) so old
-  // data keeps validating. New saves simply stop writing the field.
+  // WhatsApp (full international digits, e.g. 96170123456): persisted so
+  // the header/footer wa.me buttons and the Social autofill keep working.
+  const whatsapp = typeof s.whatsapp === 'string' ? s.whatsapp.replace(/[^0-9]/g, '') : '';
 
   // Map URL — accepts a work location in any form (full/short Maps URL,
   // raw "lat,lng", place name) and normalizes to a working https Maps link.
@@ -88,7 +87,7 @@ function validateSettings(s, errors) {
   }
 
   // Social
-  const SOCIAL_NETWORKS = ['instagram', 'facebook'];
+  const SOCIAL_NETWORKS = ['instagram', 'facebook', 'whatsapp'];
   const social = {};
   if (s.social && typeof s.social === 'object') {
     SOCIAL_NETWORKS.forEach((network) => {
@@ -121,6 +120,7 @@ function validateSettings(s, errors) {
   const socialEnabled = {
     instagram: socialEnabledRaw.instagram !== false,
     facebook: socialEnabledRaw.facebook !== false,
+    whatsapp: socialEnabledRaw.whatsapp !== false,
   };
 
   const about = validateBilingualOpt(s.about, 300);
@@ -132,12 +132,15 @@ function validateSettings(s, errors) {
   // Ordering settings
   const ord = s.ordering || {};
   const orderingEnabled = Boolean(ord.enabled);
-  // The contact-phone guard moved here from settings.whatsapp (removed):
-  // ordering needs a callable restaurant number (the same field behind
-  // the Call/tel: button). PHONE_REGEX allows +, spaces and dashes;
-  // strictly-local short numbers fail the length floor.
+  // Ordering guards: enabling needs BOTH a callable contact phone (Call
+  // button) AND a WhatsApp number (header/footer wa.me buttons + order
+  // contact). PHONE_REGEX allows +, spaces and dashes; WHATSAPP_REGEX
+  // wants full international digits with no leading zero.
   if (orderingEnabled && !PHONE_REGEX.test(phone)) {
     errors.push('settings.phone must be a callable phone number (e.g. +96170123456) when ordering is enabled');
+  }
+  if (orderingEnabled && !WHATSAPP_REGEX.test(whatsapp)) {
+    errors.push('settings.whatsapp must be an international phone number (e.g. 96170123456) when ordering is enabled');
   }
   const validTypes = ['delivery', 'pickup', 'dinein'];
   const types = Array.isArray(ord.types)
@@ -279,6 +282,7 @@ function validateSettings(s, errors) {
     tagline,
     logoText,
     phone,
+    whatsapp,
     mapUrl,
     address,
     hoursText,

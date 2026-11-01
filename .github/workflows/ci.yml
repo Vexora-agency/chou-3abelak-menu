@@ -45,9 +45,11 @@ jobs:
         run: npx vite build --outDir "$RUNNER_TEMP/chou-dist" --emptyOutDir
 
       - name: Bundle grep (forbidden strings must not ship)
-        # dev-admin backdoor, build-stamp comments, removed WhatsApp surface.
+        # dev-admin backdoor, build-stamp comments, removed WhatsApp automation
+        # surface (waapi/sentVia). The customer-facing wa.me buttons are
+        # restored (owner decision), so wa.me is allowed again.
         run: |
-          if grep -riE 'dev-admin|REMOVE BEFORE COMMIT|wa\.me|waapi|sentVia' "$RUNNER_TEMP/chou-dist/assets" "$RUNNER_TEMP/chou-dist/index.html"; then
+          if grep -riE 'dev-admin|REMOVE BEFORE COMMIT|waapi|sentVia' "$RUNNER_TEMP/chou-dist/assets" "$RUNNER_TEMP/chou-dist/index.html"; then
             echo 'FORBIDDEN STRING IN BUNDLE' >&2
             exit 1
           fi
@@ -55,6 +57,11 @@ jobs:
 
   secrets:
     runs-on: ubuntu-latest
+    # gitleaks lists PR commits via the API on pull_request events —
+    # needs pull-requests: read on top of the workflow default.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:

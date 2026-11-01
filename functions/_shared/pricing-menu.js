@@ -31,7 +31,7 @@ function cleanInt(v, fallback) {
  * Never throws — returns best-effort defaults for garbage input.
  */
 
-/** Control characters (would break CSV/message lines) — a custom label containing any falls back. */
+/** Control characters (would break CSV/WhatsApp lines) — a custom label containing any falls back. */
 function hasControlChars(s) {
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i);

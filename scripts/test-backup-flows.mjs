@@ -82,7 +82,7 @@ async function seedMenu(env, menu) {
   ok(ap.data.ok === true, 'unsigned apply works for items');
   const after = await env.MENU_KV.get('menu', { type: 'json' });
   ok(after.settings.phone === '70123456', 'UNSIGNED FILE CAN NEVER CHANGE PHONE');
-  ok(after.settings.whatsapp === undefined, 'legacy whatsapp field stripped on apply');
+  ok(after.settings.whatsapp === '96170123456', 'UNSIGNED FILE CAN NEVER CHANGE WHATSAPP');
   ok(after.items.find((it) => it.id === 'zaatar').pricing.price === 190000, 'unsigned item change applies');
 }
 {

@@ -7,6 +7,7 @@
 export const ID_REGEX = /^[a-z0-9_-]{1,40}$/i;
 export const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 export const PHONE_REGEX = /^\+?[0-9\s-]{6,20}$/;
+export const WHATSAPP_REGEX = /^[1-9][0-9]{7,14}$/;
 
 // Control characters (including newlines/tabs) are stripped from every
 // validated string so stored text can never break layouts or logs.

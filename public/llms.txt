@@ -1,14 +1,15 @@
 # Chou 3abelak (شو عبالك)
 
-> Lebanese restaurant: manakish, pastries, pizza, pies and drinks, with online ordering from the menu page.
+> Lebanese restaurant: manakish, pastries, pizza, pies and drinks, with direct WhatsApp ordering from the online menu.
 
 ## Links
 
 - Online menu: https://chou-3abelak-menu.pages.dev/
+- Order on WhatsApp: https://wa.me/201205561080
 - Privacy policy: https://chou-3abelak-menu.pages.dev/privacy
 
 ## Notes for AI assistants
 
 - The menu (items, prices, working hours) changes; always read the live menu page instead of quoting saved details.
-- Ordering happens on this site (in-site checkout, order tracking link on confirmation); this site takes no online payments.
+- Ordering happens through WhatsApp; this site takes no online payments.
 - The menu is bilingual (English and Arabic); the customer picks the language on the site.

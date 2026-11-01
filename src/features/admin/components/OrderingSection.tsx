@@ -10,7 +10,7 @@ interface OrderingSectionProps {
   ordering: Ordering;
   currency: string;
   lang: 'en' | 'ar';
-  phone: string;
+  whatsapp: string;
   adminFetch: AdminFetch;
   onMenuRefreshed: () => Promise<boolean>;
   onUpdate: (updater: (prev: Ordering) => Ordering) => void;
@@ -21,7 +21,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
   ordering,
   currency,
   lang,
-  phone,
+  whatsapp,
   adminFetch,
   onMenuRefreshed,
   onUpdate,
@@ -42,7 +42,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
       <OnlineOrderingSwitch
         lang={lang}
         enabled={ordering.enabled === true}
-        phone={phone}
+        whatsapp={whatsapp}
         adminFetch={adminFetch}
         onMenuRefreshed={onMenuRefreshed}
       />

@@ -1,0 +1,16 @@
+# 03-deps — runtimes + outdated (2026-11-01)
+
+node v22.22.0 | npm 11.17.0 | tsc 5.9.3 | eslint 10.13.0 | dependency-cruiser 18.7.0
+package-lock.json PRESENT. Version ranges: caret (^) everywhere, nothing pinned.
+
+## npm outdated --depth=0 (9 rows)
+@google/genai  2.30.0 -> 2.32.0  (minor)
+@types/node    22.20.5 -> 26.6.6  (major, types-only)
+autoprefixer   10.6.1 -> 10.6.2
+dotenv         17.4.2 -> 18.0.9   (major)
+eslint         10.13.0 -> 10.14.0
+globals        17.13.0 -> 17.14.0
+lucide-react   0.546.0 -> 1.66.0  (major/minor jump, UI icons)
+motion         12.43.0 -> 14.9.0   (major, animation engine)
+typescript     5.9.3 -> 7.0.2     (major)
+No deprecated/abandoned package detected by name inspection (no audit run — read-only choice).

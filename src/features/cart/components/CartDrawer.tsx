@@ -111,7 +111,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const handleClearCartWithLocation = () => { clearLocation(); onClearCart(); };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-6">
+    <div className="fixed inset-x-0 top-0 h-[100dvh] z-50 flex items-end md:items-center justify-center p-0 md:p-6">
       {/* Backdrop */}
       <div
         onClick={onClose}
@@ -124,7 +124,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           container below: transform-animated scrollers glitch on phones
           (stuck scroll-up, rubber-band jumps). */}
       <div
-        className={`anim-drawer-in relative z-10 w-full max-w-[540px] max-h-[92vh] max-h-[92dvh] flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
+        className={`anim-drawer-in relative z-10 w-full max-w-[540px] max-h-[92vh] max-h-[calc(92dvh-env(safe-area-inset-bottom))] mb-[env(safe-area-inset-bottom)] md:mb-0 flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
       >
@@ -132,19 +132,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={isAr ? 'سلة الطلبات وإتمام الشراء' : 'Order Checkout'}
-        className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-6 sm:px-8 pt-3 pb-[max(2rem,env(safe-area-inset-bottom))] overflow-x-clip scroll-pb-32"
+        className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-6 sm:px-8 pb-[max(2rem,env(safe-area-inset-bottom))] overflow-x-clip scroll-pb-32"
       >
         {/* Drag Pill Handle (Mobile only) */}
         <div
-          className={`w-11 h-1.5 rounded-full mx-auto mb-3 md:hidden ${
+          className={`w-11 h-1.5 rounded-full mx-auto mt-3 mb-3 md:hidden ${
             darkMode ? 'bg-neutral-600' : 'bg-neutral-300'
           }`}
         />
 
-        {/* Header in normal flow: scrolls with the sheet, no sticky bar. */}
+        {/* Sticky header: title + close stay put while the lines scroll. */}
         <div
-          className={`flex justify-between items-center pb-3 border-b ${
-            darkMode ? 'border-neutral-800' : 'border-neutral-200'
+          className={`sticky top-0 z-10 -mx-6 sm:-mx-8 px-6 sm:px-8 pt-3 pb-3 flex justify-between items-center gap-3 border-b ${
+            darkMode ? 'bg-[#141414] border-neutral-800' : 'bg-white border-neutral-200'
           }`}
         >
           <div>

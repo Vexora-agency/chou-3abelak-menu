@@ -142,29 +142,18 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={headerTitle}
-        className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-6 sm:px-8 pt-4 sm:pt-6 pb-[max(2rem,env(safe-area-inset-bottom))] overflow-x-clip"
+        className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-6 sm:px-8 pb-[max(2rem,env(safe-area-inset-bottom))] overflow-x-clip"
       >
         {/* Drag Pill Handle (Mobile only) */}
-        <div className={`w-11 h-1.5 rounded-full mx-auto mb-4 md:hidden ${darkMode ? 'bg-neutral-600' : 'bg-neutral-300'}`} />
+        <div className={`w-11 h-1.5 rounded-full mx-auto mt-4 mb-4 md:hidden ${darkMode ? 'bg-neutral-600' : 'bg-neutral-300'}`} />
 
-        {/* Close Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className={`absolute top-3 end-4 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
-            darkMode
-              ? 'bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700'
-              : 'bg-neutral-100 text-neutral-700 hover:text-black hover:bg-neutral-200'
-          }`}
-          aria-label={isAr ? 'إغلاق' : 'Close modal'}
-        >
-          <X size={20} />
-        </button>
-
-        {/* Header: Title and Price. The X sits absolute at the inline-end
-            corner, so the row reserves 56px on the END side (pe-14 works in
-            both LTR and RTL) — the price pill can never slide under it. */}
-        <div className="flex justify-between items-start gap-4 pe-14">
+        {/* Sticky header: title + live price + close stay visible while the
+            options scroll — the standard food-app sheet pattern. Full-bleed
+            (-mx/px mirror the scroller padding) so content slides under a
+            solid bar, not under text. */}
+        <div className={`sticky top-0 z-10 -mx-6 sm:-mx-8 px-6 sm:px-8 pt-4 sm:pt-6 pb-3 flex justify-between items-start gap-3 border-b ${
+          darkMode ? 'bg-[#141414] border-neutral-800' : 'bg-white border-neutral-200'
+        }`}>
           <div className="min-w-0 flex-1">
             <h3 dir="auto" className={`text-xl sm:text-2xl font-black leading-tight ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
               {headerTitle}
@@ -193,6 +182,21 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
           <div className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-lg font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap tabular-nums" dir="ltr">
             {headerPrice ?? priceLabel(item, lang, currency)}
           </div>
+
+          {/* In-flow close: always in the sticky bar (never scrolled away,
+              never overlapped — no absolute corner to reserve for). */}
+          <button
+            type="button"
+            onClick={onClose}
+            className={`shrink-0 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+              darkMode
+                ? 'bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700'
+                : 'bg-neutral-100 text-neutral-700 hover:text-black hover:bg-neutral-200'
+            }`}
+            aria-label={isAr ? 'إغلاق' : 'Close modal'}
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* Description (hidden when the admin leaves it empty) */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
+import { useGuardedText } from '@/src/hooks/useGuardedText';
 import { ShoppingBag, ArrowRight, ArrowLeft, Trash2, PauseCircle, MoonStar } from 'lucide-react';
 import { formatPrice } from '@/src/utils/pricing';
 import type { OrderingStatus } from '@/src/utils/status';
@@ -24,6 +25,7 @@ export const CartBar: React.FC<CartBarProps> = ({
   orderingState,
 }) => {
   const isAr = lang === 'ar';
+  const totalRef = useGuardedText<HTMLDivElement>(formatPrice(totalPrice, currency));
 
   // Delete confirmation dialog (opens on trash tap)
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -98,7 +100,7 @@ export const CartBar: React.FC<CartBarProps> = ({
             <div className={`text-xs text-neutral-400 font-medium ${isAr ? 'leading-relaxed' : 'leading-tight'}`}>
               {isAr ? 'إجمالي الطلب' : 'Your Order'}
             </div>
-            <div className="text-xs min-[380px]:text-sm sm:text-base font-extrabold text-[var(--primary)] whitespace-nowrap leading-tight tabular-nums" dir="ltr">
+            <div ref={totalRef} className="text-xs min-[380px]:text-sm sm:text-base font-extrabold text-[var(--primary)] whitespace-nowrap leading-tight tabular-nums" dir="ltr">
               {formatPrice(totalPrice, currency)}
             </div>
           </div>

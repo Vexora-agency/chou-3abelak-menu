@@ -2,6 +2,7 @@ import React from 'react';
 import type { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { formatPrice, unitPrice, featureName } from '@/src/utils/pricing';
 import { pickLangText } from '@/src/utils/menuHelpers';
+import { useGuardedText } from '@/src/hooks/useGuardedText';
 import { AlertCircle } from 'lucide-react';
 
 interface OrderSummaryLinesProps {
@@ -34,6 +35,7 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
   darkMode,
 }) => {
   const isAr = lang === 'ar';
+  const grandTotalRef = useGuardedText(formatPrice(grandTotal, currency));
   return (
     <>
       {/* Error Message */}
@@ -126,7 +128,7 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
               ? (isAr ? 'الإجمالي الكلي:' : 'Total:')
               : (isAr ? 'المجموع الفرعي:' : 'Subtotal:')}
           </span>
-          <span className="text-base px-3.5 py-1 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black shadow-xs tabular-nums shrink-0 whitespace-nowrap" dir="ltr">
+          <span ref={grandTotalRef} className="text-base px-3.5 py-1 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black shadow-xs tabular-nums shrink-0 whitespace-nowrap" dir="ltr">
             {formatPrice(grandTotal, currency)}
           </span>
         </div>

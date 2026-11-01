@@ -2,7 +2,7 @@
  * Settings-block validation for restaurant menu documents.
  * Single consumer: the validate.js orchestrator.
  */
-import { stripControls, validateBilingual, validateBilingualOpt, TIME_REGEX, PHONE_REGEX, WHATSAPP_REGEX } from './validate-core.js';
+import { stripControls, validateBilingual, validateBilingualOpt, TIME_REGEX, PHONE_REGEX } from './validate-core.js';
 import { buildFeatureLibrary } from './validate-feature-library.js';
 
 /**
@@ -49,8 +49,10 @@ function validateSettings(s, errors) {
     errors.push('settings.phone must contain only digits, +, spaces, and dashes');
   }
 
-  // WhatsApp
-  const whatsapp = typeof s.whatsapp === 'string' ? s.whatsapp.replace(/[^0-9]/g, '') : '';
+  // Legacy tolerance (owner decision, WhatsApp removal): old menu docs,
+  // imports and backups may carry settings.whatsapp. It is silently
+  // ignored here (never copied to cleanSettings, never an error) so old
+  // data keeps validating. New saves simply stop writing the field.
 
   // Map URL — accepts a work location in any form (full/short Maps URL,
   // raw "lat,lng", place name) and normalizes to a working https Maps link.
@@ -131,8 +133,12 @@ function validateSettings(s, errors) {
   // Ordering settings
   const ord = s.ordering || {};
   const orderingEnabled = Boolean(ord.enabled);
-  if (orderingEnabled && !WHATSAPP_REGEX.test(whatsapp)) {
-    errors.push('settings.whatsapp must be an international phone number (e.g. 96170123456) when ordering is enabled');
+  // The contact-phone guard moved here from settings.whatsapp (removed):
+  // ordering needs a callable restaurant number (the same field behind
+  // the Call/tel: button). PHONE_REGEX allows +, spaces and dashes;
+  // strictly-local short numbers fail the length floor.
+  if (orderingEnabled && !PHONE_REGEX.test(phone)) {
+    errors.push('settings.phone must be a callable phone number (e.g. +96170123456) when ordering is enabled');
   }
   const validTypes = ['delivery', 'pickup', 'dinein'];
   const types = Array.isArray(ord.types)
@@ -274,7 +280,6 @@ function validateSettings(s, errors) {
     tagline,
     logoText,
     phone,
-    whatsapp,
     mapUrl,
     address,
     hoursText,

@@ -3,6 +3,12 @@ import type { MenuData } from '@/src/types/menu';
 import { normalizeMenu } from '@/src/utils/pricing';
 import { isRecord, parseJson, readJson } from '@/src/utils/safeJson';
 import { publicGet } from '@/src/lib/api-client';
+import { markFetchStart, shouldEventFetch } from '@/src/utils/refreshGate';
+
+/** Event-gate channel shared by this hook's interval + ambient refreshes. */
+const MENU_KEY = 'menu';
+/** Coalescing window for focus/visibility/pageshow refreshes (see refreshGate). */
+const EVENT_WINDOW_MS = 15000;
 
 /** Loads the menu document (API → cache → seed) and exposes it with its setter. */
 export function useMenuLoader() {
@@ -105,6 +111,7 @@ export function useMenuLoader() {
   useEffect(() => {
     let alive = true;
     const refresh = async () => {
+      markFetchStart(MENU_KEY);
       try {
         const data = await publicGet<MenuData>('/api/menu');
         if (!alive || !data) return;
@@ -130,8 +137,13 @@ export function useMenuLoader() {
     const id = window.setInterval(() => {
       if (document.visibilityState === 'visible') void refresh();
     }, 60000);
+    // Ambient refreshes (tab returns, window focus): throttled + visible-only
+    // via refreshGate — iOS fires focus on every keyboard show/hide and app
+    // switch, which used to mean one /api/menu fetch per event.
     const onVisible = () => {
-      if (document.visibilityState === 'visible') void refresh();
+      if (document.visibilityState !== 'visible') return;
+      if (!shouldEventFetch(MENU_KEY, EVENT_WINDOW_MS)) return;
+      void refresh();
     };
     // bfcache restore (back/forward on phones) reuses the old page without
     // re-running effects — refresh explicitly so resume times never linger.

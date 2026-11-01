@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
 import { isPollStale, pollIntervalMs } from '@/src/utils/ordering';
+import { markFetchStart, shouldEventFetch } from '@/src/utils/refreshGate';
 import { scheduleIdle } from '@/src/utils/scheduleIdle';
+
+/** Event-gate channel shared by this hook's tick + ambient refreshes. */
+const ORDERING_KEY = 'ordering-state';
+/** Coalescing window for focus/visibility/pageshow refreshes (see refreshGate). */
+const EVENT_WINDOW_MS = 15000;
 
 export function useOrderingState() {
   const [orderingState, setOrderingState] = useState<OrderingStatus | null>(null);
@@ -36,32 +42,48 @@ export function useOrderingState() {
   useEffect(() => {
     let alive = true;
     let timer = 0;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch trigger, see above
-    const tick = async () => {
-      if (!alive) return;
-      await fetchOrderingState();
-      if (!alive) return;
-      timer = window.setTimeout(tick, pollIntervalMs(stateRef.current, Date.now(), lastReturnRef.current));
-    };
-    // First poll waits for an idle window (2 s ceiling) so the boot-critical
-    // /api/menu fetch wins the connection and the CPU; the header shows the
-    // menu-derived fail-open state meanwhile, and all later polls keep their
-    // normal cadence once the first tick runs.
-    const cancelIdle = scheduleIdle(() => {
-      if (alive) void tick();
-    }, 2000);
-    const markReturn = () => {
-      lastReturnRef.current = Date.now();
-    };
-    const onReturn = () => {
-      markReturn();
-      void fetchOrderingState();
-    };
-    const onPageShow = (e: PageTransitionEvent) => {
-      if (!e.persisted) return;
-      markReturn();
-      void fetchOrderingState();
-    };
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch trigger, see above
+  const tick = async () => {
+    if (!alive) return;
+    markFetchStart(ORDERING_KEY);
+    await fetchOrderingState();
+    if (!alive) return;
+    timer = window.setTimeout(tick, pollIntervalMs(stateRef.current, Date.now(), lastReturnRef.current));
+  };
+  // First poll waits for an idle window (2 s ceiling) so the boot-critical
+  // /api/menu fetch wins the connection and the CPU; the header shows the
+  // menu-derived fail-open state meanwhile, and all later polls keep their
+  // normal cadence once the first tick runs.
+  const cancelIdle = scheduleIdle(() => {
+    if (alive) void tick();
+  }, 2000);
+  // Event-driven top-up (focus / visible-return / persisted restore):
+  // throttled + visible-only via refreshGate — a tap-storm collapses to
+  // one fetch per window instead of one per event. Plain focus does NOT
+  // reset the fast window anymore: only genuine returns (hidden ->
+  // visible, persisted restore) extend 5 s polling, otherwise every tap
+  // would pin the fast cadence forever.
+  const eventRefresh = () => {
+    if (!shouldEventFetch(ORDERING_KEY, EVENT_WINDOW_MS)) return;
+    markFetchStart(ORDERING_KEY);
+    void fetchOrderingState();
+  };
+  const markReturn = () => {
+    lastReturnRef.current = Date.now();
+  };
+  const onVisibleReturn = () => {
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+    markReturn();
+    eventRefresh();
+  };
+  const onFocusReturn = () => {
+    eventRefresh();
+  };
+  const onPageShow = (e: PageTransitionEvent) => {
+    if (!e.persisted) return;
+    markReturn();
+    eventRefresh();
+  };
     // Freshness checker: drop data older than two poll periods so a frozen
     // poller can never pin the UI (or a ticking countdown) on dead data.
     const guard = window.setInterval(() => {
@@ -71,19 +93,19 @@ export function useOrderingState() {
         setOrderingState(null);
       }
     }, 5000);
-    document.addEventListener('visibilitychange', onReturn);
+    document.addEventListener('visibilitychange', onVisibleReturn);
     // pageshow fires on window (never on document) — document-level here
     // would silently never run, verified live with a synthetic event.
     window.addEventListener('pageshow', onPageShow);
-    window.addEventListener('focus', onReturn);
+    window.addEventListener('focus', onFocusReturn);
     return () => {
       alive = false;
       cancelIdle();
       window.clearTimeout(timer);
       window.clearInterval(guard);
-      document.removeEventListener('visibilitychange', onReturn);
+      document.removeEventListener('visibilitychange', onVisibleReturn);
       window.removeEventListener('pageshow', onPageShow);
-      window.removeEventListener('focus', onReturn);
+      window.removeEventListener('focus', onFocusReturn);
     };
   }, []);
 

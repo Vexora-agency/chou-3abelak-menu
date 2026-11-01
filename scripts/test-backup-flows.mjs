@@ -1,6 +1,6 @@
 // Route tests for Backup & History: import token single-use/expiry,
 // restore safety snapshot, trash restore, autosave coalescing,
-// unsigned-can-never-touch-WhatsApp. Pure split of test-backup.mjs.
+// unsigned-can-never-touch-contact-settings. Pure split of test-backup.mjs.
 // Run: node scripts/test-backup-flows.mjs
 import { getSiteId } from '../functions/_shared/versions.js';
 import { onRequest as analyzeReq } from '../functions/api/admin/import/analyze.js';

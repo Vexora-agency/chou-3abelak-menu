@@ -22,3 +22,6 @@ REVISED: account model answered (one/account/client); retention/legal deprioriti
 
 ## 11. Free-plan capacity — PER CLIENT (limits fetched 2026-11-01)
 Per order: KV R2/W1, D1 read ~5 rows / write ~7 rows, ~7 Function requests with views. First breakage per client: KV WRITES 1,000/day → ~800-900 orders/day. View-heavy menus burn KV reads (100k/day ≈ 30k views) first. Client count unbounded by quotas; upgrade trigger per client: >500 orders/day sustained.
+
+## 12. WhatsApp removal (branch `maintenance/remove-whatsapp`, 6 commits C1–C6)
+Cloud API send-block + sentVia channel gone (FE+BE same commit); 6 files deleted (~1,135 lines); guard moved whatsapp→contact phone with legacy strip + tests (62/0); contact number/links/picker/social removed across ~35 files; migration 0017 written, NOT run; docs/privacy/seed updated (no legal claims). Deleted tests accounted: test-whatsapp.ts (40 passed), test-whatsapp-api.mjs (all-green ok-lines), test-dial-codes.ts (35 passed, subject deleted). Dangling package.json scripts (`test:whatsapp`, `test:dial`, `test:all` chain) need a 1-line cleanup — left untouched per no-package.json rule. Remaining sweep matches are intentional (removal comments, legacy fixtures, applied migrations, orphaned aistudio artifact proposed for follow-up). No rescore; recorded what changed.

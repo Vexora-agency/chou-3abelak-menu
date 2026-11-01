@@ -9,6 +9,19 @@
 - [x] Extensibility: 3 paper traces → overview §10
 - [x] Capacity estimate → overview §11 (revised per-client 2026-11-01)
 
+## DONE — WhatsApp removal (branch `maintenance/remove-whatsapp`, NEVER push; owner reviews + pushes)
+- [x] C1 (3d5b894): orders.js Cloud API block + sentVia removed; cart.api + submit hook updated same commit
+- [x] C2 (64798c8): deleted 6 files (whatsapp-api.js, admin route, WhatsappApiSection, whatsapp.ts builder, 2 test files — 1,135 lines)
+- [x] C3 (1b80eb3): guard transferred settings.whatsapp→settings.phone; legacy strip + 5 new test-status assertions (62/0)
+- [x] C4 (59001f4): contact number/links/picker/social removed (35 files); deleted CountryCodePicker, dialCodes, test-dial-codes; fixtures keep whatsapp as tolerance coverage
+- [x] C5 (0906b3e): migration 0017 (NOT run) + markOrderSentVia removed; sent_via kept
+- [x] C6 (6819ee4): README/privacy(llms/llms.txt/seed/cart-isolation docs; no legal claims invented
+- [x] Verify: tsc clean; depcruise 0 violations (365 modules/1061 deps); eslint 99 problems (was 100; -3 deleted files, +3 owner WIP hook, net my-change 0); prod build + grep clean except orphaned aistudio artifact + fixed index.html meta
+- [x] External event logged: owner committed 59df5ad on this branch + cherry-picked to main (ad01666, appears pushed); my 6 commits untouched underneath; zero overlap with WhatsApp paths
+
+## DOING
+- [ ] Await owner: (1) review + push `maintenance/remove-whatsapp`; (2) Generate_pass.txt removal approval (Phase-0); (3) package.json dangling scripts (`test:whatsapp`, `test:dial`, `test:all` chain) — 1-line cleanup needed, rule forbade touching it; (4) privacy.html hand-review; (5) orphaned `public/assets/aistudio/Main.*.html` — delete or archive? (6) run migration 0017 per client explicitly
+
 ## DONE — Phase-0 (branch `maintenance/phase-0`, NEVER push; owner reviews)
 - [x] A. RF-06 inspected (54 lines, tracked since d63ded6, UNCERTAIN credential-like, proposal awaiting approval — NOT deleted) — evidence §A in final report
 - [x] B. RF-01 fixed: `scripts/test-pricing.mjs:128` (commit 7d1fb71) — pricing 92/0, parity 82/0, plan 46/0, no regressions

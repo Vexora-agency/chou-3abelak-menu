@@ -20,7 +20,7 @@
 - [x] External event logged: owner committed 59df5ad on this branch + cherry-picked to main (ad01666, appears pushed); my 6 commits untouched underneath; zero overlap with WhatsApp paths
 
 ## DOING
-- [ ] Await owner: (1) review + push `maintenance/remove-whatsapp`; (2) Generate_pass.txt removal approval (Phase-0); (3) package.json dangling scripts (`test:whatsapp`, `test:dial`, `test:all` chain) — 1-line cleanup needed, rule forbade touching it; (4) privacy.html hand-review; (5) orphaned `public/assets/aistudio/Main.*.html` — delete or archive? (6) run migration 0017 per client explicitly
+- [ ] Await owner: (1) review + push `maintenance/remove-whatsapp`; (2) Generate_pass.txt removal approval (Phase-0); (3) package.json dangling scripts — RESOLVED in step-1 T1 (7e6425c, test:all green); (4) privacy.html hand-review; (5) orphaned `public/assets/aistudio/Main.*.html` — delete or archive? (6) run migration 0017 per client explicitly
 
 ## DONE — Phase-0 (branch `maintenance/phase-0`, NEVER push; owner reviews)
 - [x] A. RF-06 inspected (54 lines, tracked since d63ded6, UNCERTAIN credential-like, proposal awaiting approval — NOT deleted) — evidence §A in final report

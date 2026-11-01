@@ -1,0 +1,36 @@
+# Step-1 Task 1 — failing-suite triage (branch maintenance/step-1, commit 7e6425c)
+Date: 2026-11-01. Baseline: raw/10-phase0-baseline.txt. Rule: fix stale tests only with docs+git evidence; list real bugs (none found); NEEDS ENV separated.
+
+## STALE TEST -> FIXED (4)
+1. test-features-orders 20+1 FAIL "location + phone_norm stored"
+   Root: fake DB INSERT column list in scripts/_helpers/features-cases.mjs:72
+   predates track_token (added to real repo in d190a30, `git log -S track_token`
+   shows no update to the fake). Every later column shifted by one.
+   Fix: added 'track_token' at position 4 (+2 comment lines). -> 21/0.
+2. test-features-customer FAILs (anonymize works / NULLs+location / CSV BOM) + crash :68
+   Root: commit ff29759 introduced per-action confirm words (CONFIRM_WORDS in
+   _shared/customer-data.js; anonymize=ANONYMIZE, export=EXPORT) and updated
+   test-customer-confirm.mjs, but NOT test-features-customer.mjs (still sends
+   DELETE/حذف). Server returns confirmation_required -> e.csv undefined -> crash.
+   Fix: ANONYMIZE + تصدير (Arabic variant kept). test-features.mjs wrapper -> green.
+3. test-sound.ts 4+5 FAIL (880Hz + 1174.66Hz @+0.17s, 2 osc, leak check)
+   Root: engine replaced (7a219e2 5-sound library, c0946e6 ghost-chime kill,
+   0be640c no-background-music; contract documented in bellPatterns.ts header:
+   strike list {freq,at,vol}, 3 partials per strike). Test asserted retired engine.
+   Fix: rewrote 5 assertions from pattern data (classic=4 strikes -> 12 partials,
+   stops==starts, ladder 12->24). -> 9/0.
+4. test-backup-flows.mjs crash :128 (vl.versions undefined)
+   Root: in-route session gate for admin/versions (per-actor history, acce2c1)
+   + middleware bypassed by direct onRequest harness; test sent no Cookie.
+   Fix: mint owner session like test-versions.mjs (SESSION_SECRET + Cookie header
+   wrapper). Also updated 2 obsolete assertions (diff label + unsigned-guard) to
+   phone-based equivalents; added strip assertion for whatsapp (legacy tolerance).
+   -> 41/0; test-backup.mjs runner exit 0.
+
+## test:all (package.json, scripts-only change) — ALL GREEN, exit 0
+23 suites, every suite 0 failed. Deleted-accounted: test-whatsapp.ts (40 passed),
+test-whatsapp-api.mjs (all-green), test-dial-codes.ts (35 passed, subject deleted).
+test:live = launch (:3000 + seed orders) + sqlperf (emulator state) — excluded, documented.
+
+## Pre-existing failures CONFIRMED IDENTICAL (stash A/B on pristine tree)
+None remaining from baseline except NEEDS-ENV exclusions (intended).

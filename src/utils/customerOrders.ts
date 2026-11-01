@@ -185,6 +185,24 @@ export function savePinnedLocation(loc: PinnedLocation | null): void {
   } catch {}
 }
 
+/** Drop one order from the shelf (dismissed finished/orphan entries). */
+export function removeCustomerOrder(n: number): StoredCustomerOrder[] {
+  if (!Number.isInteger(n) || n <= 0) return loadCustomerOrders();
+  const raw = readRaw();
+  const rest: unknown[] = Array.isArray(raw) ? raw : [];
+  const next = pruneOrders(
+    rest.filter((v) => !(isStoredOrder(v) && v.n === n)),
+    Date.now()
+  );
+  try {
+    window.localStorage.setItem(CUSTOMER_ORDERS_KEY, JSON.stringify(next));
+  } catch {}
+  try {
+    window.dispatchEvent(new Event('customer-orders-changed'));
+  } catch {}
+  return next;
+}
+
 const RUNG_KEY = 'customer_orders_rung_v1';
 
 /** Order numbers that already rang (persisted — survives reloads/tab kills). */

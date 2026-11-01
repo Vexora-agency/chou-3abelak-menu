@@ -6,6 +6,7 @@ import {
   loadCustomerOrders,
   loadRung,
   markRung,
+  removeCustomerOrder,
   setSoundOff,
   type StoredCustomerOrder,
 } from '@/src/utils/customerOrders';
@@ -338,6 +339,25 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // open, keep the shell so focus and scroll are not lost to <body>.
   if ((!shelf.length || allTerminal) && !open) return null;
 
+  // Dismiss a finished or orphaned order from the shelf. Only terminal
+  // (completed/cancelled) or unreachable (unknown) orders are dismissible —
+  // live ones keep their cancel/received flows. Dismissing the last order
+  // closes the panel too, and an empty shelf unmounts the bell entirely.
+  const dismissOrder = (n: number) => {
+    const next = removeCustomerOrder(n);
+    setShelf(next);
+    setStates((prev) => {
+      if (!prev[n]) return prev;
+      const { [n]: _dropped, ...rest } = prev;
+      return rest;
+    });
+    if (next.length === 0) {
+      stopBellChime();
+      pendingSoundRef.current.clear();
+      setOpen(false);
+    }
+  };
+
   // Master sound switch: off = visual bell only, never a chime.
   // Unmuting plays a chime at once (a tap always unlocks audio).
   const toggleSound = () => {
@@ -470,6 +490,17 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                           {o.status === 'completed' && <Check size={11} strokeWidth={3.5} aria-hidden="true" />}
                           {statusLabel(o.status)}
                         </span>
+                        {(o.status === 'completed' || o.status === 'cancelled' || o.status === 'unknown') && (
+                          <button
+                            type="button"
+                            onClick={() => dismissOrder(o.n)}
+                            aria-label={isAr ? `إزالة الطلب ${o.n} من القائمة` : `Dismiss order ${o.n}`}
+                            title={isAr ? 'إزالة' : 'Dismiss'}
+                            className={`group relative w-8 h-8 after:absolute after:-inset-2 after:content-[""] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'text-neutral-500 hover:text-neutral-200 hover:bg-white/10' : 'text-neutral-400 hover:text-neutral-700 hover:bg-black/5'}`}
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                     <p className={`mt-0.5 text-xs tabular-nums ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>

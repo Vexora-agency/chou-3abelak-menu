@@ -258,7 +258,6 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
           ...(location ? { location: { lat: location.lat, lng: location.lng, accuracy: Math.round(location.accuracy) } } : {}),
           lang,
           website: honeypot,
-          whatsappUpdates: customer.whatsappUpdates === true,
         },
         lang
       );

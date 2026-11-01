@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
+import { useGuardedText } from '@/src/hooks/useGuardedText';
 import { MenuData, MenuItem, CartLine } from '@/src/types/menu';
 import { X, Plus, Minus, Flame, Sparkles, Award } from 'lucide-react';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
@@ -105,6 +106,11 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
       headerPrice = null;
     }
   }
+  // Both money displays are tamper-guarded: external DOM edits snap back.
+  const headerPriceText = headerPrice ?? priceLabel(item, lang, currency);
+  const headerPriceRef = useGuardedText<HTMLDivElement>(headerPriceText);
+  const addTotalText = liveTotal !== null ? `· ${formatPrice(liveTotal, currency)}` : '';
+  const addTotalRef = useGuardedText(addTotalText);
 
   const toggleAddon = (id: string) => {
     setAddonIds((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
@@ -179,8 +185,8 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             </div>
           </div>
 
-          <div className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-lg font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap tabular-nums" dir="ltr">
-            {headerPrice ?? priceLabel(item, lang, currency)}
+          <div ref={headerPriceRef} className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-lg font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap tabular-nums" dir="ltr">
+            {headerPriceText}
           </div>
 
           {/* In-flow close: always in the sticky bar (never scrolled away,
@@ -259,7 +265,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   <Plus size={20} className="stroke-[3]" />
                   <span>{isAr ? 'إضافة إلى الطلب' : 'Add to Order'}</span>
                   {liveTotal !== null && (
-                    <span className="tabular-nums" dir="ltr">· {formatPrice(liveTotal, currency)}</span>
+                    <span ref={addTotalRef} className="tabular-nums" dir="ltr">{addTotalText}</span>
                   )}
                 </button>
               </>

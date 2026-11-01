@@ -2,13 +2,13 @@
 #
 # History contains two audit artifacts whose literal strings trip the
 # generic-api-key rule on every push scan (--first-parent walks history):
-#  1. 82d0266 .dev.vars.example lines 18/22/23/28 — obviously-fake
-#     sequential-hex placeholders (CRON/BACKUP/AUDIT/TELEGRAM secrets).
-#     The live file was already sanitized to <...> markers (a0bfb22);
-#     only the historic commit still matches. The values were never real
-#     (labeled FAKE VALUES ONLY / local test values at the time).
+#  1. 82d0266 .dev.vars.example — obviously-fake sequential-hex
+#     placeholders (CRON/BACKUP/AUDIT/TELEGRAM secrets). The live file was
+#     already sanitized to <...> markers (a0bfb22); only the historic
+#     commit still matches. The values were never real (labeled
+#     FAKE VALUES ONLY / local test values at the time).
 #  2. ee22ddb security-audit/raw/gitleaks.json — a raw scanner REPORT that
-#     quotes redacted finding strings (test fixture
+#     quotes a redacted finding string (test fixture
 #     'other-secret-12345678901234' from scripts/test-backup*.mjs).
 #     The fixture itself is fake test data, not a credential.
 #
@@ -20,14 +20,9 @@
 # Verification (2026-11-01): the 8 fingerprints failing the main-push
 # secrets job are exactly these two artifacts, nothing else.
 
-[[allowlist]]
-description = "historic fake placeholders in .dev.vars.example (82d0266, since replaced by <...> markers)"
+[allowlist]
+description = "known-fake historic placeholders (82d0266 sequential hex + quoted test fixture in ee22ddb report)"
 regexes = [
   '''(?:CRON_SECRET|BACKUP_SECRET|AUDIT_SECRET|TELEGRAM_WEBHOOK_SECRET)=0123456789abcdef[0-9a-f]*''',
-]
-
-[[allowlist]]
-description = "fake test fixture quoted inside the raw gitleaks audit report (ee22ddb)"
-regexes = [
   '''other-secret-12345678901234''',
 ]

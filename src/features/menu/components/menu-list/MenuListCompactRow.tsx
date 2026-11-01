@@ -79,7 +79,10 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
   return (
     <motion.div
       key={item.id}
-      layout
+      // No `layout`: it re-measures on every render and animates phantom
+      // corrections (e.g. the one-frame rect shift when the details modal
+      // locks the body) — the list visibly jolts up and back on tap.
+      // Entrance stays on initial/whileInView below; nothing else needs FLIP.
       initial={{ opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}

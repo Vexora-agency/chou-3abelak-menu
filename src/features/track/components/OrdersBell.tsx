@@ -13,8 +13,14 @@ import {
 import { formatPrice } from '@/src/utils/pricing';
 import { ALARM_INTERVAL_MS, ALARM_SESSION_MS } from '@/src/utils/bellPatterns';
 import { playBellChime, stopBellChime, unlockBellAudio, vibrateBell } from '@/src/utils/bellSound';
+import { markFetchStart, shouldEventFetch } from '@/src/utils/refreshGate';
 import { ReceivedButton } from './ReceivedButton';
 import { CancelOrderButton } from './CancelOrderButton';
+
+/** Event-gate channel shared by this bell's interval + ambient refreshes. */
+const BELL_KEY = 'orders-bell';
+/** Coalescing window for focus/visibility/pageshow refreshes (see refreshGate). */
+const EVENT_WINDOW_MS = 15000;
 
 interface OrdersBellProps {
   lang: 'en' | 'ar';
@@ -168,6 +174,9 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     unlockBellAudio();
     let stop = false;
     const tick = async () => {
+      // Stamp every poll start so ambient focus/visibility refreshes below
+      // dedupe against it (see refreshGate) instead of doubling it.
+      markFetchStart(BELL_KEY);
       const list = loadCustomerOrders();
       const next = list.length ? await fetchOrderStates(list) : {};
       if (stop) return;
@@ -224,16 +233,30 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       if (document.visibilityState === 'visible') void tick();
     }, 30000);
     // Same-tab saves don't emit storage events — the store pings us.
+    // Order-placed/changed pings stay immediate and ungated (rare +
+    // meaningful, never a storm source).
     const onLocal = () => void tick();
     const onStorage = () => void tick();
     // Desktop tab switches / bfcache restores don't always fire
     // visibilitychange first — belt and suspenders for the flush.
-    const onFocus = () => {
+    // Ambient refreshes (focus / restore / return) are throttled +
+    // visible-only via refreshGate: iOS fires focus on every keyboard
+    // show/hide and app switch, each of which used to mean N order-track
+    // fetches. Sound flush stays outside the gate (local-only unlock).
+    const ambientRefresh = () => {
+      if (!shouldEventFetch(BELL_KEY, EVENT_WINDOW_MS)) return;
+      markFetchStart(BELL_KEY);
       void tick();
+    };
+    const onFocus = () => {
+      ambientRefresh();
       void flushPendingSound();
     };
-    const onPageShow = () => {
-      void tick();
+    const onPageShow = (e: PageTransitionEvent) => {
+      // bfcache restore only: the initial (non-persisted) pageshow would
+      // just duplicate the mount tick above.
+      if (!e.persisted) return;
+      ambientRefresh();
       void flushPendingSound();
     };
     // Any real interaction may have just unlocked audio: flush chimes
@@ -241,7 +264,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     const onGesture = () => void flushPendingSound();
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
-        void tick();
+        ambientRefresh();
         void flushPendingSound();
       }
     };

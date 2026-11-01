@@ -73,21 +73,26 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
     };
   }, [item, onClose]);
 
-  if (!item) return null;
-
-  const pricing = normalizePricing(item);
-  const options = hasOptions(item);
-  const variants = hasVariants(item) ? item.variants || [] : [];
-  const addons = itemAddons(item);
-  const singleKey = cartLineKey(item.id);
-  const singleQty = cart[singleKey]?.quantity || 0;
+  // Rules of Hooks: EVERYTHING in this block runs on EVERY render, including
+  // when closed (item === null). The two useGuardedText calls must never sit
+  // after an early return: adding hooks on a later render crashes React with
+  // "Rendered more hooks than during the previous render", which unmounts the
+  // whole app (black screen). Closed state uses empty fallbacks.
+  const pricing = item ? normalizePricing(item) : null;
+  const options = item ? hasOptions(item) : false;
+  const variants = item && hasVariants(item) ? item.variants || [] : [];
+  const addons = item ? itemAddons(item) : [];
+  const singleKey = item ? cartLineKey(item.id) : '';
+  const singleQty = (item && cart[singleKey]?.quantity) || 0;
 
   // Live total for the configured selection
-  let liveTotal: number | null;
-  try {
-    liveTotal = lineTotal(item, { variantId, addonIds, qty });
-  } catch {
-    liveTotal = null;
+  let liveTotal: number | null = null;
+  if (item) {
+    try {
+      liveTotal = lineTotal(item, { variantId, addonIds, qty });
+    } catch {
+      liveTotal = null;
+    }
   }
 
   // Live header: title gains the selected variant name, price pill shows the
@@ -95,11 +100,13 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
   const selectedVariantName = variants.length > 0 && variantId
     ? featureName(menu, variantId, lang)
     : null;
-  const headerTitle = selectedVariantName
-    ? `${pickLangText(item.name, lang)} — ${selectedVariantName}`
-    : pickLangText(item.name, lang);
+  const headerTitle = !item
+    ? ''
+    : selectedVariantName
+      ? `${pickLangText(item.name, lang)} — ${selectedVariantName}`
+      : pickLangText(item.name, lang);
   let headerPrice: string | null = null;
-  if (options) {
+  if (item && options) {
     try {
       headerPrice = formatPrice(perUnitPrice(item, { variantId, addonIds }), currency);
     } catch {
@@ -107,17 +114,21 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
     }
   }
   // Both money displays are tamper-guarded: external DOM edits snap back.
-  const headerPriceText = headerPrice ?? priceLabel(item, lang, currency);
+  const headerPriceText = item ? (headerPrice ?? priceLabel(item, lang, currency)) : '';
   const headerPriceRef = useGuardedText<HTMLDivElement>(headerPriceText);
   const addTotalText = liveTotal !== null ? `· ${formatPrice(liveTotal, currency)}` : '';
   const addTotalRef = useGuardedText(addTotalText);
+
+  if (!item) return null;
 
   const toggleAddon = (id: string) => {
     setAddonIds((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
   };
 
   const stepQty = (dir: 1 | -1) => {
-    setQty((q) => Math.max(pricing.minQty, Math.min(pricing.maxQty, q + dir * pricing.step)));
+    // pricing is non-null whenever this can fire (the sheet only renders
+    // its controls when open); the assertion documents that invariant.
+    setQty((q) => Math.max(pricing!.minQty, Math.min(pricing!.maxQty, q + dir * pricing!.step)));
   };
 
   const chipBase = 'px-3.5 h-10 rounded-full text-xs font-bold border transition-colors btn-tactile inline-flex items-center gap-1.5';

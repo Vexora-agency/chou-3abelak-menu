@@ -15,15 +15,15 @@ Sources (fetched 2026-11-01):
 | Environment | URL | D1 | KV | R2 | Secrets |
 |---|---|---|---|---|---|
 | Production | custom domain + `<site>.pages.dev` | prod ORDERS_DB | prod MENU_KV | prod REPORTS | real keys |
-| Preview (staging) | `<branch>.<site>.pages.dev` | **preview ORDERS_DB** (separate) | **preview MENU_KV** (separate) | **preview REPORTS** (separate) | fake keys, `SITE_PLAN` as needed |
+| Preview (staging) | `<branch>.<site>.pages.dev` | `chou-3abelak-orders-preview` (`9011d17f-…`, migrated through 0017) | `MENU_KV_PREVIEW` (`d4ef20c5…`, seeded with `menu.seed.json`) | `chou-3abelak-reports-preview` | fake keys, `SITE_PLAN` as needed |
 | Local | `localhost:3000` | `--local` emulator | local KV | throwaway | `.dev.vars` (git-ignored) |
 
 Preview bindings are configured in the Cloudflare dashboard (Settings >
 Bindings); the `[env.preview]` block in `wrangler.toml` documents the same
-intent for CLI deploys and local runs. If dashboard and file ever disagree,
-**verify which wins in the dashboard deployment details** (recorded as an
-owner check below) — the dashboard is the current operational source of
-truth for this repo.
+mapping for CLI deploys. VERIFIED 2026-11-01: for git-connected deploys the
+dashboard wins — a fresh preview deploy WITH `[env.preview]` ids in the file
+still served no D1 binding (`/api/health?deep=1` → 503 while `/api/health`
+→ 200 `{"ok":true}`). The file block is documentation + CLI convenience only.
 
 ## Owner hand-do list (Cloudflare dashboard, per client account)
 

@@ -34,12 +34,12 @@ bucket_name = "chou-3abelak-reports"
 [[env.preview.d1_databases]]
 binding = "ORDERS_DB"
 database_name = "chou-3abelak-orders-preview"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "9011d17f-5f1c-436a-bd2b-3e04ef566709"
 migrations_dir = "migrations"
 
 [[env.preview.kv_namespaces]]
 binding = "MENU_KV"
-id = "00000000000000000000000000000000"
+id = "d4ef20c571854ba69e118e79c903fe6e"
 
 [[env.preview.r2_buckets]]
 binding = "REPORTS"

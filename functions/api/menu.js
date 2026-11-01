@@ -19,7 +19,7 @@ const DEFAULT_EMPTY_MENU = {
     whatsapp: '',
     mapUrl: '',
     address: { en: '', ar: '' },
-    hoursText: { en: 'Daily · 12:00 PM – 12:00 AM', ar: 'يومياً · 12:00 ظهراً – 12:00 منتصف الليل' },
+    hoursText: { en: 'Daily · 12:00 PM – 12:00 AM', ar: 'يومياً · من 12:00 م إلى 12:00 ص' },
     statusMode: 'auto',
     openTime: '12:00',
     closeTime: '00:00',

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { MenuData, AdminSaveResult } from '@/src/types/menu';
-import { ensureSettingsBlocks } from '@/src/utils/menuHelpers';
+import { ensureSettingsBlocks, formatHoursRange } from '@/src/utils/menuHelpers';
 
 interface MenuSaverOptions {
   initialMenu: MenuData;
@@ -94,7 +94,13 @@ export function useMenuSaver({ initialMenu, onSaveMenu, isAr, savePaused: savePa
         name: fillBi(menu.settings.name),
         tagline: fillBi(menu.settings.tagline),
         address: fillBi(menu.settings.address),
-        hoursText: fillBi(menu.settings.hoursText),
+        // hoursText is a legacy display field: always recompute it from the
+        // SAVED open/close/days so it can never contradict the header pill
+        // (which derives the same range via formatHoursRange).
+        hoursText: {
+          en: formatHoursRange(menu.settings, 'en'),
+          ar: formatHoursRange(menu.settings, 'ar'),
+        },
         currency: fillBi(menu.settings.currency),
         about: fillBi(menu.settings.about),
         featureDefs: (menu.settings.featureDefs || []).map((f) => ({ ...f, name: fillBi(f.name) })),

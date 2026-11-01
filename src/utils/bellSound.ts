@@ -120,6 +120,11 @@ function sharedContext(): AudioContext | null {
 function ensureLiveInGesture(): void {
   try {
     interacted = true;
+    // First real gesture: pre-build the chime elements so the first ring
+    // starts instantly. Warmup only loads data (never plays), so it never
+    // disturbs background music — unlike a mount-time warmup + session
+    // claim, which stops the user's songs on site entry.
+    warmHtmlChime();
     if (ctx && ctx.state === 'running') {
       try {
         void ctx.resume().catch(() => {});
@@ -158,13 +163,18 @@ function requestPlaybackSession(): void {
   } catch {}
 }
 
-/** Call once from the app shell: keeps audio born fresh on every gesture. */
+/**
+ * Call once from the app shell: keeps audio born fresh on every gesture.
+ * Mount-safe by design: it ONLY installs listeners here. Claiming the
+ * audio session (requestPlaybackSession) or warming media elements on
+ * mount steals background music on iOS — so both happen later: warmup on
+ * the first real gesture, the session claim inside playBellChime (which
+ * already requests it at chime time, only when something truly rings).
+ */
 export function unlockBellAudio(): void {
   if (unlocked) return;
   unlocked = true;
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
-  requestPlaybackSession();
-  warmHtmlChime();
   window.addEventListener('pointerdown', ensureLiveInGesture, { passive: true });
   // touchstart fires earliest on mobile; keydown covers desktop.
   window.addEventListener('touchstart', ensureLiveInGesture, { passive: true });

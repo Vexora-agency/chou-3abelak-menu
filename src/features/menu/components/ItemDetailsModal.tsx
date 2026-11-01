@@ -152,8 +152,15 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
       {/* Drawer on mobile, Centered Modal on Desktop.
           Entrance animation on the wrapper, scrolling on the inner div —
           never both on one element (phone scroll glitches). */}
+      {/* Full-screen sheet on phones (max-md:h-full, bottom-flush): the old
+          92dvh cap + mb-[env(safe-area-inset-bottom)] lift exposed a
+          permanent backdrop-colored strip under the sheet (black in light
+          mode, worse under iOS Chrome's toolbar). Home-indicator clearance
+          already lives INSIDE the scroller below
+          (pb-[max(2rem,env(safe-area-inset-bottom))]), so no margin is
+          needed. Desktop keeps the centered auto-height modal. */}
       <div
-        className={`anim-slide-up relative z-10 w-full max-w-[520px] max-h-[92vh] max-h-[calc(92dvh-env(safe-area-inset-bottom))] mb-[env(safe-area-inset-bottom)] md:mb-0 flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
+        className={`anim-slide-up relative z-10 w-full max-w-[520px] max-md:h-full flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
       >

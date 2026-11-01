@@ -528,7 +528,6 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           totalPrice={totalCartPrice}
           currency={currency}
           onOpenCart={() => setIsCartOpen(true)}
-          onClearCart={handleClearCart}
           lang={lang}
           orderingState={liveOrderingState}
         />

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
-import { ShoppingBag, ArrowRight, ArrowLeft, Trash2, PauseCircle, MoonStar } from 'lucide-react';
+import React from 'react';
+import { ShoppingBag, ArrowRight, ArrowLeft, PauseCircle, MoonStar } from 'lucide-react';
 import { formatPrice } from '@/src/utils/pricing';
 import type { OrderingStatus } from '@/src/utils/status';
 
@@ -9,7 +8,6 @@ interface CartBarProps {
   totalPrice: number;
   currency: string;
   onOpenCart: () => void;
-  onClearCart: () => void;
   lang: 'en' | 'ar';
   orderingState?: OrderingStatus | null;
 }
@@ -19,34 +17,10 @@ export const CartBar: React.FC<CartBarProps> = ({
   totalPrice,
   currency,
   onOpenCart,
-  onClearCart,
   lang,
   orderingState,
 }) => {
   const isAr = lang === 'ar';
-
-  // Delete confirmation dialog (opens on trash tap)
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
-  // Shared counter lock while the confirm dialog is open.
-  useBodyScrollLock(confirmOpen);
-
-  // Close the confirmation on Escape (scroll lock lives in the hook above).
-  useEffect(() => {
-    if (!confirmOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setConfirmOpen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [confirmOpen]);
-
-  const handleConfirmDelete = () => {
-    setConfirmOpen(false);
-    onClearCart();
-  };
 
   if (totalCount === 0) return null;
 
@@ -104,69 +78,17 @@ export const CartBar: React.FC<CartBarProps> = ({
           </div>
         </div>
 
-        {/* Right: quick delete + CTA */}
-        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setConfirmOpen(true);
-            }}
-            aria-label={isAr ? 'إفراغ السلة' : 'Clear cart'}
-            title={isAr ? 'حذف السلة' : 'Clear cart'}
-            className="max-[379px]:hidden w-11 h-11 min-w-[44px] min-h-[44px] flex-shrink-0 rounded-full text-red-500/70 hover:text-red-500 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 flex items-center justify-center transition-all active:scale-90"
-          >
-            <Trash2 size={18} />
-          </button>
+        {/* Right: CTA only. Clearing lives inside the drawer (Clear Cart +
+            per-line remove) — one home for destructive actions, so the bar
+            is identical on every screen size instead of hiding controls
+            under 380px. */}
+        <div className="flex items-center shrink-0">
           <div className={`flex items-center gap-1 sm:gap-1.5 whitespace-nowrap text-[11px] sm:text-xs font-bold bg-[var(--primary)] text-[#0A0A0A] px-3 sm:px-4 py-2 min-h-[44px] rounded-full shadow-sm ${isAr ? '' : 'uppercase tracking-wide'}`}>
             <span>{isAr ? 'معاينة الطلب' : 'View Order'}</span>
             {isAr ? <ArrowLeft size={14} className="stroke-[3]" /> : <ArrowRight size={14} className="stroke-[3]" />}
           </div>
         </div>
       </div>
-
-      {/* Delete confirmation dialog */}
-      {confirmOpen && (
-        <div
-          className="pointer-events-auto fixed inset-0 z-[60] flex items-center justify-center p-4 overscroll-contain"
-          role="alertdialog"
-          aria-modal="true"
-          aria-label={isAr ? 'تأكيد حذف السلة' : 'Confirm clear cart'}
-        >
-          <div
-            className="fixed inset-0 bg-black/60 anim-fade-in"
-            onClick={() => setConfirmOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="relative z-10 w-full max-w-[320px] bg-[#141414] text-white border-2 border-[var(--primary)] rounded-2xl p-5 text-center shadow-2xl anim-pop-in">
-            <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-3">
-              <Trash2 size={22} />
-            </div>
-            <h3 className="text-base font-extrabold">
-              {isAr ? 'هل تود حذف السلة؟' : 'Clear your cart?'}
-            </h3>
-            <p className="text-xs text-neutral-400 mt-1.5 leading-relaxed">
-              {isAr ? 'سيتم حذف كل الأصناف من السلة نهائياً.' : 'All items will be permanently removed from your cart.'}
-            </p>
-            <div className="flex gap-2 mt-5">
-              <button
-                type="button"
-                onClick={() => setConfirmOpen(false)}
-                className="flex-1 h-11 rounded-full border border-white/20 text-white/80 text-sm font-bold hover:bg-white/5 transition-colors"
-              >
-                {isAr ? 'تراجع' : 'Keep cart'}
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                className="btn-tactile flex-1 h-11 rounded-full bg-red-500 text-white text-sm font-bold hover:bg-red-600 shadow-md"
-              >
-                {isAr ? 'حذف' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </aside>
   );
 };

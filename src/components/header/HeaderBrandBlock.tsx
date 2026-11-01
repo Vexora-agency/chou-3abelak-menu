@@ -61,12 +61,9 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
           fetchPriority="high"
           loading="eager"
           alt={pickLangText(menu.settings.name, lang)}
-          // LCP fix: the logo paints (opacity-100) from the very first frame
-          // instead of waiting ~5.75 s for the intro engine (hasEnded). The
-          // intro canvases below stay on top in DOM order with their own
-          // opacity-100, so the 6 s reveal / smoke / sparks still play over
-          // the already-visible logo — decoration, no longer a gate.
-          className="absolute inset-0 w-full h-full object-contain opacity-100 pointer-events-none"
+          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-700 pointer-events-none ${
+            hasEnded ? 'opacity-100' : 'opacity-0'
+          }`}
           style={{ backgroundColor: 'transparent' }}
           width={1440}
           height={532}

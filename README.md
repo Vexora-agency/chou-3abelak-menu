@@ -70,11 +70,12 @@ A fast, bilingual (English & Arabic with full RTL), high-performance restaurant 
 
 ```bash
 git clone <repo-url> && cd chou-3abelak-menu
-npm ci            # one-time, ~2-4 min
-npm run test:all  # must be green (excludes test:live, which needs a server/emulator)
-npm run build
+git checkout <branch-under-review>  # main once merged; feature branches are previewed, never pushed to main
+npm ci            # one-time, ~2-4 min (esbuild postinstall warnings are harmless)
+npm run test:all  # must be green, ~1 min (excludes test:live, which needs a server/emulator)
+npm run build     # ~10 s
 cp .dev.vars.example .dev.vars   # fake local secrets (git-ignored, never commit)
-npx wrangler pages dev ./dist --port 3000
+npx wrangler pages dev ./dist --port 3000   # first run downloads wrangler (~20 s)
 ```
 
 Open http://localhost:3000. Admin login locally uses the fake `.dev.vars`

@@ -117,7 +117,12 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
   const chipBase = 'px-3.5 h-10 rounded-full text-xs font-bold border transition-colors btn-tactile inline-flex items-center gap-1.5';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-6">
+    // Container height is 100dvh (not inset-0's bottom edge): on iOS Chrome
+    // the layout viewport extends behind the bottom toolbar, so a bottom edge
+    // would pin the sheet too low and leave a dark strip / cut the Close
+    // button. dvh tracks the VISIBLE height — identical to inset-0 wherever
+    // they agree, correct where they don't.
+    <div className="fixed inset-x-0 top-0 h-[100dvh] z-50 flex items-end md:items-center justify-center p-0 md:p-6">
       {/* Backdrop */}
       <div
         onClick={onClose}
@@ -129,7 +134,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
           Entrance animation on the wrapper, scrolling on the inner div —
           never both on one element (phone scroll glitches). */}
       <div
-        className={`anim-slide-up relative z-10 w-full max-w-[520px] max-h-[92vh] max-h-[92dvh] flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
+        className={`anim-slide-up relative z-10 w-full max-w-[520px] max-h-[92vh] max-h-[calc(92dvh-env(safe-area-inset-bottom))] mb-[env(safe-area-inset-bottom)] md:mb-0 flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
       >

@@ -57,7 +57,10 @@
 - [ ] Extensibility: order-type registry, notifier abstraction, clone-drift process
 - [ ] RF-13: cross-account deploy-credential story (later phase)
 
-## DONE — Repo cleanup: GitHub is now exactly 2 branches (2026-11-01)
+## DONE — Repo cleanup + stable branch name (2026-11-01)
+- GitHub had 3 branches (main, remove-boosthis, step-1) → now exactly 2: `main` + `maintenance`.
+- `maintenance/step-1` renamed to `maintenance` (single permanent dev branch; old name deleted from GitHub after verifying zero unique commits — containment check passed).
+- CI trigger narrowed to `[main, maintenance]`; CONTRIBUTING updated to single-branch flow.
 - remote `maintenance/remove-boosthis` DELETED from GitHub (verified: tip fbc164d fully contained in step-1, zero unique commits — lossless).
 - GitHub now: `main` + `maintenance/step-1` only. Local `origin/*` tracking refs for deleted/exclusive branches left untouched (C:\ repo not mine to modify).
 - step-1 pushed to GitHub through black-screen fix (96f75e6): triggers fresh preview build so staging serves the fix. Untouched: main (never), production bindings/data.

@@ -70,7 +70,7 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
         >
           {isAr ? 'إفراغ السلة' : 'Clear Cart'}
         </button>
-        <p className={`text-center text-xs leading-relaxed ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
+        <p className={`text-center text-xs leading-relaxed ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
           {isAr ? 'اسمك وهاتفك وعنوانك تُستخدم فقط لتجهيز طلبك. ' : 'Your name, phone and address are used only to prepare your order. '}
           <a href="/privacy" className="underline underline-offset-4 font-bold hover:text-[var(--primary)] inline-flex items-center min-h-[44px] px-1 -my-3">
             {isAr ? 'الخصوصية' : 'Privacy'}

@@ -124,23 +124,31 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   const { lang, setLang, darkMode, setDarkMode } = useAppPrefs(menu);
   const handleSaveMenuFromAdmin = useAdminSaveMenu(setMenu);
 
+  // Boot splash served its purpose (first React paint is on screen) — stays
+  // synchronous with this effect so a slow device never sits on the splash.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.getElementById('boot-splash')?.remove();
+  }, [showAdmin]);
+
   // Per-route install manifest: iOS Home Screen icons open the manifest's
   // start_url (NOT the page added from), so the admin needs its own manifest
   // (start_url /admin, distinct "Admin" name) while the storefront keeps the
-  // menu one. Swapped live — the share sheet reads the DOM at tap time, and
-  // the fresh filename defeats any cached old manifest.
+  // menu one. Deferred to idle (2 s ceiling): the share sheet reads the DOM
+  // at tap time, so a later swap is invisible — only the first paint matters,
+  // and this effect must not spend boot time on a querySelector + write.
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    const href = showAdmin ? '/manifest-admin.webmanifest' : '/manifest.webmanifest';
-    let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'manifest';
-      document.head.appendChild(link);
-    }
-    if (link.getAttribute('href') !== href) link.setAttribute('href', href);
-    // Boot splash served its purpose (first React paint is on screen).
-    document.getElementById('boot-splash')?.remove();
+    return scheduleIdle(() => {
+      const href = showAdmin ? '/manifest-admin.webmanifest' : '/manifest.webmanifest';
+      let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'manifest';
+        document.head.appendChild(link);
+      }
+      if (link.getAttribute('href') !== href) link.setAttribute('href', href);
+    }, 2000);
   }, [showAdmin]);
 
   // Thin reading-progress line at the top of the page — hand-rolled on purpose:
@@ -252,6 +260,14 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
 
   // Cart Drawer
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Floating order bell mounts after first paint (idle, 2 s ceiling): on
+  // mount it fires its own /api/menu fetch, creates an AudioContext unlock
+  // attempt and starts 30 s polling — none of which the hero/LCP needs. The
+  // bell only renders for returning customers with stored orders anyway, and
+  // a ≤2 s later mount loses nothing (statuses re-fetch on mount).
+  const [bellReady, setBellReady] = useState(false);
+  useEffect(() => scheduleIdle(() => setBellReady(true), 2000), []);
 
   const {
     cart, cartLines, totalCartCount, totalCartPrice,
@@ -501,7 +517,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
         />
 
         {/* Floating order bell (48h shelf, ordering plans only) */}
-        {orderingOn && (
+        {orderingOn && bellReady && (
           <OrdersBell lang={lang} darkMode={darkMode} />
         )}
 

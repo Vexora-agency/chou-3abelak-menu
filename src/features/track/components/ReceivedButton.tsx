@@ -32,7 +32,7 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
         <p className={`mt-1.5 text-sm font-black ${darkMode ? 'text-green-300' : 'text-green-800'}`}>
           {isAr ? 'تم تأكيد الاستلام — بالعافية!' : 'Receipt confirmed — enjoy!'}
         </p>
-        <p className={`mt-0.5 text-[11px] ${darkMode ? 'text-green-500' : 'text-green-600'}`}>
+        <p className={`mt-0.5 text-[11px] ${darkMode ? 'text-green-500' : 'text-green-700'}`}>
           {isAr ? 'تم إرسال تأكيد الاستلام بنجاح' : 'Receipt confirmation sent'}
         </p>
       </div>
@@ -88,7 +88,7 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
         {isAr ? 'نعم، استلمت' : 'Yes, received'}
       </button>
       {failed && (
-        <p className="mt-1.5 text-[11px] font-bold text-red-400">
+        <p className={`mt-1.5 text-[11px] font-bold ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
           {isAr ? 'تعذر التأكيد — حاول مجددًا.' : 'Could not confirm — try again.'}
         </p>
       )}

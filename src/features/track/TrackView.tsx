@@ -180,7 +180,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
           </div>
         ) : (
           <>
-            <p className="text-center text-xs font-bold text-neutral-500">
+            <p className="text-center text-xs font-bold text-neutral-400">
               {storeName || (isAr ? 'تتبع الطلب' : 'Order tracking')}
             </p>
             <h1 className="text-center text-2xl sm:text-3xl font-black mt-1 tabular-nums" dir="ltr">
@@ -235,7 +235,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                     {pick(it.name, lang)}
                     {it.variantName && <span className="text-neutral-400"> ({pick(it.variantName, lang)})</span>}
                     {it.addonNames && it.addonNames.length > 0 && (
-                      <span className="block text-[11px] text-neutral-500">
+                      <span className="block text-[11px] text-neutral-400">
                         + {(it.addonNames.map((a) => pick(a, lang)) || []).join(isAr ? '، ' : ', ')}
                       </span>
                     )}
@@ -287,7 +287,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                 />
               </div>
             )}
-            <p className="mt-4 text-center text-xs text-neutral-600 flex flex-wrap items-center gap-1 justify-center w-full">
+            <p className="mt-4 text-center text-xs text-neutral-400 flex flex-wrap items-center gap-1 justify-center w-full">
               <BellRing size={12} className="shrink-0" />
               <span className="min-w-0 break-words">{isAr ? 'الصفحة تتحدث تلقائيًا — خليها مفتوحة.' : 'This page updates itself — keep it open.'}</span>
             </p>

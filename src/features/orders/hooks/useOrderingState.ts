@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
 import { isPollStale, pollIntervalMs } from '@/src/utils/ordering';
+import { scheduleIdle } from '@/src/utils/scheduleIdle';
 
 export function useOrderingState() {
   const [orderingState, setOrderingState] = useState<OrderingStatus | null>(null);
@@ -42,7 +43,13 @@ export function useOrderingState() {
       if (!alive) return;
       timer = window.setTimeout(tick, pollIntervalMs(stateRef.current, Date.now(), lastReturnRef.current));
     };
-    void tick();
+    // First poll waits for an idle window (2 s ceiling) so the boot-critical
+    // /api/menu fetch wins the connection and the CPU; the header shows the
+    // menu-derived fail-open state meanwhile, and all later polls keep their
+    // normal cadence once the first tick runs.
+    const cancelIdle = scheduleIdle(() => {
+      if (alive) void tick();
+    }, 2000);
     const markReturn = () => {
       lastReturnRef.current = Date.now();
     };
@@ -71,6 +78,7 @@ export function useOrderingState() {
     window.addEventListener('focus', onReturn);
     return () => {
       alive = false;
+      cancelIdle();
       window.clearTimeout(timer);
       window.clearInterval(guard);
       document.removeEventListener('visibilitychange', onReturn);

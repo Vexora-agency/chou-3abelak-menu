@@ -17,7 +17,7 @@ export const MenuListEmptyState: React.FC<MenuListEmptyStateProps> = ({
       <p className={`text-base font-semibold ${darkMode ? 'text-white/80' : 'text-neutral-700'}`}>
         {isAr ? 'لم يتم العثور على وجبات مطابقة لبحثك' : 'Nothing matches your search yet.'}
       </p>
-      <p className="text-xs text-neutral-500 mt-1">
+      <p className={`text-xs mt-1 ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
         {isAr ? 'جرب كلمات أخرى أو اختر قسماً آخر' : 'Try different words or pick another category.'}
       </p>
     </div>

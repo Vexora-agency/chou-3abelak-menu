@@ -21,7 +21,7 @@ export const LocationAddressPreview: React.FC<LocationAddressPreviewProps> = ({
           pin until this reads correctly — this is a real order. */}
       <div role="status" aria-live="polite" className={`rounded-xl border p-3 min-h-[58px] break-words overflow-wrap:anywhere ${darkMode ? 'border-neutral-700 bg-black/40' : 'border-neutral-300 bg-neutral-100'}`}>
         {!point ? (
-          <p className={`text-xs ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
+          <p className={`text-xs ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
             {isAr ? 'حرّك الدبوس أو اضغط على الخريطة…' : 'Move the pin or tap the map…'}
           </p>
         ) : addrLoading ? (
@@ -31,7 +31,7 @@ export const LocationAddressPreview: React.FC<LocationAddressPreviewProps> = ({
         ) : addrPreview ? (
           <>
             <p className={`text-[13px] font-black leading-snug ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`} dir="auto">{addrPreview}</p>
-            <p className="text-[11px] tabular-nums text-neutral-500 mt-0.5" dir="ltr">
+            <p className={`text-[11px] tabular-nums mt-0.5 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`} dir="ltr">
               {point.lat}, {point.lng} · ±{Math.round(point.accuracy)}m
             </p>
           </>

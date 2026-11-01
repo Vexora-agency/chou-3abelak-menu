@@ -131,7 +131,7 @@ export const PushSubscribeButton: React.FC<PushSubscribeButtonProps> = ({
         {isAr ? 'نبّهني بحالة الطلب' : 'Notify me on updates'}
       </button>
       {note && (
-        <p className={`mt-1.5 text-xs text-center flex items-center justify-center gap-1 ${isAr ? 'leading-relaxed' : ''} ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
+        <p className={`mt-1.5 text-xs text-center flex items-center justify-center gap-1 ${isAr ? 'leading-relaxed' : ''} ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
           <BellOff size={14} className="shrink-0" />
           <span className="min-w-0 break-words">{note}</span>
         </p>

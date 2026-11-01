@@ -155,8 +155,8 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
               isAr ? 'pr-11 pl-10' : 'pl-11 pr-10'
             } ${
               darkMode
-                ? 'bg-[#141414] text-white border-[#2A2A2A] placeholder-neutral-500 shadow-[0_8px_24px_rgba(0,0,0,0.5)]'
-                : 'bg-white text-[#0A0A0A] border-[#E5E5E5] placeholder-neutral-400 shadow-[0_8px_20px_rgba(0,0,0,0.1)]'
+                ? 'bg-[#141414] text-white border-[#2A2A2A] placeholder-neutral-400 shadow-[0_8px_24px_rgba(0,0,0,0.5)]'
+                : 'bg-white text-[#0A0A0A] border-[#E5E5E5] placeholder-neutral-500 shadow-[0_8px_20px_rgba(0,0,0,0.1)]'
             }`}
           />
           {searchQuery && (
@@ -260,7 +260,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
           aria-label={isAr ? 'تصفية سريعة' : 'Quick filters'}
         >
           <div className="m-auto flex w-max max-w-full items-center gap-2 px-0.5 py-0.5">
-            <span className={`flex-shrink-0 text-[11px] font-bold ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>
+            <span className={`flex-shrink-0 text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
               {isAr ? 'تصفية سريعة:' : 'Quick filter:'}
             </span>
             {badgeChips.map(({ id, label, Icon }) => {

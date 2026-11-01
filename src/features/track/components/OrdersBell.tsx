@@ -412,7 +412,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
             <div className="py-2 flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-black">{isAr ? 'طلباتك' : 'Your orders'}</h2>
-                <p className="text-[11px] text-neutral-500">
+                <p className={`text-[11px] ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
                   {isAr ? 'تظهر هنا لمدة 12 ساعة' : 'Kept here for 12 hours'}
                 </p>
               </div>
@@ -472,7 +472,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                         </span>
                       </div>
                     </div>
-                    <p className={`mt-0.5 text-xs tabular-nums ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
+                    <p className={`mt-0.5 text-xs tabular-nums ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
                       <bdi>{timeAgo(o.at, isAr, nowMs)}</bdi>
                       {typeof o.itemsCount === 'number' && typeof o.total === 'number' && (
                         <span> · <bdi className="tabular-nums" dir="ltr">{o.itemsCount}</bdi> {isAr ? 'أصناف' : 'items'} · <span className="tabular-nums" dir="ltr">{formatPrice(o.total)}</span></span>

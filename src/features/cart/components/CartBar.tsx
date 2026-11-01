@@ -116,7 +116,7 @@ export const CartBar: React.FC<CartBarProps> = ({
             }}
             aria-label={isAr ? 'إفراغ السلة' : 'Clear cart'}
             title={isAr ? 'حذف السلة' : 'Clear cart'}
-            className="relative w-9 h-9 min-w-[36px] min-h-[36px] min-[380px]:w-11 min-[380px]:h-11 min-[380px]:min-w-[44px] min-[380px]:min-h-[44px] after:absolute after:-inset-2 after:content-[""] flex-shrink-0 rounded-full text-red-500/70 hover:text-red-500 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 flex items-center justify-center transition-all active:scale-90"
+            className="relative w-9 h-9 min-w-[36px] min-h-[36px] min-[380px]:w-11 min-[380px]:h-11 min-[380px]:min-w-[44px] min-[380px]:min-h-[44px] after:absolute after:-inset-2 after:content-[''] flex-shrink-0 rounded-full text-red-500/70 hover:text-red-500 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 flex items-center justify-center transition-all active:scale-90"
           >
             <Trash2 size={16} className="min-[380px]:w-[18px] min-[380px]:h-[18px]" />
           </button>

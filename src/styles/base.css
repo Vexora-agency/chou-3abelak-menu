@@ -14,6 +14,17 @@
 html {
   scroll-behavior: smooth;
   font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  /* Root canvas follows the theme (the app toggles .dark on <html>):
+     iOS rubber-band overscroll and the home-indicator area paint this
+     color. Hard-black here showed as a black bottom gap in light mode
+     (dark mode is unaffected — black stays black). */
+  background-color: #FFFFFF;
+  color-scheme: light;
+}
+
+html.dark {
+  background-color: #0A0A0A;
+  color-scheme: dark;
 }
 
 /* Motion-sensitive users: instant jumps only. Brand animations themselves
@@ -32,7 +43,12 @@ html[dir="rtl"], [dir="rtl"] {
 body {
   margin: 0;
   padding: 0;
-  background-color: #0A0A0A;
+  /* Inherit the themed html canvas above. This unlayered rule beats the
+     hard-black bg-[#0A0A0A] utility on <body> (unlayered author styles win
+     over cascade layers), so light mode no longer exposes black beneath
+     the white canvas. Pre-React first paint stays brand-black via the
+     opaque boot splash, which covers everything until React mounts. */
+  background-color: inherit;
   color: #0A0A0A;
   -webkit-font-smoothing: antialiased;
 }

@@ -1,0 +1,10 @@
+# Step-0 re-verification in dedicated clone D:/Chou 3abelak (2026-11-01)
+# Guard: toplevel=D:/Chou_3abelak, .git own, branch=maintenance/step-1, HEAD=3eec800 — recorded before AND after every run, stable throughout.
+# Earlier runs from the shared tree are VOID (HEAD moved mid-run by another session).
+
+- test:all: EXIT 0. All 30 suites green (plan 46, parity 82, pricing 92, telegram 104, status 62, backup/diff/flows 42/41/42, reports 44/18/44/18/29, features 21/25/21/25, customer-orders 25, customer-confirm 14, cart 20, access ok-lines, versions ok-lines, import ok-lines, bell-sound 11, distance 14, digits 11, settings 39, sound 9, client-pricing 20, safe-json 23, track-push ok-lines).
+- tsc --noEmit: CLEAN (no output).
+- depcruise src functions scheduler scripts: 0 violations (330 modules / 982 dependencies cruised).
+- vite build -> Temp/opencode/chou-dist-step1-clean: OK (3.00s).
+- Bundle grep (case-insensitive: dev-admin|REMOVE BEFORE COMMIT|wa\.me|waapi|sentVia|whatsappUpdates): ZERO matches. (Orphaned public/assets/aistudio/Main.*.html was deleted in 81b4b49; index.html meta + privacy/llms rewritten in remove-whatsapp C6.)
+- Conclusion: step-1 tip verified green/clean in isolation. Pre-existing baseline failures from raw/10 are GONE (fixed in T1); NEEDS-ENV suites remain excluded (test:launch needs :3000+seed, test:sqlperf needs emulator state).

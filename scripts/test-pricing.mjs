@@ -125,7 +125,7 @@ const decItem = { id: 'd1', categoryId: 'c', pricing: { unit: 'pc', price: 10.1,
 ok(lineTotal(decItem, { qty: 3 }) === 30.3, '10.1 x 3 = 30.3 exactly');
 const decItem2 = { id: 'd2', categoryId: 'c', pricing: { unit: 'pc', minQty: 1, step: 1, maxQty: 50, showUnit: false }, variants: [{ featureId: 'v1', price: 333.33 }] };
 ok(lineTotal(decItem2, { variantId: 'v1', qty: 3 }) === 999.99, '333.33 x 3 = 999.99');
-throwsCode(() => unitPrice({ ...decItem2, variants: [{ featureId: 'v1', price: 0 }] }, 'v1'), 'unknown_variant', 'zero variant price rejected');
+ok(unitPrice({ ...decItem2, variants: [{ featureId: 'v1', price: 0 }] }, 'v1') === 0, 'zero variant price accepted as free (see docs/PRICING.md gap 3)');
 ok(round2(0.1 + 0.2) === 0.3, 'round2 kills float dust');
 
 // unitLabel

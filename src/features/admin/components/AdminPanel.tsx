@@ -233,7 +233,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           reportSched={report.reportSched}
           onSaveReportSettings={report.handleSaveReportSettings}
           onResendVerification={report.handleResendVerification}
-          onSendTestReport={report.handleSendTestReport}
           onDownloadReport={(m) => void report.handleDownloadReport(m)}
           onSearchCustomers={report.searchCustomers}
           onCustomerAction={report.handleCustomerAction}

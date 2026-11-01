@@ -58,7 +58,7 @@ function readRaw(): unknown {
   }
 }
 
-/** Orders of the last 48h, newest first (also prunes the stored shelf). */
+/** Orders of the last 12h, newest first (also prunes the stored shelf). */
 export function loadCustomerOrders(nowMs: number = Date.now()): StoredCustomerOrder[] {
   const pruned = pruneOrders(readRaw(), nowMs);
   try {

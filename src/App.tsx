@@ -15,6 +15,7 @@ import { Footer } from '@/src/components/Footer';
 import { useAdminSaveMenu } from '@/src/features/admin/hooks/useAdminSaveMenu';
 import { useAdminSaveAuth } from '@/src/features/admin/hooks/useAdminSaveAuth';
 import { scheduleIdle } from '@/src/utils/scheduleIdle';
+import { loadCustomerOrders } from '@/src/utils/customerOrders';
 // Admin UI is a separate chunk, downloaded only when /admin opens: customers
 // never pay for the panel, editors and backup code. NOTE: these dynamic
 // imports bypass the admin barrel ON PURPOSE — importing the barrel (even
@@ -33,7 +34,7 @@ const InvitePage = lazy(() =>
 const TrackView = lazy(() =>
   import('@/src/features/track/TrackView').then((m) => ({ default: m.TrackView }))
 );
-// Floating order bell (48h shelf): tiny, lives in the main chunk — it must
+// Floating order bell (12h shelf): tiny, lives in the main chunk — it must
 // be present on the menu page itself. ReceivedButton stays out (only the
 // bell + tracking page pull it, via their own imports).
 import { OrdersBell } from '@/src/features/track/components/OrdersBell';
@@ -262,12 +263,35 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Floating order bell mounts after first paint (idle, 2 s ceiling): on
-  // mount it fires its own /api/menu fetch, creates an AudioContext unlock
-  // attempt and starts 30 s polling — none of which the hero/LCP needs. The
-  // bell only renders for returning customers with stored orders anyway, and
-  // a ≤2 s later mount loses nothing (statuses re-fetch on mount).
+  // mount it polls statuses, installs audio-gesture listeners and vibrates —
+  // none of which the hero/LCP needs, and none of which may exist without
+  // a real order. So the bell mounts ONLY while the 12h shelf is non-empty
+  // (an order was placed on this device and hasn't expired/been dismissed):
+  // no orders = no timers, no listeners, no audio footprint at all. A new
+  // order (same tab or another one) flips hasOrders and mounts it instantly.
   const [bellReady, setBellReady] = useState(false);
   useEffect(() => scheduleIdle(() => setBellReady(true), 2000), []);
+  const [hasOrders, setHasOrders] = useState<boolean>(() => {
+    try {
+      return loadCustomerOrders().length > 0;
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sync = () => {
+      try {
+        setHasOrders(loadCustomerOrders().length > 0);
+      } catch {}
+    };
+    window.addEventListener('customer-orders-changed', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener('customer-orders-changed', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
 
   const {
     cart, cartLines, totalCartCount, totalCartPrice,
@@ -516,8 +540,10 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           lang={lang}
         />
 
-        {/* Floating order bell (48h shelf, ordering plans only) */}
-        {orderingOn && bellReady && (
+        {/* Floating order bell (12h shelf, ordering plans only): mounted
+            only while the customer actually has orders — otherwise it
+            doesn't exist at all (no timers, no listeners, no audio). */}
+        {orderingOn && bellReady && hasOrders && (
           <OrdersBell lang={lang} darkMode={darkMode} />
         )}
 

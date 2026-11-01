@@ -1,0 +1,28 @@
+# Gitleaks baseline: known-fake placeholder secrets, never real credentials.
+#
+# History contains two audit artifacts whose literal strings trip the
+# generic-api-key rule on every push scan (--first-parent walks history):
+#  1. 82d0266 .dev.vars.example — obviously-fake sequential-hex
+#     placeholders (CRON/BACKUP/AUDIT/TELEGRAM secrets). The live file was
+#     already sanitized to <...> markers (a0bfb22); only the historic
+#     commit still matches. The values were never real (labeled
+#     FAKE VALUES ONLY / local test values at the time).
+#  2. ee22ddb security-audit/raw/gitleaks.json — a raw scanner REPORT that
+#     quotes a redacted finding string (test fixture
+#     'other-secret-12345678901234' from scripts/test-backup*.mjs).
+#     The fixture itself is fake test data, not a credential.
+#
+# Both patterns below are hyper-specific to those fakes: sequential hex
+# and the literal fixture string. Real secrets can never match them, so
+# detection strength for everything else is unchanged. Revisit only if a
+# finding names a file/value outside these two artifacts.
+#
+# Verification (2026-11-01): the 8 fingerprints failing the main-push
+# secrets job are exactly these two artifacts, nothing else.
+
+[allowlist]
+description = "known-fake historic placeholders (82d0266 sequential hex + quoted test fixture in ee22ddb report)"
+regexes = [
+  '''(?:CRON_SECRET|BACKUP_SECRET|AUDIT_SECRET|TELEGRAM_WEBHOOK_SECRET)=0123456789abcdef[0-9a-f]*''',
+  '''other-secret-12345678901234''',
+]

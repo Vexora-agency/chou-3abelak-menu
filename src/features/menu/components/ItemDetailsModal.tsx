@@ -194,6 +194,20 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
     });
   };
 
+  // One-tap "all units this option": the option rides the ids alone at full
+  // qty (legacy shape — collapses any split), siblings in the group drop.
+  const fillAll = (groupId: string, id: string) => {
+    const block = blocks.find((b) => (b.groupId ?? '') === groupId);
+    const members = block ? block.addons.map((a) => a.featureId) : [id];
+    setAddonIds((prev) => [...prev.filter((a) => !members.includes(a)), id]);
+    setAddonCounts((prev) => {
+      if (!Object.keys(prev).length) return prev;
+      const next = { ...prev };
+      for (const m of members) delete next[m];
+      return next;
+    });
+  };
+
   const stepQty = (dir: 1 | -1) => {
     // pricing is non-null whenever this can fire (the sheet only renders
     // its controls when open); the assertion documents that invariant.
@@ -362,6 +376,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                     onToggleMulti={toggleMulti}
                     onSelectRadio={selectRadio}
                     onSetCount={setSplitCount}
+                    onFillAll={fillAll}
                     lang={lang}
                     currency={currency}
                     darkMode={darkMode}

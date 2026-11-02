@@ -185,3 +185,15 @@
 .stagger > *:nth-child(7) { animation-delay: 0.3s; }
 .stagger > *:nth-child(8) { animation-delay: 0.35s; }
 .stagger > *:nth-child(n+9) { animation-delay: 0.4s; }
+
+/* --- Smart-split rows: when a single-choice group flips from radio chips
+   to per-option steppers (qty 1 → 2+), rows rise in with a stagger so the
+   customer notices they can now distribute each unit. Same expo feel as
+   the rest of the sheet; delay is set inline per row (40ms steps). */
+@keyframes splitRise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.anim-split-in {
+  animation: splitRise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}

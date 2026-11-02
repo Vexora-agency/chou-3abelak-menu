@@ -13,6 +13,7 @@ interface AddonPickerProps {
   onToggleMulti: (id: string) => void;
   onSelectRadio: (groupId: string, id: string) => void;
   onSetCount: (id: string, count: number) => void;
+  onFillAll: (groupId: string, id: string) => void;
   lang: 'en' | 'ar';
   currency: string;
   darkMode: boolean;
@@ -41,6 +42,7 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
   onToggleMulti,
   onSelectRadio,
   onSetCount,
+  onFillAll,
   lang,
   currency,
   darkMode,
@@ -76,14 +78,19 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
               <span dir="auto">{title}</span>
             </p>
             {split ? (
-              <div>
+              // key remounts on radio↔split flips so the rise-in replays.
+              <div key="split">
                 <div className="space-y-1">
-                  {b.addons.map((a: ItemAddon) => {
+                  {b.addons.map((a: ItemAddon, i: number) => {
                     const count = countOf(addonCounts, addonIds, a.featureId, qty);
                     const free = a.price === 0;
                     const name = featureName(menu, a.featureId, lang);
                     return (
-                      <div key={a.featureId} className="flex items-center justify-between gap-2">
+                      <div
+                        key={a.featureId}
+                        className="anim-split-in flex items-center justify-between gap-2"
+                        style={{ animationDelay: `${Math.min(i, 5) * 40}ms` }}
+                      >
                         <span dir="auto" className={`min-w-0 flex-1 text-xs font-bold break-words ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
                           {name}
                           {/* Zero-price add-ons show no price text (same rule as chips). */}
@@ -121,6 +128,23 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
                           >
                             <Plus size={14} strokeWidth={3} />
                           </button>
+                          {/* One-tap "all units this option" — hidden once it
+                              already holds the full qty. Fills this option and
+                              zeroes its siblings in one go. */}
+                          {count < qty && (
+                            <button
+                              type="button"
+                              onClick={() => onFillAll(b.groupId ?? '', a.featureId)}
+                              className={`h-9 px-2.5 rounded-full text-[11px] font-black border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                                darkMode
+                                  ? 'border-neutral-700 text-[var(--primary)] hover:border-[var(--primary)]'
+                                  : 'border-neutral-300 text-neutral-800 hover:border-[#0A0A0A] hover:bg-neutral-100'
+                              }`}
+                              aria-label={isAr ? `كل الكمية ${name}` : `All ${name}`}
+                            >
+                              {isAr ? 'الكل' : 'All'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     );

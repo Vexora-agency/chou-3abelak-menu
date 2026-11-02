@@ -47,6 +47,12 @@ import {
   syncOrderStatusToTelegram,
 } from '../../_shared/telegram.js';
 
+/**
+ * Local alias for the shared sweep-counters shape. Type-only — the four
+ * counters below still travel as one `CronCounts` object per site.
+ * @typedef {import('../../_shared/repositories/orders.repo.js').CronCounts} CronCounts
+ */
+
 const AUTO_COMPLETE_AFTER_MS = 12 * 3600 * 1000;
 const AUTO_COMPLETE_BATCH = 20;
 // Customer self-cancel window = kitchen grace period: 5 minutes from order
@@ -267,10 +273,10 @@ export async function onRequest(context) {
       await recordCronRunError(db, ORDER_NAG_SERVICE, {
         endedIso: new Date().toISOString(),
         error: msg,
-        result: { nagged, released, autoCompleted, lockNoticed },
+        result: /** @type {CronCounts} */ ({ nagged, released, autoCompleted, lockNoticed }),
       });
     } catch {}
-    return jsonNoStore({ ok: true, nagged, released, autoCompleted, lockNoticed });
+    return jsonNoStore(/** @type {{ ok: true } & CronCounts} */ ({ ok: true, nagged, released, autoCompleted, lockNoticed }));
   }
 
   // Heartbeat: stamp sweep success with duration + counts (D1, never KV).
@@ -279,9 +285,9 @@ export async function onRequest(context) {
     await recordCronRunSuccess(db, ORDER_NAG_SERVICE, {
       endedIso: new Date().toISOString(),
       durationMs: Date.now() - sweepStartMs,
-      result: { nagged, released, autoCompleted, lockNoticed },
+      result: /** @type {CronCounts} */ ({ nagged, released, autoCompleted, lockNoticed }),
     });
   } catch {}
 
-  return jsonNoStore({ ok: true, nagged, released, autoCompleted, lockNoticed });
+  return jsonNoStore(/** @type {{ ok: true } & CronCounts} */ ({ ok: true, nagged, released, autoCompleted, lockNoticed }));
 }

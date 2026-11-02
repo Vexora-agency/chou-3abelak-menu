@@ -95,12 +95,33 @@ export async function onRequest(context) {
           };
         }
         if (Array.isArray(it.addonNames)) {
-          out.addonNames = it.addonNames
-            .filter((a) => a && typeof a === 'object')
-            .map((a) => ({
+          // Split-count passthrough: when the stored line carries addonQty,
+          // each name entry gains an optional `count` (0..qty). Legacy lines
+          // (no addonQty) omit it, so old readers keep working unchanged.
+          // Stored addonNames order matches stored addonIds order (orders.js
+          // builds both from the same list), so index alignment holds.
+          const hasQty = !!(it.addonQty && typeof it.addonQty === 'object' && !Array.isArray(it.addonQty));
+          const lineQty = typeof it.qty === 'number' ? it.qty : 0;
+          const names = [];
+          for (let ni = 0; ni < it.addonNames.length; ni++) {
+            const a = it.addonNames[ni];
+            if (!a || typeof a !== 'object') continue;
+            const base = {
               en: typeof a.en === 'string' ? a.en : '',
               ar: typeof a.ar === 'string' ? a.ar : '',
-            }));
+            };
+            if (hasQty) {
+              const fid = Array.isArray(it.addonIds) ? it.addonIds[ni] : null;
+              const raw = fid && Object.prototype.hasOwnProperty.call(it.addonQty, fid)
+                ? it.addonQty[fid]
+                : lineQty;
+              if (typeof raw === 'number' && Number.isInteger(raw)) {
+                base.count = raw;
+              }
+            }
+            names.push(base);
+          }
+          out.addonNames = names;
         }
         return out;
       }).filter(Boolean);

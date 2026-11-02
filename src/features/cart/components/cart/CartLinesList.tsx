@@ -104,6 +104,11 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {l.addonIds.map((id) => {
                   const addonPrice = (l.item.addons || []).find((a) => a && a.featureId === id)?.price ?? 0;
+                  // Split lines: partial picks (0 < count < qty) render as
+                  // `name ×n`; full-count and legacy picks render exactly as
+                  // today (name only, no layout change).
+                  const count = l.addonQty?.[id] ?? l.quantity;
+                  const partial = count > 0 && count < l.quantity;
                   return (
                     <span
                       key={id}
@@ -113,7 +118,7 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                           : 'border-[#8a6d00]/30 bg-[#8a6d00]/5 text-[#8a6d00]'
                       }`}
                     >
-                      <bdi className="min-w-0 break-words">+ {featureName(menu, id, lang)}</bdi>
+                      <bdi className="min-w-0 break-words">+ {featureName(menu, id, lang)}{partial ? ` ×${count}` : ''}</bdi>
                       {/* Zero-price add-ons show no price text (mirrors the item modal). */}
                       {addonPrice !== 0 && (
                         <span className="tabular-nums opacity-80 shrink-0" dir="ltr">
@@ -127,7 +132,7 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                           darkMode ? 'hover:bg-red-500/20 hover:text-red-400' : 'hover:bg-red-500/10 hover:text-red-600'
                         }`}
                         title={isAr ? 'إزالة الإضافة من السطر' : 'Remove add-on from this line'}
-                        aria-label={`${isAr ? 'إزالة الإضافة' : 'Remove add-on'} ${featureName(menu, id, lang)}`}
+                        aria-label={`${isAr ? 'إزالة الإضافة' : 'Remove add-on'} ${featureName(menu, id, lang)}${partial ? ` ×${count}` : ''}`}
                       >
                         <X size={14} strokeWidth={3} />
                       </button>

@@ -17,7 +17,9 @@ interface TrackItem {
   unit?: string;
   name: { en: string; ar: string };
   variantName?: { en: string; ar: string };
-  addonNames?: { en: string; ar: string }[];
+  /** Split-count entries carry `count` (present only for split lines —
+   *  legacy entries omit it and render exactly as today). */
+  addonNames?: { en: string; ar: string; count?: number }[];
 }
 
 interface TrackData {
@@ -242,7 +244,14 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                     {it.variantName && <span className="text-neutral-400"> ({pick(it.variantName, lang)})</span>}
                     {it.addonNames && it.addonNames.length > 0 && (
                       <span className="block text-[11px] text-neutral-400">
-                        + {(it.addonNames.map((a) => pick(a, lang)) || []).join(isAr ? '، ' : ', ')}
+                        + {(it.addonNames.map((a) => {
+                          const nm = pick(a, lang);
+                          // Split lines: partial picks (0 < count < qty)
+                          // render as `name ×n`; full-count and legacy
+                          // entries render exactly as today.
+                          const c = typeof a.count === 'number' ? a.count : NaN;
+                          return Number.isInteger(c) && c > 0 && c < it.qty ? `${nm} ×${c}` : nm;
+                        }) || []).join(isAr ? '، ' : ', ')}
                       </span>
                     )}
                   </span>

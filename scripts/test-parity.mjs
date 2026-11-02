@@ -201,6 +201,54 @@ const orders = [
 ];
 ok(same(FE.topSellers(orders, menuBase, { nowMs: NOW }), BE.topSellers(orders, menuBase, { nowMs: NOW })), 'topSellers rank/exclude/window');
 
+// ---------- 11. split quantities (addonQty) ----------
+const splitItem = {
+  id: 'd1',
+  pricing: { unit: 'pc', price: 50, minQty: 1, step: 1, maxQty: 20, showUnit: false },
+  addons: [{ featureId: 'x-cheese', price: 10 }, { featureId: 'x-free', price: 0 }],
+};
+const splitMenu = {
+  version: 1, schemaVersion: 2, updatedAt: '2026-01-01T00:00:00.000Z',
+  settings: {
+    featureGroups: [
+      { id: 'sizes', name: { en: 'Sizes', ar: 'أحجام' }, selection: 'multi' },
+      { id: 'addons', name: { en: 'Add-ons', ar: 'إضافات' }, selection: 'multi' },
+      { id: 'choice', name: { en: 'Choice', ar: 'الاختيار' }, selection: 'single', prompt: { en: 'Pick', ar: 'اختر' } },
+    ],
+    featureDefs: [
+      { id: 'x-cheese', groupId: 'addons', name: { en: 'Cheese', ar: 'جبن' } },
+      { id: 'x-free', groupId: 'choice', name: { en: 'Free', ar: 'مجاني' } },
+    ],
+    ordering: { minOrder: 0, deliveryFee: 0 },
+    badges: { newDays: 14, topDays: 30, topCount: 6 },
+  },
+  categories: [],
+  items: [splitItem],
+};
+const splitCalls = [
+  ['addonSum legacy (no counts)', (m) => m.addonSum(splitItem, ['x-cheese'])],
+  ['addonSum split 2/4', (m) => m.addonSum(splitItem, ['x-cheese'], { 'x-cheese': 2 }, 4)],
+  ['lineTotal split 2/4', (m) => m.lineTotal(splitItem, { addonIds: ['x-cheese'], addonQty: { 'x-cheese': 2 }, qty: 4 })],
+  ['perUnitPrice split avg', (m) => m.perUnitPrice(splitItem, { addonIds: ['x-cheese'], addonQty: { 'x-cheese': 2 }, qty: 4 })],
+  ['cartLineKey split', (m) => m.cartLineKey('i', 'v', ['x-cheese', 'x-free'], { 'x-cheese': 2, 'x-free': 0 }, 4)],
+  ['cartLineKey legacy byte-identical', (m) => m.cartLineKey('i', 'v', ['x-free', 'x-cheese'])],
+  ['validatePicks pass returns undefined', (m) => String(m.validatePicks(splitMenu, splitItem, ['x-cheese'], { 'x-cheese': 4 }, 4))],
+];
+for (const [name, call] of splitCalls) {
+  ok(call(FE) === call(BE), name, `FE=${call(FE)} BE=${call(BE)}`);
+}
+throwsSame(() => FE.validatePicks(splitMenu, splitItem, ['x-cheese'], { 'x-cheese': 2 }, 4), () => BE.validatePicks(splitMenu, splitItem, ['x-cheese'], { 'x-cheese': 2 }, 4), 'validatePicks multi partial throws both');
+throwsSame(() => FE.lineTotal(splitItem, { addonIds: ['ghost'], addonQty: { ghost: 1 }, qty: 2 }), () => BE.lineTotal(splitItem, { addonIds: ['ghost'], addonQty: { ghost: 1 }, qty: 2 }), 'lineTotal split unknown addon throws both');
+throwsSame(() => FE.perUnitPrice(splitItem, { addonIds: ['x-cheese'], addonQty: { 'x-cheese': 2 } }), () => BE.perUnitPrice(splitItem, { addonIds: ['x-cheese'], addonQty: { 'x-cheese': 2 } }), 'perUnitPrice split missing qty throws both');
+{
+  const feS = FE.normalizeMenu(splitMenu);
+  const beS = BE.normalizeMenu(splitMenu);
+  ok(same(feS.settings.featureGroups, beS.settings.featureGroups), 'normalizeMenu featureGroups (selection+prompt)',
+    `\nFE=${stable(feS.settings.featureGroups)}\nBE=${stable(beS.settings.featureGroups)}`);
+  const ch = feS.settings.featureGroups.find((g) => g.id === 'choice');
+  ok(ch && ch.selection === 'single' && ch.prompt && ch.prompt.en === 'Pick', 'normalizeMenu preserves selection+prompt');
+}
+
 // ---------- summary ----------
 console.log(`\nparity: ${pass} passed, ${fail} failed`);
 if (fail > 0) {

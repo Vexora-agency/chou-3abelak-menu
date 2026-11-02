@@ -3,7 +3,7 @@
  * Builds the groups/defs lookup maps plus the ensure* mutators that the
  * items phase uses for legacy migration. Single consumer: validateSettings.
  */
-import { validateBilingual, ID_REGEX } from './validate-core.js';
+import { validateBilingual, stripControls, ID_REGEX } from './validate-core.js';
 
 /**
  * Parses settings.featureGroups + settings.featureDefs.
@@ -14,6 +14,10 @@ export function buildFeatureLibrary(s, errors) {
   // Feature groups (library sections). The kind lives here once per
   // section — features inside inherit it. Missing entirely in old docs →
   // default Sizes/Add-ons sections are created when features need them.
+  const cleanPrompt = (raw) => ({
+    en: typeof raw.en === 'string' ? stripControls(raw.en).trim().slice(0, 120) : '',
+    ar: typeof raw.ar === 'string' ? stripControls(raw.ar).trim().slice(0, 120) : '',
+  });
   const featureGroups = [];
   const groupById = new Map();
   if (s.featureGroups !== undefined) {
@@ -33,6 +37,24 @@ export function buildFeatureLibrary(s, errors) {
           continue;
         }
         const grp = { id: gid, name: validateBilingual(errors, g.name, `group[${gid}].name`, 80) };
+        // Split-quantity rule for ADD-ONS only (default 'multi'). Invalid →
+        // error, kept as 'multi' so remaining validation can proceed.
+        if (g.selection === undefined) {
+          grp.selection = 'multi';
+        } else if (g.selection === 'single' || g.selection === 'multi') {
+          grp.selection = g.selection;
+        } else {
+          errors.push(`Invalid feature group selection: "${gid}"`);
+          grp.selection = 'multi';
+        }
+        // Optional customer-facing title/note (absent/empty = legacy).
+        if (g.prompt !== undefined) {
+          if (!g.prompt || typeof g.prompt !== 'object' || Array.isArray(g.prompt)) {
+            errors.push(`Invalid feature group prompt for "${gid}"`);
+          } else {
+            grp.prompt = cleanPrompt(g.prompt);
+          }
+        }
         featureGroups.push(grp);
         groupById.set(gid, grp);
       }
@@ -41,6 +63,7 @@ export function buildFeatureLibrary(s, errors) {
   const ensureGroup = (gid, name) => {
     if (groupById.has(gid)) return groupById.get(gid);
     const grp = { id: gid, name: validateBilingual(errors, name, `group[${gid}].name`, 80) };
+    grp.selection = 'multi';
     featureGroups.push(grp);
     groupById.set(gid, grp);
     return grp;

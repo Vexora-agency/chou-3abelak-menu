@@ -110,28 +110,110 @@ export function minVariantPrice(item) {
   return min;
 }
 
+function isPlainObject(v) {
+  return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
+/** Group id for a feature (null when the library has no such feature). */
+function featureGroupId(menu, featureId) {
+  try {
+    const s = menu && menu.settings && typeof menu.settings === 'object' ? menu.settings : {};
+    const defs = Array.isArray(s.featureDefs) ? s.featureDefs : [];
+    const d = defs.find((x) => x && x.id === featureId);
+    return d && typeof d.groupId === 'string' ? d.groupId : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Full line total: qty * (unitPrice + enabled add-on prices).
- * Every add-on must be enabled on the item itself. Throws 'invalid_addon'
- * otherwise (unknown variant throws via unitPrice).
+ * Add-on selection rule for a group: 'single' | 'multi'.
+ * Defaults to 'multi' when the group/selection is missing or invalid.
+ * The sizes-section group ('sizes') never constrains add-ons — it always
+ * behaves as 'multi' (sizes stay single-required via variants as today).
  */
-export function lineTotal(item, sel) {
-  const { variantId, addonIds, qty } = sel || {};
-  const unit = unitPrice(item, variantId);
-  const addons = addonSum(item, addonIds);
-  const q = cleanInt(qty, NaN);
-  if (!isInt(q)) throw new Error('invalid_qty');
-  return round2(q * (unit + addons));
+function groupSelection(menu, groupId) {
+  if (groupId === 'sizes') return 'multi';
+  try {
+    const s = menu && menu.settings && typeof menu.settings === 'object' ? menu.settings : {};
+    const groups = Array.isArray(s.featureGroups) ? s.featureGroups : [];
+    const g = groups.find((x) => x && x.id === groupId);
+    if (g && g.selection === 'single') return 'single';
+  } catch {}
+  return 'multi';
 }
 
-/** Per-unit price including enabled add-ons. */
-export function perUnitPrice(item, sel) {
-  const { variantId, addonIds } = sel || {};
-  return round2(unitPrice(item, variantId) + addonSum(item, addonIds));
+/**
+ * Validate split-quantity add-on picks. Throws 'invalid_addon' on ANY
+ * violation (unknown/disabled id, dupes, non-int or out-of-range counts,
+ * multi partial-count, single sum overflow). Legacy calls without addonQty
+ * validate ids exactly as today. `qty` bounds counts (0..qty); when qty is
+ * not an integer only id/shape checks run so the caller's qty validation
+ * still reports 'invalid_qty'.
+ */
+export function validatePicks(menu, item, addonIds, addonQty, qty) {
+  function idsOf(v) {
+    if (v === undefined || v === null) return [];
+    if (!Array.isArray(v)) throw new Error('invalid_addon');
+    return v;
+  }
+  const list = idsOf(addonIds);
+  const seen = new Set();
+  const enabled = itemAddons(item);
+  for (const id of list) {
+    if (typeof id !== 'string' || seen.has(id)) throw new Error('invalid_addon');
+    seen.add(id);
+    const found = enabled.find((a) => a && a.featureId === id);
+    if (!found || !isMoney(found.price) || found.price < 0) throw new Error('invalid_addon');
+  }
+  if (addonQty === undefined || addonQty === null) return;
+  if (!isPlainObject(addonQty)) throw new Error('invalid_addon');
+  for (const k of Object.keys(addonQty)) {
+    if (!seen.has(k)) throw new Error('invalid_addon');
+  }
+  const qInt = isInt(qty) ? qty : null;
+  // Explicit counts must always be ints >= 0 (upper bound needs a valid qty).
+  for (const id of list) {
+    if (!Object.prototype.hasOwnProperty.call(addonQty, id)) continue;
+    const c = addonQty[id];
+    if (!isInt(c) || c < 0) throw new Error('invalid_addon');
+    if (qInt !== null && c > qInt) throw new Error('invalid_addon');
+  }
+  if (qInt === null) return;
+  // Resolved counts (missing = applies to all units) + group rules.
+  const resolved = new Map();
+  for (const id of list) {
+    const c = Object.prototype.hasOwnProperty.call(addonQty, id) ? addonQty[id] : qInt;
+    if (!isInt(c) || c < 0 || c > qInt) throw new Error('invalid_addon');
+    resolved.set(id, c);
+  }
+  const byGroup = new Map();
+  for (const [fid, c] of resolved) {
+    const gid = featureGroupId(menu, fid);
+    const sel = groupSelection(menu, gid);
+    if (sel === 'multi') {
+      if (c !== 0 && c !== qInt) throw new Error('invalid_addon');
+    }
+    if (!byGroup.has(gid)) byGroup.set(gid, { sel, sum: 0 });
+    const g = byGroup.get(gid);
+    // A group mixing rules cannot happen (one gid → one sel), keep first.
+    g.sum += c;
+  }
+  for (const [, g] of byGroup) {
+    if (g.sel === 'single' && g.sum > qInt) throw new Error('invalid_addon');
+  }
 }
 
-function addonSum(item, addonIds) {
-  let sum = 0;
+/** Alias with an explicit name for UI/admin implementers. */
+export const validateAddonPicks = validatePicks;
+
+/**
+ * Add-on money. Legacy (no addonQty): per-unit sum of enabled prices,
+ * exactly as today. Split (addonQty object): TOTAL for the line,
+ * Σ price_o × count_o where count_o = addonQty[o] ?? qty.
+ * Throws 'invalid_addon' on unknown/disabled ids, dupes, or bad counts.
+ */
+export function addonSum(item, addonIds, addonQty, qty) {
   const ids = Array.isArray(addonIds) ? addonIds : [];
   const seen = new Set();
   const enabled = itemAddons(item);
@@ -140,9 +222,63 @@ function addonSum(item, addonIds) {
     seen.add(id);
     const found = enabled.find((a) => a && a.featureId === id);
     if (!found || !isMoney(found.price) || found.price < 0) throw new Error('invalid_addon');
-    sum += found.price;
   }
-  return sum;
+  if (addonQty === undefined || addonQty === null) {
+    let sum = 0;
+    for (const id of ids) {
+      const found = enabled.find((a) => a && a.featureId === id);
+      sum += found.price;
+    }
+    return sum;
+  }
+  if (!isPlainObject(addonQty)) throw new Error('invalid_addon');
+  for (const k of Object.keys(addonQty)) {
+    if (!seen.has(k)) throw new Error('invalid_addon');
+  }
+  const qInt = isInt(qty) ? qty : null;
+  let total = 0;
+  for (const id of ids) {
+    const has = Object.prototype.hasOwnProperty.call(addonQty, id);
+    if (!has && qInt === null) continue; // qty check reports invalid_qty downstream
+    const c = has ? addonQty[id] : qInt;
+    if (!isInt(c) || c < 0 || (qInt !== null && c > qInt)) throw new Error('invalid_addon');
+    const found = enabled.find((a) => a && a.featureId === id);
+    total += found.price * c;
+  }
+  return total;
+}
+
+/**
+ * Full line total. Legacy (no addonQty): qty * (unit + per-unit add-ons),
+ * byte-identical to today. Split: qty * unit + Σ price_o × count_o.
+ * Throws 'invalid_addon' / 'invalid_qty' (unknown variant via unitPrice).
+ */
+export function lineTotal(item, sel) {
+  const { variantId, addonIds, addonQty, qty } = sel || {};
+  const unit = unitPrice(item, variantId);
+  const addons = addonSum(item, addonIds, addonQty, qty);
+  const q = cleanInt(qty, NaN);
+  if (!isInt(q)) throw new Error('invalid_qty');
+  if (addonQty === undefined || addonQty === null) {
+    return round2(q * (unit + addons));
+  }
+  return round2(q * unit + addons);
+}
+
+/**
+ * Per-unit price including add-ons. Legacy (no addonQty): unit + per-unit
+ * add-ons, exactly as today. Split: unit + totalAddons / qty (average).
+ * Split requires an integer qty > 0, else throws 'invalid_qty'.
+ */
+export function perUnitPrice(item, sel) {
+  const { variantId, addonIds, addonQty, qty } = sel || {};
+  const unit = unitPrice(item, variantId);
+  if (addonQty === undefined || addonQty === null) {
+    return round2(unit + addonSum(item, addonIds));
+  }
+  const q = cleanInt(qty, NaN);
+  if (!isInt(q) || q <= 0) throw new Error('invalid_qty');
+  return round2(unit + addonSum(item, addonIds, addonQty, qty) / q);
 }
 
 /** qty integer on the min/step/max grid. */
@@ -163,10 +299,42 @@ export function clampQty(item, qty) {
   return p.minQty + steps * p.step;
 }
 
-/** Deterministic cart-line key: id + variantId + sorted addonIds. */
-export function cartLineKey(id, variantId, addonIds) {
-  const ids = Array.isArray(addonIds) ? [...addonIds].sort() : [];
-  return `${id}|${variantId || ''}|${ids.join(',')}`;
+/**
+ * Deterministic cart-line key.
+ * Legacy (no addonQty): `id|variantId|sortedIds`, byte-identical to today.
+ * Split (addonQty object): `id|variantId|sorted(fid:count)` using ONLY
+ * nonzero counts; missing counts default to `qty` (pass qty when keys must
+ * distinguish defaulted options). Zero counts are dropped. Never throws.
+ */
+export function cartLineKey(id, variantId, addonIds, addonQty, qty) {
+  if (addonQty === undefined || addonQty === null) {
+    const ids = Array.isArray(addonIds) ? [...addonIds].sort() : [];
+    return `${id}|${variantId || ''}|${ids.join(',')}`;
+  }
+  if (!isPlainObject(addonQty)) {
+    const ids = Array.isArray(addonIds) ? [...addonIds].sort() : [];
+    return `${id}|${variantId || ''}|${ids.join(',')}`;
+  }
+  const qInt = isInt(qty) ? qty : null;
+  const counts = new Map();
+  const ids = Array.isArray(addonIds) ? addonIds : [];
+  for (const fid of ids) {
+    if (typeof fid !== 'string') continue;
+    const has = Object.prototype.hasOwnProperty.call(addonQty, fid);
+    const c = has ? addonQty[fid] : qInt;
+    if (!isInt(c) || c === 0) continue;
+    counts.set(fid, c);
+  }
+  for (const k of Object.keys(addonQty)) {
+    if (counts.has(k)) continue;
+    const c = addonQty[k];
+    if (typeof k !== 'string' || !isInt(c) || c === 0) continue;
+    counts.set(k, c);
+  }
+  const pairs = [...counts.entries()]
+    .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    .map(([fid, c]) => `${fid}:${c}`);
+  return `${id}|${variantId || ''}|${pairs.join(',')}`;
 }
 
 /**

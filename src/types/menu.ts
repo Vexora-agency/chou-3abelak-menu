@@ -15,10 +15,17 @@ export interface ItemPricing {
 
 /** A section in the Features library (e.g. Sizes, Add-ons).
  *  Sections are pure folders — whether a feature is used as a size or an
- *  add-on is decided per item in the item editor. */
+ *  add-on is decided per item in the item editor.
+ *  `selection` controls split-quantity picks for ADD-ONS only ('multi' =
+ *  all-or-nothing per option, 'single' = at most one unit's worth across
+ *  the group; default 'multi'). The sizes section ignores it (sizes stay
+ *  single-required as today). `prompt` is an optional customer-facing
+ *  title/note shown above that group's choices; absent/empty = legacy. */
 export interface FeatureGroup {
   id: string;
   name: { en: string; ar: string };
+  selection?: 'single' | 'multi';
+  prompt?: { en: string; ar: string };
 }
 
 /**
@@ -208,11 +215,16 @@ export interface MenuData {
   items: MenuItem[];
 }
 
-/** One configured cart line. Key = id + variantId + sorted addonIds. */
+/** One configured cart line. Key = id + variantId + sorted addonIds
+ *  (or sorted fid:count pairs when addonQty is present).
+ *  `addonQty` maps featureId → number of units carrying that option.
+ *  ABSENT = legacy semantics (every id in addonIds applies to ALL units). */
 export interface CartLine {
   id: string;
   variantId?: string;
   addonIds?: string[];
+  /** Split quantities: featureId → 0..quantity. Absent = legacy (all units). */
+  addonQty?: Record<string, number>;
   quantity: number;
 }
 
@@ -223,12 +235,15 @@ export interface AdminSaveResult {
   saved: boolean;
 }
 
-/** A cart line resolved against the live menu, with real money. */
+/** A cart line resolved against the live menu, with real money.
+ *  `addonQty` rides along when the source line carries split counts
+ *  (absent = legacy, every addon applies to all units). */
 export interface ResolvedCartLine {
   key: string;
   item: MenuItem;
   variantId?: string;
   addonIds: string[];
+  addonQty?: Record<string, number>;
   quantity: number;
   unit: number;
   total: number;

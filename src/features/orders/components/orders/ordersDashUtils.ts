@@ -69,8 +69,31 @@ export function relTime(iso: string, lang: 'en' | 'ar', now: Date) {  const t = 
 export function itemTitle(it: OrderItem, lang: 'en' | 'ar'): string {
   const base = lang === 'ar' ? it.name.ar : it.name.en;
   const v = it.variantName ? ` (${lang === 'ar' ? it.variantName.ar : it.variantName.en})` : '';
-  const a = it.addonNames?.length
-    ? ` + ${it.addonNames.map((n) => (lang === 'ar' ? n.ar : n.en)).join(' + ')}`
-    : '';
+  const names = it.addonNames;
+  const hasQty = !!(it.addonQty && typeof it.addonQty === 'object' && !Array.isArray(it.addonQty));
+  if (!names?.length || !hasQty) {
+    const a = names?.length
+      ? ` + ${names.map((n) => (lang === 'ar' ? n.ar : n.en)).join(' + ')}`
+      : '';
+    return `${base}${v}${a}`;
+  }
+  // Split quantities (same rule as Telegram): `name ×n` ONLY when
+  // 0 < count < line qty; full counts render plain, zero-count is hidden.
+  const lineQty = Number.isFinite(it.qty) ? it.qty : 0;
+  const parts: string[] = [];
+  for (let i = 0; i < names.length; i++) {
+    const label = lang === 'ar' ? names[i].ar : names[i].en;
+    if (!label) continue;
+    const fid = Array.isArray(it.addonIds) ? it.addonIds[i] : null;
+    const raw = fid && Object.prototype.hasOwnProperty.call(it.addonQty, fid)
+      ? (it.addonQty as Record<string, unknown>)[fid]
+      : lineQty;
+    const c = typeof raw === 'number' && Number.isInteger(raw) ? raw : lineQty;
+    if (c === 0) continue;
+    if (c === lineQty) parts.push(label);
+    else if (c > 0 && c < lineQty) parts.push(`${label} ×${c}`);
+    else parts.push(label);
+  }
+  const a = parts.length ? ` + ${parts.join(' + ')}` : '';
   return `${base}${v}${a}`;
 }

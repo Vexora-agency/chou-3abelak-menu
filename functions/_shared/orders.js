@@ -13,6 +13,7 @@ import {
   normalizeMenu,
   normalizePricing,
   round2,
+  validatePicks,
 } from './pricing.js';
 
 export function newOrderId() {
@@ -176,9 +177,31 @@ export function validateOrderInput(body, menu) {
         break;
       }
 
+      // Split quantities (optional): validated after qty so a bad qty still
+      // reports invalid_qty, not invalid_addon. Persisted ONLY when the
+      // request carries it (legacy lines store no addonQty key at all).
+      let addonQty;
+      if (line.addonQty !== undefined) {
+        if (!line.addonQty || typeof line.addonQty !== 'object' || Array.isArray(line.addonQty)) {
+          errors.push('invalid_addon');
+          break;
+        }
+        try {
+          validatePicks(norm, found, addonIds, line.addonQty, qty);
+        } catch {
+          errors.push('invalid_addon');
+          break;
+        }
+        const resolved = {};
+        for (const a of addonIds) {
+          resolved[a] = Object.prototype.hasOwnProperty.call(line.addonQty, a) ? line.addonQty[a] : qty;
+        }
+        addonQty = resolved;
+      }
+
       let unit;
       try {
-        unit = lineTotal(found, { variantId, addonIds, qty });
+        unit = lineTotal(found, { variantId, addonIds, addonQty, qty });
         unit = round2(unit / qty);
       } catch (e) {
         const code = e && typeof e.message === 'string' ? e.message : 'invalid_items';
@@ -210,6 +233,9 @@ export function validateOrderInput(body, menu) {
       if (addonIds.length) {
         entry.addonIds = addonIds;
         entry.addonNames = addonNames;
+      }
+      if (addonQty !== undefined) {
+        entry.addonQty = addonQty;
       }
       resolved.push(entry);
     }

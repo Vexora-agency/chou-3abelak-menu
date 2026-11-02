@@ -104,7 +104,7 @@ export function normalizeMenu<T>(menu: T): T {
     : {}) as Record<string, unknown>;
   const groups: Record<string, unknown>[] = [];
   const groupById = new Map<string, Record<string, unknown>>();
-  const ensureGroup = (id: unknown, name: unknown) => {
+  const ensureGroup = (id: unknown, name: unknown, selection?: unknown, prompt?: unknown, hasPrompt?: boolean) => {
     if (typeof id !== 'string' || !id || groupById.has(id)) return (groupById.get(id as string) || null);
     const nm = name && typeof name === 'object'
       ? {
@@ -113,6 +113,18 @@ export function normalizeMenu<T>(menu: T): T {
         }
       : { en: id, ar: id };
     const g: Record<string, unknown> = { id, name: nm };
+    // Selection preserved when valid, else defaulted to 'multi' (same as
+    // validation). The sizes section ignores it at order time.
+    g.selection = selection === 'single' || selection === 'multi' ? selection : 'multi';
+    // Prompt preserved when the input carries an object (cleaned to {en,ar});
+    // absent stays absent (absent/empty = legacy rendering).
+    if (hasPrompt && prompt && typeof prompt === 'object' && !Array.isArray(prompt)) {
+      const pp = prompt as Record<string, unknown>;
+      g.prompt = {
+        en: typeof pp.en === 'string' ? (pp.en as string) : '',
+        ar: typeof pp.ar === 'string' ? (pp.ar as string) : '',
+      };
+    }
     groups.push(g);
     groupById.set(id, g);
     return g;
@@ -120,7 +132,8 @@ export function normalizeMenu<T>(menu: T): T {
   for (const g of Array.isArray(settingsFirst.featureGroups) ? (settingsFirst.featureGroups as unknown[]) : []) {
     if (g && typeof g === 'object') {
       const gg = g as Record<string, unknown>;
-      ensureGroup(gg.id, gg.name);
+      const hasPrompt = Object.prototype.hasOwnProperty.call(gg, 'prompt');
+      ensureGroup(gg.id, gg.name, gg.selection, gg.prompt, hasPrompt);
     }
   }
   // Default buckets (by id convention) for migrating kind-carrying old data

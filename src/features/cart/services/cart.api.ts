@@ -8,7 +8,10 @@ export interface SubmitOrderPayload {
   type: string;
   customer: { name: string; phone: string; address: string };
   notes: string;
-  items: Array<{ id: string; variantId?: string; addonIds?: string[]; qty: number }>;
+  // Split quantities: present ONLY when the line actually uses splits
+  // (non-trivial per-option counts). Legacy lines omit the key entirely so
+  // the payload byte-shape is untouched until a real split is sent.
+  items: Array<{ id: string; variantId?: string; addonIds?: string[]; addonQty?: Record<string, number>; qty: number }>;
   location?: { lat: number; lng: number; accuracy: number };
   lang: string;
   website: string;

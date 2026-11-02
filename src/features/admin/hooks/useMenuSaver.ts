@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { MenuData, AdminSaveResult } from '@/src/types/menu';
+import type { FeatureGroup, MenuData, AdminSaveResult } from '@/src/types/menu';
 import { ensureSettingsBlocks, formatHoursRange } from '@/src/utils/menuHelpers';
 
 interface MenuSaverOptions {
@@ -125,6 +125,25 @@ export function useMenuSaver({ initialMenu, onSaveMenu, isAr, savePaused: savePa
         currency: fillBi(snapshot.settings.currency),
         about: fillBi(snapshot.settings.about),
         featureDefs: (snapshot.settings.featureDefs || []).map((f) => ({ ...f, name: fillBi(f.name) })),
+        // Library sections: fillBi names like everything else; selection is
+        // normalized to 'single'|'multi' (default 'multi'); a prompt with one
+        // blank side copies the filled side, both-blank drops to legacy.
+        featureGroups: (snapshot.settings.featureGroups || []).map((g): FeatureGroup => {
+          const base: FeatureGroup = {
+            ...g,
+            name: fillBi(g.name),
+            selection: g.selection === 'single' ? 'single' : 'multi',
+          };
+          if (g.prompt === undefined) return base;
+          const en = typeof g.prompt.en === 'string' ? g.prompt.en : '';
+          const ar = typeof g.prompt.ar === 'string' ? g.prompt.ar : '';
+          if (!en.trim() && !ar.trim()) {
+            const { prompt: _dropped, ...rest } = base;
+            void _dropped;
+            return rest;
+          }
+          return { ...base, prompt: { en: en.trim() ? en : ar, ar: ar.trim() ? ar : en } };
+        }),
       },
       items: snapshot.items.map((i) => ({
         ...i,

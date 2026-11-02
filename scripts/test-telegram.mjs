@@ -128,6 +128,43 @@ const many = formatNewOrderMessage(
 ok('long orders truncated with remainder', many.includes('أصناف أخرى') && many.length <= 4100);
 ok('empty items safe', formatNewOrderMessage({ type: 'pickup', name: 'X', phone: '1', items: [] }, 1, '').includes('#1'));
 
+// 7s. Split quantities (addonQty): mixed counts show ×n, full counts plain, legacy unchanged.
+{
+  const splitLine = {
+    id: 'd1', qty: 4, unitPrice: 60000,
+    name: { ar: 'مشروب', en: 'Drink' },
+    addonIds: ['pepsi-a', 'pepsi-b', 'veg'],
+    addonQty: { 'pepsi-a': 2, 'pepsi-b': 2, veg: 4 },
+    addonNames: [
+      { ar: 'بيبسي أ', en: 'Pepsi A' },
+      { ar: 'بيبسي ب', en: 'Pepsi B' },
+      { ar: 'خضرة', en: 'Veg' },
+    ],
+  };
+  const splitMsg = formatNewOrderMessage({ ...sampleCleaned, items: [splitLine] }, 2001, '');
+  ok('split mixed counts show ×n', splitMsg.includes('+بيبسي أ ×') && splitMsg.includes('+بيبسي ب ×'));
+  ok('split full count renders plain (no × for veg)', !splitMsg.includes('+خضرة ×') && splitMsg.includes('+خضرة'));
+  // Legacy line without addonQty renders exactly as today (no per-option ×).
+  const legacyLine = {
+    id: 'd2', qty: 4, unitPrice: 70000,
+    name: { ar: 'مشروب', en: 'Drink' },
+    addonIds: ['pepsi-a', 'pepsi-b'],
+    addonNames: [{ ar: 'بيبسي أ', en: 'Pepsi A' }, { ar: 'بيبسي ب', en: 'Pepsi B' }],
+  };
+  const legacyMsg = formatNewOrderMessage({ ...sampleCleaned, items: [legacyLine] }, 2002, '');
+  ok('legacy split-less line has no count marks', legacyMsg.includes('+بيبسي أ') && !legacyMsg.includes('+بيبسي أ ×') && !legacyMsg.includes('+بيبسي ب ×'));
+  // Zero-count option hidden (applies to zero units).
+  const zeroLine = {
+    id: 'd3', qty: 4, unitPrice: 50000,
+    name: { ar: 'مشروب', en: 'Drink' },
+    addonIds: ['pepsi-a', 'veg'],
+    addonQty: { 'pepsi-a': 0, veg: 4 },
+    addonNames: [{ ar: 'بيبسي أ', en: 'Pepsi A' }, { ar: 'خضرة', en: 'Veg' }],
+  };
+  const zeroMsg = formatNewOrderMessage({ ...sampleCleaned, items: [zeroLine] }, 2003, '');
+  ok('zero-count option hidden', !zeroMsg.includes('بيبسي أ') && zeroMsg.includes('+خضرة'));
+}
+
 // 7f. Maps link + bidi: precise coords link, address search fallback, isolates.
 const withLoc = { ...sampleCleaned, location: { lat: 33.8938, lng: 35.5018 } };
 const precise = buildMapsLink(withLoc);

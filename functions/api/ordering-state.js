@@ -5,7 +5,7 @@
  *
  * KV discipline: this endpoint is polled every few seconds by every open
  * tab, so it sits behind a Cache API envelope (per datacenter, purged on
- * every ordering write via purgeOrderingState + bounded by validUntil for
+ * every ordering write via purgeMenuCaches + bounded by validUntil for
  * timed flips). A cache hit costs zero KV reads; only a miss/expired
  * snapshot reads `menu` once (edge-TTL 30s, the platform minimum).
  */
@@ -23,8 +23,8 @@ const SNAPSHOT_TTL_MS = 60 * 1000;
  * ASCII-safe djb2 hex (messages may contain Arabic — never put raw
  * Unicode in a header).
  */
-function stableTag(st) {
-  const basis = JSON.stringify({ s: st.state, m: st.message, r: st.reopensAt || '' });
+function stableTag(snapshot) {
+  const basis = JSON.stringify({ s: snapshot.state, m: snapshot.message, r: snapshot.reopensAt || '' });
   let h = 5381;
   for (let i = 0; i < basis.length; i++) h = (((h << 5) + h + basis.charCodeAt(i)) >>> 0);
   return `W/"os-${h.toString(16)}"`;
@@ -48,12 +48,12 @@ export async function onRequest(context) {
     try {
       const hit = await caches.default.match(cacheKey);
       if (hit) {
-        const env2 = await hit.json();
-        if (env2 && typeof env2.validUntil === 'number' && Date.now() < env2.validUntil && env2.st) {
-          if (request.headers.get('If-None-Match') === env2.tag) {
-            return new Response(null, { status: 304, headers: { ETag: env2.tag, 'Cache-Control': 'no-store' } });
+        const cachedEnvelope = await hit.json();
+        if (cachedEnvelope && typeof cachedEnvelope.validUntil === 'number' && Date.now() < cachedEnvelope.validUntil && cachedEnvelope.snapshot) {
+          if (request.headers.get('If-None-Match') === cachedEnvelope.tag) {
+            return new Response(null, { status: 304, headers: { ETag: cachedEnvelope.tag, 'Cache-Control': 'no-store' } });
           }
-          return jsonNoStore({ ...env2.st, serverTime: new Date().toISOString() }, 200, { ETag: env2.tag });
+          return jsonNoStore({ ...cachedEnvelope.snapshot, serverTime: new Date().toISOString() }, 200, { ETag: cachedEnvelope.tag });
         }
       }
     } catch {}
@@ -74,25 +74,25 @@ export async function onRequest(context) {
   if (!settings) {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
-  let st;
+  let snapshot;
   try {
-    st = getOrderingState(settings, Date.now());
+    snapshot = getOrderingState(settings, Date.now());
   } catch {
-    st = { state: 'open', message: { en: '', ar: '' } };
+    snapshot = { state: 'open', message: { en: '', ar: '' } };
   }
   // Conditional GET: unchanged polls answer 304 with no body, so the
   // 3 s / 5 s / 60 s scheduler cadence costs headers only. The client
   // echoes this tag (see fetchOrderingStatusVersioned); serverTime keeps
   // flowing on 200s only, while the Date header stays fresh on both.
-  const tag = stableTag(st);
+  const tag = stableTag(snapshot);
   // Store the envelope for the next polls (best-effort: a cache failure
   // must never fail the request — the fresh body below is already built).
   if (cacheKey) {
     try {
       const envelope = {
         tag,
-        st,
-        validUntil: snapshotValidUntilMs(st, settings, Date.now()),
+        snapshot,
+        validUntil: snapshotValidUntilMs(snapshot, settings, Date.now()),
       };
       await caches.default.put(
         cacheKey,
@@ -103,24 +103,24 @@ export async function onRequest(context) {
   if (request.headers.get('If-None-Match') === tag) {
     return new Response(null, { status: 304, headers: { ETag: tag, 'Cache-Control': 'no-store' } });
   }
-  return jsonNoStore({ ...st, serverTime: new Date().toISOString() }, 200, { ETag: tag });
+  return jsonNoStore({ ...snapshot, serverTime: new Date().toISOString() }, 200, { ETag: tag });
 }
 
 /**
  * Validity horizon for a snapshot: manual pause/resume/enabled/menu
- * writes purge the envelope instantly (purgeOrderingState), but TIMED
+ * writes purge the envelope instantly (purgeMenuCaches), but TIMED
  * flips (pausedUntil / reopensAt) happen with no write — so the envelope
  * must expire on or before the next scheduled flip. Falls back to a
  * short fixed TTL when nothing is scheduled.
  */
-function snapshotValidUntilMs(st, settings, nowMs) {
+function snapshotValidUntilMs(snapshot, settings, nowMs) {
   let horizon = nowMs + SNAPSHOT_TTL_MS;
   try {
-    const pu = settings && settings.ordering && settings.ordering.pausedUntil
+    const pausedUntilMs = settings && settings.ordering && settings.ordering.pausedUntil
       ? Date.parse(settings.ordering.pausedUntil) : NaN;
-    if (Number.isFinite(pu) && pu > nowMs) horizon = Math.min(horizon, pu);
-    const ro = st && st.reopensAt ? Date.parse(st.reopensAt) : NaN;
-    if (Number.isFinite(ro) && ro > nowMs) horizon = Math.min(horizon, ro);
+    if (Number.isFinite(pausedUntilMs) && pausedUntilMs > nowMs) horizon = Math.min(horizon, pausedUntilMs);
+    const reopensAtMs = snapshot && snapshot.reopensAt ? Date.parse(snapshot.reopensAt) : NaN;
+    if (Number.isFinite(reopensAtMs) && reopensAtMs > nowMs) horizon = Math.min(horizon, reopensAtMs);
   } catch {}
   return horizon;
 }

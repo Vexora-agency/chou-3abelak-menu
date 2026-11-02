@@ -7,7 +7,7 @@
 import { validateMenu } from '../../_shared/validate.js';
 import { jsonNoStore } from '../../_shared/session.js';
 import { applyPlanToSettings } from '../../_shared/plan.js';
-import { getActor, migrateLegacyBackup, purgeOrderingState, purgePublicMenu, snapshotMenu, writeMenuVersioned } from '../../_shared/versions.js';
+import { getActor, migrateLegacyBackup, purgeMenuCaches, snapshotMenu, writeMenuVersioned } from '../../_shared/versions.js';
 import { diffMenus, summarizeChanges } from '../../_shared/diff.js';
 import { logActivity } from '../../_shared/activity.js';
 
@@ -180,8 +180,7 @@ export async function onRequest(context) {
 
     // 7. Invalidate caches.default for public menu (shared helper — every
     // menu write must do this or the storefront serves stale data).
-    await purgePublicMenu(request);
-    await purgeOrderingState(request);
+    await purgeMenuCaches(request);
 
     // 8. Activity log (best-effort; never fails the save).
     try {

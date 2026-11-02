@@ -6,6 +6,7 @@ import { CategoriesTab } from './CategoriesTab';
 import { ItemsTab } from './ItemsTab';
 import { AdminTopBar, type AdminTab } from './admin/AdminTopBar';
 import { AdminSettingsTab } from './admin/AdminSettingsTab';
+import { AdminLibrariesTab } from './admin/AdminLibrariesTab';
 import { AdminDashboardTab } from './admin/AdminDashboardTab';
 import { AdminOverlays, type ConfirmBox } from './admin/AdminOverlays';
 import { useAdminApi } from '../hooks/useAdminApi';
@@ -49,7 +50,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const raw = m ? m[1] : null;
     if (raw === 'reports' || raw === 'customers') return 'dashboard';
     if (raw === 'backup' && !featuresConfig.enableBackup) return 'dashboard';
-    return raw === 'dashboard' || raw === 'settings' || raw === 'categories' || raw === 'items' || raw === 'backup'
+    return raw === 'dashboard' || raw === 'settings' || raw === 'categories' || raw === 'libraries' || raw === 'items' || raw === 'backup'
       ? (raw as AdminTab)
       : 'dashboard';
   });
@@ -185,7 +186,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         return;
       }
       const tab =
-        raw === 'dashboard' || raw === 'settings' || raw === 'categories' || raw === 'items' ||
+        raw === 'dashboard' || raw === 'settings' || raw === 'categories' || raw === 'libraries' || raw === 'items' ||
         (raw === 'backup' && featuresConfig.enableBackup)
           ? (raw as AdminTab)
           : null;
@@ -272,7 +273,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         />
       )}
 
-      {/* TAB 3: ITEMS */}
+      {/* TAB 3: LIBRARIES */}
+      {activeTab === 'libraries' && (
+        <AdminLibrariesTab
+          menu={menu}
+          lang={lang}
+          onUpdateMenu={updateMenu}
+          collapsedGroups={collapsedGroups}
+          onToggleCollapse={(gid) => setCollapsedGroups((prev) => ({ ...prev, [gid]: !prev[gid] }))}
+          onConfirm={(box) => setConfirmBox(box)}
+        />
+      )}
+
+      {/* TAB 4: ITEMS */}
       {activeTab === 'items' && (
         <ItemsTab
           menu={menu}
@@ -314,7 +327,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         />
       )}
 
-      {/* TAB 4: BACKUP & HISTORY (hidden on starter — backend 404s it too) */}
+      {/* TAB 5: BACKUP & HISTORY (hidden on starter — backend 404s it too) */}
       {activeTab === 'backup' && featuresConfig.enableBackup && (
         <BackupPanel
           lang={lang}

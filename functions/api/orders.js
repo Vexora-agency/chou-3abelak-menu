@@ -7,8 +7,7 @@
 
 import { jsonNoStore, readJsonBody } from '../_shared/session.js';
 import { mapOrderRow, validateOrderInput } from '../_shared/orders.js';
-import { newTrackToken, notifyNewOrder } from '../_shared/push.js';
-import { notifyNewOrderTelegram } from '../_shared/telegram.js';
+import { newTrackToken } from '../_shared/push.js';
 import { findOrderById, findOrderByIdemKey, insertOrderWithNumber, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
 import { getOrderingState } from '../_shared/status.js';
 
@@ -183,6 +182,11 @@ export async function onRequest(context) {
 
   // Bookkeeping (never blocks the response). Retention lives in the daily
   // /api/internal/run-reports job now — never here.
+  // Kitchen grace period: NO owner notification here (no Telegram message,
+  // no admin push). The 1-minute /api/internal/order-nag sweep "releases"
+  // the order once the 5-minute customer-cancel window lapses — only then
+  // does it appear in the admin dashboard + Telegram. A customer cancel
+  // inside the window pings the owner from /api/track/cancel instead.
   const after = (async () => {
     try {
       await kv.put(
@@ -190,53 +194,6 @@ export async function onRequest(context) {
         JSON.stringify({ n: used + 1, reset: windowReset }),
         { expirationTtl: RATE_TTL_SEC }
       );
-    } catch {}
-    // Kitchen loop (owner side): a stored order pushes every admin-
-    // subscribed device. Best-effort only — push failure never touches the
-    // order or the customer response (payload: number + total, no PII).
-    try {
-      let origin = '';
-      try {
-        origin = new URL(request.url).origin;
-      } catch {}
-      const currency = menu?.settings?.currency;
-      const cur = currency && typeof currency === 'object'
-        ? String(currency.en || currency.ar || '') : '';
-      const nm = menu?.settings?.name;
-      const storeName = nm && typeof nm === 'object' ? String(nm.en || nm.ar || '') : '';
-      await notifyNewOrder(db, {
-        storeName,
-        orderNumber: created.num,
-        total: c.total,
-        currency: cur,
-        adminUrl: origin ? `${origin}/admin` : '',
-        subject: origin || undefined,
-        tag: `new-order-${created.num}`,
-      });
-    } catch {}
-    // Telegram owner loop: same best-effort contract — runs AFTER the
-    // order row is committed, inside waitUntil, never touches the order
-    // or the customer response. Deduped via the telegram_notifications
-    // ledger (Phase 4: View-button only, no Accept/Reject yet).
-    try {
-      const token = env.TELEGRAM_BOT_TOKEN || null;
-      let origin = '';
-      try {
-        origin = new URL(request.url).origin;
-      } catch {}
-      const currency = menu?.settings?.currency;
-      const cur = currency && typeof currency === 'object'
-        ? String(currency.en || currency.ar || '') : '';
-      const nm = menu?.settings?.name;
-      const storeName = nm && typeof nm === 'object' ? String(nm.en || nm.ar || '') : '';
-      await notifyNewOrderTelegram(db, token, {
-        orderId: created.id,
-        orderNumber: created.num,
-        cleaned: c,
-        storeName,
-        currency: cur,
-        adminUrl: origin ? `${origin}/admin/dashboard` : '',
-      });
     } catch {}
   })();
   if (context.waitUntil) {

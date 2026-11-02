@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, XCircle } from 'lucide-react';
 
-export const CUSTOMER_CANCEL_WINDOW_MS = 2 * 60 * 1000;
+export const CUSTOMER_CANCEL_WINDOW_MS = 5 * 60 * 1000;
 
 interface CancelOrderButtonProps {
   number: number;
@@ -28,9 +28,11 @@ function fmtCountdown(ms: number): string {
 
 /**
  * Customer self-cancel: a red countdown button, visible ONLY inside the
- * 2-minute window while the order is still `new`. The server re-checks
+ * 5-minute window while the order is still `new`. The server re-checks
  * both conditions atomically (a confirmed order or an expired window
  * answers 409 `too_late`), so the client countdown is UX, not security.
+ * The same 5 minutes double as the kitchen grace period: the order stays
+ * hidden from the admin dashboard + Telegram until the window lapses.
  */
 export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
   number, token, createdAt, status, lang, darkMode = true, onCancelled,

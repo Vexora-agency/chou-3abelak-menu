@@ -6,7 +6,7 @@
 
 import { jsonNoStore } from '../../_shared/session.js';
 import { featureOffResponse, hasFeature } from '../../_shared/plan.js';
-import { listOrdersByWindow } from '../../_shared/repositories/orders.repo.js';
+import { isOrderInGrace, listOrdersByWindow } from '../../_shared/repositories/orders.repo.js';
 
 function parseISO(v) {
   if (typeof v !== 'string' || !v) return null;
@@ -57,6 +57,16 @@ export async function onRequest(context) {
   } catch {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
+
+  // Kitchen grace period: a `new` order younger than 5 minutes stays
+  // hidden (the customer may still self-cancel). Cancelled orders are
+  // never hidden — the owner sees the cancellation at once.
+  try {
+    const now = Date.now();
+    if (Array.isArray(orders)) {
+      orders = orders.filter((o) => !isOrderInGrace(o && o.status, o && o.createdAt, now));
+    }
+  } catch {}
 
   return jsonNoStore({ orders });
 }

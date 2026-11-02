@@ -685,6 +685,40 @@ export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, 
 }
 
 /**
+ * Map a raw `orders` DB row to the `cleaned` shape formatNewOrderMessage
+ * reads (single source — used by the live order route, the release sweep,
+ * and rebuildOrderMessage below).
+ */
+export function orderRowToCleaned(order) {
+  const o = order && typeof order === 'object' ? order : {};
+  let items = [];
+  try {
+    const parsed = JSON.parse(o.items_json || '[]');
+    if (Array.isArray(parsed)) items = parsed;
+  } catch {
+    items = [];
+  }
+  return {
+    type: o.type,
+    name: o.customer_name || '',
+    phone: o.customer_phone || '',
+    address: o.customer_address || null,
+    table: o.customer_table || null,
+    notes: o.notes || null,
+    items,
+    subtotal: o.subtotal,
+    // camelCase: formatNewOrderMessage reads deliveryFee (snake_case here
+    // used to silently drop the delivery fee line).
+    deliveryFee: o.delivery_fee,
+    total: o.total,
+    lang: o.lang,
+    location: (o.location_lat !== null && o.location_lat !== undefined &&
+      o.location_lng !== null && o.location_lng !== undefined)
+      ? { lat: o.location_lat, lng: o.location_lng }
+      : null,
+  };
+}
+/**
  * Rebuild the full order message (with HTML links) from the DB row.
  * Needed because Telegram hands callbacks only the PLAIN text of the
  * message — re-stamping that would permanently kill the maps link and
@@ -695,13 +729,13 @@ export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, 
 export async function rebuildOrderMessage(db, env, order) {
   try {
     if (!db || !order || typeof order !== 'object') return null;
-    let items = [];
+    if (!Number.isInteger(order.number)) return null;
     try {
-      const parsed = JSON.parse(order.items_json || '[]');
-      if (Array.isArray(parsed)) items = parsed;
+      JSON.parse(order.items_json || '[]');
     } catch {
       return null;
     }
+    const cleaned = orderRowToCleaned(order);
     let currency = '';
     try {
       const kv = env && env.MENU_KV ? env.MENU_KV : null;
@@ -709,26 +743,6 @@ export async function rebuildOrderMessage(db, env, order) {
       const cur = menu && menu.settings && menu.settings.currency;
       if (cur && typeof cur === 'object') currency = String(cur.en || cur.ar || '');
     } catch {}
-    const cleaned = {
-      type: order.type,
-      name: order.customer_name || '',
-      phone: order.customer_phone || '',
-      address: order.customer_address || null,
-      table: order.customer_table || null,
-      notes: order.notes || null,
-      items,
-      subtotal: order.subtotal,
-      // camelCase: formatNewOrderMessage reads deliveryFee (snake_case here
-      // used to silently drop the delivery line after Confirm was pressed).
-      deliveryFee: order.delivery_fee,
-      total: order.total,
-      lang: order.lang,
-      location: (order.location_lat !== null && order.location_lat !== undefined &&
-        order.location_lng !== null && order.location_lng !== undefined)
-        ? { lat: order.location_lat, lng: order.location_lng }
-        : null,
-    };
-    if (!Number.isInteger(order.number)) return null;
     return formatNewOrderMessage(cleaned, order.number, currency);
   } catch {
     return null;
@@ -1083,7 +1097,7 @@ export async function notifyOwnerCustomerCancelled(db, token, { orderNumber, cus
 }
 
 /**
- * Owner ping when the 2-minute customer-cancel window lapses with the
+ * Owner ping when the 5-minute customer-cancel window lapses with the
  * order still `new`: the order is now final — proceed normally.
  * Best-effort and silent — NEVER throws.
  */

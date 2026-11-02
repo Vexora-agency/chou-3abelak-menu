@@ -13,6 +13,7 @@
  */
 import { generateVapidKeys } from '@mmmike/web-push/vapid';
 import { sendPushNotification } from '@mmmike/web-push/send';
+import { ORDER_GRACE_MS } from './repositories/orders.repo.js';
 
 /** 128-bit tracking token (also used for /api/track gating). */
 export function newTrackToken() {
@@ -249,8 +250,10 @@ export async function notifyNewOrder(db, { storeName, orderNumber, total, curren
 
 /**
  * Nag pass (called every minute by the external cron): re-pushes every
- * UNACKNOWLEDGED order (status new, 1–30 min old) with its stable tag, so a
- * closed phone re-blips instead of staying silent. Ack/cancel/completion
+ * UNACKNOWLEDGED order (status new, past the grace window up to 30 min
+ * old) with its stable tag, so a closed phone re-blips instead of staying
+ * silent after the first ping. The window starts at the grace end because
+ * younger orders are still hidden (unreleased). Ack/cancel/completion
  * flips the status and the nagging stops by itself; past-30-min orders age
  * out (the kitchen missed them — no infinite nagging).
  */
@@ -259,7 +262,7 @@ export async function nagUnackedOrders(db, { storeName, currency, adminUrl, subj
   try {
     const now = Date.now();
     const from = new Date(now - 30 * 60 * 1000).toISOString();
-    const to = new Date(now - 60 * 1000).toISOString();
+    const to = new Date(now - ORDER_GRACE_MS).toISOString();
     const res = await db
       .prepare(
         "SELECT number, total FROM orders WHERE status = 'new' AND created_at >= ?1 AND created_at <= ?2 ORDER BY created_at ASC LIMIT 20"

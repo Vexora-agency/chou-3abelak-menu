@@ -7,32 +7,53 @@
  * or missing secret answers 404 so the route is indistinguishable from a
  * missing one (same convention as run-reports).
  *
- * Effect: re-pushes unacknowledged orders (status new, 1–30 min old) with
- * their stable tag — a closed phone re-blips every minute until the owner
- * acks, instead of staying silent after the first ping. Best-effort only.
- *
- * Second effect (same pass, same auth): auto-completes CONFIRMED or READY
- * orders older than 12h whose customer never pressed "received" — the
- * system marks them complete, stamps the Telegram message and pings the
- * owner. Only active (an unacked `new` order stays the owner's job). Also
- * best-effort: failures are counted, never thrown.
+ * Effects (same pass, same auth):
+ * - nag: re-pushes unacknowledged orders (status new, 5–30 min old) with
+ *   their stable tag — a closed phone re-blips every minute until the owner
+ *   acks, instead of staying silent after the first ping. Best-effort only.
+ * - release: orders still `new` past the 5-minute customer-cancel window
+ *   are "released" (released_at stamped, exactly once via atomic claim):
+ *   the owner gets the Telegram order message + admin web push NOW — never
+ *   at order time. This is the ONLY sender of first notifications; the
+ *   /api/orders route sends none (kitchen grace period). A customer cancel
+ *   inside the window flips to `cancelled` and is visible immediately, so
+ *   it never waits for release.
+ * - lock notice: still-`new` Telegram-notified orders past the window get
+ *   ONE "final, proceed" notice (marked, never repeated).
+ * - auto-complete: CONFIRMED or READY orders older than 12h whose customer
+ *   never pressed "received" are completed (stamp + owner ping).
  */
 import { jsonNoStore, readJsonBody, safeCompareStrings } from '../../_shared/session.js';
-import { nagUnackedOrders } from '../../_shared/push.js';
+import { nagUnackedOrders, notifyNewOrder } from '../../_shared/push.js';
 import {
+  ORDER_GRACE_MS,
+  claimOrderRelease,
   completeOrderByIdIfActive,
+  findDueForRelease,
   findStaleActiveForAutoComplete,
   findUnackedForLockNotice,
   markLockNotified,
 } from '../../_shared/repositories/orders.repo.js';
-import { notifyOwnerAutoCompleted, notifyOwnerOrderLocked, syncOrderStatusToTelegram } from '../../_shared/telegram.js';
+import {
+  notifyOwnerAutoCompleted,
+  notifyOwnerOrderLocked,
+  notifyNewOrderTelegram,
+  orderRowToCleaned,
+  syncOrderStatusToTelegram,
+} from '../../_shared/telegram.js';
 
 const AUTO_COMPLETE_AFTER_MS = 12 * 3600 * 1000;
 const AUTO_COMPLETE_BATCH = 20;
-// Customer self-cancel window: 2 minutes from order creation. Past that,
-// still-`new` Telegram-notified orders get ONE "final, proceed" notice.
-const LOCK_NOTICE_AFTER_MS = 2 * 60 * 1000;
+// Customer self-cancel window = kitchen grace period: 5 minutes from order
+// creation. Past that, a still-`new` Telegram-notified order gets ONE
+// "final, proceed" notice.
+const LOCK_NOTICE_AFTER_MS = ORDER_GRACE_MS;
 const LOCK_NOTICE_BATCH = 20;
+// Release sweep bounds: past the grace window, but not ancient (upper bound
+// mirrors the nag window so a stalled cron can't resurrect week-old
+// unacked orders with a first ping).
+const RELEASE_BATCH = 20;
+const RELEASE_MAX_AGE_MS = 30 * 60 * 1000;
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -92,7 +113,7 @@ export async function onRequest(context) {
     nagged = out.nagged;
   } catch {}
 
-  // Lock-notice sweep: still-`new` and past the 2-minute customer-cancel
+  // Lock-notice sweep: still-`new` and past the 5-minute customer-cancel
   // window gets ONE "final, proceed" Telegram notice (marked, never repeated).
   let lockNoticed = 0;
   try {
@@ -111,6 +132,56 @@ export async function onRequest(context) {
         await markLockNotified(db, cand.id);
       } catch {}
       lockNoticed += 1;
+    }
+  } catch {}
+
+  // Release sweep (runs AFTER lock-notice in the same pass, so an order
+  // released right now waits one more minute for its lock notice instead
+  // of receiving both messages at once): still-`new`, past the grace
+  // window, never released — claim atomically, then send the FIRST
+  // Telegram order message + admin web push. Exactly-once per order:
+  // only the pass that wins the claim notifies.
+  let released = 0;
+  try {
+    const nowMs = Date.now();
+    const releaseCutoff = new Date(nowMs - ORDER_GRACE_MS).toISOString();
+    const recentCutoff = new Date(nowMs - RELEASE_MAX_AGE_MS).toISOString();
+    const due = await findDueForRelease(db, releaseCutoff, recentCutoff, RELEASE_BATCH);
+    const token = env.TELEGRAM_BOT_TOKEN || null;
+    const adminBase = origin ? `${origin}/admin` : '';
+    const dashUrl = origin ? `${origin}/admin/dashboard` : '';
+    for (const row of due) {
+      if (!row || typeof row.id !== 'string' || !row.id) continue;
+      let claimed = false;
+      try {
+        claimed = await claimOrderRelease(db, row.id, new Date(nowMs).toISOString());
+      } catch {
+        claimed = false;
+      }
+      if (!claimed) continue;
+      released += 1;
+      try {
+        const cleaned = orderRowToCleaned(row);
+        await notifyNewOrderTelegram(db, token, {
+          orderId: row.id,
+          orderNumber: row.number,
+          cleaned,
+          storeName,
+          currency: cur,
+          adminUrl: dashUrl,
+        });
+      } catch {}
+      try {
+        await notifyNewOrder(db, {
+          storeName,
+          orderNumber: row.number,
+          total: row.total,
+          currency: cur,
+          adminUrl: adminBase,
+          subject: origin || undefined,
+          tag: `new-order-${row.number}`,
+        });
+      } catch {}
     }
   } catch {}
 
@@ -144,5 +215,5 @@ export async function onRequest(context) {
     }
   } catch {}
 
-  return jsonNoStore({ ok: true, nagged, autoCompleted, lockNoticed });
+  return jsonNoStore({ ok: true, nagged, released, autoCompleted, lockNoticed });
 }

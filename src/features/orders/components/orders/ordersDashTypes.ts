@@ -32,6 +32,23 @@ export interface Order {
   total: number;
 }
 
+/** Kitchen health signal: the 1-minute order-nag sweep heartbeat.
+ *  `stale` (>3 min) / `critical` (>5 min) are computed server-side;
+ *  `neverRan` means no sweep recorded yet (fresh install — no alarm). */
+export interface CronHealth {
+  service: string;
+  lastStartedAt: string | null;
+  lastSuccessAt: string | null;
+  lastDurationMs: number | null;
+  runs: number;
+  consecutiveErrors: number;
+  lastError: string | null;
+  lastResult: unknown;
+  stale: boolean;
+  critical: boolean;
+  neverRan: boolean;
+}
+
 export interface OrdersDashboardProps {
   lang: 'en' | 'ar';
   orders: Order[];

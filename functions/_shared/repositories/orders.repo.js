@@ -153,6 +153,143 @@ export async function hasUnackedOrders(db, releaseCutoffIso, recentCutoffIso) {
 }
 
 /**
+ * Cron heartbeat (kitchen health signal): the 1-minute external order-nag
+ * sweep stamps `started` on entry and `success` (+ duration + result
+ * counts) at the end of every pass. Started-without-success means the
+ * sweep began but crashed mid-run. D1, never KV — a per-minute KV write
+ * would burn the 1k/day free writes alone; D1 allows 100k/day.
+ * All helpers never throw (route stays best-effort).
+ */
+export const ORDER_NAG_SERVICE = 'order-nag';
+
+/** Staleness bounds for the 60s cron: warn after 3 missed runs, critical after 5. */
+export const CRON_STALE_AFTER_MS = 3 * 60 * 1000;
+export const CRON_CRITICAL_AFTER_MS = 5 * 60 * 1000;
+
+/** Stamp sweep start (call once per pass, right after auth). */
+export async function recordCronRunStarted(db, service, nowIso) {
+  try {
+    const stamp = typeof nowIso === 'string' ? nowIso : new Date().toISOString();
+    await db
+      .prepare(
+        `INSERT INTO cron_heartbeat (service, last_started_at, runs)
+         VALUES (?1, ?2, 1)
+         ON CONFLICT(service) DO UPDATE SET last_started_at = excluded.last_started_at, runs = runs + 1`
+      )
+      .bind(service, stamp)
+      .run();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Stamp sweep success with duration + result counts. */
+export async function recordCronRunSuccess(db, service, outcome) {
+  try {
+    const o = outcome && typeof outcome === 'object' ? outcome : {};
+    const endedIso = typeof o.endedIso === 'string' ? o.endedIso : new Date().toISOString();
+    const durationMs = Number.isFinite(o.durationMs) ? Math.max(0, Math.round(o.durationMs)) : null;
+    let resultJson = null;
+    try {
+      resultJson = o.result !== undefined ? JSON.stringify(o.result) : null;
+    } catch {
+      resultJson = null;
+    }
+    const res = await db
+      .prepare(
+        `UPDATE cron_heartbeat
+         SET last_success_at = ?2, last_duration_ms = ?3, consecutive_errors = 0, last_error = NULL, last_result = ?4
+         WHERE service = ?1`
+      )
+      .bind(service, endedIso, durationMs, resultJson)
+      .run();
+    return !!res && !!res.meta && res.meta.changes === 1;
+  } catch {
+    return false;
+  }
+}
+
+/** Stamp sweep failure (only reachable if code outside the swallowed per-sweep try/catch throws). */
+export async function recordCronRunError(db, service, outcome) {
+  try {
+    const o = outcome && typeof outcome === 'object' ? outcome : {};
+    const endedIso = typeof o.endedIso === 'string' ? o.endedIso : new Date().toISOString();
+    const err = typeof o.error === 'string' ? o.error.slice(0, 200) : 'error';
+    let resultJson = null;
+    try {
+      resultJson = o.result !== undefined ? JSON.stringify(o.result) : null;
+    } catch {
+      resultJson = null;
+    }
+    const res = await db
+      .prepare(
+        `UPDATE cron_heartbeat
+         SET consecutive_errors = consecutive_errors + 1, last_error = ?2, last_result = ?3
+         WHERE service = ?1`
+      )
+      .bind(service, err, resultJson)
+      .run();
+    void endedIso;
+    return !!res && !!res.meta && res.meta.changes === 1;
+  } catch {
+    return false;
+  }
+}
+
+/** Read the raw heartbeat row (null when the sweep never recorded one). */
+export async function getCronHeartbeat(db, service) {
+  try {
+    const row = await db
+      .prepare(
+        `SELECT service, last_started_at, last_success_at, last_duration_ms, runs, consecutive_errors, last_error, last_result
+         FROM cron_heartbeat WHERE service = ?1`
+      )
+      .bind(service)
+      .first();
+    return row && typeof row === 'object' ? row : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Pure health view (unit-testable): the server clock decides stale vs
+ * critical from last_success_at. A never-recorded row is NOT stale (fresh
+ * install must not alarm before the first tick lands).
+ */
+export function cronHealthFromRow(row, nowMs) {
+  const now = Number.isFinite(nowMs) ? nowMs : Date.now();
+  const base = {
+    service: row && typeof row.service === 'string' ? row.service : ORDER_NAG_SERVICE,
+    lastStartedAt: row && typeof row.last_started_at === 'string' ? row.last_started_at : null,
+    lastSuccessAt: row && typeof row.last_success_at === 'string' ? row.last_success_at : null,
+    lastDurationMs: row && Number.isFinite(row.last_duration_ms) ? row.last_duration_ms : null,
+    runs: row && Number.isFinite(row.runs) ? row.runs : 0,
+    consecutiveErrors: row && Number.isFinite(row.consecutive_errors) ? row.consecutive_errors : 0,
+    lastError: row && typeof row.last_error === 'string' ? row.last_error : null,
+    lastResult: null,
+    stale: false,
+    critical: false,
+    neverRan: !row,
+  };
+  if (row && typeof row.last_result === 'string') {
+    try {
+      base.lastResult = JSON.parse(row.last_result);
+    } catch {
+      base.lastResult = null;
+    }
+  }
+  if (!row || !base.lastSuccessAt) return base;
+  const successMs = Date.parse(base.lastSuccessAt);
+  if (!Number.isFinite(successMs)) return base;
+  const age = now - successMs;
+  base.stale = age > CRON_STALE_AFTER_MS;
+  base.critical = age > CRON_CRITICAL_AFTER_MS;
+  return base;
+}
+
+/**
  * Lock-notice sweep candidates: still-`new` orders past the customer
  * cancel window that were Telegram-notified but never lock-noticed.
  * Bounded (oldest first).

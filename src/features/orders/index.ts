@@ -10,4 +10,4 @@ export { useOrderingState } from './hooks/useOrderingState';
 // (the sole allowed cross-feature importer) reaches it through the barrel,
 // never deep — see .dependency-cruiser.json feature-admin-isolation.
 export { playNewOrderBeep, unlockOrderSound } from './hooks/useNewOrderSound';
-export type { Order, OrderStatus } from './components/orders/ordersDashTypes';
+export type { Order, OrderStatus, CronHealth } from './components/orders/ordersDashTypes';

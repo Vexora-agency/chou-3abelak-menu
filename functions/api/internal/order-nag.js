@@ -27,6 +27,7 @@ import { jsonNoStore, readJsonBody, safeCompareStrings } from '../../_shared/ses
 import { nagUnackedOrders, notifyNewOrder } from '../../_shared/push.js';
 import {
   ORDER_GRACE_MS,
+  ORDER_NAG_SERVICE,
   claimOrderRelease,
   completeOrderByIdIfActive,
   findDueForRelease,
@@ -34,6 +35,8 @@ import {
   findUnackedForLockNotice,
   hasUnackedOrders,
   markLockNotified,
+  recordCronRunStarted,
+  recordCronRunSuccess,
 } from '../../_shared/repositories/orders.repo.js';
 import {
   notifyOwnerAutoCompleted,
@@ -83,6 +86,13 @@ export async function onRequest(context) {
     ok = false;
   }
   if (!ok) return jsonNoStore({ error: 'not_found' }, 404);
+
+  // Heartbeat: stamp sweep start (D1, never KV) so the dashboard can
+  // tell a dead cron from a slow one. Best-effort — never blocks sweeps.
+  const sweepStartMs = Date.now();
+  try {
+    await recordCronRunStarted(db, ORDER_NAG_SERVICE, new Date(sweepStartMs).toISOString());
+  } catch {}
 
   // Drain a body if the caller sends one (some crons POST empty forms).
   try {
@@ -241,6 +251,16 @@ export async function onRequest(context) {
         });
       } catch {}
     }
+  } catch {}
+
+  // Heartbeat: stamp sweep success with duration + counts (D1, never KV).
+  // The dashboard reads this to banner a dead/slow cron. Best-effort.
+  try {
+    await recordCronRunSuccess(db, ORDER_NAG_SERVICE, {
+      endedIso: new Date().toISOString(),
+      durationMs: Date.now() - sweepStartMs,
+      result: { nagged, released, autoCompleted, lockNoticed },
+    });
   } catch {}
 
   return jsonNoStore({ ok: true, nagged, released, autoCompleted, lockNoticed });

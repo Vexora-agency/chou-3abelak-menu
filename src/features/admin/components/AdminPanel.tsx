@@ -89,7 +89,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     isSaving, saveConflict, dismissConflict,
   } = useMenuSaver({ initialMenu, onSaveMenu, isAr, savePaused, onSaved: flashSaved });
   const {
-    orders, ordersLoading, ordersError, fetchOrders, handleOrderStatusChange,
+    orders, ordersLoading, ordersError, cronHealth, fetchOrders, handleOrderStatusChange,
   } = useAdminOrders({ isAr, timezone: menu.settings.timezone || 'Asia/Beirut', activeTab, enabled: featuresConfig.enableOrderLogging });
   const report = useReportCenter({ isAr, activeTab, adminFetch });
   const backup = useBackupHistory({
@@ -222,6 +222,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           orders={orders}
           ordersLoading={ordersLoading}
           ordersError={ordersError}
+          cronHealth={cronHealth}
           onOrderStatusChange={(id, s) => void handleOrderStatusChange(id, s)}
           onRefreshOrders={() => void fetchOrders(false)}
           reportsOn={report.reportsOn}

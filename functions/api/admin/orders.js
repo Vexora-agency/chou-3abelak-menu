@@ -2,11 +2,14 @@
  * Admin Orders Endpoint: GET /api/admin/orders?days=35&limit=1000
  * or GET /api/admin/orders?from=<ISO>&to=<ISO>&limit=2000
  * Behind the admin middleware (session or Cloudflare Access). Newest first.
+ * Also returns `cronHealth` (order-nag heartbeat: last run, stale/critical
+ * flags computed on the server clock) so the dashboard can banner a dead
+ * cron — the sweep that releases grace orders and re-pushes unacked ones.
  */
 
 import { jsonNoStore } from '../../_shared/session.js';
 import { featureOffResponse, hasFeature } from '../../_shared/plan.js';
-import { isOrderInGrace, listOrdersByWindow } from '../../_shared/repositories/orders.repo.js';
+import { cronHealthFromRow, getCronHeartbeat, isOrderInGrace, listOrdersByWindow, ORDER_NAG_SERVICE } from '../../_shared/repositories/orders.repo.js';
 
 function parseISO(v) {
   if (typeof v !== 'string' || !v) return null;
@@ -68,5 +71,14 @@ export async function onRequest(context) {
     }
   } catch {}
 
-  return jsonNoStore({ orders });
+  // Cron health (D1 heartbeat row, one cheap indexed read): never fails
+  // the orders payload — a missing row just reports neverRan.
+  let cronHealth = null;
+  try {
+    cronHealth = cronHealthFromRow(await getCronHeartbeat(db, ORDER_NAG_SERVICE), Date.now());
+  } catch {
+    cronHealth = cronHealthFromRow(null, Date.now());
+  }
+
+  return jsonNoStore({ orders, cronHealth });
 }

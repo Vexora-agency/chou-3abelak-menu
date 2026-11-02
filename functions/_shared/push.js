@@ -13,7 +13,7 @@
  */
 import { generateVapidKeys } from '@mmmike/web-push/vapid';
 import { sendPushNotification } from '@mmmike/web-push/send';
-import { ORDER_GRACE_MS } from './repositories/orders.repo.js';
+import { ORDER_GRACE_MS, RELEASED_UNACKED_PREDICATE } from './repositories/orders.repo.js';
 
 /** 128-bit tracking token (also used for /api/track gating). */
 export function newTrackToken() {
@@ -270,7 +270,7 @@ export async function nagUnackedOrders(db, { storeName, currency, adminUrl, subj
     const to = new Date(now - ORDER_GRACE_MS).toISOString();
     const res = await db
       .prepare(
-        "SELECT number, total FROM orders WHERE status = 'new' AND released_at IS NOT NULL AND created_at >= ?1 AND created_at <= ?2 ORDER BY created_at ASC LIMIT 20"
+        `SELECT number, total FROM orders WHERE ${RELEASED_UNACKED_PREDICATE} AND created_at >= ?1 AND created_at <= ?2 ORDER BY created_at ASC LIMIT 20`
       )
       .bind(from, to)
       .all();

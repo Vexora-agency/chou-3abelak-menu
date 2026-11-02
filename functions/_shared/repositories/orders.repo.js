@@ -83,7 +83,7 @@ export async function findTrackRowsByNumbers(db, numbers) {
   const placeholders = nums.map((_, i) => `?${i + 1}`).join(',');
   const res = await db
     .prepare(
-      `SELECT number, track_token, status, type, total, items_json, created_at FROM orders WHERE number IN (${placeholders})`
+      `SELECT number, track_token, status, total, items_json, created_at FROM orders WHERE number IN (${placeholders})`
     )
     .bind(...nums)
     .all();
@@ -176,6 +176,14 @@ export async function cancelOrderByTrackToken(db, number, token, nowMs) {
 }
 
 /**
+ * Shared released-but-unacked predicate: still-`new` AND already released.
+ * Single source of truth for the nag SELECT (push.js) and the nag existence
+ * probe (hasUnackedOrders below) — both SQL strings interpolate this const
+ * so the gate can never drift between the two queries.
+ */
+export const RELEASED_UNACKED_PREDICATE = "status = 'new' AND released_at IS NOT NULL";
+
+/**
  * Nag existence probe (KV-free): is there at least one unacknowledged,
  * ALREADY-RELEASED order inside the nag window? Lets the minute-cron skip
  * the menu KV read on idle minutes — the common case. Bounded to one row.
@@ -186,7 +194,7 @@ export async function hasUnackedOrders(db, releaseCutoffIso, recentCutoffIso) {
   try {
     const row = await db
       .prepare(
-        "SELECT 1 AS x FROM orders WHERE status = 'new' AND released_at IS NOT NULL AND created_at <= ?1 AND created_at >= ?2 LIMIT 1"
+        `SELECT 1 AS x FROM orders WHERE ${RELEASED_UNACKED_PREDICATE} AND created_at <= ?1 AND created_at >= ?2 LIMIT 1`
       )
       .bind(releaseCutoffIso, recentCutoffIso)
       .first();

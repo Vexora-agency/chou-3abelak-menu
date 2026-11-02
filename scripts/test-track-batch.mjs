@@ -1,6 +1,10 @@
 // Batched order tracking: one request for the whole bell shelf — one KV
-// rate-limit probe + one D1 round-trip. No-oracle shapes: unknown numbers,
-// bad tokens and malformed pairs are indistinguishable from each other.
+// rate-limit probe + one D1 round-trip. No-oracle shapes: unknown numbers
+// and bad tokens are indistinguishable from each other; every input pair
+// yields exactly one entry (malformed pairs get the unknown shape with
+// number: null — accepted residual: null vs int still differs, but the
+// bell never sends malformed pairs and token/number guessing stays
+// identical).
 // Run: node scripts/test-track-batch.mjs
 import { onRequest } from '../functions/api/track/batch.js';
 import { createAsserts } from './_helpers/shared.mjs';
@@ -12,8 +16,8 @@ const TOK = 'a'.repeat(32);
 const TOK2 = 'b'.repeat(32);
 
 const seed = [
-  { number: 101, track_token: TOK, status: 'confirmed', type: 'delivery', total: 500, items_json: '[{},{},{}]', created_at: iso(T0 - 60 * 1000) },
-  { number: 202, track_token: TOK2, status: 'new', type: 'pickup', total: 250, items_json: '[]', created_at: iso(T0 - 120 * 1000) },
+  { number: 101, track_token: TOK, status: 'confirmed', total: 500, items_json: '[{},{},{}]', created_at: iso(T0 - 60 * 1000) },
+  { number: 202, track_token: TOK2, status: 'new', total: 250, items_json: '[]', created_at: iso(T0 - 120 * 1000) },
 ];
 
 function mockDb() {
@@ -71,20 +75,22 @@ const env = () => ({ MENU_KV: mockKv(), ORDERS_DB: mockDb() });
       { number: 202, t: TOK2 }, // valid
       { number: 101, t: 'c'.repeat(32) }, // bad token, same number as #1 (dedupe: first wins)
       { number: 999, t: TOK }, // unknown number
-      { number: 'x', t: TOK }, // malformed — dropped, no entry
-      { number: 202 }, // malformed — dropped, no entry
+      { number: 'x', t: TOK }, // malformed — unknown entry with number: null
+      { number: 202 }, // malformed — unknown entry with number: null
     ] }),
     env: e,
   });
   ok(r.status === 200, 'mixed batch is 200');
   const d = await r.json();
-  ok(d.ok === true && Array.isArray(d.results) && d.results.length === 4, 'one entry per well-formed pair, malformed dropped');
-  const [r101, r202, r101bad, r999] = d.results;
+  ok(d.ok === true && Array.isArray(d.results) && d.results.length === 6, 'one entry per input pair, malformed get number:null unknown');
+  const [r101, r202, r101bad, r999, rMal1, rMal2] = d.results;
   ok(r101.status === 'confirmed' && r101.total === 500 && r101.itemsCount === 3 && typeof r101.createdAt === 'string', 'valid row returns status payload');
   ok(r202.status === 'new' && r202.itemsCount === 0, 'second valid row resolves independently');
   const unknownShape = (r) => r && r.status === 'unknown' && r.total === null && r.itemsCount === null && r.createdAt === null;
   ok(unknownShape(r101bad) && r101bad.number === 101, 'bad token reads exactly like unknown (no oracle)');
   ok(unknownShape(r999) && r999.number === 999, 'unknown number reads identically (no oracle)');
+  ok(unknownShape(rMal1) && rMal1.number === null, 'malformed pair yields unknown with number:null');
+  ok(unknownShape(rMal2) && rMal2.number === null, 'missing-token pair yields unknown with number:null');
   ok(kv.reads === 2, 'probe + one failure-count read for the whole batch (still a single write)');
   ok(kv.writes === 1, 'exactly one write counted for the failed pair');
 }

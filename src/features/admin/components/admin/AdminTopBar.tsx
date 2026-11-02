@@ -118,7 +118,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
           Mobile shows a 3×2 grid so every tab is visible with no hidden
           horizontal scroll; sm+ keeps the single scrollable row. */}
       <div className="grid grid-cols-3 sm:flex gap-1.5 p-1 bg-neutral-900 rounded-2xl border border-neutral-800 mt-4 mb-6 sm:overflow-x-auto no-scrollbar">
-        {(['dashboard', 'settings', 'categories', 'libraries', 'items', ...(featuresConfig.enableBackup ? ['backup'] as const : [])] as const).map((tab) => (
+        {(['dashboard', 'settings', ...(featuresConfig.enableBackup ? ['backup'] as const : []), 'categories', 'libraries', 'items'] as const).map((tab) => (
           <button
             key={tab}
             type="button"

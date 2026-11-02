@@ -134,15 +134,17 @@ export async function cancelOrderByTrackToken(db, number, token, nowMs) {
 }
 
 /**
- * Nag existence probe (KV-free): is there at least one unacknowledged
- * order inside the nag window? Lets the minute-cron skip the menu KV read
- * on idle minutes — the common case. Bounded to one row.
+ * Nag existence probe (KV-free): is there at least one unacknowledged,
+ * ALREADY-RELEASED order inside the nag window? Lets the minute-cron skip
+ * the menu KV read on idle minutes — the common case. Bounded to one row.
+ * Gated on `released_at` exactly like nagUnackedOrders: the first ping is
+ * the release sweep's job, so unreleased rows must not trigger a fetch.
  */
 export async function hasUnackedOrders(db, releaseCutoffIso, recentCutoffIso) {
   try {
     const row = await db
       .prepare(
-        "SELECT 1 AS x FROM orders WHERE status = 'new' AND created_at <= ?1 AND created_at >= ?2 LIMIT 1"
+        "SELECT 1 AS x FROM orders WHERE status = 'new' AND released_at IS NOT NULL AND created_at <= ?1 AND created_at >= ?2 LIMIT 1"
       )
       .bind(releaseCutoffIso, recentCutoffIso)
       .first();

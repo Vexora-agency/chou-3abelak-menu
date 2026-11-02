@@ -184,5 +184,22 @@ const LIB = {
   check('underscore form aliases', r.ok && got('drink-7up')[0] === 'diet', JSON.stringify(got('drink-7up')));
 }
 
+// 10) group selection + prompt (optional, preserved, validated).
+{
+  const groups = [
+    { id: 'sizes', name: S('Sizes', 'أحجام') },
+    { id: 'choice', name: S('Choice', 'الاختيار'), selection: 'single', prompt: { en: 'Pick one', ar: 'اختر واحدًا' } },
+    { id: 'addons', name: S('Add-ons', 'إضافات'), selection: 'multi' },
+  ];
+  const r = validateMenu(libDoc([], groups, []));
+  const byId = (id) => (r.ok ? r.value.settings.featureGroups.find((g) => g.id === id) : null);
+  check('selection+prompt preserved', r.ok && byId('choice').selection === 'single' && byId('choice').prompt.en === 'Pick one', JSON.stringify(byId('choice')));
+  check('missing selection defaults multi, absent prompt stays absent', r.ok && byId('sizes').selection === 'multi' && !('prompt' in byId('sizes')));
+  const badSel = validateMenu(libDoc([], [{ id: 'x', name: S('X', 'س'), selection: 'sometimes' }], []));
+  check('bad selection rejected', !badSel.ok && badSel.errors.some((e) => e.includes('selection')));
+  const badPrompt = validateMenu(libDoc([], [{ id: 'y', name: S('Y', 'ص'), prompt: 'hello' }], []));
+  check('non-object prompt rejected', !badPrompt.ok && badPrompt.errors.some((e) => e.includes('prompt')));
+}
+
 if (fails) { console.error(`import-features: ${fails} FAILURES`); process.exit(1); }
 console.log('import-features: all green');

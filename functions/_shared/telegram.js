@@ -439,14 +439,38 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
         qtyWord = `${bidi(qty)} ${escapeHtml(unitLabel(it.unit, qty, 'ar'))}`;
       }
     } catch {}
-    const extras = [];
-    if (it.variantName && pickName(it.variantName)) extras.push(escapeHtml(pickName(it.variantName)));
-    if (Array.isArray(it.addonNames)) {
-      for (const a of it.addonNames) {
-        const n = pickName(a);
-        if (n) extras.push('+' + escapeHtml(n));
+      const extras = [];
+      if (it.variantName && pickName(it.variantName)) extras.push(escapeHtml(pickName(it.variantName)));
+      if (Array.isArray(it.addonNames)) {
+        // Split quantities: `name ×n` ONLY when 0 < count < line qty;
+        // full counts (or legacy lines without addonQty) render plain.
+        // Zero-count options apply to zero units, so they are hidden.
+        const hasQty = !!(it.addonQty && typeof it.addonQty === 'object' && !Array.isArray(it.addonQty));
+        const lineQty = Number.isFinite(it.qty) ? it.qty : 0;
+        for (let ai = 0; ai < it.addonNames.length; ai++) {
+          const a = it.addonNames[ai];
+          const n = pickName(a);
+          if (!n) continue;
+          const base = '+' + escapeHtml(n);
+          if (!hasQty) {
+            extras.push(base);
+            continue;
+          }
+          const fid = Array.isArray(it.addonIds) ? it.addonIds[ai] : null;
+          const raw = fid && Object.prototype.hasOwnProperty.call(it.addonQty, fid)
+            ? it.addonQty[fid]
+            : lineQty;
+          const c = typeof raw === 'number' && Number.isInteger(raw) ? raw : lineQty;
+          if (c === 0) continue;
+          if (c === lineQty) {
+            extras.push(base);
+          } else if (c > 0 && c < lineQty) {
+            extras.push(`${base} ×${bidi(escapeHtml(String(c)))}`);
+          } else {
+            extras.push(base);
+          }
+        }
       }
-    }
     const extra = extras.length ? ` (${extras.join('، ')})` : '';
     lines.push(`• ${name}${extra} × ${qtyWord} = ${money(unit * qty)}`);
   }

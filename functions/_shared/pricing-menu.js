@@ -84,18 +84,32 @@ export function normalizeMenu(menu) {
   const settingsFirst = menu.settings && typeof menu.settings === 'object' ? menu.settings : {};
   const groups = [];
   const groupById = new Map();
-  const ensureGroup = (id, name) => {
+  const ensureGroup = (id, name, selection, prompt, hasPrompt) => {
     if (typeof id !== 'string' || !id || groupById.has(id)) return groupById.get(id) || null;
     const nm = name && typeof name === 'object'
       ? { en: typeof name.en === 'string' ? name.en : '', ar: typeof name.ar === 'string' ? name.ar : '' }
       : { en: id, ar: id };
     const g = { id, name: nm };
+    // Selection preserved when valid, else defaulted to 'multi' (same as
+    // validation). The sizes section ignores it at order time.
+    g.selection = selection === 'single' || selection === 'multi' ? selection : 'multi';
+    // Prompt preserved when the input carries an object (cleaned to {en,ar});
+    // absent stays absent (absent/empty = legacy rendering).
+    if (hasPrompt && prompt && typeof prompt === 'object' && !Array.isArray(prompt)) {
+      g.prompt = {
+        en: typeof prompt.en === 'string' ? prompt.en : '',
+        ar: typeof prompt.ar === 'string' ? prompt.ar : '',
+      };
+    }
     groups.push(g);
     groupById.set(id, g);
     return g;
   };
   for (const g of Array.isArray(settingsFirst.featureGroups) ? settingsFirst.featureGroups : []) {
-    if (g && typeof g === 'object') ensureGroup(g.id, g.name);
+    if (g && typeof g === 'object') {
+      const hasPrompt = Object.prototype.hasOwnProperty.call(g, 'prompt');
+      ensureGroup(g.id, g.name, g.selection, g.prompt, hasPrompt);
+    }
   }
   const defaultGroupFor = (kind) => {
     const id = kind === 'addon' ? 'addons' : 'sizes';

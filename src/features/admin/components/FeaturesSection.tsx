@@ -7,6 +7,14 @@ import { FeatureSectionFooter } from './features/FeatureSectionFooter';
 
 type LibraryValues = Pick<MenuSettings, 'featureGroups' | 'featureDefs'>;
 
+/** The sizes section (id "sizes" or a sizes-like name) stays
+ *  single-required by design — no choice-mode toggle there. */
+function isSizesGroup(g: { id: string; name: { en: string; ar: string } }): boolean {
+  if (g.id === 'sizes') return true;
+  const names = [g.name?.en, g.name?.ar].map((s) => (s || '').trim().toLowerCase());
+  return names.some((n) => n === 'size' || n === 'sizes' || n === 'أحجام' || n === 'احجام');
+}
+
 export interface AdminConfirmBox {
   title: string;
   body: string;
@@ -27,6 +35,132 @@ interface FeaturesSectionProps {
   onUpdate: (updater: (prev: LibraryValues) => LibraryValues) => void;
 }
 
+interface GroupChoiceModeProps {
+  group: { id: string; name: { en: string; ar: string }; selection?: 'single' | 'multi'; prompt?: { en: string; ar: string } };
+  isAr: boolean;
+  isSizes: boolean;
+  promptOpen: boolean;
+  onTogglePrompt: () => void;
+  onUpdate: (updater: (prev: LibraryValues) => LibraryValues) => void;
+}
+
+/** Per-section choice mode + optional customer title. Sizes stay
+ *  single-required by design, so their toggle renders disabled. */
+const GroupChoiceMode: React.FC<GroupChoiceModeProps> = ({
+  group,
+  isAr,
+  isSizes,
+  promptOpen,
+  onTogglePrompt,
+  onUpdate,
+}) => {
+  const sel = group.selection === 'single' ? 'single' : 'multi';
+  const open = promptOpen || !!((group.prompt?.en || '').trim() || (group.prompt?.ar || '').trim());
+  const setSel = (mode: 'single' | 'multi') =>
+    onUpdate((prev) => ({
+      ...prev,
+      featureGroups: (prev.featureGroups || []).map((x) =>
+        x.id === group.id ? { ...x, selection: mode } : x
+      ),
+    }));
+  const setPrompt = (side: 'en' | 'ar', value: string) =>
+    onUpdate((prev) => ({
+      ...prev,
+      featureGroups: (prev.featureGroups || []).map((x) =>
+        x.id === group.id
+          ? { ...x, prompt: { en: x.prompt?.en ?? '', ar: x.prompt?.ar ?? '', [side]: value } }
+          : x
+      ),
+    }));
+  const btn = (active: boolean) =>
+    `px-3 h-9 text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+      active ? 'bg-[var(--primary)] text-[#0A0A0A]' : 'text-neutral-300 hover:text-[var(--primary)]'
+    }`;
+  return (
+    <div className="rounded-xl border border-neutral-800 bg-black/30 px-3 py-2.5 space-y-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <span className="text-xs text-neutral-400">{isAr ? 'وضع الاختيار' : 'Choice mode'}</span>
+        <div
+          className={`inline-flex rounded-full border border-neutral-700 overflow-hidden ${isSizes ? 'opacity-50' : ''}`}
+          role="group"
+          aria-label={isAr ? 'وضع الاختيار' : 'Choice mode'}
+        >
+          <button
+            type="button"
+            disabled={isSizes}
+            aria-pressed={sel === 'single'}
+            onClick={() => setSel('single')}
+            className={btn(sel === 'single')}
+            title={isAr ? 'اختيار واحد' : 'One choice'}
+          >
+            {isAr ? 'اختيار واحد' : 'One choice'}
+          </button>
+          <button
+            type="button"
+            disabled={isSizes}
+            aria-pressed={sel === 'multi'}
+            onClick={() => setSel('multi')}
+            className={`${btn(sel === 'multi')} border-s border-neutral-700`}
+            title={isAr ? 'اختيارات متعددة' : 'Multiple'}
+          >
+            {isAr ? 'اختيارات متعددة' : 'Multiple'}
+          </button>
+        </div>
+      </div>
+      {isSizes && (
+        <p className="text-[11px] text-neutral-500">
+          {isAr
+            ? 'الأحجام اختيار واحد إجباري بطبيعتها — لا وضع اختيار هنا.'
+            : 'Sizes stay single-required by design — no choice mode here.'}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={onTogglePrompt}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between gap-2 text-start text-xs text-neutral-400 hover:text-neutral-200"
+      >
+        <span>{isAr ? 'عنوان للزبون (اختياري)' : 'Customer title (optional)'}</span>
+        <ChevronDown size={14} className={`shrink-0 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'العنوان (EN)' : 'Title (EN)'}</label>
+              <input
+                type="text"
+                value={group.prompt?.en ?? ''}
+                maxLength={120}
+                onChange={(e) => setPrompt('en', e.target.value)}
+                placeholder={isAr ? 'مثال: اختر نوع مشروبك' : 'e.g. Choose your drink type'}
+                className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'العنوان (AR)' : 'Title (AR)'}</label>
+              <input
+                type="text"
+                dir="rtl"
+                value={group.prompt?.ar ?? ''}
+                maxLength={120}
+                onChange={(e) => setPrompt('ar', e.target.value)}
+                placeholder={isAr ? 'مثال: اختر نوع مشروبك' : 'e.g. Choose your drink type'}
+                className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm"
+              />
+            </div>
+          </div>
+          <p className="text-[11px] text-neutral-500">
+            {isAr
+              ? 'يظهر فوق خيارات هذا القسم عند الزبون. اتركه فارغاً بدون عنوان.'
+              : 'Shown above this section’s choices in the customer sheet. Leave empty for no title.'}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 /** Features Library card of the admin Settings tab. */
 export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
   menu,
@@ -38,6 +172,8 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
   onUpdate,
 }) => {
   const isAr = lang === 'ar';
+  // Per-section prompt disclosure (open when the section already has one).
+  const [promptOpen, setPromptOpen] = React.useState<Record<string, boolean>>({});
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <div>
@@ -175,6 +311,18 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                     />
                   </div>
                 </div>
+              ) : null}
+              {group.id ? (
+                <GroupChoiceMode
+                  group={group}
+                  isAr={isAr}
+                  isSizes={isSizesGroup(group)}
+                  promptOpen={!!promptOpen[group.id]}
+                  onTogglePrompt={() =>
+                    setPromptOpen((prev) => ({ ...prev, [group.id]: !prev[group.id] }))
+                  }
+                  onUpdate={onUpdate}
+                />
               ) : null}
               {features.length === 0 ? (
                 <p className="text-[11px] text-neutral-500">

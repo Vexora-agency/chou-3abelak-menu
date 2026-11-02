@@ -12,6 +12,7 @@ import {
   effectiveBadges, isNewItem, topSellers,
   featureDef, featureName, itemAddons, hasOptions,
   perUnitPrice, featuresByGroup,
+  addonSum, validatePicks,
 } from '../functions/_shared/pricing.js';
 
 let pass = 0, fail = 0;
@@ -240,6 +241,91 @@ if (existsSync(seedPath)) {
   ok(seed.version === 2 && seed.schemaVersion === 2, 'seed keeps version, has schemaVersion');
 } else {
   console.log('SKIP seed scenarios (public/menu.seed.json not installed yet)');
+}
+
+// ---- split quantities (addonQty): 2+2 pepsi math + group rules + keys ----
+const splitMenu = {
+  settings: {
+    featureGroups: [
+      { id: 'sizes', name: { en: 'Sizes', ar: 'أحجام' }, selection: 'multi' },
+      { id: 'addons', name: { en: 'Add-ons', ar: 'إضافات' }, selection: 'multi' },
+      { id: 'choice', name: { en: 'Choice', ar: 'الاختيار' }, selection: 'single' },
+    ],
+    featureDefs: [
+      { id: 'extra-veg', groupId: 'addons', name: { en: 'Extra veg', ar: 'خضرة' } },
+      { id: 'pepsi-a', groupId: 'choice', name: { en: 'Pepsi A', ar: 'بيبسي أ' } },
+      { id: 'pepsi-b', groupId: 'choice', name: { en: 'Pepsi B', ar: 'بيبسي ب' } },
+      { id: 'size-opt', groupId: 'sizes', name: { en: 'Size opt', ar: 'خيار حجم' } },
+      { id: 'orphan-opt', groupId: 'missing-bucket', name: { en: 'Orphan', ar: 'يتيم' } },
+    ],
+  },
+  items: [],
+};
+const drink = {
+  id: 'drink', categoryId: 'drinks',
+  pricing: { unit: 'pc', price: 50000, minQty: 1, step: 1, maxQty: 50, showUnit: false },
+  addons: [
+    { featureId: 'pepsi-a', price: 10000 },
+    { featureId: 'pepsi-b', price: 10000 },
+    { featureId: 'extra-veg', price: 30000 },
+    { featureId: 'size-opt', price: 5000 },
+    { featureId: 'orphan-opt', price: 7000 },
+  ],
+};
+// 2+2 pepsi math (single group, sum 4 <= qty 4): 4*50k + 2*10k + 2*10k = 240,000
+ok(lineTotal(drink, { addonIds: ['pepsi-a', 'pepsi-b'], addonQty: { 'pepsi-a': 2, 'pepsi-b': 2 }, qty: 4 }) === 240000, 'split 2+2 single-group total');
+ok(addonSum(drink, ['pepsi-a', 'pepsi-b'], { 'pepsi-a': 2, 'pepsi-b': 2 }, 4) === 40000, 'split addonSum is qty-scaled total');
+ok(perUnitPrice(drink, { addonIds: ['pepsi-a', 'pepsi-b'], addonQty: { 'pepsi-a': 2, 'pepsi-b': 2 }, qty: 4 }) === 60000, 'split per-unit average');
+// legacy without counts is untouched (same ids, qty 4): 4*(50k+10k+10k) = 280,000
+ok(lineTotal(drink, { addonIds: ['pepsi-a', 'pepsi-b'], qty: 4 }) === 280000, 'legacy without counts unchanged');
+// full counts equal legacy money but keys differ textually (specified format)
+ok(lineTotal(drink, { addonIds: ['pepsi-a', 'pepsi-b'], addonQty: { 'pepsi-a': 4, 'pepsi-b': 4 }, qty: 4 }) === 280000, 'full counts match legacy money');
+ok(cartLineKey('a', 'v', ['y', 'z']) === 'a|v|y,z', 'legacy key byte-identical (no counts)');
+ok(cartLineKey('a', 'v', ['z', 'y'], { z: 2, y: 2 }, 4) === 'a|v|y:2,z:2', 'split key sorted fid:count');
+ok(cartLineKey('a', 'v', ['y', 'z'], { y: 4, z: 4 }, 4) === 'a|v|y:4,z:4', 'full-count key differs textually from legacy (specified)');
+ok(cartLineKey('a', 'v', ['y', 'z'], { y: 0, z: 2 }, 4) === 'a|v|z:2', 'split key drops zero counts');
+// single sum > qty throws (via validatePicks; lineTotal is pure math and
+// does not enforce group rules without a menu — order-time validation does)
+ok(lineTotal(drink, { addonIds: ['pepsi-a', 'pepsi-b'], addonQty: { 'pepsi-a': 3, 'pepsi-b': 2 }, qty: 4 }) === 250000, 'lineTotal pure math ignores groups (4*50k+3*10k+2*10k)');
+throwsCode(() => validatePicks(splitMenu, drink, ['pepsi-a', 'pepsi-b'], { 'pepsi-a': 3, 'pepsi-b': 2 }, 4), 'invalid_addon', 'single sum>qty throws');
+throwsCode(() => validatePicks(splitMenu, drink, ['extra-veg'], { 'extra-veg': 2 }, 4), 'invalid_addon', 'multi partial-count throws');
+ok((() => { validatePicks(splitMenu, drink, ['extra-veg'], { 'extra-veg': 4 }, 4); return true; })(), 'multi full-count passes');
+ok((() => { validatePicks(splitMenu, drink, ['pepsi-a', 'pepsi-b'], { 'pepsi-a': 2, 'pepsi-b': 2 }, 4); return true; })(), 'single 2+2 passes');
+// orphan-group addons behave as multi
+throwsCode(() => validatePicks(splitMenu, drink, ['orphan-opt'], { 'orphan-opt': 1 }, 4), 'invalid_addon', 'orphan partial-count throws (multi)');
+ok((() => { validatePicks(splitMenu, drink, ['orphan-opt'], { 'orphan-opt': 4 }, 4); return true; })(), 'orphan full-count passes');
+// sizes-section group never constrains addons (forced multi even though single would allow 2/4)
+{
+  const sizesSingle = JSON.parse(JSON.stringify(splitMenu));
+  sizesSingle.settings.featureGroups.find((g) => g.id === 'sizes').selection = 'single';
+  throwsCode(() => validatePicks(sizesSingle, drink, ['size-opt'], { 'size-opt': 2 }, 4), 'invalid_addon', 'sizes group forced multi for addons');
+}
+// bad shapes still throw invalid_addon
+throwsCode(() => validatePicks(splitMenu, drink, ['pepsi-a', 'pepsi-a'], { 'pepsi-a': 4 }, 4), 'invalid_addon', 'dupes rejected');
+throwsCode(() => validatePicks(splitMenu, drink, ['ghost'], { ghost: 1 }, 4), 'invalid_addon', 'unknown id rejected');
+throwsCode(() => validatePicks(splitMenu, drink, ['pepsi-a'], { 'pepsi-a': 1.5 }, 4), 'invalid_addon', 'non-int count rejected');
+throwsCode(() => validatePicks(splitMenu, drink, ['pepsi-a'], { 'pepsi-a': 5 }, 4), 'invalid_addon', 'count>qty rejected');
+throwsCode(() => validatePicks(splitMenu, drink, ['pepsi-a'], 'nope', 4), 'invalid_addon', 'non-object addonQty rejected');
+// normalizeMenu preserves selection + prompt round-trip
+{
+  const withGroups = normalizeMenu({
+    items: [],
+    settings: {
+      ordering: {},
+      featureGroups: [
+        { id: 'choice', name: { en: 'Choice', ar: 'الاختيار' }, selection: 'single', prompt: { en: 'Pick one', ar: 'اختر واحدًا' } },
+        { id: 'addons', name: { en: 'Add-ons', ar: 'إضافات' } },
+      ],
+      featureDefs: [],
+    },
+  });
+  const choice = withGroups.settings.featureGroups.find((g) => g.id === 'choice');
+  ok(choice && choice.selection === 'single', 'normalize preserves selection');
+  ok(choice && choice.prompt && choice.prompt.en === 'Pick one' && choice.prompt.ar === 'اختر واحدًا', 'normalize preserves prompt');
+  const addons = withGroups.settings.featureGroups.find((g) => g.id === 'addons');
+  ok(addons && addons.selection === 'multi' && !('prompt' in addons), 'normalize defaults selection, absent prompt stays absent');
+  const again = normalizeMenu(JSON.parse(JSON.stringify(withGroups)));
+  ok(JSON.stringify(again.settings.featureGroups) === JSON.stringify(withGroups.settings.featureGroups), 'normalize round-trip stable');
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

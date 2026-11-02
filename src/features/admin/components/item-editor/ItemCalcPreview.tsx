@@ -112,10 +112,21 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
                     }),
                   }))
                   .filter((x) => x.lines.length > 0)
-                  .map(({ group, lines }) => (
+                  .map(({ group, lines }) => {
+                    const prEn = typeof group.prompt?.en === 'string' ? group.prompt.en : '';
+                    const prAr = typeof group.prompt?.ar === 'string' ? group.prompt.ar : '';
+                    const title = ((isAr ? prAr : prEn).trim() || (isAr ? prEn : prAr).trim())
+                      || (isAr ? group.name.ar : group.name.en);
+                    const mode = group.selection === 'single' ? 'single' : 'multi';
+                    return (
                     <div key={group.id}>
                       <p className="text-[10px] font-bold text-neutral-500 mb-1">
-                        {isAr ? group.name.ar : group.name.en}
+                        {title}
+                        <span className="ms-1.5 font-bold text-neutral-600">
+                          {mode === 'single'
+                            ? (isAr ? '· اختيار واحد' : '· One choice')
+                            : (isAr ? '· اختيارات متعددة' : '· Multiple')}
+                        </span>
                       </p>
                       {lines.map((a, ai) => (
                         <div key={`${a.featureId || 'blank'}-${ai}`} className="flex justify-between text-[11px]">
@@ -129,7 +140,8 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
                         </div>
                       ))}
                     </div>
-                  ))}
+                    );
+                  })}
                 {pvAddons
                   .filter((a) => {
                     const def = (menu.settings.featureDefs || []).find((d) => d.id === a.featureId);

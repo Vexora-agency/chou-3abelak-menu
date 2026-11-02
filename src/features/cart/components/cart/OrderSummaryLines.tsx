@@ -63,8 +63,13 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
                 `${l.variantId ? featureName(menu, l.variantId, lang) : pickLangText(l.item.name, lang)}${base !== 0 ? ` ${formatPrice(base, currency)}` : ''}`,
                 ...l.addonIds.map((id) => {
                   const price = (l.item.addons || []).find((a) => a && a.featureId === id)?.price ?? 0;
-                  // Zero-price add-ons show no price text (mirrors the item modal).
-                  return `${featureName(menu, id, lang)}${price !== 0 ? ` ${formatPrice(price, currency)}` : ''}`;
+                  // Split lines: partial picks (0 < count < qty) render as
+                  // `name ×n`; full-count and legacy picks render exactly as
+                  // today. Zero-price add-ons show no price text (mirrors
+                  // the item modal).
+                  const count = l.addonQty?.[id] ?? l.quantity;
+                  const partial = count > 0 && count < l.quantity;
+                  return `${featureName(menu, id, lang)}${partial ? ` ×${count}` : ''}${price !== 0 ? ` ${formatPrice(price, currency)}` : ''}`;
                 }),
               ];
               return (

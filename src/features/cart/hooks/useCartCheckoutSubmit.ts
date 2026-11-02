@@ -252,6 +252,11 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
             id: l.item.id,
             ...(l.variantId ? { variantId: l.variantId } : {}),
             ...(l.addonIds.length ? { addonIds: l.addonIds } : {}),
+            // Split lines only: ResolvedCartLine carries addonQty exactly
+            // when the counts are non-trivial (the cart hook canonicalizes
+            // trivial all-full maps back to the legacy shape), so legacy
+            // lines keep their exact payload byte-shape.
+            ...(l.addonQty && Object.keys(l.addonQty).length ? { addonQty: { ...l.addonQty } } : {}),
             qty: l.quantity,
           })),
           ...(location ? { location: { lat: location.lat, lng: location.lng, accuracy: Math.round(location.accuracy) } } : {}),

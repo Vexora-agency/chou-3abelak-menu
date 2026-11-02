@@ -11,6 +11,8 @@ export interface OrderItem {
   variantName?: { en: string; ar: string };
   addonIds?: string[];
   addonNames?: { en: string; ar: string }[];
+  /** Split quantities: featureId → 0..qty. Absent = legacy (every addon applies to all units). */
+  addonQty?: Record<string, number>;
   qty: number;
   unitPrice: number;
 }

@@ -60,10 +60,11 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
             {lines.map((l) => {
               const base = unitPrice(l.item, l.variantId);
               const parts = [
-                `${l.variantId ? featureName(menu, l.variantId, lang) : pickLangText(l.item.name, lang)} ${formatPrice(base, currency)}`,
+                `${l.variantId ? featureName(menu, l.variantId, lang) : pickLangText(l.item.name, lang)}${base !== 0 ? ` ${formatPrice(base, currency)}` : ''}`,
                 ...l.addonIds.map((id) => {
                   const price = (l.item.addons || []).find((a) => a && a.featureId === id)?.price ?? 0;
-                  return `${featureName(menu, id, lang)} ${formatPrice(price, currency)}`;
+                  // Zero-price add-ons show no price text (mirrors the item modal).
+                  return `${featureName(menu, id, lang)}${price !== 0 ? ` ${formatPrice(price, currency)}` : ''}`;
                 }),
               ];
               return (

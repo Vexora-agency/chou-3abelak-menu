@@ -55,13 +55,70 @@ export async function findStaleActiveForAutoComplete(db, cutoffIso, limit) {
 }
 
 /**
+ * Kitchen grace period (also the customer self-cancel window): 5 minutes
+ * from order creation. While `status = 'new'` AND `created_at` is fresher
+ * than this, the order stays hidden from the admin dashboard + Telegram +
+ * admin push — the 1-minute order-nag sweep "releases" it once the window
+ * lapses (sets `released_at`, sends the Telegram message + web push). A
+ * customer cancel inside the window flips to `cancelled`, which is visible
+ * immediately (never grace-hidden). Single source of truth — the frontend
+ * countdown in CancelOrderButton.tsx mirrors this value.
+ */
+export const ORDER_GRACE_MS = 5 * 60 * 1000;
+export const CUSTOMER_CANCEL_WINDOW_MS = ORDER_GRACE_MS;
+
+/**
+ * Grace check (pure, unit-testable): a `new` order younger than the grace
+ * window is hidden from admin surfaces. Cancelled/completed/old orders are
+ * never grace-hidden.
+ */
+export function isOrderInGrace(status, createdAtIso, nowMs, graceMs = ORDER_GRACE_MS) {
+  if (status !== 'new') return false;
+  const t = Date.parse(createdAtIso || '');
+  if (!Number.isFinite(t)) return false;
+  const now = Number.isFinite(nowMs) ? nowMs : Date.now();
+  const g = Number.isFinite(graceMs) ? graceMs : ORDER_GRACE_MS;
+  return now - t < g;
+}
+
+/**
+ * Release sweep candidates: still-`new`, never released, past the grace
+ * window — but not ancient (upper bound mirrors the nag window so a
+ * stalled cron can't resurrect week-old unacked orders with a ping).
+ * Bounded (oldest first) so a minute-cron pass stays cheap.
+ */
+export async function findDueForRelease(db, releaseCutoffIso, recentCutoffIso, limit) {
+  const n = Number.isInteger(limit) ? Math.min(50, Math.max(1, limit)) : 20;
+  const res = await db
+    .prepare(
+      "SELECT * FROM orders WHERE status = 'new' AND released_at IS NULL AND created_at <= ?1 AND created_at >= ?2 ORDER BY created_at ASC LIMIT ?3"
+    )
+    .bind(releaseCutoffIso, recentCutoffIso, n)
+    .all();
+  return (res && res.results) || [];
+}
+
+/**
+ * Atomic release claim: exactly one cron pass owns the release
+ * (sets released_at). Returns true only on a real claim — the caller
+ * sends Telegram + web push only then, so neither ever double-fires.
+ */
+export async function claimOrderRelease(db, id, nowIso) {
+  const stamp = typeof nowIso === 'string' ? nowIso : new Date().toISOString();
+  const res = await db
+    .prepare('UPDATE orders SET released_at = ?2, updated_at = ?2 WHERE id = ?1 AND released_at IS NULL')
+    .bind(id, stamp)
+    .run();
+  const changed = res && res.meta ? res.meta.changes : 0;
+  return changed === 1;
+}
+
+/**
  * Customer self-cancel: token-gated like the track page, atomic, and
  * time-boxed. Only a FRESH `new` order flips — once the kitchen confirms
  * (or the window lapses) the row is untouched and the caller gets `false`
  * (answer: "too late, call us"). Returns true only on a real flip.
  */
-export const CUSTOMER_CANCEL_WINDOW_MS = 2 * 60 * 1000;
-
 export async function cancelOrderByTrackToken(db, number, token, nowMs) {
   const now = Number.isFinite(nowMs) ? nowMs : Date.now();
   const cutoffIso = new Date(now - CUSTOMER_CANCEL_WINDOW_MS).toISOString();

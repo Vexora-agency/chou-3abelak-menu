@@ -70,7 +70,7 @@ this pass except the separately-approved tamper guard (see §6).
   outside it found.
 - **Public writers are capability-gated, not hidden:** `track/cancel`
   (POST, 1KB body cap, token-checked atomic flip, only fresh `new` within
-  2 min — `track/cancel.js:22-79`), `track/received`, `orders` (rate
+  5 min — `track/cancel.js:22-79`), `track/received`, `orders` (rate
   limited), `push-subscribe` (VAPID-validated per `push.js:30`), invite
   redeem/validate (20-attempt lock, `access.js:19`), telegram webhook
   (secret header gate, `webhook.js:1-19`).

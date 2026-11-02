@@ -4,7 +4,7 @@
  * same trust model as /api/track and /api/track/received.
  *
  * Rules (server-enforced, never trust the client's countdown):
- * - Only a FRESH `new` order flips (status + 2-minute window, atomic).
+ * - Only a FRESH `new` order flips (status + 5-minute window, atomic).
  * - Already confirmed/completed/cancelled or expired -> 409 { error:
  *   'too_late' } so the UI can say "call us" instead of failing silently.
  * - Unknown number/token -> 404 (same shape, no oracle).

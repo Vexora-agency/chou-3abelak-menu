@@ -19,15 +19,15 @@ export async function findOrderByNumber(db, number) {
 
 /**
  * Customer self-confirm receipt (bell / tracking page): token-gated
- * capability (128-bit, unguessable — same trust as /api/track). Atomic:
- * exactly one caller can flip new|confirmed -> completed; repeats and
+ * capability (128-bit, unguessable — same trust as /api/track).
+ * Atomic: exactly one caller flips new|confirmed|ready -> completed;
  * terminal states change nothing. Returns true only on a real flip.
  */
 export async function completeOrderByTrackToken(db, number, token) {
   const nowIso = new Date().toISOString();
   const res = await db
     .prepare(
-      "UPDATE orders SET status = 'completed', updated_at = ?3 WHERE number = ?1 AND track_token = ?2 AND status IN ('new','confirmed')"
+      "UPDATE orders SET status = 'completed', updated_at = ?3 WHERE number = ?1 AND track_token = ?2 AND status IN ('new','confirmed','ready')"
     )
     .bind(number, token, nowIso)
     .run();
@@ -36,16 +36,16 @@ export async function completeOrderByTrackToken(db, number, token) {
 }
 
 /**
- * Auto-complete sweep candidates: confirmed orders older than the cutoff
- * (customer never pressed "received"). Only confirmed — an unacked `new`
- * order stays the owner's responsibility (the nag covers it).
- * Bounded (oldest first) so a minute-cron pass stays cheap.
+ * Auto-complete sweep candidates: confirmed or ready + older than the
+ * cutoff (customer silent — no "received" tap). An unacked `new` order
+ * stays the owner's job (the nag covers it). Bounded (oldest first) so a
+ * minute-cron pass stays cheap.
  */
-export async function findStaleConfirmedForAutoComplete(db, cutoffIso, limit) {
+export async function findStaleActiveForAutoComplete(db, cutoffIso, limit) {
   const n = Number.isInteger(limit) ? Math.min(50, Math.max(1, limit)) : 20;
   const res = await db
     .prepare(
-      "SELECT id, number, customer_name FROM orders WHERE status = 'confirmed' AND created_at < ?1 ORDER BY created_at ASC LIMIT ?2"
+      "SELECT id, number, customer_name FROM orders WHERE status IN ('confirmed','ready') AND created_at < ?1 ORDER BY created_at ASC LIMIT ?2"
     )
     .bind(cutoffIso, n)
     .all();
@@ -103,11 +103,11 @@ export async function markLockNotified(db, orderId) {
   } catch {}
 }
 
-/** Flip one order confirmed -> completed (race-safe; true only on flip). */
-export async function completeOrderByIdIfConfirmed(db, id) {
+/** Flip one active order (confirmed|ready) -> completed (race-safe; true only on flip). */
+export async function completeOrderByIdIfActive(db, id) {
   const res = await db
     .prepare(
-      "UPDATE orders SET status = 'completed', updated_at = ?2 WHERE id = ?1 AND status = 'confirmed'"
+      "UPDATE orders SET status = 'completed', updated_at = ?2 WHERE id = ?1 AND status IN ('confirmed','ready')"
     )
     .bind(id, new Date().toISOString())
     .run();

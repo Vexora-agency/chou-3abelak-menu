@@ -11,17 +11,17 @@
  * their stable tag — a closed phone re-blips every minute until the owner
  * acks, instead of staying silent after the first ping. Best-effort only.
  *
- * Second effect (same pass, same auth): auto-completes CONFIRMED orders
- * older than 12h whose customer never pressed "received" — the system
- * marks them complete, stamps the Telegram message and pings the owner.
- * Only confirmed (an unacked `new` order stays the owner's job). Also
+ * Second effect (same pass, same auth): auto-completes CONFIRMED or READY
+ * orders older than 12h whose customer never pressed "received" — the
+ * system marks them complete, stamps the Telegram message and pings the
+ * owner. Only active (an unacked `new` order stays the owner's job). Also
  * best-effort: failures are counted, never thrown.
  */
 import { jsonNoStore, readJsonBody, safeCompareStrings } from '../../_shared/session.js';
 import { nagUnackedOrders } from '../../_shared/push.js';
 import {
-  completeOrderByIdIfConfirmed,
-  findStaleConfirmedForAutoComplete,
+  completeOrderByIdIfActive,
+  findStaleActiveForAutoComplete,
   findUnackedForLockNotice,
   markLockNotified,
 } from '../../_shared/repositories/orders.repo.js';
@@ -114,17 +114,17 @@ export async function onRequest(context) {
     }
   } catch {}
 
-  // Auto-complete sweep: confirmed + older than 12h + customer silent.
+  // Auto-complete sweep: confirmed/ready + older than 12h + customer silent.
   let autoCompleted = 0;
   try {
     const cutoff = new Date(Date.now() - AUTO_COMPLETE_AFTER_MS).toISOString();
-    const candidates = await findStaleConfirmedForAutoComplete(db, cutoff, AUTO_COMPLETE_BATCH);
+    const candidates = await findStaleActiveForAutoComplete(db, cutoff, AUTO_COMPLETE_BATCH);
     const token = env.TELEGRAM_BOT_TOKEN || null;
     for (const cand of candidates) {
       if (!cand || typeof cand.id !== 'string' || !cand.id) continue;
       let flipped = false;
       try {
-        flipped = await completeOrderByIdIfConfirmed(db, cand.id);
+        flipped = await completeOrderByIdIfActive(db, cand.id);
       } catch {
         flipped = false;
       }

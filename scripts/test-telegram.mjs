@@ -21,6 +21,7 @@ import {
   parseOrderCallback,
   readLastTelegramNotification,
   readPendingPairing,
+  readyBannerFor,
   rebuildOrderMessage,
   resolveBotUsername,
   syncOrderStatusToTelegram,
@@ -188,11 +189,13 @@ ok('parse cancel', parseOrderCallback(`tg:cnl:${oid}`)?.status === 'cancelled');
 ok('reject forged action', parseOrderCallback(`tg:done:${oid}`) === null);
 ok('reject long id', parseOrderCallback(`tg:cfm:${'x'.repeat(129)}`) === null);
 ok('reject non-string', parseOrderCallback(null) === null);
-ok('transitions new->confirmed/cancelled', isTelegramTransitionAllowed('new', 'confirmed') && isTelegramTransitionAllowed('new', 'cancelled'));
-ok('transitions confirmed->cancelled only', isTelegramTransitionAllowed('confirmed', 'cancelled') && !isTelegramTransitionAllowed('confirmed', 'confirmed'));
-ok('transitions terminal blocked', !isTelegramTransitionAllowed('completed', 'cancelled') && !isTelegramTransitionAllowed('cancelled', 'confirmed'));
+ok('transitions new->confirmed/ready/cancelled', isTelegramTransitionAllowed('new', 'confirmed') && isTelegramTransitionAllowed('new', 'ready') && isTelegramTransitionAllowed('new', 'cancelled'));
+ok('transitions confirmed->ready/cancelled (+legacy completed)', isTelegramTransitionAllowed('confirmed', 'ready') && isTelegramTransitionAllowed('confirmed', 'cancelled') && isTelegramTransitionAllowed('confirmed', 'completed') && !isTelegramTransitionAllowed('confirmed', 'confirmed'));
+ok('transitions ready->completed/cancelled only', isTelegramTransitionAllowed('ready', 'completed') && isTelegramTransitionAllowed('ready', 'cancelled') && !isTelegramTransitionAllowed('ready', 'confirmed') && !isTelegramTransitionAllowed('ready', 'new'));
+ok('transitions terminal blocked', !isTelegramTransitionAllowed('completed', 'cancelled') && !isTelegramTransitionAllowed('cancelled', 'confirmed') && !isTelegramTransitionAllowed('completed', 'ready') && !isTelegramTransitionAllowed('cancelled', 'ready'));
 ok('parse received', parseOrderCallback(`tg:rcv:${oid}`)?.status === 'completed');
-ok('transitions to received', isTelegramTransitionAllowed('new', 'completed') && isTelegramTransitionAllowed('confirmed', 'completed') && !isTelegramTransitionAllowed('cancelled', 'completed'));
+ok('parse ready', JSON.stringify(parseOrderCallback(`tg:rdy:${oid}`)) === JSON.stringify({ action: 'rdy', orderId: oid, status: 'ready' }));
+ok('transitions to received', isTelegramTransitionAllowed('new', 'completed') && isTelegramTransitionAllowed('confirmed', 'completed') && isTelegramTransitionAllowed('ready', 'completed') && !isTelegramTransitionAllowed('cancelled', 'completed'));
 
 // 7e. Callback handling end-to-end (mocked D1 + Bot API).
 function orderDb(linked, initialStatus = 'new') {
@@ -255,7 +258,8 @@ const cbBase = { callbackId: 'cb1', clickerId: 12345, chatId: 12345, messageId: 
 const dbNew = orderDb(true, 'new');
 const okConfirm = await handleOrderCallback(dbNew, 'tok', { ...cbBase, data: `tg:cfm:ord-1` });
 ok('confirm new order', okConfirm.handled === true && okConfirm.status === 'confirmed' && dbNew.orders.get('ord-1').status === 'confirmed');
-ok('buttons frozen after action', cbCalls.some((c) => c.method === 'editMessageReplyMarkup'));
+const confirmKb = cbCalls.filter((c) => c.method === 'editMessageReplyMarkup');
+ok('confirm re-arms ready keyboard (no freeze)', confirmKb.length === 1 && JSON.stringify(confirmKb[0].body.reply_markup).includes('tg:rdy:ord-1'));
 const stamped = cbCalls.find((c) => c.method === 'editMessageText');
 ok('stamped message keeps html (links survive)', !!stamped && stamped.body.text.includes('<b>') && stamped.body.parse_mode === 'HTML');
 // Rebuild from the DB row keeps the exact-pin maps link after confirm.
@@ -289,6 +293,18 @@ const unlinked = await handleOrderCallback(orderDb(false), 'tok', { ...cbBase, c
 ok('stranger click rejected', unlinked.reason === 'unauthorized');
 const forged = await handleOrderCallback(orderDb(true), 'tok', { ...cbBase, callbackId: 'cb5', data: 'tg:done:ord-1' });
 ok('forged data rejected', forged.reason === 'bad_data');
+// Ready flow: confirmed -> ready stamps the out-for-delivery banner (mock order is delivery).
+const dbReady = orderDb(true, 'confirmed');
+const nCallsBeforeReady = cbCalls.length;
+const ready = await handleOrderCallback(dbReady, 'tok', { ...cbBase, callbackId: 'cbR1', data: `tg:rdy:ord-1` });
+const readyCalls = cbCalls.slice(nCallsBeforeReady);
+const readyStamp = readyCalls.find((c) => c.method === 'editMessageText');
+ok('ready marks out-for-delivery', ready.handled === true && ready.status === 'ready' && dbReady.orders.get('ord-1').status === 'ready');
+ok('ready stamps delivery banner', !!readyStamp && readyStamp.body.text.includes('🛵 الطلب خارج للتوصيل'));
+const readyAgain = await handleOrderCallback(dbReady, 'tok', { ...cbBase, callbackId: 'cbR2', data: `tg:rdy:ord-1` });
+ok('repeat ready is noop', readyAgain.handled === true && readyAgain.noop === true);
+const readyDone = await handleOrderCallback(dbReady, 'tok', { ...cbBase, callbackId: 'cbR3', data: `tg:rcv:ord-1` });
+ok('ready completes via legacy rcv', readyDone.handled === true && readyDone.status === 'completed' && dbReady.orders.get('ord-1').status === 'completed');
 const dbRecv = orderDb(true, 'confirmed');
 const received = await handleOrderCallback(dbRecv, 'tok', { ...cbBase, callbackId: 'cb6', data: `tg:rcv:ord-1` });
 ok('received marks completed', received.handled === true && received.status === 'completed' && dbRecv.orders.get('ord-1').status === 'completed');
@@ -323,6 +339,14 @@ dbSync.ledger.set('ord-s3', { status: 'sent', order_number: 13, chat_id: 111, me
 const s5 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-s3', status: 'completed', adminUrl: '' });
 const editText3 = syncCalls.filter((c) => c.method === 'editMessageText').pop();
 ok('no double banner on restamp', s5.sent === 1 && editText3.body.text.includes('📦 تم الاستلام') && !editText3.body.text.includes('قيد التحضير') && !editText3.body.text.includes('تم تأكيد'));
+dbSync.ledger.set('ord-r1', { status: 'sent', order_number: 14, chat_id: 111, message_id: 26, message_text: '<b>طلب #14</b>\n\n🔥 الطلب قيد التحضير' });
+const sR = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-r1', status: 'ready', adminUrl: 'https://x/admin/dashboard' });
+const editTextR = syncCalls.filter((c) => c.method === 'editMessageText').pop();
+ok('sync ready stamps out-for-delivery banner, old one cleared', sR.sent === 1 && editTextR.body.text.includes('🛵 الطلب خارج للتوصيل') && !editTextR.body.text.includes('قيد التحضير'));
+dbSync.ledger.set('ord-r2', { status: 'sent', order_number: 16, chat_id: 111, message_id: 27, message_text: '<b>طلب #16</b>\n\n🛵 الطلب خارج للتوصيل' });
+const sR2 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-r2', status: 'completed', adminUrl: '' });
+const editTextR2 = syncCalls.filter((c) => c.method === 'editMessageText').pop();
+ok('re-stamp after ready clears ready banner', sR2.sent === 1 && editTextR2.body.text.includes('📦 تم الاستلام') && !editTextR2.body.text.includes('خارج للتوصيل'));
 const s6 = await syncOrderStatusToTelegram(dbSync, '', { orderId: 'ord-s1', status: 'confirmed', adminUrl: '' });
 ok('sync without token skips', s6.sent === 0 && s6.reason === 'misconfigured');
 globalThis.fetch = prevFetch7g;
@@ -372,8 +396,25 @@ ok('legacy rcv callback still completes', parseOrderCallback(`tg:rcv:${oid}`)?.s
 const cbData = kb2.inline_keyboard[1].map((b) => b.callback_data);
 ok('callback data fits 64 bytes', cbData.every((d) => d.length <= 64 && parseOrderCallback(d) !== null));
 const kb = buildOrderKeyboard('https://example.com/admin/dashboard');
-ok('keyboard url button', kb.inline_keyboard[0][0].url === 'https://example.com/admin/dashboard'
-  && typeof kb.inline_keyboard[0][0].text === 'string');
+ok(
+  'keyboard url button',
+  kb.inline_keyboard[0][0].url === 'https://example.com/admin/dashboard' &&
+    typeof kb.inline_keyboard[0][0].text === 'string'
+);
+const kbReady = buildOrderKeyboard('https://x/admin/dashboard', oid, 'confirmed');
+const kbReadyCbs = kbReady.inline_keyboard.flat().map((b) => b.callback_data || '');
+ok(
+  'confirmed keyboard offers mark-ready + cancel only',
+  kbReadyCbs.includes(`tg:rdy:${oid}`) &&
+    kbReadyCbs.includes(`tg:cnl:${oid}`) &&
+    !kbReadyCbs.some((d) => (d || '').startsWith('tg:cfm:'))
+);
+const kbNoAdmin = buildOrderKeyboard('', oid, 'confirmed');
+ok(
+  'keyboard without admin url omits view row',
+  kbNoAdmin.inline_keyboard.length === 1 && kbNoAdmin.inline_keyboard[0].length === 2
+);
+ok('readyBannerFor respects order type', readyBannerFor('delivery').includes('خارج للتوصيل') && readyBannerFor('pickup').includes('جاهز للاستلام') && readyBannerFor('dinein').includes('جاهز للاستلام'));
 
 // 9. Ledger sender with mocked D1 + fetch.
 function mockDb(linked) {

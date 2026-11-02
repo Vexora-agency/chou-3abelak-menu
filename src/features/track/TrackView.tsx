@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, CookingPot, XCircle, ArrowLeft, BellRing, Loader2 } from 'lucide-react';
+import { CheckCircle2, Clock, CookingPot, Truck, Store, XCircle, ArrowLeft, BellRing, Loader2 } from 'lucide-react';
 import { formatPrice, unitLabel } from '@/src/utils/pricing';
 import { ReceivedButton } from './components/ReceivedButton';
 import { CancelOrderButton } from './components/CancelOrderButton';
@@ -22,7 +22,8 @@ interface TrackItem {
 
 interface TrackData {
   number: number;
-  status: 'new' | 'confirmed' | 'completed' | 'cancelled';
+  status: 'new' | 'confirmed' | 'ready' | 'completed' | 'cancelled';
+  type?: 'delivery' | 'pickup' | 'dinein';
   items: TrackItem[];
   subtotal: number;
   deliveryFee: number;
@@ -131,12 +132,18 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
     };
   }, [number, token]);
 
+  const readyLabel =
+    data?.type === 'delivery'
+      ? (isAr ? 'خارج للتوصيل' : 'Out for delivery')
+      : (isAr ? 'جاهز للاستلام' : 'Ready for pickup');
+  const ReadyIcon = data?.type === 'delivery' ? Truck : Store;
   const steps = [
-    { id: 'new', label: isAr ? 'بانتظار التأكيد' : 'Awaiting confirmation', icon: Clock },
+    { id: 'new', label: isAr ? 'تم استلام الطلب' : 'Order received', icon: Clock },
     { id: 'confirmed', label: isAr ? 'طلبك قيد التحضير' : 'Being prepared', icon: CookingPot },
+    { id: 'ready', label: readyLabel, icon: ReadyIcon },
     { id: 'completed', label: isAr ? 'تم التوصيل' : 'Delivered', icon: CheckCircle2 },
   ];
-  const stage = data?.status === 'completed' ? 2 : data?.status === 'confirmed' ? 1 : 0;
+  const stage = data?.status === 'completed' ? 3 : data?.status === 'ready' ? 2 : data?.status === 'confirmed' ? 1 : 0;
   const cancelled = data?.status === 'cancelled';
 
   return (
@@ -265,7 +272,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                 />
               </div>
             )}
-            {(data.status === 'new' || data.status === 'confirmed') && (
+            {(data.status === 'new' || data.status === 'confirmed' || data.status === 'ready') && (
               <div className="mt-4">
                 <ReceivedButton
                   number={data.number}

@@ -47,7 +47,7 @@ export async function onRequest(context) {
   try {
     row = await db
       .prepare(
-        'SELECT id, number, status, items_json, subtotal, delivery_fee, total, lang, created_at, updated_at FROM orders WHERE number = ?1'
+        'SELECT id, number, status, type, items_json, subtotal, delivery_fee, total, lang, created_at, updated_at FROM orders WHERE number = ?1'
       )
       .bind(number)
       .first();
@@ -113,6 +113,9 @@ export async function onRequest(context) {
     ok: true,
     number: row.number,
     status: row.status,
+    // Order type drives the customer-facing ready label (out for delivery
+    // vs ready for pickup). Allowlisted, defaults to delivery.
+    type: row.type === 'pickup' || row.type === 'dinein' ? row.type : 'delivery',
     items,
     subtotal: row.subtotal,
     deliveryFee: row.delivery_fee,

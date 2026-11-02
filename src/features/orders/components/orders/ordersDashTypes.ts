@@ -1,5 +1,5 @@
 /* ---------- Types (the API should return exactly this shape) ---------- */
-export type OrderStatus = 'new' | 'confirmed' | 'completed' | 'cancelled';
+export type OrderStatus = 'new' | 'confirmed' | 'ready' | 'completed' | 'cancelled';
 export type OrderType = 'delivery' | 'pickup' | 'dinein';
 
 export interface OrderItem {
@@ -50,12 +50,12 @@ export const STR = {
     vsPrev: 'vs previous', over: 'Orders over time', peak: 'Peak', ordersWord: 'orders',
     top: 'Top sellers', sold: 'sold',
     recent: 'Recent orders', all: 'All', showMore: 'Show more',
-    new: 'New', confirmed: 'Preparing', completed: 'Completed', cancelled: 'Cancelled',
+    new: 'New', confirmed: 'Preparing', ready: 'Ready', completed: 'Completed', cancelled: 'Cancelled',
     emptyTitle: 'No orders yet', emptyDesc: 'Orders placed from your menu will appear here instantly.',
     emptyView: 'No orders in this view.', noData: 'No data for this period.',
     itemsLabel: 'Items', phone: 'Phone', address: 'Address', table: 'Table', notes: 'Notes', openMaps: 'Open in Maps',
     subtotal: 'Subtotal', fee: 'Delivery fee', total: 'Total',
-    complete: 'Mark completed', cancel: 'Cancel order', reopen: 'Reopen', ack: 'Start preparing',
+    complete: 'Mark completed', cancel: 'Cancel order', reopen: 'Reopen', ack: 'Start preparing', markReady: 'Mark ready',
     wa: 'WhatsApp', call: 'Call', now: 'Just now',
     min: (n: number) => `${n} min ago`, hr: (n: number) => `${n}h ago`,
   },
@@ -65,12 +65,12 @@ export const STR = {
     vsPrev: 'عن السابقة', over: 'الطلبات عبر الوقت', peak: 'الذروة', ordersWord: 'طلب',
     top: 'الأكثر مبيعاً', sold: 'مباع',
     recent: 'آخر الطلبات', all: 'الكل', showMore: 'عرض المزيد',
-    new: 'جديد', confirmed: 'قيد التحضير', completed: 'مكتمل', cancelled: 'ملغي',
+    new: 'جديد', confirmed: 'قيد التحضير', ready: 'جاهز', completed: 'مكتمل', cancelled: 'ملغي',
     emptyTitle: 'لا توجد طلبات بعد', emptyDesc: 'الطلبات القادمة من المنيو ستظهر هنا فوراً.',
     emptyView: 'لا توجد طلبات في هذا العرض.', noData: 'لا توجد بيانات لهذه الفترة.',
     itemsLabel: 'الأصناف', phone: 'الهاتف', address: 'العنوان', table: 'الطاولة', notes: 'ملاحظات', openMaps: 'فتح في الخرائط',
     subtotal: 'المجموع الفرعي', fee: 'رسوم التوصيل', total: 'الإجمالي',
-    complete: 'تم التسليم', cancel: 'إلغاء الطلب', reopen: 'إعادة فتح', ack: 'بدء التحضير',
+    complete: 'تم التسليم', cancel: 'إلغاء الطلب', reopen: 'إعادة فتح', ack: 'بدء التحضير', markReady: 'تعيين جاهز',
     wa: 'واتساب', call: 'اتصال', now: 'الآن',
     min: (n: number) => `قبل ${n} د`, hr: (n: number) => `قبل ${n} س`,
   },

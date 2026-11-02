@@ -469,21 +469,37 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
 
 /**
  * Order keyboard: row 1 = View (URL, opens the dashboard behind admin
- * login — zero auth surface); row 2 = Start-preparing / Cancel (callbacks,
- * fully validated server-side in handleOrderCallback).
+ * login — zero auth surface); row 2 = action buttons for the CURRENT
+ * status (callbacks, fully validated server-side in handleOrderCallback).
+ * New orders: Start-preparing / Cancel. Confirmed orders: the kitchen is
+ * done -> Mark ready (out for delivery / ready for pickup, chosen by
+ * order type) / Cancel. Ready orders: frozen (the dashboard completes or
+ * cancels from here).
  * "بدء التحضير" = the OWNER confirming receipt: the kitchen saw the
  * order and is preparing it -> status `confirmed` (DB value kept;
  * everywhere the customer looks it reads "قيد التحضير / Preparing",
  * NOT delivered).
- * Delivery is confirmed separately: the customer taps "received" in the
+ * Handoff is confirmed separately: the owner taps "جاهز" above (or the
+ * dashboard) -> status `ready`; the customer taps "received" in the
  * bell/tracking (or the 12h auto-complete) -> `completed`. Old tg:rcv:*
  * callbacks from already-sent messages still validate and complete —
  * they are just never attached to NEW messages. callback_data is capped
  * by Telegram at 64 bytes: prefix + 36-char order id fits.
  */
-export function buildOrderKeyboard(adminUrl, orderId) {
-  const rows = [[{ text: '👁 عرض الطلب', url: String(adminUrl || '') }]];
-  if (typeof orderId === 'string' && orderId) {
+export function buildOrderKeyboard(adminUrl, orderId, status) {
+  const rows = [];
+  if (typeof adminUrl === 'string' && adminUrl) {
+    rows.push([{ text: '👁 عرض الطلب', url: adminUrl }]);
+  }
+  if (typeof orderId !== 'string' || !orderId) {
+    return { inline_keyboard: rows };
+  }
+  if (status === 'confirmed') {
+    rows.push([
+      { text: '🛵 جاهز — إشعار الزبون', callback_data: `tg:rdy:${orderId}` },
+      { text: '❌ إلغاء', callback_data: `tg:cnl:${orderId}` },
+    ]);
+  } else {
     rows.push([
       { text: '🔥 بدء التحضير', callback_data: `tg:cfm:${orderId}` },
       { text: '❌ إلغاء', callback_data: `tg:cnl:${orderId}` },
@@ -494,23 +510,39 @@ export function buildOrderKeyboard(adminUrl, orderId) {
 
 /* ---------- Phase 5: Confirm / Cancel callbacks ---------- */
 
-export const ORDER_ACTIONS = { cfm: 'confirmed', cnl: 'cancelled', rcv: 'completed' };
+export const ORDER_ACTIONS = { cfm: 'confirmed', rdy: 'ready', cnl: 'cancelled', rcv: 'completed' };
 /**
- * Telegram may only move orders forward along these edges (admin model
- * subset — no new status: "received" IS completed). Terminal states
- * (completed/cancelled) accept nothing further.
+ * Telegram may only move orders forward along these edges: new is
+ * acknowledged, preparation finishes into ready (handoff), receipt
+ * completes. Terminal states (completed/cancelled) accept nothing further.
  */
 const TG_TRANSITIONS = {
-  new: ['confirmed', 'cancelled', 'completed'],
-  confirmed: ['cancelled', 'completed'],
+  new: ['confirmed', 'ready', 'cancelled', 'completed'],
+  confirmed: ['ready', 'cancelled', 'completed'],
+  ready: ['completed', 'cancelled'],
 };
 
 const CONFIRMED_BANNER = '🔥 الطلب قيد التحضير';
 const RECEIVED_BANNER = '📦 تم الاستلام';
+/** Ready banners are type-aware (chosen at stamp time, see readyBannerFor). */
+const READY_DELIVERY_BANNER = '🛵 الطلب خارج للتوصيل';
+const READY_PICKUP_BANNER = '✅ الطلب جاهز للاستلام';
+
+/** Ready banner by order type: delivery goes out, pickup/dine-in waits. */
+export function readyBannerFor(orderType) {
+  return orderType === 'delivery' ? READY_DELIVERY_BANNER : READY_PICKUP_BANNER;
+}
+
+/** Customer push/sync label for the ready state, by order type. */
+export function readyLabelFor(orderType, lang) {
+  const isAr = lang === 'ar';
+  if (orderType === 'delivery') return isAr ? 'خارج للتوصيل' : 'Out for delivery';
+  return isAr ? 'جاهز للاستلام' : 'Ready for pickup';
+}
 
 export function parseOrderCallback(data) {
   if (typeof data !== 'string') return null;
-  const m = /^tg:(cfm|cnl|rcv):([A-Za-z0-9-]{1,128})$/.exec(data.trim());
+  const m = /^tg:(cfm|rdy|cnl|rcv):([A-Za-z0-9-]{1,128})$/.exec(data.trim());
   if (!m) return null;
   return { action: m[1], orderId: m[2], status: ORDER_ACTIONS[m[1]] };
 }
@@ -689,8 +721,8 @@ export async function rebuildOrderMessage(db, env, order) {
  *
  * Only the linked owner chat can act (clicker AND message chat must equal
  * the stored chat_id — usernames never trusted). Terminal states
- * (confirmed/completed/cancelled) reject further Confirm presses; Cancel is
- * allowed from new/confirmed only. The write goes through the same
+ * (completed/cancelled) reject further presses; Cancel is allowed from
+ * new/confirmed/ready. The write goes through the same
  * updateOrderStatus repository as the dashboard (one status model).
  */
 export async function handleOrderCallback(db, token, { callbackId, clickerId, chatId, messageId, data, messageText, env }) {
@@ -738,7 +770,9 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     if (current === parsed.status) {
       const already = parsed.status === 'confirmed'
         ? 'Already confirmed ✅'
-        : parsed.status === 'completed' ? 'Already marked received 📦' : 'Already cancelled.';
+        : parsed.status === 'ready'
+          ? 'Already marked ready ✅'
+          : parsed.status === 'completed' ? 'Already marked received 📦' : 'Already cancelled.';
       await answer(already);
       return { handled: true, noop: true, status: current };
     }
@@ -758,7 +792,9 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     }
     const banner = parsed.status === 'confirmed'
       ? CONFIRMED_BANNER
-      : parsed.status === 'completed' ? RECEIVED_BANNER : '❌ تم إلغاء الطلب';
+      : parsed.status === 'ready'
+        ? readyBannerFor(order && order.type)
+        : parsed.status === 'completed' ? RECEIVED_BANNER : '❌ تم إلغاء الطلب';
     // Rebuild the FULL message (with HTML links) from the DB row: the
     // callback only carries plain text, and re-stamping that would kill
     // the maps link and all formatting. Falls back to plain text only
@@ -789,12 +825,19 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
         .run();
     } catch {}
     await answer(banner);
-    // Freeze the buttons (no double-tap) + stamp the status on the message.
+    // Next-step buttons (no double-tap): a confirmed order now offers
+    // Mark-ready/Cancel inline (no admin URL in callback context, so no
+    // View row here — the dashboard keeps full controls); every other
+    // terminal move freezes the keyboard. Then stamp the status.
     try {
+      const nextKeyboard =
+        parsed.status === 'confirmed'
+          ? buildOrderKeyboard('', parsed.orderId, 'confirmed')
+          : { inline_keyboard: [] };
       await callTelegramApi(token, 'editMessageReplyMarkup', {
         chat_id: chatId,
         message_id: messageId,
-        reply_markup: { inline_keyboard: [] },
+        reply_markup: nextKeyboard,
       });
     } catch {}
     try {
@@ -816,6 +859,7 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
         orderId: parsed.orderId,
         orderNumber: order.number,
         status: parsed.status,
+        orderType: order.type,
         lang: order.lang === 'ar' ? 'ar' : 'en',
         trackUrl: '',
         subject: undefined,
@@ -838,7 +882,7 @@ function stripBanner(text) {
   let out = String(text ?? '');
   // Legacy banners (pre-preparing wording) still strip cleanly on reopen.
   const legacy = ['✅ تم تأكيد الطلب', '✅ تم استلام الطلب — جارٍ التحضير'];
-  for (const b of [...Object.values(STATUS_BANNERS), ...legacy]) {
+  for (const b of [...Object.values(STATUS_BANNERS), READY_DELIVERY_BANNER, READY_PICKUP_BANNER, ...legacy]) {
     const tail = `\n\n${b}`;
     if (out.endsWith(tail)) out = out.slice(0, -tail.length);
   }
@@ -851,15 +895,17 @@ function stripBanner(text) {
  * Best-effort and silent — NEVER throws, NEVER blocks the dashboard action:
  *   - no ledger row / no message refs (pre-0015 message, unlinked chat,
  *     deleted message) -> skipped with a reason, no error surfaced.
- *   - confirmed/completed/cancelled -> banner stamped + buttons frozen.
- *   - new (reopened) -> buttons restored so the owner can act again.
+  *   - confirmed/completed/cancelled -> banner stamped + buttons frozen.
+  *   - ready -> type-aware banner (out for delivery / ready for
+  *     pickup) stamped + buttons frozen (dashboard drives completion).
+  *   - new (reopened) -> buttons restored so the owner can act again.
  */
 export async function syncOrderStatusToTelegram(db, token, { orderId, status, adminUrl }) {
   const skip = (reason) => ({ sent: 0, reason });
   try {
     if (!db || typeof token !== 'string' || !token) return skip('misconfigured');
     if (typeof orderId !== 'string' || !orderId) return skip('bad_order');
-    if (typeof status !== 'string' || !(status === 'new' || STATUS_BANNERS[status])) return skip('bad_status');
+    if (typeof status !== 'string' || !(status === 'new' || status === 'ready' || STATUS_BANNERS[status])) return skip('bad_status');
     let row = null;
     try {
       row = await db
@@ -884,7 +930,17 @@ export async function syncOrderStatusToTelegram(db, token, { orderId, status, ad
       } catch {}
       return { sent: 1 };
     }
-    const banner = STATUS_BANNERS[status];
+    // Ready banners are type-aware (delivery goes out, pickup/dine-in
+    // waits): read the order type once, fall back to delivery wording.
+    let banner = STATUS_BANNERS[status];
+    if (status === 'ready') {
+      let orderType = 'delivery';
+      try {
+        const ord = await findOrderById(db, orderId);
+        if (ord && typeof ord.type === 'string' && ord.type) orderType = ord.type;
+      } catch {}
+      banner = readyBannerFor(orderType);
+    }
     const base = stripBanner(typeof row.message_text === 'string' && row.message_text ? row.message_text : '');
     if (base) {
       try {

@@ -28,7 +28,7 @@ interface OrdersBellProps {
 }
 
 interface BellOrder extends StoredCustomerOrder {
-  status: 'new' | 'confirmed' | 'completed' | 'cancelled' | 'unknown';
+  status: 'new' | 'confirmed' | 'ready' | 'completed' | 'cancelled' | 'unknown';
   total: number | null;
   itemsCount: number | null;
   createdAt: string | null;
@@ -63,7 +63,7 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
         const st = d?.status;
         next[o.n] = {
           ...o,
-          status: st === 'new' || st === 'confirmed' || st === 'completed' || st === 'cancelled' ? st : 'unknown',
+          status: st === 'new' || st === 'confirmed' || st === 'ready' || st === 'completed' || st === 'cancelled' ? st : 'unknown',
           total: typeof d?.total === 'number' ? d.total : null,
           itemsCount: Array.isArray(d?.items) ? d.items.length : null,
           createdAt: typeof d?.createdAt === 'string' ? d.createdAt : null,
@@ -83,6 +83,7 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
 const STATUS_STYLE: Record<string, string> = {
   new: 'text-amber-700 border-amber-300 bg-amber-100 dark:text-amber-400 dark:border-amber-800 dark:bg-amber-950/60',
   confirmed: 'text-yellow-800 border-yellow-500 bg-yellow-100 dark:text-[var(--primary)] dark:border-[var(--primary)]/40 dark:bg-[var(--primary)]/10',
+  ready: 'text-sky-700 border-sky-300 bg-sky-100 dark:text-sky-400 dark:border-sky-800 dark:bg-sky-950/60',
   completed: 'text-green-700 border-green-300 bg-green-50 dark:text-green-400 dark:border-green-800 dark:bg-green-950/60',
   cancelled: 'text-red-700 border-red-300 bg-red-50 dark:text-red-400 dark:border-red-800 dark:bg-red-950/60',
   unknown: 'text-neutral-500 border-neutral-300 bg-neutral-100 dark:text-neutral-400 dark:border-neutral-700 dark:bg-black',
@@ -217,7 +218,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
           markRung(list.map((o) => o.n));
         }
       }
-      activeRef.current = Object.values(next).some((s) => s.status === 'new' || s.status === 'confirmed');
+      activeRef.current = Object.values(next).some((s) => s.status === 'new' || s.status === 'confirmed' || s.status === 'ready');
       setShelf(list);
       setStates(next);
       // A brand-new order re-arms a muted bell (see saveCustomerOrder) —
@@ -398,7 +399,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     }
   };
 
-  const activeCount = orders.filter((o) => o.status === 'new' || o.status === 'confirmed').length;
+  const activeCount = orders.filter((o) => o.status === 'new' || o.status === 'confirmed' || o.status === 'ready').length;
 
   // new = placed, owner hasn't confirmed yet; confirmed = the kitchen
   // confirmed receipt and is preparing; completed = delivered to you.
@@ -407,6 +408,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   const statusLabel = (s: string) =>
     s === 'new' ? (isAr ? 'بانتظار التأكيد' : 'Awaiting confirmation')
     : s === 'confirmed' ? (isAr ? 'قيد التحضير' : 'Being prepared')
+    : s === 'ready' ? (isAr ? 'جاهز' : 'Ready')
     : s === 'completed' ? (isAr ? 'تم التوصيل' : 'Delivered')
     : s === 'cancelled' ? (isAr ? 'ملغي' : 'Cancelled')
     : (isAr ? '…' : '…');
@@ -503,7 +505,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                   key={o.n}
                   className={`relative overflow-hidden rounded-2xl border p-3 ${darkMode ? 'border-neutral-800 bg-black/40' : 'border-neutral-200 bg-neutral-50'}`}
                 >
-                  {(o.status === 'new' || o.status === 'confirmed') && (
+                  {(o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && (
                     <span aria-hidden="true" className="absolute top-0 inset-x-10 h-[2px] rounded-full bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent" />
                   )}
                   <div className="flex items-center justify-between gap-2">
@@ -558,7 +560,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                         <ExternalLink size={13} />
                         {isAr ? 'تتبع مباشر' : 'Track live'}
                       </a>
-                      {(o.status === 'new' || o.status === 'confirmed') && (
+                      {(o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && (
                         <ReceivedButton
                           number={o.n}
                           token={o.t}
@@ -571,7 +573,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                         />
                       )}
                     </div>
-                    {(o.status === 'new' || o.status === 'confirmed') && (
+                    {(o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && (
                       <p className={`mt-2 text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
                         {isAr ? 'هل استلمت طلبك؟' : 'Did you receive your order?'}
                       </p>

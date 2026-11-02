@@ -31,7 +31,7 @@ function fmtCountdown(ms: number): string {
  * 5-minute window while the order is still `new`. The server re-checks
  * both conditions atomically (a confirmed order or an expired window
  * answers 409 `too_late`), so the client countdown is UX, not security.
- * The same 5 minutes double as the kitchen grace period: the order stays
+ * The same 5 minutes double as the preparation grace period: the order stays
  * hidden from the admin dashboard + Telegram until the window lapses.
  */
 export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
@@ -76,7 +76,7 @@ export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
         setDone(true);
         onCancelled?.();
       } else if (res.status === 409 || data?.error === 'too_late') {
-        // Kitchen already confirmed (or window lapsed on the server clock):
+        // The place already confirmed (or window lapsed on the server clock):
         // cancelling is closed — call us instead.
         setDenied(true);
       }
@@ -118,7 +118,7 @@ export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
       </button>
       {denied && (
         <p className={`mt-1.5 text-[11px] font-bold ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>
-          {isAr ? 'بدأ المطعم التحضير أو انتهت المهلة — اتصل بنا للإلغاء.' : 'The kitchen already started or time ran out — call us to cancel.'}
+            {isAr ? 'بدأ التجهيز أو انتهت المهلة — اتصل بنا للإلغاء.' : 'Preparation started or time ran out — call us to cancel.'}
         </p>
       )}
     </div>

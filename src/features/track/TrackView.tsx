@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, CookingPot, XCircle, ArrowLeft, BellRing, Loader2 } from 'lucide-react';
+import { CheckCircle2, Clock, CookingPot, ArrowUp, XCircle, ArrowLeft, BellRing, Loader2 } from 'lucide-react';
 import { formatPrice, unitLabel } from '@/src/utils/pricing';
 import { ReceivedButton } from './components/ReceivedButton';
 import { CancelOrderButton } from './components/CancelOrderButton';
@@ -63,7 +63,20 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   const [missing, setMissing] = useState(false);
   const [storeName, setStoreName] = useState('');
   const [currency, setCurrency] = useState('LBP');
+  const [showTop, setShowTop] = useState(false);
   const isAr = lang === 'ar';
+
+  // iPhone-safe "back to top": a floating button that appears once the
+  // page is scrolled down. Tapping the iOS status bar doesn't reliably
+  // jump to the top inside this standalone view (sticky bar + 100dvh
+  // toolbar resizing absorb the gesture), so this one-tap control is the
+  // guaranteed way back — no gesture or browser quirk involved.
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 600);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Always enter at the top: a reload restores the old scroll position and
   // a bfcache return lands mid-page — the tracking page must start at its
@@ -145,15 +158,18 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   ];
   const stage = data?.status === 'completed' ? 2 : data?.status === 'confirmed' || data?.status === 'ready' ? 1 : 0;
   const cancelled = data?.status === 'cancelled';
-  // Customer receipt unlocks only after the kitchen starts preparing.
-  const awaitingKitchen = data?.status === 'new';
+  // Customer receipt unlocks only after the place starts preparing.
+  const awaitingConfirm = data?.status === 'new';
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'} className="min-h-dvh bg-[#0A0A0A] text-white flex flex-col items-center px-5 pb-[max(2rem,env(safe-area-inset-bottom))]">
       <div className="w-full max-w-[520px]">
         {/* Sticky top bar: back-to-menu + language stay reachable no matter
-            how far down the order details scroll (mobile-first fix). */}
-        <div className="sticky top-0 z-20 -mx-5 px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-[#0A0A0A]/90 backdrop-blur-md">
+            how far down the order details scroll (mobile-first fix).
+            Solid background on purpose: backdrop-blur on a sticky bar is a
+            known iOS compositor glitch source (flicker / stuck scrolling),
+            and over this black page a solid bar looks identical. */}
+        <div className="sticky top-0 z-20 -mx-5 px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-[#0A0A0A]">
           <div className="flex items-center justify-between">
             <button
               type="button"
@@ -288,7 +304,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                   token={token}
                   lang={lang}
                   darkMode
-                  disabled={awaitingKitchen}
+                  disabled={awaitingConfirm}
                   onConfirmed={() => setData((d) => (d ? { ...d, status: 'completed' } : d))}
                 />
               </div>
@@ -301,6 +317,16 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
         )}
         </div>
       </div>
+      {showTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label={isAr ? 'الرجوع لأعلى الصفحة' : 'Back to top'}
+          className="btn-tactile fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] end-5 z-30 w-12 h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-1 ring-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
+        >
+          <ArrowUp size={20} strokeWidth={2.5} />
+        </button>
+      )}
     </div>
   );
 };

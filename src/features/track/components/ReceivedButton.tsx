@@ -8,11 +8,11 @@ interface ReceivedButtonProps {
   lang: 'en' | 'ar';
   darkMode?: boolean;
   compact?: boolean;
-  /**
-   * Gated by the kitchen: true while the order is still `new` (the owner
-   * hasn't tapped "بدء التحضير" yet). The button renders disabled with a
-   * waiting hint instead of completing — backend enforces the same rule.
-   */
+/**
+ * Gated by confirmation: true while the order is still `new` (the owner
+ * hasn't tapped "بدء التحضير" yet). The button renders disabled with a
+ * waiting hint instead of completing — backend enforces the same rule.
+ */
   disabled?: boolean;
   onConfirmed?: () => void;
 }
@@ -86,7 +86,7 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
         type="button"
         onClick={() => void confirm()}
         disabled={busy || disabled}
-        title={disabled ? (isAr ? 'بانتظار تأكيد المطعم' : 'Waiting for the restaurant to confirm') : undefined}
+        title={disabled ? (isAr ? 'بانتظار التأكيد' : 'Waiting for confirmation') : undefined}
         className={`btn-tactile inline-flex items-center gap-1.5 rounded-full font-extrabold disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 ${
           compact ? 'h-11 min-h-[44px] px-5 text-xs' : 'h-12 min-h-[48px] px-6 text-sm'
         } ${disabled ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed' : 'bg-[var(--primary)] text-[#0A0A0A]'}`}
@@ -96,7 +96,7 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
       </button>
       {disabled && (
         <p className={`mt-1.5 text-[11px] font-bold ${darkMode ? 'text-amber-400/90' : 'text-amber-700'}`}>
-          {isAr ? 'بانتظار تأكيد المطعم — الزر هيتفعل أول ما المطبخ يبدأ التحضير.' : 'Waiting for the restaurant — this unlocks once the kitchen starts preparing.'}
+          {isAr ? 'بانتظار التأكيد — الزر هيتفعل أول ما طلبك يبدأ يتجهز.' : 'Waiting for confirmation — this unlocks once your order starts being prepared.'}
         </p>
       )}
       {failed && (

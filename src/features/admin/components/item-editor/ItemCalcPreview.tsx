@@ -76,7 +76,9 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
                               {featureName(menu, v.featureId, lang)}
                               {isDef && <span className="ms-1.5 text-[var(--primary)] font-bold">{isAr ? '(افتراضي)' : '(default)'}</span>}
                             </span>
-                            <span className="text-neutral-400 tabular-nums" dir="ltr">{formatPrice(v.price, cur)}</span>
+                            {v.price !== 0 && (
+                              <span className="text-neutral-400 tabular-nums" dir="ltr">{formatPrice(v.price, cur)}</span>
+                            )}
                           </div>
                         );
                       })}
@@ -87,14 +89,16 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
                     const def = (menu.settings.featureDefs || []).find((d) => d.id === v.featureId);
                     return !def || !(menu.settings.featureGroups || []).some((g) => g.id === def.groupId);
                   })
-                  .map((v, vi) => (
-                    <div key={`orphan-${v.featureId || 'blank'}-${vi}`} className="flex justify-between text-[11px]">
-                      <span className="text-neutral-300">
-                        {featureName(menu, v.featureId, lang)}
-                      </span>
-                      <span className="text-neutral-400 tabular-nums" dir="ltr">{formatPrice(v.price, cur)}</span>
-                    </div>
-                  ))}
+                    .map((v, vi) => (
+                      <div key={`orphan-${v.featureId || 'blank'}-${vi}`} className="flex justify-between text-[11px]">
+                        <span className="text-neutral-300">
+                          {featureName(menu, v.featureId, lang)}
+                        </span>
+                        {v.price !== 0 && (
+                          <span className="text-neutral-400 tabular-nums" dir="ltr">{formatPrice(v.price, cur)}</span>
+                        )}
+                      </div>
+                    ))}
               </div>
             )}
             {pvAddons.length > 0 && (
@@ -116,9 +120,12 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
                       {lines.map((a, ai) => (
                         <div key={`${a.featureId || 'blank'}-${ai}`} className="flex justify-between text-[11px]">
                           <span className="text-[var(--primary)]">+ {featureName(menu, a.featureId, lang)}</span>
-                          <span className="text-neutral-400 tabular-nums" dir="ltr">
-                            {a.price === 0 ? (isAr ? 'مجاناً' : 'Free') : `+${formatPrice(a.price, cur)}`}
-                          </span>
+                          {/* Zero-price add-ons show no price text (mirrors the storefront). */}
+                          {a.price !== 0 && (
+                            <span className="text-neutral-400 tabular-nums" dir="ltr">
+                              {`+${formatPrice(a.price, cur)}`}
+                            </span>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -128,14 +135,16 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
                     const def = (menu.settings.featureDefs || []).find((d) => d.id === a.featureId);
                     return !def || !(menu.settings.featureGroups || []).some((g) => g.id === def.groupId);
                   })
-                  .map((a, ai) => (
-                    <div key={`orphan-${a.featureId || 'blank'}-${ai}`} className="flex justify-between text-[11px]">
-                      <span className="text-[var(--primary)]">+ {featureName(menu, a.featureId, lang)}</span>
-                      <span className="text-neutral-400 tabular-nums" dir="ltr">
-                        {a.price === 0 ? (isAr ? 'مجاناً' : 'Free') : `+${formatPrice(a.price, cur)}`}
-                      </span>
-                    </div>
-                  ))}
+                    .map((a, ai) => (
+                      <div key={`orphan-${a.featureId || 'blank'}-${ai}`} className="flex justify-between text-[11px]">
+                        <span className="text-[var(--primary)]">+ {featureName(menu, a.featureId, lang)}</span>
+                        {a.price !== 0 && (
+                          <span className="text-neutral-400 tabular-nums" dir="ltr">
+                            {`+${formatPrice(a.price, cur)}`}
+                          </span>
+                        )}
+                      </div>
+                    ))}
               </div>
             )}
           </div>

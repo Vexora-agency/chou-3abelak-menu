@@ -70,9 +70,9 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
   };
 
   return (
-    <div className={compact ? '' : 'rounded-xl border border-neutral-800 bg-black/40 p-3'}>
+    <div className={compact ? '' : 'rounded-xl border border-neutral-800 bg-black/40 p-3 text-center'}>
       {!compact && (
-        <p className={`text-xs font-black mb-2 ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
+        <p className={`text-xs font-black mb-2.5 ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
           {isAr ? 'هل استلمت طلبك؟' : 'Did you receive your order?'}
         </p>
       )}

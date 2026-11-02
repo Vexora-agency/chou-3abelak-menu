@@ -3,7 +3,6 @@ import { CheckCircle2, Clock, CookingPot, XCircle, ArrowLeft, BellRing, Loader2 
 import { formatPrice, unitLabel } from '@/src/utils/pricing';
 import { ReceivedButton } from './components/ReceivedButton';
 import { CancelOrderButton } from './components/CancelOrderButton';
-import { PushSubscribeButton } from './PushSubscribeButton';
 
 interface TrackViewProps {
   number: number;
@@ -274,16 +273,6 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                   lang={lang}
                   darkMode
                   onConfirmed={() => setData((d) => (d ? { ...d, status: 'completed' } : d))}
-                />
-              </div>
-            )}
-            {(data.status === 'new' || data.status === 'confirmed') && (
-              <div className="mt-3">
-                <PushSubscribeButton
-                  orderNumber={data.number}
-                  trackToken={token}
-                  lang={lang}
-                  darkMode
                 />
               </div>
             )}

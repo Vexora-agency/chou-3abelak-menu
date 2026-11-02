@@ -19,6 +19,9 @@ interface AdminDashboardTabProps {
   ordersError: boolean;
   /** Kitchen health signal (order-nag heartbeat). Null until fetched. */
   cronHealth: CronHealth | null;
+  /** Grace-pipeline count (number only): `new` orders inside the 5-minute
+   *  customer-cancel window, hidden from the list below. */
+  graceHidden: number;
   onOrderStatusChange: (id: string, s: OrderStatus) => void;
   onRefreshOrders: () => void;
   reportsOn: boolean;
@@ -40,7 +43,7 @@ interface AdminDashboardTabProps {
 
 /** TAB 0: ORDERS DASHBOARD — pause control, view switcher, orders/reports/customers. */
 export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
-  lang, menu, orders, ordersLoading, ordersError, cronHealth,
+  lang, menu, orders, ordersLoading, ordersError, cronHealth, graceHidden,
   onOrderStatusChange, onRefreshOrders,
   reportsOn, customersOn, dashView, onDashViewChange,
   reportSettings, reportRows, retentionCfg, reportSched,
@@ -167,6 +170,17 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
             {isAr ? 'تحديث' : 'Refresh'}
           </button>
         </div>
+      )}
+      {/* Pipeline visibility (count only, no PII): orders sitting inside the
+          5-minute customer-cancel window are hidden from the list below by
+          design — this line proves a quiet board is calm, not stuck. */}
+      {showOrders && graceHidden > 0 && (
+        <p className="mb-3 flex items-center gap-1.5 text-[11px] font-bold text-neutral-500">
+          <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
+          {isAr
+            ? `${graceHidden} في مهلة الإلغاء (5 دقايق) — هيظهروا هنا تلقائيًا`
+            : `${graceHidden} in the 5-min grace window — appearing automatically`}
+        </p>
       )}
       {(showReports || showCustomers) && (
         <div className="mb-4 flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800 w-fit max-w-full overflow-x-auto no-scrollbar" role="tablist" aria-label={isAr ? 'الداشبورد' : 'Dashboard'}>

@@ -46,33 +46,49 @@ function timeAgo(at: string, isAr: boolean, nowMs: number): string {
   return isAr ? `منذ ${days} يوم` : `${days}d ago`;
 }
 
-/** Pure fetch: statuses for a shelf (no setState — the caller applies). */
+/** One batched fetch for the whole shelf: 1 KV probe + 1 D1 round-trip
+ *  per tick instead of N× GET /api/track (see POST /api/track/batch).
+ *  Same no-oracle contract: unknown numbers / bad tokens come back in the
+ *  identical `unknown` shape, never distinguished. */
 async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<number, BellOrder>> {
   const next: Record<number, BellOrder> = {};
-  await Promise.all(
-    list.map(async (o) => {
-      try {
-        const res = await fetch(`/api/track?number=${o.n}&t=${encodeURIComponent(o.t)}`);
-        if (!res.ok) {
-          next[o.n] = { ...o, status: 'unknown', total: null, itemsCount: null, createdAt: null };
-          return;
-        }
-        const d = (await res.json()) as {
-          status?: string; total?: number; items?: unknown[]; createdAt?: string;
-        };
-        const st = d?.status;
-        next[o.n] = {
-          ...o,
-          status: st === 'new' || st === 'confirmed' || st === 'ready' || st === 'completed' || st === 'cancelled' ? st : 'unknown',
-          total: typeof d?.total === 'number' ? d.total : null,
-          itemsCount: Array.isArray(d?.items) ? d.items.length : null,
-          createdAt: typeof d?.createdAt === 'string' ? d.createdAt : null,
-        };
-      } catch {
-        next[o.n] = { ...o, status: 'unknown', total: null, itemsCount: null, createdAt: null };
-      }
-    })
-  );
+  const unknown = (o: StoredCustomerOrder): BellOrder => ({
+    ...o, status: 'unknown', total: null, itemsCount: null, createdAt: null,
+  });
+  if (list.length === 0) return next;
+  try {
+    const res = await fetch('/api/track/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orders: list.map((o) => ({ number: o.n, t: o.t })) }),
+    });
+    if (!res.ok) {
+      for (const o of list) next[o.n] = unknown(o);
+      return next;
+    }
+    const d = (await res.json()) as {
+      results?: Array<{ number?: unknown; status?: unknown; total?: unknown; itemsCount?: unknown; createdAt?: unknown }>;
+    };
+    const byNum = new Map<number, { status: BellOrder['status']; total: number | null; itemsCount: number | null; createdAt: string | null }>();
+    const toStatus = (s: string): BellOrder['status'] =>
+      s === 'new' || s === 'confirmed' || s === 'ready' || s === 'completed' || s === 'cancelled' ? s : 'unknown';
+    for (const r of Array.isArray(d?.results) ? d.results : []) {
+      if (!r || typeof r.number !== 'number') continue;
+      const st = typeof r.status === 'string' ? r.status : '';
+      byNum.set(r.number, {
+        status: toStatus(st),
+        total: typeof r.total === 'number' ? r.total : null,
+        itemsCount: typeof r.itemsCount === 'number' ? r.itemsCount : null,
+        createdAt: typeof r.createdAt === 'string' ? r.createdAt : null,
+      });
+    }
+    for (const o of list) {
+      const r = byNum.get(o.n);
+      next[o.n] = r ? { ...o, ...r } : unknown(o);
+    }
+  } catch {
+    for (const o of list) next[o.n] = unknown(o);
+  }
   return next;
 }
 

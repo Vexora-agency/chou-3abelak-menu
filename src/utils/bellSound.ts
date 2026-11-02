@@ -47,6 +47,17 @@ let interacted = false;
 // yet fired (or an <audio>.play() still awaiting) abort instead of ringing
 // as a ghost AFTER the bell vanished (order completed mid-chime).
 let chimeEpoch = 0;
+// Single-flight + cooldown: EVERY trigger (poll tick, gesture flush,
+// 4 s alarm loop, unmute toggle) funnels through playBellChime — without
+// this, two triggers <1s apart overlap audibly (chop/restart stutter).
+// A concurrent call joins the running chime instead of stacking a second
+// one; a call landing inside the cooldown (chime tail ~2.2s) is a no-op
+// `false` so the caller keeps it queued for the next tick. The timestamp
+// is set synchronously at start (never in a .then) so jitter can't shrink
+// the gap. Never throws.
+let chimeInFlight: Promise<boolean> | null = null;
+let lastChimeStartMs = 0;
+const CHIME_COOLDOWN_MS = 3000;
 
 /**
  * Silence any in-flight chime immediately: pauses every cached <audio>
@@ -404,43 +415,66 @@ async function playHtmlChime(sound?: BellSoundId | string | null): Promise<boole
  */
 export async function playBellChime(sound?: BellSoundId | string | null): Promise<boolean> {
   try {
-    requestPlaybackSession();
-    try {
-      if (await playHtmlChime(sound)) return true;
-    } catch {
-      // Fall through to the Web Audio engine below.
-    }
-    const ac = sharedContext();
-    if (!ac) return false;
-    // Read fresh each call (a function defeats TS property narrowing —
-    // resume() genuinely flips suspended -> running at runtime).
-    const stateOf = (): AudioContextState => {
+    // Join, don't stack: a chime already playing covers this trigger.
+    if (chimeInFlight) {
       try {
-        return ac.state;
+        return await chimeInFlight;
       } catch {
-        return 'suspended';
-      }
-    };
-    if (stateOf() === 'running') {
-      return strikeFull(ac, stateOf, sound);
-    }
-    for (let i = 0; i < 4; i++) {
-      try {
-        // The documented unstick sequence: suspend first, then resume
-        // after a beat — a bare resume() on a backgrounded context
-        // is the call iOS ignores.
-        void ac.suspend().catch(() => {});
-      } catch {}
-      await sleep(200);
-      try {
-        void ac.resume().catch(() => {});
-      } catch {}
-      await sleep(200);
-      if (stateOf() === 'running') {
-        return strikeFull(ac, stateOf, sound);
+        return false;
       }
     }
-    return false;
+    // Cooldown: the tail just rang — stay silent, caller retries later.
+    if (Date.now() - lastChimeStartMs < CHIME_COOLDOWN_MS) return false;
+    lastChimeStartMs = Date.now();
+    const run = (async (): Promise<boolean> => {
+      try {
+        requestPlaybackSession();
+        try {
+          if (await playHtmlChime(sound)) return true;
+        } catch {
+          // Fall through to the Web Audio engine below.
+        }
+        const ac = sharedContext();
+        if (!ac) return false;
+        // Read fresh each call (a function defeats TS property narrowing —
+        // resume() genuinely flips suspended -> running at runtime).
+        const stateOf = (): AudioContextState => {
+          try {
+            return ac.state;
+          } catch {
+            return 'suspended';
+          }
+        };
+        if (stateOf() === 'running') {
+          return strikeFull(ac, stateOf, sound);
+        }
+        for (let i = 0; i < 4; i++) {
+          try {
+            // The documented unstick sequence: suspend first, then resume
+            // after a beat — a bare resume() on a backgrounded context
+            // is the call iOS ignores.
+            void ac.suspend().catch(() => {});
+          } catch {}
+          await sleep(200);
+          try {
+            void ac.resume().catch(() => {});
+          } catch {}
+          await sleep(200);
+          if (stateOf() === 'running') {
+            return strikeFull(ac, stateOf, sound);
+          }
+        }
+        return false;
+      } catch {
+        return false;
+      }
+    })();
+    chimeInFlight = run;
+    try {
+      return await run;
+    } finally {
+      if (chimeInFlight === run) chimeInFlight = null;
+    }
   } catch {
     return false;
   }

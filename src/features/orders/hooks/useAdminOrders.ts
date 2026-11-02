@@ -22,6 +22,9 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
   // request. Null until the first successful fetch (or when the endpoint
   // predates the field).
   const [cronHealth, setCronHealth] = useState<CronHealth | null>(null);
+  // Grace-pipeline count (number only, no PII): parsed alongside orders so
+  // the dashboard can show "N in grace window" with zero extra requests.
+  const [graceHidden, setGraceHidden] = useState(0);
   const ordersTitleBase = useRef(typeof document !== 'undefined' ? document.title : '');
 
   const fetchOrders = useCallback(async (silent = false) => {
@@ -46,6 +49,8 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
         && typeof rawHealth.stale === 'boolean'
         && typeof rawHealth.critical === 'boolean';
       setCronHealth(healthOk ? (rawHealth as unknown as CronHealth) : null);
+      const rawGrace = isRecord(data) ? data.graceHidden : undefined;
+      setGraceHidden(typeof rawGrace === 'number' && Number.isFinite(rawGrace) && rawGrace >= 0 ? Math.floor(rawGrace) : 0);
       setOrders((prev) => {
         const prevIds = new Set(prev.map((o) => o.id));
         const freshIds = list.filter((o) => !prevIds.has(o.id)).map((o) => o.id);
@@ -120,5 +125,5 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
     }
   };
 
-  return { orders, ordersLoading, ordersError, cronHealth, fetchOrders, handleOrderStatusChange };
+  return { orders, ordersLoading, ordersError, cronHealth, graceHidden, fetchOrders, handleOrderStatusChange };
 }

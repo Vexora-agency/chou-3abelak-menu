@@ -16,6 +16,7 @@ import { playBellChime, stopBellChime, unlockBellAudio, vibrateBell } from '@/sr
 import { markFetchStart, shouldEventFetch } from '@/src/utils/refreshGate';
 import { ReceivedButton } from './ReceivedButton';
 import { CancelOrderButton } from './CancelOrderButton';
+import { publicPostRaw } from '@/src/lib/api-client';
 
 /** Event-gate channel shared by this bell's interval + ambient refreshes. */
 const BELL_KEY = 'orders-bell';
@@ -46,6 +47,13 @@ function timeAgo(at: string, isAr: boolean, nowMs: number): string {
   return isAr ? `منذ ${days} يوم` : `${days}d ago`;
 }
 
+/** Single source of truth for batch validation + display: the 5 known
+ *  batch statuses, anything else is `unknown`. Legacy `ready` stays a
+ *  distinct value here — the display layer merges it into preparing. */
+function toBellStatus(s: unknown): BellOrder['status'] {
+  return s === 'new' || s === 'confirmed' || s === 'ready' || s === 'completed' || s === 'cancelled' ? s : 'unknown';
+}
+
 /** One batched fetch for the whole shelf: 1 KV probe + 1 D1 round-trip
  *  per tick instead of N× GET /api/track (see POST /api/track/batch).
  *  Same no-oracle contract: unknown numbers / bad tokens come back in the
@@ -57,12 +65,11 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
   });
   if (list.length === 0) return next;
   try {
-    const res = await fetch('/api/track/batch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orders: list.map((o) => ({ number: o.n, t: o.t })) }),
-    });
-    if (!res.ok) {
+    // Shared public POST transport (same shape as ReceivedButton's
+    // token-gated call): null = network/abort failure, else a Response
+    // with `.ok`/`.json()` consumed exactly like a raw fetch Response.
+    const res = await publicPostRaw('/api/track/batch', { orders: list.map((o) => ({ number: o.n, t: o.t })) });
+    if (!res || !res.ok) {
       for (const o of list) next[o.n] = unknown(o);
       return next;
     }
@@ -70,13 +77,11 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
       results?: Array<{ number?: unknown; status?: unknown; total?: unknown; itemsCount?: unknown; createdAt?: unknown }>;
     };
     const byNum = new Map<number, { status: BellOrder['status']; total: number | null; itemsCount: number | null; createdAt: string | null }>();
-    const toStatus = (s: string): BellOrder['status'] =>
-      s === 'new' || s === 'confirmed' || s === 'ready' || s === 'completed' || s === 'cancelled' ? s : 'unknown';
     for (const r of Array.isArray(d?.results) ? d.results : []) {
       if (!r || typeof r.number !== 'number') continue;
       const st = typeof r.status === 'string' ? r.status : '';
       byNum.set(r.number, {
-        status: toStatus(st),
+        status: toBellStatus(st),
         total: typeof r.total === 'number' ? r.total : null,
         itemsCount: typeof r.itemsCount === 'number' ? r.itemsCount : null,
         createdAt: typeof r.createdAt === 'string' ? r.createdAt : null,
@@ -425,12 +430,14 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // Legacy `ready` orders (pre-simplification) read exactly like confirmed:
   // the customer timeline is 3 steps now, so the bell shows no 4th state.
   // (The sky chip color for `ready` is kept — styling only, not a step.)
-  const statusLabel = (s: string) =>
-    s === 'new' ? (isAr ? 'بانتظار التأكيد' : 'Awaiting confirmation')
-    : s === 'confirmed' || s === 'ready' ? (isAr ? 'قيد التحضير' : 'Being prepared')
-    : s === 'completed' ? (isAr ? 'تم التوصيل' : 'Delivered')
-    : s === 'cancelled' ? (isAr ? 'ملغي' : 'Cancelled')
-    : (isAr ? '…' : '…');
+  const statusLabel = (s: string) => {
+    const st = toBellStatus(s);
+    return st === 'new' ? (isAr ? 'بانتظار التأكيد' : 'Awaiting confirmation')
+      : st === 'confirmed' || st === 'ready' ? (isAr ? 'قيد التحضير' : 'Being prepared')
+      : st === 'completed' ? (isAr ? 'تم التوصيل' : 'Delivered')
+      : st === 'cancelled' ? (isAr ? 'ملغي' : 'Cancelled')
+      : (isAr ? '…' : '…');
+  };
 
   return (
     <>

@@ -35,6 +35,7 @@ import {
   findUnackedForLockNotice,
   hasUnackedOrders,
   markLockNotified,
+  recordCronRunError,
   recordCronRunStarted,
   recordCronRunSuccess,
 } from '../../_shared/repositories/orders.repo.js';
@@ -132,6 +133,13 @@ export async function onRequest(context) {
   };
 
   let nagged = 0;
+  let lockNoticed = 0;
+  let released = 0;
+  let autoCompleted = 0;
+  // Outer guard: anything escaping the per-sweep swallowing try/catches
+  // (auth already passed) records the error heartbeat, then returns the
+  // normal shape — heartbeat bookkeeping must never 500 the cron.
+  try {
   try {
     // Cheap D1 existence probe first: no released-but-unacked order in the
     // nag window means the menu KV read below is skipped entirely.
@@ -156,7 +164,6 @@ export async function onRequest(context) {
 
   // Lock-notice sweep: still-`new` and past the 5-minute customer-cancel
   // window gets ONE "final, proceed" Telegram notice (marked, never repeated).
-  let lockNoticed = 0;
   try {
     const cutoff = new Date(Date.now() - LOCK_NOTICE_AFTER_MS).toISOString();
     const candidates = await findUnackedForLockNotice(db, cutoff, LOCK_NOTICE_BATCH);
@@ -182,7 +189,6 @@ export async function onRequest(context) {
   // window, never released — claim atomically, then send the FIRST
   // Telegram order message + admin web push. Exactly-once per order:
   // only the pass that wins the claim notifies.
-  let released = 0;
   try {
     const nowMs = Date.now();
     const releaseCutoff = new Date(nowMs - ORDER_GRACE_MS).toISOString();
@@ -228,7 +234,6 @@ export async function onRequest(context) {
   } catch {}
 
   // Auto-complete sweep: confirmed/ready + older than 12h + customer silent.
-  let autoCompleted = 0;
   try {
     const cutoff = new Date(Date.now() - AUTO_COMPLETE_AFTER_MS).toISOString();
     const candidates = await findStaleActiveForAutoComplete(db, cutoff, AUTO_COMPLETE_BATCH);
@@ -256,6 +261,17 @@ export async function onRequest(context) {
       } catch {}
     }
   } catch {}
+  } catch (sweepErr) {
+    try {
+      const msg = sweepErr instanceof Error ? sweepErr.message || 'sweep_failed' : String(sweepErr);
+      await recordCronRunError(db, ORDER_NAG_SERVICE, {
+        endedIso: new Date().toISOString(),
+        error: msg,
+        result: { nagged, released, autoCompleted, lockNoticed },
+      });
+    } catch {}
+    return jsonNoStore({ ok: true, nagged, released, autoCompleted, lockNoticed });
+  }
 
   // Heartbeat: stamp sweep success with duration + counts (D1, never KV).
   // The dashboard reads this to banner a dead/slow cron. Best-effort.

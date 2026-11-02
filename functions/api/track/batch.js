@@ -4,9 +4,14 @@
  * /api/track (one KV rate-limit probe + one D1 round-trip per tick).
  * Token-gated per row (same 128-bit capability model as GET /api/track).
  *
- * No-oracle shape: every entry answers identically — valid pairs get the
- * status payload, unknown numbers / bad tokens / malformed entries all
- * get the same `unknown` shape. Never 404s per row, never distinguishes.
+ * No-oracle shape: every input pair yields exactly one result entry —
+ * valid pairs get the status payload, unknown numbers / bad tokens get
+ * the same `unknown` shape with their number, malformed pairs get the
+ * same `unknown` shape with `number: null`. Never 404s per row.
+ * Accepted residual: `number: null` vs int still differs, so well-formed
+ * vs malformed stays distinguishable by shape; the bell never sends
+ * malformed pairs and the real attack surface — token/number guessing —
+ * stays identical (bad token reads exactly like unknown number).
  * Minimal fields only (number, status, total, itemsCount, createdAt):
  * the bell needs nothing else, and items/names stay out of this payload.
  */
@@ -28,10 +33,10 @@ const unknownShape = (number) => ({
   createdAt: null,
 });
 
-function cleanPair(p) {
-  if (!p || typeof p !== 'object') return null;
-  const number = typeof p.number === 'number' ? p.number : NaN;
-  const t = typeof p.t === 'string' ? p.t.trim() : '';
+function cleanPair(pair) {
+  if (!pair || typeof pair !== 'object') return null;
+  const number = typeof pair.number === 'number' ? pair.number : NaN;
+  const t = typeof pair.t === 'string' ? pair.t.trim() : '';
   if (!Number.isInteger(number) || number <= 0 || !TOKEN_RE.test(t)) return null;
   return { number, t };
 }
@@ -82,8 +87,8 @@ export async function onRequest(context) {
 
   const pairs = rawList.map(cleanPair);
   const byNumber = new Map();
-  for (const p of pairs) {
-    if (p && !byNumber.has(p.number)) byNumber.set(p.number, p.t);
+  for (const pair of pairs) {
+    if (pair && !byNumber.has(pair.number)) byNumber.set(pair.number, pair.t);
   }
 
   const db = env.ORDERS_DB || null;
@@ -102,21 +107,24 @@ export async function onRequest(context) {
   let anyFailed = false;
   const results = [];
   // Preserve request order and duplicates: one entry per input pair.
-  for (const p of pairs) {
-    if (!p) {
+  // Malformed pairs also yield one `unknown` entry (number: null) so
+  // result length never leaks well-formed vs malformed.
+  for (const pair of pairs) {
+    if (!pair) {
       anyFailed = true;
+      results.push(unknownShape(null));
       continue;
     }
-    const row = rowByNumber.get(p.number);
+    const row = rowByNumber.get(pair.number);
     let ok = false;
     try {
-      ok = !!(row && typeof row.track_token === 'string' && (await safeCompareStrings(p.t, row.track_token)));
+      ok = !!(row && typeof row.track_token === 'string' && (await safeCompareStrings(pair.t, row.track_token)));
     } catch {
       ok = false;
     }
     if (!ok || !row || !STATUSES.includes(row.status)) {
       anyFailed = true;
-      results.push(unknownShape(p.number));
+      results.push(unknownShape(pair.number));
       continue;
     }
     results.push({

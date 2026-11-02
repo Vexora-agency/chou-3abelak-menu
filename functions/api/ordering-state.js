@@ -64,6 +64,9 @@ export async function onRequest(context) {
     // endpoint 503s on every request — do not lower it). 30s still cuts
     // most repeated KV reads; the endpoint is tiny. True seconds-fresh
     // flips would need a write-time purge, not a shorter TTL.
+    // No in-memory (L1) menu cache: isolate memory can't be purged on
+    // pause/resume writes, so it would delay pause propagation past the
+    // Cache API TTL. Pause writes purge via purgeMenuCaches instead.
     const menu = env.MENU_KV ? await env.MENU_KV.get('menu', { type: 'json', cacheTtl: 30 }) : null;
     settings = (menu && menu.settings) || null;
   } catch (e) {

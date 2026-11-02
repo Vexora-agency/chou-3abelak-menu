@@ -567,6 +567,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                           lang={lang}
                           darkMode={darkMode}
                           compact
+                          disabled={o.status === 'new'}
                           onConfirmed={() =>
                             setStates((prev) => (prev[o.n] ? { ...prev, [o.n]: { ...prev[o.n], status: 'completed' } } : prev))
                           }
@@ -575,7 +576,9 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                     </div>
                     {(o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && (
                       <p className={`mt-2 text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                        {isAr ? 'هل استلمت طلبك؟' : 'Did you receive your order?'}
+                        {o.status === 'new'
+                          ? (isAr ? 'بانتظار تأكيد المطعم — الزر هيتفعل أول ما المطبخ يبدأ التحضير.' : 'Waiting for the restaurant — unlocks once the kitchen starts preparing.')
+                          : (isAr ? 'هل استلمت طلبك؟' : 'Did you receive your order?')}
                       </p>
                     )}
                   </div>

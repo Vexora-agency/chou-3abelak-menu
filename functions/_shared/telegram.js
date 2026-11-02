@@ -496,19 +496,17 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
  * login — zero auth surface); row 2 = action buttons for the CURRENT
  * status (callbacks, fully validated server-side in handleOrderCallback).
  * New orders: Start-preparing / Cancel. Confirmed orders: the kitchen is
- * done -> Mark ready (out for delivery / ready for pickup, chosen by
- * order type) / Cancel. Ready orders: frozen (the dashboard completes or
- * cancels from here).
+ * already preparing -> Mark delivered (customer handoff done) / Cancel.
+ * (The old "جاهز / Mark ready" step is removed — no new message ever
+ * offers tg:rdy; old in-flight tg:rdy:* callbacks from already-sent
+ * messages still validate and move to `ready` for backward compat.)
  * "بدء التحضير" = the OWNER confirming receipt: the kitchen saw the
  * order and is preparing it -> status `confirmed` (DB value kept;
  * everywhere the customer looks it reads "قيد التحضير / Preparing",
- * NOT delivered).
- * Handoff is confirmed separately: the owner taps "جاهز" above (or the
- * dashboard) -> status `ready`; the customer taps "received" in the
- * bell/tracking (or the 12h auto-complete) -> `completed`. Old tg:rcv:*
- * callbacks from already-sent messages still validate and complete —
- * they are just never attached to NEW messages. callback_data is capped
- * by Telegram at 64 bytes: prefix + 36-char order id fits.
+ * NOT delivered). The customer tap "received" in the bell/tracking
+ * (or the 12h auto-complete, or the owner "تم التسليم" above) ->
+ * `completed`. callback_data is capped by Telegram at 64 bytes:
+ * prefix + 36-char order id fits.
  */
 export function buildOrderKeyboard(adminUrl, orderId, status) {
   const rows = [];
@@ -520,7 +518,7 @@ export function buildOrderKeyboard(adminUrl, orderId, status) {
   }
   if (status === 'confirmed') {
     rows.push([
-      { text: '🛵 جاهز — إشعار الزبون', callback_data: `tg:rdy:${orderId}` },
+      { text: '📦 تم التسليم', callback_data: `tg:rcv:${orderId}` },
       { text: '❌ إلغاء', callback_data: `tg:cnl:${orderId}` },
     ]);
   } else {
@@ -850,7 +848,7 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     } catch {}
     await answer(banner);
     // Next-step buttons (no double-tap): a confirmed order now offers
-    // Mark-ready/Cancel inline (no admin URL in callback context, so no
+    // Mark-delivered/Cancel inline (no admin URL in callback context, so no
     // View row here — the dashboard keeps full controls); every other
     // terminal move freezes the keyboard. Then stamp the status.
     try {

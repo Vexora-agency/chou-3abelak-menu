@@ -4,8 +4,10 @@
  * same trust model as GET /api/track (unguessable, per-order, no PII in
  * the request beyond what the customer already knows).
  *
- * Atomic flip new|confirmed -> completed via completeOrderByTrackToken:
- * exactly one caller wins; repeats are idempotent. On a real flip the
+ * Atomic flip confirmed|ready -> completed via completeOrderByTrackToken:
+ * exactly one caller wins; repeats are idempotent. A still-`new` order
+ * (kitchen hasn't started preparing) is rejected with 404 (no oracle).
+ * On a real flip the
  * owner is pinged on Telegram (new short message + original order message
  * stamped completed) — best-effort via waitUntil, never blocks the reply.
  * Unknown number/token reads 404 identically (no oracle).

@@ -253,9 +253,14 @@ export async function notifyNewOrder(db, { storeName, orderNumber, total, curren
  * UNACKNOWLEDGED order (status new, past the grace window up to 30 min
  * old) with its stable tag, so a closed phone re-blips instead of staying
  * silent after the first ping. The window starts at the grace end because
- * younger orders are still hidden (unreleased). Ack/cancel/completion
- * flips the status and the nagging stops by itself; past-30-min orders age
- * out (the kitchen missed them — no infinite nagging).
+ * younger orders are still hidden (unreleased).
+ * Release-gated: only ALREADY-RELEASED orders qualify (`released_at IS
+ * NOT NULL`). The first ping is always the release sweep's job — this
+ * keeps nag a pure re-push and structurally eliminates the same-pass
+ * double (nag runs before release, so a due-but-unclaimed order is
+ * skipped here and notified exactly once by the release below).
+ * Ack/cancel/completion flips the status and the nagging stops by itself;
+ * past-30-min orders age out (the kitchen missed them — no infinite nagging).
  */
 export async function nagUnackedOrders(db, { storeName, currency, adminUrl, subject }) {
   let rows = [];
@@ -265,7 +270,7 @@ export async function nagUnackedOrders(db, { storeName, currency, adminUrl, subj
     const to = new Date(now - ORDER_GRACE_MS).toISOString();
     const res = await db
       .prepare(
-        "SELECT number, total FROM orders WHERE status = 'new' AND created_at >= ?1 AND created_at <= ?2 ORDER BY created_at ASC LIMIT 20"
+        "SELECT number, total FROM orders WHERE status = 'new' AND released_at IS NOT NULL AND created_at >= ?1 AND created_at <= ?2 ORDER BY created_at ASC LIMIT 20"
       )
       .bind(from, to)
       .all();

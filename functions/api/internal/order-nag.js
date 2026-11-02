@@ -133,8 +133,12 @@ export async function onRequest(context) {
 
   let nagged = 0;
   try {
-    // Cheap D1 existence probe first: no unacked order in the nag window
-    // means the menu KV read below is skipped entirely.
+    // Cheap D1 existence probe first: no released-but-unacked order in the
+    // nag window means the menu KV read below is skipped entirely.
+    // ORDER MATTERS: this runs BEFORE the release sweep below. The nag's
+    // released-gate only dedupes same-pass doubles while release hasn't
+    // claimed yet — move release above this block and due orders get
+    // nagged + released in the same pass again.
     const nowMs = Date.now();
     const nagFrom = new Date(nowMs - 30 * 60 * 1000).toISOString();
     const nagTo = new Date(nowMs - ORDER_GRACE_MS).toISOString();

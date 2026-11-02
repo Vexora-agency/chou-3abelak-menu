@@ -15,5 +15,6 @@ Apply remote: `npx wrangler d1 migrations apply ORDERS_DB --remote` (needs the r
 | `0017_whatsapp_removal.sql` | WhatsApp removal: deletes `wa-api` config + token rows. NOT yet applied — run explicitly per client. Keeps `orders.sent_via`. |
 | `0018_order_ready_status.sql` | Order `ready` state (`new → confirmed → ready → completed` + cancelled): rebuilds `orders` with the widened status CHECK, full column set as of 0017, data copied verbatim. |
 | `0019_order_release.sql` | Order release marker (`released_at` + backfill): kitchen grace period — new orders stay hidden from admin/Telegram/push for 5 min, the order-nag sweep releases them after. |
+| `0020_cron_heartbeat.sql` | Cron health ledger (`cron_heartbeat`): the 1-minute order-nag sweep stamps started/success per pass so the dashboard can banner a dead cron. |
 
 Rules: additive only, never edit an applied migration — add a new `00NN_*.sql` with the next free number (see `docs/ADD_NEW_FEATURE.md` step 1).

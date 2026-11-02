@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { Order, OrderStatus } from '../components/OrdersDashboard';
+import type { CronHealth, Order, OrderStatus } from '../components/OrdersDashboard';
 import { prevMonthStartISO } from '@/src/utils/tz';
 import { isRecord, readJson } from '@/src/utils/safeJson';
 import { adminFetch } from '@/src/lib/api-client';
@@ -17,6 +17,11 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [ordersError, setOrdersError] = useState(false);
+  // Kitchen health signal (order-nag heartbeat): parsed alongside orders on
+  // every poll, so the dashboard banner tracks staleness without its own
+  // request. Null until the first successful fetch (or when the endpoint
+  // predates the field).
+  const [cronHealth, setCronHealth] = useState<CronHealth | null>(null);
   const ordersTitleBase = useRef(typeof document !== 'undefined' ? document.title : '');
 
   const fetchOrders = useCallback(async (silent = false) => {
@@ -34,6 +39,13 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
       const data: unknown = await readJson(res);
       const rawOrders = isRecord(data) ? data.orders : undefined;
       const list: Order[] = Array.isArray(rawOrders) ? (rawOrders as Order[]) : [];
+      const rawHealth = isRecord(data) ? data.cronHealth : undefined;
+      // Light shape check (booleans the banner branches on); a malformed
+      // payload hides the banner instead of rendering garbage.
+      const healthOk = isRecord(rawHealth)
+        && typeof rawHealth.stale === 'boolean'
+        && typeof rawHealth.critical === 'boolean';
+      setCronHealth(healthOk ? (rawHealth as unknown as CronHealth) : null);
       setOrders((prev) => {
         const prevIds = new Set(prev.map((o) => o.id));
         const freshIds = list.filter((o) => !prevIds.has(o.id)).map((o) => o.id);
@@ -108,5 +120,5 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
     }
   };
 
-  return { orders, ordersLoading, ordersError, fetchOrders, handleOrderStatusChange };
+  return { orders, ordersLoading, ordersError, cronHealth, fetchOrders, handleOrderStatusChange };
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import type { MenuData } from '@/src/types/menu';
-import { OrdersDashboard, type Order, type OrderStatus } from '@/src/features/orders';
+import { OrdersDashboard, type CronHealth, type Order, type OrderStatus } from '@/src/features/orders';
 import { ReportsPanel, type ReportSettings, type MonthlyReportRow, CustomerData, type CustomerResult } from '@/src/features/reports';
 import OrderingToggle from './OrderingToggle';
 import { getOrderingState } from '@/src/utils/status';
@@ -17,6 +17,8 @@ interface AdminDashboardTabProps {
   orders: Order[];
   ordersLoading: boolean;
   ordersError: boolean;
+  /** Kitchen health signal (order-nag heartbeat). Null until fetched. */
+  cronHealth: CronHealth | null;
   onOrderStatusChange: (id: string, s: OrderStatus) => void;
   onRefreshOrders: () => void;
   reportsOn: boolean;
@@ -38,7 +40,7 @@ interface AdminDashboardTabProps {
 
 /** TAB 0: ORDERS DASHBOARD — pause control, view switcher, orders/reports/customers. */
 export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
-  lang, menu, orders, ordersLoading, ordersError,
+  lang, menu, orders, ordersLoading, ordersError, cronHealth,
   onOrderStatusChange, onRefreshOrders,
   reportsOn, customersOn, dashView, onDashViewChange,
   reportSettings, reportRows, retentionCfg, reportSched,
@@ -101,6 +103,15 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   // strictly better than the old code which had no correction at all).
   const [clockOffsetMs] = useState(() => serverNow() - Date.now());
 
+  // Kitchen health banner: shown when the order-nag sweep goes stale
+  // (>3 min, amber) or critical (>5 min, red). Minutes-since-last-sweep
+  // recomputes on every render — the 5 s orders poll keeps it fresh.
+  // neverRan (fresh install, no sweep yet) never alarms.
+  const cronAt = cronHealth && !cronHealth.neverRan && cronHealth.lastSuccessAt
+    ? Date.parse(cronHealth.lastSuccessAt) : NaN;
+  const cronMins = Number.isFinite(cronAt) ? Math.max(1, Math.round((Date.now() - cronAt) / 60000)) : null;
+  const showCronBanner = showOrders && !!cronHealth && !cronHealth.neverRan && (cronHealth.stale || cronHealth.critical);
+
   return (
     <>
       {/* Pause control — same design and motion as the launch spec */}
@@ -126,6 +137,34 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
           className="px-5 h-11 min-h-[44px] inline-flex items-center rounded-full bg-red-500/20 hover:bg-red-500/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
           >
             {isAr ? 'إعادة المحاولة' : 'Retry'}
+          </button>
+        </div>
+      )}
+      {showCronBanner && cronHealth && (
+        <div className={`mb-3 flex items-center justify-between gap-3 p-3 rounded-xl text-xs font-bold border ${
+          cronHealth.critical
+            ? 'bg-red-500/10 border-red-500/30 text-red-300'
+            : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+        }`}>
+          <span>
+            {cronHealth.critical
+              ? (isAr ? 'التحديث التلقائي للمطبخ متوقف' : 'Kitchen auto-updates stopped')
+              : (isAr ? 'التحديث التلقائي للمطبخ متأخر' : 'Kitchen auto-updates delayed')}
+            {cronMins !== null && (
+              <span className="opacity-80">{isAr ? ` — آخر تحديث منذ ${cronMins} د` : ` — last sweep ${cronMins}m ago`}</span>
+            )}
+            {cronHealth.critical && <span className="opacity-80">{isAr ? ' — تحقق من خدمة الكرون' : ' — check the cron service'}</span>}
+          </span>
+          <button
+            type="button"
+            onClick={() => onRefreshOrders()}
+            className={`px-5 h-11 min-h-[44px] inline-flex items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 ${
+              cronHealth.critical
+                ? 'bg-red-500/20 hover:bg-red-500/30 focus-visible:ring-red-400'
+                : 'bg-amber-500/20 hover:bg-amber-500/30 focus-visible:ring-amber-400'
+            }`}
+          >
+            {isAr ? 'تحديث' : 'Refresh'}
           </button>
         </div>
       )}

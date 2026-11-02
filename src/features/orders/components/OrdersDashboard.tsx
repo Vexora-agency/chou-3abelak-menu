@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type FC } from 'react';
-import type { Order, OrderItem, OrderStatus, OrderType, OrdersDashboardProps, Period } from './orders/ordersDashTypes';
+import type { Order, OrderItem, OrderStatus, OrderType, OrdersDashboardProps, Period, CronHealth } from './orders/ordersDashTypes';
 import { useOrdersDashClock } from '../hooks/useOrdersDashClock';
 import { useOrdersDashStats } from '../hooks/useOrdersDashStats';
 import { playNewOrderBeep, unlockOrderSound, useNewOrderAlarm, useNewOrderSound } from '../hooks/useNewOrderSound';
 import { OrdersDashChart, OrdersDashKpis, OrdersDashPeriodBar, OrdersDashTopItems } from './orders/OrdersDashPanels';
 import { OrdersDashList } from './orders/OrdersDashList';
 
-export type { Order, OrderItem, OrderStatus, OrderType, Period };
+export type { Order, OrderItem, OrderStatus, OrderType, Period, CronHealth };
 
 /* ---------- Main component ---------- */
 const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loading, onStatusChange, onRefresh, kitchenSound }) => {  const isAr = lang === 'ar';

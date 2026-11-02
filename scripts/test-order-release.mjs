@@ -6,6 +6,7 @@
 import {
   ORDER_GRACE_MS,
   CUSTOMER_CANCEL_WINDOW_MS,
+  countGraceHiddenOrders,
   hasUnackedOrders,
   isOrderInGrace,
   findDueForRelease,
@@ -56,9 +57,14 @@ function mockOrdersDb(rows) {
               if (sql.includes('SELECT 1 AS x FROM orders')) {
                 const [cutoff, recent] = args;
                 const found = rows.some(
-                  (r) => r.status === 'new' && r.created_at <= cutoff && r.created_at >= recent
+                  (r) => r.status === 'new' && r.released_at !== null && r.created_at <= cutoff && r.created_at >= recent
                 );
                 return found ? { x: 1 } : null;
+              }
+              if (sql.includes('SELECT COUNT(*) AS c FROM orders')) {
+                const [cutoff] = args;
+                const c = rows.filter((r) => r.status === 'new' && r.created_at > cutoff).length;
+                return { c };
               }
               return null;
             },
@@ -169,5 +175,17 @@ const emptyDb = mockOrdersDb([
 ok((await hasUnackedOrders(emptyDb, iso(T0 - ORDER_GRACE_MS), iso(T0 - 30 * MIN))) === false, 'probe is false on idle minutes');
 const failingDb = { prepare() { throw new Error('down'); } };
 ok((await hasUnackedOrders(failingDb, iso(T0 - ORDER_GRACE_MS), iso(T0 - 30 * MIN))) === true, 'probe fails open (nag runs) when D1 errors');
+
+// 8. Grace-hidden count (dashboard pipeline line): fresh `new` only.
+{
+  const db = mockOrdersDb([
+    row('g1', 'new', 1, false), // hidden
+    row('g2', 'new', 4, false), // hidden
+    row('v1', 'new', 10, false), // visible (aged out)
+    row('c1', 'cancelled', 1, false), // visible immediately (never grace-hidden)
+  ]);
+  ok((await countGraceHiddenOrders(db, iso(T0 - ORDER_GRACE_MS))) === 2, 'counts only grace-hidden new orders');
+  ok((await countGraceHiddenOrders(mockOrdersDb([]), iso(T0 - ORDER_GRACE_MS))) === 0, 'empty shelf counts zero');
+}
 
 summary();

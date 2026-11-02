@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { MenuData } from '@/src/types/menu';
 import { normalizeMenu } from '@/src/utils/pricing';
 import { isRecord, parseJson, readJson } from '@/src/utils/safeJson';
-import { publicGet } from '@/src/lib/api-client';
+import { publicGet, publicGetVersioned } from '@/src/lib/api-client';
 import { markFetchStart, shouldEventFetch } from '@/src/utils/refreshGate';
 
 /** Event-gate channel shared by this hook's interval + ambient refreshes. */
@@ -110,12 +110,21 @@ export function useMenuLoader() {
   // when version/updatedAt actually changed, so idle pages never re-render.
   useEffect(() => {
     let alive = true;
+    // Last server ETag: echoed as If-None-Match so unchanged polls answer
+    // 304 with no body (the endpoint already speaks ETag — see
+    // functions/api/menu.js). 304 skips normalize + cache write entirely.
+    let etag: string | null = null;
     const refresh = async () => {
       markFetchStart(MENU_KEY);
       try {
-        const data = await publicGet<MenuData>('/api/menu');
-        if (!alive || !data) return;
+        const res = await publicGetVersioned<MenuData>('/api/menu', etag ? { etag } : undefined);
+        if (!alive) return;
+        // Unchanged on the server: nothing to normalize, swap, or persist.
+        if (res.status === 'not-modified') return;
+        if (res.status !== 'fresh') return;
+        const data = res.data;
         if (!isRecord(data)) return;
+        if (res.etag) etag = res.etag;
         setMenu((prev) => {
           if (
             prev &&

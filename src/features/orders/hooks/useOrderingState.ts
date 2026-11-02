@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
+import { fetchOrderingStatusVersioned, type OrderingStatus } from '@/src/utils/status';
 import { isPollStale, pollIntervalMs } from '@/src/utils/ordering';
 import { markFetchStart, shouldEventFetch } from '@/src/utils/refreshGate';
 import { scheduleIdle } from '@/src/utils/scheduleIdle';
@@ -17,14 +17,24 @@ export function useOrderingState() {
   const stateRef = useRef<OrderingStatus | null>(null);
   // Last mount/return instant: drives the fast window after opening.
   const lastReturnRef = useRef<number>(Date.now());
+  // Last server ETag: echoed as If-None-Match so unchanged polls answer
+  // 304 with no body (see ordering-state endpoint + refreshGate).
+  const etagRef = useRef<string | null>(null);
 
   const fetchOrderingState = async () => {
-    const state = await fetchOrderingStatus();
-    if (state) {
+    const r = await fetchOrderingStatusVersioned(undefined, etagRef.current);
+    // 304 (unchanged) still proves liveness: refresh the freshness clock
+    // without touching state, so the staleness guard below never drops
+    // good data just because nothing changed for a while.
+    if (r.notModified) {
       lastOkRef.current = Date.now();
-      stateRef.current = state;
-      setOrderingState(state);
+      return;
     }
+    if (!r.state) return;
+    if (r.etag) etagRef.current = r.etag;
+    lastOkRef.current = Date.now();
+    stateRef.current = r.state;
+    setOrderingState(r.state);
   };
 
   // Ordering availability refreshes with the menu and on a self-scheduling

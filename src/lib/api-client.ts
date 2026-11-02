@@ -56,6 +56,39 @@ export async function publicGet<T = unknown>(url: string, signal?: AbortSignal):
   }
 }
 
+export type VersionedGetResult<T> =
+  | { status: 'fresh'; data: T; etag: string | null }
+  | { status: 'not-modified' }
+  | { status: 'error' };
+
+/**
+ * Conditional GET for versioned polls (menu doc, ordering state). Sends
+ * `If-None-Match` when the caller holds a tag; an unchanged resource
+ * answers 304 with no body, so steady-state polls cost headers only.
+ * A 304 is SUCCESS here (data unchanged) — never an error, never a retry.
+ * Same-origin, no credentials — mirrors publicGet.
+ */
+export async function publicGetVersioned<T>(
+  url: string,
+  init?: { etag?: string | null; signal?: AbortSignal }
+): Promise<VersionedGetResult<T>> {
+  try {
+    const headers: Record<string, string> = {};
+    if (init?.etag) headers['If-None-Match'] = init.etag;
+    const res = await fetch(url, {
+      ...(Object.keys(headers).length ? { headers } : {}),
+      ...(init?.signal ? { signal: init.signal } : {}),
+    }).catch(() => null);
+    if (!res) return { status: 'error' };
+    setServerOffsetFromDateHeader(res.headers.get('Date'));
+    if (res.status === 304) return { status: 'not-modified' };
+    if (!res.ok) return { status: 'error' };
+    return { status: 'fresh', data: (await readJson(res)) as T, etag: res.headers.get('ETag') };
+  } catch {
+    return { status: 'error' };
+  }
+}
+
 /**
  * Public POST returning the raw Response (for callers needing status branches,
  * e.g. the 403 availability gate). Same-origin credentials, JSON body, timeout.

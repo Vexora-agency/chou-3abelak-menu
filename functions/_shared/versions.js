@@ -172,6 +172,20 @@ export async function purgePublicMenu(request) {
   } catch {}
 }
 
+/** Drop the cached ordering snapshot (/api/ordering-state, see its route
+ *  for the envelope format) so pause/resume/enabled/menu writes propagate
+ *  instantly instead of waiting out the snapshot TTL. Call next to every
+ *  purgePublicMenu call — both caches flip on the same writes. Never
+ *  throws. */
+export async function purgeOrderingState(request) {
+  try {
+    if (typeof caches === 'undefined' || !caches.default) return;
+    const url = new URL(request.url);
+    const orderingStateUrl = new URL('/api/ordering-state', url.origin).toString();
+    await caches.default.delete(new Request(orderingStateUrl));
+  } catch {}
+}
+
 /* ---- Shared restore tail (versions/[id]/restore, trash/[id]/restore) ---- */
 
 /**
@@ -203,5 +217,6 @@ export async function restoreValidatedMenu(env, request, { doc, prevDoc, source,
   }
   if (!written.ok) return { res: jsonNoStore({ ok: false, error: 'conflict', version: written.current ? written.current.version : null }, 409) };
   await purgePublicMenu(request);
+  await purgeOrderingState(request);
   return { doc: written.doc };
 }

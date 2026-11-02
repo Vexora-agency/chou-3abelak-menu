@@ -32,6 +32,7 @@ import {
   findDueForRelease,
   findStaleActiveForAutoComplete,
   findUnackedForLockNotice,
+  hasUnackedOrders,
   markLockNotified,
 } from '../../_shared/repositories/orders.repo.js';
 import {
@@ -92,25 +93,51 @@ export async function onRequest(context) {
   try {
     origin = new URL(request.url).origin;
   } catch {}
+  // Menu KV read (store name + currency for notification text) is LAZY:
+  // the sweeps below are D1-only until one of them actually has an order
+  // to notify, so idle minutes cost zero KV. Cached after first fetch —
+  // at most one KV read per cron run, usually none.
+  let menuCache = null;
+  let menuTried = false;
+  const loadMenu = async () => {
+    if (menuTried) return menuCache;
+    menuTried = true;
+    try {
+      menuCache = kv ? await kv.get('menu', { type: 'json' }) : null;
+    } catch {
+      menuCache = null;
+    }
+    return menuCache;
+  };
   let storeName = '';
   let cur = '';
-  try {
-    const menu = kv ? await kv.get('menu', { type: 'json' }) : null;
-    const nm = menu?.settings?.name;
-    storeName = nm && typeof nm === 'object' ? String(nm.en || nm.ar || '') : '';
-    const currency = menu?.settings?.currency;
-    cur = currency && typeof currency === 'object' ? String(currency.en || currency.ar || '') : '';
-  } catch {}
+  const needMenuText = async () => {
+    const menu = await loadMenu();
+    try {
+      const nm = menu?.settings?.name;
+      storeName = nm && typeof nm === 'object' ? String(nm.en || nm.ar || '') : '';
+      const currency = menu?.settings?.currency;
+      cur = currency && typeof currency === 'object' ? String(currency.en || currency.ar || '') : '';
+    } catch {}
+  };
 
   let nagged = 0;
   try {
-    const out = await nagUnackedOrders(db, {
-      storeName,
-      currency: cur,
-      adminUrl: origin ? `${origin}/admin` : '',
-      subject: origin || undefined,
-    });
-    nagged = out.nagged;
+    // Cheap D1 existence probe first: no unacked order in the nag window
+    // means the menu KV read below is skipped entirely.
+    const nowMs = Date.now();
+    const nagFrom = new Date(nowMs - 30 * 60 * 1000).toISOString();
+    const nagTo = new Date(nowMs - ORDER_GRACE_MS).toISOString();
+    if (await hasUnackedOrders(db, nagTo, nagFrom)) {
+      await needMenuText();
+      const out = await nagUnackedOrders(db, {
+        storeName,
+        currency: cur,
+        adminUrl: origin ? `${origin}/admin` : '',
+        subject: origin || undefined,
+      });
+      nagged = out.nagged;
+    }
   } catch {}
 
   // Lock-notice sweep: still-`new` and past the 5-minute customer-cancel
@@ -147,6 +174,7 @@ export async function onRequest(context) {
     const releaseCutoff = new Date(nowMs - ORDER_GRACE_MS).toISOString();
     const recentCutoff = new Date(nowMs - RELEASE_MAX_AGE_MS).toISOString();
     const due = await findDueForRelease(db, releaseCutoff, recentCutoff, RELEASE_BATCH);
+    if (due.length > 0) await needMenuText();
     const token = env.TELEGRAM_BOT_TOKEN || null;
     const adminBase = origin ? `${origin}/admin` : '';
     const dashUrl = origin ? `${origin}/admin/dashboard` : '';

@@ -85,17 +85,45 @@ export async function hashClientPassword(password) {
  *  hit (not just failures) — invite endpoints are single-shot by design. */
 export async function checkRateLimit(kv, key, max, ttlSec) {
   const now = Math.floor(Date.now() / 1000);
-  let st = { n: 0, reset: 0 };
+  const st = await readLimitState(kv, key, now);
+  if (st.n >= max) {
+    return { ok: false, retryMin: Math.max(1, Math.ceil((st.reset - now) / 60)) };
+  }
+  const reset = st.reset > now ? st.reset : now + ttlSec;
+  try {
+    if (kv) await kv.put(key, JSON.stringify({ n: st.n + 1, reset }), { expirationTtl: ttlSec });
+  } catch {}
+  return { ok: true };
+}
+
+/** Shared counter read: current window count or a zeroed state. Fails open
+ *  (zeroed) when KV is unreachable — same posture as checkRateLimit. */
+async function readLimitState(kv, key, nowSec) {
+  const now = Number.isFinite(nowSec) ? nowSec : Math.floor(Date.now() / 1000);
   try {
     const raw = kv ? await kv.get(key) : null;
     if (raw) {
       const p = JSON.parse(raw);
-      if (p && typeof p.n === 'number' && typeof p.reset === 'number' && now < p.reset) st = p;
+      if (p && typeof p.n === 'number' && typeof p.reset === 'number' && now < p.reset) return p;
     }
   } catch {}
-  if (st.n >= max) {
-    return { ok: false, retryMin: Math.max(1, Math.ceil((st.reset - now) / 60)) };
-  }
+  return { n: 0, reset: 0 };
+}
+
+/** Read-only limit probe: 1 KV read, zero writes. Use before cheap work on
+ *  hot polled routes — legitimate successes must not cost a write. */
+export async function isRateLimited(kv, key, max) {
+  const st = await readLimitState(kv, key);
+  return st.n >= max;
+}
+
+/** Count one abusive hit: read + write. Call ONLY on failure paths (bad
+ *  token, rejected attempt) — successes stay write-free. Fails silently
+ *  when KV is unreachable. */
+export async function noteRateLimitHit(kv, key, max, ttlSec) {
+  const now = Math.floor(Date.now() / 1000);
+  const st = await readLimitState(kv, key, now);
+  if (st.n >= max) return { ok: false };
   const reset = st.reset > now ? st.reset : now + ttlSec;
   try {
     if (kv) await kv.put(key, JSON.stringify({ n: st.n + 1, reset }), { expirationTtl: ttlSec });

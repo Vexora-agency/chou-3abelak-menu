@@ -10,7 +10,7 @@
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
 import { validateMenu } from '../../../_shared/validate.js';
-import { getActor, purgePublicMenu, snapshotMenu } from '../../../_shared/versions.js';
+import { getActor, purgeOrderingState, purgePublicMenu, snapshotMenu } from '../../../_shared/versions.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -59,6 +59,7 @@ export async function onRequest(context) {
       await snapshotMenu(env, { prevDoc: current, incomingDoc: doc, source: 'manual', actor });
       await env.MENU_KV.put('menu', JSON.stringify(doc));
       await purgePublicMenu(request);
+      await purgeOrderingState(request);
       return jsonNoStore({ ok: true, enabled: doc.settings.ordering.enabled, version: doc.version });
     } catch {
       return jsonNoStore({ ok: false, error: 'unavailable' }, 503);

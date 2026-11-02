@@ -739,7 +739,8 @@ export async function rebuildOrderMessage(db, env, order) {
     let currency = '';
     try {
       const kv = env && env.MENU_KV ? env.MENU_KV : null;
-      const menu = kv ? await kv.get('menu', { type: 'json' }) : null;
+      // Currency string only — safe to edge-cache for minutes.
+      const menu = kv ? await kv.get('menu', { type: 'json', cacheTtl: 300 }) : null;
       const cur = menu && menu.settings && menu.settings.currency;
       if (cur && typeof cur === 'object') currency = String(cur.en || cur.ar || '');
     } catch {}

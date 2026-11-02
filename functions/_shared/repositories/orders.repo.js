@@ -134,6 +134,25 @@ export async function cancelOrderByTrackToken(db, number, token, nowMs) {
 }
 
 /**
+ * Nag existence probe (KV-free): is there at least one unacknowledged
+ * order inside the nag window? Lets the minute-cron skip the menu KV read
+ * on idle minutes — the common case. Bounded to one row.
+ */
+export async function hasUnackedOrders(db, releaseCutoffIso, recentCutoffIso) {
+  try {
+    const row = await db
+      .prepare(
+        "SELECT 1 AS x FROM orders WHERE status = 'new' AND created_at <= ?1 AND created_at >= ?2 LIMIT 1"
+      )
+      .bind(releaseCutoffIso, recentCutoffIso)
+      .first();
+    return !!(row && row.x === 1);
+  } catch {
+    return true;
+  }
+}
+
+/**
  * Lock-notice sweep candidates: still-`new` orders past the customer
  * cancel window that were Telegram-notified but never lock-noticed.
  * Bounded (oldest first).

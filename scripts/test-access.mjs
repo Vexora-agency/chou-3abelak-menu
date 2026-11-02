@@ -9,10 +9,12 @@ import {
   inviteUsable,
   isInviteUsername,
   isPasswordOk,
+  isRateLimited,
   isSessionRevoked,
   isTokenFormat,
   newInviteToken,
   normalizeUsername,
+  noteRateLimitHit,
   revokeSessions,
   sha256Hex,
   siteBaseUrl,
@@ -113,6 +115,36 @@ check('attempt cap sane', INVITE_MAX_ATTEMPTS >= 10 && INVITE_MAX_ATTEMPTS <= 50
   check('enable clears', (await isSessionRevoked(kv, 'client:layali', now - 5)) === false);
   check('no store fails closed', (await isSessionRevoked(null, 'client:layali', now)) === true);
   check('revoke TTL covers longest session', REVOKE_TTL_SEC >= 30 * 24 * 3600);
+}
+
+// Fail-only limiter (powers GET /api/track): reads are free, only failed
+// attempts cost a KV write. Fake KV with op counters, no infra.
+{
+  const mkKv = () => {
+    const store = new Map();
+    return {
+      reads: 0,
+      writes: 0,
+      get: async function (k) { this.reads += 1; return store.has(k) ? store.get(k) : null; },
+      put: async function (k, v) { this.writes += 1; store.set(k, v); },
+    };
+  };
+  const kv = mkKv();
+  check('fresh key not limited', (await isRateLimited(kv, 'track:1.2.3.4', 3)) === false);
+  check('probe costs one read, zero writes', kv.reads === 1 && kv.writes === 0);
+  // Successes never write, no matter how many.
+  for (let i = 0; i < 10; i++) await isRateLimited(kv, 'track:1.2.3.4', 3);
+  check('ten success probes still zero writes', kv.writes === 0);
+  // Failures count; the 3rd trips the limit.
+  await noteRateLimitHit(kv, 'track:1.2.3.4', 3, 300);
+  await noteRateLimitHit(kv, 'track:1.2.3.4', 3, 300);
+  check('two failures not limited yet', (await isRateLimited(kv, 'track:1.2.3.4', 3)) === false);
+  await noteRateLimitHit(kv, 'track:1.2.3.4', 3, 300);
+  check('third failure trips the limit', (await isRateLimited(kv, 'track:1.2.3.4', 3)) === true);
+  check('only failures wrote', kv.writes === 3);
+  // Null KV fails open both ways.
+  check('no store never limits', (await isRateLimited(null, 'x', 1)) === false);
+  check('no store hit is a silent no-op', (await noteRateLimitHit(null, 'x', 1, 60)).ok === true);
 }
 
 if (fails) {

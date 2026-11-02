@@ -67,7 +67,8 @@ export async function onRequest(context) {
           let storeName = '';
           try {
             const kv = env.MENU_KV || null;
-            const menu = kv ? await kv.get('menu', { type: 'json' }) : null;
+            // Store name string only — safe to edge-cache for minutes.
+            const menu = kv ? await kv.get('menu', { type: 'json', cacheTtl: 300 }) : null;
             const nm = menu && menu.settings && menu.settings.name;
             storeName = typeof nm?.en === 'string' && nm.en ? nm.en : '';
           } catch {}

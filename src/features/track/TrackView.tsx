@@ -42,7 +42,7 @@ const pick = (v: { en: string; ar: string } | undefined, lang: 'en' | 'ar') => {
 
 /**
  * Customer order tracking (?track=N&t=token): standalone page, no menu data
- * needed. Polls the token-gated /api/track every 7s while visible — the
+ * needed. Polls the token-gated /api/track every 10s while visible — the
  * owner's dashboard status tap is what moves this timeline.
  */
 /** Site language preference (same key the storefront writes). */
@@ -139,9 +139,13 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
       } catch {}
     };
     void tick();
+    // 10 s cadence: the kitchen-side change still lands within seconds of
+    // opening the page (immediate tick above); the steady poll only needs
+    // to catch up while the customer watches. Keeps per-order KV + D1
+    // reads ~30% below the old 7 s rhythm with no felt difference.
     const id = window.setInterval(() => {
       if (document.visibilityState === 'visible') void tick();
-    }, 7000);
+    }, 10000);
     return () => {
       stop = true;
       window.clearInterval(id);

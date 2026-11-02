@@ -207,6 +207,15 @@ export function normalizeMenu(menu) {
   const ord = settings.ordering && typeof settings.ordering === 'object' ? settings.ordering : {};
   const minOrder = typeof ord.minOrder === 'number' && Number.isFinite(ord.minOrder) ? ord.minOrder : 0;
   const deliveryFee = typeof ord.deliveryFee === 'number' && Number.isFinite(ord.deliveryFee) ? ord.deliveryFee : 0;
+  const etaMinutesOr = (v, fb) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 180 ? Math.round(v) : fb);
+  const receiveDelayOr = (v, fb) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 720 ? Math.round(v) : fb);
+  const prepMinutes = etaMinutesOr(ord.prepMinutes, 15);
+  const kitchenMinutesPerOrder = etaMinutesOr(ord.kitchenMinutesPerOrder, 3);
+  const courierSpeedKmh = (typeof ord.courierSpeedKmh === 'number' && Number.isFinite(ord.courierSpeedKmh) && ord.courierSpeedKmh >= 5 && ord.courierSpeedKmh <= 120) ? ord.courierSpeedKmh : 25;
+  const roadFactor = (typeof ord.roadFactor === 'number' && Number.isFinite(ord.roadFactor) && ord.roadFactor >= 1 && ord.roadFactor <= 2) ? Math.round((ord.roadFactor + Number.EPSILON) * 100) / 100 : 1.35;
+  const defaultDeliveryMinutes = etaMinutesOr(ord.defaultDeliveryMinutes, 20);
+  const receiveDelayDeliveryMin = receiveDelayOr(ord.receiveDelayDeliveryMin, 30);
+  const receiveDelayPickupMin = receiveDelayOr(ord.receiveDelayPickupMin, 15);
   const bRaw = settings.badges && typeof settings.badges === 'object' ? settings.badges : {};
   const intOr = (v, fb, min, max) => (Number.isInteger(v) && v >= min && v <= max ? v : fb);
   out.settings = {
@@ -217,6 +226,13 @@ export function normalizeMenu(menu) {
       deliveryFee,
       minOrderEnabled: typeof ord.minOrderEnabled === 'boolean' ? ord.minOrderEnabled : minOrder > 0,
       deliveryFeeEnabled: typeof ord.deliveryFeeEnabled === 'boolean' ? ord.deliveryFeeEnabled : deliveryFee > 0,
+      prepMinutes,
+      kitchenMinutesPerOrder,
+      courierSpeedKmh,
+      roadFactor,
+      defaultDeliveryMinutes,
+      receiveDelayDeliveryMin,
+      receiveDelayPickupMin,
     },
     badges: {
       newDays: intOr(bRaw.newDays, 14, 1, 365),

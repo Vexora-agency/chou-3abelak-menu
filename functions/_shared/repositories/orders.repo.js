@@ -4,6 +4,7 @@
  * Routes in `functions/api/**` must call these helpers (thin routes).
  */
 import { mapOrderRow, newOrderId } from '../orders.js';
+import { orderingEtaOrDefaults } from '../eta.js';
 
 export async function findOrderByIdemKey(db, idemKey) {
   return db.prepare('SELECT number, total, track_token, sent_via FROM orders WHERE idem_key = ?1').bind(idemKey).first();
@@ -68,12 +69,13 @@ export const ORDER_GRACE_MS = 5 * 60 * 1000;
 export const CUSTOMER_CANCEL_WINDOW_MS = ORDER_GRACE_MS;
 
 /**
- * Batch track lookup: one D1 round-trip for up to N order numbers.
- * The IN-list placeholders are generated from the validated COUNT only
- * (never from user input) and every value stays bound — injection is
- * impossible by construction, which is why this builder (unlike the
- * fixed WINDOW_WHERE templates) takes a dynamic list. Callers must still
- * verify each row's track token themselves (tokens never go in SQL).
+ * Batch track lookup: one D1 round-trip for up to N numbers.
+ * Includes the confirm/unlock columns the batch route needs (`type` for
+ * the per-type delay bucket, `confirmed_at`/`eta_at` for the unlock).
+ * The placeholders are generated from the validated count only (never
+ * from user input); every value stays bound — injection is impossible by
+ * construction, which is why this builder (unlike the fixed WINDOW_WHERE
+ * templates) takes a dynamic list.
  */
 export async function findTrackRowsByNumbers(db, numbers) {
   const nums = Array.isArray(numbers)
@@ -83,7 +85,7 @@ export async function findTrackRowsByNumbers(db, numbers) {
   const placeholders = nums.map((_, i) => `?${i + 1}`).join(',');
   const res = await db
     .prepare(
-      `SELECT number, track_token, status, total, items_json, created_at FROM orders WHERE number IN (${placeholders})`
+      `SELECT number, track_token, status, type, total, items_json, created_at, confirmed_at, eta_at FROM orders WHERE number IN (${placeholders})`
     )
     .bind(...nums)
     .all();
@@ -496,13 +498,147 @@ export async function listOrdersByWindow(db, { from, to, days }, limit) {
   return listOrders(db, WINDOW_WHERE.days, [new Date(Date.now() - n * 86400000).toISOString()], limit);
 }
 
-export async function updateOrderStatus(db, id, status) {  const nowIso = new Date().toISOString();
+export async function updateOrderStatus(db, id, status, opts) {  const nowIso = new Date().toISOString();
   const res = await db
     .prepare('UPDATE orders SET status = ?1, updated_at = ?2 WHERE id = ?3')
     .bind(status, nowIso, id)
     .run();
   const changed = res && res.meta ? res.meta.changes : 0;
   if (!changed) return null;
+  // Confirm stamping (migration 0022): the choke point for BOTH confirm
+  // paths (dashboard PATCH route + Telegram callbacks) — a flip TO
+  // `confirmed` stamps confirmed_at + eta_at best-effort. Never throws and
+  // never blocks the status write (a stamp failure still returns the order;
+  // the re-read below then simply carries NULL stamps). First-writer-wins
+  // via the `confirmed_at IS NULL` guard inside stampConfirmation, so a
+  // repeated confirm keeps the ORIGINAL instant.
+  let stamp = null;
+  if (status === 'confirmed') {
+    try {
+      stamp = await stampConfirmation(db, id, opts);
+    } catch {
+      stamp = null;
+    }
+  }
   const row = await findOrderById(db, id);
-  return row ? mapOrderRow(row) : null;
+  if (!row) return null;
+  const mapped = mapOrderRow(row);
+  if (stamp) {
+    mapped.confirmedAt = stamp.confirmedAt;
+    mapped.etaAt = stamp.etaAt;
+  }
+  return mapped;
+}
+
+/**
+ * Smart ETA math (pure, unit-testable — no DB, no clock reads beyond the
+ * explicit confirmedAtMs input).
+ *
+ * total = prepMinutes + queueAhead * kitchenMinutesPerOrder + travel, where
+ * queueAhead counts orders AHEAD of this one (never itself — prep covers
+ * this order's own work), and travel = 0 for pickup/dinein (the customer
+ * comes to us) and for delivery either the road-adjusted ride
+ * (distanceKm * roadFactor / courierSpeedKmh * 60) or
+ * defaultDeliveryMinutes when no precise distance is known.
+ * Clamped to [10, 120] minutes, rounded. Returns the ETA instant + minutes.
+ */
+export function computeEta({ confirmedAtMs, orderType, queueLen, distanceKm, settings }) {
+  const s = orderingEtaOrDefaults(settings);
+  const base = Number.isFinite(confirmedAtMs) ? confirmedAtMs : Date.now();
+  const q = Number.isFinite(queueLen) ? Math.max(0, Math.floor(queueLen)) : 0;
+  // Anything that is not an explicit counter handoff travels like delivery.
+  const travels = orderType !== 'pickup' && orderType !== 'dinein';
+  let travel = 0;
+  if (travels) {
+    travel =
+      typeof distanceKm === 'number' && Number.isFinite(distanceKm) && distanceKm >= 0
+        ? (distanceKm * s.roadFactor / s.courierSpeedKmh) * 60
+        : s.defaultDeliveryMinutes;
+  }
+  const total = s.prepMinutes + q * s.kitchenMinutesPerOrder + travel;
+  const etaMinutes = Math.round(Math.min(120, Math.max(10, total)));
+  return { etaAtMs: base + etaMinutes * 60000, etaMinutes };
+}
+
+/**
+ * Kitchen load at confirm time: orders already occupying the line
+ * (`new` + `confirmed` — grace-hidden ones included, they are real work).
+ * Includes the order being confirmed itself; stampConfirmation subtracts
+ * it since the queue means "orders AHEAD". Never throws (0 on any failure
+ * — the ETA degrades, the confirm proceeds).
+ */
+export async function countActiveKitchenOrders(db) {
+  try {
+    const row = await db
+      .prepare("SELECT COUNT(*) AS c FROM orders WHERE status IN ('new','confirmed')")
+      .first();
+    const c = row && typeof row.c === 'number' ? row.c : 0;
+    return Number.isFinite(c) && c >= 0 ? Math.floor(c) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Stamp confirmed_at + eta_at for a JUST-confirmed order (migration 0022).
+ * Called by updateOrderStatus (both confirm paths); also importable for
+ * tests. Inputs ride in `opts` so entry points can piggyback data they
+ * already hold — NO KV/D1 reads are added here beyond the one row load and
+ * (only when queueLen is absent) the kitchen count:
+ *   opts.settings   — settings.ordering (or anything shaped like it);
+ *                     absent/invalid → ETA defaults.
+ *   opts.queueLen   — precomputed kitchen load INCLUDING this order (as
+ *                     counted live); the stamp subtracts it so the queue
+ *                     means "orders ahead". Absent → counted live.
+ *   opts.distanceKm — precomputed order→restaurant km; absent → default leg.
+ *   opts.nowMs      — confirm instant; absent → Date.now().
+ * Idempotent: only fills NULL stamps (first confirm wins). Returns the
+ * stamped instants ({ confirmedAt, etaAt, etaMinutes }) or null when there
+ * is nothing to stamp (not confirmed / already stamped / write lost a
+ * race). Never throws — an unmigrated DB (missing columns) yields null and
+ * the confirm still succeeds with NULL stamps (fail open, legacy-safe).
+ */
+export async function stampConfirmation(db, id, opts) {
+  try {
+    if (!db || typeof id !== 'string' || !id) return null;
+    const o = opts && typeof opts === 'object' ? opts : {};
+    const row = await findOrderById(db, id);
+    if (!row || row.status !== 'confirmed') return null;
+    if (row.confirmed_at) return { confirmedAt: row.confirmed_at, etaAt: row.eta_at || null, etaMinutes: null };
+    const nowMs = Number.isFinite(o.nowMs) ? o.nowMs : Date.now();
+    const nowIso = new Date(nowMs).toISOString();
+    let queueLen = Number.isFinite(o.queueLen) ? Math.max(0, Math.floor(o.queueLen)) : NaN;
+    if (!Number.isFinite(queueLen)) queueLen = await countActiveKitchenOrders(db);
+    // Exclude self: the live count (and any caller count taken the same
+    // way) includes the order being confirmed — but prepMinutes already
+    // covers this order's own work, so the queue means "orders ahead of it".
+    queueLen = Math.max(0, queueLen - 1);
+    const { etaAtMs, etaMinutes } = computeEta({
+      confirmedAtMs: nowMs,
+      orderType: row.type,
+      queueLen,
+      distanceKm: o.distanceKm,
+      settings: o.settings,
+    });
+    const etaIso = new Date(etaAtMs).toISOString();
+    const res = await db
+      .prepare(
+        "UPDATE orders SET confirmed_at = ?1, eta_at = ?2, updated_at = ?1 WHERE id = ?3 AND status = 'confirmed' AND confirmed_at IS NULL"
+      )
+      .bind(nowIso, etaIso, id)
+      .run();
+    const changed = res && res.meta ? res.meta.changes : 0;
+    if (changed === 1) return { confirmedAt: nowIso, etaAt: etaIso, etaMinutes };
+    // Lost a race (or the columns are missing): re-read best-effort so a
+    // concurrent stamper's values still surface; else null (fail open).
+    try {
+      const reread = await findOrderById(db, id);
+      if (reread && reread.confirmed_at) {
+        return { confirmedAt: reread.confirmed_at, etaAt: reread.eta_at || null, etaMinutes: null };
+      }
+    } catch {}
+    return null;
+  } catch {
+    return null;
+  }
 }

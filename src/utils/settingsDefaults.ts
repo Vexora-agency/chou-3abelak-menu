@@ -111,6 +111,28 @@ export function tickerSpeedOrDefault(v: unknown): number {
   return typeof v === 'number' && Number.isFinite(v) ? Math.min(10, Math.max(1, Math.round(v))) : 5;
 }
 
+/** Smart-ETA minute fields (prep / per-order / fallback): 0..180, default `fallback`. */
+export function etaMinutesOrDefault(v: unknown, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 180 ? Math.round(v) : fallback;
+}
+
+/** Smart-ETA courier speed km/h: 5..120, default 25. Floats preserved. */
+export function courierSpeedOrDefault(v: unknown): number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 5 && v <= 120 ? v : 25;
+}
+
+/** Smart-ETA road detour multiplier: 1.0..2.0 rounded to 2 decimals, default 1.35. */
+export function roadFactorOrDefault(v: unknown): number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 1 && v <= 2
+    ? Math.round((v + Number.EPSILON) * 100) / 100
+    : 1.35;
+}
+
+/** Smart-ETA receive-delay windows: 0..720 min, default `fallback`. */
+export function receiveDelayOrDefault(v: unknown, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 720 ? Math.round(v) : fallback;
+}
+
 /** Featured-carousel interval seconds, 2..10, default 4. */
 export function autoplayIntervalOrDefault(v: unknown): number {
   return typeof v === 'number' && v >= 2 && v <= 10 ? Math.round(v) : 4;

@@ -5,7 +5,12 @@
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
 import { featureOffResponse, hasFeature } from '../../../_shared/plan.js';
-import { updateOrderStatus } from '../../../_shared/repositories/orders.repo.js';
+import {
+  countActiveKitchenOrders,
+  findOrderById,
+  updateOrderStatus,
+} from '../../../_shared/repositories/orders.repo.js';
+import { orderDistanceKm, orderingEtaOrDefaults } from '../../../_shared/eta.js';
 import { notifyOrderStatus } from '../../../_shared/push.js';
 import { syncOrderStatusToTelegram } from '../../../_shared/telegram.js';
 
@@ -49,8 +54,37 @@ export async function onRequest(context) {
     return jsonNoStore({ error: 'not_found' }, 404);
   }
 
+  // Single edge-cached menu read for everything below (confirm-stamp inputs
+  // AND the owner-push store name) — still exactly ONE KV read per call.
+  let menu = null;
   try {
-    const order = await updateOrderStatus(db, id, status);
+    const kv = env.MENU_KV || null;
+    menu = kv ? await kv.get('menu', { type: 'json', cacheTtl: 300 }) : null;
+  } catch {
+    menu = null;
+  }
+
+  // Confirm stamping inputs (migration 0022): piggyback the menu + the
+  // current row (both already needed) — no extra KV reads. The stamp itself
+  // happens inside updateOrderStatus; absent/invalid inputs degrade to ETA
+  // defaults + a live kitchen count (never blocks the status write).
+  let confirmOpts;
+  if (status === 'confirmed') {
+    confirmOpts = {};
+    try {
+      const existing = await findOrderById(db, id);
+      if (existing) {
+        confirmOpts.settings = orderingEtaOrDefaults(menu && menu.settings ? menu.settings.ordering : null);
+        confirmOpts.distanceKm = orderDistanceKm(existing, menu);
+        confirmOpts.queueLen = await countActiveKitchenOrders(db);
+      }
+    } catch {
+      confirmOpts = {};
+    }
+  }
+
+  try {
+    const order = await updateOrderStatus(db, id, status, confirmOpts);
     if (!order) {
       return jsonNoStore({ error: 'not_found' }, 404);
     }
@@ -64,11 +98,10 @@ export async function onRequest(context) {
           origin = new URL(request.url).origin;
         } catch {}
         try {
+          // Store name string only — reuses the menu fetched above (still
+          // one KV read per admin call, edge-cached for minutes).
           let storeName = '';
           try {
-            const kv = env.MENU_KV || null;
-            // Store name string only — safe to edge-cache for minutes.
-            const menu = kv ? await kv.get('menu', { type: 'json', cacheTtl: 300 }) : null;
             const nm = menu && menu.settings && menu.settings.name;
             storeName = typeof nm?.en === 'string' && nm.en ? nm.en : '';
           } catch {}

@@ -12,13 +12,18 @@
  * vs malformed stays distinguishable by shape; the bell never sends
  * malformed pairs and the real attack surface — token/number guessing —
  * stays identical (bad token reads exactly like unknown number).
- * Minimal fields only (number, status, total, itemsCount, createdAt):
- * the bell needs nothing else, and items/names stay out of this payload.
+ * Minimal fields only (number, status, total, itemsCount, createdAt +
+ * receivableAt): the bell gates its receive button on the unlock instant,
+ * so per-row unlocks ride along — two small fields, computed from columns
+ * already fetched, plus one edge-cached settings read per batch tick.
+ * etaAt itself stays out: the bell renders no ETA copy (the track page
+ * re-fetches the single order for its countdown banner).
  */
 
 import { jsonNoStore, readJsonBody, safeCompareStrings } from '../../_shared/session.js';
 import { isRateLimited, noteRateLimitHit, rateKey } from '../../_shared/access.js';
 import { findTrackRowsByNumbers } from '../../_shared/repositories/orders.repo.js';
+import { receivableAtMs } from '../../_shared/eta.js';
 
 const MAX_BODY_BYTES = 8 * 1024;
 const MAX_BATCH = 20;
@@ -31,6 +36,7 @@ const unknownShape = (number) => ({
   total: null,
   itemsCount: null,
   createdAt: null,
+  receivableAt: null,
 });
 
 function cleanPair(pair) {
@@ -106,6 +112,22 @@ export async function onRequest(context) {
 
   let anyFailed = false;
   const results = [];
+  // Settings for the unlock computation: ONE edge-cached menu KV read per
+  // batch tick, and only when at least one row can actually need it
+  // (confirmed/ready) — batches of pure-`new` orders cost zero extra reads.
+  // Best-effort with hardcoded fallbacks: a KV miss degrades to defaults,
+  // never to an error.
+  const needsUnlock = rows.some((r) => r && (r.status === 'confirmed' || r.status === 'ready'));
+  let ordering = null;
+  if (needsUnlock) {
+    try {
+      const kv = env.MENU_KV || null;
+      const menu = kv ? await kv.get('menu', { type: 'json', cacheTtl: 300 }) : null;
+      ordering = menu && menu.settings ? menu.settings.ordering : null;
+    } catch {
+      ordering = null;
+    }
+  }
   // Preserve request order and duplicates: one entry per input pair.
   // Malformed pairs also yield one `unknown` entry (number: null) so
   // result length never leaks well-formed vs malformed.
@@ -127,12 +149,32 @@ export async function onRequest(context) {
       results.push(unknownShape(pair.number));
       continue;
     }
+    // Receive-unlock instant for confirmed/ready rows only — the bell
+    // disables its button until this passes (same rule as GET /api/track,
+    // so the two surfaces can never disagree).
+    let receivableAt = null;
+    if (row.status === 'confirmed' || row.status === 'ready') {
+      try {
+        receivableAt = new Date(
+          receivableAtMs({
+            confirmedAt: row.confirmed_at,
+            createdAt: row.created_at,
+            etaAt: row.eta_at,
+            orderType: row.type,
+            settings: ordering,
+          })
+        ).toISOString();
+      } catch {
+        receivableAt = null;
+      }
+    }
     results.push({
       number: row.number,
       status: row.status,
       total: typeof row.total === 'number' ? row.total : null,
       itemsCount: countItems(row),
       createdAt: typeof row.created_at === 'string' ? row.created_at : null,
+      receivableAt,
     });
   }
 

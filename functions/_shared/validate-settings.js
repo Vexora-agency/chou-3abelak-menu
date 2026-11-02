@@ -187,6 +187,21 @@ function validateSettings(s, errors) {
   }
   const acceptWhenClosed = ord.acceptWhenClosed === true;
 
+  // Smart-ETA tuning (all optional, safe defaults; out-of-range falls back).
+  const etaMinutesOr = (v, fb) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 180 ? Math.round(v) : fb);
+  const courierSpeedKmh = (typeof ord.courierSpeedKmh === 'number' && Number.isFinite(ord.courierSpeedKmh) && ord.courierSpeedKmh >= 5 && ord.courierSpeedKmh <= 120)
+    ? ord.courierSpeedKmh
+    : 25;
+  const roadFactor = (typeof ord.roadFactor === 'number' && Number.isFinite(ord.roadFactor) && ord.roadFactor >= 1 && ord.roadFactor <= 2)
+    ? Math.round((ord.roadFactor + Number.EPSILON) * 100) / 100
+    : 1.35;
+  const receiveDelayOr = (v, fb) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 720 ? Math.round(v) : fb);
+  const prepMinutes = etaMinutesOr(ord.prepMinutes, 15);
+  const kitchenMinutesPerOrder = etaMinutesOr(ord.kitchenMinutesPerOrder, 3);
+  const defaultDeliveryMinutes = etaMinutesOr(ord.defaultDeliveryMinutes, 20);
+  const receiveDelayDeliveryMin = receiveDelayOr(ord.receiveDelayDeliveryMin, 30);
+  const receiveDelayPickupMin = receiveDelayOr(ord.receiveDelayPickupMin, 15);
+
   // Announcement banner (plain text only, optional scheduling).
   const ann = s.announcement && typeof s.announcement === 'object' ? s.announcement : {};
   const announcementEnabled = ann.enabled === true;
@@ -318,6 +333,13 @@ function validateSettings(s, errors) {
       pausedAt,
       pausedMessage,
       acceptWhenClosed,
+      prepMinutes,
+      kitchenMinutesPerOrder,
+      courierSpeedKmh,
+      roadFactor,
+      defaultDeliveryMinutes,
+      receiveDelayDeliveryMin,
+      receiveDelayPickupMin,
     },
     announcement: {
       enabled: announcementEnabled,

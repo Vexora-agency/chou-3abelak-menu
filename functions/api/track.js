@@ -7,6 +7,7 @@
  */
 import { jsonNoStore } from '../_shared/session.js';
 import { isRateLimited, noteRateLimitHit, rateKey } from '../_shared/access.js';
+import { receivableAtMs } from '../_shared/eta.js';
 
 // Polling math: the bell re-checks each order every 60s, so a customer
 // with a few orders stays far below this. 120 hits / 5 min per IP only
@@ -53,7 +54,7 @@ export async function onRequest(context) {
   try {
     row = await db
       .prepare(
-        'SELECT id, number, status, type, items_json, subtotal, delivery_fee, total, lang, created_at, updated_at FROM orders WHERE number = ?1'
+        'SELECT id, number, status, type, items_json, subtotal, delivery_fee, total, lang, created_at, updated_at, confirmed_at, eta_at FROM orders WHERE number = ?1'
       )
       .bind(number)
       .first();
@@ -138,6 +139,38 @@ export async function onRequest(context) {
     items = [];
   }
 
+  // Smart ETA + receive-unlock (migration 0022): etaAt echoes the stamped
+  // estimate (null until the kitchen confirms); receivableAt is the computed
+  // customer-tap unlock instant for confirmed/ready, null for every other
+  // status. Settings come from ONE edge-cached menu KV read with hardcoded
+  // fallbacks — a KV miss still yields the legacy guarantee (unlock from
+  // created_at + delay, i.e. immediately for old orders, never trapped).
+  let ordering = null;
+  try {
+    const kv = env.MENU_KV || null;
+    const menu = kv ? await kv.get('menu', { type: 'json', cacheTtl: 300 }) : null;
+    ordering = menu && menu.settings ? menu.settings.ordering : null;
+  } catch {
+    ordering = null;
+  }
+  const etaAt = row.eta_at || null;
+  let receivableAt = null;
+  if (row.status === 'confirmed' || row.status === 'ready') {
+    try {
+      receivableAt = new Date(
+        receivableAtMs({
+          confirmedAt: row.confirmed_at,
+          createdAt: row.created_at,
+          etaAt: row.eta_at,
+          orderType: row.type,
+          settings: ordering,
+        })
+      ).toISOString();
+    } catch {
+      receivableAt = null;
+    }
+  }
+
   return jsonNoStore({
     ok: true,
     number: row.number,
@@ -153,5 +186,7 @@ export async function onRequest(context) {
     // Server clock truth for the customer cancel countdown (5-min window).
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    etaAt,
+    receivableAt,
   });
 }

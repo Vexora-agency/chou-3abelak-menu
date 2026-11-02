@@ -1,6 +1,6 @@
 /**
  * Admin Order Status Endpoint: PATCH /api/admin/orders/<id>
- * Body {status} must be one of the four order statuses. Unknown id -> 404.
+ * Body {status} must be one of the five order statuses. Unknown id -> 404.
  */
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
@@ -9,7 +9,7 @@ import { updateOrderStatus } from '../../../_shared/repositories/orders.repo.js'
 import { notifyOrderStatus } from '../../../_shared/push.js';
 import { syncOrderStatusToTelegram } from '../../../_shared/telegram.js';
 
-const STATUSES = ['new', 'confirmed', 'completed', 'cancelled'];
+const STATUSES = ['new', 'confirmed', 'ready', 'completed', 'cancelled'];
 
 export async function onRequest(context) {
   const { request, env, params } = context;
@@ -76,6 +76,7 @@ export async function onRequest(context) {
             orderId: id,
             orderNumber: order.number,
             status,
+            orderType: order.type,
             lang: order.lang === 'ar' ? 'ar' : 'en',
             trackUrl: origin ? `${origin}/?track=${order.number}&t=${order.trackToken}` : '',
             subject: origin || undefined,

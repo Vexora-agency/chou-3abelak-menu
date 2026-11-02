@@ -22,6 +22,7 @@ export const loc = (lang: 'en' | 'ar') => (lang === 'ar' ? 'ar-u-nu-latn' : 'en-
 export const STATUS_STYLE: Record<OrderStatus, string> = {
   new: 'bg-[var(--primary)] text-[#0A0A0A] border border-[var(--primary)]',
   confirmed: 'bg-white/10 text-white border border-white/25',
+  ready: 'bg-sky-500/15 text-sky-400 border border-sky-500/30',
   completed: 'bg-green-500/15 text-green-400 border border-green-500/30',
   cancelled: 'bg-red-500/10 text-red-400 border border-red-500/30',
 };

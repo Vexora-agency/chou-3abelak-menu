@@ -94,6 +94,20 @@ const STATUS_COPY = {
     ar: (n) => `طلبك #${n} قيد التحضير 👨‍🍳`,
     en: (n) => `Order #${n} is being prepared`,
   },
+  ready: {
+    delivery: {
+      ar: (n) => `طلبك #${n} خارج للتوصيل 🛵`,
+      en: (n) => `Order #${n} is out for delivery`,
+    },
+    pickup: {
+      ar: (n) => `طلبك #${n} جاهز للاستلام 🎉`,
+      en: (n) => `Order #${n} is ready for pickup`,
+    },
+    dinein: {
+      ar: (n) => `طلبك #${n} جاهز 🍽️`,
+      en: (n) => `Order #${n} is ready 🍽️`,
+    },
+  },
   completed: {
     ar: (n) => `طلب #${n} جاهز! 🎉`,
     en: (n) => `Order #${n} is ready! 🎉`,
@@ -105,12 +119,26 @@ const STATUS_COPY = {
 };
 
 /**
+ * Resolve the localized body template for a status (+ order type for the
+ * ready state: delivery goes out, pickup/dine-in waits). Pure and exported
+ * for unit tests — unknown statuses yield null (caller skips silently).
+ */
+export function resolveStatusCopy(status, orderType) {
+  const entry = STATUS_COPY[status];
+  if (!entry) return null;
+  if (typeof entry.ar === 'function') return entry;
+  const kind = orderType === 'pickup' || orderType === 'dinein' ? orderType : 'delivery';
+  return entry[kind] || entry.delivery;
+}
+
+/**
  * Best-effort push to every device subscribed to an order. Only
- * confirmed/completed/cancelled notify (a "new" order IS the customer's own
- * send). Gone subscriptions (404/410) are pruned; every other failure is
- * swallowed — notification must never break the admin action.
- */export async function notifyOrderStatus(db, { storeName, orderId, orderNumber, status, lang, trackUrl, subject }) {
-  const copy = STATUS_COPY[status];
+ * confirmed/ready/completed/cancelled notify (a "new" order IS the customer's
+ * own send). Gone subscriptions (404/410) are pruned; every other failure
+ * is swallowed — notification must never delay or break the admin action.
+ */
+export async function notifyOrderStatus(db, { storeName, orderId, orderNumber, status, orderType, lang, trackUrl, subject }) {
+  const copy = resolveStatusCopy(status, orderType);
   if (!copy || !orderId) return { sent: 0 };
   const useAr = lang === 'ar';
   const title = typeof storeName === 'string' && storeName ? storeName : useAr ? 'طلبك' : 'Your order';

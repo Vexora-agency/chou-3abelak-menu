@@ -1,6 +1,6 @@
 // Tracking tokens + VAPID lazy-gen + notify guards (no infra).
 // Usage: node scripts/test-track-push.mjs
-import { newTrackToken, getVapidSettings, notifyOrderStatus, notifyNewOrder, nagUnackedOrders, validatePushSub } from '../functions/_shared/push.js';
+import { newTrackToken, getVapidSettings, notifyOrderStatus, notifyNewOrder, nagUnackedOrders, resolveStatusCopy, validatePushSub } from '../functions/_shared/push.js';
 
 let fails = 0;
 const check = (name, cond, extra = '') => {
@@ -83,6 +83,9 @@ function fakeDb() {
   check('unknown status no-op', (await notifyOrderStatus(api, { orderId: 'x', status: 'new', orderNumber: 1 })).sent === 0);
   check('missing orderId no-op', (await notifyOrderStatus(api, { status: 'confirmed', orderNumber: 1 })).sent === 0);
   check('no subs no-op', (await notifyOrderStatus(api, { orderId: 'x', status: 'confirmed', orderNumber: 1 })).sent === 0);
+  check('ready copy follows order type', resolveStatusCopy('ready', 'delivery').ar(7).includes('خارج للتوصيل') && resolveStatusCopy('ready', 'pickup').en(7).includes('ready for pickup') && resolveStatusCopy('ready', 'dinein').ar(7).includes('جاهز'));
+  check('ready copy falls back to delivery', resolveStatusCopy('ready', undefined).en(7).includes('out for delivery'));
+  check('plain statuses pass through', resolveStatusCopy('confirmed', 'delivery').en(7).includes('being prepared') && resolveStatusCopy('bogus', 'delivery') === null);
 }
 
 // ---- kitchen loop guards (admin subs table empty here) ----

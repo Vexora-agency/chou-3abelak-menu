@@ -218,6 +218,19 @@ export const ORDER_NAG_SERVICE = 'order-nag';
 export const CRON_STALE_AFTER_MS = 3 * 60 * 1000;
 export const CRON_CRITICAL_AFTER_MS = 5 * 60 * 1000;
 
+/**
+ * Cron sweep counters (order-nag result shape).
+ *
+ * Bundles the four counters that travel together as the heartbeat
+ * `result` and the JSON response body. Type-only — no runtime change.
+ *
+ * @typedef {object} CronCounts
+ * @property {number} nagged
+ * @property {number} released
+ * @property {number} autoCompleted
+ * @property {number} lockNoticed
+ */
+
 /** Stamp sweep start (call once per pass, right after auth). */
 export async function recordCronRunStarted(db, service, nowIso) {
   try {
@@ -236,7 +249,12 @@ export async function recordCronRunStarted(db, service, nowIso) {
   }
 }
 
-/** Stamp sweep success with duration + result counts. */
+/**
+ * Stamp sweep success with duration + result counts.
+ * @param {any} db
+ * @param {string} service
+ * @param {{ endedIso?: string, durationMs?: number, result?: CronCounts }} outcome
+ */
 export async function recordCronRunSuccess(db, service, outcome) {
   try {
     const o = outcome && typeof outcome === 'object' ? outcome : {};
@@ -262,11 +280,17 @@ export async function recordCronRunSuccess(db, service, outcome) {
   }
 }
 
-/** Stamp sweep failure (only reachable if code outside the swallowed per-sweep try/catch throws). */
+/**
+ * Stamp sweep failure (only reachable if code outside the swallowed per-sweep try/catch throws).
+ * @param {any} db
+ * @param {string} service
+ * @param {{ endedIso?: string, error?: string, result?: CronCounts }} outcome
+ */
 export async function recordCronRunError(db, service, outcome) {
   try {
     const o = outcome && typeof outcome === 'object' ? outcome : {};
-    const endedIso = typeof o.endedIso === 'string' ? o.endedIso : new Date().toISOString();
+    // endedIso accepted for API symmetry with recordCronRunSuccess but not
+    // stored (no error-time column; the heartbeat tracks success time only).
     const err = typeof o.error === 'string' ? o.error.slice(0, 200) : 'error';
     let resultJson = null;
     try {
@@ -282,7 +306,6 @@ export async function recordCronRunError(db, service, outcome) {
       )
       .bind(service, err, resultJson)
       .run();
-    void endedIso;
     return !!res && !!res.meta && res.meta.changes === 1;
   } catch {
     return false;

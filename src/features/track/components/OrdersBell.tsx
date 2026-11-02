@@ -54,6 +54,18 @@ function toBellStatus(s: unknown): BellOrder['status'] {
   return s === 'new' || s === 'confirmed' || s === 'ready' || s === 'completed' || s === 'cancelled' ? s : 'unknown';
 }
 
+/** Single lookup for bell status copy: `confirmed` + `ready` share one
+ *  object on purpose — both read as "Being prepared" (3-step timeline). */
+const STATUS_PREPARING_LABEL = { en: 'Being prepared', ar: 'قيد التحضير' };
+const STATUS_LABEL: Record<BellOrder['status'], { en: string; ar: string }> = {
+  new: { en: 'Awaiting confirmation', ar: 'بانتظار التأكيد' },
+  confirmed: STATUS_PREPARING_LABEL,
+  ready: STATUS_PREPARING_LABEL,
+  completed: { en: 'Delivered', ar: 'تم التوصيل' },
+  cancelled: { en: 'Cancelled', ar: 'ملغي' },
+  unknown: { en: '…', ar: '…' },
+};
+
 /** One batched fetch for the whole shelf: 1 KV probe + 1 D1 round-trip
  *  per tick instead of N× GET /api/track (see POST /api/track/batch).
  *  Same no-oracle contract: unknown numbers / bad tokens come back in the
@@ -68,6 +80,8 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
     // Shared public POST transport (same shape as ReceivedButton's
     // token-gated call): null = network/abort failure, else a Response
     // with `.ok`/`.json()` consumed exactly like a raw fetch Response.
+    // Deliberate: the 4s default abort bounds hung polls; a timeout shows
+    // `unknown`, identical to any failed fetch.
     const res = await publicPostRaw('/api/track/batch', { orders: list.map((o) => ({ number: o.n, t: o.t })) });
     if (!res || !res.ok) {
       for (const o of list) next[o.n] = unknown(o);
@@ -430,14 +444,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // Legacy `ready` orders (pre-simplification) read exactly like confirmed:
   // the customer timeline is 3 steps now, so the bell shows no 4th state.
   // (The sky chip color for `ready` is kept — styling only, not a step.)
-  const statusLabel = (s: string) => {
-    const st = toBellStatus(s);
-    return st === 'new' ? (isAr ? 'بانتظار التأكيد' : 'Awaiting confirmation')
-      : st === 'confirmed' || st === 'ready' ? (isAr ? 'قيد التحضير' : 'Being prepared')
-      : st === 'completed' ? (isAr ? 'تم التوصيل' : 'Delivered')
-      : st === 'cancelled' ? (isAr ? 'ملغي' : 'Cancelled')
-      : (isAr ? '…' : '…');
-  };
+  const statusLabel = (s: string) => { const l = STATUS_LABEL[toBellStatus(s)]; return isAr ? l.ar : l.en; };
 
   return (
     <>

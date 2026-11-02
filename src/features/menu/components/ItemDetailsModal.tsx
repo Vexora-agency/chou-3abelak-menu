@@ -157,7 +157,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
           permanent backdrop-colored strip under the sheet (black in light
           mode, worse under iOS Chrome's toolbar). Home-indicator clearance
           already lives INSIDE the scroller below
-          (pb-[max(2rem,env(safe-area-inset-bottom))]), so no margin is
+          (pb-[max(1.25rem,env(safe-area-inset-bottom))]), so no margin is
           needed. Desktop keeps the centered auto-height modal. */}
       <div
         className={`anim-slide-up relative z-10 w-full max-w-[520px] max-md:h-full flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
@@ -168,7 +168,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={headerTitle}
-        className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-6 sm:px-8 pb-[max(2rem,env(safe-area-inset-bottom))] overflow-x-clip"
+        className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-6 sm:px-8 pb-[max(1.25rem,env(safe-area-inset-bottom))] overflow-x-clip"
       >
         {/* Drag Pill Handle (Mobile only) */}
         <div className={`w-11 h-1.5 rounded-full mx-auto mt-4 mb-4 md:hidden ${darkMode ? 'bg-neutral-600' : 'bg-neutral-300'}`} />
@@ -181,7 +181,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
           darkMode ? 'bg-[#141414] border-neutral-800' : 'bg-white border-neutral-200'
         }`}>
           <div className="min-w-0 flex-1">
-            <h3 dir="auto" className={`text-xl sm:text-2xl font-black leading-tight ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+            <h3 dir="auto" className={`text-lg min-[380px]:text-xl sm:text-2xl font-black leading-tight ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
               {headerTitle}
             </h3>
             {/* Badges */}
@@ -205,9 +205,9 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             </div>
           </div>
 
-          <div ref={headerPriceRef} className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-lg font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap tabular-nums" dir="ltr">
-            {headerPriceText}
-          </div>
+      <div ref={headerPriceRef} className="flex-shrink-0 px-3 py-1 min-[380px]:px-3.5 min-[380px]:py-1.5 rounded-full text-base min-[380px]:text-lg font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap tabular-nums" dir="ltr">
+        {headerPriceText}
+      </div>
 
           {/* In-flow close: always in the sticky bar (never scrolled away,
               never overlapped — no absolute corner to reserve for). */}

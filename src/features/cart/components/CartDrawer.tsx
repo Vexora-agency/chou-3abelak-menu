@@ -123,15 +123,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           Entrance animation on the wrapper — NEVER on the scroll
           container below: transform-animated scrollers glitch on phones
           (stuck scroll-up, rubber-band jumps). */}
-      {/* Full-screen sheet on phones (max-md:h-full, bottom-flush): the old
-          92dvh cap + mb-[env(safe-area-inset-bottom)] lift exposed a
-          permanent backdrop-colored strip under the sheet (black in light
-          mode, worse under iOS Chrome's toolbar). Home-indicator clearance
-          already lives INSIDE the scroller below
-          (pb-[max(2rem,env(safe-area-inset-bottom))]), so no margin is
-          needed. Desktop keeps the centered auto-height modal. */}
+      {/* Bottom-flush, content-sized sheet: NO bottom margin (the old
+          mb-[env(safe-area-inset-bottom)] lift exposed a permanent
+          backdrop strip underneath) and NO forced full height (a
+          full-height sheet with short content left a big empty area under
+          the last button). The sheet hugs its content down to the
+          viewport edge; 92dvh caps long content so it scrolls inside.
+          Home-indicator clearance lives INSIDE the scroller below. */}
       <div
-        className={`anim-drawer-in relative z-10 w-full max-w-[540px] max-md:h-full flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
+        className={`anim-drawer-in relative z-10 w-full max-w-[540px] max-h-[92vh] max-h-[92dvh] flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
       >

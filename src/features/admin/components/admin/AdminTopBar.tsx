@@ -114,21 +114,23 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
         </span>
       </h1>
 
-      {/* Tabs (Backup hidden on starter — backend 404s it too) */}
-      <div className="flex gap-1.5 p-1 bg-neutral-900 rounded-2xl border border-neutral-800 mt-4 mb-6 overflow-x-auto no-scrollbar">
+      {/* Tabs (Backup hidden on starter — backend 404s it too).
+          Mobile shows a 3×2 grid so every tab is visible with no hidden
+          horizontal scroll; sm+ keeps the single scrollable row. */}
+      <div className="grid grid-cols-3 sm:flex gap-1.5 p-1 bg-neutral-900 rounded-2xl border border-neutral-800 mt-4 mb-6 sm:overflow-x-auto no-scrollbar">
         {(['dashboard', 'settings', 'categories', 'libraries', 'items', ...(featuresConfig.enableBackup ? ['backup'] as const : [])] as const).map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => onTabChange(tab)}
-            className={`relative flex-1 whitespace-nowrap px-3 min-h-[44px] inline-flex items-center justify-center rounded-xl text-xs font-bold capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+            className={`relative min-w-0 sm:flex-1 whitespace-nowrap px-2 sm:px-3 min-h-[44px] inline-flex items-center justify-center rounded-xl text-xs font-bold capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
               activeTab === tab
                 ? 'text-[#0A0A0A]'
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
             {activeTab === tab && <motion.span layoutId="admin-tab" className="absolute inset-0 rounded-xl bg-[var(--primary)] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
-            <span className="relative z-10">
+            <span className="relative z-10 truncate">
             {tab === 'dashboard' && (isAr ? 'الطلبات' : 'Dashboard')}
             {tab === 'settings' && (isAr ? 'الإعدادات' : 'Settings')}
             {tab === 'categories' && (isAr ? 'الأقسام' : 'Categories')}

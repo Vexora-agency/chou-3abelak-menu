@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MenuData } from '@/src/types/menu';
 
-export function useAppPrefs(menu: MenuData | null) {
+export function useAppPrefs(menu: MenuData | null, forceDark = false) {
   // Language state: 'en' | 'ar' (first visit falls back to the admin default)
   const [lang, setLang] = useState<'en' | 'ar'>(() => {
     try {
@@ -50,12 +50,20 @@ export function useAppPrefs(menu: MenuData | null) {
     } catch {}
   }, [lang]);
 
+  // Dark-mode class on <html> (drives the themed root background). The
+  // admin console is always dark by design, so while it is open the class
+  // is pinned on regardless of the storefront theme — otherwise a light
+  // storefront theme leaks white around/through the dark admin shell
+  // (overscroll, short pages). The saved preference itself is untouched:
+  // forceDark never writes to storage, closing admin restores the theme.
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-    try {
-      localStorage.setItem('menu_theme_v1', darkMode ? 'dark' : 'light');
-    } catch {}
-  }, [darkMode]);
+    document.documentElement.classList.toggle('dark', forceDark || darkMode);
+    if (!forceDark) {
+      try {
+        localStorage.setItem('menu_theme_v1', darkMode ? 'dark' : 'light');
+      } catch {}
+    }
+  }, [darkMode, forceDark]);
 
   return { lang, setLang, darkMode, setDarkMode };
 }

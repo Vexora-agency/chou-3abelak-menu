@@ -122,7 +122,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     showAdmin, openAdmin, adminUnlocked, authStatus, setAuthStatus,
     handleLoginSubmit, handleLogout, closeAdmin,
   } = useAdminSaveAuth();
-  const { lang, setLang, darkMode, setDarkMode } = useAppPrefs(menu);
+    const { lang, setLang, darkMode, setDarkMode } = useAppPrefs(menu, showAdmin);
   const handleSaveMenuFromAdmin = useAdminSaveMenu(setMenu, lang === 'ar');
 
   // Boot splash served its purpose (first React paint is on screen) — stays

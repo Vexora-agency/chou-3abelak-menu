@@ -15,7 +15,6 @@ import { AccessSection } from '../AccessSection';
 import { TelegramSection } from '../TelegramSection';
 import { SoundsSection } from '../SoundsSection';
 import { AutoplaySection } from '../AutoplaySection';
-import { FeaturesSection } from '../FeaturesSection';
 
 interface AdminSettingsTabProps {
   menu: MenuData;
@@ -216,65 +215,6 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         onUpdate={(updater) =>
           onUpdateMenu((m) => {
             const next = updater({ showMore: m.settings.showMore });
-            return { ...m, settings: { ...m.settings, ...next } };
-          })
-        }
-      />
-
-      <FeaturesSection
-        menu={menu}
-        collapsed={collapsedGroups}
-        lang={lang}
-        onToggleCollapse={onToggleCollapse}
-        onConfirm={onConfirm}
-        onDeleteFeatures={(defIds, groupId) =>
-          onUpdateMenu((m) => {
-            const gone = new Set(defIds);
-            const items = m.items.map((it) => {
-              const hadSizes = Array.isArray(it.variants) && it.variants.length > 0;
-              const variants = (it.variants || []).filter((v) => v && !gone.has(v.featureId));
-              const removed = (it.variants || []).filter((v) => v && gone.has(v.featureId));
-              const addons = (it.addons || []).filter((a) => a && !gone.has(a.featureId));
-              let next = it;
-              if (variants.length !== (it.variants || []).length) {
-                if (hadSizes && variants.length === 0) {
-                  // Lost its only size(s): fall back to a fixed base price
-                  // taken from the removed sole size — same amount, no sizes.
-                  const fallback = removed.length > 0 && typeof removed[0].price === 'number' ? removed[0].price : undefined;
-                  next = {
-                    ...next,
-                    variants: undefined,
-                    defaultVariant: undefined,
-                    pricing: { ...it.pricing, ...(fallback !== undefined ? { price: fallback } : {}) },
-                  };
-                } else {
-                  next = { ...next, variants };
-                  if (typeof next.defaultVariant === 'string' && gone.has(next.defaultVariant)) {
-                    next = { ...next, defaultVariant: variants.length > 0 ? variants[0].featureId : undefined };
-                  }
-                }
-              }
-              if (addons.length !== (it.addons || []).length) {
-                next = { ...next, addons: addons.length > 0 ? addons : undefined };
-              }
-              return next;
-            });
-            return {
-              ...m,
-              items,
-              settings: {
-                ...m.settings,
-                featureGroups: groupId
-                  ? (m.settings.featureGroups || []).filter((g) => g.id !== groupId)
-                  : m.settings.featureGroups,
-                featureDefs: (m.settings.featureDefs || []).filter((d) => !gone.has(d.id)),
-              },
-            };
-          })
-        }
-        onUpdate={(updater) =>
-          onUpdateMenu((m) => {
-            const next = updater({ featureGroups: m.settings.featureGroups, featureDefs: m.settings.featureDefs });
             return { ...m, settings: { ...m.settings, ...next } };
           })
         }

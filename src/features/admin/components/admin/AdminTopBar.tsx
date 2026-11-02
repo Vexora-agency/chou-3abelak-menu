@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Check, Globe } from 'lucide-react';
 import { featuresConfig } from '@/src/config/features.config';
 
-export type AdminTab = 'dashboard' | 'settings' | 'categories' | 'items' | 'backup';
+export type AdminTab = 'dashboard' | 'settings' | 'categories' | 'libraries' | 'items' | 'backup';
 
 interface AdminTopBarProps {
   lang: 'en' | 'ar';
@@ -116,7 +116,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
 
       {/* Tabs (Backup hidden on starter — backend 404s it too) */}
       <div className="flex gap-1.5 p-1 bg-neutral-900 rounded-2xl border border-neutral-800 mt-4 mb-6 overflow-x-auto no-scrollbar">
-        {(['dashboard', 'settings', 'categories', 'items', ...(featuresConfig.enableBackup ? ['backup'] as const : [])] as const).map((tab) => (
+        {(['dashboard', 'settings', 'categories', 'libraries', 'items', ...(featuresConfig.enableBackup ? ['backup'] as const : [])] as const).map((tab) => (
           <button
             key={tab}
             type="button"
@@ -132,6 +132,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
             {tab === 'dashboard' && (isAr ? 'الطلبات' : 'Dashboard')}
             {tab === 'settings' && (isAr ? 'الإعدادات' : 'Settings')}
             {tab === 'categories' && (isAr ? 'الأقسام' : 'Categories')}
+            {tab === 'libraries' && (isAr ? 'المكتبات' : 'Libraries')}
             {tab === 'items' && (isAr ? 'الوجبات' : 'Items')}
             {tab === 'backup' && (isAr ? 'النسخ الاحتياطي' : 'Backup')}
             </span>

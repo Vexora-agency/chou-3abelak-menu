@@ -6,12 +6,16 @@
  * oracle). No auth session needed: the token IS the capability.
  */
 import { jsonNoStore } from '../_shared/session.js';
-import { checkRateLimit, rateKey } from '../_shared/access.js';
+import { isRateLimited, noteRateLimitHit, rateKey } from '../_shared/access.js';
 
-// Polling math: the bell re-checks each order every 30s, so a customer
+// Polling math: the bell re-checks each order every 60s, so a customer
 // with a few orders stays far below this. 120 hits / 5 min per IP only
 // bites scrapers — and a 429 here fails soft client-side (unknown state,
 // retried on the next tick), never a dead page.
+// KV discipline: the probe below is read-only; only FAILED token checks
+// cost a write (noteRateLimitHit). Tokens are 128-bit unguessable, so
+// brute force is the only threat worth counting — legitimate polls
+// (the 99.99% case) stay write-free and off the 1k/day quota.
 const TRACK_MAX = 120;
 const TRACK_TTL_SEC = 5 * 60;
 
@@ -22,8 +26,10 @@ export async function onRequest(context) {
     return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'GET' });
   }
 
-  const rl = await checkRateLimit(env.MENU_KV || null, rateKey('track', request), TRACK_MAX, TRACK_TTL_SEC);
-  if (!rl.ok) return jsonNoStore({ error: 'rate_limited' }, 429);
+  const limitKey = rateKey('track', request);
+  if (await isRateLimited(env.MENU_KV || null, limitKey, TRACK_MAX)) {
+    return jsonNoStore({ error: 'rate_limited' }, 429);
+  }
 
   const db = env.ORDERS_DB || null;
   if (!db) {
@@ -69,6 +75,8 @@ export async function onRequest(context) {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
   if (!tokenOk) {
+    // Failed guess: the only hit worth counting (see top comment).
+    await noteRateLimitHit(env.MENU_KV || null, limitKey, TRACK_MAX, TRACK_TTL_SEC);
     return jsonNoStore({ error: 'not_found' }, 404);
   }
 
@@ -142,7 +150,7 @@ export async function onRequest(context) {
     deliveryFee: row.delivery_fee,
     total: row.total,
     lang: row.lang === 'ar' ? 'ar' : 'en',
-    // Server clock truth for the customer cancel countdown (2-min window).
+    // Server clock truth for the customer cancel countdown (5-min window).
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });

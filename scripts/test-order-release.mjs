@@ -6,6 +6,7 @@
 import {
   ORDER_GRACE_MS,
   CUSTOMER_CANCEL_WINDOW_MS,
+  hasUnackedOrders,
   isOrderInGrace,
   findDueForRelease,
   claimOrderRelease,
@@ -52,6 +53,13 @@ function mockOrdersDb(rows) {
               return { meta: { changes: 0 } };
             },
             async first() {
+              if (sql.includes('SELECT 1 AS x FROM orders')) {
+                const [cutoff, recent] = args;
+                const found = rows.some(
+                  (r) => r.status === 'new' && r.created_at <= cutoff && r.created_at >= recent
+                );
+                return found ? { x: 1 } : null;
+              }
               return null;
             },
           };
@@ -150,5 +158,16 @@ ok(
   feed.length === 3 && feed.every((o) => o.status !== 'new' || o.createdAt !== iso(T0 - MIN)),
   'admin feed hides only the grace order'
 );
+
+// 7. Nag existence probe: true only when an unacked order sits in window.
+const probeDb = mockOrdersDb([row('p', 'new', 10, true)]);
+ok((await hasUnackedOrders(probeDb, iso(T0 - ORDER_GRACE_MS), iso(T0 - 30 * MIN))) === true, 'probe finds windowed unacked order');
+const emptyDb = mockOrdersDb([
+  row('q', 'new', 2, false), // grace — not yet
+  row('r', 'confirmed', 10, true), // not new
+]);
+ok((await hasUnackedOrders(emptyDb, iso(T0 - ORDER_GRACE_MS), iso(T0 - 30 * MIN))) === false, 'probe is false on idle minutes');
+const failingDb = { prepare() { throw new Error('down'); } };
+ok((await hasUnackedOrders(failingDb, iso(T0 - ORDER_GRACE_MS), iso(T0 - 30 * MIN))) === true, 'probe fails open (nag runs) when D1 errors');
 
 summary();

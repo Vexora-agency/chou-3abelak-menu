@@ -230,9 +230,12 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       void flushPendingSound();
     };
     void tick();
+    // 60 s ambient cadence (was 30 s): the open tracking page still polls
+    // fast for the order being watched — the bell is background awareness,
+    // so a minute granularity is plenty and halves its track + KV reads.
     const id = window.setInterval(() => {
       if (document.visibilityState === 'visible') void tick();
-    }, 30000);
+    }, 60000);
     // Same-tab saves don't emit storage events — the store pings us.
     // Order-placed/changed pings stay immediate and ungated (rare +
     // meaningful, never a storm source).

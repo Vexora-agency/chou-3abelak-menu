@@ -70,9 +70,12 @@ export async function auditCustomerAction(env, { who, action, mode, count, phone
     const phoneHash = [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 12);
     const rand = [...crypto.getRandomValues(new Uint8Array(4))].map((b) => b.toString(16).padStart(2, '0')).join('');
     const id = `${new Date().toISOString()}-${rand}`;
+    // Audit keys expire after 90 days — unbounded growth would burn the
+    // 1 GB namespace quota for data nobody reads after an audit window.
     await env.MENU_KV.put(
       `audit:${id}`,
-      JSON.stringify({ who, when: new Date().toISOString(), action, mode, count, phoneHash })
+      JSON.stringify({ who, when: new Date().toISOString(), action, mode, count, phoneHash }),
+      { expirationTtl: 90 * 24 * 3600 }
     );
     return id;
   } catch {

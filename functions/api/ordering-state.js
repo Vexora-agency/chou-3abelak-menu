@@ -7,6 +7,20 @@
 import { getOrderingState } from '../_shared/status.js';
 import { jsonNoStore } from '../_shared/session.js';
 
+/**
+ * Stable ETag over exactly the fields the client renders
+ * (state/message/reopensAt). serverTime is deliberately excluded: it
+ * ticks every second and would make every poll look changed.
+ * ASCII-safe djb2 hex (messages may contain Arabic — never put raw
+ * Unicode in a header).
+ */
+function stableTag(st) {
+  const basis = JSON.stringify({ s: st.state, m: st.message, r: st.reopensAt || '' });
+  let h = 5381;
+  for (let i = 0; i < basis.length; i++) h = (((h << 5) + h + basis.charCodeAt(i)) >>> 0);
+  return `W/"os-${h.toString(16)}"`;
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   if (request.method !== 'GET') {
@@ -34,5 +48,13 @@ export async function onRequest(context) {
   } catch {
     st = { state: 'open', message: { en: '', ar: '' } };
   }
-  return jsonNoStore({ ...st, serverTime: new Date().toISOString() });
+  // Conditional GET: unchanged polls answer 304 with no body, so the
+  // 3 s / 5 s / 60 s scheduler cadence costs headers only. The client
+  // echoes this tag (see fetchOrderingStatusVersioned); serverTime keeps
+  // flowing on 200s only, while the Date header stays fresh on both.
+  const tag = stableTag(st);
+  if (request.headers.get('If-None-Match') === tag) {
+    return new Response(null, { status: 304, headers: { ETag: tag, 'Cache-Control': 'no-store' } });
+  }
+  return jsonNoStore({ ...st, serverTime: new Date().toISOString() }, 200, { ETag: tag });
 }

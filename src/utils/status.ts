@@ -6,7 +6,7 @@
 import { getOrderingState as getState } from '@/functions/_shared/status.js';
 import type { MenuSettings } from '@/src/types/menu';
 import { isRecord, str } from '@/src/utils/safeJson';
-import { publicGet } from '@/src/lib/api-client';
+import { publicGet, publicGetVersioned } from '@/src/lib/api-client';
 
 export type OrderingState = 'open' | 'paused' | 'closed' | 'disabled';
 
@@ -26,6 +26,36 @@ export function getOrderingState(settings: MenuSettings, nowMs: number = Date.no
  */
 export async function fetchOrderingStatus(signal?: AbortSignal): Promise<OrderingStatus | null> {
   const data = await publicGet<unknown>('/api/ordering-state', signal);
+  return parseOrderingStatus(data);
+}
+
+export interface VersionedOrderingFetch {
+  state: OrderingStatus | null;
+  /** Echo back on the next call so unchanged polls answer 304 (no body). */
+  etag: string | null;
+  /** True when the server answered 304: state is unchanged, keep showing it. */
+  notModified: boolean;
+}
+
+/**
+ * ETag round-trip variant for the scheduled poller (useOrderingState).
+ * The checkout-time availability check keeps using fetchOrderingStatus
+ * (always-fresh single shot). Shared parser below, so both paths agree.
+ */
+export async function fetchOrderingStatusVersioned(
+  signal?: AbortSignal,
+  etag?: string | null
+): Promise<VersionedOrderingFetch> {
+  const res = await publicGetVersioned<unknown>('/api/ordering-state', {
+    ...(etag ? { etag } : {}),
+    ...(signal ? { signal } : {}),
+  });
+  if (res.status === 'not-modified') return { state: null, etag: null, notModified: true };
+  if (res.status !== 'fresh') return { state: null, etag: null, notModified: false };
+  return { state: parseOrderingStatus(res.data), etag: res.etag, notModified: false };
+}
+
+function parseOrderingStatus(data: unknown): OrderingStatus | null {
   try {
     if (!data || !isRecord(data)) return null;
     const state = data.state;

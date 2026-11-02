@@ -566,10 +566,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           item={activeItem}
           menu={displayMenu}
           onClose={() => setActiveItem(null)}
-          cart={cart}
-          onAddItem={handleAddItem}
           onAddConfigured={handleAddConfigured}
-          onUpdateLine={handleUpdateLine}
           currency={currency}
           lang={lang}
           darkMode={darkMode}

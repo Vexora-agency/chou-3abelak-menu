@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { useGuardedText } from '@/src/hooks/useGuardedText';
-import { MenuData, MenuItem, CartLine } from '@/src/types/menu';
+import { MenuData, MenuItem } from '@/src/types/menu';
 import { X, Plus, Minus, Flame, Sparkles, Award } from 'lucide-react';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import {
-  cartLineKey, hasOptions, hasVariants, getVariant,
+  hasOptions, hasVariants, getVariant,
   lineTotal, perUnitPrice, featureName, normalizePricing, priceLabel, formatPrice,
   validatePicks,
 } from '@/src/utils/pricing';
@@ -17,10 +17,7 @@ interface ItemDetailsModalProps {
   item: MenuItem | null;
   menu: MenuData;
   onClose: () => void;
-  cart: Record<string, CartLine>;
-  onAddItem: (item: MenuItem) => void;
   onAddConfigured: (item: MenuItem, variantId: string | undefined, addonIds: string[], qty: number, addonQty?: Record<string, number>) => void;
-  onUpdateLine: (key: string, dir: 1 | -1) => void;
   currency: string;
   lang: 'en' | 'ar';
   darkMode: boolean;
@@ -30,10 +27,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
   item,
   menu,
   onClose,
-  cart,
-  onAddItem,
   onAddConfigured,
-  onUpdateLine,
   currency,
   lang,
   darkMode,
@@ -102,8 +96,6 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
   const variants = item && hasVariants(item) ? item.variants || [] : [];
   const blocks = item ? addonBlocks(menu, item) : [];
   const hasAddons = blocks.length > 0;
-  const singleKey = item ? cartLineKey(item.id) : '';
-  const singleQty = (item && cart[singleKey]?.quantity) || 0;
 
   // Canonical split map (undefined while the picks are legacy-shaped, so
   // keys/validation/money stay byte-identical to today until a real split).
@@ -360,10 +352,12 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             line). */}
         <div className="mt-6 space-y-4">
           {item.available ? (
-            options ? (
-              <>
-                {/* Variants (required — first is the default) */}
+            <>
+              {/* Variants (required — first is the default). Simple items
+                  have none, so the picker stays hidden for them. */}
+              {variants.length > 0 && (
                 <VariantPicker variants={variants} variantId={variantId} onSelect={setVariantId} menu={menu} lang={lang} currency={currency} darkMode={darkMode} isAr={isAr} chipBase={chipBase} />
+              )}
 
                 {/* Add-ons */}
                 {hasAddons && (
@@ -413,7 +407,8 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   </div>
                 </div>
 
-                {/* Add button with live total */}
+                {/* Add button with live total — merges into the matching
+                    cart line (same config), so re-adding just tops up. */}
                 <button
                   type="button"
                   disabled={liveTotal === null || !picksValid}
@@ -427,43 +422,6 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   )}
                 </button>
               </>
-            ) : singleQty === 0 ? (
-              <button
-                type="button"
-                onClick={() => onAddItem(item)}
-                className="btn-tactile w-full h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-extrabold text-base flex items-center justify-center gap-2 shadow-lg hover:brightness-110"
-              >
-                <Plus size={20} className="stroke-[3]" />
-                <span>{isAr ? 'إضافة إلى الطلب' : 'Add to Order'}</span>
-              </button>
-            ) : (
-              <div className={`flex items-center justify-between gap-4 p-2 rounded-full ${
-                darkMode ? 'bg-neutral-800 text-white' : 'bg-neutral-100 text-[#0A0A0A]'
-              }`}>
-                <span className="font-bold text-sm px-4">
-                  {isAr ? 'الكمية في السلة:' : 'In your cart:'}
-                </span>
-                <div className="flex items-center gap-1.5 bg-[var(--primary)] text-[#0A0A0A] rounded-full p-1 shadow-sm shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => onUpdateLine(singleKey, -1)}
-                    className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-black/10 hover:bg-black/20 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] flex items-center justify-center font-bold text-[#0A0A0A]"
-                  >
-                    <Minus size={18} className="stroke-[3]" />
-                  </button>
-                  <span className="font-black text-base px-2 min-w-[28px] text-center text-[#0A0A0A] tabular-nums" dir="ltr">
-                    {singleQty}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onUpdateLine(singleKey, 1)}
-                    className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-black/10 hover:bg-black/20 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] flex items-center justify-center font-bold text-[#0A0A0A]"
-                  >
-                    <Plus size={18} className="stroke-[3]" />
-                  </button>
-                </div>
-              </div>
-            )
           ) : (
             <div className={`text-center py-2 text-sm font-semibold ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
               {isAr ? 'هذا العنصر غير متوفر حالياً' : 'This item is currently unavailable'}

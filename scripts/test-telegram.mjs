@@ -330,17 +330,23 @@ const unlinked = await handleOrderCallback(orderDb(false), 'tok', { ...cbBase, c
 ok('stranger click rejected', unlinked.reason === 'unauthorized');
 const forged = await handleOrderCallback(orderDb(true), 'tok', { ...cbBase, callbackId: 'cb5', data: 'tg:done:ord-1' });
 ok('forged data rejected', forged.reason === 'bad_data');
-// Legacy ready flow (old in-flight tg:rdy buttons still validate): confirmed
-// -> ready stamps the out-for-delivery banner (mock order is delivery).
+// Frozen step: legacy in-flight tg:rdy buttons no longer move orders —
+// they answer with a modal alert and strip the dead buttons. The order
+// row is untouched. Legacy `ready` ROWS still complete via rcv (seeded
+// directly below since no press can create one anymore).
 const dbReady = orderDb(true, 'confirmed');
 const nCallsBeforeReady = cbCalls.length;
 const ready = await handleOrderCallback(dbReady, 'tok', { ...cbBase, callbackId: 'cbR1', data: `tg:rdy:ord-1` });
 const readyCalls = cbCalls.slice(nCallsBeforeReady);
-const readyStamp = readyCalls.find((c) => c.method === 'editMessageText');
-ok('ready marks out-for-delivery', ready.handled === true && ready.status === 'ready' && dbReady.orders.get('ord-1').status === 'ready');
-ok('ready stamps delivery banner', !!readyStamp && readyStamp.body.text.includes('🛵 الطلب خارج للتوصيل'));
+const readyAnswer = readyCalls.find((c) => c.method === 'answerCallbackQuery');
+ok('stale rdy is frozen (deprecated)', ready.handled === false && ready.reason === 'deprecated' && dbReady.orders.get('ord-1').status === 'confirmed');
+ok('freeze answers with modal alert', !!readyAnswer && readyAnswer.body.show_alert === true && readyAnswer.body.cache_time === 0 && String(readyAnswer.body.text || '').includes('الداشبورد'));
+const readyStrip = readyCalls.find((c) => c.method === 'editMessageReplyMarkup');
+ok('freeze strips the dead buttons', !!readyStrip && Array.isArray(readyStrip.body.reply_markup.inline_keyboard) && readyStrip.body.reply_markup.inline_keyboard.length === 0);
+ok('freeze stamps no banner', !readyCalls.some((c) => c.method === 'editMessageText'));
 const readyAgain = await handleOrderCallback(dbReady, 'tok', { ...cbBase, callbackId: 'cbR2', data: `tg:rdy:ord-1` });
-ok('repeat ready is noop', readyAgain.handled === true && readyAgain.noop === true);
+ok('repeat rdy stays frozen', readyAgain.handled === false && readyAgain.reason === 'deprecated');
+dbReady.orders.get('ord-1').status = 'ready';
 const readyDone = await handleOrderCallback(dbReady, 'tok', { ...cbBase, callbackId: 'cbR3', data: `tg:rcv:ord-1` });
 ok('ready completes via legacy rcv', readyDone.handled === true && readyDone.status === 'completed' && dbReady.orders.get('ord-1').status === 'completed');
 const dbRecv = orderDb(true, 'confirmed');

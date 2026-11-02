@@ -406,12 +406,12 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
 
   // new = placed, owner hasn't confirmed yet; confirmed = the place
   // confirmed receipt and is preparing it; completed = delivered to you.
-  // new = placed but not yet confirmed by the business;
-  // confirmed = the place received it and is preparing it.
+  // Legacy `ready` orders (pre-simplification) read exactly like confirmed:
+  // the customer timeline is 3 steps now, so the bell shows no 4th state.
+  // (The sky chip color for `ready` is kept — styling only, not a step.)
   const statusLabel = (s: string) =>
     s === 'new' ? (isAr ? 'بانتظار التأكيد' : 'Awaiting confirmation')
-    : s === 'confirmed' ? (isAr ? 'قيد التحضير' : 'Being prepared')
-    : s === 'ready' ? (isAr ? 'جاهز' : 'Ready')
+    : s === 'confirmed' || s === 'ready' ? (isAr ? 'قيد التحضير' : 'Being prepared')
     : s === 'completed' ? (isAr ? 'تم التوصيل' : 'Delivered')
     : s === 'cancelled' ? (isAr ? 'ملغي' : 'Cancelled')
     : (isAr ? '…' : '…');

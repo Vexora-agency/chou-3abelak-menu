@@ -753,8 +753,9 @@ export async function rebuildOrderMessage(db, env, order) {
 /**
  * Handle a Confirm/Cancel button press. NEVER throws — every failure path
  * answers the callback (so the client spinner never hangs) and returns a
- * reason. Validation order: linked chat → known action → order exists →
- * idempotent repeat → allowed transition → write → announce.
+ * reason. Validation order: linked chat → known action → frozen-step
+ * reject (`rdy`) → order exists → idempotent repeat → allowed transition
+ * → write → announce.
  *
  * Only the linked owner chat can act (clicker AND message chat must equal
  * the stored chat_id — usernames never trusted). Terminal states
@@ -764,13 +765,21 @@ export async function rebuildOrderMessage(db, env, order) {
  */
 export async function handleOrderCallback(db, token, { callbackId, clickerId, chatId, messageId, data, messageText, env }) {
   const noop = (reason) => ({ handled: false, reason });
-  const answer = async (text) => {
+  // alert=true renders a modal dialog (must-tap-to-dismiss) instead of a
+  // fading toast — right for "action gone, go elsewhere". Plain text only
+  // (alerts have no parse_mode), ≤200 chars, never cached.
+  const answer = async (text, alert = false) => {
     if (!token || typeof callbackId !== 'string' || !callbackId) return;
     try {
-      await callTelegramApi(token, 'answerCallbackQuery', {
+      const params = {
         callback_query_id: callbackId,
         text: String(text || '').slice(0, 200),
-      });
+      };
+      if (alert) {
+        params.show_alert = true;
+        params.cache_time = 0;
+      }
+      await callTelegramApi(token, 'answerCallbackQuery', params);
     } catch {}
   };
   try {
@@ -792,6 +801,23 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     if (!parsed) {
       await answer('Unknown action.');
       return noop('bad_data');
+    }
+    // Frozen step: the "جاهز / mark-ready" button was removed from the
+    // product — old in-flight `tg:rdy:*` buttons in already-sent messages
+    // must NOT move orders to `ready` anymore. Answer with a modal alert
+    // (must be read, never cached) and strip the dead buttons best-effort.
+    // Legacy `ready` ROWS keep working: sync/stamp/complete paths below
+    // still accept the status, only new presses are frozen.
+    if (parsed.action === 'rdy') {
+      await answer('خطوة "جاهز" اتلغت — كمّل من الداشبورد', true);
+      try {
+        await callTelegramApi(token, 'editMessageReplyMarkup', {
+          chat_id: chatId,
+          message_id: messageId,
+          reply_markup: { inline_keyboard: [] },
+        });
+      } catch {}
+      return noop('deprecated');
     }
     let order = null;
     try {

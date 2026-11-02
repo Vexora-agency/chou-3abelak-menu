@@ -8,6 +8,14 @@ import {
 
 let ctx: AudioContext | null = null;
 
+// Overlap guard: the 2 s beep must never stack on itself (session-start
+// chime + toggle beep + new-order beep can land in the same second).
+// Calls inside the cooldown are dropped — the 4 s alarm loop re-fires
+// anyway, so nothing is lost, only the stutter. Timestamp set
+// synchronously at schedule time (never after an await).
+let lastBeepStartMs = 0;
+const BEEP_COOLDOWN_MS = 2000;
+
 function ensureCtx(): AudioContext | null {
   try {
     if (typeof window === 'undefined') return null;
@@ -55,6 +63,10 @@ export function isAudioLocked(): boolean {
 export function playNewOrderBeep(sound?: BellSoundId | string | null) {
   const ac = ensureCtx();
   if (!ac) return;
+  // Single-flight: skip when the previous beep is still ringing.
+  const now = Date.now();
+  if (now - lastBeepStartMs < BEEP_COOLDOWN_MS) return;
+  lastBeepStartMs = now;
   // Suspended (no gesture yet): schedule anyway (harmless silence) and retry
   // on a widening ladder — the alarm re-fires every tick anyway, so a late
   // unlock still catches sound within seconds instead of losing this beep.

@@ -68,6 +68,48 @@ export const ORDER_GRACE_MS = 5 * 60 * 1000;
 export const CUSTOMER_CANCEL_WINDOW_MS = ORDER_GRACE_MS;
 
 /**
+ * Batch track lookup: one D1 round-trip for up to N order numbers.
+ * The IN-list placeholders are generated from the validated COUNT only
+ * (never from user input) and every value stays bound — injection is
+ * impossible by construction, which is why this builder (unlike the
+ * fixed WINDOW_WHERE templates) takes a dynamic list. Callers must still
+ * verify each row's track token themselves (tokens never go in SQL).
+ */
+export async function findTrackRowsByNumbers(db, numbers) {
+  const nums = Array.isArray(numbers)
+    ? [...new Set(numbers.filter((n) => Number.isInteger(n) && n > 0))].slice(0, 50)
+    : [];
+  if (!nums.length) return [];
+  const placeholders = nums.map((_, i) => `?${i + 1}`).join(',');
+  const res = await db
+    .prepare(
+      `SELECT number, track_token, status, type, total, items_json, created_at FROM orders WHERE number IN (${placeholders})`
+    )
+    .bind(...nums)
+    .all();
+  return (res && res.results) || [];
+}
+
+/**
+ * Grace-pipeline visibility (count only, no PII): how many `new` orders
+ * are still inside the customer-cancel window and therefore hidden from
+ * the admin dashboard. Lets the dashboard show "N orders in grace" so a
+ * quiet board is distinguishable from a dead cron.
+ */
+export async function countGraceHiddenOrders(db, graceCutoffIso) {
+  try {
+    const row = await db
+      .prepare("SELECT COUNT(*) AS c FROM orders WHERE status = 'new' AND created_at > ?1")
+      .bind(graceCutoffIso)
+      .first();
+    const c = row && typeof row.c === 'number' ? row.c : 0;
+    return Number.isFinite(c) && c >= 0 ? Math.floor(c) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Grace check (pure, unit-testable): a `new` order younger than the grace
  * window is hidden from admin surfaces. Cancelled/completed/old orders are
  * never grace-hidden.

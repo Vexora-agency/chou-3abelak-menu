@@ -11,7 +11,7 @@
 
 import { jsonNoStore } from '../../_shared/session.js';
 import { featureOffResponse, hasFeature } from '../../_shared/plan.js';
-import { cronHealthFromRow, getCronHeartbeat, isOrderInGrace, listOrdersByWindow, ORDER_NAG_SERVICE } from '../../_shared/repositories/orders.repo.js';
+import { cronHealthFromRow, countGraceHiddenOrders, getCronHeartbeat, isOrderInGrace, listOrdersByWindow, ORDER_GRACE_MS, ORDER_NAG_SERVICE } from '../../_shared/repositories/orders.repo.js';
 
 function parseISO(v) {
   if (typeof v !== 'string' || !v) return null;
@@ -66,12 +66,22 @@ export async function onRequest(context) {
   // Kitchen grace period: a `new` order younger than 5 minutes stays
   // hidden (the customer may still self-cancel). Cancelled orders are
   // never hidden — the owner sees the cancellation at once.
+  const nowMs = Date.now();
   try {
-    const now = Date.now();
     if (Array.isArray(orders)) {
-      orders = orders.filter((o) => !isOrderInGrace(o && o.status, o && o.createdAt, now));
+      orders = orders.filter((o) => !isOrderInGrace(o && o.status, o && o.createdAt, nowMs));
     }
   } catch {}
+
+  // Pipeline visibility (count only, no PII): how many `new` orders are
+  // inside the grace window right now, so a quiet board reads as "calm",
+  // not "cron dead" (the heartbeat banner covers the dead case).
+  let graceHidden = 0;
+  try {
+    graceHidden = await countGraceHiddenOrders(db, new Date(nowMs - ORDER_GRACE_MS).toISOString());
+  } catch {
+    graceHidden = 0;
+  }
 
   // Cron health (D1 heartbeat row, one cheap indexed read) for everyone
   // watching the dashboard: owner and client logins alike. Never fails
@@ -83,5 +93,5 @@ export async function onRequest(context) {
     cronHealth = cronHealthFromRow(null, Date.now());
   }
 
-  return jsonNoStore({ orders, cronHealth });
+  return jsonNoStore({ orders, cronHealth, graceHidden });
 }

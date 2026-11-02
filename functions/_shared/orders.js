@@ -299,6 +299,11 @@ export function mapOrderRow(row) {
     createdAt: row.created_at,
     status: row.status,
     type: row.type,
+    // Confirm + smart-ETA instants (migration 0022, nullable — legacy rows
+    // keep NULL until re-confirmed; always present as null-or-string so the
+    // dashboard/public shapes never shift keys).
+    confirmedAt: row.confirmed_at || null,
+    etaAt: row.eta_at || null,
     customer: {
       name: row.customer_name || '',
       phone: row.customer_phone || '',

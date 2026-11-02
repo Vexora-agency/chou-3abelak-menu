@@ -7,17 +7,22 @@
  * Atomic flip confirmed|ready -> completed via completeOrderByTrackToken:
  * exactly one caller wins; repeats are idempotent. A still-`new` order
  * (kitchen hasn't started preparing) is rejected with 404 (no oracle).
+ * Receive-unlock gate (migration 0022): only flips once
+ * max((confirmed_at ?? created_at) + delay[type], eta_at ?? -inf) passes —
+ * too early answers 409 { error: 'too_early', retryAfterSec }, mirroring
+ * the cancel endpoint's 409 'too_late' shape.
  * On a real flip the
  * owner is pinged on Telegram (new short message + original order message
  * stamped completed) — best-effort via waitUntil, never blocks the reply.
  * Unknown number/token reads 404 identically (no oracle).
  */
 
-import { jsonNoStore, readJsonBody } from '../../_shared/session.js';
+import { jsonNoStore, readJsonBody, safeCompareStrings } from '../../_shared/session.js';
 import {
   completeOrderByTrackToken,
   findOrderByNumber,
 } from '../../_shared/repositories/orders.repo.js';
+import { receivableAtMs } from '../../_shared/eta.js';
 import { notifyOwnerReceived, syncOrderStatusToTelegram } from '../../_shared/telegram.js';
 
 const MAX_BODY_BYTES = 1 * 1024;
@@ -53,6 +58,73 @@ export async function onRequest(context) {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
 
+  // Receive-unlock gate (migration 0022): the button unlocks at
+  // max((confirmed_at ?? created_at) + delay[type], eta_at ?? -inf), where
+  // delays come from settings.ordering (receiveDelayDeliveryMin default 30,
+  // receiveDelayPickupMin default 15). ONE edge-cached menu KV read max, on
+  // tap only, best-effort with hardcoded fallbacks — a KV miss degrades to
+  // the legacy guarantee (unlock from created_at + delay, i.e. immediately
+  // for old orders, never trapped). Too early answers 409 { error:
+  // 'too_early', status, retryAfterSec }, mirroring the cancel endpoint's
+  // 409 'too_late' shape.
+  let row = null;
+  try {
+    row = await findOrderByNumber(db, number);
+  } catch {
+    return jsonNoStore({ error: 'unavailable' }, 503);
+  }
+  let tokenOk = false;
+  try {
+    tokenOk = !!(row && typeof row.track_token === 'string' && safeCompareStrings(token, row.track_token));
+  } catch {
+    tokenOk = false;
+  }
+  if (!row || !tokenOk) {
+    return jsonNoStore({ error: 'not_found' }, 404);
+  }
+  if (row.status === 'completed' || row.status === 'cancelled') {
+    return jsonNoStore({ ok: true, status: row.status, number });
+  }
+  if (row.status !== 'confirmed' && row.status !== 'ready') {
+    return jsonNoStore({ error: 'not_found' }, 404);
+  }
+  let ordering = null;
+  try {
+    const kv = env.MENU_KV || null;
+    const menu = kv ? await kv.get('menu', { type: 'json', cacheTtl: 300 }) : null;
+    ordering = menu && menu.settings ? menu.settings.ordering : null;
+  } catch {
+    ordering = null;
+  }
+  const nowMs = Date.now();
+  let unlockAtMs = -Infinity;
+  try {
+    unlockAtMs = receivableAtMs({
+      confirmedAt: row.confirmed_at,
+      createdAt: row.created_at,
+      etaAt: row.eta_at,
+      orderType: row.type,
+      settings: ordering,
+      nowMs,
+    });
+  } catch {
+    unlockAtMs = -Infinity;
+  }
+  if (nowMs < unlockAtMs) {
+    return jsonNoStore(
+      {
+        error: 'too_early',
+        status: row.status,
+        retryAfterSec: Math.max(1, Math.ceil((unlockAtMs - nowMs) / 1000)),
+      },
+      409
+    );
+  }
+
+  // Atomic flip confirmed|ready -> completed (unchanged query): exactly one
+  // caller wins; a millisecond race between the gate above and this write at
+  // minute granularity is irrelevant (worst case the tap lands seconds
+  // early) — documented, not guarded.
   let flipped;
   try {
     flipped = await completeOrderByTrackToken(db, number, token);

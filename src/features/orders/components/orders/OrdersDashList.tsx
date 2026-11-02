@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { BellRing, Check, ChevronDown, Inbox, MapPin, MessageCircle, Phone, Store, X } from 'lucide-react';
 import { STR } from './ordersDashTypes';
 import type { Order, OrderStatus } from './ordersDashTypes';
-import { STATUS_STYLE, TYPE_ICON, digits, fmt, itemTitle, relTime } from './ordersDashUtils';
+import { STATUS_STYLE, TYPE_ICON, digits, fmt, itemTitle, loc, relTime } from './ordersDashUtils';
 import { unitLabel } from '@/src/utils/pricing';
 import { card } from './OrdersDashBits';
 
@@ -70,6 +70,14 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
           {list.slice(0, limit).map((o) => {
             const open = openId === o.id;
             const TypeIcon = TYPE_ICON[o.type] ?? Store;
+            // Smart ETA: absolute 12h time while on-time, mins-late once passed.
+            const etaMs = typeof o.etaAt === 'string' && o.etaAt ? Date.parse(o.etaAt) : NaN;
+            const showEta = (o.status === 'confirmed' || o.status === 'ready') && Number.isFinite(etaMs);
+            const etaTime = showEta
+              ? new Date(etaMs).toLocaleTimeString(loc(lang), { hour: 'numeric', minute: '2-digit', hour12: true })
+              : '';
+            const etaLateMins = showEta ? Math.floor((now.getTime() - etaMs) / 60000) : 0;
+            const etaLate = showEta ? now.getTime() > etaMs : false;
             return (
               <motion.div key={o.id} layout={reduce ? false : 'position'}
                 initial={reduce ? false : { opacity: 0, y: -12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
@@ -115,6 +123,11 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                             {o.deliveryFee > 0 && <div className="flex justify-between"><span>{t.fee}</span><span className="tabular-nums" dir="ltr">{fmt(o.deliveryFee)}</span></div>}
                             <div className="flex justify-between text-sm font-extrabold text-white"><span>{t.total}</span><span className="tabular-nums" dir="ltr">{fmt(o.total)} {currency}</span></div>
                           </div>
+                          {showEta && (
+                            <p dir="auto" className={`text-[11px] tabular-nums truncate ${etaLate ? 'text-amber-400 font-bold' : 'text-neutral-500'}`}>
+                              {etaLate ? t.late(etaLateMins) : t.arrives(etaTime)}
+                            </p>
+                          )}
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                           <div className="flex items-center gap-2 text-neutral-300 min-w-0"><Phone size={14} className="text-[var(--primary)] shrink-0" /><span dir="ltr" className="tabular-nums truncate">{o.customer.phone}</span></div>

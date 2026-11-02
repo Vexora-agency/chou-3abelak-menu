@@ -31,7 +31,8 @@
 import { sha256Hex } from './access.js';
 import { unitLabel } from './pricing.js';
 import { safeCompareStrings } from './session.js';
-import { findOrderById, updateOrderStatus } from './repositories/orders.repo.js';
+import { findOrderById, countActiveKitchenOrders, updateOrderStatus } from './repositories/orders.repo.js';
+import { orderDistanceKm, orderingEtaOrDefaults } from './eta.js';
 import { notifyOrderStatus } from './push.js';
 
 export const TELEGRAM_CONFIG_KEY = 'telegram';
@@ -845,7 +846,29 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     }
     let updated = null;
     try {
-      updated = await updateOrderStatus(db, parsed.orderId, parsed.status);
+      // Confirm stamping inputs (migration 0022): piggyback the ALREADY-
+      // LOADED order row + one edge-cached menu read (confirm taps only —
+      // other transitions add no reads). Degrades to ETA defaults + a live
+      // kitchen count on any failure; the stamp never blocks the write.
+      let confirmOpts;
+      if (parsed.status === 'confirmed') {
+        confirmOpts = {};
+        try {
+          let menu = null;
+          try {
+            const kv = env && env.MENU_KV ? env.MENU_KV : null;
+            menu = kv ? await kv.get('menu', { type: 'json', cacheTtl: 300 }) : null;
+          } catch {
+            menu = null;
+          }
+          confirmOpts.settings = orderingEtaOrDefaults(menu && menu.settings ? menu.settings.ordering : null);
+          confirmOpts.distanceKm = orderDistanceKm(order, menu);
+          confirmOpts.queueLen = await countActiveKitchenOrders(db);
+        } catch {
+          confirmOpts = {};
+        }
+      }
+      updated = await updateOrderStatus(db, parsed.orderId, parsed.status, confirmOpts);
     } catch {
       updated = null;
     }

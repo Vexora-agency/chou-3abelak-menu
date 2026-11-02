@@ -14,6 +14,14 @@ interface ReceivedButtonProps {
  * waiting hint instead of completing — backend enforces the same rule.
  */
   disabled?: boolean;
+  /**
+   * Overrides the hint under the disabled button (e.g. the delivery-lock
+   * countdown the track page passes while `receivableAt` is still in the
+   * future). Undefined = today's confirmation copy (bell + new-order paths
+   * render exactly as before). A provided hint carries `role="timer"` since
+   * it always wraps a live countdown.
+   */
+  waitingHint?: React.ReactNode;
   onConfirmed?: () => void;
 }
 
@@ -24,7 +32,7 @@ interface ReceivedButtonProps {
  * server-side and pings the owner on Telegram.
  */
 export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
-  number, token, lang, darkMode = true, compact = false, disabled = false, onConfirmed,
+  number, token, lang, darkMode = true, compact = false, disabled = false, waitingHint, onConfirmed,
 }) => {
   const isAr = lang === 'ar';
   const [busy, setBusy] = useState(false);
@@ -95,9 +103,15 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
         {isAr ? 'نعم، استلمت' : 'Yes, received'}
       </button>
       {disabled && (
-        <p className={`mt-1.5 text-[11px] font-bold ${darkMode ? 'text-amber-400/90' : 'text-amber-700'}`}>
-          {isAr ? 'بانتظار التأكيد — الزر هيتفعل أول ما طلبك يبدأ يتجهز.' : 'Waiting for confirmation — this unlocks once your order starts being prepared.'}
-        </p>
+        waitingHint !== undefined ? (
+          <p role="timer" className={`mt-1.5 text-[11px] font-bold tabular-nums ${darkMode ? 'text-amber-400/90' : 'text-amber-700'}`}>
+            {waitingHint}
+          </p>
+        ) : (
+          <p className={`mt-1.5 text-[11px] font-bold ${darkMode ? 'text-amber-400/90' : 'text-amber-700'}`}>
+            {isAr ? 'بانتظار التأكيد — الزر هيتفعل أول ما طلبك يبدأ يتجهز.' : 'Waiting for confirmation — this unlocks once your order starts being prepared.'}
+          </p>
+        )
       )}
       {failed && (
         <p className={`mt-1.5 text-[11px] font-bold ${darkMode ? 'text-red-400' : 'text-red-600'}`}>

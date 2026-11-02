@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, CookingPot, ArrowUp, XCircle, ArrowLeft, BellRing, Loader2 } from 'lucide-react';
+import { CheckCircle2, Clock, CookingPot, ArrowUp, XCircle, ArrowLeft, BellRing, Loader2, Truck } from 'lucide-react';
 import { formatPrice, unitLabel } from '@/src/utils/pricing';
+import { formatMMSS } from '@/src/utils/countdown';
+import { etaRange, formatEtaRange } from '@/src/utils/etaFormat';
 import { ReceivedButton } from './components/ReceivedButton';
 import { CancelOrderButton } from './components/CancelOrderButton';
+import { PushSubscribeButton } from './PushSubscribeButton';
 
 interface TrackViewProps {
   number: number;
@@ -33,6 +36,15 @@ interface TrackData {
   total: number;
   lang: 'en' | 'ar';
   createdAt?: string;
+  /**
+   * Smart-ETA contract: both optional. Absent or invalid = old behavior
+   * (button enabled once confirmed — never trap the user on a stale
+   * backend that doesn't send these fields).
+   * - `etaAt`: ISO instant the order is expected to arrive (banner range).
+   * - `receivableAt`: ISO instant the receive button unlocks (delivery lock).
+   */
+  etaAt?: string | null;
+  receivableAt?: string | null;
 }
 
 const pick = (v: { en: string; ar: string } | undefined, lang: 'en' | 'ar') => {
@@ -63,6 +75,10 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   const [missing, setMissing] = useState(false);
   const [storeName, setStoreName] = useState('');
   const [currency, setCurrency] = useState('LBP');
+  // Render clock: refreshed on every 10 s poll tick so the delivery-lock
+  // countdown and ETA range stay live without their own timer. Read in
+  // render (never Date.now() inline — hooks purity rule).
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [showTop, setShowTop] = useState(false);
   const isAr = lang === 'ar';
 
@@ -135,6 +151,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
           const d = (await res.json()) as TrackData & { ok?: boolean };
           if (stop || !d || d.ok === false) return;
           setData(d);
+          setNowMs(Date.now());
           if (!siteLang() && (d.lang === 'ar' || d.lang === 'en')) setLang(d.lang);
       } catch {}
     };
@@ -164,6 +181,25 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   const cancelled = data?.status === 'cancelled';
   // Customer receipt unlocks only after the place starts preparing.
   const awaitingConfirm = data?.status === 'new';
+  // Delivery lock (smart-ETA contract): while confirmed/ready AND the
+  // server's `receivableAt` is still in the future, the button stays
+  // disabled with a live countdown. Absent/invalid/past = today's behavior
+  // (enabled once confirmed) — stale clients are never trapped.
+  const receivableMs =
+    data && typeof data.receivableAt === 'string' && data.receivableAt ? Date.parse(data.receivableAt) : NaN;
+  const deliveryLocked =
+    !!data &&
+    (data.status === 'confirmed' || data.status === 'ready') &&
+    Number.isFinite(receivableMs) &&
+    receivableMs > nowMs;
+  const receivedDisabled = awaitingConfirm || deliveryLocked;
+  const lockedRemainingMs = deliveryLocked ? Math.max(0, receivableMs - nowMs) : 0;
+  // ETA banner range: etaAt ±20% (min ±5 min each side), computed at render
+  // so the 10 s poll keeps it fresh. Invalid/absent = no banner.
+  const etaWindow = data && !cancelled && data.status !== 'completed' && typeof data.etaAt === 'string' && data.etaAt
+    ? etaRange(data.etaAt, nowMs)
+    : null;
+  const etaLabel = etaWindow ? formatEtaRange(etaWindow.fromIso, etaWindow.toIso, lang) : '';
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'} className="min-h-dvh bg-[#0A0A0A] text-white flex flex-col items-center px-5 pb-[max(2rem,env(safe-area-inset-bottom))]">
@@ -254,6 +290,16 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
               </ol>
             )}
 
+            {etaLabel && (
+              <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs font-bold text-neutral-300">
+                <Truck size={13} className="shrink-0 text-[var(--primary)]" aria-hidden="true" />
+                <span className="min-w-0 break-words">
+                  {isAr ? 'يوصلك تقريبًا ' : 'Arriving around '}
+                  <span dir="ltr" className="tabular-nums">{etaLabel}</span>
+                </span>
+              </p>
+            )}
+
             <div className="mt-2 rounded-2xl border border-neutral-800 border-t-2 border-t-[var(--primary)] bg-neutral-900/60 p-4 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)]">
               {data.items.map((it, i) => (
                 <div key={i} className="flex justify-between gap-3 py-1.5 text-sm">
@@ -308,9 +354,22 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                   token={token}
                   lang={lang}
                   darkMode
-                  disabled={awaitingConfirm}
+                  disabled={receivedDisabled}
+                  waitingHint={deliveryLocked ? (
+                    isAr ? (
+                      <>زر التأكيد هيتفعل بعد التوصيل (متبقي <span dir="ltr" className="tabular-nums">{formatMMSS(lockedRemainingMs)}</span>)</>
+                    ) : (
+                      <>Confirm unlocks after delivery (<span dir="ltr" className="tabular-nums">{formatMMSS(lockedRemainingMs)}</span> left)</>
+                    )
+                  ) : undefined}
                   onConfirmed={() => setData((d) => (d ? { ...d, status: 'completed' } : d))}
                 />
+              </div>
+            )}
+
+            {(data.status === 'new' || data.status === 'confirmed' || data.status === 'ready') && (
+              <div className="mt-4 rounded-2xl border border-neutral-800 border-t-2 border-t-[var(--primary)] bg-neutral-900/60 p-4">
+                <PushSubscribeButton orderNumber={data.number} trackToken={token} lang={lang} darkMode />
               </div>
             )}
             <p className="mt-4 text-center text-xs text-neutral-400 flex flex-wrap items-center gap-1 justify-center w-full">

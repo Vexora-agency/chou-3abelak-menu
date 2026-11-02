@@ -141,6 +141,102 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
         )}
       </div>
 
+      {/* Smart ETA tuning */}
+      <div className="rounded-xl border border-neutral-800 bg-black/40 p-3 space-y-3">
+        <div>
+          <p className="block text-xs font-bold">{isAr ? 'تقدير التوصيل الذكي' : 'Smart delivery estimate'}</p>
+          <p className="block text-[11px] text-neutral-500 mt-0.5">
+            {isAr ? 'يضبط الوقت المتوقع الظاهر على الطلبات المؤكدة' : 'Tunes the ETA shown on confirmed orders'}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'تحضير أساسي (د)' : 'Base prep (min)'}</label>
+            <input
+              type="number"
+              step="any"
+              min={0}
+              max={180}
+              value={ordering.prepMinutes}
+              onChange={(e) => onUpdate((prev) => ({ ...prev, prepMinutes: Number(e.target.value) }))}
+              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'دقائق المطبخ / طلب' : 'Kitchen min / order'}</label>
+            <input
+              type="number"
+              step="any"
+              min={0}
+              max={180}
+              value={ordering.kitchenMinutesPerOrder}
+              onChange={(e) => onUpdate((prev) => ({ ...prev, kitchenMinutesPerOrder: Number(e.target.value) }))}
+              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'سرعة المندوب (كم/س)' : 'Courier speed (km/h)'}</label>
+            <input
+              type="number"
+              step="any"
+              min={5}
+              max={120}
+              value={ordering.courierSpeedKmh}
+              onChange={(e) => onUpdate((prev) => ({ ...prev, courierSpeedKmh: Number(e.target.value) }))}
+              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'معامل الطريق (×)' : 'Road factor (×)'}</label>
+            <input
+              type="number"
+              step="any"
+              min={1}
+              max={2}
+              value={ordering.roadFactor}
+              onChange={(e) => onUpdate((prev) => ({ ...prev, roadFactor: Number(e.target.value) }))}
+              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'توصيل احتياطي (د)' : 'Fallback delivery (min)'}</label>
+            <input
+              type="number"
+              step="any"
+              min={0}
+              max={180}
+              value={ordering.defaultDeliveryMinutes}
+              onChange={(e) => onUpdate((prev) => ({ ...prev, defaultDeliveryMinutes: Number(e.target.value) }))}
+              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'مهلة الاستلام · توصيل (د)' : 'Receive delay · delivery (min)'}</label>
+            <input
+              type="number"
+              step="any"
+              min={0}
+              max={720}
+              value={ordering.receiveDelayDeliveryMin}
+              onChange={(e) => onUpdate((prev) => ({ ...prev, receiveDelayDeliveryMin: Number(e.target.value) }))}
+              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
+            />
+          </div>
+          <div className="min-[380px]:col-span-2">
+            <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'مهلة الاستلام · استلام (د)' : 'Receive delay · pickup (min)'}</label>
+            <input
+              type="number"
+              step="any"
+              min={0}
+              max={720}
+              value={ordering.receiveDelayPickupMin}
+              onChange={(e) => onUpdate((prev) => ({ ...prev, receiveDelayPickupMin: Number(e.target.value) }))}
+              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Pause orders switch */}
       <div className="rounded-xl border border-neutral-800 bg-black/40 p-3 space-y-3">
         <button

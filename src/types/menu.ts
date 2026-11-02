@@ -171,6 +171,20 @@ export interface MenuSettings {  name: { en: string; ar: string };
     pausedMessage: { en: string; ar: string };
     /** When true, orders are accepted outside business hours. */
     acceptWhenClosed: boolean;
+    /** Base kitchen prep minutes before dispatch (smart ETA). */
+    prepMinutes: number;
+    /** Extra kitchen minutes per queued order (smart ETA). */
+    kitchenMinutesPerOrder: number;
+    /** Courier speed km/h (smart ETA). */
+    courierSpeedKmh: number;
+    /** Road detour multiplier, 1.0..2.0 (smart ETA). */
+    roadFactor: number;
+    /** Fallback delivery minutes when distance is unknown (smart ETA). */
+    defaultDeliveryMinutes: number;
+    /** Receive-delay window for delivery orders (smart ETA). */
+    receiveDelayDeliveryMin: number;
+    /** Receive-delay window for pickup orders (smart ETA). */
+    receiveDelayPickupMin: number;
   };
   announcement: {
     enabled: boolean;

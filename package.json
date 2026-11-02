@@ -19,6 +19,7 @@
     "test:customer-orders": "tsx scripts/test-customer-orders.mjs",
     "test:bell-sound": "tsx scripts/test-bell-sound.mjs",
     "test:customer-confirm": "node scripts/test-customer-confirm.mjs",
+    "test:eta": "node scripts/test-eta.mjs",
     "test:parity": "tsx scripts/test-parity.mjs",
     "test:cart": "node scripts/test-cart-isolation.mjs",
     "test:plan": "node scripts/test-plan.mjs",

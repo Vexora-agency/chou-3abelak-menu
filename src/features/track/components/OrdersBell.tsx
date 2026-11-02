@@ -33,6 +33,8 @@ interface BellOrder extends StoredCustomerOrder {
   total: number | null;
   itemsCount: number | null;
   createdAt: string | null;
+  /** Receive-unlock instant (server-computed); null = no lock info. */
+  receivableAt: string | null;
 }
 
 function timeAgo(at: string, isAr: boolean, nowMs: number): string {
@@ -54,6 +56,17 @@ function toBellStatus(s: unknown): BellOrder['status'] {
   return s === 'new' || s === 'confirmed' || s === 'ready' || s === 'completed' || s === 'cancelled' ? s : 'unknown';
 }
 
+/** Delivery lock for the compact receive button: mirrors the track page's
+ *  rule (same server-computed `receivableAt`). Bell ticks every 60s with
+ *  no live countdown, so a locked button simply stays disabled with the
+ *  waiting copy until a later poll unlocks it — never a dead tap. */
+function isReceivableLocked(o: BellOrder, nowMs: number): boolean {
+  if (o.status !== 'confirmed' && o.status !== 'ready') return false;
+  if (typeof o.receivableAt !== 'string' || !o.receivableAt) return false;
+  const ms = Date.parse(o.receivableAt);
+  return Number.isFinite(ms) && ms > nowMs;
+}
+
 /** Single lookup for bell status copy: `confirmed` + `ready` share one
  *  object on purpose — both read as "Being prepared" (3-step timeline). */
 const STATUS_PREPARING_LABEL = { en: 'Being prepared', ar: 'قيد التحضير' };
@@ -73,7 +86,7 @@ const STATUS_LABEL: Record<BellOrder['status'], { en: string; ar: string }> = {
 async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<number, BellOrder>> {
   const next: Record<number, BellOrder> = {};
   const unknown = (o: StoredCustomerOrder): BellOrder => ({
-    ...o, status: 'unknown', total: null, itemsCount: null, createdAt: null,
+    ...o, status: 'unknown', total: null, itemsCount: null, createdAt: null, receivableAt: null,
   });
   if (list.length === 0) return next;
   try {
@@ -88,9 +101,9 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
       return next;
     }
     const d = (await res.json()) as {
-      results?: Array<{ number?: unknown; status?: unknown; total?: unknown; itemsCount?: unknown; createdAt?: unknown }>;
+      results?: Array<{ number?: unknown; status?: unknown; total?: unknown; itemsCount?: unknown; createdAt?: unknown; receivableAt?: unknown }>;
     };
-    const byNum = new Map<number, { status: BellOrder['status']; total: number | null; itemsCount: number | null; createdAt: string | null }>();
+    const byNum = new Map<number, { status: BellOrder['status']; total: number | null; itemsCount: number | null; createdAt: string | null; receivableAt: string | null }>();
     for (const r of Array.isArray(d?.results) ? d.results : []) {
       if (!r || typeof r.number !== 'number') continue;
       const st = typeof r.status === 'string' ? r.status : '';
@@ -99,6 +112,7 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
         total: typeof r.total === 'number' ? r.total : null,
         itemsCount: typeof r.itemsCount === 'number' ? r.itemsCount : null,
         createdAt: typeof r.createdAt === 'string' ? r.createdAt : null,
+        receivableAt: typeof r.receivableAt === 'string' ? r.receivableAt : null,
       });
     }
     for (const o of list) {
@@ -152,6 +166,11 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // on every later gesture/visibility/tick until one strike lands — the
   // sound is never dropped, only muted orders are skipped.
   const pendingSoundRef = useRef<Set<number>>(new Set());
+  // Last seen batch status per order number: edge-detects the new ->
+  // confirmed/ready ("being prepared") transition so that moment chimes
+  // exactly once. Unknowns never overwrite memory — a failed poll must not
+  // fake an edge when the next tick recovers.
+  const prevStatusRef = useRef<Map<number, BellOrder['status']>>(new Map());
   // Owner-picked customer chime id (menu settings.sounds.customer).
   const [customerSound, setCustomerSound] = useState<string>('classic');
   const soundRef = useRef(customerSound);
@@ -254,6 +273,45 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
         }
       }
       activeRef.current = Object.values(next).some((s) => s.status === 'new' || s.status === 'confirmed' || s.status === 'ready');
+      // Edge-triggered "now preparing" chime: any tracked order moving from
+      // a non-preparing state into confirmed/ready since the previous tick
+      // queues ONE chime through the shared pending queue (same cooldown +
+      // flush path as new arrivals — no second chime engine, so this can
+      // never fight the 3s engine cooldown or the 4s alarm loop). Mount-time
+      // sightings are skipped (prev === undefined): the rung catch-up above
+      // already covers them, so a long-confirmed order never double-rings.
+      // Gated by the master switch like everything else: off = silent.
+      if (!isSoundOff()) {
+        let edge = false;
+        for (const o of list) {
+          const cur = next[o.n]?.status;
+          if (cur !== 'confirmed' && cur !== 'ready') continue;
+          const prev = prevStatusRef.current.get(o.n);
+          if (prev === undefined) continue;
+          if (prev !== 'confirmed' && prev !== 'ready') {
+            pendingSoundRef.current.add(o.n);
+            edge = true;
+          }
+        }
+        if (edge) {
+          vibrateBell();
+          dance(1500);
+          void flushPendingSound();
+        }
+      }
+      // Advance edge memory: unknowns never overwrite (failed polls stay
+      // invisible), numbers that left the shelf are pruned.
+      {
+        const seen = new Set<number>();
+        for (const o of list) {
+          seen.add(o.n);
+          const cur = next[o.n]?.status ?? 'unknown';
+          if (cur !== 'unknown') prevStatusRef.current.set(o.n, cur);
+        }
+        for (const k of [...prevStatusRef.current.keys()]) {
+          if (!seen.has(k)) prevStatusRef.current.delete(k);
+        }
+      }
       setShelf(list);
       setStates(next);
       // A brand-new order re-arms a muted bell (see saveCustomerOrder) —
@@ -600,7 +658,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                           lang={lang}
                           darkMode={darkMode}
                           compact
-                          disabled={o.status === 'new'}
+                          disabled={o.status === 'new' || isReceivableLocked(o, nowMs)}
                           onConfirmed={() =>
                             setStates((prev) => (prev[o.n] ? { ...prev, [o.n]: { ...prev[o.n], status: 'completed' } } : prev))
                           }
@@ -611,7 +669,9 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                       <p className={`mt-2 text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
                         {o.status === 'new'
                           ? (isAr ? 'بانتظار التأكيد — الزر هيتفعل أول ما طلبك يبدأ يتجهز.' : 'Waiting for confirmation — unlocks once your order starts being prepared.')
-                          : (isAr ? 'هل استلمت طلبك؟' : 'Did you receive your order?')}
+                          : isReceivableLocked(o, nowMs)
+                            ? (isAr ? 'بانتظار التوصيل — الزر هيتفعل أول ما طلبك يوصلك.' : 'Waiting for delivery — unlocks once your order reaches you.')
+                            : (isAr ? 'هل استلمت طلبك؟' : 'Did you receive your order?')}
                       </p>
                     )}
                   </div>

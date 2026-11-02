@@ -30,6 +30,10 @@ export interface Order {
   subtotal: number;
   deliveryFee: number;
   total: number;
+  /** Confirm instant (ISO) — set when the kitchen acknowledges. */
+  confirmedAt?: string | null;
+  /** Smart-ETA instant (ISO) — mapped server-side in mapOrderRow. */
+  etaAt?: string | null;
 }
 
 /** Kitchen health signal: the 1-minute order-nag sweep heartbeat.
@@ -77,6 +81,7 @@ export const STR = {
     complete: 'Mark completed', cancel: 'Cancel order', reopen: 'Reopen', ack: 'Start preparing', markReady: 'Mark ready',
     wa: 'WhatsApp', call: 'Call', now: 'Just now',
     min: (n: number) => `${n} min ago`, hr: (n: number) => `${n}h ago`,
+    arrives: (t: string) => `Arrives ~${t}`, late: (n: number) => `${n}m late`,
   },
   ar: {
     today: 'اليوم', d7: '7 أيام', thisMonth: 'هذا الشهر', lastMonth: 'الشهر الماضي', refresh: 'تحديث', live: 'مباشر', liveTip: 'التحديث التلقائي يعمل: الطلبات الجديدة تظهر هنا وحدها', soundOn: 'صوت الطلبات الجديدة يعمل', soundOff: 'صوت الطلبات الجديدة متوقف',
@@ -92,5 +97,6 @@ export const STR = {
     complete: 'تم التسليم', cancel: 'إلغاء الطلب', reopen: 'إعادة فتح', ack: 'بدء التحضير', markReady: 'تعيين جاهز',
     wa: 'واتساب', call: 'اتصال', now: 'الآن',
     min: (n: number) => `قبل ${n} د`, hr: (n: number) => `قبل ${n} س`,
+    arrives: (t: string) => `يوصل ~${t}`, late: (n: number) => `متأخر ${n} د`,
   },
 } as const;

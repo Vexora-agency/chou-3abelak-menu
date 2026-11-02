@@ -1,0 +1,155 @@
+/**
+ * Smart ETA + receive-unlock helpers (pure, no dependencies).
+ *
+ * Single source of truth for the ordering ETA tunables that live under
+ * `settings.ordering` (validated in ./validate-settings.js, normalized in
+ * ./pricing-menu.js). Field names are a cross-agent contract with the admin
+ * UI — do NOT rename: prepMinutes, kitchenMinutesPerOrder, courierSpeedKmh,
+ * roadFactor, defaultDeliveryMinutes, receiveDelayDeliveryMin,
+ * receiveDelayPickupMin.
+ *
+ * Works in Cloudflare Workers and Node (no imports). The coordinate parser
+ * below is a plain-JS twin of parseMapUrlCoords() in
+ * src/utils/menuHelpers.ts — keep the two in sync (same shapes, same ranges).
+ */
+
+/** Defaults applied when a menu predates the ETA settings or omits them. */
+export const ETA_DEFAULTS = Object.freeze({
+  prepMinutes: 15,
+  kitchenMinutesPerOrder: 3,
+  courierSpeedKmh: 25,
+  roadFactor: 1.35,
+  defaultDeliveryMinutes: 20,
+  receiveDelayDeliveryMin: 30,
+  receiveDelayPickupMin: 15,
+});
+
+function numOr(v, fb) {
+  return typeof v === 'number' && Number.isFinite(v) ? v : fb;
+}
+
+function clampNum(v, fb, min, max) {
+  const n = numOr(v, fb);
+  if (n < min) return min;
+  if (n > max) return max;
+  return n;
+}
+
+/**
+ * Coerce an ordering block's ETA tunables with server-side range clamps
+ * (minutes 0..180, speed 5..120, factor 1.0..2.0, delays 0..720).
+ * Missing/non-finite values fall back to ETA_DEFAULTS. Never throws —
+ * null/garbage input yields pure defaults so unlock paths fail open.
+ */
+export function orderingEtaOrDefaults(ordering) {
+  const o = ordering && typeof ordering === 'object' ? ordering : {};
+  return {
+    prepMinutes: clampNum(o.prepMinutes, ETA_DEFAULTS.prepMinutes, 0, 180),
+    kitchenMinutesPerOrder: clampNum(o.kitchenMinutesPerOrder, ETA_DEFAULTS.kitchenMinutesPerOrder, 0, 180),
+    courierSpeedKmh: clampNum(o.courierSpeedKmh, ETA_DEFAULTS.courierSpeedKmh, 5, 120),
+    roadFactor: clampNum(o.roadFactor, ETA_DEFAULTS.roadFactor, 1.0, 2.0),
+    defaultDeliveryMinutes: clampNum(o.defaultDeliveryMinutes, ETA_DEFAULTS.defaultDeliveryMinutes, 0, 180),
+    receiveDelayDeliveryMin: clampNum(o.receiveDelayDeliveryMin, ETA_DEFAULTS.receiveDelayDeliveryMin, 0, 720),
+    receiveDelayPickupMin: clampNum(o.receiveDelayPickupMin, ETA_DEFAULTS.receiveDelayPickupMin, 0, 720),
+  };
+}
+
+/**
+ * Receive delay for an order type (minutes): delivery gets the courier
+ * window, everything else (pickup/dinein — the customer is already at the
+ * counter) gets the shorter pickup window.
+ */
+export function receiveDelayMinFor(orderType, settings) {
+  const s = orderingEtaOrDefaults(settings);
+  return orderType === 'delivery' ? s.receiveDelayDeliveryMin : s.receiveDelayPickupMin;
+}
+
+/**
+ * Extract `lat,lng` from a Google Maps URL in any common shape (server twin
+ * of the client's parseMapUrlCoords — same regexes, same ranges):
+ * bare "lat,lng" · ?q= / ?query= / ?api=1&query= · ?ll= / ?center= ·
+ * directions ?destination= / ?origin= / ?saddr= / ?daddr= ·
+ * path "@lat,lng,zoom" · data "…!3dlat!4dlng".
+ * Short links (maps.app.goo.gl) carry no coords → null. Null when absent.
+ */
+export function parseMapUrlCoordsJs(url) {
+  if (typeof url !== 'string' || !url) return null;
+  const clean = url.trim();
+  if (!clean) return null;
+  const inRange = (lat, lng) =>
+    Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+  const pair = (a, b) => {
+    if (a === undefined || b === undefined) return null;
+    const lat = Number(a);
+    const lng = Number(b);
+    return inRange(lat, lng) ? { lat, lng } : null;
+  };
+  let m = clean.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+  if (m) return pair(m[1], m[2]);
+  m = clean.match(/[?&](?:q|query|ll|center|destination|origin|saddr|daddr)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  if (m) return pair(m[1], m[2]);
+  m = clean.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)(?:,|$|[?/])/);
+  if (m) return pair(m[1], m[2]);
+  m = clean.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+  if (m) return pair(m[1], m[2]);
+  return null;
+}
+
+/** Great-circle distance in kilometres (haversine). */
+export function haversineKm(aLat, aLng, bLat, bLng) {
+  const R = 6371;
+  const t = Math.PI / 180;
+  const dLat = (bLat - aLat) * t;
+  const dLng = (bLng - aLng) * t;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(aLat * t) * Math.cos(bLat * t) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+/**
+ * Order → restaurant distance in km, or null when it cannot be computed
+ * (non-delivery types don't travel — callers treat non-delivery as 0
+ * travel; here null simply means "no precise distance, use the default").
+ * Restaurant coords come from the ALREADY-LOADED menu
+ * (`menu.settings.mapUrl`); the order's own stored location_lat/lng.
+ * Pure — no KV/D1 reads (callers piggyback their existing menu fetch).
+ */
+export function orderDistanceKm(orderRow, menu) {
+  try {
+    const r = orderRow && typeof orderRow === 'object' ? orderRow : null;
+    // Strict number check: Number(null) === 0 would fake a Gulf-of-Guinea
+    // fix for orders without a stored location — those must stay null.
+    const lat = r && typeof r.location_lat === 'number' ? r.location_lat : NaN;
+    const lng = r && typeof r.location_lng === 'number' ? r.location_lng : NaN;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    const mapUrl = menu && menu.settings ? menu.settings.mapUrl : null;
+    const rest = parseMapUrlCoordsJs(typeof mapUrl === 'string' ? mapUrl : '');
+    if (!rest) return null;
+    const km = haversineKm(lat, lng, rest.lat, rest.lng);
+    return Number.isFinite(km) && km >= 0 ? km : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Receive-unlock instant (ms epoch) for a customer "received" tap.
+ * unlock = max((confirmed_at ?? created_at) + delay[type], eta_at ?? -inf).
+ * The confirmed_at ?? created_at fallback guarantees legacy rows (NULL
+ * stamps) unlock from created_at + delay — i.e. immediately in practice —
+ * so old orders are NEVER trapped. A corrupt/missing created_at fails open
+ * to `nowMs` (receivable immediately). Pure — same function feeds GET
+ * /api/track and POST /api/track/received so the two can never disagree.
+ */
+export function receivableAtMs(input) {
+  const o = input && typeof input === 'object' ? input : {};
+  const now = Number.isFinite(o.nowMs) ? o.nowMs : Date.now();
+  let base = Date.parse(typeof o.confirmedAt === 'string' ? o.confirmedAt : '');
+  if (!Number.isFinite(base)) base = Date.parse(typeof o.createdAt === 'string' ? o.createdAt : '');
+  if (!Number.isFinite(base)) base = now;
+  const delayMin = receiveDelayMinFor(o.orderType, o.settings);
+  const eta = Date.parse(typeof o.etaAt === 'string' ? o.etaAt : '');
+  const unlock = Math.max(base + delayMin * 60000, Number.isFinite(eta) ? eta : -Infinity);
+  return unlock;
+}

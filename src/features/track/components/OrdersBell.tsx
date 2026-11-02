@@ -401,10 +401,10 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
 
   const activeCount = orders.filter((o) => o.status === 'new' || o.status === 'confirmed' || o.status === 'ready').length;
 
-  // new = placed, owner hasn't confirmed yet; confirmed = the kitchen
-  // confirmed receipt and is preparing; completed = delivered to you.
+  // new = placed, owner hasn't confirmed yet; confirmed = the place
+  // confirmed receipt and is preparing it; completed = delivered to you.
   // new = placed but not yet confirmed by the business;
-  // confirmed = the kitchen received it and is preparing it.
+  // confirmed = the place received it and is preparing it.
   const statusLabel = (s: string) =>
     s === 'new' ? (isAr ? 'بانتظار التأكيد' : 'Awaiting confirmation')
     : s === 'confirmed' ? (isAr ? 'قيد التحضير' : 'Being prepared')
@@ -577,7 +577,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                     {(o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && (
                       <p className={`mt-2 text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
                         {o.status === 'new'
-                          ? (isAr ? 'بانتظار تأكيد المطعم — الزر هيتفعل أول ما المطبخ يبدأ التحضير.' : 'Waiting for the restaurant — unlocks once the kitchen starts preparing.')
+                          ? (isAr ? 'بانتظار التأكيد — الزر هيتفعل أول ما طلبك يبدأ يتجهز.' : 'Waiting for confirmation — unlocks once your order starts being prepared.')
                           : (isAr ? 'هل استلمت طلبك؟' : 'Did you receive your order?')}
                       </p>
                     )}

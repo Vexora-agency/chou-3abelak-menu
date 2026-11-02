@@ -94,8 +94,8 @@ const baseSettings = (ordering) => ({
   const b = await r.json();
   ok(b.state === 'paused' && b.reopensAt === until, 'paused snapshot carries reopensAt');
   const raw = caches.__raw('https://shop.test/api/ordering-state');
-  const env2 = JSON.parse(await raw.text());
-  ok(env2.validUntil <= Date.parse(until) && env2.validUntil > Date.now(), 'envelope expires on/before the timed flip');
+  const envelope = JSON.parse(await raw.text());
+  ok(envelope.validUntil <= Date.parse(until) && envelope.validUntil > Date.now(), 'envelope expires on/before the timed flip');
 }
 
 // ---- 4. expired envelope is ignored (re-reads KV) ----
@@ -106,10 +106,25 @@ const baseSettings = (ordering) => ({
   const env = { MENU_KV: kv };
   await caches.default.put(
     new Request('https://shop.test/api/ordering-state'),
-    new Response(JSON.stringify({ tag: 'W/"os-stale"', st: { state: 'open', message: { en: '', ar: '' } }, validUntil: Date.now() - 1000 }), { headers: { 'Content-Type': 'application/json' } })
+    new Response(JSON.stringify({ tag: 'W/"os-stale"', snapshot: { state: 'open', message: { en: '', ar: '' } }, validUntil: Date.now() - 1000 }), { headers: { 'Content-Type': 'application/json' } })
   );
   const r = await onRequest({ request: req(), env });
   ok(r.status === 200 && kv.reads === 1, 'stale envelope is bypassed with a KV re-read');
+}
+
+// ---- 4b. pre-rename envelope shape misses safely (fresh `st`, no `snapshot`) ----
+{
+  const kv = makeFakeKV({ settings: baseSettings() });
+  const caches = makeFakeCaches();
+  globalThis.caches = caches;
+  const env = { MENU_KV: kv };
+  await caches.default.put(
+    new Request('https://shop.test/api/ordering-state'),
+    new Response(JSON.stringify({ tag: 'W/"os-old"', st: { state: 'open', message: { en: '', ar: '' } }, validUntil: Date.now() + 60000 }), { headers: { 'Content-Type': 'application/json' } })
+  );
+  const r = await onRequest({ request: req(), env });
+  const b = await r.json();
+  ok(r.status === 200 && kv.reads === 1 && b.state === 'open', 'old-shape envelope misses safely with a KV re-read');
 }
 
 // ---- 5. failure posture unchanged ----

@@ -186,6 +186,18 @@ export async function purgeOrderingState(request) {
   } catch {}
 }
 
+/**
+ * One entry point for every menu write: drops both edge caches (public
+ * menu + ordering snapshot) so the storefront can never serve a mixed
+ * old-menu/new-state pair. Prefer this over the two single purges —
+ * they stay exported for the rare write that affects only one surface.
+ * Never throws.
+ */
+export async function purgeMenuCaches(request) {
+  await purgePublicMenu(request);
+  await purgeOrderingState(request);
+}
+
 /* ---- Shared restore tail (versions/[id]/restore, trash/[id]/restore) ---- */
 
 /**
@@ -216,7 +228,6 @@ export async function restoreValidatedMenu(env, request, { doc, prevDoc, source,
     return { res: jsonNoStore({ ok: false, error: 'unavailable' }, 503) };
   }
   if (!written.ok) return { res: jsonNoStore({ ok: false, error: 'conflict', version: written.current ? written.current.version : null }, 409) };
-  await purgePublicMenu(request);
-  await purgeOrderingState(request);
+  await purgeMenuCaches(request);
   return { doc: written.doc };
 }

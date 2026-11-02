@@ -13,8 +13,7 @@ import { logActivity } from '../../_shared/activity.js';
 import {
   getActor,
   pushTrash,
-  purgeOrderingState,
-  purgePublicMenu,
+  purgeMenuCaches,
   readTrash,
   snapshotMenu,
   toTrashList,
@@ -89,8 +88,7 @@ export async function onRequest(context) {
     return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
   }
   if (!written.ok) return jsonNoStore({ ok: false, error: 'conflict', version: written.current ? written.current.version : null }, 409);
-  await purgePublicMenu(request);
-  await purgeOrderingState(request);
+  await purgeMenuCaches(request);
   const saved = await pushTrash(env, entry);
   try {
     const nm = (entry.data && entry.data.name) || {};

@@ -296,7 +296,7 @@ const dbNew = orderDb(true, 'new');
 const okConfirm = await handleOrderCallback(dbNew, 'tok', { ...cbBase, data: `tg:cfm:ord-1` });
 ok('confirm new order', okConfirm.handled === true && okConfirm.status === 'confirmed' && dbNew.orders.get('ord-1').status === 'confirmed');
 const confirmKb = cbCalls.filter((c) => c.method === 'editMessageReplyMarkup');
-ok('confirm re-arms ready keyboard (no freeze)', confirmKb.length === 1 && JSON.stringify(confirmKb[0].body.reply_markup).includes('tg:rdy:ord-1'));
+ok('confirm re-arms delivered keyboard (no freeze)', confirmKb.length === 1 && JSON.stringify(confirmKb[0].body.reply_markup).includes('tg:rcv:ord-1'));
 const stamped = cbCalls.find((c) => c.method === 'editMessageText');
 ok('stamped message keeps html (links survive)', !!stamped && stamped.body.text.includes('<b>') && stamped.body.parse_mode === 'HTML');
 // Rebuild from the DB row keeps the exact-pin maps link after confirm.
@@ -330,7 +330,8 @@ const unlinked = await handleOrderCallback(orderDb(false), 'tok', { ...cbBase, c
 ok('stranger click rejected', unlinked.reason === 'unauthorized');
 const forged = await handleOrderCallback(orderDb(true), 'tok', { ...cbBase, callbackId: 'cb5', data: 'tg:done:ord-1' });
 ok('forged data rejected', forged.reason === 'bad_data');
-// Ready flow: confirmed -> ready stamps the out-for-delivery banner (mock order is delivery).
+// Legacy ready flow (old in-flight tg:rdy buttons still validate): confirmed
+// -> ready stamps the out-for-delivery banner (mock order is delivery).
 const dbReady = orderDb(true, 'confirmed');
 const nCallsBeforeReady = cbCalls.length;
 const ready = await handleOrderCallback(dbReady, 'tok', { ...cbBase, callbackId: 'cbR1', data: `tg:rdy:ord-1` });
@@ -441,10 +442,11 @@ ok(
 const kbReady = buildOrderKeyboard('https://x/admin/dashboard', oid, 'confirmed');
 const kbReadyCbs = kbReady.inline_keyboard.flat().map((b) => b.callback_data || '');
 ok(
-  'confirmed keyboard offers mark-ready + cancel only',
-  kbReadyCbs.includes(`tg:rdy:${oid}`) &&
+  'confirmed keyboard offers delivered + cancel only',
+  kbReadyCbs.includes(`tg:rcv:${oid}`) &&
     kbReadyCbs.includes(`tg:cnl:${oid}`) &&
-    !kbReadyCbs.some((d) => (d || '').startsWith('tg:cfm:'))
+    !kbReadyCbs.some((d) => (d || '').startsWith('tg:cfm:')) &&
+    !kbReadyCbs.some((d) => (d || '').startsWith('tg:rdy:'))
 );
 const kbNoAdmin = buildOrderKeyboard('', oid, 'confirmed');
 ok(

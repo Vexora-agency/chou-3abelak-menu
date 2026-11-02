@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, CookingPot, Truck, Store, XCircle, ArrowLeft, BellRing, Loader2 } from 'lucide-react';
+import { CheckCircle2, Clock, CookingPot, XCircle, ArrowLeft, BellRing, Loader2 } from 'lucide-react';
 import { formatPrice, unitLabel } from '@/src/utils/pricing';
 import { ReceivedButton } from './components/ReceivedButton';
 import { CancelOrderButton } from './components/CancelOrderButton';
@@ -24,6 +24,7 @@ interface TrackItem {
 
 interface TrackData {
   number: number;
+  /** `ready` is legacy (pre-simplification orders) — mapped to preparing. */
   status: 'new' | 'confirmed' | 'ready' | 'completed' | 'cancelled';
   type?: 'delivery' | 'pickup' | 'dinein';
   items: TrackItem[];
@@ -134,19 +135,18 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
     };
   }, [number, token]);
 
-  const readyLabel =
-    data?.type === 'delivery'
-      ? (isAr ? 'خارج للتوصيل' : 'Out for delivery')
-      : (isAr ? 'جاهز للاستلام' : 'Ready for pickup');
-  const ReadyIcon = data?.type === 'delivery' ? Truck : Store;
+  // Simplified flow: new -> confirmed (owner tapped "بدء التحضير") ->
+  // completed (customer tapped "نعم، استلمت"). Legacy `ready` orders map
+  // to the preparing stage — no new order ever enters `ready` anymore.
   const steps = [
     { id: 'new', label: isAr ? 'تم استلام الطلب' : 'Order received', icon: Clock },
     { id: 'confirmed', label: isAr ? 'طلبك قيد التحضير' : 'Being prepared', icon: CookingPot },
-    { id: 'ready', label: readyLabel, icon: ReadyIcon },
     { id: 'completed', label: isAr ? 'تم التوصيل' : 'Delivered', icon: CheckCircle2 },
   ];
-  const stage = data?.status === 'completed' ? 3 : data?.status === 'ready' ? 2 : data?.status === 'confirmed' ? 1 : 0;
+  const stage = data?.status === 'completed' ? 2 : data?.status === 'confirmed' || data?.status === 'ready' ? 1 : 0;
   const cancelled = data?.status === 'cancelled';
+  // Customer receipt unlocks only after the kitchen starts preparing.
+  const awaitingKitchen = data?.status === 'new';
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'} className="min-h-dvh bg-[#0A0A0A] text-white flex flex-col items-center px-5 pb-[max(2rem,env(safe-area-inset-bottom))]">
@@ -288,6 +288,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                   token={token}
                   lang={lang}
                   darkMode
+                  disabled={awaitingKitchen}
                   onConfirmed={() => setData((d) => (d ? { ...d, status: 'completed' } : d))}
                 />
               </div>

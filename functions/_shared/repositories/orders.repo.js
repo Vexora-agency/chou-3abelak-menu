@@ -20,14 +20,16 @@ export async function findOrderByNumber(db, number) {
 /**
  * Customer self-confirm receipt (bell / tracking page): token-gated
  * capability (128-bit, unguessable — same trust as /api/track).
- * Atomic: exactly one caller flips new|confirmed|ready -> completed;
- * terminal states change nothing. Returns true only on a real flip.
+ * Atomic: exactly one caller flips confirmed|ready -> completed;
+ * a still-`new` order (kitchen hasn't tapped "بدء التحضير" yet) is
+ * rejected — the customer button stays disabled until prepare.
+ * Terminal states change nothing. Returns true only on a real flip.
  */
 export async function completeOrderByTrackToken(db, number, token) {
   const nowIso = new Date().toISOString();
   const res = await db
     .prepare(
-      "UPDATE orders SET status = 'completed', updated_at = ?3 WHERE number = ?1 AND track_token = ?2 AND status IN ('new','confirmed','ready')"
+      "UPDATE orders SET status = 'completed', updated_at = ?3 WHERE number = ?1 AND track_token = ?2 AND status IN ('confirmed','ready')"
     )
     .bind(number, token, nowIso)
     .run();

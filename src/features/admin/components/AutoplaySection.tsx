@@ -47,32 +47,33 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
         lang={lang}
         collapsed={collapsed}
         onToggle={() => onToggleCollapse?.()}
-        action={(
-          <button
-            type="button"
-            role="switch"
-            aria-checked={on}
-            aria-label={isAr ? 'تحريك تلقائي' : 'Autoplay'}
-            onClick={() => onUpdate((prev) => ({ ...prev, featuredAutoplay: !(prev.featuredAutoplay !== false) }))}
-            className="shrink-0 p-2 -m-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
-          >
-            <span
-              className={`block relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                on ? 'bg-[var(--primary)]' : 'bg-neutral-700'
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${
-                  on
-                    ? (isAr ? 'left-0.5' : 'left-5')
-                    : (isAr ? 'left-5' : 'left-0.5')
-                }`}
-              />
-            </span>
-          </button>
-        )}
       />
       <SettingsGroupBody open={!collapsed}>
+      <div className="rounded-xl border border-neutral-800 bg-black/40 p-3">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={on}
+          aria-label={isAr ? 'تشغيل أو إيقاف التحريك التلقائي' : 'Turn autoplay on or off'}
+          onClick={() => onUpdate((prev) => ({ ...prev, featuredAutoplay: !(prev.featuredAutoplay !== false) }))}
+          className="w-full flex items-center justify-between gap-3 text-start min-h-[44px] rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+        >
+          <span className="text-xs font-bold">{isAr ? 'التشغيل' : 'Enabled'}</span>
+          <span
+            className={`relative w-11 h-6 shrink-0 rounded-full transition-colors duration-200 ${
+              on ? 'bg-[var(--primary)]' : 'bg-neutral-700'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${
+                on
+                  ? (isAr ? 'left-0.5' : 'left-5')
+                  : (isAr ? 'left-5' : 'left-0.5')
+              }`}
+            />
+          </span>
+        </button>
+      </div>
       {on && (
         <div className="anim-fade-in">
           <label className="block text-xs text-neutral-400 mb-1">

@@ -15,11 +15,11 @@ interface ReceivedButtonProps {
  */
   disabled?: boolean;
   /**
-   * Overrides the hint under the disabled button (e.g. the delivery-lock
-   * countdown the track page passes while `receivableAt` is still in the
-   * future). Undefined = today's confirmation copy (bell + new-order paths
-   * render exactly as before). A provided hint carries `role="timer"` since
-   * it always wraps a live countdown.
+   * Overrides the hint under the disabled button. Callers always pass the
+   * phased copy (cancel-window countdown / awaiting-kitchen / accepted +
+   * delivery-lock countdown) — see orderPhases.ts, shared by the bell and
+   * the track page so both surfaces agree. A provided hint carries
+   * `role="timer"`; it usually wraps a live countdown.
    */
   waitingHint?: React.ReactNode;
   onConfirmed?: () => void;
@@ -94,7 +94,7 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
         type="button"
         onClick={() => void confirm()}
         disabled={busy || disabled}
-        title={disabled ? (isAr ? 'بانتظار التأكيد' : 'Waiting for confirmation') : undefined}
+        title={disabled ? (isAr ? 'بانتظار استلام الطلب' : 'Waiting for your order') : undefined}
         className={`btn-tactile inline-flex items-center gap-1.5 rounded-full font-extrabold disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 ${
           compact ? 'h-11 min-h-[44px] px-5 text-xs' : 'h-12 min-h-[48px] px-6 text-sm'
         } ${disabled ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed' : 'bg-[var(--primary)] text-[#0A0A0A]'}`}
@@ -108,8 +108,10 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
             {waitingHint}
           </p>
         ) : (
+          // Fallback only (callers normally pass the phased copy above):
+          // neutral "waiting" line with no countdown inside.
           <p className={`mt-1.5 text-[11px] font-bold ${darkMode ? 'text-amber-400/90' : 'text-amber-700'}`}>
-            {isAr ? 'بانتظار التأكيد — سيُفعَّل الزر عندما يبدأ تجهيز طلبك.' : 'Waiting for confirmation — the button unlocks once your order starts being prepared.'}
+            {isAr ? 'بانتظار استلام طلبك' : 'Waiting to accept your order'}
           </p>
         )
       )}

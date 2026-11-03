@@ -37,6 +37,7 @@ const unknownShape = (number) => ({
   itemsCount: null,
   createdAt: null,
   receivableAt: null,
+  etaAt: null,
 });
 
 function cleanPair(pair) {
@@ -207,6 +208,9 @@ export async function onRequest(context) {
       itemsCount: countItems(row),
       createdAt: typeof row.created_at === 'string' ? row.created_at : null,
       receivableAt,
+      // ETA range for the bell's expected-arrival line (same instant the
+      // track page banners; null when the kitchen hasn't confirmed yet).
+      etaAt: typeof row.eta_at === 'string' ? row.eta_at : null,
     });
   }
 

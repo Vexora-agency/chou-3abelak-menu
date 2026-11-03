@@ -7,6 +7,7 @@ import { etaRange, formatEtaRange } from '@/src/utils/etaFormat';
 import { ReceivedButton } from './components/ReceivedButton';
 import { CancelOrderButton } from './components/CancelOrderButton';
 import { InstallAppCard } from './components/InstallAppCard';
+import { cancelWindowRemainingMs } from './orderPhases';
 
 interface TrackViewProps {
   number: number;
@@ -187,6 +188,13 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   const cancelled = data?.status === 'cancelled';
   // Customer receipt unlocks only after the place starts preparing.
   const awaitingConfirm = data?.status === 'new';
+  // Phase-1 countdown (shared orderPhases rule with the bell): while a
+  // `new` order is still inside its cancel window the button explains the
+  // wait with a live countdown; afterwards it shows the static "waiting"
+  // line until the kitchen confirms.
+  const cancelRemainingPollMs =
+    data?.status === 'new' ? cancelWindowRemainingMs(data.createdAt ?? null, nowMs) : null;
+  const cancelArmed = cancelRemainingPollMs !== null && cancelRemainingPollMs > 0;
   // Delivery lock (smart-ETA contract): while confirmed/ready AND the
   // server's `receivableAt` is still in the future, the button stays
   // disabled with a live countdown. Absent/invalid/past = today's behavior
@@ -201,9 +209,12 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
     (data.status === 'confirmed' || data.status === 'ready') &&
     Number.isFinite(receivableMs) &&
     receivableMs > nowMs;
-  const tickNowMs = useNow(lockArmed, 1000);
-  // Display clock: live 1 s ticks while locked, poll stamp otherwise.
-  const displayNowMs = lockArmed ? tickNowMs : nowMs;
+  // Either countdown (delivery lock or cancel window) drives the 1 s
+  // display ticker so both tick every second with zero extra fetches.
+  const liveArmed = lockArmed || cancelArmed;
+  const tickNowMs = useNow(liveArmed, 1000);
+  // Display clock: live 1 s ticks while a countdown runs, poll stamp otherwise.
+  const displayNowMs = liveArmed ? tickNowMs : nowMs;
   const deliveryLocked =
     !!data &&
     (data.status === 'confirmed' || data.status === 'ready') &&
@@ -211,6 +222,10 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
     receivableMs > displayNowMs;
   const receivedDisabled = awaitingConfirm || deliveryLocked;
   const lockedRemainingMs = deliveryLocked ? Math.max(0, receivableMs - displayNowMs) : 0;
+  // Recompute the cancel countdown on the display clock so it ticks live.
+  const cancelRemainingMs =
+    data?.status === 'new' ? cancelWindowRemainingMs(data.createdAt ?? null, displayNowMs) : null;
+  const inCancelWindow = cancelRemainingMs !== null && cancelRemainingMs > 0;
   // ETA banner range: etaAt ±20% (min ±5 min each side), computed at render
   // so the poll keeps it fresh (live while locked). Invalid/absent = no banner.
   const etaWindow = data && !cancelled && data.status !== 'completed' && typeof data.etaAt === 'string' && data.etaAt
@@ -375,11 +390,19 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                   lang={lang}
                   darkMode
                   disabled={receivedDisabled}
-                  waitingHint={deliveryLocked ? (
+                  waitingHint={awaitingConfirm ? (
+                    inCancelWindow ? (
+                      isAr ? (
+                        <>سيتم استلام طلبك بعد انتهاء موعد إلغاء الطلب (المتبقي <span dir="ltr" className="tabular-nums">{formatMMSS(cancelRemainingMs ?? 0)}</span>)</>
+                      ) : (
+                        <>Your order will be accepted after the cancellation window ends (<span dir="ltr" className="tabular-nums">{formatMMSS(cancelRemainingMs ?? 0)}</span> left)</>
+                      )
+                    ) : undefined
+                  ) : deliveryLocked ? (
                     isAr ? (
-                      <>سيتم تفعيل زر التأكيد بعد التوصيل (المتبقي <span dir="ltr" className="tabular-nums">{formatMMSS(lockedRemainingMs)}</span>)</>
+                      <>تم استلام طلبك وجارٍ التجهيز الآن<br />سيتم تفعيل زر التأكيد بعد التوصيل (المتبقي <span dir="ltr" className="tabular-nums">{formatMMSS(lockedRemainingMs)}</span>)</>
                     ) : (
-                      <>Confirm unlocks after delivery (<span dir="ltr" className="tabular-nums">{formatMMSS(lockedRemainingMs)}</span> left)</>
+                      <>Your order is accepted and being prepared<br />Confirm unlocks after delivery (<span dir="ltr" className="tabular-nums">{formatMMSS(lockedRemainingMs)}</span> left)</>
                     )
                   ) : undefined}
                   onConfirmed={() => setData((d) => (d ? { ...d, status: 'completed' } : d))}

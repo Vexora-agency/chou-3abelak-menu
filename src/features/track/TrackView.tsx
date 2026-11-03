@@ -139,8 +139,9 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
     return () => {
       stop = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- menu once; lang switch re-resolves below
-  }, []);
+    // Re-runs on language toggle so the store name + currency word follow
+    // the switch (stale ل.ل/LBP after toggling was the bug).
+  }, [lang]);
 
   useEffect(() => {
     let stop = false;
@@ -277,7 +278,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                 <XCircle size={32} className="mx-auto text-red-400" />
                 <p className="mt-2 font-black">{isAr ? 'تم إلغاء الطلب' : 'Order cancelled'}</p>
                 <p className="mt-1 text-xs text-neutral-400">
-                  {isAr ? 'كلمنا لو في أي سؤال.' : 'Call us if you have any question.'}
+                  {isAr ? 'تواصل معنا إذا كان لديك أي استفسار.' : 'Call us if you have any questions.'}
                 </p>
               </div>
             ) : (
@@ -391,7 +392,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
             )}
             <p className="mt-4 text-center text-xs text-neutral-400 flex flex-wrap items-center gap-1 justify-center w-full">
               <BellRing size={12} className="shrink-0" />
-              <span className="min-w-0 break-words">{isAr ? 'الصفحة تتحدث تلقائيًا — خليها مفتوحة.' : 'This page updates itself — keep it open.'}</span>
+              <span className="min-w-0 break-words">{isAr ? 'الصفحة تتحدث تلقائيًا — أبقِها مفتوحة.' : 'This page updates itself — keep it open.'}</span>
             </p>
           </>
         )}

@@ -90,7 +90,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         )}
 
         {/* Price Pill */}
-        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[var(--primary)] text-[#0A0A0A] shadow-sm flex-shrink-0 tabular-nums group-hover:scale-105 transition-transform" dir="ltr">
+        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[var(--primary)] text-[#0A0A0A] shadow-sm flex-shrink-0 tabular-nums group-hover:scale-105 transition-transform" dir="auto">
           {priceLabel(item, lang, currency)}
         </span>
       </div>
@@ -147,7 +147,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
           </span>
         )}
 
-        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[var(--primary)] text-[#0A0A0A] shadow-sm flex-shrink-0 tabular-nums transition-transform group-hover:scale-105" dir="ltr">
+        <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[var(--primary)] text-[#0A0A0A] shadow-sm flex-shrink-0 tabular-nums transition-transform group-hover:scale-105" dir="auto">
           {priceLabel(item, lang, currency)}
         </span>
 

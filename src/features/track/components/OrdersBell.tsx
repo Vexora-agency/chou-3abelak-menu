@@ -180,6 +180,9 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   const [customerSound, setCustomerSound] = useState<string>('classic');
   const soundRef = useRef(customerSound);
   soundRef.current = customerSound;
+  // Menu currency for the compact totals (same /api/menu read as the chime).
+  const [menuCurrency, setMenuCurrency] = useState<{ en: string; ar: string } | null>(null);
+  const bellCurrency = menuCurrency ? (isAr ? menuCurrency.ar || menuCurrency.en : menuCurrency.en || menuCurrency.ar) : '';
 
   // Load the picked chime once + refresh every 5 min (the owner may change
   // it mid-day in settings). Unknown ids fall back to classic in the engine.
@@ -189,9 +192,13 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       try {
         const res = await fetch('/api/menu');
         if (!res.ok || stop) return;
-        const m = (await res.json()) as { settings?: { sounds?: { customer?: unknown } } };
+        const m = (await res.json()) as { settings?: { sounds?: { customer?: unknown }; currency?: { en?: unknown; ar?: unknown } } };
         const s = m?.settings?.sounds?.customer;
         if (!stop && typeof s === 'string' && s) setCustomerSound(s);
+        const cc = m?.settings?.currency;
+        if (!stop && cc && typeof cc.en === 'string' && typeof cc.ar === 'string') {
+          setMenuCurrency({ en: cc.en, ar: cc.ar });
+        }
       } catch {}
     };
     void load();
@@ -636,10 +643,10 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                     <p className={`mt-0.5 text-xs tabular-nums ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
                       <bdi>{timeAgo(o.at, isAr, displayNowMs)}</bdi>
                       {typeof o.itemsCount === 'number' && typeof o.total === 'number' && (
-                        <bdi> · <bdi dir="ltr" className="tabular-nums">{o.itemsCount}</bdi> {isAr ? 'أصناف' : 'items'} · <bdi dir="ltr" className="tabular-nums">{formatPrice(o.total)}</bdi></bdi>
+                        <bdi> · <bdi dir="ltr" className="tabular-nums">{o.itemsCount}</bdi> {isAr ? 'أصناف' : 'items'} · <bdi dir="ltr" className="tabular-nums">{formatPrice(o.total)}</bdi>{bellCurrency ? <> <span dir="auto">{bellCurrency}</span></> : null}</bdi>
                       )}
                       {o.status === 'unknown' && (
-                        <span className="inline-flex items-center gap-1 ms-1"><PackageSearch size={11} />{isAr ? 'تعذر التحديث' : 'unreachable'}</span>
+                        <span className="inline-flex items-center gap-1 ms-1"><PackageSearch size={11} />{isAr ? 'تعذر التحديث' : 'Update unavailable'}</span>
                       )}
                     </p>
                     {typeof o.parentNumber === 'number' && (o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && (

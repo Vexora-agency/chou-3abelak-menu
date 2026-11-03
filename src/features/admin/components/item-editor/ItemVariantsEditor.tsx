@@ -29,7 +29,7 @@ export const ItemVariantsEditor: React.FC<ItemVariantsEditorProps> = ({
       </div>
       <p className="text-[11px] text-neutral-500 mb-1.5">
         {isAr
-          ? 'اللي تحط عليه النجمة هو الافتراضي — والنجمة ثابتة مكانها مبتحركش الترتيب. بدون نجمة: الأول افتراضياً. سعر فارغ أو 0 = مجاناً.'
+          ? 'الذي تضع عليه النجمة هو الافتراضي — والنجمة ثابتة ولا تغيّر الترتيب. بدون نجمة: الأول هو الافتراضي. سعر فارغ أو 0 = مجانًا.'
           : 'Whatever you star is the default — the star stays in place and never reorders. No star: the first is the default. Empty or 0 price = free.'}
       </p>
       {((item.variants || []).length === 0) && (

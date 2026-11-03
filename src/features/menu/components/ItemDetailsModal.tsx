@@ -316,7 +316,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             </div>
           </div>
 
-      <div ref={headerPriceRef} className="flex-shrink-0 px-3 py-1 min-[380px]:px-3.5 min-[380px]:py-1.5 rounded-full text-base min-[380px]:text-lg font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap tabular-nums" dir="ltr">
+      <div ref={headerPriceRef} className="flex-shrink-0 px-3 py-1 min-[380px]:px-3.5 min-[380px]:py-1.5 rounded-full text-base min-[380px]:text-lg font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap tabular-nums" dir="auto">
         {headerPriceText}
       </div>
 

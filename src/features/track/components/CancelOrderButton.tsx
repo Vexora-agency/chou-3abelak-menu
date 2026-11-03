@@ -98,7 +98,7 @@ export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
           urgent && !busy ? 'bg-red-700 animate-pulse' : 'bg-red-600'
         }`}
       >
-        {/* Time-remaining bar: drains left-to-right as the window lapses. */}
+        {/* Time-remaining bar: drains inline-start to inline-end as the window lapses. */}
         <span
           aria-hidden="true"
           className="absolute bottom-0 start-0 top-0 bg-white/15 transition-[width] duration-200 ease-linear"

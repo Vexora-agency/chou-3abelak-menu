@@ -347,7 +347,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
               className="flex-1 min-w-0 h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
             />
           </div>
-          <p className="text-[11px] text-neutral-500 mt-1" dir="ltr">
+          <p className="text-[11px] text-neutral-500 mt-1" dir={isAr ? 'rtl' : 'ltr'}>
             {waComposed
               ? <>Stored international: <b className="text-neutral-300 tabular-nums">+{waComposed}</b></>
               : (isAr ? 'اختر الدولة ثم اكتب الرقم المحلي.' : 'Pick the country, then type the local number.')}

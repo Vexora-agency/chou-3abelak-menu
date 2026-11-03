@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Download, Eraser, Lock, Search, ShieldAlert, Trash2 } from 'lucide-react';
+import { formatPrice } from '@/src/utils/pricing';
 
 export interface CustomerResult {
   id: string;
@@ -198,7 +199,7 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
                       </span>
                       <span className="block text-xs text-neutral-300 mt-0.5"><span dir="auto">{r.name}</span> · <span dir="ltr" className="tabular-nums">{r.phone}</span></span>
                       <span className="block text-xs text-neutral-500 mt-0.5">
-                        <bdi>{new Date(r.createdAt).toLocaleDateString(loc(lang), { day: 'numeric', month: 'short' })}</bdi> · <span dir="ltr" className="tabular-nums">{r.total}</span> <span dir="auto">{currency}</span> · <bdi>{r.status}</bdi>
+                        <bdi>{new Date(r.createdAt).toLocaleDateString(loc(lang), { day: 'numeric', month: 'short' })}</bdi> · <span dir="ltr" className="tabular-nums">{formatPrice(r.total)}</span> <span dir="auto">{currency}</span> · <bdi>{r.status}</bdi>
                       </span>
                     </span>
                   </div>

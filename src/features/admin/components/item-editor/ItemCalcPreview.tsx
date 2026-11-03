@@ -133,9 +133,7 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
                           <span className="text-[var(--primary)]">+ {featureName(menu, a.featureId, lang)}</span>
                           {/* Zero-price add-ons show no price text (mirrors the storefront). */}
                           {a.price !== 0 && (
-                            <span className="text-neutral-400 tabular-nums" dir="ltr">
-                              {`+${formatPrice(a.price, cur)}`}
-                            </span>
+                            <span className="text-neutral-400 tabular-nums"><bdi dir="ltr">+{formatPrice(a.price)}</bdi> <span dir="auto">{cur}</span></span>
                           )}
                         </div>
                       ))}
@@ -174,8 +172,7 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
           />
           {isAr ? '→ الإجمالي' : '→ total'}
         </label>
-        <span className="font-extrabold text-white tabular-nums" dir="ltr">
-          {(() => {
+        <span className="font-extrabold text-white tabular-nums"><bdi dir="ltr">{(() => {
             // Same math the customer pays: default variant + pre-selected
             // (default-on) add-ons through the shared lineTotal, with the
             // grid rules enforced. The old preview ignored add-ons and the
@@ -187,12 +184,11 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
                 ? item.defaultVariant
                 : vs[0]?.featureId;
               const addonIds = (item.addons || []).filter((a) => a && a.default === true).map((a) => a.featureId);
-              return formatPrice(lineTotal(item, { variantId, addonIds, qty: calcQty }), menu.settings.currency[lang] || menu.settings.currency.en);
+              return formatPrice(lineTotal(item, { variantId, addonIds, qty: calcQty }));
             } catch {
               return '—';
             }
-          })()}
-        </span>
+          })()}</bdi> <span dir="auto">{menu.settings.currency[lang] || menu.settings.currency.en}</span></span>
       </div>
     </div>
   );

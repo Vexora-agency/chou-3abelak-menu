@@ -31,9 +31,9 @@ export const SmartBadgesSection: React.FC<SmartBadgesSectionProps> = ({
           never stay aligned — rows always do, at any width. */}
       <div className="space-y-2.5">
         {([
-          { k: 'newDays', label: isAr ? 'مدة NEW (يوم)' : 'NEW days', hint: isAr ? 'تتشال لوحدها بعدها' : 'auto-removed after' },
-          { k: 'topDays', label: isAr ? 'نافذة المبيعات (يوم)' : 'Sales window (days)', hint: isAr ? 'آخر كام يوم' : 'last N days' },
-          { k: 'topCount', label: isAr ? 'عدد الـ Top' : 'Top count', hint: isAr ? 'أول كام صنف' : 'top N items' },
+          { k: 'newDays', label: isAr ? 'مدة NEW (يوم)' : 'NEW days', hint: isAr ? 'تُزال تلقائيًا بعدها' : 'auto-removed after' },
+          { k: 'topDays', label: isAr ? 'نافذة المبيعات (يوم)' : 'Sales window (days)', hint: isAr ? 'آخر عدد من الأيام' : 'last N days' },
+          { k: 'topCount', label: isAr ? 'عدد الـ Top' : 'Top count', hint: isAr ? 'الأصناف الأعلى مبيعًا' : 'top N items' },
         ] as const).map((f) => (
           <div key={f.k} className="flex items-center gap-3">
             <div className="flex-1 min-w-0">

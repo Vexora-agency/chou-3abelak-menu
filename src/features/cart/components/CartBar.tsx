@@ -98,7 +98,7 @@ export const CartBar: React.FC<CartBarProps> = ({
 
           <div>
             <div className={`text-xs text-neutral-400 font-medium ${isAr ? 'leading-relaxed' : 'leading-tight'}`}>
-              {isAr ? 'إجمالي الطلب' : 'Your Order'}
+              {isAr ? 'طلبك' : 'Your order'}
             </div>
             <div ref={totalRef} className="text-xs min-[380px]:text-sm sm:text-base font-extrabold text-[var(--primary)] whitespace-nowrap leading-tight tabular-nums text-start">
               <bdi dir="ltr" className="tabular-nums">{formatPrice(totalPrice)}</bdi> <span dir="auto">{currency}</span>

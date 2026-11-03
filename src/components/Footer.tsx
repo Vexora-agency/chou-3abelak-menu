@@ -79,7 +79,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
         <button
           type="button"
           onClick={scrollToTop}
-          className="btn-tactile absolute right-5 sm:right-8 -top-6 w-12 h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center shadow-lg hover:brightness-110 border-4 border-[#0A0A0A]"
+          className="btn-tactile absolute end-5 sm:end-8 -top-6 w-12 h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center shadow-lg hover:brightness-110 border-4 border-[#0A0A0A]"
           aria-label={isAr ? 'العودة لأعلى الصفحة' : 'Back to top'}
         >
           <ArrowUp size={20} className="stroke-[2.5]" />
@@ -196,7 +196,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
         {/* Bottom Copyright & Admin Trigger */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-neutral-400 text-center">
           <div>
-            © 2026 {isAr ? menu.settings.name.ar : menu.settings.name.en} · All Rights Reserved
+            © 2026 {isAr ? menu.settings.name.ar : menu.settings.name.en} {isAr ? '· جميع الحقوق محفوظة' : '· All Rights Reserved'}
           </div>
           <div className="flex items-center gap-2">
             <a

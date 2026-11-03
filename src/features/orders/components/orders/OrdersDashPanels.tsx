@@ -215,7 +215,7 @@ export const OrdersDashTopItems: React.FC<OrdersDashTopItemsProps> = ({ lang, pe
         {stats.top.map((it, i) => (
           <div key={`${period}-${i}-${it.name.en}`}>
             <div className="flex items-center justify-between gap-3 text-[13px]">
-              <span className="font-semibold truncate min-w-0" dir="auto"><span className="text-neutral-500 me-1.5 tabular-nums" dir="ltr">{i + 1}</span>{isAr ? it.name.ar : it.name.en}</span>
+              <span className="font-semibold truncate min-w-0" dir="auto"><span className={`text-neutral-500 tabular-nums ${isAr ? 'ml-1.5' : 'mr-1.5'}`} dir="ltr">{i + 1}</span>{isAr ? it.name.ar : it.name.en}</span>
               <span className="shrink-0 text-xs text-neutral-400 tabular-nums"><b className="text-white" dir="ltr">{it.qty}</b> {t.sold}</span>
             </div>
             <div className="mt-1.5 h-1.5 rounded-full bg-neutral-800 overflow-hidden">

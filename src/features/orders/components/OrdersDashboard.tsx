@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FC } from 'react';
 import type { Order, OrderItem, OrderStatus, OrderType, OrdersDashboardProps, Period, CronHealth } from './orders/ordersDashTypes';
 import { useOrdersDashClock } from '../hooks/useOrdersDashClock';
 import { useOrdersDashStats } from '../hooks/useOrdersDashStats';
-import { playNewOrderBeep, unlockOrderSound, useNewOrderAlarm, useNewOrderSound } from '../hooks/useNewOrderSound';
+import { isFreshOrder, playNewOrderBeep, unlockOrderSound, useNewOrderAlarm, useNewOrderSound } from '../hooks/useNewOrderSound';
 import { OrdersDashChart, OrdersDashKpis, OrdersDashPeriodBar, OrdersDashTopItems } from './orders/OrdersDashPanels';
 import { OrdersDashList } from './orders/OrdersDashList';
 
@@ -25,7 +25,10 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
     orders, period, lang, now, filter, sel,
   });
 
-  // Kitchen bell: beeps when the 30s poll brings ids we haven't seen.
+  // Kitchen bell: beeps ONLY for genuinely fresh arrivals — a `new` order
+  // created within minutes. Stuck `new` rows from days ago (never
+  // auto-completed by design) and the first month-long history load stay
+  // silent; without the age gate every old id looked like a new arrival.
   // Preference survives reloads; the first tap anywhere unlocks audio
   // (autoplay policy) so the bell works even if it starts muted-by-browser.
   const [soundOn, setSoundOn] = useState<boolean>(() => {
@@ -35,11 +38,15 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
       return true;
     }
   });
-  useNewOrderSound(orders.map((o) => o.id), soundOn, kitchenSound);
-  // Looping alarm while ANY order is still unacknowledged (status new).
-  // Acking (or cancelling) the last one flips `active` off and the
-  // interval cleans itself up — the owner never hunts for a stop button.
-  useNewOrderAlarm(orders.some((o) => o.status === 'new'), soundOn, kitchenSound);
+  const freshNewIds = orders
+    .filter((o) => o.status === 'new' && isFreshOrder(o.createdAt))
+    .map((o) => o.id);
+  useNewOrderSound(freshNewIds, soundOn, kitchenSound);
+  // Looping alarm while a FRESH order is still unacknowledged (status new).
+  // Ancient stuck rows never arm it — the owner never hunts for a stop
+  // button, and the board never chimes with no order. Acking (or cancelling)
+  // the last fresh one flips `active` off and the interval cleans itself up.
+  useNewOrderAlarm(orders.some((o) => o.status === 'new' && isFreshOrder(o.createdAt)), soundOn, kitchenSound);
   useEffect(() => {
     // Every interaction flavor unlocks audio (mouse, touch, keyboard, tab
     // focus/return): the first gesture anywhere arms all future beeps.

@@ -213,12 +213,24 @@ export function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: 
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
+/**
+ * Plausibility ceiling for a single delivery trip (mirrors
+ * MAX_DELIVERY_DISTANCE_KM in functions/_shared/eta.js — keep in sync).
+ * Beyond this the geometry is certainly wrong (a test pin, a stale
+ * restaurant link) and the UI must hide the distance instead of showing
+ * hundreds of kilometres.
+ */
+export const MAX_DELIVERY_DISTANCE_KM = 60;
+
 /** Extract `lat,lng` from a Google Maps URL in ANY common shape:
  *  bare "lat,lng" · ?q= / ?query= / ?api=1&query= · ?ll= / ?center= ·
  *  directions ?destination= / ?origin= / ?saddr= / ?daddr= ·
- *  path "@lat,lng,zoom" (place/share URLs) · data "…!3dlat!4dlng".
+ *  path "@lat,lng,zoom" (place/share URLs) · data "…!3dlat!4dlng" ·
+ *  DMS "33°52'29.1"N 35°32'44.5"E" (decoded or URL-encoded, hemisphere
+ *  suffixes optional — a missing suffix reads positive).
  *  Short links (maps.app.goo.gl) carry no coords — null there (the link
- *  itself still works as a directions URL). Null when absent/invalid. */
+ *  itself still works as a directions URL). Null when absent/invalid.
+ *  TWIN: functions/_shared/eta.js parseMapUrlCoordsJs — keep in sync. */
 export function parseMapUrlCoords(url: string | undefined): { lat: number; lng: number } | null {
   if (!url) return null;
   const clean = url.trim();
@@ -243,6 +255,34 @@ export function parseMapUrlCoords(url: string | undefined): { lat: number; lng: 
   // Embed data "…!3dlat!4dlng…".
   m = clean.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
   if (m) return pair(m[1], m[2]);
+  // DMS "33°52'29.1"N 35°32'44.5"E" — the shape Google Maps copies when the
+  // owner shares coordinates in degrees mode (often URL-encoded, sometimes
+  // pasted truncated without the trailing "E). Decoded first so %C2%B0/%22
+  // forms parse identically. Suffixes optional (missing = positive);
+  // minutes/seconds are range-checked so free text never matches.
+  let decoded = clean;
+  try {
+    decoded = decodeURIComponent(clean);
+  } catch {
+    decoded = clean;
+  }
+  m = decoded.match(/(\d{1,3})\s*[°ºdD]\s*(\d{1,2})\s*['′’mM]\s*(\d+(?:\.\d+)?)\s*(?:"|″|”|s|S)?\s*([NSns])?\s*[,;]?\s*(\d{1,3})\s*[°ºdD]\s*(\d{1,2})\s*['′’mM]\s*(\d+(?:\.\d+)?)\s*(?:"|″|”|s|S)?\s*([EWew])?/);
+  if (m) {
+    const dms = (
+      deg: string, min: string, sec: string, hemi: string | undefined, neg: string,
+    ): number => {
+      const dd = Number(deg);
+      const mm = Number(min);
+      const ss = Number(sec);
+      if (!Number.isFinite(dd) || mm >= 60 || ss >= 60) return NaN;
+      let v = dd + mm / 60 + ss / 3600;
+      if ((hemi || '').toUpperCase() === neg) v = -v;
+      return v;
+    };
+    const lat = dms(m[1], m[2], m[3], m[4], 'S');
+    const lng = dms(m[5], m[6], m[7], m[8], 'W');
+    if (inRange(lat, lng)) return { lat, lng };
+  }
   return null;
 }
 

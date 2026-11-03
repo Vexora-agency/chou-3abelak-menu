@@ -1,7 +1,8 @@
 // Distance math verification: haversine accuracy against independent
 // references, every map-URL shape, and customer-facing formatting.
-// Run: npm run test:distance (or: npx tsx scripts/test-distance.mjs)
-import { haversineMeters, parseMapUrlCoords, formatDistance } from '../src/utils/menuHelpers.ts';
+// Run: npm run test-distance (or: npx tsx scripts/test-distance.mjs)
+import { MAX_DELIVERY_DISTANCE_KM, haversineMeters, parseMapUrlCoords, formatDistance } from '../src/utils/menuHelpers.ts';
+import { MAX_DELIVERY_DISTANCE_KM as SERVER_MAX_KM } from '../functions/_shared/eta.js';
 
 let pass = 0;
 let fail = 0;
@@ -51,6 +52,18 @@ ok('all URL shapes parse', shapes.every((u) => {
 ok('short link has no coords', parseMapUrlCoords('https://maps.app.goo.gl/AbC123xYz') === null);
 ok('garbage rejected', parseMapUrlCoords('Hamra, Beirut') === null && parseMapUrlCoords('') === null && parseMapUrlCoords(undefined) === null);
 ok('out-of-range rejected', parseMapUrlCoords('91, 200') === null);
+// DMS (degrees-mode share): decoded, URL-encoded, and truncated (no "E).
+const dmsClose = (c) => c !== null && Math.abs(c.lat - 33.87475) < 1e-6 && Math.abs(c.lng - 35.5456944) < 1e-6;
+ok('DMS decoded parses', dmsClose(parseMapUrlCoords('33°52\'29.1"N 35°32\'44.5"E')));
+ok('DMS encoded+truncated (live restaurant URL) parses', dmsClose(parseMapUrlCoords('https://www.google.com/maps/search/?api=1&query=33%C2%B052\'29.1%22N%2035%C2%B032\'44.5')));
+ok('DMS word form parses', dmsClose(parseMapUrlCoords('33d 52m 29.1s n, 35d 32m 44.5s e')));
+{
+  const sw = parseMapUrlCoords('33°52\'29.1"S 35°32\'44.5"W');
+  ok('DMS S/W negates', sw !== null && sw.lat < 0 && sw.lng < 0);
+}
+ok('DMS minutes >= 60 rejected', parseMapUrlCoords('33°99\'29.1"N 35°32\'44.5"E') === null);
+ok('degree sign in prose rejected', parseMapUrlCoords('It is 33° hot today') === null);
+ok('delivery radius ceiling mirrored on both twins', MAX_DELIVERY_DISTANCE_KM === 60 && SERVER_MAX_KM === 60);
 
 // 3. Customer-facing formatting (Western digits, both languages).
 ok('meters ar', formatDistance(999, 'ar') === '≈ 999 م');

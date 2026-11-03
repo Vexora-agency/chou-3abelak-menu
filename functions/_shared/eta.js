@@ -154,10 +154,8 @@ export function haversineKm(aLat, aLng, bLat, bLng) {
  * Restaurant coords come from the ALREADY-LOADED menu
  * (`menu.settings.mapUrl`); the order's own stored location_lat/lng.
  * Deliberately uncapped: every pin computes its true distance, however
- * far — the ETA clamp ([10,120] in computeEta) bounds what the customer
- * sees, and the checkout shows its own out-of-zone warning past the
- * plausibility ceiling. A wrong-looking number must stay visible so it
- * can be investigated, never silently replaced by a plausible default.
+ * far — computeEta floors at 10 minutes but never caps above, so a wrong
+ * estimate stays visible and investigable instead of hiding behind a cap.
  * Pure — no KV/D1 reads (callers piggyback their existing menu fetch).
  */
 export function orderDistanceKm(orderRow, menu) {

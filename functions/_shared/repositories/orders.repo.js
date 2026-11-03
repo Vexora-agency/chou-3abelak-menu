@@ -598,7 +598,10 @@ export async function updateOrderStatus(db, id, status, opts) {  const nowIso = 
  * comes to us) and for delivery either the road-adjusted ride
  * (distanceKm * roadFactor / courierSpeedKmh * 60) or
  * defaultDeliveryMinutes when no precise distance is known.
- * Clamped to [10, 120] minutes, rounded. Returns the ETA instant + minutes.
+ * Floored at 10 minutes (never zero/negative), rounded — and deliberately
+ * NOT capped above: a far pin must show its true computed time so a wrong
+ * estimate is visible and investigable instead of hiding behind a cap.
+ * Returns the ETA instant + minutes.
  */
 export function computeEta({ confirmedAtMs, orderType, queueLen, distanceKm, settings }) {
   const s = orderingEtaOrDefaults(settings);
@@ -614,7 +617,7 @@ export function computeEta({ confirmedAtMs, orderType, queueLen, distanceKm, set
         : s.defaultDeliveryMinutes;
   }
   const total = s.prepMinutes + q * s.kitchenMinutesPerOrder + travel;
-  const etaMinutes = Math.round(Math.min(120, Math.max(10, total)));
+  const etaMinutes = Math.max(10, Math.round(total));
   return { etaAtMs: base + etaMinutes * 60000, etaMinutes };
 }
 

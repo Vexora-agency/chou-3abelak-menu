@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Check, Loader2, Send, Unlink } from 'lucide-react';
 import type { AdminFetch } from '@/src/lib/api-client';
+import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 interface TelegramSectionProps {
   lang: 'en' | 'ar';
@@ -12,6 +13,8 @@ interface TelegramSectionProps {
     mode?: 'confirm' | 'info';
     action?: () => void;
   }) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 interface TgStatus {
@@ -39,12 +42,15 @@ interface TgStatus {
  * (The bot itself is configured once by the developer via the
  * TELEGRAM_BOT_USERNAME Pages variable.)
  */
-export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFetch, onConfirm }) => {
+export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFetch, onConfirm, collapsed = false, onToggleCollapse }) => {
   const isAr = lang === 'ar';
   const [status, setStatus] = useState<TgStatus | null>(null);
   const [deepLink, setDeepLink] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  // Edge-trigger for the one-time "linked" confirmation: the 15s poll would
+  // otherwise re-set the same message on every tick.
+  const wasLinkedRef = useRef<boolean | null>(null);
 
   const refresh = async () => {
     try {
@@ -52,6 +58,7 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
       if (!res.ok) return;
       const data = (await res.json()) as TgStatus;
       setStatus(data);
+      wasLinkedRef.current = data.linked === true;
     } catch {}
   };
 
@@ -72,10 +79,13 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
           if (!res.ok || stop) return;
           const data = (await res.json()) as TgStatus;
           setStatus(data);
-          if (data.linked) {
+          // One-time brand confirmation on the false → true edge only.
+          const linkedNow = data.linked === true;
+          if (linkedNow && wasLinkedRef.current === false) {
             setDeepLink(null);
-            setMsg({ kind: 'ok', text: isAr ? 'تم الربط بنجاح ✅' : 'Linked successfully ✅' });
+            setMsg({ kind: 'ok', text: isAr ? 'تم ربط Telegram — ستصلك إشعارات الطلبات فور وصولها.' : 'Telegram linked — order notifications will arrive instantly.' });
           }
+          wasLinkedRef.current = linkedNow;
         } catch {}
       })();
     }, 15000);
@@ -151,24 +161,22 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
   };
 
   return (
-    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
-            {isAr ? 'إشعارات الطلبات' : 'Order notifications'}
-          </h2>
-          <p className="text-[11px] text-neutral-500 mt-0.5">
-            {isAr
-              ? 'اربط حسابك ليصلك إشعار فوري مع كل طلب جديد.'
-              : 'Link your account to get an instant ping with every new order.'}
-          </p>
-        </div>
+    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
+      <SettingsGroupHeader
+        title={isAr ? 'إشعارات الطلبات' : 'Order notifications'}
+        subtitle={isAr ? 'اربط حسابك ليصلك إشعار فوري مع كل طلب جديد.' : 'Link your account to get an instant ping with every new order.'}
+        lang={lang}
+        collapsed={collapsed}
+        onToggle={() => onToggleCollapse?.()}
+        action={(
         <span className={`shrink-0 text-[11px] font-extrabold px-2.5 py-1 rounded-full border ${status?.linked
           ? 'text-green-400 border-green-800 bg-green-950'
           : 'text-neutral-400 border-neutral-700 bg-black'}`}>
           {status?.linked ? (isAr ? '● مرتبط' : '● linked') : (isAr ? '○ غير مرتبط' : '○ not linked')}
         </span>
-      </div>
+        )}
+      />
+      <SettingsGroupBody open={!collapsed}>
 
       {!status?.linked && (
         <div className="flex flex-wrap gap-2.5">
@@ -203,9 +211,9 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
       )}
 
       {status?.lastNotification && (
-        <p className={`text-[11px] rounded-lg px-3 py-2 border ${status.lastNotification.status === 'sent'
-          ? 'text-green-400 border-green-900 bg-green-950/40'
-          : 'text-amber-400 border-amber-900 bg-amber-950/40'}`}>
+        <p className={`text-[11px] rounded-xl px-3 py-2 border ${status.lastNotification.status === 'sent'
+          ? 'text-green-400 border-green-800 bg-green-950/40'
+          : 'text-amber-400 border-amber-800 bg-amber-950/40'}`}>
           {isAr ? 'آخر إشعار: ' : 'Last notification: '}
           <span dir="ltr" className="font-mono">#{status.lastNotification.orderNumber}</span>
           {' · '}
@@ -215,11 +223,22 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
         </p>
       )}
 
-      {msg && (
-        <p role="status" className={`text-xs font-bold ${msg.kind === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
-          {msg.kind === 'ok' ? <Check size={12} className="inline me-1" /> : null}{msg.text}
+      {status && status.linked && !status.lastNotification && (
+        <p className="text-[11px] text-neutral-500 rounded-xl px-3 py-2 border border-neutral-800 bg-black/40">
+          {isAr ? 'لم تُرسل أي إشعارات بعد — ستظهر هنا فور وصول أول طلب.' : 'No notifications sent yet — the first order will appear here.'}
         </p>
       )}
+
+      {msg && (
+        <p role="status" className={`text-xs font-bold rounded-xl px-3 py-2 border inline-flex items-center gap-1.5 ${
+          msg.kind === 'ok'
+            ? 'text-[var(--primary)] border-[var(--primary)]/40 bg-[var(--primary)]/10'
+            : 'text-red-400 border-red-800 bg-red-950/40'
+        }`}>
+          {msg.kind === 'ok' ? <Check size={13} strokeWidth={3} /> : null}<span>{msg.text}</span>
+        </p>
+      )}
+      </SettingsGroupBody>
     </div>
   );
 };

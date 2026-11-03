@@ -3,6 +3,7 @@ import type { MenuSettings } from '@/src/types/menu';
 import { applyDraftPause } from '@/src/utils/ordering';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { OnlineOrderingSwitch } from './admin/OnlineOrderingSwitch';
+import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 type Ordering = MenuSettings['ordering'];
 
@@ -14,6 +15,8 @@ interface OrderingSectionProps {
   adminFetch: AdminFetch;
   onMenuRefreshed: () => Promise<boolean>;
   onUpdate: (updater: (prev: Ordering) => Ordering) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 /** Ordering System card of the admin Settings tab. */
@@ -25,19 +28,20 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
   adminFetch,
   onMenuRefreshed,
   onUpdate,
+  collapsed = false,
+  onToggleCollapse,
 }) => {
   const isAr = lang === 'ar';
   return (
-    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-      <div>
-        <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
-          {isAr ? 'إعدادات الطلبات' : 'Ordering System'}
-        </h2>
-        <p className="text-[11px] text-neutral-500 mt-0.5">
-          {isAr ? 'التوصيل فقط — فعّل الحد الأدنى أو رسوم التوصيل أدناه' : 'Delivery only — enable a minimum order or a delivery fee below'}
-        </p>
-      </div>
-
+    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
+      <SettingsGroupHeader
+        title={isAr ? 'إعدادات الطلبات' : 'Ordering System'}
+        subtitle={isAr ? 'التوصيل فقط — فعّل الحد الأدنى أو رسوم التوصيل أدناه' : 'Delivery only — enable a minimum order or a delivery fee below'}
+        lang={lang}
+        collapsed={collapsed}
+        onToggle={() => onToggleCollapse?.()}
+      />
+      <SettingsGroupBody open={!collapsed}>
       {/* Master switch first: nothing below accepts orders while it is off */}
       <OnlineOrderingSwitch
         lang={lang}
@@ -336,6 +340,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
           </span>
         </button>
       </div>
+      </SettingsGroupBody>
     </div>
   );
 };

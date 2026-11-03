@@ -3,6 +3,7 @@ import type { MenuSettings } from '@/src/types/menu';
 import { DIAL_CODES, OTHER_ISO, composeFull, splitDialCode } from '@/src/config/dialCodes';
 import { normalizeMapLocation, parseMapUrlCoords, looksLikeMapInput } from '@/src/utils/menuHelpers';
 import { CountryCodePicker } from './CountryCodePicker';
+import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 type IdentityValues = Pick<
   MenuSettings,
@@ -12,6 +13,8 @@ type IdentityValues = Pick<
 interface IdentitySectionProps extends IdentityValues {
   lang: 'en' | 'ar';
   onUpdate: (updater: (prev: IdentityValues) => IdentityValues) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 /** Store Identity card of the admin Settings tab. */
@@ -26,6 +29,8 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
   currency,
   lang,
   onUpdate,
+  collapsed = false,
+  onToggleCollapse,
 }) => {
   const isAr = lang === 'ar';
   // WhatsApp picker (Google-style): country combo + national number input.
@@ -242,11 +247,14 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapUrl, addr.en, addr.ar]);
   return (
-    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-      <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
-        {isAr ? 'بيانات المتجر' : 'Store Identity'}
-      </h2>
-
+    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
+      <SettingsGroupHeader
+        title={isAr ? 'بيانات المتجر' : 'Store Identity'}
+        lang={lang}
+        collapsed={collapsed}
+        onToggle={() => onToggleCollapse?.()}
+      />
+      <SettingsGroupBody open={!collapsed}>
       <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-neutral-400 mb-1">Name (EN)</label>
@@ -568,6 +576,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
           />
         </div>
       </div>
+      </SettingsGroupBody>
     </div>
   );
 };

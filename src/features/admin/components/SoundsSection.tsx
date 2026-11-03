@@ -4,19 +4,22 @@ import { BELL_SOUNDS, bellPatternById, type BellSoundId } from '@/src/utils/bell
 import { playNewOrderBeep, unlockOrderSound } from '@/src/features/orders';
 import { playBellChime } from '@/src/utils/bellSound';
 import { BellRing, Play, Store, ChefHat } from 'lucide-react';
+import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 type SoundsValues = Pick<MenuSettings, 'sounds'>;
 
 interface SoundsSectionProps extends SoundsValues {
   lang: 'en' | 'ar';
   onUpdate: (updater: (prev: SoundsValues) => SoundsValues) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 /** Bell-sound picker of the admin Settings tab: one chime for the kitchen
  *  alarm (this dashboard) and one for the customer bell (menu page).
  *  Every option has its own preview button playing THAT sound through the
  *  same engine the bell uses — what you hear is what rings. */
-export const SoundsSection: React.FC<SoundsSectionProps> = ({ sounds, lang, onUpdate }) => {
+export const SoundsSection: React.FC<SoundsSectionProps> = ({ sounds, lang, onUpdate, collapsed = false, onToggleCollapse }) => {
   const isAr = lang === 'ar';
   const [playing, setPlaying] = useState<string | null>(null);
   const cur = {
@@ -55,16 +58,15 @@ export const SoundsSection: React.FC<SoundsSectionProps> = ({ sounds, lang, onUp
   ];
 
   return (
-    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-      <div>
-        <span className={`block text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
-          {isAr ? 'أصوات الجرس' : 'Bell sounds'}
-        </span>
-        <span className="block text-[11px] text-neutral-500 mt-0.5">
-          {isAr ? 'اختر صوتًا لكل جرس — جرّب قبل ما تختار' : 'Pick a chime per bell — preview before you choose'}
-        </span>
-      </div>
-
+    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
+      <SettingsGroupHeader
+        title={isAr ? 'أصوات الجرس' : 'Bell sounds'}
+        subtitle={isAr ? 'اختر صوتًا لكل جرس — جرّب قبل أن تختار' : 'Pick a chime per bell — preview before you choose'}
+        lang={lang}
+        collapsed={collapsed}
+        onToggle={() => onToggleCollapse?.()}
+      />
+      <SettingsGroupBody open={!collapsed}>
       {groups.map((g) => {
         const Icon = g.icon;
         return (
@@ -125,6 +127,7 @@ export const SoundsSection: React.FC<SoundsSectionProps> = ({ sounds, lang, onUp
           </div>
         );
       })}
+      </SettingsGroupBody>
     </div>
   );
 };

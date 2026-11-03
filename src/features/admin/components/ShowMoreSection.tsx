@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { MenuData, MenuSettings } from '@/src/types/menu';
+import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 type ShowMoreValues = Pick<MenuSettings, 'showMore'>;
 
@@ -7,6 +8,8 @@ interface ShowMoreSectionProps extends ShowMoreValues {
   menu: MenuData;
   lang: 'en' | 'ar';
   onUpdate: (updater: (prev: ShowMoreValues) => ShowMoreValues) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 /** Show-more paging controls: how many items a long section shows first and
@@ -16,6 +19,8 @@ export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
   showMore,
   lang,
   onUpdate,
+  collapsed = false,
+  onToggleCollapse,
 }) => {
   const isAr = lang === 'ar';
   const committedInitial = Number.isInteger(
@@ -77,17 +82,17 @@ export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
   // (A previous setNum helper committed on every keystroke and is deleted —
   // the draft/commit pair above replaced it.)
   return (
-    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-      <div>
-        <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
-          {isAr ? 'عرض المزيد في الأقسام' : 'Section Show-More'}
-        </h2>
-        <p className="text-[11px] text-neutral-500 mt-0.5">
-          {isAr
-            ? 'الأقسام الطويلة تُطوى، والزر يكشف دفعات. الزر يظهر فقط عندما يستحق الباقي ضغطة (أكثر من 4). على الشاشات الكبيرة تُقرَّب الأعداد لأقرب صف كامل تلقائيًا.'
-            : 'Long sections collapse; the button reveals batches. It appears only when the rest is worth a tap (more than 4). On wide screens counts snap up to full grid rows automatically.'}
-        </p>
-      </div>
+    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
+      <SettingsGroupHeader
+        title={isAr ? 'عرض المزيد في الأقسام' : 'Section Show-More'}
+        subtitle={isAr
+          ? 'الأقسام الطويلة تُطوى، والزر يكشف دفعات. الزر يظهر فقط عندما يستحق الباقي ضغطة (أكثر من 4). على الشاشات الكبيرة تُقرَّب الأعداد لأقرب صف كامل تلقائيًا.'
+          : 'Long sections collapse; the button reveals batches. It appears only when the rest is worth a tap (more than 4). On wide screens counts snap up to full grid rows automatically.'}
+        lang={lang}
+        collapsed={collapsed}
+        onToggle={() => onToggleCollapse?.()}
+      />
+      <SettingsGroupBody open={!collapsed}>
       <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-neutral-400 mb-1">
@@ -133,6 +138,7 @@ export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
             : `Example: ${biggest.name} (${biggest.n}) → ${committedInitial} first, then batches of ${committedBatch}`}
         </p>
       )}
+      </SettingsGroupBody>
     </div>
   );
 };

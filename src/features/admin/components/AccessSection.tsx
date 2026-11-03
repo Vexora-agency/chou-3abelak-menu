@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { KeyRound, Copy, Check, Ban, Plus, Power, Trash2 } from 'lucide-react';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { readJson } from '@/src/utils/safeJson';
+import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 interface InviteRow {
   id: string;
@@ -20,6 +21,8 @@ interface ClientRow {
 interface AccessSectionProps {
   lang: 'en' | 'ar';
   adminFetch: AdminFetch;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 /**
@@ -32,7 +35,7 @@ interface AccessSectionProps {
  * (live sessions die at once); delete removes the row entirely and frees
  * the name for a future invite.
  */
-export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }) => {
+export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, collapsed = false, onToggleCollapse }) => {
   const isAr = lang === 'ar';
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [rows, setRows] = useState<InviteRow[]>([]);
@@ -184,19 +187,17 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }
         : 'bg-neutral-800 border-neutral-700 text-neutral-500';
 
   return (
-    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-      <div>
-        <h2 className={`text-sm font-extrabold text-[var(--primary)] flex items-center gap-2 ${isAr ? '' : 'uppercase tracking-wider'}`}>
-          <KeyRound size={15} />
-          {isAr ? 'دخول العملاء' : 'Client Access'}
-        </h2>
-        <p className="text-[11px] text-neutral-500 mt-0.5">
-          {isAr
-            ? 'أنشئ رابط دعوة لمرة واحدة — العميل يضع كلمة سره بنفسه. دخولك الرئيسي يعمل دائمًا على كل مواقع العملاء.'
-            : 'Mint a one-time invite link — the client sets their own password. Your master login always works on every client site.'}
-        </p>
-      </div>
-
+    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
+      <SettingsGroupHeader
+        title={isAr ? 'دخول العملاء' : 'Client Access'}
+        subtitle={isAr
+          ? 'أنشئ رابط دعوة لمرة واحدة — العميل يضع كلمة سره بنفسه. دخولك الرئيسي يعمل دائمًا على كل مواقع العملاء.'
+          : 'Mint a one-time invite link — the client sets their own password. Your master login always works on every client site.'}
+        lang={lang}
+        collapsed={collapsed}
+        onToggle={() => onToggleCollapse?.()}
+      />
+      <SettingsGroupBody open={!collapsed}>
       <form onSubmit={(e) => void create(e)} className="flex gap-2">
         <input
           type="text"
@@ -352,6 +353,7 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch }
           </p>
         )}
       </div>
+      </SettingsGroupBody>
     </div>
   );
 };

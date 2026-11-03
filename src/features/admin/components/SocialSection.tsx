@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import type { MenuSettings, SocialPlatform } from '@/src/types/menu';
+import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 type SocialValues = Pick<MenuSettings, 'social' | 'socialEnabled'>;
 
@@ -10,6 +11,8 @@ interface SocialSectionProps extends SocialValues {
   whatsappNumber: string;
   onMove: (key: SocialPlatform, dir: 'up' | 'down') => void;
   onUpdate: (updater: (prev: SocialValues) => SocialValues) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 const LABELS: Record<SocialPlatform, string> = {
@@ -27,20 +30,21 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
   whatsappNumber,
   onMove,
   onUpdate,
+  collapsed = false,
+  onToggleCollapse,
 }) => {
   const isAr = lang === 'ar';
   const waDigits = (whatsappNumber || '').replace(/[^0-9]/g, '');
   return (
-    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-      <div>
-        <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
-          {isAr ? 'التواصل الاجتماعي' : 'Social Media'}
-        </h2>
-        <p className="text-[11px] text-neutral-500 mt-0.5">
-          {isAr ? 'شغّل المنصة وحط الرابط بتاعها — ورتّبهم بالأسهم' : 'Turn on a platform and paste its link — reorder with the arrows'}
-        </p>
-      </div>
-
+    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
+      <SettingsGroupHeader
+        title={isAr ? 'التواصل الاجتماعي' : 'Social Media'}
+        subtitle={isAr ? 'فعّل المنصة وأضف رابطها — ورتّبها بالأسهم' : 'Turn on a platform and paste its link — reorder with the arrows'}
+        lang={lang}
+        collapsed={collapsed}
+        onToggle={() => onToggleCollapse?.()}
+      />
+      <SettingsGroupBody open={!collapsed}>
       {order.map((network, idx) => {
         const on = !!socialEnabled?.[network];
         const label = LABELS[network];
@@ -130,6 +134,7 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
           </div>
         );
       })}
+      </SettingsGroupBody>
     </div>
   );
 };

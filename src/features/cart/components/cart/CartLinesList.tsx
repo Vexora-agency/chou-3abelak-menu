@@ -144,15 +144,15 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
            {/* Line math: full-width receipt line under the row — the old pill
                squeezed beside the stepper and stacked ugly on narrow phones.
                No heavy bubble: quiet text, strong total. */}
-           <p dir="ltr" className={`mt-2 text-xs tabular-nums break-words leading-relaxed ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-             <span className={`font-extrabold ${darkMode ? 'text-white' : 'text-neutral-800'}`}>
-               {l.quantity} {unitLabel(pricingUnit, l.quantity, lang)}
-             </span>
-             {' × '}{formatPrice(l.unit)}{' = '}
-             <span className={`font-black ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`}>
-               {formatPrice(l.total)}
-             </span>
-           </p>
+            <p dir="auto" className={`mt-2 text-xs tabular-nums break-words leading-relaxed text-start ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
+              <span className={`font-extrabold ${darkMode ? 'text-white' : 'text-neutral-800'}`}>
+                <bdi dir="ltr" className="tabular-nums">{l.quantity}</bdi> <span>{unitLabel(pricingUnit, l.quantity, lang)}</span>
+              </span>
+              <span dir="ltr"> × </span><bdi dir="ltr" className="tabular-nums">{formatPrice(l.unit)}</bdi><span dir="ltr"> = </span>
+              <span className={`font-black ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`}>
+                <bdi dir="ltr" className="tabular-nums">{formatPrice(l.total)}</bdi>
+              </span>
+            </p>
           </div>
         );
       })}

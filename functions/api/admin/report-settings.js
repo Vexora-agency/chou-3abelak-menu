@@ -38,7 +38,7 @@ async function sendConfirmation(env, email, token) {
   const site = typeof env?.SITE_URL === 'string' ? env.SITE_URL.replace(/\/$/, '') : '';
   if (!site) return false;
   const { restaurantName } = await loadMenuBasics(env);
-  const name = restaurantName.en || 'our restaurant';
+  const name = restaurantName.en || 'our store';
   const content = confirmEmailContent(`${site}/api/reports/confirm?token=${token}`, name);
   try {
     await sendEmail(env, {

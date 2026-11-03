@@ -162,7 +162,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               {isAr ? 'سلة طلبك' : 'Your Order'}
             </h2>
             <p className={`text-xs mt-0.5 font-medium ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-              <bdi className="tabular-nums">{lines.length}</bdi> {isAr ? (lines.length === 1 ? 'صنف مختار' : lines.length === 2 ? 'صنفان مختاران' : 'أصناف مختارة') : 'items selected'}
+              <bdi dir="ltr" className="tabular-nums">{lines.length}</bdi> {isAr ? (lines.length === 1 ? 'صنف مختار' : lines.length === 2 ? 'صنفان مختاران' : 'أصناف مختارة') : 'items selected'}
             </p>
           </div>
           <button

@@ -44,7 +44,7 @@ export async function onRequest(context) {
   const site = typeof env?.SITE_URL === 'string' ? env.SITE_URL.replace(/\/$/, '') : '';
   if (!site) return jsonNoStore({ ok: false, error: 'mail_unconfigured' }, 503);
   const { restaurantName } = await loadMenuBasics(env);
-  const content = confirmEmailContent(`${site}/api/reports/confirm?token=${token}`, restaurantName.en || 'our restaurant');
+  const content = confirmEmailContent(`${site}/api/reports/confirm?token=${token}`, restaurantName.en || 'our store');
   try {
     await sendEmail(env, {
       to: email,

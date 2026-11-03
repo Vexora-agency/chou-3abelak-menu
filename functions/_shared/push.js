@@ -92,7 +92,7 @@ export async function getVapidSettings(db, subject) {
 
 const STATUS_COPY = {
   confirmed: {
-    ar: (n) => `طلبك #${n} قيد التحضير 👨‍🍳`,
+    ar: (n) => `طلبك #${n} قيد التحضير`,
     en: (n) => `Order #${n} is being prepared`,
   },
   ready: {
@@ -105,8 +105,8 @@ const STATUS_COPY = {
       en: (n) => `Order #${n} is ready for pickup`,
     },
     dinein: {
-      ar: (n) => `طلبك #${n} جاهز 🍽️`,
-      en: (n) => `Order #${n} is ready 🍽️`,
+      ar: (n) => `طلبك #${n} جاهز 🎉`,
+      en: (n) => `Order #${n} is ready 🎉`,
     },
   },
   completed: {

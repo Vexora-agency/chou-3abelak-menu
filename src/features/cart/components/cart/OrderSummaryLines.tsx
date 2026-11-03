@@ -59,35 +59,42 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
           <div className={`space-y-1.5 pb-2 border-b ${darkMode ? 'border-neutral-800' : 'border-neutral-200'}`}>
             {lines.map((l) => {
               const base = unitPrice(l.item, l.variantId);
-              const parts = [
-                `${l.variantId ? featureName(menu, l.variantId, lang) : pickLangText(l.item.name, lang)}${base !== 0 ? ` ${formatPrice(base, currency)}` : ''}`,
-                ...l.addonIds.map((id) => {
-                  const price = (l.item.addons || []).find((a) => a && a.featureId === id)?.price ?? 0;
-                  // Split lines: partial picks (0 < count < qty) render as
-                  // `name ×n`; full-count and legacy picks render exactly as
-                  // today. Zero-price add-ons show no price text (mirrors
-                  // the item modal).
-                  const count = l.addonQty?.[id] ?? l.quantity;
-                  const partial = count > 0 && count < l.quantity;
-                  return `${featureName(menu, id, lang)}${partial ? ` ×${count}` : ''}${price !== 0 ? ` ${formatPrice(price, currency)}` : ''}`;
-                }),
-              ];
+              const baseName = l.variantId ? featureName(menu, l.variantId, lang) : pickLangText(l.item.name, lang);
+              const addonParts = l.addonIds.map((id) => {
+                const price = (l.item.addons || []).find((a) => a && a.featureId === id)?.price ?? 0;
+                // Split lines: partial picks (0 < count < qty) render as
+                // `name ×n`; full-count and legacy picks render exactly as
+                // today. Zero-price add-ons show no price text (mirrors
+                // the item modal).
+                const count = l.addonQty?.[id] ?? l.quantity;
+                const partial = count > 0 && count < l.quantity;
+                return { key: id, name: featureName(menu, id, lang), count: partial ? count : null, price };
+              });
               return (
                 <div key={l.key}>
                   <div className="flex justify-between items-baseline gap-2">
                     <span className={`font-bold min-w-0 flex-1 break-words ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
                       <span dir="auto">{pickLangText(l.item.name, lang)}</span>
-                      <bdi className="tabular-nums" dir="ltr"> × {l.quantity}</bdi>
+                      <span dir="ltr"> × </span><bdi dir="ltr" className="tabular-nums">{l.quantity}</bdi>
                     </span>
-                    <span className={`font-bold tabular-nums whitespace-nowrap shrink-0 ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`} dir="ltr">
-                      {formatPrice(l.total, currency)}
+                    <span className={`font-bold tabular-nums whitespace-nowrap shrink-0 ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+                      <bdi dir="ltr" className="tabular-nums">{formatPrice(l.total)}</bdi> <span dir="auto">{currency}</span>
                     </span>
                   </div>
                   <p className={`text-xs tabular-nums break-words ${isAr ? 'leading-relaxed' : ''} ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                    {parts.map((part, i) => (
-                      <React.Fragment key={i}>
-                        {i > 0 && <span> + </span>}
-                        <bdi>{part}</bdi>
+                    <bdi dir="auto">{baseName}</bdi>
+                    {base !== 0 && (
+                      <>{' '}<bdi dir="ltr" className="tabular-nums">{formatPrice(base)}</bdi> <span dir="auto">{currency}</span></>
+                    )}
+                    {addonParts.map((a) => (
+                      <React.Fragment key={a.key}>
+                        <span dir="ltr"> + </span><bdi dir="auto">{a.name}</bdi>
+                        {a.count !== null && (
+                          <><span dir="ltr"> ×</span><bdi dir="ltr" className="tabular-nums">{a.count}</bdi></>
+                        )}
+                        {a.price !== 0 && (
+                          <>{' '}<bdi dir="ltr" className="tabular-nums">{formatPrice(a.price)}</bdi> <span dir="auto">{currency}</span></>
+                        )}
                       </React.Fragment>
                     ))}
                   </p>
@@ -101,8 +108,8 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
             <span className={`min-w-0 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
               {isAr ? 'المجموع الفرعي:' : 'Subtotal:'}
             </span>
-            <span className={`font-bold text-sm tabular-nums shrink-0 ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`} dir="ltr">
-              {formatPrice(subtotal, currency)}
+            <span className={`font-bold text-sm tabular-nums shrink-0 ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+              <bdi dir="ltr" className="tabular-nums">{formatPrice(subtotal)}</bdi> <span dir="auto">{currency}</span>
             </span>
           </div>
         )}
@@ -112,15 +119,15 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
             <span className={`min-w-0 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
               {isAr ? 'رسوم التوصيل:' : 'Delivery Fee:'}
             </span>
-            <span className={`font-bold text-sm tabular-nums shrink-0 ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`} dir="ltr">
-              {formatPrice(deliveryFee, currency)}
+            <span className={`font-bold text-sm tabular-nums shrink-0 ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+              <bdi dir="ltr" className="tabular-nums">{formatPrice(deliveryFee)}</bdi> <span dir="auto">{currency}</span>
             </span>
           </div>
         )}
 
         {isBelowMin && (
           <div className="text-amber-600 font-bold text-xs pt-1">
-            * {isAr ? <>الحد الأدنى للطلب <span className="tabular-nums" dir="ltr">{formatPrice(minOrder, currency)}</span></> : <>Minimum order is <span className="tabular-nums" dir="ltr">{formatPrice(minOrder, currency)}</span></>}
+            * {isAr ? <>الحد الأدنى للطلب <bdi dir="ltr" className="tabular-nums">{formatPrice(minOrder)}</bdi> <span dir="auto">{currency}</span></> : <>Minimum order is <bdi dir="ltr" className="tabular-nums">{formatPrice(minOrder)}</bdi> <span dir="auto">{currency}</span></>}
           </div>
         )}
 
@@ -134,8 +141,8 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
               ? (isAr ? 'الإجمالي الكلي:' : 'Total:')
               : (isAr ? 'المجموع الفرعي:' : 'Subtotal:')}
           </span>
-          <span ref={grandTotalRef} className="text-base px-3.5 py-1 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black shadow-xs tabular-nums shrink-0 whitespace-nowrap" dir="ltr">
-            {formatPrice(grandTotal, currency)}
+          <span ref={grandTotalRef} className="text-base px-3.5 py-1 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black shadow-xs tabular-nums shrink-0 whitespace-nowrap">
+            <bdi dir="ltr" className="tabular-nums">{formatPrice(grandTotal)}</bdi> <span dir="auto">{currency}</span>
           </span>
         </div>
       </div>

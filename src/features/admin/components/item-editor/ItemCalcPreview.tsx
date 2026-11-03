@@ -77,7 +77,7 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
                               {isDef && <span className="ms-1.5 text-[var(--primary)] font-bold">{isAr ? '(افتراضي)' : '(default)'}</span>}
                             </span>
                             {v.price !== 0 && (
-                              <span className="text-neutral-400 tabular-nums" dir="ltr">{formatPrice(v.price, cur)}</span>
+                              <span className="text-neutral-400 tabular-nums"><bdi dir="ltr">{formatPrice(v.price)}</bdi> <span dir="auto">{cur}</span></span>
                             )}
                           </div>
                         );
@@ -95,7 +95,7 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
                           {featureName(menu, v.featureId, lang)}
                         </span>
                         {v.price !== 0 && (
-                          <span className="text-neutral-400 tabular-nums" dir="ltr">{formatPrice(v.price, cur)}</span>
+                          <span className="text-neutral-400 tabular-nums"><bdi dir="ltr">{formatPrice(v.price)}</bdi> <span dir="auto">{cur}</span></span>
                         )}
                       </div>
                     ))}

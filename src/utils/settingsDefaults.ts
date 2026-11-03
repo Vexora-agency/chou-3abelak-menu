@@ -155,11 +155,11 @@ export function soundsOrDefault(v: unknown): BellSounds {
 
 /**
  * House footer blurb shown when the admin left About empty.
- * Generic enough for any restaurant; admin text always wins when present.
+ * Generic enough for any place; admin text always wins when present.
  */
 export const DEFAULT_ABOUT: Bilingual = {
-  en: 'Fresh food, honest prices, and warm hospitality — every single day.',
-  ar: 'أكل طازج، أسعار مناسبة، وضيافة من القلب — كل يوم.',
+  en: 'Quality you can trust, fair prices — every day.',
+  ar: 'جودة تستاهل، أسعار مناسبة — كل يوم.',
 };
 
 /**

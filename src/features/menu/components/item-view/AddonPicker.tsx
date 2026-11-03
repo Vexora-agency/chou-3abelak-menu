@@ -95,7 +95,7 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
                           {name}
                           {/* Zero-price add-ons show no price text (same rule as chips). */}
                           {!free && (
-                            <span className="tabular-nums opacity-80" dir="ltr"> +{formatPrice(a.price, currency)}</span>
+                            <span className="tabular-nums opacity-80"><bdi dir="ltr">+{formatPrice(a.price)}</bdi> <span dir="auto">{currency}</span></span>
                           )}
                         </span>
                         <div className="flex items-center gap-1 shrink-0">
@@ -179,7 +179,7 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
                       {/* Zero-price add-ons (e.g. spicy) show no price text at all —
                           neither "Free" nor "+0": the name alone is the honest label. */}
                       {!free && (
-                        <span className="tabular-nums opacity-80" dir="ltr">+{formatPrice(a.price, currency)}</span>
+                        <span className="tabular-nums opacity-80"><bdi dir="ltr">+{formatPrice(a.price)}</bdi> <span dir="auto">{currency}</span></span>
                       )}
                     </button>
                   );

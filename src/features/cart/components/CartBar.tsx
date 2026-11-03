@@ -91,7 +91,7 @@ export const CartBar: React.FC<CartBarProps> = ({
             <div className="w-7 h-7 min-[380px]:w-8 min-[380px]:h-8 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center font-black">
               <ShoppingBag size={15} className="stroke-[2.5] min-[380px]:w-[17px] min-[380px]:h-[17px]" />
             </div>
-            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[11px] font-black min-w-5 h-5 px-1 rounded-full flex items-center justify-center border-2 border-[#0A0A0A] tabular-nums">
+            <span className="absolute -top-1.5 -end-1.5 bg-red-500 text-white text-[11px] font-black min-w-5 h-5 px-1 rounded-full flex items-center justify-center border-2 border-[#0A0A0A] tabular-nums">
               {totalCount > 99 ? '99+' : totalCount}
             </span>
           </div>
@@ -100,8 +100,8 @@ export const CartBar: React.FC<CartBarProps> = ({
             <div className={`text-xs text-neutral-400 font-medium ${isAr ? 'leading-relaxed' : 'leading-tight'}`}>
               {isAr ? 'إجمالي الطلب' : 'Your Order'}
             </div>
-            <div ref={totalRef} className="text-xs min-[380px]:text-sm sm:text-base font-extrabold text-[var(--primary)] whitespace-nowrap leading-tight tabular-nums" dir="ltr">
-              {formatPrice(totalPrice, currency)}
+            <div ref={totalRef} className="text-xs min-[380px]:text-sm sm:text-base font-extrabold text-[var(--primary)] whitespace-nowrap leading-tight tabular-nums text-start">
+              <bdi dir="ltr" className="tabular-nums">{formatPrice(totalPrice)}</bdi> <span dir="auto">{currency}</span>
             </div>
           </div>
         </div>

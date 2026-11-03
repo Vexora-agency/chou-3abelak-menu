@@ -114,14 +114,14 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                           <p className={`text-[11px] font-bold text-neutral-500 ${isAr ? '' : 'uppercase tracking-wide'}`}>{t.itemsLabel}</p>
                           {o.items.map((it, idx) => (
                             <div key={`${it.id}-${idx}`} className="flex justify-between gap-3">
-                              <span className="min-w-0 flex-1 break-words"><bdi className="tabular-nums" dir="ltr">{it.qty}×</bdi> {typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, lang)} ` : ''}<span dir="auto">{itemTitle(it, lang)}</span></span>
-                              <span className="text-neutral-400 tabular-nums whitespace-nowrap shrink-0" dir="ltr">{fmt(it.qty)} × {fmt(it.unitPrice)} = {fmt(it.qty * it.unitPrice)}</span>
+                              <span className="min-w-0 flex-1 break-words"><bdi dir="ltr" className="tabular-nums">{it.qty}</bdi><span dir="ltr">×</span> {typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, lang)} ` : ''}<span dir="auto">{itemTitle(it, lang)}</span></span>
+                              <span className="text-neutral-400 tabular-nums whitespace-nowrap shrink-0"><bdi dir="ltr" className="tabular-nums">{fmt(it.qty)}</bdi><span dir="ltr"> × </span><bdi dir="ltr" className="tabular-nums">{fmt(it.unitPrice)}</bdi><span dir="ltr"> = </span><bdi dir="ltr" className="tabular-nums">{fmt(it.qty * it.unitPrice)}</bdi></span>
                             </div>
                           ))}
                           <div className="pt-1.5 border-t border-neutral-800 space-y-1 text-xs text-neutral-400">
                             <div className="flex justify-between"><span>{t.subtotal}</span><span className="tabular-nums" dir="ltr">{fmt(o.subtotal)}</span></div>
                             {o.deliveryFee > 0 && <div className="flex justify-between"><span>{t.fee}</span><span className="tabular-nums" dir="ltr">{fmt(o.deliveryFee)}</span></div>}
-                            <div className="flex justify-between text-sm font-extrabold text-white"><span>{t.total}</span><span className="tabular-nums" dir="ltr">{fmt(o.total)} {currency}</span></div>
+                            <div className="flex justify-between text-sm font-extrabold text-white"><span>{t.total}</span><span className="tabular-nums"><bdi dir="ltr" className="tabular-nums">{fmt(o.total)}</bdi> <span dir="auto">{currency}</span></span></div>
                           </div>
                           {showEta && (
                             <p dir="auto" className={`text-[11px] tabular-nums truncate ${etaLate ? 'text-amber-400 font-bold' : 'text-neutral-500'}`}>

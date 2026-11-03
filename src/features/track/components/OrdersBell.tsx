@@ -622,7 +622,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                     <p className={`mt-0.5 text-xs tabular-nums ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
                       <bdi>{timeAgo(o.at, isAr, nowMs)}</bdi>
                       {typeof o.itemsCount === 'number' && typeof o.total === 'number' && (
-                        <span> · <bdi className="tabular-nums" dir="ltr">{o.itemsCount}</bdi> {isAr ? 'أصناف' : 'items'} · <span className="tabular-nums" dir="ltr">{formatPrice(o.total)}</span></span>
+                        <bdi> · <bdi dir="ltr" className="tabular-nums">{o.itemsCount}</bdi> {isAr ? 'أصناف' : 'items'} · <bdi dir="ltr" className="tabular-nums">{formatPrice(o.total)}</bdi></bdi>
                       )}
                       {o.status === 'unknown' && (
                         <span className="inline-flex items-center gap-1 ms-1"><PackageSearch size={11} />{isAr ? 'تعذر التحديث' : 'unreachable'}</span>

@@ -67,7 +67,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           placeholder={isAr ? 'مثال: 70123456' : '+961 70 123 456'}
           maxLength={20}
           enterKeyHint="next"
-          className={`w-full h-11 px-3.5 rounded-xl border text-base tabular-nums text-start focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
+          className={`w-full h-11 px-3.5 rounded-xl border text-base tabular-nums text-left focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
             darkMode
               ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-400'
               : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-500 shadow-xs'

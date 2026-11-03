@@ -99,7 +99,7 @@ export function unitPrice(item, variantId) {
   return p.price;
 }
 
-/** Lowest variant price (for "From X" labels). Throws when unpriced. */
+/** Lowest variant price (shown bare on cards, no "From" prefix). Throws when unpriced. */
 export function minVariantPrice(item) {
   if (!hasVariants(item)) return unitPrice(item);
   let min = Infinity;

@@ -433,14 +433,13 @@ export function unitLabel(unit: string, qty: number, lang: 'en' | 'ar'): string 
   }
 }
 
-/** Card price label: "From 80,000 LBP" for variants, "FREE"/"مجاناً" when 0. */
+/** Card price label: lowest variant price ("80,000 LBP"), "FREE"/"مجاناً" when 0. */
 export function priceLabel(item: MenuItem, lang: 'en' | 'ar', currency: string): string {
   const free = lang === 'ar' ? 'مجاناً' : 'FREE';
   const p = normalizePricing(item);
   if (hasVariants(item)) {
     if (minVariantPrice(item) === 0) return free;
-    const from = lang === 'ar' ? 'من' : 'From';
-    return `${from} ${formatPrice(minVariantPrice(item), currency)}`;
+    return formatPrice(minVariantPrice(item), currency);
   }
   if (!isMoney(p.price)) return '—';
   if (p.price === 0) return free;

@@ -39,6 +39,7 @@ interface AdminDashboardTabProps {
   onCustomerAction: (args: { phone: string; mode: string; password: string; confirm: string }) => Promise<{ ok: boolean; mode?: string; count?: number; error?: string } | { ok: boolean; error: string }>;
   adminFetch: AdminFetch;
   onMenuRefreshed: () => Promise<boolean>;
+  onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
 }
 
 /** TAB 0: ORDERS DASHBOARD — pause control, view switcher, orders/reports/customers. */
@@ -49,7 +50,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   reportSettings, reportRows, retentionCfg, reportSched,
   onSaveReportSettings, onResendVerification, onDownloadReport,
   onSearchCustomers, onCustomerAction,
-  adminFetch, onMenuRefreshed,
+  adminFetch, onMenuRefreshed, onConfirm,
 }) => {
   const isAr = lang === 'ar';
   // White-label package gates: starter hides Reports UI, the customers view
@@ -211,6 +212,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
         currency={menu.settings.currency[lang] || menu.settings.currency.en}
         loading={ordersLoading}
         onStatusChange={(id, s) => onOrderStatusChange(id, s)}
+        onConfirm={onConfirm}
         onRefresh={() => onRefreshOrders()}
         kitchenSound={menu.settings.sounds?.kitchen}
       />

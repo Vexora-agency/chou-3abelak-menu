@@ -64,6 +64,9 @@ export interface OrdersDashboardProps {
   onRefresh?: () => void;
   /** Owner-picked kitchen chime id (one of the 5 library ids, unknown -> classic). */
   kitchenSound?: string | null;
+  /** Optional confirm gate (admin modal): when provided, destructive
+   *  actions ask first instead of firing immediately. */
+  onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
 }
 
 export type Period = 'today' | '7d' | 'month' | 'lastMonth';

@@ -23,11 +23,15 @@ interface OrdersDashListProps {
   flashId: string | null;
   now: Date;
   onStatusChange: (id: string, status: OrderStatus) => void;
+  /** Optional confirm gate: when provided, cancelling an order asks
+   *  "هل تود إلغاء الطلب؟" first (protects against accidental taps —
+   *  cancelling notifies no one and is hard to undo mid-rush). */
+  onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
 }
 
 export const OrdersDashList: FC<OrdersDashListProps> = ({
   lang, currency, loading, totalCount, list, counts, filter, onFilterChange,
-  limit, onShowMore, openId, onToggleOpen, flashId, now, onStatusChange,
+  limit, onShowMore, openId, onToggleOpen, flashId, now, onStatusChange, onConfirm,
 }) => {
   const t = STR[lang];
   const isAr = lang === 'ar';
@@ -167,7 +171,18 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                         {o.status === 'confirmed' && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Check size={14} strokeWidth={3} />{t.complete}</button>}
                         {o.status === 'ready' && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Check size={14} strokeWidth={3} />{t.complete}</button>}
                         {(o.status === 'completed' || o.status === 'cancelled') && <button type="button" onClick={() => onStatusChange(o.id, 'new')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">{t.reopen}</button>}
-                        {(o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && <button type="button" onClick={() => onStatusChange(o.id, 'cancelled')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-red-500/40 text-red-400 text-xs font-bold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"><X size={14} />{t.cancel}</button>}
+                        {(o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && <button type="button" onClick={() => {
+                          if (onConfirm) {
+                            onConfirm({
+                              title: isAr ? `هل تود إلغاء الطلب #${o.number}؟` : `Cancel order #${o.number}?`,
+                              body: isAr ? 'سيتم إلغاء الطلب نهائيًا. لن يتم إشعار الزبون تلقائيًا — تواصل معه إذا لزم.' : 'The order will be cancelled for good. The customer is not notified automatically — contact them if needed.',
+                              confirmText: isAr ? 'تأكيد الإلغاء' : 'Confirm cancel',
+                              action: () => onStatusChange(o.id, 'cancelled'),
+                            });
+                          } else {
+                            onStatusChange(o.id, 'cancelled');
+                          }
+                        }} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-red-500/40 text-red-400 text-xs font-bold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"><X size={14} />{t.cancel}</button>}
                           <a href={`https://wa.me/${digits(o.customer.phone)}`} target="_blank" rel="noopener noreferrer" className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><MessageCircle size={14} className="text-[var(--primary)]" />{t.wa}</a>
                           <a href={`tel:+${digits(o.customer.phone)}`} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Phone size={14} className="text-[var(--primary)]" />{t.call}</a>
                         </div>

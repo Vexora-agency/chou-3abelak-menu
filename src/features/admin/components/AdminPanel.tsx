@@ -263,6 +263,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           onCustomerAction={report.handleCustomerAction}
           adminFetch={adminFetch}
           onMenuRefreshed={backup.refreshMenuFromServer}
+          onConfirm={(box) => setConfirmBox(box)}
         />
       )}
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, XCircle } from 'lucide-react';
 import { CUSTOMER_CANCEL_WINDOW_MS } from '../orderPhases';
 
@@ -32,6 +32,11 @@ function fmtCountdown(ms: number): string {
  * answers 409 `too_late`), so the client countdown is UX, not security.
  * The same 5 minutes double as the preparation grace period: the order stays
  * hidden from the admin dashboard + Telegram until the window lapses.
+ *
+ * Accidental-tap guard: the first tap only ARMS a confirm step
+ * ("هل تود إلغاء الطلب؟" + [تأكيد الإلغاء] / [تراجع]) — nothing is sent
+ * until the explicit confirm tap. Arming auto-expires after 8 s (and on
+ * Escape), so a stray tap can never leave a live "confirm" lying around.
  */
 export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
   number, token, createdAt, status, lang, darkMode = true, onCancelled,
@@ -41,6 +46,13 @@ export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [denied, setDenied] = useState(false);
+  const [armed, setArmed] = useState(false);
+  const armTimer = useRef(0);
+
+  const disarm = () => {
+    window.clearTimeout(armTimer.current);
+    setArmed(false);
+  };
 
   useEffect(() => {
     // 250ms tick: the seconds readout stays stable (ceil) while the
@@ -49,11 +61,32 @@ export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
     return () => window.clearInterval(id);
   }, []);
 
+  // Armed confirm expires on its own; never leak the timer.
+  useEffect(() => () => window.clearTimeout(armTimer.current), []);
+
+  // Escape backs out of the armed confirm (same as tapping "back").
+  useEffect(() => {
+    if (!armed) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') disarm();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [armed]);
+
   if (done || status !== 'new') return null;
   const left = remainingMs(createdAt, nowMs);
   if (left <= 0) return null;
   const progress = Math.max(0, Math.min(1, left / CUSTOMER_CANCEL_WINDOW_MS));
   const urgent = left <= 30 * 1000;
+
+  const arm = () => {
+    setDenied(false);
+    setArmed(true);
+    window.clearTimeout(armTimer.current);
+    // A stray first tap must never leave a live confirm behind.
+    armTimer.current = window.setTimeout(() => setArmed(false), 8000);
+  };
 
   const cancel = async () => {
     if (busy) return;
@@ -88,9 +121,38 @@ export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
 
   return (
     <div>
+      {armed ? (
+        <div className={`rounded-2xl border p-3 text-center ${darkMode ? 'border-red-800/60 bg-red-950/30' : 'border-red-300 bg-red-50'}`}>
+          <p role="alert" className={`text-sm font-black ${darkMode ? 'text-red-300' : 'text-red-700'}`}>
+            {isAr ? 'هل تود إلغاء الطلب؟' : 'Cancel this order?'}
+          </p>
+          <p className={`mt-0.5 text-[11px] ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
+            {isAr ? 'لن تتمكن من التراجع بعد التأكيد.' : 'This cannot be undone.'}
+          </p>
+          <div className="mt-2.5 flex gap-2 justify-center">
+            <button
+              type="button"
+              onClick={() => void cancel()}
+              disabled={busy}
+              className="btn-tactile h-11 min-h-[44px] px-6 rounded-full bg-red-600 text-white text-sm font-extrabold inline-flex items-center gap-1.5 shadow-md hover:brightness-110 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
+            >
+              {busy ? <Loader2 size={15} className="animate-spin" /> : <XCircle size={15} />}
+              {isAr ? 'تأكيد الإلغاء' : 'Confirm cancel'}
+            </button>
+            <button
+              type="button"
+              onClick={disarm}
+              disabled={busy}
+              className={`btn-tactile h-11 min-h-[44px] px-6 rounded-full border text-sm font-bold disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 text-neutral-200' : 'border-neutral-300 text-neutral-700'}`}
+            >
+              {isAr ? 'تراجع' : 'Back'}
+            </button>
+          </div>
+        </div>
+      ) : (
       <button
         type="button"
-        onClick={() => void cancel()}
+        onClick={arm}
         disabled={busy}
         aria-label={isAr ? 'إلغاء الطلب' : 'Cancel order'}
         className={`btn-tactile relative overflow-hidden w-full h-12 min-h-[48px] px-5 rounded-full text-white text-sm font-extrabold inline-flex items-center justify-center gap-2 shadow-md hover:brightness-110 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 ${
@@ -115,6 +177,7 @@ export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
           </span>
         )}
       </button>
+      )}
       {denied && (
         <p className={`mt-1.5 text-[11px] font-bold ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>
             {isAr ? 'بدأ التجهيز أو انتهت المهلة — اتصل بنا للإلغاء.' : 'Preparation started or time ran out — call us to cancel.'}

@@ -22,7 +22,7 @@ import {
   completeOrderByTrackToken,
   findOrderByNumber,
 } from '../../_shared/repositories/orders.repo.js';
-import { receivableAtMs } from '../../_shared/eta.js';
+import { linkedReceivableAtMs, receivableAtMs } from '../../_shared/eta.js';
 import { notifyOwnerReceived, syncOrderStatusToTelegram } from '../../_shared/telegram.js';
 
 const MAX_BODY_BYTES = 1 * 1024;
@@ -99,7 +99,7 @@ export async function onRequest(context) {
   const nowMs = Date.now();
   let unlockAtMs = -Infinity;
   try {
-    unlockAtMs = receivableAtMs({
+    const ownMs = receivableAtMs({
       confirmedAt: row.confirmed_at,
       createdAt: row.created_at,
       etaAt: row.eta_at,
@@ -107,6 +107,17 @@ export async function onRequest(context) {
       settings: ordering,
       nowMs,
     });
+    unlockAtMs = ownMs;
+    // Joint delivery: a follow-up unlocks with its still-active parent.
+    if (Number.isInteger(row.parent_number)) {
+      try {
+        const parent = await db
+          .prepare('SELECT status, type, created_at, confirmed_at, eta_at FROM orders WHERE number = ?1')
+          .bind(row.parent_number)
+          .first();
+        unlockAtMs = linkedReceivableAtMs(ownMs, parent, ordering, nowMs);
+      } catch {}
+    }
   } catch {
     unlockAtMs = -Infinity;
   }

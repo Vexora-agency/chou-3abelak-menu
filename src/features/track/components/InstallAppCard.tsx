@@ -59,8 +59,8 @@ export const InstallAppCard: React.FC<InstallAppCardProps> = ({ orderNumber, tra
   const steps: string[] = ios
     ? isAr
       ? [
-          'دوس «مشاركة» (Share) في سفاري.',
-          'اختار «إضافة للشاشة الرئيسية» وخلّي «يفتح كتطبيق ويب» شغال.',
+          'اضغط «مشاركة» (Share) في سفاري.',
+          'اختر «إضافة للشاشة الرئيسية» وأبقِ «يفتح كتطبيق ويب» مفعّلًا.',
           'افتح أيقونة التطبيق من الشاشة الرئيسية.',
         ]
       : [
@@ -70,8 +70,8 @@ export const InstallAppCard: React.FC<InstallAppCardProps> = ({ orderNumber, tra
         ]
     : isAr
       ? [
-          'افتح قايمة المتصفح ( ⋮ ).',
-          'اختار «تثبيت التطبيق» أو «إضافة للشاشة الرئيسية».',
+          'افتح قائمة المتصفح ( ⋮ ).',
+          'اختر «تثبيت التطبيق» أو «إضافة للشاشة الرئيسية».',
           'افتح أيقونة التطبيق الجديدة.',
         ]
       : [
@@ -104,7 +104,7 @@ export const InstallAppCard: React.FC<InstallAppCardProps> = ({ orderNumber, tra
           </h2>
           <p className="mt-0.5 text-[11px] leading-relaxed text-neutral-400">
             {isAr
-              ? 'عشان توصلك تنبيهات طلبك حتى لو قفلت المتصفح.'
+              ? 'لتصلك تنبيهات طلبك حتى لو أغلقت المتصفح.'
               : 'Get your order alerts even with the browser closed.'}
           </p>
         </div>
@@ -127,7 +127,7 @@ export const InstallAppCard: React.FC<InstallAppCardProps> = ({ orderNumber, tra
               ? 'جارٍ التثبيت…'
               : 'Installing…'
             : isAr
-              ? 'ثبّت التطبيق (ضغطة واحدة)'
+              ? 'ثبّت التطبيق (بنقرة واحدة)'
               : 'Install the app (one tap)'}
         </button>
       ) : (
@@ -148,7 +148,7 @@ export const InstallAppCard: React.FC<InstallAppCardProps> = ({ orderNumber, tra
       {ios && (
         <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
           {isAr
-            ? 'ملحوظة: التطبيق المثبت بيبدأ من جديد — فعّل التنبيه من جوّاه.'
+            ? 'ملاحظة: التطبيق المثبت يبدأ من جديد — فعّل التنبيه من داخله.'
             : 'Note: the installed app starts fresh — turn notifications on from inside it.'}
         </p>
       )}

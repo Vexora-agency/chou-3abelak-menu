@@ -153,3 +153,34 @@ export function receivableAtMs(input) {
   const unlock = Math.max(base + delayMin * 60000, Number.isFinite(eta) ? eta : -Infinity);
   return unlock;
 }
+
+/**
+ * Joint-delivery unlock for a follow-up order (pure).
+ * The child keeps its own kitchen ticket, but the courier carries both
+ * together — so the customer may confirm the child as soon as EITHER the
+ * child or its still-active parent becomes receivable. Returns the earlier
+ * of the two instants (or the own instant when the parent is gone/done).
+ * Pure — same helper feeds GET /api/track, POST /api/track/batch and
+ * POST /api/track/received so the three surfaces can never disagree.
+ */
+export function linkedReceivableAtMs(ownMs, parentRow, settings, nowMs) {
+  const own = Number.isFinite(ownMs) ? ownMs : Infinity;
+  try {
+    const p = parentRow && typeof parentRow === 'object' ? parentRow : null;
+    if (!p) return own;
+    const st = typeof p.status === 'string' ? p.status : '';
+    if (st !== 'new' && st !== 'confirmed' && st !== 'ready') return own;
+    const parentMs = receivableAtMs({
+      confirmedAt: typeof p.confirmed_at === 'string' ? p.confirmed_at : null,
+      createdAt: typeof p.created_at === 'string' ? p.created_at : null,
+      etaAt: typeof p.eta_at === 'string' ? p.eta_at : null,
+      orderType: typeof p.type === 'string' ? p.type : 'delivery',
+      settings,
+      nowMs,
+    });
+    if (!Number.isFinite(parentMs)) return own;
+    return Math.min(own, parentMs);
+  } catch {
+    return own;
+  }
+}

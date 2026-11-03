@@ -3,8 +3,17 @@
  * Skill rule: no `db.prepare` / SELECT / INSERT outside `functions/_shared/**`.
  * Routes in `functions/api/**` must call these helpers (thin routes).
  */
-import { mapOrderRow, newOrderId } from '../orders.js';
+import { isSameCustomerPhone, mapOrderRow, newOrderId } from '../orders.js';
 import { orderingEtaOrDefaults } from '../eta.js';
+
+/**
+ * Follow-up window: a new order within this long after an ACTIVE order
+ * (new/confirmed/ready) from the same phone links to it via parent_number.
+ * 15 minutes covers "نسيت أضيف صنف" without ever merging strangers —
+ * completed/cancelled orders never link, and the link is display-only
+ * (two separate kitchen tickets, two separate totals, never auto-merged).
+ */
+export const LINK_WINDOW_MS = 15 * 60 * 1000;
 
 export async function findOrderByIdemKey(db, idemKey) {
   return db.prepare('SELECT number, total, track_token, sent_via FROM orders WHERE idem_key = ?1').bind(idemKey).first();
@@ -16,6 +25,36 @@ export async function findOrderById(db, id) {
 
 export async function findOrderByNumber(db, number) {
   return db.prepare('SELECT * FROM orders WHERE number = ?1').bind(number).first();
+}
+
+/**
+ * Follow-up candidate: the most recent ACTIVE order (new/confirmed/ready)
+ * inside the link window whose phone matches (exact or shared suffix —
+ * see isSameCustomerPhone). Returns { number } or null. Read-only, never
+ * throws (fail open = standalone order). Bounded to the last 50 rows in
+ * the window so a busy 15 minutes stays one cheap indexed read.
+ */
+export async function findLinkCandidate(db, phoneNorm, cutoffIso) {
+  try {
+    if (typeof phoneNorm !== 'string' || !phoneNorm || phoneNorm.replace(/[^0-9]/g, '').length < 7) return null;
+    if (typeof cutoffIso !== 'string' || !cutoffIso) return null;
+    const res = await db
+      .prepare(
+        "SELECT number, phone_norm FROM orders WHERE created_at >= ?1 AND status IN ('new','confirmed','ready') ORDER BY created_at DESC LIMIT 50"
+      )
+      .bind(cutoffIso)
+      .all();
+    const rows = (res && res.results) || [];
+    for (const r of rows) {
+      if (!r || !Number.isInteger(r.number)) continue;
+      if (isSameCustomerPhone(typeof r.phone_norm === 'string' ? r.phone_norm : '', phoneNorm)) {
+        return { number: r.number };
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -85,7 +124,7 @@ export async function findTrackRowsByNumbers(db, numbers) {
   const placeholders = nums.map((_, i) => `?${i + 1}`).join(',');
   const res = await db
     .prepare(
-      `SELECT number, track_token, status, type, total, items_json, created_at, confirmed_at, eta_at FROM orders WHERE number IN (${placeholders})`
+      `SELECT number, track_token, status, type, total, items_json, created_at, confirmed_at, eta_at, parent_number FROM orders WHERE number IN (${placeholders})`
     )
     .bind(...nums)
     .all();
@@ -428,35 +467,54 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
   // nowIso is passed by the caller (one timestamp per request, shared across retries —
   // verbatim original behaviour: created_at/updated_at identical even on retry).
   const stamp = typeof nowIso === 'string' ? nowIso : new Date().toISOString();
-  await db.batch([
-    db
-      .prepare(
-        'INSERT INTO orders (id, number, idem_key, track_token, created_at, updated_at, status, type, customer_name, customer_phone, phone_norm, customer_address, customer_table, notes, location_lat, location_lng, items_json, subtotal, delivery_fee, total, lang) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21)'
-      )
-      .bind(
-        id,
-        num,
-        cleaned.idemKey,
-        typeof cleaned.trackToken === 'string' ? cleaned.trackToken : null,
-        stamp,
-        stamp,
-        'new',
-        cleaned.type,
-        cleaned.name,
-        cleaned.phone,
-        cleaned.phoneNorm,
-        cleaned.address,
-        cleaned.table,
-        cleaned.notes,
-        cleaned.location ? cleaned.location.lat : null,
-        cleaned.location ? cleaned.location.lng : null,
-        JSON.stringify(cleaned.items),
-        cleaned.subtotal,
-        cleaned.deliveryFee,
-        cleaned.total,
-        cleaned.lang
-      ),
-  ]);
+  const parent = cleaned && Number.isInteger(cleaned.parentNumber) && cleaned.parentNumber > 0
+    ? cleaned.parentNumber
+    : null;
+  const runInsert = (withParent) =>
+    db.batch([
+      db
+        .prepare(
+          withParent
+            ? 'INSERT INTO orders (id, number, idem_key, track_token, created_at, updated_at, status, type, customer_name, customer_phone, phone_norm, customer_address, customer_table, notes, location_lat, location_lng, items_json, subtotal, delivery_fee, total, lang, parent_number) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22)'
+            : 'INSERT INTO orders (id, number, idem_key, track_token, created_at, updated_at, status, type, customer_name, customer_phone, phone_norm, customer_address, customer_table, notes, location_lat, location_lng, items_json, subtotal, delivery_fee, total, lang) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21)'
+        )
+        .bind(
+          id,
+          num,
+          cleaned.idemKey,
+          typeof cleaned.trackToken === 'string' ? cleaned.trackToken : null,
+          stamp,
+          stamp,
+          'new',
+          cleaned.type,
+          cleaned.name,
+          cleaned.phone,
+          cleaned.phoneNorm,
+          cleaned.address,
+          cleaned.table,
+          cleaned.notes,
+          cleaned.location ? cleaned.location.lat : null,
+          cleaned.location ? cleaned.location.lng : null,
+          JSON.stringify(cleaned.items),
+          cleaned.subtotal,
+          cleaned.deliveryFee,
+          cleaned.total,
+          cleaned.lang,
+          ...(withParent ? [parent] : [])
+        ),
+    ]);
+  try {
+    await runInsert(parent !== null);
+  } catch (e) {
+    // Unmigrated DB (no parent_number column yet): retry without the link —
+    // the order itself must never fail because of the new column.
+    const msg = e && typeof e.message === 'string' ? e.message : '';
+    if (parent !== null && /no such column/i.test(msg)) {
+      await runInsert(false);
+    } else {
+      throw e;
+    }
+  }
   return { id, num };
 }
 

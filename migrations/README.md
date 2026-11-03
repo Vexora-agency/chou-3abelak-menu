@@ -18,5 +18,6 @@ Apply remote: `npx wrangler d1 migrations apply ORDERS_DB --remote` (needs the r
 | `0020_cron_heartbeat.sql` | Cron health ledger (`cron_heartbeat`): the 1-minute order-nag sweep stamps started/success per pass so the dashboard can banner a dead cron. |
 | `0021_*` | **Intentionally skipped — no 0021 exists.** The ETA feature landed as `0022` directly; D1 applies by filename order so the gap is harmless (same precedent as the missing `0002`). Do NOT create a `0021` to "fill" it. |
 | `0022_eta_times.sql` | Smart ETA + receive-unlock instants (`orders.confirmed_at`, `orders.eta_at`, both nullable, no backfill — legacy rows keep NULL and the code treats NULL safely via created_at+delay fallbacks). |
+| `0023_linked_orders.sql` | Follow-up link (`orders.parent_number` nullable, no backfill — NULL = standalone) + restores `idx_orders_phone_norm` (dropped by 0018) + `idx_orders_parent_number`. |
 
 Rules: additive only, never edit an applied migration — add a new `00NN_*.sql` with the next free number (see `docs/ADD_NEW_FEATURE.md` step 1).

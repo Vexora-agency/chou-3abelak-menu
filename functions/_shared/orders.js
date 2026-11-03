@@ -296,6 +296,37 @@ export function validateOrderInput(body, menu) {
   };
 }
 
+/**
+ * Canonical phone for follow-up matching (pure, no DB).
+ * Strips non-digits, drops a leading international `00` (so `0020…` and
+ * `20…` compare equal), keeps the rest verbatim. Never throws — garbage
+ * yields '' so callers fail closed (no link).
+ */
+export function canonicalLinkPhone(v) {
+  if (typeof v !== 'string' || !v) return '';
+  const digits = v.replace(/[^0-9]/g, '');
+  if (!digits) return '';
+  return digits.startsWith('00') ? digits.slice(2) : digits;
+}
+
+/**
+ * Same-customer test for the follow-up link (pure, unit-testable).
+ * Exact match wins; otherwise a shared suffix of 9 (then 7) digits catches
+ * the `01…` (local) vs `20…` (international) Egyptian shape and the
+ * `03…` vs `961…` Lebanese shape without ever merging strangers.
+ * Both numbers must carry at least 7 digits — shorter fragments never link.
+ */
+export function isSameCustomerPhone(a, b) {
+  const x = canonicalLinkPhone(a);
+  const y = canonicalLinkPhone(b);
+  if (!x || !y || x.length < 7 || y.length < 7) return false;
+  if (x === y) return true;
+  for (const k of [9, 7]) {
+    if (x.length >= k && y.length >= k && x.slice(-k) === y.slice(-k)) return true;
+  }
+  return false;
+}
+
 /** Map a D1 row to the camelCase Order shape the dashboard expects. */
 export function mapOrderRow(row) {
   let items = [];
@@ -314,6 +345,10 @@ export function mapOrderRow(row) {
     // dashboard/public shapes never shift keys).
     confirmedAt: row.confirmed_at || null,
     etaAt: row.eta_at || null,
+    // Follow-up link (migration 0023, nullable — legacy rows keep NULL and
+    // read as standalone; always present as number-or-null so the dashboard
+    // shape never shifts keys).
+    parentNumber: Number.isInteger(row.parent_number) ? row.parent_number : null,
     customer: {
       name: row.customer_name || '',
       phone: row.customer_phone || '',

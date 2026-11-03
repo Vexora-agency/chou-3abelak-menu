@@ -91,7 +91,7 @@ export const PushSubscribeButton: React.FC<PushSubscribeButtonProps> = ({
     return (
       <div className="flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-green-500/10 border border-green-500/40 text-green-500 text-xs font-extrabold">
         <BellRing size={15} />
-        {isAr ? 'هنبّهك بكل جديد في طلبك' : 'We will ping you on every update'}
+        {isAr ? 'سنُعلمك بكل جديد في طلبك' : 'We will ping you on every update'}
       </div>
     );
   }
@@ -100,7 +100,7 @@ export const PushSubscribeButton: React.FC<PushSubscribeButtonProps> = ({
     return (
       <div className={`rounded-2xl border p-3 text-[11px] leading-relaxed ${darkMode ? 'border-neutral-700 text-neutral-300' : 'border-neutral-300 text-neutral-700'}`}>
         {isAr
-          ? 'للتنبيه على الآيفون: شارك ← إضافة للشاشة الرئيسية ← افتح أيقونة الموقع ← دوس الزر ده هناك.'
+          ? 'للتنبيه على الآيفون: شارك ← إضافة للشاشة الرئيسية ← افتح أيقونة الموقع ← اضغط هذا الزر هناك.'
           : 'For iPhone alerts: Share → Add to Home Screen → open the site icon → tap this button there.'}
       </div>
     );
@@ -108,7 +108,7 @@ export const PushSubscribeButton: React.FC<PushSubscribeButtonProps> = ({
 
   const note =
     state === 'denied'
-      ? isAr ? 'التنبيهات مقفولة من المتصفح — فعّلها من الإعدادات.' : 'Notifications are blocked in the browser — enable them in settings.'
+      ? isAr ? 'التنبيهات محظورة في المتصفح — فعّلها من الإعدادات.' : 'Notifications are blocked in the browser — enable them in settings.'
       : state === 'unsupported'
         ? isAr ? 'متصفحك لا يدعم التنبيهات — صفحة التتبع تتحدث تلقائيًا.' : 'This browser cannot notify — the tracking page updates itself.'
         : state === 'error'

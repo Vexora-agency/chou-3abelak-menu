@@ -34,6 +34,8 @@ export interface Order {
   confirmedAt?: string | null;
   /** Smart-ETA instant (ISO) — mapped server-side in mapOrderRow. */
   etaAt?: string | null;
+  /** Follow-up link (server-computed): earlier order number or null. */
+  parentNumber?: number | null;
 }
 
 /** Kitchen health signal: the 1-minute order-nag sweep heartbeat.
@@ -82,6 +84,7 @@ export const STR = {
     wa: 'WhatsApp', call: 'Call', now: 'Just now',
     min: (n: number) => `${n} min ago`, hr: (n: number) => `${n}h ago`,
     arrives: (t: string) => `Arrives ~${t}`, late: (n: number) => `${n}m late`,
+    linkedShort: (n: number) => `Linked to #${n}`, linkedLong: (n: number) => `Follow-up to order #${n} — same customer, prepare together`,
   },
   ar: {
     today: 'اليوم', d7: '7 أيام', thisMonth: 'هذا الشهر', lastMonth: 'الشهر الماضي', refresh: 'تحديث', live: 'مباشر', liveTip: 'التحديث التلقائي يعمل: الطلبات الجديدة تظهر هنا وحدها', soundOn: 'صوت الطلبات الجديدة يعمل', soundOff: 'صوت الطلبات الجديدة متوقف',
@@ -98,5 +101,6 @@ export const STR = {
     wa: 'واتساب', call: 'اتصال', now: 'الآن',
     min: (n: number) => `قبل ${n} د`, hr: (n: number) => `قبل ${n} س`,
     arrives: (t: string) => `يوصل ~${t}`, late: (n: number) => `متأخر ${n} د`,
+    linkedShort: (n: number) => `مرتبط بـ #${n}`, linkedLong: (n: number) => `تابع للطلب #${n} — نفس الزبون، يُجهَّز معه`,
   },
 } as const;

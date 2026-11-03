@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Clock, CookingPot, ArrowUp, XCircle, ArrowLeft, BellRing, Loader2, Truck } from 'lucide-react';
 import { formatPrice, unitLabel } from '@/src/utils/pricing';
 import { formatMMSS } from '@/src/utils/countdown';
+import { useNow } from '@/src/hooks/useNow';
 import { etaRange, formatEtaRange } from '@/src/utils/etaFormat';
 import { ReceivedButton } from './components/ReceivedButton';
 import { CancelOrderButton } from './components/CancelOrderButton';
@@ -30,6 +31,8 @@ interface TrackData {
   /** `ready` is legacy (pre-simplification orders) — mapped to preparing. */
   status: 'new' | 'confirmed' | 'ready' | 'completed' | 'cancelled';
   type?: 'delivery' | 'pickup' | 'dinein';
+  /** Follow-up link (server-computed): earlier order number or null. */
+  parentNumber?: number | null;
   items: TrackItem[];
   subtotal: number;
   deliveryFee: number;
@@ -75,9 +78,11 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   const [missing, setMissing] = useState(false);
   const [storeName, setStoreName] = useState('');
   const [currency, setCurrency] = useState('LBP');
-  // Render clock: refreshed on every 10 s poll tick so the delivery-lock
-  // countdown and ETA range stay live without their own timer. Read in
-  // render (never Date.now() inline — hooks purity rule).
+  // Render clock: poll stamp refreshed on every 10 s fetch (network stays
+  // exactly at 10 s). While a delivery lock is armed the DISPLAY clock
+  // below takes over at 1 s so the countdown ticks every second with zero
+  // extra fetches. Read displayNowMs in render (never Date.now() inline —
+  // hooks purity rule).
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [showTop, setShowTop] = useState(false);
   const isAr = lang === 'ar';
@@ -187,17 +192,28 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   // (enabled once confirmed) — stale clients are never trapped.
   const receivableMs =
     data && typeof data.receivableAt === 'string' && data.receivableAt ? Date.parse(data.receivableAt) : NaN;
-  const deliveryLocked =
+  // Arm the 1 s display ticker on the poll clock: while the server's
+  // `receivableAt` is still in the future the countdown below must tick
+  // every second (the 10 s fetch alone would visibly stall it).
+  const lockArmed =
     !!data &&
     (data.status === 'confirmed' || data.status === 'ready') &&
     Number.isFinite(receivableMs) &&
     receivableMs > nowMs;
+  const tickNowMs = useNow(lockArmed, 1000);
+  // Display clock: live 1 s ticks while locked, poll stamp otherwise.
+  const displayNowMs = lockArmed ? tickNowMs : nowMs;
+  const deliveryLocked =
+    !!data &&
+    (data.status === 'confirmed' || data.status === 'ready') &&
+    Number.isFinite(receivableMs) &&
+    receivableMs > displayNowMs;
   const receivedDisabled = awaitingConfirm || deliveryLocked;
-  const lockedRemainingMs = deliveryLocked ? Math.max(0, receivableMs - nowMs) : 0;
+  const lockedRemainingMs = deliveryLocked ? Math.max(0, receivableMs - displayNowMs) : 0;
   // ETA banner range: etaAt ±20% (min ±5 min each side), computed at render
-  // so the 10 s poll keeps it fresh. Invalid/absent = no banner.
+  // so the poll keeps it fresh (live while locked). Invalid/absent = no banner.
   const etaWindow = data && !cancelled && data.status !== 'completed' && typeof data.etaAt === 'string' && data.etaAt
-    ? etaRange(data.etaAt, nowMs)
+    ? etaRange(data.etaAt, displayNowMs)
     : null;
   const etaLabel = etaWindow ? formatEtaRange(etaWindow.fromIso, etaWindow.toIso, lang) : '';
 
@@ -250,6 +266,11 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
             <h1 className="text-center text-2xl sm:text-3xl font-black mt-1 tabular-nums" dir="ltr">
               #{data.number}
             </h1>
+            {typeof data.parentNumber === 'number' && (
+              <p className="mt-2 text-center text-[11px] font-bold text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-xl px-3 py-1.5" dir="auto">
+                {isAr ? `🔗 هذا الطلب سيصل مع الطلب #${data.parentNumber} — نفس التوصيلة` : `🔗 Arriving with order #${data.parentNumber} — same delivery`}
+              </p>
+            )}
 
             {cancelled ? (
               <div className="mt-6 rounded-2xl border border-red-500/40 bg-red-950/30 p-5 text-center">
@@ -294,7 +315,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
               <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs font-bold text-neutral-300">
                 <Truck size={13} className="shrink-0 text-[var(--primary)]" aria-hidden="true" />
                 <span className="min-w-0 break-words">
-                  {isAr ? 'يوصلك تقريبًا ' : 'Arriving around '}
+                  {isAr ? 'سيصلك طلبك تقريبًا ' : 'Arriving around '}
                   <span dir="ltr" className="tabular-nums">{etaLabel}</span>
                 </span>
               </p>
@@ -355,7 +376,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                   disabled={receivedDisabled}
                   waitingHint={deliveryLocked ? (
                     isAr ? (
-                      <>زر التأكيد هيتفعل بعد التوصيل (متبقي <span dir="ltr" className="tabular-nums">{formatMMSS(lockedRemainingMs)}</span>)</>
+                      <>سيتم تفعيل زر التأكيد بعد التوصيل (المتبقي <span dir="ltr" className="tabular-nums">{formatMMSS(lockedRemainingMs)}</span>)</>
                     ) : (
                       <>Confirm unlocks after delivery (<span dir="ltr" className="tabular-nums">{formatMMSS(lockedRemainingMs)}</span> left)</>
                     )

@@ -110,11 +110,11 @@ const STATUS_COPY = {
     },
   },
   completed: {
-    ar: (n) => `طلب #${n} جاهز! 🎉`,
-    en: (n) => `Order #${n} is ready! 🎉`,
+    ar: (n) => `تم توصيل طلبك #${n} — شكرًا لك!`,
+    en: (n) => `Order #${n} delivered — thank you!`,
   },
   cancelled: {
-    ar: (n) => `طلب #${n} اتلغى — كلمنا لو في سؤال`,
+    ar: (n) => `طلب #${n} أُلغي — اتصل بنا إذا كان لديك سؤال`,
     en: (n) => `Order #${n} was cancelled — call us`,
   },
 };

@@ -8,7 +8,7 @@
 import { jsonNoStore, readJsonBody } from '../_shared/session.js';
 import { mapOrderRow, validateOrderInput } from '../_shared/orders.js';
 import { newTrackToken } from '../_shared/push.js';
-import { findOrderById, findOrderByIdemKey, insertOrderWithNumber, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
+import { LINK_WINDOW_MS, findLinkCandidate, findOrderById, findOrderByIdemKey, insertOrderWithNumber, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
 import { getOrderingState } from '../_shared/status.js';
 
 const MAX_BODY_BYTES = 8 * 1024;
@@ -151,6 +151,16 @@ export async function onRequest(context) {
 
   // One timestamp per request (verbatim original: created_at/updated_at identical, even on retry).
   const nowIso = new Date().toISOString();
+  // Follow-up link (display-only, never merged): same phone with an ACTIVE
+  // order inside the 15-minute window links to the most recent one. Best
+  // effort — any failure reads as standalone, the order itself never waits.
+  try {
+    const cutoff = new Date(Date.now() - LINK_WINDOW_MS).toISOString();
+    const cand = await findLinkCandidate(db, c.phoneNorm, cutoff);
+    c.parentNumber = cand && Number.isInteger(cand.number) ? cand.number : null;
+  } catch {
+    c.parentNumber = null;
+  }
   const insertWithNumber = async (num) => insertOrderWithNumber(db, c, num, nowIso);
 
   // Order numbers come from the atomic order_counter (UPDATE ... RETURNING):
@@ -206,9 +216,16 @@ export async function onRequest(context) {
 
   // Fetch the stored row back so the response reflects exactly what was saved
   let savedTotal = c.total;
+  let savedParent = typeof c.parentNumber === 'number' ? c.parentNumber : null;
   try {
     const row = await findOrderById(db, created.id);
-    if (row) savedTotal = mapOrderRow(row).total;
+    if (row) {
+      const mapped = mapOrderRow(row);
+      savedTotal = mapped.total;
+      savedParent = typeof mapped.parentNumber === 'number' ? mapped.parentNumber : null;
+    }
   } catch {}
-  return jsonNoStore({ ok: true, orderNumber: created.num, total: savedTotal, trackToken: c.trackToken });
+  const out = { ok: true, orderNumber: created.num, total: savedTotal, trackToken: c.trackToken };
+  if (Number.isInteger(savedParent)) out.parentNumber = savedParent;
+  return jsonNoStore(out);
 }

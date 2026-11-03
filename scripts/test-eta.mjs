@@ -58,11 +58,11 @@ const TOK = 'a'.repeat(32);
   ok(computeEta({ confirmedAtMs: T0, orderType: 'spaceship', queueLen: 0, distanceKm: null, settings: s }).etaMinutes === 35, 'unknown type travels like delivery');
 }
 
-// ---- 4. Clamp [10,120] + rounding ----
+// ---- 4. Floor at 10 min, NO upper cap + rounding ----
 {
   const s = { prepMinutes: 0, kitchenMinutesPerOrder: 0, courierSpeedKmh: 25, roadFactor: 1.35, defaultDeliveryMinutes: 0 };
-  ok(computeEta({ confirmedAtMs: T0, orderType: 'pickup', queueLen: 0, distanceKm: null, settings: s }).etaMinutes === 10, 'zero work clamps to 10 min floor');
-  ok(computeEta({ confirmedAtMs: T0, orderType: 'delivery', queueLen: 100, distanceKm: 200, settings: { ...s, prepMinutes: 15, kitchenMinutesPerOrder: 3 } }).etaMinutes === 120, 'huge queue clamps to 120 min ceiling');
+  ok(computeEta({ confirmedAtMs: T0, orderType: 'pickup', queueLen: 0, distanceKm: null, settings: s }).etaMinutes === 10, 'zero work floors at 10 min');
+  ok(computeEta({ confirmedAtMs: T0, orderType: 'delivery', queueLen: 100, distanceKm: 200, settings: { ...s, prepMinutes: 15, kitchenMinutesPerOrder: 3 } }).etaMinutes === 963, 'huge queue has no cap: raw 15 + 300 + 648 = 963 min');
   // 16.5 rounds half-up to 17 (15 prep + 1.5 kitchen).
   const half = computeEta({ confirmedAtMs: T0, orderType: 'pickup', queueLen: 1, distanceKm: null, settings: { prepMinutes: 15, kitchenMinutesPerOrder: 1.5 } });
   ok(half.etaMinutes === 17, `rounds half up (got ${half.etaMinutes})`);
@@ -127,10 +127,9 @@ const TOK = 'a'.repeat(32);
   ok(orderDistanceKm({ location_lat: null, location_lng: null }, menu) === null, 'missing order location is null');
   ok(orderDistanceKm(row, { settings: {} }) === null, 'menu without coords is null');
   ok(orderDistanceKm(row, null) === null, 'missing menu is null');
-  // No plausibility ceiling in the math: every parseable pin computes its
-  // true distance, however far. The display clamp ([10,120] in computeEta)
-  // bounds what the customer sees; the checkout shows its own out-of-zone
-  // warning past 60 km.
+  // No plausibility ceiling and no display cap: every parseable pin computes
+  // its true distance, however far, and the ETA shows the raw result. The
+  // checkout shows its own out-of-zone warning past 60 km.
   const beirutMenu = { settings: { mapUrl: 'https://www.google.com/maps/search/?api=1&query=33%C2%B052\'29.1%22N%2035%C2%B032\'44.5' } };
   const atDoorKm = orderDistanceKm({ location_lat: 33.87475, location_lng: 35.54569 }, beirutMenu);
   ok(typeof atDoorKm === 'number' && atDoorKm < 0.05, 'pin at restaurant door is ~0 km');
@@ -138,7 +137,7 @@ const TOK = 'a'.repeat(32);
   ok(typeof nearKm === 'number' && nearKm > 1 && nearKm < 2, 'pin 0.01° north is ~1.1 km');
   const cairoKm = orderDistanceKm({ location_lat: 30.15093, location_lng: 31.39782 }, beirutMenu);
   ok(typeof cairoKm === 'number' && cairoKm > 500 && cairoKm < 650, `Cairo pin computes true distance (~570 km, got ${cairoKm?.toFixed?.(1)})`);
-  ok(computeEta({ confirmedAtMs: T0, orderType: 'delivery', queueLen: 0, distanceKm: cairoKm, settings: null }).etaMinutes === 120, 'far pin clamps to the 120 min display ceiling');
+  ok(computeEta({ confirmedAtMs: T0, orderType: 'delivery', queueLen: 0, distanceKm: cairoKm, settings: null }).etaMinutes > 1500, 'far pin shows raw computed ETA (no cap)');
 }
 
 // ---- 8. mapOrderRow exposes the new instants ----

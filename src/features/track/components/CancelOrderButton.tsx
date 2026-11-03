@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, XCircle } from 'lucide-react';
-
-export const CUSTOMER_CANCEL_WINDOW_MS = 5 * 60 * 1000;
+import { CUSTOMER_CANCEL_WINDOW_MS } from '../orderPhases';
 
 interface CancelOrderButtonProps {
   number: number;

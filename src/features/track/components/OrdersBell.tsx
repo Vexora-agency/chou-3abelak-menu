@@ -269,13 +269,22 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
         // Catch-up on (re)mount: orders never rung on THIS device ring once
         // — this covers leaving the browser and coming back, even if the OS
         // killed the tab (a fresh mount would otherwise stay silent).
-        // Skipped entirely while the master switch is off.
+        // Skipped entirely while the master switch is off. Only ACTIVE
+        // orders (new/confirmed/ready) may chime: after a storage wipe,
+        // finished (completed/cancelled) shelf entries must never ring —
+        // ringing for a dead order is the classic ghost chime.
         if (!isSoundOff()) {
           const rung = loadRung();
-          const missed = list.filter((o) => !rung.includes(o.n));
-          if (missed.length > 0) {
-            markRung(list.map((o) => o.n));
-            for (const o of missed) pendingSoundRef.current.add(o.n);
+          const missedActive = list.filter((o) => {
+            if (rung.includes(o.n)) return false;
+            const s = next[o.n]?.status;
+            return s === 'new' || s === 'confirmed' || s === 'ready';
+          });
+          // Mark everything seen (so finished orders never re-trigger),
+          // but queue sound for active ones only.
+          markRung(list.map((o) => o.n));
+          if (missedActive.length > 0) {
+            for (const o of missedActive) pendingSoundRef.current.add(o.n);
             vibrateBell();
             dance(2000);
             void flushPendingSound();

@@ -138,6 +138,25 @@ export const KITCHEN_ALARM_SESSION_MS = ALARM_SESSION_MS;
 export const KITCHEN_ALARM_INTERVAL_MS = ALARM_INTERVAL_MS;
 
 /**
+ * Freshness gate against ghost ringing: only orders created within the
+ * recent window may beep or keep the alarm alive. A stuck `new` row from
+ * days ago (never auto-completed by design — the nag sweep only completes
+ * confirmed/ready) stays visible on the board but silent. Unparseable or
+ * future dates fail closed (no sound — the board still shows them).
+ * 40 minutes covers the kitchen grace (5m) + nag window (5-30m) + margin.
+ */
+export const FRESH_ORDER_MS = 40 * 60 * 1000;
+
+export function isFreshOrder(createdAt: string | null | undefined, nowMs = Date.now()): boolean {
+  if (typeof createdAt !== 'string' || !createdAt) return false;
+  const t = Date.parse(createdAt);
+  if (!Number.isFinite(t)) return false;
+  const now = Number.isFinite(nowMs) ? nowMs : Date.now();
+  const age = now - t;
+  return age >= 0 && age < FRESH_ORDER_MS;
+}
+
+/**
  * Beeps when order ids appear that weren't in the previous poll. The first
  * effect run never beeps (prev === null is the baseline, not news). An
  * empty baseline IS news on transition: [] -> [A] is a real arrival, so it

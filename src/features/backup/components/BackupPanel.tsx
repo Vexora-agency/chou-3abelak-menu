@@ -81,7 +81,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
     const name = ownerRow ? t.actorOwner : actor.startsWith('client:') ? actor.slice('client:'.length) : actor;
     return (
       <span
-        dir="ltr"
+        dir="auto"
         className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
           ownerRow
             ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'

@@ -50,7 +50,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
             onClick={() => onChange({ ...item, addons: (item.addons || []).filter((a) => a.featureId !== 'spicy') })}
             className="btn-tactile shrink-0 px-2.5 py-1 rounded-full bg-red-500 text-white text-[10px] font-bold hover:brightness-110"
           >
-            {isAr ? 'شيل خيار الحار' : 'Remove spicy option'}
+            {isAr ? 'أزل خيار الحار' : 'Remove spicy option'}
           </button>
         </div>
       )}

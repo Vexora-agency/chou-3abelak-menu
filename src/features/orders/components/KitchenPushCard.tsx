@@ -166,7 +166,7 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
                 ? isAr
                   ? `التطبيق المثبت لا يرسل الترويسة المطلوبة — حدّث iOS وكرر التثبيت من سفاري. (${errDetail})`
                   : `The installed app omits a required header — update iOS and reinstall from Safari. (${errDetail})`
-                : isAr ? `تعذر الحفظ (${errDetail}) — ابعث هذا السطر كاملًا.` : `Could not save (${errDetail}) — send this full line.`
+                : isAr ? `تعذر الحفظ (${errDetail}) — أرسل هذا السطر كاملًا.` : `Could not save (${errDetail}) — send this full line.`
           : null;
 
   const on = state === 'on';

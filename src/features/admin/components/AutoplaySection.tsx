@@ -68,7 +68,7 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
       {on && (
         <div className="anim-fade-in">
           <label className="block text-xs text-neutral-400 mb-1">
-            {isAr ? 'كل كام ثانية يتحرك؟ (2 - 10)' : 'Slide every N seconds (2 - 10)'}
+            {isAr ? 'بعد كم ثانية يتحرك؟ (2 - 10)' : 'Slide every N seconds (2 - 10)'}
           </label>
           <input
             type="number"

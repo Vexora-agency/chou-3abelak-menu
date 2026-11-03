@@ -125,7 +125,7 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
           </p>
         ) : null}
       </div>
-      <span className={`shrink-0 text-sm font-extrabold tabular-nums ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`} dir="ltr">
+      <span className={`shrink-0 text-sm font-extrabold tabular-nums ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`} dir="auto">
         {priceLabel(item, lang, currency)}
       </span>
       {!isSoldOut && orderingEnabled && (

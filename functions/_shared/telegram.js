@@ -752,7 +752,8 @@ export async function rebuildOrderMessage(db, env, order) {
       // Currency string only — safe to edge-cache for minutes.
       const menu = kv ? await kv.get('menu', { type: 'json', cacheTtl: 300 }) : null;
       const cur = menu && menu.settings && menu.settings.currency;
-      if (cur && typeof cur === 'object') currency = String(cur.en || cur.ar || '');
+      // Arabic-first to match the message language (ل.ل), English fallback.
+      if (cur && typeof cur === 'object') currency = String(cur.ar || cur.en || '');
     } catch {}
     return formatNewOrderMessage(cleaned, order.number, currency);
   } catch {

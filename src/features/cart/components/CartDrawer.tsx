@@ -173,7 +173,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 ? 'bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700'
                 : 'bg-neutral-100 text-neutral-700 hover:text-black hover:bg-neutral-200'
             }`}
-            aria-label="Close"
+            aria-label={isAr ? 'إغلاق' : 'Close'}
           >
             <X size={20} />
           </button>

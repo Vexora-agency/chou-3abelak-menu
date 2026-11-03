@@ -134,7 +134,9 @@ export async function onRequest(context) {
       const nm = menu?.settings?.name;
       storeName = nm && typeof nm === 'object' ? String(nm.en || nm.ar || '') : '';
       const currency = menu?.settings?.currency;
-      cur = currency && typeof currency === 'object' ? String(currency.en || currency.ar || '') : '';
+      // Arabic-first: the Telegram order message is Arabic-first, so the
+      // currency word must match (ل.ل), falling back to English when unset.
+      cur = currency && typeof currency === 'object' ? String(currency.ar || currency.en || '') : '';
     } catch {}
   };
 

@@ -150,7 +150,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
       <div className={`relative flex justify-between items-center mt-3 pt-2 border-t border-dashed ${
         darkMode ? 'border-neutral-800' : 'border-neutral-200'
       }`}>
-        <span className={`font-extrabold text-sm tabular-nums ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`} dir="ltr">
+        <span className={`font-extrabold text-sm tabular-nums ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`} dir="auto">
           {priceLabel(item, lang, currency)}
         </span>
 

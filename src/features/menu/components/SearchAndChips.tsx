@@ -143,14 +143,14 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
         <div className="relative flex items-center">
           <Search
             size={19}
-            className={`absolute ${isAr ? 'right-4' : 'left-4'} stroke-[2.5] pointer-events-none ${darkMode ? 'text-[var(--primary)]' : 'text-[#8a6d00]'}`}
+            className={`absolute start-4 stroke-[2.5] pointer-events-none ${darkMode ? 'text-[var(--primary)]' : 'text-[#8a6d00]'}`}
           />
           <input
             id="menu-search-input"
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder={isAr ? 'ابحث في المنيو...' : 'Search the menu...'}
+            placeholder={isAr ? 'ابحث في القائمة...' : 'Search the menu...'}
             className={`w-full h-12 rounded-full border-[1.5px] text-base transition-all focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ps-11 pe-10 ${
               darkMode
                 ? 'bg-[#141414] text-white border-[#2A2A2A] placeholder-neutral-400 shadow-[0_8px_24px_rgba(0,0,0,0.5)]'
@@ -161,7 +161,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
             <button
               type="button"
               onClick={() => onSearchChange('')}
-              className={`absolute ${isAr ? 'left-1' : 'right-1'} w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+              className={`absolute end-1 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                 darkMode ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-black'
               }`}
               aria-label={isAr ? 'مسح البحث' : 'Clear search'}

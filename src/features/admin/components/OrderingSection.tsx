@@ -163,7 +163,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
             />
           </div>
           <div>
-            <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'دقائق المطبخ / طلب' : 'Kitchen min / order'}</label>
+            <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'دقائق التحضير / طلب' : 'Prep min / order'}</label>
             <input
               type="number"
               step="any"

@@ -52,8 +52,8 @@ export async function loadMenuBasics(env) {
     timezone = 'Asia/Beirut';
   }
   const name = settings.name && typeof settings.name === 'object'
-    ? { en: settings.name.en || 'Restaurant', ar: settings.name.ar || settings.name.en || 'Restaurant' }
-    : { en: 'Restaurant', ar: 'Restaurant' };
+    ? { en: settings.name.en || 'Store', ar: settings.name.ar || settings.name.en || 'المتجر' }
+    : { en: 'Store', ar: 'المتجر' };
   const currency = settings.currency && typeof settings.currency === 'object'
     ? { en: settings.currency.en || '', ar: settings.currency.ar || settings.currency.en || '' }
     : { en: '', ar: '' };

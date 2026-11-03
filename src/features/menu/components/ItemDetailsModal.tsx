@@ -418,7 +418,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   <Plus size={20} className="stroke-[3]" />
                   <span>{isAr ? 'إضافة إلى الطلب' : 'Add to Order'}</span>
                   {liveTotal !== null && (
-                    <span ref={addTotalRef} className="tabular-nums" dir="ltr">{addTotalText}</span>
+                    <span ref={addTotalRef} className="tabular-nums" dir="auto">{addTotalText}</span>
                   )}
                 </button>
               </>

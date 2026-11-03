@@ -138,7 +138,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
       {/* Overlapping Floating Search Bar */}
       <div className="relative -mt-6 z-20 max-w-xl mx-auto">
         <label htmlFor="menu-search-input" className="sr-only">
-          {isAr ? 'البحث في قائمة الطعام' : 'Search the menu'}
+          {isAr ? 'البحث في القائمة' : 'Search the menu'}
         </label>
         <div className="relative flex items-center">
           <Search
@@ -151,9 +151,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={isAr ? 'ابحث في المنيو...' : 'Search the menu...'}
-            className={`w-full h-12 rounded-full border-[1.5px] text-base transition-all focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${
-              isAr ? 'pr-11 pl-10' : 'pl-11 pr-10'
-            } ${
+            className={`w-full h-12 rounded-full border-[1.5px] text-base transition-all focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ps-11 pe-10 ${
               darkMode
                 ? 'bg-[#141414] text-white border-[#2A2A2A] placeholder-neutral-400 shadow-[0_8px_24px_rgba(0,0,0,0.5)]'
                 : 'bg-white text-[#0A0A0A] border-[#E5E5E5] placeholder-neutral-500 shadow-[0_8px_20px_rgba(0,0,0,0.1)]'

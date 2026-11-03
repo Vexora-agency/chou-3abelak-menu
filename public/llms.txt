@@ -1,6 +1,6 @@
 # Chou 3abelak (شو عبالك)
 
-> Lebanese restaurant: manakish, pastries, pizza, pies and drinks, with direct WhatsApp ordering from the online menu.
+> A local place with an online menu and direct WhatsApp ordering. Browse the menu and order in a tap.
 
 ## Links
 

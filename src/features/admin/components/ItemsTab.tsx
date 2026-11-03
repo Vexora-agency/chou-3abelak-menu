@@ -91,7 +91,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
           className="btn-tactile h-11 min-h-[44px] px-4 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-xs flex items-center justify-center gap-1 shadow-md basis-full min-[560px]:basis-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
         >
           <Plus size={14} />
-          <span>{isAr ? 'إضافة وجبة' : 'Add Item'}</span>
+          <span>{isAr ? 'إضافة صنف' : 'Add Item'}</span>
         </button>
       </div>
 

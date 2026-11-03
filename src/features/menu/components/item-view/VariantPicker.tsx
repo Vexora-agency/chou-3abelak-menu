@@ -54,7 +54,7 @@ export const VariantPicker: React.FC<VariantPickerProps> = ({
               <span dir="auto">{featureName(menu, v.featureId, lang)}</span>
               {/* Zero-price variants show no price text (same rule as add-ons). */}
               {v.price !== 0 && (
-                <span className="tabular-nums opacity-80" dir="ltr">+{formatPrice(v.price, currency)}</span>
+                <span className="tabular-nums opacity-80"><bdi dir="ltr">+{formatPrice(v.price)}</bdi> <span dir="auto">{currency}</span></span>
               )}
             </button>
           );

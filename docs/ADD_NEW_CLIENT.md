@@ -10,5 +10,6 @@
 4. Resources: create fresh D1 + KV + R2, bind as `ORDERS_DB`, `MENU_KV`, `REPORTS`. Run `npx wrangler d1 migrations apply ORDERS_DB --remote`.
 5. `npm run build` → deploy Pages → smoke test: menu loads, order 403/200, admin login, reports 404 on starter.
 6. Backend untouched. Never `if (client === …)` — use config flags.
+7. Replace `menu.seed.json` catalog copy per client — it ships only as the dev/fallback dataset.
 
 Phase 2 note: brand codemod complete — `theme.config.ts primary` drives the whole site via `var(--primary)`. Intentionally left as-is: `#8a6d00` light-mode tints, canvas particle fallback, `public/privacy.html` static page (own `<style>`, future work).

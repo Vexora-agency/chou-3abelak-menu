@@ -96,7 +96,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
           draggable={false}
           className="w-8 h-8 object-contain -rotate-12"
         />
-        <span>{isAr ? 'إدارة قائمة الطعام' : 'Menu Management'}</span>
+        <span>{isAr ? 'إدارة القائمة' : 'Menu Management'}</span>
         {/* Client's sold plan (from features.config `plan`, set by the setup
             script — keep SITE_PLAN in sync on rebuild). Gold for pro, gray
             for starter. */}

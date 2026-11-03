@@ -48,7 +48,7 @@ export const BELL_SOUNDS: BellPattern[] = [
   },
   {
     id: 'triple',
-    name: { en: 'Triple kitchen bell', ar: 'جرس المطبخ الثلاثي' },
+    name: { en: 'Triple bell', ar: 'الجرس الثلاثي' },
     hint: { en: 'Rising triple strike', ar: 'ثلاث دقات متصاعدة' },
     strikes: [
       { freq: E5, at: 0, vol: 0.16 },

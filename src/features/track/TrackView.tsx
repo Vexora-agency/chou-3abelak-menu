@@ -304,7 +304,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
               {data.items.map((it, i) => (
                 <div key={i} className="flex justify-between gap-3 py-1.5 text-sm">
                   <span className="min-w-0 flex-1 break-words text-neutral-200">
-                    <bdi className="tabular-nums" dir="ltr">{it.qty} × </bdi>
+                    <bdi dir="ltr" className="tabular-nums">{it.qty}</bdi><span dir="ltr"> × </span>
                     {typeof it.unit === 'string' && it.unit ? <span>{unitLabel(it.unit, it.qty, lang)} </span> : null}
                     {pick(it.name, lang)}
                     {it.variantName && <span className="text-neutral-400"> ({pick(it.variantName, lang)})</span>}
@@ -328,9 +328,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
               ))}
               <div className="border-t border-neutral-800 mt-2 pt-2 flex justify-between text-sm font-black">
                 <span>{isAr ? 'الإجمالي' : 'Total'}</span>
-                <span className="tabular-nums text-[var(--primary)]" dir="ltr">
-                  {formatPrice(data.total, currency)}
-                </span>
+                <span className="tabular-nums text-[var(--primary)]"><bdi dir="ltr">{formatPrice(data.total)}</bdi> <span dir="auto">{currency}</span></span>
               </div>
             </div>
 

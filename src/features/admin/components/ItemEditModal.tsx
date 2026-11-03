@@ -62,7 +62,7 @@ export const ItemEditModal: React.FC<ItemEditModalProps> = ({
   <div className="relative z-10 w-full max-w-[480px] bg-[#141414] border-2 border-[var(--primary)] rounded-2xl p-5 max-h-[90dvh] overflow-y-auto overscroll-contain space-y-4 shadow-2xl stagger">
     <div className="flex items-center justify-between gap-3">
       <h3 className="text-lg font-black">
-        {isNew ? (isAr ? 'إضافة وجبة جديدة' : 'Add New Item') : (isAr ? 'تعديل الوجبة' : 'Edit Item')}
+        {isNew ? (isAr ? 'إضافة صنف جديد' : 'Add New Item') : (isAr ? 'تعديل الصنف' : 'Edit Item')}
       </h3>
       <button
         type="button"

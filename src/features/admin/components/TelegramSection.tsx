@@ -168,15 +168,15 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
         lang={lang}
         collapsed={collapsed}
         onToggle={() => onToggleCollapse?.()}
-        action={(
+      />
+      <SettingsGroupBody open={!collapsed}>
+      <div className="flex justify-end">
         <span className={`shrink-0 text-[11px] font-extrabold px-2.5 py-1 rounded-full border ${status?.linked
           ? 'text-green-400 border-green-800 bg-green-950'
           : 'text-neutral-400 border-neutral-700 bg-black'}`}>
           {status?.linked ? (isAr ? '● مرتبط' : '● linked') : (isAr ? '○ غير مرتبط' : '○ not linked')}
         </span>
-        )}
-      />
-      <SettingsGroupBody open={!collapsed}>
+      </div>
 
       {!status?.linked && (
         <div className="flex flex-wrap gap-2.5">

@@ -13,6 +13,7 @@ import {
 import {
   ETA_DEFAULTS,
   MAX_DELIVERY_DISTANCE_KM,
+  RECEIVE_BUFFER_MIN,
   haversineKm,
   orderDistanceKm,
   orderingEtaOrDefaults,
@@ -84,15 +85,17 @@ const TOK = 'a'.repeat(32);
   ok(receiveDelayMinFor('delivery', null) === 30 && receiveDelayMinFor('pickup', null) === 15 && receiveDelayMinFor('dinein', null) === 15 && receiveDelayMinFor('bogus', null) === 15, 'receive delays: delivery 30, counter types 15');
 }
 
-// ---- 6. receivableAtMs: max(created+delay, eta), legacy-safe ----
+// ---- 6. receivableAtMs: unlock = eta + 5 min buffer, legacy-safe ----
 {
+  ok(RECEIVE_BUFFER_MIN === 5, 'receive buffer is 5 min');
   const created = iso(T0 - 60 * MIN);
   const confirmed = iso(T0 - 50 * MIN);
   const eta = iso(T0 + 60 * MIN);
-  // eta (T0+60) beats created+30 (T0-30).
-  ok(receivableAtMs({ confirmedAt: confirmed, createdAt: created, etaAt: eta, orderType: 'delivery', settings: null, nowMs: T0 }) === T0 + 60 * MIN, 'future eta wins over delay');
-  // eta in the past: delay instant wins.
-  ok(receivableAtMs({ confirmedAt: confirmed, createdAt: created, etaAt: iso(T0 - 90 * MIN), orderType: 'delivery', settings: null, nowMs: T0 }) === T0 - 20 * MIN, 'delay wins when eta already passed');
+  // eta + buffer, regardless of the old per-type delays.
+  ok(receivableAtMs({ confirmedAt: confirmed, createdAt: created, etaAt: eta, orderType: 'delivery', settings: null, nowMs: T0 }) === T0 + 65 * MIN, 'unlock = eta + 5 min');
+  ok(receivableAtMs({ confirmedAt: confirmed, createdAt: created, etaAt: eta, orderType: 'delivery', settings: { receiveDelayDeliveryMin: 45, receiveDelayPickupMin: 10 }, nowMs: T0 }) === T0 + 65 * MIN, 'custom delays ignored once eta exists');
+  // A passed eta still unlocks at eta + buffer (never earlier, never trapped).
+  ok(receivableAtMs({ confirmedAt: confirmed, createdAt: created, etaAt: iso(T0 - 90 * MIN), orderType: 'delivery', settings: null, nowMs: T0 }) === T0 - 85 * MIN, 'passed eta unlocks at eta + 5');
   // Legacy row (NULL stamps): unlock from created + delay.
   ok(receivableAtMs({ confirmedAt: null, createdAt: created, etaAt: null, orderType: 'delivery', settings: null, nowMs: T0 }) === T0 - 30 * MIN, 'legacy delivery unlocks from created+30');
   ok(receivableAtMs({ confirmedAt: null, createdAt: created, etaAt: null, orderType: 'pickup', settings: null, nowMs: T0 }) === T0 - 45 * MIN, 'legacy pickup unlocks from created+15');
@@ -326,16 +329,17 @@ const trackEnv = (db, menu) => ({ ORDERS_DB: db, MENU_KV: mockKv(menu) });
 {
   const ordering = { receiveDelayDeliveryMin: 45, receiveDelayPickupMin: 10 };
   const db = mockOrdersDb([
-    orderSeed({ status: 'confirmed', confirmed_at: iso(T0 - 10 * MIN), eta_at: iso(T0 + 30 * MIN) }),
+    orderSeed({ status: 'confirmed', confirmed_at: iso(T0 - 10 * MIN), eta_at: iso(T0 + 20 * MIN) }),
     orderSeed({ id: 'ord-9', number: 1009, status: 'new' }),
     orderSeed({ id: 'ord-8', number: 1008, status: 'confirmed', confirmed_at: null, eta_at: null, created_at: iso(T0 - 120 * MIN) }),
   ]);
   const r = await trackOnRequest({ request: trackReq(1001, TOK), env: trackEnv(db, { settings: { ordering } }) });
   ok(r.status === 200, 'track 200 for valid pair');
   const d = await r.json();
-  ok(d.etaAt === iso(T0 + 30 * MIN), 'track echoes stamped etaAt');
-  // max(confirmed+45, eta): T0-10+45 = T0+35 beats the T0+30 eta.
-  ok(d.receivableAt === iso(T0 + 35 * MIN), 'receivableAt = max(created+delay, eta) -> delay wins here');
+  ok(d.etaAt === iso(T0 + 20 * MIN), 'track echoes stamped etaAt');
+  // eta + 5 min buffer — the custom 45-min delay is ignored (old rule would
+  // have answered max(T0-10+45, T0+20) = T0+35).
+  ok(d.receivableAt === iso(T0 + 25 * MIN), 'receivableAt = eta + 5 min buffer');
   const n = await (await trackOnRequest({ request: trackReq(1009, TOK), env: trackEnv(db, { settings: { ordering } }) })).json();
   ok(n.etaAt === null && n.receivableAt === null, 'new order: both null');
   const leg = await (await trackOnRequest({ request: trackReq(1008, TOK), env: trackEnv(db, { settings: { ordering } }) })).json();

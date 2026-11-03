@@ -7,10 +7,11 @@
  * Atomic flip confirmed|ready -> completed via completeOrderByTrackToken:
  * exactly one caller wins; repeats are idempotent. A still-`new` order
  * (kitchen hasn't started preparing) is rejected with 404 (no oracle).
- * Receive-unlock gate (migration 0022): only flips once
- * max((confirmed_at ?? created_at) + delay[type], eta_at ?? -inf) passes —
- * too early answers 409 { error: 'too_early', retryAfterSec }, mirroring
- * the cancel endpoint's 409 'too_late' shape.
+ * Receive-unlock gate: only flips once the smart ETA passes plus a small
+ * grace buffer (eta_at + 5 min) — too early answers 409
+ * { error: 'too_early', retryAfterSec }, mirroring the cancel endpoint's
+ * 409 'too_late' shape. Legacy rows without eta_at fall back to the old
+ * created+delay guarantee (never trapped).
  * On a real flip the
  * owner is pinged on Telegram (new short message + original order message
  * stamped completed) — best-effort via waitUntil, never blocks the reply.
@@ -58,13 +59,12 @@ export async function onRequest(context) {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
 
-  // Receive-unlock gate (migration 0022): the button unlocks at
-  // max((confirmed_at ?? created_at) + delay[type], eta_at ?? -inf), where
-  // delays come from settings.ordering (receiveDelayDeliveryMin default 30,
-  // receiveDelayPickupMin default 15). ONE edge-cached menu KV read max, on
-  // tap only, best-effort with hardcoded fallbacks — a KV miss degrades to
-  // the legacy guarantee (unlock from created_at + delay, i.e. immediately
-  // for old orders, never trapped). Too early answers 409 { error:
+  // Receive-unlock gate: the button unlocks at eta_at + 5 min (the ETA
+  // already encodes prep + queue + route, so the unlock scales with the
+  // real wait). ONE edge-cached menu KV read max, on tap only, best-effort
+  // with hardcoded fallbacks — a KV miss or a legacy row without eta_at
+  // degrades to the legacy guarantee (unlock from created_at + delay,
+  // i.e. immediately for old orders, never trapped). Too early answers 409 { error:
   // 'too_early', status, retryAfterSec }, mirroring the cancel endpoint's
   // 409 'too_late' shape.
   let row = null;

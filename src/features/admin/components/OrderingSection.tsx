@@ -145,12 +145,15 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
         )}
       </div>
 
-      {/* Smart ETA tuning */}
+      {/* Smart ETA tuning: 3 numbers only — courier speed, road factor and
+          the receive window are fixed researched constants (not owner
+          inputs), and the "received" button unlocks automatically 5 minutes
+          after the computed arrival. */}
       <div className="rounded-xl border border-neutral-800 bg-black/40 p-3 space-y-3">
         <div>
           <p className="block text-xs font-bold">{isAr ? 'تقدير التوصيل الذكي' : 'Smart delivery estimate'}</p>
           <p className="block text-[11px] text-neutral-500 mt-0.5">
-            {isAr ? 'مضبوطة وجاهزة — القيم الافتراضية تناسب معظم المطاعم. غيّرها فقط إذا كنت متأكدًا.' : 'Pre-tuned and ready — defaults fit most restaurants. Change only if you are sure.'}
+            {isAr ? 'مضبوطة وجاهزة — القيم الافتراضية تناسب معظم المطاعم. زر "استلمت" يفتح تلقائيًا بعد 5 دقائق من الوقت المتوقع.' : 'Pre-tuned and ready — defaults fit most restaurants. The Received button unlocks automatically 5 minutes after the ETA.'}
           </p>
         </div>
         <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
@@ -180,33 +183,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
             />
             <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'تُضاف عن كل طلب قبله في طابور المطبخ.' : 'Added for each order ahead in the kitchen queue.'}</p>
           </div>
-          <div>
-            <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'سرعة المندوب (كم/س)' : 'Courier speed (km/h)'}</label>
-            <input
-              type="number"
-              step="any"
-              min={5}
-              max={120}
-              value={ordering.courierSpeedKmh}
-              onChange={(e) => onUpdate((prev) => ({ ...prev, courierSpeedKmh: Number(e.target.value) }))}
-              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
-            />
-            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'متوسط سرعة الدليفري على الطريق.' : 'Average courier speed on the road.'}</p>
-          </div>
-          <div>
-            <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'معامل الطريق (×)' : 'Road factor (×)'}</label>
-            <input
-              type="number"
-              step="any"
-              min={1}
-              max={2}
-              value={ordering.roadFactor}
-              onChange={(e) => onUpdate((prev) => ({ ...prev, roadFactor: Number(e.target.value) }))}
-              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
-            />
-            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'الطريق أطول من الخط المستقيم — 1.35 تعني زيادة 35%.' : 'Roads are longer than straight lines — 1.35 means +35%.'}</p>
-          </div>
-          <div>
+          <div className="min-[380px]:col-span-2">
             <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'توصيل احتياطي (د)' : 'Fallback delivery (min)'}</label>
             <input
               type="number"
@@ -218,32 +195,6 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
               className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
             />
             <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'يُستخدم عند غياب موقع دقيق للزبون.' : 'Used when the customer has no precise location.'}</p>
-          </div>
-          <div>
-            <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'مهلة الاستلام · توصيل (د)' : 'Receive delay · delivery (min)'}</label>
-            <input
-              type="number"
-              step="any"
-              min={0}
-              max={720}
-              value={ordering.receiveDelayDeliveryMin}
-              onChange={(e) => onUpdate((prev) => ({ ...prev, receiveDelayDeliveryMin: Number(e.target.value) }))}
-              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
-            />
-            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'بعدها يستطيع الزبون الضغط على "استلمت" (دلفري).' : 'After this the customer can tap Received (delivery).'}</p>
-          </div>
-          <div className="min-[380px]:col-span-2">
-            <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'مهلة الاستلام · استلام (د)' : 'Receive delay · pickup (min)'}</label>
-            <input
-              type="number"
-              step="any"
-              min={0}
-              max={720}
-              value={ordering.receiveDelayPickupMin}
-              onChange={(e) => onUpdate((prev) => ({ ...prev, receiveDelayPickupMin: Number(e.target.value) }))}
-              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
-            />
-            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'بعدها يستطيع الزبون الضغط على "استلمت" (استلام من المحل).' : 'After this the customer can tap Received (pickup).'}</p>
           </div>
         </div>
       </div>

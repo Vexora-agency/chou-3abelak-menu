@@ -138,6 +138,13 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   const distanceText = Number.isFinite(distanceMeters) && distanceMeters >= 0 && distanceMeters <= MAX_DELIVERY_DISTANCE_KM * 1000
     ? formatDistance(distanceMeters, lang)
     : null;
+  // Out-of-zone heads-up (never a blocker): a pin past the plausibility
+  // ceiling gets an honest warning instead of a made-up delivery time.
+  const distanceWarning = location && restaurantCoords && Number.isFinite(distanceMeters) && distanceMeters > MAX_DELIVERY_DISTANCE_KM * 1000
+    ? (isAr
+      ? `عنوانك على بعد ${formatDistance(distanceMeters, lang)} من المطعم — خارج نطاق التوصيل المعتاد. اتصل بنا قبل إتمام الطلب.`
+      : `Your address is ${formatDistance(distanceMeters, lang)} from the restaurant — outside the usual delivery zone. Call us before ordering.`)
+    : null;
 
   // Stable idempotency key for this drawer session: retries reuse it so
   // they never create a duplicate order; it resets when the drawer closes
@@ -368,6 +375,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     closeLocSheet,
     handleMapPick,
     distanceText,
+    distanceWarning,
     subtotal,
     deliveryFee,
     grandTotal,

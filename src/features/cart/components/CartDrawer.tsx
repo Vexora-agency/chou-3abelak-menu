@@ -52,6 +52,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     closeLocSheet,
     handleMapPick,
     distanceText,
+    distanceWarning,
     subtotal,
     deliveryFee,
     grandTotal,
@@ -242,9 +243,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               setCustomer={setCustomer}
               honeypot={honeypot}
               setHoneypot={setHoneypot}
-              location={location}
-              distanceText={distanceText}
-              lang={lang}
+                location={location}
+                distanceText={distanceText}
+                distanceWarning={distanceWarning}
+                lang={lang}
               darkMode={darkMode}
               onOpenLocSheet={() => setLocSheetOpen(true)}
               onClearLocation={clearLocation}

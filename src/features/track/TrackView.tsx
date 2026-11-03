@@ -5,7 +5,7 @@ import { formatMMSS } from '@/src/utils/countdown';
 import { etaRange, formatEtaRange } from '@/src/utils/etaFormat';
 import { ReceivedButton } from './components/ReceivedButton';
 import { CancelOrderButton } from './components/CancelOrderButton';
-import { PushSubscribeButton } from './PushSubscribeButton';
+import { InstallAppCard } from './components/InstallAppCard';
 
 interface TrackViewProps {
   number: number;
@@ -368,9 +368,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
             )}
 
             {(data.status === 'new' || data.status === 'confirmed' || data.status === 'ready') && (
-              <div className="mt-4 rounded-2xl border border-neutral-800 border-t-2 border-t-[var(--primary)] bg-neutral-900/60 p-4">
-                <PushSubscribeButton orderNumber={data.number} trackToken={token} lang={lang} darkMode />
-              </div>
+              <InstallAppCard orderNumber={data.number} trackToken={token} lang={lang} />
             )}
             <p className="mt-4 text-center text-xs text-neutral-400 flex flex-wrap items-center gap-1 justify-center w-full">
               <BellRing size={12} className="shrink-0" />

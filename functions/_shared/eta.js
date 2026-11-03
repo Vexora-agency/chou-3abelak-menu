@@ -148,22 +148,16 @@ export function haversineKm(aLat, aLng, bLat, bLng) {
 }
 
 /**
- * Plausibility ceiling for a single delivery trip. Beyond this the geometry
- * is certainly wrong (a test pin, a stale restaurant link, a customer
- * ordering from another country) — a 500 km "delivery" must never produce
- * a 120-minute ETA. Over-range reads as unknown so callers fall back to
- * the default leg. Mirrors MAX_DELIVERY_DISTANCE_KM in src/utils/menuHelpers.ts.
- */
-export const MAX_DELIVERY_DISTANCE_KM = 60;
-
-/**
  * Order → restaurant distance in km, or null when it cannot be computed
  * (non-delivery types don't travel — callers treat non-delivery as 0
  * travel; here null simply means "no precise distance, use the default").
  * Restaurant coords come from the ALREADY-LOADED menu
  * (`menu.settings.mapUrl`); the order's own stored location_lat/lng.
- * Beyond MAX_DELIVERY_DISTANCE_KM the geometry is implausible (wrong link
- * or test pin) and reads as unknown — never a 120-minute ETA.
+ * Deliberately uncapped: every pin computes its true distance, however
+ * far — the ETA clamp ([10,120] in computeEta) bounds what the customer
+ * sees, and the checkout shows its own out-of-zone warning past the
+ * plausibility ceiling. A wrong-looking number must stay visible so it
+ * can be investigated, never silently replaced by a plausible default.
  * Pure — no KV/D1 reads (callers piggyback their existing menu fetch).
  */
 export function orderDistanceKm(orderRow, menu) {
@@ -178,7 +172,7 @@ export function orderDistanceKm(orderRow, menu) {
     const rest = parseMapUrlCoordsJs(typeof mapUrl === 'string' ? mapUrl : '');
     if (!rest) return null;
     const km = haversineKm(lat, lng, rest.lat, rest.lng);
-    if (!Number.isFinite(km) || km < 0 || km > MAX_DELIVERY_DISTANCE_KM) return null;
+    if (!Number.isFinite(km) || km < 0) return null;
     return km;
   } catch {
     return null;

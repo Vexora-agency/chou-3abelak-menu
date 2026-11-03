@@ -150,7 +150,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
         <div>
           <p className="block text-xs font-bold">{isAr ? 'تقدير التوصيل الذكي' : 'Smart delivery estimate'}</p>
           <p className="block text-[11px] text-neutral-500 mt-0.5">
-            {isAr ? 'يضبط الوقت المتوقع الظاهر على الطلبات المؤكدة' : 'Tunes the ETA shown on confirmed orders'}
+            {isAr ? 'مضبوطة وجاهزة — القيم الافتراضية تناسب معظم المطاعم. غيّرها فقط إذا كنت متأكدًا.' : 'Pre-tuned and ready — defaults fit most restaurants. Change only if you are sure.'}
           </p>
         </div>
         <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
@@ -165,6 +165,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
               onChange={(e) => onUpdate((prev) => ({ ...prev, prepMinutes: Number(e.target.value) }))}
               className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
             />
+            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'وقت ثابت يُضاف لتجهيز أي طلب.' : 'Fixed time added to prepare any order.'}</p>
           </div>
           <div>
             <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'دقائق التحضير / طلب' : 'Prep min / order'}</label>
@@ -177,6 +178,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
               onChange={(e) => onUpdate((prev) => ({ ...prev, kitchenMinutesPerOrder: Number(e.target.value) }))}
               className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
             />
+            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'تُضاف عن كل طلب قبله في طابور المطبخ.' : 'Added for each order ahead in the kitchen queue.'}</p>
           </div>
           <div>
             <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'سرعة المندوب (كم/س)' : 'Courier speed (km/h)'}</label>
@@ -189,6 +191,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
               onChange={(e) => onUpdate((prev) => ({ ...prev, courierSpeedKmh: Number(e.target.value) }))}
               className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
             />
+            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'متوسط سرعة الدليفري على الطريق.' : 'Average courier speed on the road.'}</p>
           </div>
           <div>
             <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'معامل الطريق (×)' : 'Road factor (×)'}</label>
@@ -201,6 +204,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
               onChange={(e) => onUpdate((prev) => ({ ...prev, roadFactor: Number(e.target.value) }))}
               className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
             />
+            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'الطريق أطول من الخط المستقيم — 1.35 تعني زيادة 35%.' : 'Roads are longer than straight lines — 1.35 means +35%.'}</p>
           </div>
           <div>
             <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'توصيل احتياطي (د)' : 'Fallback delivery (min)'}</label>
@@ -213,6 +217,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
               onChange={(e) => onUpdate((prev) => ({ ...prev, defaultDeliveryMinutes: Number(e.target.value) }))}
               className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
             />
+            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'يُستخدم عند غياب موقع دقيق للزبون.' : 'Used when the customer has no precise location.'}</p>
           </div>
           <div>
             <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'مهلة الاستلام · توصيل (د)' : 'Receive delay · delivery (min)'}</label>
@@ -225,6 +230,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
               onChange={(e) => onUpdate((prev) => ({ ...prev, receiveDelayDeliveryMin: Number(e.target.value) }))}
               className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
             />
+            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'بعدها يستطيع الزبون الضغط على "استلمت" (دلفري).' : 'After this the customer can tap Received (delivery).'}</p>
           </div>
           <div className="min-[380px]:col-span-2">
             <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'مهلة الاستلام · استلام (د)' : 'Receive delay · pickup (min)'}</label>
@@ -237,6 +243,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
               onChange={(e) => onUpdate((prev) => ({ ...prev, receiveDelayPickupMin: Number(e.target.value) }))}
               className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
             />
+            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'بعدها يستطيع الزبون الضغط على "استلمت" (استلام من المحل).' : 'After this the customer can tap Received (pickup).'}</p>
           </div>
         </div>
       </div>

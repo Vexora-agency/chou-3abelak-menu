@@ -217,9 +217,9 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
           {isAr ? 'آخر إشعار: ' : 'Last notification: '}
           <span dir="ltr" className="font-mono">#{status.lastNotification.orderNumber}</span>
           {' · '}
-          {status.lastNotification.status === 'sent'
-            ? (isAr ? 'وصل ✅' : 'delivered ✅')
-            : (isAr ? `فشل (محاولات: ${status.lastNotification.attempts ?? 0})` : `failed (attempts: ${status.lastNotification.attempts ?? 0})`)}
+        {status.lastNotification.status === 'sent'
+          ? (isAr ? 'وصل' : 'delivered')
+          : (isAr ? `فشل (محاولات: ${status.lastNotification.attempts ?? 0})` : `failed (attempts: ${status.lastNotification.attempts ?? 0})`)}
         </p>
       )}
 

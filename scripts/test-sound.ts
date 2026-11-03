@@ -1,5 +1,7 @@
 // Kitchen-bell audio path test: stubbed AudioContext records every call.
-// Proves playNewOrderBeep schedules the two-tone bell and unlock resumes.
+// Proves a locked playNewOrderBeep schedules NOTHING (no silent consume),
+// the ladder replays exactly once on unlock, and concurrent triggers ring
+// once (2s single-flight). Unlock path: first tap resumes the context.
 // Usage: npx tsx scripts/test-sound.ts
 const calls: string[] = [];
 let ctxState = 'suspended';
@@ -40,7 +42,9 @@ const ok = (c: boolean, n: string, x = '') => { if (c) { pass++; console.log('PA
 const { playNewOrderBeep, unlockOrderSound, isAudioLocked } = await import('@/src/features/orders/hooks/useNewOrderSound');
 const { bellPatternById } = await import('@/src/utils/bellPatterns');
 
-// Suspended ctx: schedules anyway + asks resume (browser decides).
+// Locked ctx: NOTHING is scheduled — oscillators on a frozen currentTime
+// are inaudible, so the beep stays owned by the retry ladder instead of
+// being silently consumed. Resume is still requested (browser decides).
 // Engine contract (bellPatterns.ts + useNewOrderSound.ts): the default
 // (classic) pattern renders every strike with 3 partial oscillators each;
 // every oscillator is stopped (+0.5s). Retired two-tone expectations
@@ -50,21 +54,10 @@ const EXPECTED_STARTS = classic.strikes.length * 3;
 playNewOrderBeep();
 ok(calls.includes('ctx.resume'), 'resume requested when suspended');
 ok(
-  calls.some((c) => c === `osc.start@10.00 f=${classic.strikes[0].freq}`),
-  'first pattern strike scheduled',
+  calls.filter((c) => c.startsWith('osc.start')).length === 0,
+  'nothing scheduled while locked (no silent consume)',
   calls.join('|')
 );
-ok(
-  calls.filter((c) => c.startsWith('osc.start')).length === EXPECTED_STARTS,
-  `all ${classic.strikes.length} strikes rendered (${EXPECTED_STARTS} partials)`,
-  calls.join('|')
-);
-ok(calls.filter((c) => c === 'gain.connect->destination').length === EXPECTED_STARTS, 'every partial reaches speakers');
-{
-  const starts = calls.filter((c) => c.startsWith('osc.start')).length;
-  const stops = calls.filter((c) => c.startsWith('osc.stop')).length;
-  ok(starts === stops && starts === EXPECTED_STARTS, 'oscillators stopped (no leak)');
-}
 
 // Unlock path (dashboard toggle / first tap = real gesture).
 calls.length = 0;
@@ -76,23 +69,51 @@ ok(ctxState === 'running' && calls.includes('ctx.resume'), 'unlock resumes conte
 
 (globalThis as unknown as { __gesture: boolean }).__gesture = false;
 
-// Drain BOTH retry timers armed by the first phase, then test the retry alone.
+// Drain BOTH retry timers armed by the first phase, then test the ladder alone.
 await new Promise((r) => setTimeout(r, 2700));
 calls.length = 0;
 ctxState = 'suspended';
-// Suspended ladder: replay only once audio actually unlocks (an unlock
-// landing mid-ladder is caught — perpetual silence is not replayed).
+// Locked ladder: the trigger itself stays silent; the first retry after an
+// unlock landing mid-ladder replays the full chime exactly once, and the
+// second retry finds played=true (no double-chime).
 playNewOrderBeep();
-const first = calls.filter((c) => c.startsWith('osc.start')).length;
+ok(
+  calls.filter((c) => c.startsWith('osc.start')).length === 0,
+  'locked trigger schedules nothing itself',
+  calls.join('|')
+);
 await new Promise((r) => setTimeout(r, 300));
 (globalThis as unknown as { __gesture: boolean }).__gesture = true; // unlock lands
-await new Promise((r) => setTimeout(r, 600));
-// Bounded ladder (600ms + 2500ms retries, replay only when running):
-// the 600ms retry replays the full chime once, the 2500ms one is still
-// pending at assertion time.
-const total = calls.filter((c) => c.startsWith('osc.start')).length;
-ok(first === EXPECTED_STARTS && total === 2 * EXPECTED_STARTS, 'ladder replays once unlocked', `${first}->${total}`);
+await new Promise((r) => setTimeout(r, 600)); // 600ms retry fires...
+ok(
+  calls.filter((c) => c.startsWith('osc.start')).length === EXPECTED_STARTS,
+  'ladder replays once unlocked',
+  calls.join('|')
+);
+await new Promise((r) => setTimeout(r, 2200)); // ...past the 2500ms retry
+ok(
+  calls.filter((c) => c.startsWith('osc.start')).length === EXPECTED_STARTS,
+  'no second replay (single chime)',
+  calls.join('|')
+);
+ok(calls.filter((c) => c === 'gain.connect->destination').length === EXPECTED_STARTS, 'every partial reaches speakers');
+{
+  const starts = calls.filter((c) => c.startsWith('osc.start')).length;
+  const stops = calls.filter((c) => c.startsWith('osc.stop')).length;
+  ok(starts === stops && starts === EXPECTED_STARTS, 'oscillators stopped (no leak)');
+}
 (globalThis as unknown as { __gesture: boolean }).__gesture = false;
+
+// Single-flight: two triggers inside 2s ring once, never stacked.
+// (Cooldown from the ladder trigger above expired during the 3s waits.)
+calls.length = 0;
+playNewOrderBeep();
+playNewOrderBeep();
+ok(
+  calls.filter((c) => c.startsWith('osc.start')).length === EXPECTED_STARTS,
+  'concurrent triggers ring once',
+  calls.join('|')
+);
 
 // Lock sensor for the dashboard hint.
 ctxState = 'suspended';

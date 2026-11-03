@@ -67,19 +67,41 @@ export function playNewOrderBeep(sound?: BellSoundId | string | null) {
   const now = Date.now();
   if (now - lastBeepStartMs < BEEP_COOLDOWN_MS) return;
   lastBeepStartMs = now;
-  // Suspended (no gesture yet): schedule anyway (harmless silence) and retry
-  // on a widening ladder — the alarm re-fires every tick anyway, so a late
-  // unlock still catches sound within seconds instead of losing this beep.
-  // Each retry re-resolves the context (never re-ladders: bounded, 2 shots).
+  // Suspended (no gesture yet): do NOT schedule on the frozen context —
+  // those nodes are inaudible (or a stacked blast on a late resume) while
+  // the timestamp above is already consumed, and the same-tick alarm chime
+  // is then eaten by the cooldown: the classic silent first order. The
+  // bounded ladder (2 shots) owns this beep instead — each retry
+  // re-resolves the context, awaits resume, and plays at most once per
+  // ladder (played flag), only when truly running. Concurrent triggers
+  // stay single-flighted by the timestamp above (no ladder stacking); the
+  // 4s alarm loop remains the long-term net while still locked.
   if (ac.state !== 'running' && typeof window !== 'undefined') {
+    let played = false;
     const retryOnce = () => {
+      if (played) return;
       try {
         const c2 = ensureCtx();
-        if (c2 && c2.state === 'running') playOnce(c2, sound);
+        if (!c2) return;
+        // resume() flips state asynchronously on real browsers — a
+        // synchronous check right after the call always sees 'suspended'
+        // and drops the retry. Await it first, then check.
+        void c2
+          .resume()
+          .catch(() => {})
+          .then(() => {
+            try {
+              if (played) return;
+              if (c2.state !== 'running') return;
+              played = true;
+              playOnce(c2, sound);
+            } catch {}
+          });
       } catch {}
     };
     window.setTimeout(retryOnce, 600);
     window.setTimeout(retryOnce, 2500);
+    return;
   }
   playOnce(ac, sound);
 }
@@ -116,8 +138,12 @@ export const KITCHEN_ALARM_SESSION_MS = ALARM_SESSION_MS;
 export const KITCHEN_ALARM_INTERVAL_MS = ALARM_INTERVAL_MS;
 
 /**
- * Beeps when order ids appear that weren't in the previous poll. First load
- * never beeps (baseline, not news). Respects the owner's toggle.
+ * Beeps when order ids appear that weren't in the previous poll. The first
+ * effect run never beeps (prev === null is the baseline, not news). An
+ * empty baseline IS news on transition: [] -> [A] is a real arrival, so it
+ * beeps here instead of leaning on the alarm, which only covers
+ * status === 'new'. No double-beep: the alarm's session-start chime lands on
+ * the same tick and the 2s single-flight guard merges them into one.
  */
 export function useNewOrderSound(orderIds: string[], enabled: boolean, sound?: BellSoundId | string | null) {
   const prevRef = useRef<string[] | null>(null);
@@ -126,7 +152,7 @@ export function useNewOrderSound(orderIds: string[], enabled: boolean, sound?: B
   useEffect(() => {
     const prev = prevRef.current;
     prevRef.current = orderIds;
-    if (!enabled || !prev || prev.length === 0) return;
+    if (!enabled || !prev) return;
     const known = new Set(prev);
     if (orderIds.some((id) => !known.has(id))) playNewOrderBeep(soundRef.current);
   }, [orderIds, enabled]);

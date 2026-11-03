@@ -7,7 +7,7 @@
  */
 import { jsonNoStore } from '../_shared/session.js';
 import { isRateLimited, noteRateLimitHit, rateKey } from '../_shared/access.js';
-import { receivableAtMs } from '../_shared/eta.js';
+import { linkedReceivableAtMs, receivableAtMs } from '../_shared/eta.js';
 
 // Polling math: the bell re-checks each order every 60s, so a customer
 // with a few orders stays far below this. 120 hits / 5 min per IP only
@@ -54,7 +54,7 @@ export async function onRequest(context) {
   try {
     row = await db
       .prepare(
-        'SELECT id, number, status, type, items_json, subtotal, delivery_fee, total, lang, created_at, updated_at, confirmed_at, eta_at FROM orders WHERE number = ?1'
+        'SELECT id, number, status, type, items_json, subtotal, delivery_fee, total, lang, created_at, updated_at, confirmed_at, eta_at, parent_number FROM orders WHERE number = ?1'
       )
       .bind(number)
       .first();
@@ -155,17 +155,31 @@ export async function onRequest(context) {
   }
   const etaAt = row.eta_at || null;
   let receivableAt = null;
+  // Follow-up link for the customer (display-only, MSA copy in TrackView):
+  // integer or null, never 0. Lets the track page print "سيصل مع #X".
+  const parentNumber = Number.isInteger(row.parent_number) ? row.parent_number : null;
   if (row.status === 'confirmed' || row.status === 'ready') {
     try {
-      receivableAt = new Date(
-        receivableAtMs({
-          confirmedAt: row.confirmed_at,
-          createdAt: row.created_at,
-          etaAt: row.eta_at,
-          orderType: row.type,
-          settings: ordering,
-        })
-      ).toISOString();
+      const ownMs = receivableAtMs({
+        confirmedAt: row.confirmed_at,
+        createdAt: row.created_at,
+        etaAt: row.eta_at,
+        orderType: row.type,
+        settings: ordering,
+      });
+      let finalMs = ownMs;
+      // Joint delivery: the courier carries both together, so the child
+      // unlocks as soon as EITHER becomes receivable (the earlier instant).
+      if (parentNumber !== null) {
+        try {
+          const parent = await db
+            .prepare('SELECT status, type, created_at, confirmed_at, eta_at FROM orders WHERE number = ?1')
+            .bind(parentNumber)
+            .first();
+          finalMs = linkedReceivableAtMs(ownMs, parent, ordering, Date.now());
+        } catch {}
+      }
+      receivableAt = new Date(finalMs).toISOString();
     } catch {
       receivableAt = null;
     }
@@ -175,6 +189,7 @@ export async function onRequest(context) {
     ok: true,
     number: row.number,
     status: row.status,
+    parentNumber,
     // Order type drives the customer-facing ready label (out for delivery
     // vs ready for pickup). Allowlisted, defaults to delivery.
     type: row.type === 'pickup' || row.type === 'dinein' ? row.type : 'delivery',

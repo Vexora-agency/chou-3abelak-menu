@@ -182,7 +182,7 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
             <p className="text-sm font-black text-white">{isAr ? 'تنبيهات الطلبات الجديدة' : 'New order alerts'}</p>
             <p className="text-[11px] text-neutral-500">
               {isAr
-                ? 'كل طلب جديد يرنّ على هذا الجهاز — حتى واللوحة مقفولة.'
+                ? 'كل طلب جديد يرنّ على هذا الجهاز — حتى عندما تكون اللوحة مغلقة.'
                 : 'Every new order pings this device — even with the panel closed.'}
               {devices !== null && devices > 0 ? (isAr ? ` (${devices} ${devices === 1 ? 'جهاز' : 'أجهزة'})` : ` (${devices})`) : ''}
             </p>

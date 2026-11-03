@@ -16,6 +16,8 @@ import { playBellChime, stopBellChime, unlockBellAudio, vibrateBell } from '@/sr
 import { markFetchStart, shouldEventFetch } from '@/src/utils/refreshGate';
 import { ReceivedButton } from './ReceivedButton';
 import { CancelOrderButton } from './CancelOrderButton';
+import { useNow } from '@/src/hooks/useNow';
+import { formatMMSS } from '@/src/utils/countdown';
 import { publicPostRaw } from '@/src/lib/api-client';
 
 /** Event-gate channel shared by this bell's interval + ambient refreshes. */
@@ -35,6 +37,8 @@ interface BellOrder extends StoredCustomerOrder {
   createdAt: string | null;
   /** Receive-unlock instant (server-computed); null = no lock info. */
   receivableAt: string | null;
+  /** Follow-up link (server-computed joint delivery); null = standalone. */
+  parentNumber: number | null;
 }
 
 function timeAgo(at: string, isAr: boolean, nowMs: number): string {
@@ -57,9 +61,9 @@ function toBellStatus(s: unknown): BellOrder['status'] {
 }
 
 /** Delivery lock for the compact receive button: mirrors the track page's
- *  rule (same server-computed `receivableAt`). Bell ticks every 60s with
- *  no live countdown, so a locked button simply stays disabled with the
- *  waiting copy until a later poll unlocks it — never a dead tap. */
+ *  rule (same server-computed `receivableAt`). While locked the button stays
+ *  disabled with a LIVE 1 s countdown (display clock below) until the lock
+ *  lapses — never a dead tap, never a stall between 60 s polls. */
 function isReceivableLocked(o: BellOrder, nowMs: number): boolean {
   if (o.status !== 'confirmed' && o.status !== 'ready') return false;
   if (typeof o.receivableAt !== 'string' || !o.receivableAt) return false;
@@ -86,7 +90,7 @@ const STATUS_LABEL: Record<BellOrder['status'], { en: string; ar: string }> = {
 async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<number, BellOrder>> {
   const next: Record<number, BellOrder> = {};
   const unknown = (o: StoredCustomerOrder): BellOrder => ({
-    ...o, status: 'unknown', total: null, itemsCount: null, createdAt: null, receivableAt: null,
+    ...o, status: 'unknown', total: null, itemsCount: null, createdAt: null, receivableAt: null, parentNumber: null,
   });
   if (list.length === 0) return next;
   try {
@@ -101,9 +105,9 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
       return next;
     }
     const d = (await res.json()) as {
-      results?: Array<{ number?: unknown; status?: unknown; total?: unknown; itemsCount?: unknown; createdAt?: unknown; receivableAt?: unknown }>;
+      results?: Array<{ number?: unknown; status?: unknown; total?: unknown; itemsCount?: unknown; createdAt?: unknown; receivableAt?: unknown; parentNumber?: unknown }>;
     };
-    const byNum = new Map<number, { status: BellOrder['status']; total: number | null; itemsCount: number | null; createdAt: string | null; receivableAt: string | null }>();
+    const byNum = new Map<number, { status: BellOrder['status']; total: number | null; itemsCount: number | null; createdAt: string | null; receivableAt: string | null; parentNumber: number | null }>();
     for (const r of Array.isArray(d?.results) ? d.results : []) {
       if (!r || typeof r.number !== 'number') continue;
       const st = typeof r.status === 'string' ? r.status : '';
@@ -113,6 +117,7 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
         itemsCount: typeof r.itemsCount === 'number' ? r.itemsCount : null,
         createdAt: typeof r.createdAt === 'string' ? r.createdAt : null,
         receivableAt: typeof r.receivableAt === 'string' ? r.receivableAt : null,
+        parentNumber: typeof r.parentNumber === 'number' ? r.parentNumber : null,
       });
     }
     for (const o of list) {
@@ -445,8 +450,17 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // confirm button already flips local state, so this is instant — the
   // next poll just confirms it). Unknown (not yet fetched) counts as
   // active so the bell never flickers on mount.
-  const orders = shelf.map((o) => states[o.n] ?? { ...o, status: 'unknown' as const, total: null, itemsCount: null, createdAt: null });
+  const orders = shelf.map((o) => states[o.n] ?? { ...o, status: 'unknown' as const, total: null, itemsCount: null, createdAt: null, receivableAt: null, parentNumber: null });
   const allTerminal = orders.length > 0 && orders.every((o) => o.status === 'completed' || o.status === 'cancelled');
+  // Live display clock (1 s) while any shelf order is delivery-locked: the
+  // 60 s batch poll only re-stamps `nowMs`, so without this the locked
+  // countdown would visibly stall between polls. Enabled on any locked
+  // shelf order regardless of panel state (the badge shows with it closed);
+  // fetching stays exactly at 60 s — only the display speeds up. Read
+  // displayNowMs in render (never Date.now() inline — hooks purity rule).
+  const anyLocked = orders.some((o) => isReceivableLocked(o, nowMs));
+  const tickNowMs = useNow(anyLocked, 1000);
+  const displayNowMs = anyLocked ? tickNowMs : nowMs;
   // The moment everything resolves, drop the queued chimes and silence any
   // in-flight one: nothing may ring after the bell is gone (ghost-chime
   // bug — a chime started seconds before the last poll must not finish).
@@ -620,7 +634,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                       </div>
                     </div>
                     <p className={`mt-0.5 text-xs tabular-nums ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                      <bdi>{timeAgo(o.at, isAr, nowMs)}</bdi>
+                      <bdi>{timeAgo(o.at, isAr, displayNowMs)}</bdi>
                       {typeof o.itemsCount === 'number' && typeof o.total === 'number' && (
                         <bdi> · <bdi dir="ltr" className="tabular-nums">{o.itemsCount}</bdi> {isAr ? 'أصناف' : 'items'} · <bdi dir="ltr" className="tabular-nums">{formatPrice(o.total)}</bdi></bdi>
                       )}
@@ -628,6 +642,11 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                         <span className="inline-flex items-center gap-1 ms-1"><PackageSearch size={11} />{isAr ? 'تعذر التحديث' : 'unreachable'}</span>
                       )}
                     </p>
+                    {typeof o.parentNumber === 'number' && (o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && (
+                      <p className={`mt-1 text-[11px] font-bold ${darkMode ? 'text-amber-300' : 'text-amber-700'}`} dir="auto">
+                        {isAr ? `🔗 سيصل مع الطلب #${o.parentNumber} — نفس التوصيلة` : `🔗 Arriving with order #${o.parentNumber} — same delivery`}
+                      </p>
+                    )}
                     <div className="mt-2 flex items-center gap-2 flex-wrap">
                       {o.status === 'new' && (
                         <CancelOrderButton
@@ -658,20 +677,28 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                           lang={lang}
                           darkMode={darkMode}
                           compact
-                          disabled={o.status === 'new' || isReceivableLocked(o, nowMs)}
+                          disabled={o.status === 'new' || isReceivableLocked(o, displayNowMs)}
+                          waitingHint={isReceivableLocked(o, displayNowMs) ? (
+                            isAr ? (
+                              <>سيتم تفعيل زر التأكيد بعد التوصيل (المتبقي <span dir="ltr" className="tabular-nums">{formatMMSS(Math.max(0, Date.parse(o.receivableAt as string) - displayNowMs))}</span>)</>
+                            ) : (
+                              <>Confirm unlocks after delivery (<span dir="ltr" className="tabular-nums">{formatMMSS(Math.max(0, Date.parse(o.receivableAt as string) - displayNowMs))}</span> left)</>
+                            )
+                          ) : undefined}
                           onConfirmed={() =>
                             setStates((prev) => (prev[o.n] ? { ...prev, [o.n]: { ...prev[o.n], status: 'completed' } } : prev))
                           }
                         />
                       )}
                     </div>
-                    {(o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && (
+                    {/* Single-hint rule: waiting copy lives ONLY inside the
+                        compact button (its own inline line — default copy for
+                        `new`, live countdown above while locked). This caption
+                        renders solely for the unlocked "did you receive" state,
+                        where the enabled button shows no hint at all. */}
+                    {(o.status === 'confirmed' || o.status === 'ready') && !isReceivableLocked(o, displayNowMs) && (
                       <p className={`mt-2 text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                        {o.status === 'new'
-                          ? (isAr ? 'بانتظار التأكيد — الزر هيتفعل أول ما طلبك يبدأ يتجهز.' : 'Waiting for confirmation — unlocks once your order starts being prepared.')
-                          : isReceivableLocked(o, nowMs)
-                            ? (isAr ? 'بانتظار التوصيل — الزر هيتفعل أول ما طلبك يوصلك.' : 'Waiting for delivery — unlocks once your order reaches you.')
-                            : (isAr ? 'هل استلمت طلبك؟' : 'Did you receive your order?')}
+                        {isAr ? 'هل استلمت طلبك؟' : 'Did you receive your order?'}
                       </p>
                     )}
                   </div>

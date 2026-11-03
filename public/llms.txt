@@ -1,6 +1,6 @@
 # Chou 3abelak (شو عبالك)
 
-> A local place with an online menu and direct WhatsApp ordering. Browse the menu and order in a tap.
+> A local place with an online menu. Browse the menu and order in a tap.
 
 ## Links
 

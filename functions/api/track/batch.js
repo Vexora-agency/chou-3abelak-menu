@@ -23,7 +23,7 @@
 import { jsonNoStore, readJsonBody, safeCompareStrings } from '../../_shared/session.js';
 import { isRateLimited, noteRateLimitHit, rateKey } from '../../_shared/access.js';
 import { findTrackRowsByNumbers } from '../../_shared/repositories/orders.repo.js';
-import { receivableAtMs } from '../../_shared/eta.js';
+import { linkedReceivableAtMs, receivableAtMs } from '../../_shared/eta.js';
 
 const MAX_BODY_BYTES = 8 * 1024;
 const MAX_BATCH = 20;
@@ -128,6 +128,23 @@ export async function onRequest(context) {
       ordering = null;
     }
   }
+  // Joint-delivery parents: collect every parent_number on the shelf and
+  // load them in ONE extra round-trip so each child can unlock with its
+  // parent (courier carries both together). Best-effort, never fails batch.
+  let parentByNumber = new Map();
+  try {
+    const parentNums = [...new Set(
+      rows
+        .filter((r) => r && Number.isInteger(r.parent_number))
+        .map((r) => r.parent_number)
+    )].slice(0, 20);
+    if (parentNums.length) {
+      const prows = await findTrackRowsByNumbers(db, parentNums);
+      parentByNumber = new Map(prows.map((r) => [r.number, r]));
+    }
+  } catch {
+    parentByNumber = new Map();
+  }
   // Preserve request order and duplicates: one entry per input pair.
   // Malformed pairs also yield one `unknown` entry (number: null) so
   // result length never leaks well-formed vs malformed.
@@ -151,19 +168,33 @@ export async function onRequest(context) {
     }
     // Receive-unlock instant for confirmed/ready rows only — the bell
     // disables its button until this passes (same rule as GET /api/track,
-    // so the two surfaces can never disagree).
+    // so the two surfaces can never disagree). Follow-ups unlock with the
+    // earlier of own/parent (joint delivery).
     let receivableAt = null;
+    const parentNumber = Number.isInteger(row.parent_number) ? row.parent_number : null;
     if (row.status === 'confirmed' || row.status === 'ready') {
       try {
-        receivableAt = new Date(
-          receivableAtMs({
-            confirmedAt: row.confirmed_at,
-            createdAt: row.created_at,
-            etaAt: row.eta_at,
-            orderType: row.type,
-            settings: ordering,
-          })
-        ).toISOString();
+        const ownMs = receivableAtMs({
+          confirmedAt: row.confirmed_at,
+          createdAt: row.created_at,
+          etaAt: row.eta_at,
+          orderType: row.type,
+          settings: ordering,
+        });
+        let finalMs = ownMs;
+        if (parentNumber !== null) {
+          const prow = parentByNumber.get(parentNumber);
+          if (prow) {
+            finalMs = linkedReceivableAtMs(ownMs, {
+              status: prow.status,
+              type: prow.type,
+              created_at: prow.created_at,
+              confirmed_at: prow.confirmed_at,
+              eta_at: prow.eta_at,
+            }, ordering, Date.now());
+          }
+        }
+        receivableAt = new Date(finalMs).toISOString();
       } catch {
         receivableAt = null;
       }
@@ -171,6 +202,7 @@ export async function onRequest(context) {
     results.push({
       number: row.number,
       status: row.status,
+      parentNumber,
       total: typeof row.total === 'number' ? row.total : null,
       itemsCount: countItems(row),
       createdAt: typeof row.created_at === 'string' ? row.created_at : null,

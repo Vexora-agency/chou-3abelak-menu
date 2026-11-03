@@ -44,7 +44,7 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
       <div className={`rounded-2xl border p-4 text-center ${darkMode ? 'border-green-800/60 bg-green-950/40' : 'border-green-300 bg-green-50'}`}>
         <CheckCircle2 size={30} strokeWidth={2.5} className={`mx-auto ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
         <p className={`mt-1.5 text-sm font-black ${darkMode ? 'text-green-300' : 'text-green-800'}`}>
-          {isAr ? 'تم تأكيد الاستلام — بالعافية!' : 'Receipt confirmed — enjoy!'}
+          {isAr ? 'تم تأكيد الاستلام — شكرًا لك!' : 'Receipt confirmed — enjoy!'}
         </p>
         <p className={`mt-0.5 text-[11px] ${darkMode ? 'text-green-500' : 'text-green-700'}`}>
           {isAr ? 'تم إرسال تأكيد الاستلام بنجاح' : 'Receipt confirmation sent'}
@@ -109,7 +109,7 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
           </p>
         ) : (
           <p className={`mt-1.5 text-[11px] font-bold ${darkMode ? 'text-amber-400/90' : 'text-amber-700'}`}>
-            {isAr ? 'بانتظار التأكيد — الزر هيتفعل أول ما طلبك يبدأ يتجهز.' : 'Waiting for confirmation — this unlocks once your order starts being prepared.'}
+            {isAr ? 'بانتظار التأكيد — سيُفعَّل الزر عندما يبدأ تجهيز طلبك.' : 'Waiting for confirmation — the button unlocks once your order starts being prepared.'}
           </p>
         )
       )}

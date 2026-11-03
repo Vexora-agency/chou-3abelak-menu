@@ -406,6 +406,13 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
   const money = (n) => (cur ? `${bidi(fmtMoney(n))} ${cur}` : bidi(fmtMoney(n)));
   const lines = [];
   lines.push(`🆕 <b>طلب جديد ${bidi(`#${Number.isInteger(orderNumber) ? orderNumber : '?'}`)}</b>`);
+  // Follow-up badge (display-only, never merged): same customer ordered again
+  // within minutes — kitchen keeps two separate tickets, this line only tells
+  // them to prepare/deliver together. Renders in the first message AND every
+  // rebuild (status taps) because it lives in formatNewOrderMessage itself.
+  if (cleaned && Number.isInteger(cleaned.parentNumber)) {
+    lines.push(`🔁 <b>تابع للطلب ${bidi(`#${cleaned.parentNumber}`)}</b> — نفس الزبون، يُجهَّز معه`);
+  }
   const typeLabel = TYPE_LABEL[cleaned.type] || escapeHtml(String(cleaned.type || ''));
   lines.push(`<b>النوع:</b> ${typeLabel}`);
   lines.push(`<b>الزبون:</b> ${escapeHtml(cleaned.name || '-')}`);
@@ -713,6 +720,8 @@ export function orderRowToCleaned(order) {
     deliveryFee: o.delivery_fee,
     total: o.total,
     lang: o.lang,
+    // Follow-up link (migration 0023): integer or null, never 0/''.
+    parentNumber: Number.isInteger(o.parent_number) ? o.parent_number : null,
     location: (o.location_lat !== null && o.location_lat !== undefined &&
       o.location_lng !== null && o.location_lng !== undefined)
       ? { lat: o.location_lat, lng: o.location_lng }

@@ -89,6 +89,11 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
                       <b className="text-sm tabular-nums" dir="ltr">#{o.number}</b>
+                      {typeof o.parentNumber === 'number' && (
+                        <span dir="auto" className="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-300">
+                          {t.linkedShort(o.parentNumber)}
+                        </span>
+                      )}
                       <span className="text-sm font-semibold truncate">{o.customer.name}</span>
                     </span>
                     <span className="block text-[11px] text-neutral-500 truncate mt-0.5" dir="auto">
@@ -110,6 +115,11 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden">
                       <div className="px-3.5 pb-3.5 pt-3 border-t border-neutral-800 space-y-3 text-[13px]">
+                        {typeof o.parentNumber === 'number' && (
+                          <p dir="auto" className="text-[11px] font-bold text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-xl px-3 py-1.5">
+                            {`🔗 ${t.linkedLong(o.parentNumber)}`}
+                          </p>
+                        )}
                         <div className="space-y-1.5">
                           <p className={`text-[11px] font-bold text-neutral-500 ${isAr ? '' : 'uppercase tracking-wide'}`}>{t.itemsLabel}</p>
                           {o.items.map((it, idx) => (

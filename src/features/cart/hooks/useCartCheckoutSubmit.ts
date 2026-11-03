@@ -313,8 +313,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         // the same idempotency key, so it can never double-record.
         setErrorMsg(
           result.failure === 'timeout'
-          ? (isAr ? 'انقطع الاتصال أثناء الإرسال (NET-TIMEOUT) — قد يكون طلبك محفوظًا: تحقق من الداشبورد قبل إعادة المحاولة' : 'Connection dropped while sending (NET-TIMEOUT) — your order may be saved: check the dashboard before retrying')
-          : (isAr ? 'رفض السيرفر الطلب (SRV-INVALID) — حدّث الصفحة وحاول مجددًا' : 'Server rejected the order (SRV-INVALID) — refresh and try again')
+          ? (isAr ? 'انقطع الاتصال أثناء الإرسال — قد يكون طلبك محفوظًا: تحقق من الداشبورد قبل إعادة المحاولة' : 'Connection dropped while sending — your order may be saved: check the dashboard before retrying')
+          : (isAr ? 'رفض السيرفر الطلب — حدّث الصفحة وحاول مجددًا' : 'Server rejected the order — refresh and try again')
         );
       }
       if (result.orderNumber) {

@@ -24,6 +24,16 @@ export const ETA_DEFAULTS = Object.freeze({
   receiveDelayPickupMin: 15,
 });
 
+/**
+ * Grace buffer after the computed ETA before the customer may tap
+ * "received". Covers real-world variance (traffic lights, handoff at the
+ * door) without ever trapping: the unlock instant is always ETA + this,
+ * never earlier. Industry tolerance is far more generous (Talabat allows
+ * cancellation only after +20 min past promise), so +5 never angers —
+ * it protects against Beirut signal jitter.
+ */
+export const RECEIVE_BUFFER_MIN = 5;
+
 function numOr(v, fb) {
   return typeof v === 'number' && Number.isFinite(v) ? v : fb;
 }
@@ -58,6 +68,8 @@ export function orderingEtaOrDefaults(ordering) {
  * Receive delay for an order type (minutes): delivery gets the courier
  * window, everything else (pickup/dinein — the customer is already at the
  * counter) gets the shorter pickup window.
+ * FALLBACK-ONLY since the ETA+5 rule: used solely when an order carries no
+ * usable etaAt (legacy rows). Normal orders never consult these tunables.
  */
 export function receiveDelayMinFor(orderType, settings) {
   const s = orderingEtaOrDefaults(settings);
@@ -175,23 +187,26 @@ export function orderDistanceKm(orderRow, menu) {
 
 /**
  * Receive-unlock instant (ms epoch) for a customer "received" tap.
- * unlock = max((confirmed_at ?? created_at) + delay[type], eta_at ?? -inf).
- * The confirmed_at ?? created_at fallback guarantees legacy rows (NULL
- * stamps) unlock from created_at + delay — i.e. immediately in practice —
- * so old orders are NEVER trapped. A corrupt/missing created_at fails open
- * to `nowMs` (receivable immediately). Pure — same function feeds GET
- * /api/track and POST /api/track/received so the two can never disagree.
+ * Smart rule: unlock = etaAt + RECEIVE_BUFFER_MIN. The ETA already encodes
+ * prep + queue + route, so the unlock scales with the real wait instead of
+ * a fixed per-type delay — no setting for the owner to misjudge.
+ * Fallback (legacy/corrupt rows with no usable etaAt): the old guarantee
+ * unlock = max((confirmed_at ?? created_at) + delay[type], -inf), i.e.
+ * immediately receivable in practice — old orders are NEVER trapped.
+ * A corrupt/missing created_at fails open to `nowMs` (receivable now).
+ * Pure — same function feeds GET /api/track, POST /api/track/batch and
+ * POST /api/track/received so the three can never disagree.
  */
 export function receivableAtMs(input) {
   const o = input && typeof input === 'object' ? input : {};
   const now = Number.isFinite(o.nowMs) ? o.nowMs : Date.now();
+  const eta = Date.parse(typeof o.etaAt === 'string' ? o.etaAt : '');
+  if (Number.isFinite(eta)) return eta + RECEIVE_BUFFER_MIN * 60000;
   let base = Date.parse(typeof o.confirmedAt === 'string' ? o.confirmedAt : '');
   if (!Number.isFinite(base)) base = Date.parse(typeof o.createdAt === 'string' ? o.createdAt : '');
   if (!Number.isFinite(base)) base = now;
   const delayMin = receiveDelayMinFor(o.orderType, o.settings);
-  const eta = Date.parse(typeof o.etaAt === 'string' ? o.etaAt : '');
-  const unlock = Math.max(base + delayMin * 60000, Number.isFinite(eta) ? eta : -Infinity);
-  return unlock;
+  return base + delayMin * 60000;
 }
 
 /**

@@ -10,6 +10,7 @@ interface CustomerFormFieldsProps {
   setHoneypot: React.Dispatch<React.SetStateAction<string>>;
   location: { lat: number; lng: number; accuracy: number } | null;
   distanceText: string | null;
+  distanceWarning: string | null;
   lang: 'en' | 'ar';
   darkMode: boolean;
   onOpenLocSheet: () => void;
@@ -23,6 +24,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   setHoneypot,
   location,
   distanceText,
+  distanceWarning,
   lang,
   darkMode,
   onOpenLocSheet,
@@ -138,6 +140,9 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               <span className="shrink-0 text-amber-500">
                 {isAr ? 'تقريبي — اكتب العنوان أيضاً' : 'Rough — also write the address'}
               </span>
+            )}
+            {distanceWarning && (
+              <span className="shrink-0 basis-full text-amber-500" dir="auto">{distanceWarning}</span>
             )}
             <span className="flex gap-2 shrink-0 ms-auto">
               <button

@@ -87,7 +87,7 @@ const env = () => ({ MENU_KV: mockKv(), ORDERS_DB: mockDb() });
   ok(d.ok === true && Array.isArray(d.results) && d.results.length === 6, 'one entry per input pair, malformed get number:null unknown');
   const [r101, r202, r101bad, r999, rMal1, rMal2] = d.results;
   ok(r101.status === 'confirmed' && r101.total === 500 && r101.itemsCount === 3 && typeof r101.createdAt === 'string', 'valid row returns status payload');
-  ok(r101.receivableAt === iso(T0 + 55 * MIN), 'locked row carries exact unlock instant (max(created+30, eta))');
+  ok(r101.receivableAt === iso(T0 + 60 * MIN), 'locked row carries exact unlock instant (eta + 5 min buffer)');
   ok(r202.status === 'new' && r202.itemsCount === 0, 'second valid row resolves independently');
   ok(r202.receivableAt === null, 'new rows carry no unlock instant');
   const unknownShape = (r) => r && r.status === 'unknown' && r.total === null && r.itemsCount === null && r.createdAt === null && r.receivableAt === null;

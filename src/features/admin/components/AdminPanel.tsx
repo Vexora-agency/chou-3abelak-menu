@@ -66,8 +66,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setCalcItemId(editingId);
     setCalcQty(1);
   }
-  // Collapsed feature-library groups (open by default)
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  // Collapsed groups (settings sections + feature library): open by default,
+  // persisted per device — a closed section stays closed across visits,
+  // an open one stays open. Only `true` is stored (absent = open).
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(() => {
+    try {
+      const raw = window.localStorage.getItem('admin_collapsed_groups_v1');
+      if (!raw) return {};
+      const parsed: unknown = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+      const out: Record<string, boolean> = {};
+      for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+        if (typeof k === 'string' && k && v === true) out[k] = true;
+      }
+      return out;
+    } catch {
+      return {};
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('admin_collapsed_groups_v1', JSON.stringify(collapsedGroups));
+    } catch {}
+    // Persist only — the initial read happens once in the state initializer.
+  }, [collapsedGroups]);
   // Professional confirm dialog (replaces native confirm for deletes).
   // mode 'info' shows a single OK button (for blocked deletes).
   const [confirmBox, setConfirmBox] = useState<ConfirmBox | null>(null);

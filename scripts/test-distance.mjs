@@ -2,7 +2,6 @@
 // references, every map-URL shape, and customer-facing formatting.
 // Run: npm run test-distance (or: npx tsx scripts/test-distance.mjs)
 import { MAX_DELIVERY_DISTANCE_KM, haversineMeters, parseMapUrlCoords, formatDistance } from '../src/utils/menuHelpers.ts';
-import { MAX_DELIVERY_DISTANCE_KM as SERVER_MAX_KM } from '../functions/_shared/eta.js';
 
 let pass = 0;
 let fail = 0;
@@ -63,7 +62,7 @@ ok('DMS word form parses', dmsClose(parseMapUrlCoords('33d 52m 29.1s n, 35d 32m 
 }
 ok('DMS minutes >= 60 rejected', parseMapUrlCoords('33°99\'29.1"N 35°32\'44.5"E') === null);
 ok('degree sign in prose rejected', parseMapUrlCoords('It is 33° hot today') === null);
-ok('delivery radius ceiling mirrored on both twins', MAX_DELIVERY_DISTANCE_KM === 60 && SERVER_MAX_KM === 60);
+ok('out-of-zone warning threshold is 60 km', MAX_DELIVERY_DISTANCE_KM === 60);
 
 // 3. Customer-facing formatting (Western digits, both languages).
 ok('meters ar', formatDistance(999, 'ar') === '≈ 999 م');

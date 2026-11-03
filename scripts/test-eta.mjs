@@ -12,7 +12,6 @@ import {
 } from '../functions/_shared/repositories/orders.repo.js';
 import {
   ETA_DEFAULTS,
-  MAX_DELIVERY_DISTANCE_KM,
   RECEIVE_BUFFER_MIN,
   haversineKm,
   orderDistanceKm,
@@ -128,15 +127,18 @@ const TOK = 'a'.repeat(32);
   ok(orderDistanceKm({ location_lat: null, location_lng: null }, menu) === null, 'missing order location is null');
   ok(orderDistanceKm(row, { settings: {} }) === null, 'menu without coords is null');
   ok(orderDistanceKm(row, null) === null, 'missing menu is null');
-  // Plausibility ceiling: Beirut restaurant vs Cairo pin (~570 km) reads as
-  // unknown (default leg) — never a 120-minute ETA from a wrong/test pin.
-  ok(MAX_DELIVERY_DISTANCE_KM === 60, 'radius ceiling is 60 km');
+  // No plausibility ceiling in the math: every parseable pin computes its
+  // true distance, however far. The display clamp ([10,120] in computeEta)
+  // bounds what the customer sees; the checkout shows its own out-of-zone
+  // warning past 60 km.
   const beirutMenu = { settings: { mapUrl: 'https://www.google.com/maps/search/?api=1&query=33%C2%B052\'29.1%22N%2035%C2%B032\'44.5' } };
   const atDoorKm = orderDistanceKm({ location_lat: 33.87475, location_lng: 35.54569 }, beirutMenu);
   ok(typeof atDoorKm === 'number' && atDoorKm < 0.05, 'pin at restaurant door is ~0 km');
   const nearKm = orderDistanceKm({ location_lat: 33.88475, location_lng: 35.54569 }, beirutMenu);
   ok(typeof nearKm === 'number' && nearKm > 1 && nearKm < 2, 'pin 0.01° north is ~1.1 km');
-  ok(orderDistanceKm({ location_lat: 30.15093, location_lng: 31.39782 }, beirutMenu) === null, 'Cairo pin vs Beirut restaurant reads as unknown');
+  const cairoKm = orderDistanceKm({ location_lat: 30.15093, location_lng: 31.39782 }, beirutMenu);
+  ok(typeof cairoKm === 'number' && cairoKm > 500 && cairoKm < 650, `Cairo pin computes true distance (~570 km, got ${cairoKm?.toFixed?.(1)})`);
+  ok(computeEta({ confirmedAtMs: T0, orderType: 'delivery', queueLen: 0, distanceKm: cairoKm, settings: null }).etaMinutes === 120, 'far pin clamps to the 120 min display ceiling');
 }
 
 // ---- 8. mapOrderRow exposes the new instants ----

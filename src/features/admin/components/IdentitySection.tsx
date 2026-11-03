@@ -17,7 +17,7 @@ interface IdentitySectionProps extends IdentityValues {
   onToggleCollapse?: () => void;
 }
 
-/** Store Identity card of the admin Settings tab. */
+/** Identity & Contact card of the admin Settings tab. */
 export const IdentitySection: React.FC<IdentitySectionProps> = ({
   name,
   tagline,
@@ -249,7 +249,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
       <SettingsGroupHeader
-        title={isAr ? 'بيانات المتجر' : 'Store Identity'}
+        title={isAr ? 'الهوية والتواصل' : 'Identity & Contact'}
         lang={lang}
         collapsed={collapsed}
         onToggle={() => onToggleCollapse?.()}

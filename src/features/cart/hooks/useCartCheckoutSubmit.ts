@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { MenuData, CustomerDetails, ResolvedCartLine } from '@/src/types/menu';
-import { haversineMeters, parseMapUrlCoords, formatDistance } from '@/src/utils/menuHelpers';
+import { MAX_DELIVERY_DISTANCE_KM, haversineMeters, parseMapUrlCoords, formatDistance } from '@/src/utils/menuHelpers';
 import { formatPrice, round2 } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
@@ -128,10 +128,15 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   };
 
   // Clear customer-facing answer: how far is the pinned point from the
-  // restaurant (parsed from the saved Google Maps URL). Null when unknown.
+  // restaurant (parsed from the saved Google Maps URL). Null when unknown —
+  // and hidden past the plausibility ceiling (a test pin or stale link must
+  // never print hundreds of kilometres).
   const restaurantCoords = parseMapUrlCoords(menu.settings.mapUrl);
-  const distanceText = location && restaurantCoords
-    ? formatDistance(haversineMeters(location.lat, location.lng, restaurantCoords.lat, restaurantCoords.lng), lang)
+  const distanceMeters = location && restaurantCoords
+    ? haversineMeters(location.lat, location.lng, restaurantCoords.lat, restaurantCoords.lng)
+    : NaN;
+  const distanceText = Number.isFinite(distanceMeters) && distanceMeters >= 0 && distanceMeters <= MAX_DELIVERY_DISTANCE_KM * 1000
+    ? formatDistance(distanceMeters, lang)
     : null;
 
   // Stable idempotency key for this drawer session: retries reuse it so

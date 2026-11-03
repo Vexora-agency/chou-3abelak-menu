@@ -12,6 +12,7 @@ import {
 } from '../functions/_shared/repositories/orders.repo.js';
 import {
   ETA_DEFAULTS,
+  MAX_DELIVERY_DISTANCE_KM,
   haversineKm,
   orderDistanceKm,
   orderingEtaOrDefaults,
@@ -109,12 +110,30 @@ const TOK = 'a'.repeat(32);
   ok(parseMapUrlCoordsJs('https://www.google.com/maps/search/?api=1&query=33.89,35.50')?.lng === 35.5, '?query= parses');
   ok(parseMapUrlCoordsJs('https://maps.app.goo.gl/AbC123xYz') === null, 'short link has no coords');
   ok(parseMapUrlCoordsJs('Hamra, Beirut') === null && parseMapUrlCoordsJs('') === null && parseMapUrlCoordsJs(null) === null, 'garbage/empty rejected');
+  // DMS (degrees mode share): decoded, URL-encoded, and truncated (no "E).
+  const dmsClose = (c) => c !== null && Math.abs(c.lat - 33.87475) < 1e-6 && Math.abs(c.lng - 35.5456944) < 1e-6;
+  ok(dmsClose(parseMapUrlCoordsJs('33°52\'29.1"N 35°32\'44.5"E')), 'DMS decoded parses');
+  ok(dmsClose(parseMapUrlCoordsJs('https://www.google.com/maps/search/?api=1&query=33%C2%B052\'29.1%22N%2035%C2%B032\'44.5')), 'DMS encoded+truncated (live restaurant URL) parses');
+  ok(dmsClose(parseMapUrlCoordsJs('33d 52m 29.1s n, 35d 32m 44.5s e')), 'DMS word form parses');
+  const sw = parseMapUrlCoordsJs('33°52\'29.1"S 35°32\'44.5"W');
+  ok(sw !== null && sw.lat < 0 && sw.lng < 0, 'DMS S/W negates');
+  ok(parseMapUrlCoordsJs('33°99\'29.1"N 35°32\'44.5"E') === null, 'DMS minutes >= 60 rejected');
+  ok(parseMapUrlCoordsJs('It is 33° hot today') === null, 'degree sign in prose rejected');
   const row = { location_lat: 33.8938, location_lng: 35.5018 };
   const menu = { settings: { mapUrl: 'https://www.google.com/maps/search/?api=1&query=33.8938,35.5018' } };
   ok(orderDistanceKm(row, menu) === 0, 'same-spot order is 0 km');
   ok(orderDistanceKm({ location_lat: null, location_lng: null }, menu) === null, 'missing order location is null');
   ok(orderDistanceKm(row, { settings: {} }) === null, 'menu without coords is null');
   ok(orderDistanceKm(row, null) === null, 'missing menu is null');
+  // Plausibility ceiling: Beirut restaurant vs Cairo pin (~570 km) reads as
+  // unknown (default leg) — never a 120-minute ETA from a wrong/test pin.
+  ok(MAX_DELIVERY_DISTANCE_KM === 60, 'radius ceiling is 60 km');
+  const beirutMenu = { settings: { mapUrl: 'https://www.google.com/maps/search/?api=1&query=33%C2%B052\'29.1%22N%2035%C2%B032\'44.5' } };
+  const atDoorKm = orderDistanceKm({ location_lat: 33.87475, location_lng: 35.54569 }, beirutMenu);
+  ok(typeof atDoorKm === 'number' && atDoorKm < 0.05, 'pin at restaurant door is ~0 km');
+  const nearKm = orderDistanceKm({ location_lat: 33.88475, location_lng: 35.54569 }, beirutMenu);
+  ok(typeof nearKm === 'number' && nearKm > 1 && nearKm < 2, 'pin 0.01° north is ~1.1 km');
+  ok(orderDistanceKm({ location_lat: 30.15093, location_lng: 31.39782 }, beirutMenu) === null, 'Cairo pin vs Beirut restaurant reads as unknown');
 }
 
 // ---- 8. mapOrderRow exposes the new instants ----

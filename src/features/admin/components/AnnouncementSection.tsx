@@ -7,6 +7,7 @@ import { formatTime12h } from '@/src/utils/menuHelpers';
 import { serverNow } from '@/src/utils/serverTime';
 import { announcementStatus, annSpeed } from '@/src/utils/announcement';
 import { useTickerLoop } from '@/src/hooks/useTickerLoop';
+import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 type Announcement = MenuSettings['announcement'];
 
@@ -15,6 +16,8 @@ interface AnnouncementSectionProps {
   timezone: string;
   lang: 'en' | 'ar';
   onUpdate: (updater: (prev: Announcement) => Announcement) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 /** Storefront-faithful ticker preview: measures its own width so the reading
@@ -209,18 +212,20 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
   timezone,
   lang,
   onUpdate,
+  collapsed = false,
+  onToggleCollapse,
 }) => {
   const isAr = lang === 'ar';
   return (
-    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-      <div>
-        <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
-          {isAr ? 'شريط الإعلان' : 'Announcement banner'}
-        </h2>
-        <p className="text-[11px] text-neutral-500 mt-0.5">
-          {isAr ? 'شريط أصفر متحرك أعلى الموقع (140 حرفاً كحد أقصى) — توقف عند مرور المؤشر' : 'A scrolling yellow ticker above the site (140 chars max) — pauses on hover'}
-        </p>
-      </div>
+    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
+      <SettingsGroupHeader
+        title={isAr ? 'شريط الإعلان' : 'Announcement banner'}
+        subtitle={isAr ? 'شريط أصفر متحرك أعلى الموقع (140 حرفاً كحد أقصى) — توقف عند مرور المؤشر' : 'A scrolling yellow ticker above the site (140 chars max) — pauses on hover'}
+        lang={lang}
+        collapsed={collapsed}
+        onToggle={() => onToggleCollapse?.()}
+      />
+      <SettingsGroupBody open={!collapsed}>
       <div className="rounded-xl border border-neutral-800 bg-black/40 p-3 space-y-3">
         <button
           type="button"
@@ -427,6 +432,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
           );
         })()}
       </div>
+      </SettingsGroupBody>
     </div>
   );
 };

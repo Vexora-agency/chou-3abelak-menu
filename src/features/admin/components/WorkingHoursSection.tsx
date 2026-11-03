@@ -1,12 +1,15 @@
 import React from 'react';
 import type { MenuSettings } from '@/src/types/menu';
 import { formatTime12h } from '@/src/utils/menuHelpers';
+import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 type WorkingHoursValues = Pick<MenuSettings, 'statusMode' | 'openTime' | 'closeTime' | 'workingDays'>;
 
 interface WorkingHoursSectionProps extends WorkingHoursValues {
   lang: 'en' | 'ar';
   onUpdate: (updater: (prev: WorkingHoursValues) => WorkingHoursValues) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 const ALL_DAYS = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
@@ -19,14 +22,19 @@ export const WorkingHoursSection: React.FC<WorkingHoursSectionProps> = ({
   workingDays,
   lang,
   onUpdate,
+  collapsed = false,
+  onToggleCollapse,
 }) => {
   const isAr = lang === 'ar';
   return (
-    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
-      <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
-        {isAr ? 'مواعيد العمل والحالة' : 'Working Hours & Status'}
-      </h2>
-
+    <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
+      <SettingsGroupHeader
+        title={isAr ? 'مواعيد العمل والحالة' : 'Working Hours & Status'}
+        lang={lang}
+        collapsed={collapsed}
+        onToggle={() => onToggleCollapse?.()}
+      />
+      <SettingsGroupBody open={!collapsed}>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
           <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'وضع الحالة' : 'Status Mode'}</label>
@@ -111,6 +119,7 @@ export const WorkingHoursSection: React.FC<WorkingHoursSectionProps> = ({
           })}
         </div>
       </div>
+      </SettingsGroupBody>
     </div>
   );
 };

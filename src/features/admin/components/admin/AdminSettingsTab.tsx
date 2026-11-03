@@ -40,6 +40,8 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
   return (
     <div className="space-y-6 stagger">
       <IdentitySection
+        collapsed={!!collapsedGroups['identity']}
+        onToggleCollapse={() => onToggleCollapse('identity')}
         name={menu.settings.name}
         tagline={menu.settings.tagline}
         about={menu.settings.about}
@@ -90,6 +92,8 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
       />
 
       <SocialSection
+        collapsed={!!collapsedGroups['social']}
+        onToggleCollapse={() => onToggleCollapse('social')}
         social={menu.settings.social}
         socialEnabled={menu.settings.socialEnabled}
         lang={lang}
@@ -115,6 +119,8 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
       />
 
       <VisitorDefaultsSection
+        collapsed={!!collapsedGroups['visitor']}
+        onToggleCollapse={() => onToggleCollapse('visitor')}
         defaultTheme={menu.settings.defaultTheme}
         defaultLang={menu.settings.defaultLang}
         lang={lang}
@@ -127,6 +133,8 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
       />
 
       <WorkingHoursSection
+        collapsed={!!collapsedGroups['hours']}
+        onToggleCollapse={() => onToggleCollapse('hours')}
         statusMode={menu.settings.statusMode}
         openTime={menu.settings.openTime}
         closeTime={menu.settings.closeTime}
@@ -149,6 +157,8 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           hidden and the dashboard toggle is the only ordering surface. */}
       {featuresConfig.enableOrdering && (
       <OrderingSection
+        collapsed={!!collapsedGroups['ordering']}
+        onToggleCollapse={() => onToggleCollapse('ordering')}
         ordering={menu.settings.ordering}
         currency={menu.settings.currency[lang] || menu.settings.currency.en}
         lang={lang}
@@ -165,12 +175,14 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
       )}
 
       {featuresConfig.enableOrdering && (
-        <TelegramSection lang={lang} adminFetch={adminFetch} onConfirm={onConfirm} />
+        <TelegramSection lang={lang} adminFetch={adminFetch} onConfirm={onConfirm} collapsed={!!collapsedGroups['telegram']} onToggleCollapse={() => onToggleCollapse('telegram')} />
       )}
 
       {featuresConfig.enableOrdering && (
-        <SoundsSection
-          sounds={menu.settings.sounds}
+      <SoundsSection
+        collapsed={!!collapsedGroups['sounds']}
+        onToggleCollapse={() => onToggleCollapse('sounds')}
+        sounds={menu.settings.sounds}
           lang={lang}
           onUpdate={(updater) =>
             onUpdateMenu((m) => ({
@@ -183,6 +195,8 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
 
       {featuresConfig.enableAnnouncements && (
       <AnnouncementSection
+        collapsed={!!collapsedGroups['announcement']}
+        onToggleCollapse={() => onToggleCollapse('announcement')}
         announcement={menu.settings.announcement}
         timezone={menu.settings.timezone || 'Asia/Beirut'}
         lang={lang}
@@ -196,6 +210,8 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
       )}
 
       <AutoplaySection
+        collapsed={!!collapsedGroups['autoplay']}
+        onToggleCollapse={() => onToggleCollapse('autoplay')}
         menu={menu}
         featuredAutoplay={menu.settings.featuredAutoplay}
         featuredAutoplayInterval={menu.settings.featuredAutoplayInterval}
@@ -209,6 +225,8 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
       />
 
       <ShowMoreSection
+        collapsed={!!collapsedGroups['showmore']}
+        onToggleCollapse={() => onToggleCollapse('showmore')}
         menu={menu}
         showMore={menu.settings.showMore}
         lang={lang}
@@ -224,6 +242,8 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           pricing); starter keeps defaults. Same gate as OrderingSection. */}
             {featuresConfig.enableOrdering && (
       <SmartBadgesSection        badges={menu.settings.badges}
+        collapsed={!!collapsedGroups['badges']}
+        onToggleCollapse={() => onToggleCollapse('badges')}
         lang={lang}
         onUpdate={(updater) =>
           onUpdateMenu((m) => ({
@@ -236,7 +256,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
 
       {/* Client access: owner-minted invite links (hidden from client logins —
           the section hides itself on 403). Last: it is account-level, not menu. */}
-      <AccessSection lang={lang} adminFetch={adminFetch} />
+      <AccessSection lang={lang} adminFetch={adminFetch} collapsed={!!collapsedGroups['access']} onToggleCollapse={() => onToggleCollapse('access')} />
     </div>
   );
 };

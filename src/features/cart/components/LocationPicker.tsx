@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type * as Leaflet from 'leaflet';
 import { Loader2, Navigation } from 'lucide-react';
-import { reverseGeocode, round5, useMidSplitLocationMap } from '../hooks/useMidSplitLocationMap';
+import { AUTO_LOCATE_OPTIONS, reverseGeocode, round5, shouldAutoLocateOnOpen, useMidSplitLocationMap } from '../hooks/useMidSplitLocationMap';
 import { LocationAddressPreview } from './location/LocationAddressPreview';
 
 interface LocationPickerProps {
@@ -82,6 +82,8 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   const [manual, setManual] = useState(false);
   // Guards overlapping detect() runs (open auto-fix vs. button taps).
   const seqRef = useRef(0);
+  // Once-per-open guard for the silent auto-fix below.
+  const autoTriedRef = useRef(false);
   const { addrPreview, addrLoading, previewKey } = useMidSplitLocationMap(point, ready, lang);
 
   // Load Leaflet lazily (only when the picker opens) and build the map.
@@ -242,10 +244,46 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     );
   };
 
-  // Auto-detect once when the picker opens (fetch trigger).
+  // On-open auto-fix: center on the saved/pinned point when present; else
+  // ONE silent high-accuracy attempt (~8s, no retry, no denial toast).
+  // No auto-retry because iOS Safari only shows the permission prompt on a
+  // user gesture -- an on-load prompt is dropped/denied there (Android/desktop
+  // Chrome generally allow prompt-on-load), and retrying would nag the OS.
+  // The "My location" button stays as the gesture path that works everywhere
+  // (full two-phase fix + accuracy gate + two-tap confirm, unchanged).
+  // Never more than once per open (autoTriedRef).
   useEffect(() => {
+    if (autoTriedRef.current) return;
+    autoTriedRef.current = true;
+    if (!shouldAutoLocateOnOpen(initial)) return;
+    if (!('geolocation' in navigator) || typeof navigator.geolocation?.getCurrentPosition !== 'function') return;
+    const seq = ++seqRef.current;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch trigger, see above
-    detect();
+    setDetecting(true);
+    const watchdog = window.setTimeout(() => {
+      if (seq !== seqRef.current) return;
+      setDetecting(false);
+      // Silent: never surface the auto-fix watchdog as an error toast.
+    }, 9000);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (seq !== seqRef.current) return;
+        window.clearTimeout(watchdog);
+        setDetecting(false);
+        if (manualRef.current) return;
+        const { latitude, longitude, accuracy } = pos.coords;
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+        moveTo(latitude, longitude, typeof accuracy === 'number' ? accuracy : 100);
+      },
+      () => {
+        if (seq !== seqRef.current) return;
+        window.clearTimeout(watchdog);
+        setDetecting(false);
+        // Silent on denial/failure: no retry, no toast. Manual button remains.
+      },
+      AUTO_LOCATE_OPTIONS,
+    );
+    return () => window.clearTimeout(watchdog);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

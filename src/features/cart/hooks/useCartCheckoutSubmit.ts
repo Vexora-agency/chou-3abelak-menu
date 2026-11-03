@@ -6,6 +6,7 @@ import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
 import { phoneDigitsOnly } from '@/src/utils/digits';
 import { loadPinnedLocation, loadRememberedDetails, saveCustomerOrder, savePinnedLocation, saveRememberedDetails } from '@/src/utils/customerOrders';
+import { shouldOverwriteAddress } from './useMidSplitLocationMap';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { formatMMSS } from '@/src/utils/countdown';
 import { clientConfig } from '@/src/config/client.config';
@@ -77,30 +78,50 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // landmark) is never destroyed. Without this, a first wrong auto-fill
   // (coarse fix) stuck forever: the field was non-empty so later correct
   // picks were ignored — the "address is wrong" bug.
-  const lastAutoFillRef = useRef<string | null>(null);
-  const COORDS_RE = /^-?\d{1,3}\.\d{1,5},\s*-?\d{1,3}\.\d{1,5}$/;
+  // Repeat-order fix: a remembered address paired with a remembered pin IS
+  // our previous auto-fill, not typed text. A fresh mount starts with
+  // lastAutoFill=null and would misclassify it as typed, keeping a stale
+  // address with a fresh pin (exact-pin Telegram link points at the new
+  // coords while the ticket shows the old street — the reported WRONG pin).
+  // Seeding the ref from the remembered pair makes the first re-pin
+  // overwrite correctly. Unpaired typed text (no pin) still starts null.
+  const lastAutoFillRef = useRef<string | null>((() => {
+    try {
+      if (!loadPinnedLocation()) return null;
+      const rem = loadRememberedDetails();
+      const a = rem && typeof (rem as { address?: unknown }).address === 'string'
+        ? (rem as { address: string }).address.trim().slice(0, 200)
+        : '';
+      return a || null;
+    } catch {
+      return null;
+    }
+  })());
+  // Accuracy gate shared with Telegram (mirrors MAPS_ACCURACY_OK_M = 250 in
+  // functions/_shared/telegram.js): a coarse cell-tower fix must never ride
+  // as an "exact pin" — it falls back to the address-query link.
+  const PIN_ACCURACY_OK_M = 250;
+  // State-only clear. Storage is the remembered pair and is synced atomically
+  // on submit (see sendOrder) so a pick without a submit, a sheet dismiss,
+  // or a drawer close can never strand a new pin against an old address.
   const clearLocation = () => {
     setLocation(null);
-    try {
-      savePinnedLocation(null);
-    } catch {}
   };
-  const closeLocSheet = (keep: boolean) => { if (!keep) clearLocation(); setLocSheetOpen(false); };
+  // Dismissing the sheet without confirming leaves the parent pair untouched:
+  // the unconfirmed point lives only in picker state, so there is nothing to
+  // wipe — wiping here used to destroy the saved pin on a mere view.
+  const closeLocSheet = (_keep: boolean) => { setLocSheetOpen(false); };
   const handleMapPick = (lat: number, lng: number, accuracy: number, addressText: string | null) => {
     setLocation({ lat, lng, accuracy });
-    try {
-      savePinnedLocation({ lat, lng, accuracy });
-    } catch {}
     const fill = addressText && addressText.trim() ? addressText.trim().slice(0, 200) : `${lat}, ${lng}`;
     const prevFill = lastAutoFillRef.current;
     lastAutoFillRef.current = fill;
     setCustomer((prev) => {
-      const cur = prev.address.trim();
-      // Empty, our own previous auto-fill, or a bare coords fallback:
-      // refresh with the new pick so a wrong auto-fill never sticks.
-      if (!cur || cur === prevFill || COORDS_RE.test(cur)) return { ...prev, address: fill };
-      // Genuinely typed text (building, floor, landmark): keep it — the
-      // exact pin + maps link still travel with the order for the kitchen.
+      // Pure rule (see shouldOverwriteAddress): empty / our previous
+      // auto-fill (including the seeded remembered pair) / coords fallback
+      // refresh so a wrong auto-fill never sticks; genuinely typed text
+      // (building, floor, landmark) is kept with the fresh pin.
+      if (shouldOverwriteAddress(prev.address, prevFill)) return { ...prev, address: fill };
       return prev;
     });
     setLocSheetOpen(false);
@@ -220,10 +241,24 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     }
 
     // Save remember details (checked = persist, unchecked = erase).
+    // The pin + address travel as ONE atomic pair: storage is synced here
+    // (not at pick time) so a pick without a submit, a sheet dismiss, or a
+    // drawer close can never strand a new pin against an old address in
+    // localStorage. Coarse fixes (>250m) are never persisted — they ride as
+    // an address-query fallback, never as a fake "exact" pin.
     saveRememberedDetails(customer);
-    // Unchecked = store nothing at all: forget the pin together with the
-    // details (the pin in flight is still sent with THIS order below).
+    const sendableLocation = location && location.accuracy <= PIN_ACCURACY_OK_M ? location : null;
     if (!customer.remember) {
+      try {
+        savePinnedLocation(null);
+      } catch {}
+    } else if (sendableLocation) {
+      try {
+        savePinnedLocation(sendableLocation);
+      } catch {}
+    } else {
+      // Remembered but cleared/coarse this order: forget the stale pin so
+      // the next repeat cannot re-send it with the new address text.
       try {
         savePinnedLocation(null);
       } catch {}
@@ -259,7 +294,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
             ...(l.addonQty && Object.keys(l.addonQty).length ? { addonQty: { ...l.addonQty } } : {}),
             qty: l.quantity,
           })),
-          ...(location ? { location: { lat: location.lat, lng: location.lng, accuracy: Math.round(location.accuracy) } } : {}),
+          ...(sendableLocation ? { location: { lat: sendableLocation.lat, lng: sendableLocation.lng, accuracy: Math.round(sendableLocation.accuracy) } } : {}),
           lang,
           website: honeypot,
         },
@@ -292,7 +327,9 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
 
     // In-site ordering: the saved server record IS the order — Telegram
     // pings the owner automatically, so the customer never leaves the site.
-    clearLocation();
+    // Preserve the validated pair for repeat orders when remembered; forget
+    // the transient pick when not.
+    if (!customer.remember) clearLocation();
     // Talabat/Elmenus standard: the order is placed, so the cart empties
     // now — otherwise the next visit re-sends a duplicate. Runs only on
     // the success path (validation/availability gates above return early).

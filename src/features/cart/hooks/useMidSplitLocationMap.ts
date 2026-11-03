@@ -3,6 +3,40 @@ import { readJson } from '@/src/utils/safeJson';
 
 export const round5 = (v: number) => Math.round(v * 1e5) / 1e5;
 
+/** Single silent on-open fix: high accuracy, ~8s, no retry (see picker). */
+export const AUTO_LOCATE_OPTIONS: PositionOptions = {
+  enableHighAccuracy: true,
+  timeout: 8000,
+  maximumAge: 0,
+};
+
+/** True only when there is no saved/pinned point to center on. */
+export function shouldAutoLocateOnOpen(
+  initial: { lat: number; lng: number } | null | undefined,
+): boolean {
+  return initial == null;
+}
+
+/** Bare-coords fallback shape (`"33.89352, 35.50161"`): always overwritable. */
+export const COORDS_RE = /^-?\d{1,3}\.\d{1,5},\s*-?\d{1,3}\.\d{1,5}$/;
+
+/**
+ * Pure address-merge rule for a confirmed pick (testable without React).
+ * Overwrite the field when it is empty, still holds our own previous
+ * auto-fill, or is a bare coords fallback — genuinely typed text
+ * (building, floor, landmark) is preserved. A remembered address paired
+ * with a remembered pin must be passed as `prevFill` (see the checkout
+ * hook seeding) so the first re-pin overwrites it instead of stranding a
+ * stale street with a fresh pin.
+ */
+export function shouldOverwriteAddress(curAddress: string, prevFill: string | null): boolean {
+  const cur = (curAddress ?? '').trim();
+  if (!cur) return true;
+  if (prevFill !== null && cur === prevFill) return true;
+  if (COORDS_RE.test(cur)) return true;
+  return false;
+}
+
 /** Reverse-geocode via OpenStreetMap Nominatim (called only on Confirm). */
 export async function reverseGeocode(lat: number, lng: number, lang: 'en' | 'ar'): Promise<string | null> {
   const ctrl = new AbortController();

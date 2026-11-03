@@ -99,11 +99,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   // Reset transient checkout state whenever the drawer closes.
   // Render-phase adjustment (blessed pattern): guarded so it converges
   // immediately, and the closed drawer never flashes stale errors.
-  if (!isOpen && (orderPrepared || errorMsg !== '' || location !== null || lastOrder !== null)) {
+  // NOTE: location + customer persist across closes by design — they are the
+  // remembered pair (synced to storage on submit). Clearing the pin here
+  // used to wipe the remembered pin on every close (and on initial mount),
+  // so repeat orders lost the exact pin; worse, storage/state could drift.
+  if (!isOpen && (orderPrepared || errorMsg !== '' || lastOrder !== null)) {
     setOrderPrepared(false);
     setErrorMsg('');
     setLastOrder(null);
-    clearLocation();
   }
 
   if (!isOpen) return null;

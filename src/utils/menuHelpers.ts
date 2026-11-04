@@ -121,10 +121,13 @@ export const SPICY_LEVEL_DEFAULTS: ReadonlyArray<{
 ];
 
 /**
- * Built-in features the admin UI must never delete (order flow, Telegram
- * and email copy all key off stable ids). The library shows them with a
- * locked "built-in" badge instead of a delete button, and the normalizer
- * below re-adds them if an old document lacks them.
+ * Built-in features the admin UI must never delete (the library shows them
+ * with a locked "built-in" badge instead of a delete button, and the
+ * normalizer re-adds the missing levels if an old document lacks them).
+ * NOTE: the legacy single 'spicy' id stays in this list for RECOGNITION
+ * only (old carts, stored orders, Telegram history) — its library def was
+ * retired: normalize no longer creates it and drops it when present, so
+ * the Add-ons section never shows the confusing duplicate again.
  */
 export const PROTECTED_FEATURE_IDS: readonly string[] = [
   SPICY_LEGACY_ID,

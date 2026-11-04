@@ -5,7 +5,7 @@ import { formatPrice, round2 } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
 import { phoneDigitsOnly } from '@/src/utils/digits';
-import { loadPinnedLocation, loadRememberedDetails, loadSavedEmail, saveCustomerOrder, saveEmailAddress, savePinnedLocation, saveRememberedDetails } from '@/src/utils/customerOrders';
+import { loadRememberedDetails, loadSavedEmail, saveCustomerOrder, saveEmailAddress, saveRememberedDetails } from '@/src/utils/customerOrders';
 import { shouldOverwriteAddress } from './useMidSplitLocationMap';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { formatMMSS } from '@/src/utils/countdown';
@@ -67,20 +67,15 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   const [honeypot, setHoneypot] = useState('');
 
   // Shared delivery location (React state only — never persisted, never
-  // logged). Cleared when the cart closes/clears or after an order is sent.
+  // logged). Every checkout starts pin-less ON PURPOSE, even when "remember
+  // my details" is checked: a remembered pin is never restored, so a stale
+  // pin from another visit/city can never ride along silently — the
+  // customer picks a fresh pin every order (required below). Cleared when
+  // the cart closes/clears or after an order is sent.
   // Detection + picking live in the LocationPicker sheet below.
-  // Shared delivery location: restored from the remembered pin (same
-  // lifetime as "remember my details") so a repeat order sends the exact
-  // same validated pin without re-picking. Text + pin travel as a pair —
-  // editing the address by hand drops the pin (see the address field).
-  // Detection + picking live in the LocationPicker sheet below.
-  const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(() => {
-    try {
-      return loadPinnedLocation();
-    } catch {
-      return null;
-    }
-  });
+  // Text + pin travel as a pair — editing the address by hand drops the pin
+  // (see the address field), which then must be re-picked.
+  const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [locSheetOpen, setLocSheetOpen] = useState(false);
   // Last address WE auto-filled from the picker (or the coords fallback).
   // A re-pin overwrites the field only when it is empty or still holds our
@@ -88,16 +83,13 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // landmark) is never destroyed. Without this, a first wrong auto-fill
   // (coarse fix) stuck forever: the field was non-empty so later correct
   // picks were ignored — the "address is wrong" bug.
-  // Repeat-order fix: a remembered address paired with a remembered pin IS
-  // our previous auto-fill, not typed text. A fresh mount starts with
-  // lastAutoFill=null and would misclassify it as typed, keeping a stale
-  // address with a fresh pin (exact-pin Telegram link points at the new
-  // coords while the ticket shows the old street — the reported WRONG pin).
-  // Seeding the ref from the remembered pair makes the first re-pin
-  // overwrite correctly. Unpaired typed text (no pin) still starts null.
+  // Seeded from the remembered address ALONE (pins are session-only now):
+  // an untouched remembered address belongs to a previous order and may be
+  // stale, so a fresh pick refreshes it — while text edited THIS session
+  // differs from the seed and is preserved. This keeps pin and address from
+  // ever disagreeing on the ticket.
   const lastAutoFillRef = useRef<string | null>((() => {
     try {
-      if (!loadPinnedLocation()) return null;
       const rem = loadRememberedDetails();
       const a = rem && typeof (rem as { address?: unknown }).address === 'string'
         ? (rem as { address: string }).address.trim().slice(0, 200)
@@ -107,10 +99,6 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       return null;
     }
   })());
-  // Accuracy gate shared with Telegram (mirrors MAPS_ACCURACY_OK_M = 250 in
-  // functions/_shared/telegram.js): a coarse cell-tower fix must never ride
-  // as an "exact pin" — it falls back to the address-query link.
-  const PIN_ACCURACY_OK_M = 250;
   // State-only clear. Storage is the remembered pair and is synced atomically
   // on submit (see sendOrder) so a pick without a submit, a sheet dismiss,
   // or a drawer close can never strand a new pin against an old address.
@@ -253,6 +241,14 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       setErrorMsg(isAr ? 'يرجى إدخال عنوان التوصيل بالتفصيل' : 'Please enter delivery address');
       return;
     }
+    // Fresh pin every order (never remembered): the ticket's exact-pin link
+    // and ETA distance need a position chosen NOW — a typed address alone
+    // is not enough. Coarse fixes still pass here (fresh but imprecise);
+    // sharpness is enforced downstream, never by blocking the order.
+    if (!location || !Number.isFinite(location.lat) || !Number.isFinite(location.lng)) {
+      setErrorMsg(isAr ? 'يرجى تحديد موقعك على الخريطة بالدبوس (خطوة إجبارية)' : 'Please pin your location on the map (required step)');
+      return;
+    }
     if (isBelowMin) {
       setErrorMsg(
         isAr
@@ -283,29 +279,10 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
           return rest;
         })();
 
-    // Save remember details (checked = persist, unchecked = erase).
-    // The pin + address travel as ONE atomic pair: storage is synced here
-    // (not at pick time) so a pick without a submit, a sheet dismiss, or a
-    // drawer close can never strand a new pin against an old address in
-    // localStorage. Coarse fixes (>250m) are never persisted — they ride as
-    // an address-query fallback, never as a fake "exact" pin.
+    // Save remember details (checked = persist, unchecked = erase). The pin
+    // is deliberately NEVER persisted: every order needs a freshly picked
+    // pin (validated mandatory above), so no stale pin can ever ride along.
     saveRememberedDetails(customerToSave);
-    const sendableLocation = location && location.accuracy <= PIN_ACCURACY_OK_M ? location : null;
-    if (!customer.remember) {
-      try {
-        savePinnedLocation(null);
-      } catch {}
-    } else if (sendableLocation) {
-      try {
-        savePinnedLocation(sendableLocation);
-      } catch {}
-    } else {
-      // Remembered but cleared/coarse this order: forget the stale pin so
-      // the next repeat cannot re-send it with the new address text.
-      try {
-        savePinnedLocation(null);
-      } catch {}
-    }
 
     // Record the order on the server. Transport lives in
     // features/cart/services/cart.api.ts (single place).
@@ -335,12 +312,15 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
             // when the counts are non-trivial (the cart hook canonicalizes
             // trivial all-full maps back to the legacy shape), so legacy
             // lines keep their exact payload byte-shape.
-            ...(l.addonQty && Object.keys(l.addonQty).length ? { addonQty: { ...l.addonQty } } : {}),
-            qty: l.quantity,
-          })),
-          ...(sendableLocation ? { location: { lat: sendableLocation.lat, lng: sendableLocation.lng, accuracy: Math.round(sendableLocation.accuracy) } } : {}),
-          lang,
-          website: honeypot,
+          ...(l.addonQty && Object.keys(l.addonQty).length ? { addonQty: { ...l.addonQty } } : {}),
+          qty: l.quantity,
+        })),
+        // The pin passed validation above, so it always rides along (even
+        // coarse — the server degrades coarse fixes to the address-query
+        // fallback instead of a fake "exact" pin, but never rejects).
+        ...(location ? { location: { lat: location.lat, lng: location.lng, accuracy: Math.round(location.accuracy) } } : {}),
+        lang,
+        website: honeypot,
         },
         lang
       );

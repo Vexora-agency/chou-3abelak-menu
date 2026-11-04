@@ -1,9 +1,13 @@
-// Remember-my-details pin/address pair: the Telegram maps link must always
-// match what the customer actually submitted this order.
+// Pin/address pair, session-only pins: the Telegram maps link must always
+// match what the customer actually submitted this order. Pins are NEVER
+// remembered — every delivery order carries a freshly picked position, so
+// no stale pin from another visit/city can ride along. Remember-me persists
+// name/phone/address only.
+//   - delivery without a pin -> invalid_location (order cannot send)
 //   - fresh-picked good coords -> exact pin link (same lat/lng as submitted)
-//   - hand-edited address (pin cleared) -> address-query fallback, never stale pin
+//   - hand-edited address (pin cleared) -> must re-pin, never the stale one
 //   - coarse fix (>250m) -> dropped before store, fallback (never fake "exact")
-//   - saved pin re-arms the picker (no silent auto-locate overwrite)
+//   - no saved pin -> picker auto-locates every time (fresh fix, never silent)
 // Run: node scripts/test-remember-pin.mjs
 import { createAsserts } from './_helpers/shared.mjs';
 import { MENU, orderBody } from './_helpers/features-cases.mjs';
@@ -18,8 +22,6 @@ import {
 import {
   loadRememberedDetails,
   saveRememberedDetails,
-  loadPinnedLocation,
-  savePinnedLocation,
 } from '../src/utils/customerOrders.ts';
 import {
   shouldAutoLocateOnOpen,
@@ -37,26 +39,21 @@ globalThis.localStorage = {
 };
 globalThis.window = { localStorage: globalThis.localStorage, dispatchEvent: () => true };
 
-/* 1. Remembered pair round-trips as a pair (no silent drift). */
+/* 1. Remember-me persists details, NEVER the pin (no pin storage exists). */
 mem.clear();
 ok(loadRememberedDetails() === null, 'no details initially');
-ok(loadPinnedLocation() === null, 'no pin initially');
 saveRememberedDetails({ name: 'Ali', phone: '70123456', address: 'Hamra, Main Rd', remember: true });
-savePinnedLocation({ lat: 33.8938, lng: 35.5018, accuracy: 25 });
 const d1 = loadRememberedDetails();
-const p1 = loadPinnedLocation();
 ok(d1 && d1.address === 'Hamra, Main Rd' && d1.remember === true, 'details roundtrip with address');
-ok(p1 && p1.lat === 33.8938 && p1.lng === 35.5018, 'pin roundtrips with coords');
-// Hand-edit clears the pin (CustomerFormFields onChange -> onClearLocation);
-// the next submit must then carry NO pin (fallback), never the stale one.
-savePinnedLocation(null);
-ok(loadPinnedLocation() === null, 'hand-edit forgets the pin');
-// Unchecked forgets both together.
-saveRememberedDetails({ name: 'Ali', phone: '70123456', address: 'Hamra', remember: true });
-savePinnedLocation({ lat: 33.9, lng: 35.5, accuracy: 25 });
+// Unchecked forgets the details. Pins live in session state only.
 saveRememberedDetails({ name: 'Ali', phone: '70123456', address: 'Hamra', remember: false });
-savePinnedLocation(null);
-ok(loadRememberedDetails() === null && loadPinnedLocation() === null, 'unchecked forgets pair');
+ok(loadRememberedDetails() === null, 'unchecked forgets details');
+// Delivery without a freshly picked pin cannot send, even with details.
+{
+  const m = JSON.parse(JSON.stringify(MENU));
+  const noPin = validateOrderInput(orderBody(), m);
+  ok(noPin.ok === false && noPin.errors.includes('invalid_location'), 'remembered details alone are not enough — pin required');
+}
 
 /* 2. Server validation: good kept, coarse dropped (fallback), bad rejected. */
 {

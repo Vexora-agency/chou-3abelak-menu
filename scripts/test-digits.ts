@@ -31,6 +31,8 @@ const body = {
   type: 'delivery',
   customer: { name: 'Ali', phone: '٧٠١٢٣٤٥٦', address: 'Beirut' },
   items: [{ id: 'zaatar', qty: 1 }],
+  // Delivery requires a freshly picked pin every order (never remembered).
+  location: { lat: 33.8938, lng: 35.5018, accuracy: 30 },
 };
 const out = validateOrderInput(body, menu) as { ok: boolean; errors: string[] };
 ok('backend accepts arabic-digit phone', out.ok && out.errors.length === 0);

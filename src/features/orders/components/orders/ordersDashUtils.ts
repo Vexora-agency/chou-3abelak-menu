@@ -3,6 +3,20 @@ import { STR } from './ordersDashTypes';
 import { isSpicyAddon } from '@/src/utils/menuHelpers';
 import type { OrderItem, OrderStatus } from './ordersDashTypes';
 
+/** True when the order line carries the spicy add-on (any id, ar/en name).
+ * Drives the flame mark next to the item name in the expanded order view. */
+export function lineIsSpicy(it: OrderItem): boolean {
+  const names = it.addonNames;
+  if (!Array.isArray(names) || names.length === 0) return false;
+  for (let i = 0; i < names.length; i++) {
+    const fid = Array.isArray(it.addonIds) ? it.addonIds[i] : null;
+    const n = names[i];
+    if (!n) continue;
+    if (isSpicyAddon(fid, n.ar) || isSpicyAddon(fid, n.en)) return true;
+  }
+  return false;
+}
+
 /* ---------- Helpers ---------- */
 export const fmt = (n: number) => {
   const v = typeof n === 'number' && Number.isFinite(n) ? n : 0;

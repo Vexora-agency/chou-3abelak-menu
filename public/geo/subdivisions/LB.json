@@ -1,0 +1,109 @@
+[
+ {
+  "code": "LB-AK",
+  "en": "Akkar",
+  "ar": "عكار",
+  "aliases": [
+   "akkar",
+   "عكار"
+  ]
+ },
+ {
+  "code": "LB-BH",
+  "en": "Baalbek-Hermel",
+  "ar": "بعلبك-الهرمل",
+  "aliases": [
+   "baalbek-hermel",
+   "baalbek",
+   "hermel",
+   "بعلبك",
+   "بعلبك-الهرمل",
+   "الهرمل"
+  ]
+ },
+ {
+  "code": "LB-BA",
+  "en": "Beirut",
+  "ar": "بيروت",
+  "aliases": [
+   "beirut",
+   "beyrouth",
+   "بيروت"
+  ]
+ },
+ {
+  "code": "LB-BI",
+  "en": "Beqaa",
+  "ar": "البقاع",
+  "aliases": [
+   "beqaa",
+   "bekaa",
+   "bekka",
+   "البقاع",
+   "بقاع"
+  ]
+ },
+ {
+  "code": "LB-KJ",
+  "en": "Keserwan-Jbeil",
+  "ar": "كسروان-جبيل",
+  "aliases": [
+   "keserwan-jbeil",
+   "keserwan",
+   "kesrouan",
+   "kesserwan",
+   "jbeil",
+   "byblos",
+   "كسروان",
+   "كسروان-جبيل",
+   "جبيل"
+  ]
+ },
+ {
+  "code": "LB-JL",
+  "en": "Mount Lebanon",
+  "ar": "جبل لبنان",
+  "aliases": [
+   "mount lebanon",
+   "mont liban",
+   "جبل لبنان"
+  ]
+ },
+ {
+  "code": "LB-NA",
+  "en": "Nabatieh",
+  "ar": "النبطية",
+  "aliases": [
+   "nabatieh",
+   "nabatiyeh",
+   "nabatieh",
+   "النبطية"
+  ]
+ },
+ {
+  "code": "LB-AS",
+  "en": "North",
+  "ar": "الشمال",
+  "aliases": [
+   "north",
+   "north lebanon",
+   "liban-nord",
+   "nord",
+   "الشمال",
+   "شمال"
+  ]
+ },
+ {
+  "code": "LB-JA",
+  "en": "South",
+  "ar": "الجنوب",
+  "aliases": [
+   "south",
+   "south lebanon",
+   "liban-sud",
+   "sud",
+   "الجنوب",
+   "جنوب"
+  ]
+ }
+]

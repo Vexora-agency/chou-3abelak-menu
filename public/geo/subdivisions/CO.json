@@ -1,0 +1,167 @@
+[
+ {
+  "code": "CO-AMA",
+  "en": "Amazonas",
+  "ar": "أمازوناس"
+ },
+ {
+  "code": "CO-ANT",
+  "en": "Antioquia",
+  "ar": "أنتيوكيا"
+ },
+ {
+  "code": "CO-ARA",
+  "en": "Arauca",
+  "ar": "أراوكا"
+ },
+ {
+  "code": "CO-ATL",
+  "en": "Atlántico",
+  "ar": "أتلانتيكو"
+ },
+ {
+  "code": "CO-DC",
+  "en": "Bogotá D.C.",
+  "ar": "بوغوتا العاصمة"
+ },
+ {
+  "code": "CO-BOL",
+  "en": "Bolívar",
+  "ar": "بوليفار"
+ },
+ {
+  "code": "CO-BOY",
+  "en": "Boyacá",
+  "ar": "بوياكا"
+ },
+ {
+  "code": "CO-CAL",
+  "en": "Caldas",
+  "ar": "كالداس"
+ },
+ {
+  "code": "CO-CAQ",
+  "en": "Caquetá",
+  "ar": "كاكيتا"
+ },
+ {
+  "code": "CO-CAS",
+  "en": "Casanare",
+  "ar": "كاساناري"
+ },
+ {
+  "code": "CO-CAU",
+  "en": "Cauca",
+  "ar": "كاوكا"
+ },
+ {
+  "code": "CO-CES",
+  "en": "Cesar",
+  "ar": "سيزار"
+ },
+ {
+  "code": "CO-CHO",
+  "en": "Chocó",
+  "ar": "شوكو"
+ },
+ {
+  "code": "CO-CUN",
+  "en": "Cundinamarca",
+  "ar": "كونديناماركا"
+ },
+ {
+  "code": "CO-COR",
+  "en": "Córdoba",
+  "ar": "قرطبة"
+ },
+ {
+  "code": "CO-GUA",
+  "en": "Guainía",
+  "ar": "غوينيا"
+ },
+ {
+  "code": "CO-GUV",
+  "en": "Guaviare",
+  "ar": "جوافياري"
+ },
+ {
+  "code": "CO-HUI",
+  "en": "Huila",
+  "ar": "هويلا"
+ },
+ {
+  "code": "CO-LAG",
+  "en": "La Guajira",
+  "ar": "لا غواخيرا"
+ },
+ {
+  "code": "CO-MAG",
+  "en": "Magdalena",
+  "ar": "ماجدالينا"
+ },
+ {
+  "code": "CO-MET",
+  "en": "Meta",
+  "ar": "ميتا"
+ },
+ {
+  "code": "CO-NAR",
+  "en": "Nariño",
+  "ar": "نارينيو"
+ },
+ {
+  "code": "CO-NSA",
+  "en": "Norte de Santander",
+  "ar": "نورتي دي سانتاندير"
+ },
+ {
+  "code": "CO-PUT",
+  "en": "Putumayo",
+  "ar": "بوتومايو"
+ },
+ {
+  "code": "CO-QUI",
+  "en": "Quindío",
+  "ar": "كوينديو"
+ },
+ {
+  "code": "CO-RIS",
+  "en": "Risaralda",
+  "ar": "ريسارالدا"
+ },
+ {
+  "code": "CO-SAP",
+  "en": "San Andrés, Providencia y Santa Catalina",
+  "ar": "سان أندريس، بروفيدنسيا وسانتا كاتالينا"
+ },
+ {
+  "code": "CO-SAN",
+  "en": "Santander",
+  "ar": "سانتاندير"
+ },
+ {
+  "code": "CO-SUC",
+  "en": "Sucre",
+  "ar": "سوكري"
+ },
+ {
+  "code": "CO-TOL",
+  "en": "Tolima",
+  "ar": "توليما"
+ },
+ {
+  "code": "CO-VAC",
+  "en": "Valle del Cauca",
+  "ar": "وادي كاوكا"
+ },
+ {
+  "code": "CO-VAU",
+  "en": "Vaupés",
+  "ar": "فوبيس"
+ },
+ {
+  "code": "CO-VID",
+  "en": "Vichada",
+  "ar": "فيشادا"
+ }
+]

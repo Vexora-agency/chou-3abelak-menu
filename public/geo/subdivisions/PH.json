@@ -1,0 +1,507 @@
+[
+ {
+  "code": "PH-ABR",
+  "en": "Abra",
+  "ar": "أبرا"
+ },
+ {
+  "code": "PH-AGN",
+  "en": "Agusan del Norte",
+  "ar": "أغوسان ديل نورتي"
+ },
+ {
+  "code": "PH-AGS",
+  "en": "Agusan del Sur",
+  "ar": "أغوسان ديل سور"
+ },
+ {
+  "code": "PH-AKL",
+  "en": "Aklan",
+  "ar": "أكلان"
+ },
+ {
+  "code": "PH-ALB",
+  "en": "Albay",
+  "ar": "ألباي"
+ },
+ {
+  "code": "PH-ANT",
+  "en": "Antique",
+  "ar": "آنتيك"
+ },
+ {
+  "code": "PH-APA",
+  "en": "Apayao",
+  "ar": "أباياو"
+ },
+ {
+  "code": "PH-AUR",
+  "en": "Aurora",
+  "ar": "أورورا"
+ },
+ {
+  "code": "PH-14",
+  "en": "Autonomous Region in Muslim Mindanao",
+  "ar": "المنطقة المتمتعة بالحكم الذاتي في مينداناو المسلمة"
+ },
+ {
+  "code": "PH-BAS",
+  "en": "Basilan",
+  "ar": "باسيلان"
+ },
+ {
+  "code": "PH-BAN",
+  "en": "Bataan",
+  "ar": "باتان"
+ },
+ {
+  "code": "PH-BTN",
+  "en": "Batanes",
+  "ar": "باتانيس"
+ },
+ {
+  "code": "PH-BTG",
+  "en": "Batangas",
+  "ar": "باتانجاس"
+ },
+ {
+  "code": "PH-BEN",
+  "en": "Benguet",
+  "ar": "بنجويت"
+ },
+ {
+  "code": "PH-05",
+  "en": "Bicol",
+  "ar": "بيكول"
+ },
+ {
+  "code": "PH-BIL",
+  "en": "Biliran",
+  "ar": "بيليران"
+ },
+ {
+  "code": "PH-BOH",
+  "en": "Bohol",
+  "ar": "بوهول"
+ },
+ {
+  "code": "PH-BUK",
+  "en": "Bukidnon",
+  "ar": "بوكيدنون"
+ },
+ {
+  "code": "PH-BUL",
+  "en": "Bulacan",
+  "ar": "بولاكان"
+ },
+ {
+  "code": "PH-CAG",
+  "en": "Cagayan",
+  "ar": "كاجايان"
+ },
+ {
+  "code": "PH-02",
+  "en": "Cagayan Valley",
+  "ar": "وادي كاجايان"
+ },
+ {
+  "code": "PH-40",
+  "en": "Calabarzon",
+  "ar": "كالابارزون"
+ },
+ {
+  "code": "PH-CAN",
+  "en": "Camarines Norte",
+  "ar": "كامارينز نورتي"
+ },
+ {
+  "code": "PH-CAS",
+  "en": "Camarines Sur",
+  "ar": "كامارينز سور"
+ },
+ {
+  "code": "PH-CAM",
+  "en": "Camiguin",
+  "ar": "كاميجوين"
+ },
+ {
+  "code": "PH-CAP",
+  "en": "Capiz",
+  "ar": "كابيز"
+ },
+ {
+  "code": "PH-13",
+  "en": "Caraga",
+  "ar": "كاراجا"
+ },
+ {
+  "code": "PH-CAT",
+  "en": "Catanduanes",
+  "ar": "كاتاندوانيس"
+ },
+ {
+  "code": "PH-CAV",
+  "en": "Cavite",
+  "ar": "كافيت"
+ },
+ {
+  "code": "PH-CEB",
+  "en": "Cebu",
+  "ar": "سيبو"
+ },
+ {
+  "code": "PH-03",
+  "en": "Central Luzon",
+  "ar": "وسط لوزون"
+ },
+ {
+  "code": "PH-07",
+  "en": "Central Visayas",
+  "ar": "فيساياس الوسطى"
+ },
+ {
+  "code": "PH-15",
+  "en": "Cordillera Administrative",
+  "ar": "إدارة كورديليرا"
+ },
+ {
+  "code": "PH-NCO",
+  "en": "Cotabato",
+  "ar": "كوتاباتو"
+ },
+ {
+  "code": "PH-11",
+  "en": "Davao",
+  "ar": "دافاو"
+ },
+ {
+  "code": "PH-DVO",
+  "en": "Davao Occidental",
+  "ar": "دافاو أوكسيدنتال"
+ },
+ {
+  "code": "PH-DAO",
+  "en": "Davao Oriental",
+  "ar": "دافاو أورينتال"
+ },
+ {
+  "code": "PH-COM",
+  "en": "Davao de Oro",
+  "ar": "دافاو دي أورو"
+ },
+ {
+  "code": "PH-DAV",
+  "en": "Davao del Norte",
+  "ar": "دافاو ديل نورتي"
+ },
+ {
+  "code": "PH-DAS",
+  "en": "Davao del Sur",
+  "ar": "دافاو ديل سور"
+ },
+ {
+  "code": "PH-DIN",
+  "en": "Dinagat Islands",
+  "ar": "جزر ديناغات"
+ },
+ {
+  "code": "PH-EAS",
+  "en": "Eastern Samar",
+  "ar": "سامار الشرقية"
+ },
+ {
+  "code": "PH-08",
+  "en": "Eastern Visayas",
+  "ar": "فيساياس الشرقية"
+ },
+ {
+  "code": "PH-GUI",
+  "en": "Guimaras",
+  "ar": "غيماراس"
+ },
+ {
+  "code": "PH-IFU",
+  "en": "Ifugao",
+  "ar": "إيفوجاو"
+ },
+ {
+  "code": "PH-01",
+  "en": "Ilocos",
+  "ar": "إيلوكوس"
+ },
+ {
+  "code": "PH-ILN",
+  "en": "Ilocos Norte",
+  "ar": "إيلوكوس نورتي"
+ },
+ {
+  "code": "PH-ILS",
+  "en": "Ilocos Sur",
+  "ar": "إيلوكوس سور"
+ },
+ {
+  "code": "PH-ILI",
+  "en": "Iloilo",
+  "ar": "إيلويلو"
+ },
+ {
+  "code": "PH-ISA",
+  "en": "Isabela",
+  "ar": "إيزابيلا"
+ },
+ {
+  "code": "PH-KAL",
+  "en": "Kalinga",
+  "ar": "كالينجا"
+ },
+ {
+  "code": "PH-LUN",
+  "en": "La Union",
+  "ar": "لا يونيون"
+ },
+ {
+  "code": "PH-LAG",
+  "en": "Laguna",
+  "ar": "لاجونا"
+ },
+ {
+  "code": "PH-LAN",
+  "en": "Lanao del Norte",
+  "ar": "لاناو ديل نورتي"
+ },
+ {
+  "code": "PH-LAS",
+  "en": "Lanao del Sur",
+  "ar": "لاناو ديل سور"
+ },
+ {
+  "code": "PH-LEY",
+  "en": "Leyte",
+  "ar": "ليتي"
+ },
+ {
+  "code": "PH-MGN",
+  "en": "Maguindanao del Norte",
+  "ar": "ماجوينداناو ديل نورتي"
+ },
+ {
+  "code": "PH-MGS",
+  "en": "Maguindanao del Sur",
+  "ar": "ماجوينداناو ديل سور"
+ },
+ {
+  "code": "PH-MAD",
+  "en": "Marinduque",
+  "ar": "ماريندوك"
+ },
+ {
+  "code": "PH-MAS",
+  "en": "Masbate",
+  "ar": "ماسباتي"
+ },
+ {
+  "code": "PH-41",
+  "en": "Mimaropa",
+  "ar": "ميماروبا"
+ },
+ {
+  "code": "PH-MSC",
+  "en": "Misamis Occidental",
+  "ar": "ميساميس أوكسيدنتال"
+ },
+ {
+  "code": "PH-MSR",
+  "en": "Misamis Oriental",
+  "ar": "ميساميس أورينتال"
+ },
+ {
+  "code": "PH-MOU",
+  "en": "Mountain Province",
+  "ar": "مقاطعة الجبل"
+ },
+ {
+  "code": "PH-00",
+  "en": "National Capital Region (Metro Manila)",
+  "ar": "منطقة العاصمة الوطنية (مانيلا الكبرى)"
+ },
+ {
+  "code": "PH-18",
+  "en": "Negros Island Region",
+  "ar": null
+ },
+ {
+  "code": "PH-NEC",
+  "en": "Negros Occidental",
+  "ar": "نيجروس أوكسيدنتال"
+ },
+ {
+  "code": "PH-NER",
+  "en": "Negros Oriental",
+  "ar": "نيجروس أورينتال"
+ },
+ {
+  "code": "PH-10",
+  "en": "Northern Mindanao",
+  "ar": "شمال مينداناو"
+ },
+ {
+  "code": "PH-NSA",
+  "en": "Northern Samar",
+  "ar": "سامار الشمالية"
+ },
+ {
+  "code": "PH-NUE",
+  "en": "Nueva Ecija",
+  "ar": "نويفا إيسيجا"
+ },
+ {
+  "code": "PH-NUV",
+  "en": "Nueva Vizcaya",
+  "ar": "نويفا فيزكايا"
+ },
+ {
+  "code": "PH-MDC",
+  "en": "Occidental Mindoro",
+  "ar": "أوكسيدنتال ميندورو"
+ },
+ {
+  "code": "PH-MDR",
+  "en": "Oriental Mindoro",
+  "ar": "ميندورو الشرقية"
+ },
+ {
+  "code": "PH-PLW",
+  "en": "Palawan",
+  "ar": "بالاوان"
+ },
+ {
+  "code": "PH-PAM",
+  "en": "Pampanga",
+  "ar": "بامبانجا"
+ },
+ {
+  "code": "PH-PAN",
+  "en": "Pangasinan",
+  "ar": "بانجاسينان"
+ },
+ {
+  "code": "PH-QUE",
+  "en": "Quezon",
+  "ar": "كيزون"
+ },
+ {
+  "code": "PH-QUI",
+  "en": "Quirino",
+  "ar": "كيرينو"
+ },
+ {
+  "code": "PH-RIZ",
+  "en": "Rizal",
+  "ar": "ريزال"
+ },
+ {
+  "code": "PH-ROM",
+  "en": "Romblon",
+  "ar": "رومبلون"
+ },
+ {
+  "code": "PH-SAR",
+  "en": "Sarangani",
+  "ar": "سارانغاني"
+ },
+ {
+  "code": "PH-SIG",
+  "en": "Siquijor",
+  "ar": "سيقويجور"
+ },
+ {
+  "code": "PH-12",
+  "en": "Soccsksargen",
+  "ar": "سوكسكسارجين"
+ },
+ {
+  "code": "PH-SOR",
+  "en": "Sorsogon",
+  "ar": "سورسوجون"
+ },
+ {
+  "code": "PH-SCO",
+  "en": "South Cotabato",
+  "ar": "جنوب كوتاباتو"
+ },
+ {
+  "code": "PH-SLE",
+  "en": "Southern Leyte",
+  "ar": "جنوب ليتي"
+ },
+ {
+  "code": "PH-19999",
+  "en": "Special Geographic Area",
+  "ar": null
+ },
+ {
+  "code": "PH-SUK",
+  "en": "Sultan Kudarat",
+  "ar": "سلطان قدرات"
+ },
+ {
+  "code": "PH-SLU",
+  "en": "Sulu",
+  "ar": "سولو"
+ },
+ {
+  "code": "PH-SUN",
+  "en": "Surigao del Norte",
+  "ar": "سوريجاو ديل نورتي"
+ },
+ {
+  "code": "PH-SUR",
+  "en": "Surigao del Sur",
+  "ar": "سوريجاو ديل سور"
+ },
+ {
+  "code": "PH-TAR",
+  "en": "Tarlac",
+  "ar": "تارلاك"
+ },
+ {
+  "code": "PH-TAW",
+  "en": "Tawi-Tawi",
+  "ar": "تاوي تاوي"
+ },
+ {
+  "code": "PH-WSA",
+  "en": "Western Samar",
+  "ar": "سامار الغربية"
+ },
+ {
+  "code": "PH-06",
+  "en": "Western Visayas",
+  "ar": "فيساياس الغربية"
+ },
+ {
+  "code": "PH-ZMB",
+  "en": "Zambales",
+  "ar": "زامباليس"
+ },
+ {
+  "code": "PH-09",
+  "en": "Zamboanga Peninsula",
+  "ar": "شبه جزيرة زامبوانجا"
+ },
+ {
+  "code": "PH-ZSI",
+  "en": "Zamboanga Sibugay",
+  "ar": "زامبوانجا سيبوغاي"
+ },
+ {
+  "code": "PH-ZAN",
+  "en": "Zamboanga del Norte",
+  "ar": "زامبوانجا ديل نورتي"
+ },
+ {
+  "code": "PH-ZAS",
+  "en": "Zamboanga del Sur",
+  "ar": "زامبوانجا ديل سور"
+ }
+]

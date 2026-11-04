@@ -1,0 +1,82 @@
+[
+ {
+  "code": "PL-30",
+  "en": "Greater Poland",
+  "ar": "بولندا الكبرى"
+ },
+ {
+  "code": "PL-26",
+  "en": "Holy Cross",
+  "ar": "الصليب المقدس"
+ },
+ {
+  "code": "PL-04",
+  "en": "Kuyavia-Pomerania",
+  "ar": "كويافيا-بوميرانيا"
+ },
+ {
+  "code": "PL-12",
+  "en": "Lesser Poland",
+  "ar": "بولندا الصغرى"
+ },
+ {
+  "code": "PL-02",
+  "en": "Lower Silesia",
+  "ar": "سيليزيا السفلى"
+ },
+ {
+  "code": "PL-06",
+  "en": "Lublin",
+  "ar": "لوبلين"
+ },
+ {
+  "code": "PL-08",
+  "en": "Lubusz",
+  "ar": "لوبوش"
+ },
+ {
+  "code": "PL-14",
+  "en": "Mazovia",
+  "ar": "مازوفيا"
+ },
+ {
+  "code": "PL-20",
+  "en": "Podlaskie",
+  "ar": "بودلاسكي"
+ },
+ {
+  "code": "PL-22",
+  "en": "Pomerania",
+  "ar": "بوميرانيا"
+ },
+ {
+  "code": "PL-24",
+  "en": "Silesia",
+  "ar": "سيليزيا"
+ },
+ {
+  "code": "PL-18",
+  "en": "Subcarpathia",
+  "ar": "سوبكارباثيا"
+ },
+ {
+  "code": "PL-16",
+  "en": "Upper Silesia",
+  "ar": "سيليزيا العليا"
+ },
+ {
+  "code": "PL-28",
+  "en": "Warmia-Masuria",
+  "ar": "وارميا-ماسوريا"
+ },
+ {
+  "code": "PL-32",
+  "en": "West Pomerania",
+  "ar": "بوميرانيا الغربية"
+ },
+ {
+  "code": "PL-10",
+  "en": "Łódź",
+  "ar": "لودز"
+ }
+]

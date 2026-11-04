@@ -1,0 +1,147 @@
+[
+ {
+  "code": "TN-12",
+  "en": "Ariana",
+  "ar": "أريانا"
+ },
+ {
+  "code": "TN-13",
+  "en": "Ben Arous",
+  "ar": "بن عروس"
+ },
+ {
+  "code": "TN-23",
+  "en": "Bizerte",
+  "ar": "بنزرت"
+ },
+ {
+  "code": "TN-31",
+  "en": "Béja",
+  "ar": "باجة"
+ },
+ {
+  "code": "TN-D1",
+  "en": "District 1",
+  "ar": null
+ },
+ {
+  "code": "TN-D2",
+  "en": "District 2",
+  "ar": null
+ },
+ {
+  "code": "TN-D3",
+  "en": "District 3",
+  "ar": null
+ },
+ {
+  "code": "TN-D4",
+  "en": "District 4",
+  "ar": null
+ },
+ {
+  "code": "TN-D5",
+  "en": "District 5",
+  "ar": null
+ },
+ {
+  "code": "TN-81",
+  "en": "Gabès",
+  "ar": "قابس"
+ },
+ {
+  "code": "TN-71",
+  "en": "Gafsa",
+  "ar": "قفصة"
+ },
+ {
+  "code": "TN-32",
+  "en": "Jendouba",
+  "ar": "جندوبة"
+ },
+ {
+  "code": "TN-41",
+  "en": "Kairouan",
+  "ar": "القيروان"
+ },
+ {
+  "code": "TN-42",
+  "en": "Kasserine",
+  "ar": "القصرين"
+ },
+ {
+  "code": "TN-73",
+  "en": "Kebili",
+  "ar": "قبلي"
+ },
+ {
+  "code": "TN-33",
+  "en": "Kef",
+  "ar": "الكاف"
+ },
+ {
+  "code": "TN-53",
+  "en": "Mahdia",
+  "ar": "المهدية"
+ },
+ {
+  "code": "TN-14",
+  "en": "Manouba",
+  "ar": "منوبة"
+ },
+ {
+  "code": "TN-82",
+  "en": "Medenine",
+  "ar": "مدنين"
+ },
+ {
+  "code": "TN-52",
+  "en": "Monastir",
+  "ar": "المنستير"
+ },
+ {
+  "code": "TN-21",
+  "en": "Nabeul",
+  "ar": "نابل"
+ },
+ {
+  "code": "TN-61",
+  "en": "Sfax",
+  "ar": "صفاقس"
+ },
+ {
+  "code": "TN-43",
+  "en": "Sidi Bouzid",
+  "ar": "سيدي بوزيد"
+ },
+ {
+  "code": "TN-34",
+  "en": "Siliana",
+  "ar": "سليانة"
+ },
+ {
+  "code": "TN-51",
+  "en": "Sousse",
+  "ar": "سوسة"
+ },
+ {
+  "code": "TN-83",
+  "en": "Tataouine",
+  "ar": "تطاوين"
+ },
+ {
+  "code": "TN-72",
+  "en": "Tozeur",
+  "ar": "توزر"
+ },
+ {
+  "code": "TN-11",
+  "en": "Tunis",
+  "ar": "تونس"
+ },
+ {
+  "code": "TN-22",
+  "en": "Zaghouan",
+  "ar": "زغوان"
+ }
+]

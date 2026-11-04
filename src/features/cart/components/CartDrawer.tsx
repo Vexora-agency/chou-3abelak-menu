@@ -9,6 +9,7 @@ import { CustomerFormFields } from './cart/CustomerFormFields';
 import { OrderSummaryLines } from './cart/OrderSummaryLines';
 import { CartCheckoutFooter } from './cart/CartCheckoutFooter';
 import { CartLocationSheet } from './cart/CartLocationSheet';
+import { ZoneBlockedPanel } from './cart/ZoneBlockedPanel';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -71,6 +72,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     idemKeyRef,
     sending,
     handleSendOrder,
+    zoneBlocked,
+    zoneStatus,
+    zonePlaceName,
   } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart });
 
   // Radical phone-scroll fix: shared counter lock (iOS-safe, nested-sheet
@@ -273,6 +277,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               darkMode={darkMode}
             />
 
+            {/* Delivery-zone hard block: pin outside served zones (delivery
+                only; pickup/dinein unaffected). Sits right above the send
+                button so the reason + WhatsApp CTA are unmissable. */}
+            {zoneBlocked && (
+              <ZoneBlockedPanel
+                lang={lang}
+                darkMode={darkMode}
+                whatsapp={menu.settings.whatsapp || ''}
+                placeName={zonePlaceName}
+                onChangeLocation={() => setLocSheetOpen(true)}
+              />
+            )}
+
             {/* Action bar in normal flow: scrolls with the bill, found
                 at the end — no floating bar covering content. */}
             <div className={`mt-2 border-t pt-3 ${
@@ -286,6 +303,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 lang={lang}
                 darkMode={darkMode}
                 sending={sending}
+                sendLocked={zoneBlocked}
                 onSend={() => void handleSendOrder()}
                 onClearCart={handleClearCartWithLocation}
               />

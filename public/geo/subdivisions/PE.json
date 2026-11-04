@@ -1,0 +1,132 @@
+[
+ {
+  "code": "PE-AMA",
+  "en": "Amazonas",
+  "ar": "أمازوناس"
+ },
+ {
+  "code": "PE-APU",
+  "en": "Apurímac",
+  "ar": "أبوريماك"
+ },
+ {
+  "code": "PE-ARE",
+  "en": "Arequipa",
+  "ar": "أريكيبا"
+ },
+ {
+  "code": "PE-AYA",
+  "en": "Ayacucho",
+  "ar": "أياكوتشو"
+ },
+ {
+  "code": "PE-CAJ",
+  "en": "Cajamarca",
+  "ar": "كاخاماركا"
+ },
+ {
+  "code": "PE-CAL",
+  "en": "Callao",
+  "ar": "كالاو"
+ },
+ {
+  "code": "PE-CUS",
+  "en": "Cusco",
+  "ar": "كوسكو"
+ },
+ {
+  "code": "PE-HUV",
+  "en": "Huancavelica",
+  "ar": "هوانكافيليكا"
+ },
+ {
+  "code": "PE-HUC",
+  "en": "Huanuco",
+  "ar": "هوانوكو"
+ },
+ {
+  "code": "PE-ICA",
+  "en": "Ica",
+  "ar": "إيكا"
+ },
+ {
+  "code": "PE-JUN",
+  "en": "Junín",
+  "ar": "جونين"
+ },
+ {
+  "code": "PE-LAL",
+  "en": "La Libertad",
+  "ar": "لا ليبرتاد"
+ },
+ {
+  "code": "PE-LAM",
+  "en": "Lambayeque",
+  "ar": "لامبايك"
+ },
+ {
+  "code": "PE-LIM",
+  "en": "Lima",
+  "ar": "ليما"
+ },
+ {
+  "code": "PE-LOR",
+  "en": "Loreto",
+  "ar": "لوريتو"
+ },
+ {
+  "code": "PE-MDD",
+  "en": "Madre de Dios",
+  "ar": "مادري دي ديوس"
+ },
+ {
+  "code": "PE-MOQ",
+  "en": "Moquegua",
+  "ar": "موكيجوا"
+ },
+ {
+  "code": "PE-LMA",
+  "en": "Municipalidad Metropolitana de Lima",
+  "ar": "بلدية ميتروبوليتانا دي ليما"
+ },
+ {
+  "code": "PE-PAS",
+  "en": "Pasco",
+  "ar": "باسكو"
+ },
+ {
+  "code": "PE-PIU",
+  "en": "Piura",
+  "ar": "بيورا"
+ },
+ {
+  "code": "PE-PUN",
+  "en": "Puno",
+  "ar": "بونو"
+ },
+ {
+  "code": "PE-SAM",
+  "en": "San Martín",
+  "ar": "سان مارتن"
+ },
+ {
+  "code": "PE-TAC",
+  "en": "Tacna",
+  "ar": "تاكنا"
+ },
+ {
+  "code": "PE-TUM",
+  "en": "Tumbes",
+  "ar": "تومبيس"
+ },
+ {
+  "code": "PE-UCA",
+  "en": "Ucayali",
+  "ar": "أوكايالي"
+ },
+ {
+  "code": "PE-ANC",
+  "en": "Áncash",
+  "ar": "أنكاشا"
+ }
+]

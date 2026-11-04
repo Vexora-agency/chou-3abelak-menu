@@ -1,0 +1,47 @@
+[
+ {
+  "code": "AT-1",
+  "en": "Burgenland",
+  "ar": "بورغنلاند"
+ },
+ {
+  "code": "AT-2",
+  "en": "Carinthia",
+  "ar": "كارينثيا"
+ },
+ {
+  "code": "AT-3",
+  "en": "Lower Austria",
+  "ar": "النمسا السفلى"
+ },
+ {
+  "code": "AT-5",
+  "en": "Salzburg",
+  "ar": "سالزبورغ"
+ },
+ {
+  "code": "AT-6",
+  "en": "Styria",
+  "ar": "ستيريا"
+ },
+ {
+  "code": "AT-7",
+  "en": "Tyrol",
+  "ar": "تيرول"
+ },
+ {
+  "code": "AT-4",
+  "en": "Upper Austria",
+  "ar": "النمسا العليا"
+ },
+ {
+  "code": "AT-9",
+  "en": "Vienna",
+  "ar": "فيينا"
+ },
+ {
+  "code": "AT-8",
+  "en": "Vorarlberg",
+  "ar": "فورارلبرغ"
+ }
+]

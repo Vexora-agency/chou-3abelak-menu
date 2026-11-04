@@ -1,0 +1,137 @@
+[
+ {
+  "code": "EG-ALX",
+  "en": "Alexandria",
+  "ar": "الإسكندرية"
+ },
+ {
+  "code": "EG-ASN",
+  "en": "Aswan",
+  "ar": "أسوان"
+ },
+ {
+  "code": "EG-AST",
+  "en": "Asyut",
+  "ar": "أسيوط"
+ },
+ {
+  "code": "EG-BH",
+  "en": "Beheira",
+  "ar": "البحيرة"
+ },
+ {
+  "code": "EG-BNS",
+  "en": "Beni Suef",
+  "ar": "بني سويف"
+ },
+ {
+  "code": "EG-C",
+  "en": "Cairo",
+  "ar": "القاهرة"
+ },
+ {
+  "code": "EG-DK",
+  "en": "Dakahlia",
+  "ar": "الدقهلية"
+ },
+ {
+  "code": "EG-DT",
+  "en": "Damietta",
+  "ar": "دمياط"
+ },
+ {
+  "code": "EG-FYM",
+  "en": "Faiyum",
+  "ar": "الفيوم"
+ },
+ {
+  "code": "EG-GH",
+  "en": "Gharbia",
+  "ar": "الغربية"
+ },
+ {
+  "code": "EG-GZ",
+  "en": "Giza",
+  "ar": "الجيزة"
+ },
+ {
+  "code": "EG-IS",
+  "en": "Ismailia",
+  "ar": "الإسماعيلية"
+ },
+ {
+  "code": "EG-KFS",
+  "en": "Kafr El-Sheikh",
+  "ar": "كفر الشيخ"
+ },
+ {
+  "code": "EG-LX",
+  "en": "Luxor",
+  "ar": "الأقصر"
+ },
+ {
+  "code": "EG-MT",
+  "en": "Matrouh",
+  "ar": "مطروح"
+ },
+ {
+  "code": "EG-MN",
+  "en": "Minya",
+  "ar": "المنيا"
+ },
+ {
+  "code": "EG-MNF",
+  "en": "Monufia",
+  "ar": "المنوفية"
+ },
+ {
+  "code": "EG-WAD",
+  "en": "New Valley",
+  "ar": "الوادي الجديد"
+ },
+ {
+  "code": "EG-SIN",
+  "en": "North Sinai",
+  "ar": "شمال سيناء"
+ },
+ {
+  "code": "EG-PTS",
+  "en": "Port Said",
+  "ar": "بورسعيد"
+ },
+ {
+  "code": "EG-KB",
+  "en": "Qalyubia",
+  "ar": "القليوبية"
+ },
+ {
+  "code": "EG-KN",
+  "en": "Qena",
+  "ar": "قنا"
+ },
+ {
+  "code": "EG-BA",
+  "en": "Red Sea",
+  "ar": "البحر الأحمر"
+ },
+ {
+  "code": "EG-SHR",
+  "en": "Sharqia",
+  "ar": "الشرقية"
+ },
+ {
+  "code": "EG-SHG",
+  "en": "Sohag",
+  "ar": "سوهاج"
+ },
+ {
+  "code": "EG-JS",
+  "en": "South Sinai",
+  "ar": "جنوب سيناء"
+ },
+ {
+  "code": "EG-SUZ",
+  "en": "Suez",
+  "ar": "السويس"
+ }
+]

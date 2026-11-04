@@ -9,6 +9,7 @@ import {
   SPICY_LEVEL_DEFAULTS,
   SPICY_SECTION_DEFAULT,
 } from '@/src/utils/menuHelpers';
+import { normalizeDeliveryZones } from '@/src/utils/deliveryZones';
 import {
   autoplayIntervalOrDefault,
   bilingualBlock,
@@ -419,6 +420,7 @@ export function normalizeMenu<T>(menu: T): T {
       defaultDeliveryMinutes: etaMinutesOrDefault(ordRaw.defaultDeliveryMinutes, 20),
       receiveDelayDeliveryMin: receiveDelayOrDefault(ordRaw.receiveDelayDeliveryMin, 30),
       receiveDelayPickupMin: receiveDelayOrDefault(ordRaw.receiveDelayPickupMin, 15),
+      deliveryZones: normalizeDeliveryZones((ordRaw as Record<string, unknown>).deliveryZones),
     },
     notifications: {
       senderName: typeof notifRaw.senderName === 'string' ? (notifRaw.senderName as string).slice(0, 80) : '',

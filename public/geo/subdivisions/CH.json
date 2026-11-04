@@ -1,0 +1,132 @@
+[
+ {
+  "code": "CH-AG",
+  "en": "Aargau",
+  "ar": "أرجاو"
+ },
+ {
+  "code": "CH-AR",
+  "en": "Appenzell Ausserrhoden",
+  "ar": "أبنزل أوسيرهودن"
+ },
+ {
+  "code": "CH-AI",
+  "en": "Appenzell Innerrhoden",
+  "ar": "أبنزل إينرهودن"
+ },
+ {
+  "code": "CH-BL",
+  "en": "Basel-Land",
+  "ar": "بازل لاند"
+ },
+ {
+  "code": "CH-BS",
+  "en": "Basel-Stadt",
+  "ar": "مدينة بازل"
+ },
+ {
+  "code": "CH-BE",
+  "en": "Bern",
+  "ar": "برن"
+ },
+ {
+  "code": "CH-FR",
+  "en": "Fribourg",
+  "ar": "فريبورغ"
+ },
+ {
+  "code": "CH-GE",
+  "en": "Geneva",
+  "ar": "جنيف"
+ },
+ {
+  "code": "CH-GL",
+  "en": "Glarus",
+  "ar": "جلاروس"
+ },
+ {
+  "code": "CH-GR",
+  "en": "Graubünden",
+  "ar": "غراوبوندن"
+ },
+ {
+  "code": "CH-JU",
+  "en": "Jura",
+  "ar": "جورا"
+ },
+ {
+  "code": "CH-LU",
+  "en": "Lucerne",
+  "ar": "لوسيرن"
+ },
+ {
+  "code": "CH-NE",
+  "en": "Neuchâtel",
+  "ar": "نوشاتيل"
+ },
+ {
+  "code": "CH-NW",
+  "en": "Nidwalden",
+  "ar": "نيدوالدن"
+ },
+ {
+  "code": "CH-OW",
+  "en": "Obwalden",
+  "ar": "أوبوالدن"
+ },
+ {
+  "code": "CH-SH",
+  "en": "Schaffhausen",
+  "ar": "شافهاوزن"
+ },
+ {
+  "code": "CH-SZ",
+  "en": "Schwyz",
+  "ar": "شويز"
+ },
+ {
+  "code": "CH-SO",
+  "en": "Solothurn",
+  "ar": "سولوتورن"
+ },
+ {
+  "code": "CH-SG",
+  "en": "St. Gallen",
+  "ar": "سانت غالن"
+ },
+ {
+  "code": "CH-TG",
+  "en": "Thurgau",
+  "ar": "ثورجاو"
+ },
+ {
+  "code": "CH-TI",
+  "en": "Ticino",
+  "ar": "تيسينو"
+ },
+ {
+  "code": "CH-UR",
+  "en": "Uri",
+  "ar": "أوري"
+ },
+ {
+  "code": "CH-VS",
+  "en": "Valais",
+  "ar": "فاليه"
+ },
+ {
+  "code": "CH-VD",
+  "en": "Vaud",
+  "ar": "فود"
+ },
+ {
+  "code": "CH-ZG",
+  "en": "Zug",
+  "ar": "زوغ"
+ },
+ {
+  "code": "CH-ZH",
+  "en": "Zürich",
+  "ar": "زيورخ"
+ }
+]

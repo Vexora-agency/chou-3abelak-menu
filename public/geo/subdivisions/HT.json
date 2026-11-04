@@ -1,0 +1,52 @@
+[
+ {
+  "code": "HT-AR",
+  "en": "Artibonite",
+  "ar": "أرتيبونيت"
+ },
+ {
+  "code": "HT-CE",
+  "en": "Centre",
+  "ar": "مركز"
+ },
+ {
+  "code": "HT-GA",
+  "en": "Grand'Anse",
+  "ar": "غراند آنس"
+ },
+ {
+  "code": "HT-NI",
+  "en": "Nippes",
+  "ar": "نيبس"
+ },
+ {
+  "code": "HT-ND",
+  "en": "Nord",
+  "ar": "نورد"
+ },
+ {
+  "code": "HT-NE",
+  "en": "Nord-Est",
+  "ar": "شمال شرق"
+ },
+ {
+  "code": "HT-NO",
+  "en": "Nord-Ouest",
+  "ar": "شمال غرب"
+ },
+ {
+  "code": "HT-OU",
+  "en": "Ouest",
+  "ar": "غرب"
+ },
+ {
+  "code": "HT-SD",
+  "en": "Sud",
+  "ar": "سود"
+ },
+ {
+  "code": "HT-SE",
+  "en": "Sud-Est",
+  "ar": "جنوب شرق"
+ }
+]

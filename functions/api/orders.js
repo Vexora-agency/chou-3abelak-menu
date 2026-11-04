@@ -107,6 +107,9 @@ export async function onRequest(context) {
       if (typeof checked.minOrder === 'number') out.minOrder = checked.minOrder;
       return jsonNoStore(out, 400);
     }
+    if (code === 'out_of_zone') {
+      return jsonNoStore({ error: code, message: { en: 'Your location isn’t in our delivery area right now — contact us.', ar: 'مكانك غير مدعوم للتوصيل حالياً، تواصل معنا' } }, 400);
+    }
     return jsonNoStore({ error: code }, 400);
   }
   const c = checked.cleaned;

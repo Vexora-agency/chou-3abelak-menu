@@ -1,0 +1,237 @@
+[
+ {
+  "code": "KE-01",
+  "en": "Baringo",
+  "ar": "بارينجو"
+ },
+ {
+  "code": "KE-02",
+  "en": "Bomet",
+  "ar": "بوميت"
+ },
+ {
+  "code": "KE-03",
+  "en": "Bungoma",
+  "ar": "بونغوما"
+ },
+ {
+  "code": "KE-04",
+  "en": "Busia",
+  "ar": "بوسيا"
+ },
+ {
+  "code": "KE-05",
+  "en": "Elgeyo-Marakwet",
+  "ar": "إلجيو-ماراكويت"
+ },
+ {
+  "code": "KE-06",
+  "en": "Embu",
+  "ar": "إمبو"
+ },
+ {
+  "code": "KE-07",
+  "en": "Garissa",
+  "ar": "غاريسا"
+ },
+ {
+  "code": "KE-08",
+  "en": "Homa Bay",
+  "ar": "خليج هوما"
+ },
+ {
+  "code": "KE-09",
+  "en": "Isiolo",
+  "ar": "إيسولو"
+ },
+ {
+  "code": "KE-10",
+  "en": "Kajiado",
+  "ar": "كاجيادو"
+ },
+ {
+  "code": "KE-11",
+  "en": "Kakamega",
+  "ar": "كاكاميجا"
+ },
+ {
+  "code": "KE-12",
+  "en": "Kericho",
+  "ar": "كيريشو"
+ },
+ {
+  "code": "KE-13",
+  "en": "Kiambu",
+  "ar": "كيامبو"
+ },
+ {
+  "code": "KE-14",
+  "en": "Kilifi",
+  "ar": "كيليفي"
+ },
+ {
+  "code": "KE-15",
+  "en": "Kirinyaga",
+  "ar": "كيرينياغا"
+ },
+ {
+  "code": "KE-16",
+  "en": "Kisii",
+  "ar": "كيسي"
+ },
+ {
+  "code": "KE-17",
+  "en": "Kisumu",
+  "ar": "كيسومو"
+ },
+ {
+  "code": "KE-18",
+  "en": "Kitui",
+  "ar": "كيتوي"
+ },
+ {
+  "code": "KE-19",
+  "en": "Kwale",
+  "ar": "كوالي"
+ },
+ {
+  "code": "KE-20",
+  "en": "Laikipia",
+  "ar": "لايكيبيا"
+ },
+ {
+  "code": "KE-21",
+  "en": "Lamu",
+  "ar": "لامو"
+ },
+ {
+  "code": "KE-22",
+  "en": "Machakos",
+  "ar": "ماشاكوس"
+ },
+ {
+  "code": "KE-23",
+  "en": "Makueni",
+  "ar": "ماكويني"
+ },
+ {
+  "code": "KE-24",
+  "en": "Mandera",
+  "ar": "مانديرا"
+ },
+ {
+  "code": "KE-25",
+  "en": "Marsabit",
+  "ar": "مارسابيت"
+ },
+ {
+  "code": "KE-26",
+  "en": "Meru",
+  "ar": "ميرو"
+ },
+ {
+  "code": "KE-27",
+  "en": "Migori",
+  "ar": "ميغوري"
+ },
+ {
+  "code": "KE-28",
+  "en": "Mombasa",
+  "ar": "مومباسا"
+ },
+ {
+  "code": "KE-29",
+  "en": "Murang'a",
+  "ar": "مورانغا"
+ },
+ {
+  "code": "KE-30",
+  "en": "Nairobi City",
+  "ar": "مدينة نيروبي"
+ },
+ {
+  "code": "KE-31",
+  "en": "Nakuru",
+  "ar": "ناكورو"
+ },
+ {
+  "code": "KE-32",
+  "en": "Nandi",
+  "ar": "ناندي"
+ },
+ {
+  "code": "KE-33",
+  "en": "Narok",
+  "ar": "ناروك"
+ },
+ {
+  "code": "KE-34",
+  "en": "Nyamira",
+  "ar": "نياميرا"
+ },
+ {
+  "code": "KE-35",
+  "en": "Nyandarua",
+  "ar": "نيانداروا"
+ },
+ {
+  "code": "KE-36",
+  "en": "Nyeri",
+  "ar": "نييري"
+ },
+ {
+  "code": "KE-37",
+  "en": "Samburu",
+  "ar": "سامبورو"
+ },
+ {
+  "code": "KE-38",
+  "en": "Siaya",
+  "ar": "سيايا"
+ },
+ {
+  "code": "KE-39",
+  "en": "Taita–Taveta",
+  "ar": "تايتا-تافيتا"
+ },
+ {
+  "code": "KE-40",
+  "en": "Tana River",
+  "ar": "نهر تانا"
+ },
+ {
+  "code": "KE-41",
+  "en": "Tharaka-Nithi",
+  "ar": "ثاراكا نيثي"
+ },
+ {
+  "code": "KE-42",
+  "en": "Trans Nzoia",
+  "ar": "ترانس نزويا"
+ },
+ {
+  "code": "KE-43",
+  "en": "Turkana",
+  "ar": "توركانا"
+ },
+ {
+  "code": "KE-44",
+  "en": "Uasin Gishu",
+  "ar": "أوسين جيشو"
+ },
+ {
+  "code": "KE-45",
+  "en": "Vihiga",
+  "ar": "فيهاجا"
+ },
+ {
+  "code": "KE-46",
+  "en": "Wajir",
+  "ar": "واجير"
+ },
+ {
+  "code": "KE-47",
+  "en": "West Pokot",
+  "ar": "غرب بوكوت"
+ }
+]

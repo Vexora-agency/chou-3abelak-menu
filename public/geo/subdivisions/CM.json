@@ -1,0 +1,52 @@
+[
+ {
+  "code": "CM-AD",
+  "en": "Adamawa",
+  "ar": "أداماوا"
+ },
+ {
+  "code": "CM-CE",
+  "en": "Centre",
+  "ar": "مركز"
+ },
+ {
+  "code": "CM-ES",
+  "en": "East",
+  "ar": "شرق"
+ },
+ {
+  "code": "CM-EN",
+  "en": "Far North",
+  "ar": "أقصى الشمال"
+ },
+ {
+  "code": "CM-LT",
+  "en": "Littoral",
+  "ar": "ساحلي"
+ },
+ {
+  "code": "CM-NO",
+  "en": "North",
+  "ar": "شمال"
+ },
+ {
+  "code": "CM-NW",
+  "en": "Northwest",
+  "ar": "شمال غرب"
+ },
+ {
+  "code": "CM-SU",
+  "en": "South",
+  "ar": "جنوب"
+ },
+ {
+  "code": "CM-SW",
+  "en": "Southwest",
+  "ar": "الجنوب الغربي"
+ },
+ {
+  "code": "CM-OU",
+  "en": "West",
+  "ar": "الغرب"
+ }
+]

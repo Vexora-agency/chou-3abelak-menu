@@ -1,0 +1,107 @@
+[
+ {
+  "code": "MV-01",
+  "en": "Addu",
+  "ar": "أدو"
+ },
+ {
+  "code": "MV-02",
+  "en": "Alif Alif",
+  "ar": "أليف أليف"
+ },
+ {
+  "code": "MV-00",
+  "en": "Alif Dhaal",
+  "ar": "أليف دهال"
+ },
+ {
+  "code": "MV-20",
+  "en": "Baa",
+  "ar": "آتول با"
+ },
+ {
+  "code": "MV-17",
+  "en": "Dhaalu",
+  "ar": "دالو"
+ },
+ {
+  "code": "MV-14",
+  "en": "Faafu",
+  "ar": "فافو"
+ },
+ {
+  "code": "MV-27",
+  "en": "Gaafu Alif",
+  "ar": "غافو أليف"
+ },
+ {
+  "code": "MV-28",
+  "en": "Gaafu Dhaalu",
+  "ar": "غافو دالو"
+ },
+ {
+  "code": "MV-29",
+  "en": "Gnaviyani",
+  "ar": "جنافياني"
+ },
+ {
+  "code": "MV-07",
+  "en": "Haa Alif",
+  "ar": "هاء ألف"
+ },
+ {
+  "code": "MV-23",
+  "en": "Haa Dhaalu",
+  "ar": "ها دالو"
+ },
+ {
+  "code": "MV-26",
+  "en": "Kaafu",
+  "ar": "كافو"
+ },
+ {
+  "code": "MV-05",
+  "en": "Laamu",
+  "ar": "لامو"
+ },
+ {
+  "code": "MV-03",
+  "en": "Lhaviyani",
+  "ar": "لافياني"
+ },
+ {
+  "code": "MV-MLE",
+  "en": "Malé",
+  "ar": "ماليه"
+ },
+ {
+  "code": "MV-12",
+  "en": "Meemu",
+  "ar": "ميمو"
+ },
+ {
+  "code": "MV-25",
+  "en": "Noonu",
+  "ar": "نونو"
+ },
+ {
+  "code": "MV-13",
+  "en": "Raa",
+  "ar": "راا"
+ },
+ {
+  "code": "MV-24",
+  "en": "Shaviyani",
+  "ar": "شافياني"
+ },
+ {
+  "code": "MV-08",
+  "en": "Thaa",
+  "ar": "ثا"
+ },
+ {
+  "code": "MV-04",
+  "en": "Vaavu",
+  "ar": "فافو"
+ }
+]

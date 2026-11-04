@@ -1,0 +1,47 @@
+[
+ {
+  "code": "AW-01",
+  "en": "Noord",
+  "ar": "شمال"
+ },
+ {
+  "code": "AW-09",
+  "en": "Oranjestad",
+  "ar": "أورانجيستاد"
+ },
+ {
+  "code": "AW-03",
+  "en": "Oranjestad East",
+  "ar": "أورانجيستاد الشرقية"
+ },
+ {
+  "code": "AW-02",
+  "en": "Oranjestad West",
+  "ar": "أورانجيستاد الغربية"
+ },
+ {
+  "code": "AW-04",
+  "en": "Paradera",
+  "ar": "باراديرا"
+ },
+ {
+  "code": "AW-05",
+  "en": "San Nicolaas Noord",
+  "ar": "سان نيكولاس نورد"
+ },
+ {
+  "code": "AW-06",
+  "en": "San Nicolaas Zuid",
+  "ar": "سان نيكولاس زويد"
+ },
+ {
+  "code": "AW-07",
+  "en": "Santa Cruz",
+  "ar": "سانتا كروز"
+ },
+ {
+  "code": "AW-08",
+  "en": "Savaneta",
+  "ar": "سافانيتا"
+ }
+]

@@ -1,0 +1,57 @@
+[
+ {
+  "code": "OM-DA",
+  "en": "Ad Dakhiliyah",
+  "ar": "الداخلية"
+ },
+ {
+  "code": "OM-ZA",
+  "en": "Ad Dhahirah",
+  "ar": "الظاهرة"
+ },
+ {
+  "code": "OM-BS",
+  "en": "Al Batinah North",
+  "ar": "شمال الباطنة"
+ },
+ {
+  "code": "OM-BJ",
+  "en": "Al Batinah South",
+  "ar": "جنوب الباطنة"
+ },
+ {
+  "code": "OM-BU",
+  "en": "Al Buraimi",
+  "ar": "البريمي"
+ },
+ {
+  "code": "OM-WU",
+  "en": "Al Wusta",
+  "ar": "الوسطى"
+ },
+ {
+  "code": "OM-SS",
+  "en": "Ash Sharqiyah North",
+  "ar": "شمال الشرقية"
+ },
+ {
+  "code": "OM-SJ",
+  "en": "Ash Sharqiyah South",
+  "ar": "جنوب الشرقية"
+ },
+ {
+  "code": "OM-ZU",
+  "en": "Dhofar",
+  "ar": "ظفار"
+ },
+ {
+  "code": "OM-MU",
+  "en": "Musandam",
+  "ar": "مسندم"
+ },
+ {
+  "code": "OM-MA",
+  "en": "Muscat",
+  "ar": "محافظة مسقط"
+ }
+]

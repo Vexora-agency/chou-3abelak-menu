@@ -1,0 +1,47 @@
+[
+ {
+  "code": "GA-1",
+  "en": "Estuaire",
+  "ar": "محافظة إيستوير"
+ },
+ {
+  "code": "GA-2",
+  "en": "Haut-Ogooué",
+  "ar": "أوت أوغوي"
+ },
+ {
+  "code": "GA-3",
+  "en": "Moyen-Ogooué",
+  "ar": "موين-أوغوي"
+ },
+ {
+  "code": "GA-4",
+  "en": "Ngounié",
+  "ar": "نغونييه"
+ },
+ {
+  "code": "GA-5",
+  "en": "Nyanga",
+  "ar": "نيانجا"
+ },
+ {
+  "code": "GA-6",
+  "en": "Ogooué-Ivindo",
+  "ar": "أوغووي-إيفيندو"
+ },
+ {
+  "code": "GA-7",
+  "en": "Ogooué-Lolo",
+  "ar": "أوغووي-لولو"
+ },
+ {
+  "code": "GA-8",
+  "en": "Ogooué-Maritime",
+  "ar": "أوغووي-ماريتايم"
+ },
+ {
+  "code": "GA-9",
+  "en": "Woleu-Ntem",
+  "ar": "ووليو-نتم"
+ }
+]

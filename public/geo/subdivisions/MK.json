@@ -1,0 +1,402 @@
+[
+ {
+  "code": "MK-801",
+  "en": "Aerodrom",
+  "ar": null
+ },
+ {
+  "code": "MK-802",
+  "en": "Aračinovo",
+  "ar": "أراتشينوفو"
+ },
+ {
+  "code": "MK-201",
+  "en": "Berovo",
+  "ar": "بيروفو"
+ },
+ {
+  "code": "MK-501",
+  "en": "Bitola",
+  "ar": "بيتولا"
+ },
+ {
+  "code": "MK-401",
+  "en": "Bogdanci",
+  "ar": "بوغدانشي"
+ },
+ {
+  "code": "MK-601",
+  "en": "Bogovinje",
+  "ar": "بوغوفينجي"
+ },
+ {
+  "code": "MK-402",
+  "en": "Bosilovo",
+  "ar": "بوسيلوفو"
+ },
+ {
+  "code": "MK-602",
+  "en": "Brvenica",
+  "ar": "برفينيكا"
+ },
+ {
+  "code": "MK-803",
+  "en": "Butel",
+  "ar": "بوتيل"
+ },
+ {
+  "code": "MK-814",
+  "en": "Centar",
+  "ar": "مركز"
+ },
+ {
+  "code": "MK-313",
+  "en": "Centar Župa",
+  "ar": "مركز زوبا"
+ },
+ {
+  "code": "MK-303",
+  "en": "Debar",
+  "ar": "ديبار"
+ },
+ {
+  "code": "MK-304",
+  "en": "Debarca",
+  "ar": "ديباركا"
+ },
+ {
+  "code": "MK-203",
+  "en": "Delčevo",
+  "ar": "ديلتشيفو"
+ },
+ {
+  "code": "MK-502",
+  "en": "Demir Hisar",
+  "ar": "ديمير حصار"
+ },
+ {
+  "code": "MK-103",
+  "en": "Demir Kapija",
+  "ar": "ديمير كابيجا"
+ },
+ {
+  "code": "MK-406",
+  "en": "Dojran",
+  "ar": "دوجران"
+ },
+ {
+  "code": "MK-503",
+  "en": "Dolneni",
+  "ar": "دولنيني"
+ },
+ {
+  "code": "MK-804",
+  "en": "Gazi Baba",
+  "ar": "غازي بابا"
+ },
+ {
+  "code": "MK-405",
+  "en": "Gevgelija",
+  "ar": "جيفجيليا"
+ },
+ {
+  "code": "MK-805",
+  "en": "Gjorče Petrov",
+  "ar": "جورجي بتروف"
+ },
+ {
+  "code": "MK-604",
+  "en": "Gostivar",
+  "ar": "غوستيفار"
+ },
+ {
+  "code": "MK-102",
+  "en": "Gradsko",
+  "ar": "غرادسكو"
+ },
+ {
+  "code": "MK-807",
+  "en": "Ilinden",
+  "ar": "إيليندن"
+ },
+ {
+  "code": "MK-606",
+  "en": "Jegunovce",
+  "ar": "جيغونوفتشي"
+ },
+ {
+  "code": "MK-205",
+  "en": "Karbinci",
+  "ar": "كاربينجي"
+ },
+ {
+  "code": "MK-808",
+  "en": "Karpoš",
+  "ar": "كاربوش"
+ },
+ {
+  "code": "MK-104",
+  "en": "Kavadarci",
+  "ar": "كافادارشي"
+ },
+ {
+  "code": "MK-809",
+  "en": "Kisela Voda",
+  "ar": "كيسيلا فودا"
+ },
+ {
+  "code": "MK-307",
+  "en": "Kičevo",
+  "ar": "كيتشيفو"
+ },
+ {
+  "code": "MK-407",
+  "en": "Konče",
+  "ar": "كونتشي"
+ },
+ {
+  "code": "MK-206",
+  "en": "Kočani",
+  "ar": "كوتشاني"
+ },
+ {
+  "code": "MK-701",
+  "en": "Kratovo",
+  "ar": "كراتوفو"
+ },
+ {
+  "code": "MK-702",
+  "en": "Kriva Palanka",
+  "ar": "كريفا بالانكا"
+ },
+ {
+  "code": "MK-504",
+  "en": "Krivogaštani",
+  "ar": "كريفوغاستاني"
+ },
+ {
+  "code": "MK-505",
+  "en": "Kruševo",
+  "ar": "كروسيفو"
+ },
+ {
+  "code": "MK-703",
+  "en": "Kumanovo",
+  "ar": "كومانوفو"
+ },
+ {
+  "code": "MK-704",
+  "en": "Lipkovo",
+  "ar": "ليبكوفو"
+ },
+ {
+  "code": "MK-105",
+  "en": "Lozovo",
+  "ar": "لوزوفو"
+ },
+ {
+  "code": "MK-207",
+  "en": "Makedonska Kamenica",
+  "ar": "مقدونيا كامينيكا"
+ },
+ {
+  "code": "MK-308",
+  "en": "Makedonski Brod",
+  "ar": "ماكدونسكي برود"
+ },
+ {
+  "code": "MK-607",
+  "en": "Mavrovo and Rostuša",
+  "ar": "مافروفو وروستوشا"
+ },
+ {
+  "code": "MK-506",
+  "en": "Mogila",
+  "ar": "موغيلا"
+ },
+ {
+  "code": "MK-106",
+  "en": "Negotino",
+  "ar": "نيغوتينو"
+ },
+ {
+  "code": "MK-507",
+  "en": "Novaci",
+  "ar": "نوفاسك"
+ },
+ {
+  "code": "MK-408",
+  "en": "Novo Selo",
+  "ar": "نوفو سيلو"
+ },
+ {
+  "code": "MK-310",
+  "en": "Ohrid",
+  "ar": "أوهريد"
+ },
+ {
+  "code": "MK-208",
+  "en": "Pehčevo",
+  "ar": "بيهتشيفو"
+ },
+ {
+  "code": "MK-810",
+  "en": "Petrovec",
+  "ar": "بيتروفيتش"
+ },
+ {
+  "code": "MK-311",
+  "en": "Plasnica",
+  "ar": "بلاسنيكا"
+ },
+ {
+  "code": "MK-508",
+  "en": "Prilep",
+  "ar": "بريليب"
+ },
+ {
+  "code": "MK-209",
+  "en": "Probištip",
+  "ar": "بروبيستيب"
+ },
+ {
+  "code": "MK-409",
+  "en": "Radoviš",
+  "ar": "رادوفيتش"
+ },
+ {
+  "code": "MK-705",
+  "en": "Rankovce",
+  "ar": "رانكوفتشي"
+ },
+ {
+  "code": "MK-509",
+  "en": "Resen",
+  "ar": "ريسن"
+ },
+ {
+  "code": "MK-107",
+  "en": "Rosoman",
+  "ar": "روسومان"
+ },
+ {
+  "code": "MK-811",
+  "en": "Saraj",
+  "ar": "سراج"
+ },
+ {
+  "code": "MK-812",
+  "en": "Sopište",
+  "ar": "سوبيشتي"
+ },
+ {
+  "code": "MK-706",
+  "en": "Staro Nagoričane",
+  "ar": "ستارو ناغوريكان"
+ },
+ {
+  "code": "MK-312",
+  "en": "Struga",
+  "ar": "ستروغا"
+ },
+ {
+  "code": "MK-410",
+  "en": "Strumica",
+  "ar": "ستروميكا"
+ },
+ {
+  "code": "MK-813",
+  "en": "Studeničani",
+  "ar": "ستودينيكاني"
+ },
+ {
+  "code": "MK-108",
+  "en": "Sveti Nikole",
+  "ar": "سفيتي نيكول"
+ },
+ {
+  "code": "MK-608",
+  "en": "Tearce",
+  "ar": "تيرس"
+ },
+ {
+  "code": "MK-609",
+  "en": "Tetovo",
+  "ar": "تيتوفو"
+ },
+ {
+  "code": "MK-403",
+  "en": "Valandovo",
+  "ar": "فالاندوفو"
+ },
+ {
+  "code": "MK-404",
+  "en": "Vasilevo",
+  "ar": "فاسيليفو"
+ },
+ {
+  "code": "MK-101",
+  "en": "Veles",
+  "ar": "فيليس"
+ },
+ {
+  "code": "MK-301",
+  "en": "Vevčani",
+  "ar": "فيفتشاني"
+ },
+ {
+  "code": "MK-202",
+  "en": "Vinica",
+  "ar": "فينيكا"
+ },
+ {
+  "code": "MK-603",
+  "en": "Vrapčište",
+  "ar": "فرابتشيستي"
+ },
+ {
+  "code": "MK-806",
+  "en": "Zelenikovo",
+  "ar": "زيلينيكوفو"
+ },
+ {
+  "code": "MK-204",
+  "en": "Zrnovci",
+  "ar": "زرنوفشي"
+ },
+ {
+  "code": "MK-815",
+  "en": "Čair",
+  "ar": "كير"
+ },
+ {
+  "code": "MK-109",
+  "en": "Čaška",
+  "ar": "تشاسكا"
+ },
+ {
+  "code": "MK-210",
+  "en": "Češinovo-Obleševo",
+  "ar": "Češinovo-Obleševo"
+ },
+ {
+  "code": "MK-816",
+  "en": "Čučer-Sandevo",
+  "ar": "Čučer-Sandevo"
+ },
+ {
+  "code": "MK-211",
+  "en": "Štip",
+  "ar": "بلدية شتيب"
+ },
+ {
+  "code": "MK-817",
+  "en": "Šuto Orizari",
+  "ar": "شوتو أوريزاري"
+ },
+ {
+  "code": "MK-605",
+  "en": "Želino",
+  "ar": "زيلينو"
+ }
+]

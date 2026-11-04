@@ -1,0 +1,362 @@
+[
+ {
+  "code": "IS-AKN",
+  "en": "Akranes",
+  "ar": "أكرانيس"
+ },
+ {
+  "code": "IS-AKU",
+  "en": "Akureyri",
+  "ar": "أكوريري"
+ },
+ {
+  "code": "IS-BLA",
+  "en": "Bláskógabyggð",
+  "ar": "بلاسكوغابيغد"
+ },
+ {
+  "code": "IS-BOL",
+  "en": "Bolungarvík",
+  "ar": "بولونجارفيك"
+ },
+ {
+  "code": "IS-BOG",
+  "en": "Borgarbyggð",
+  "ar": "بورغاربيغد"
+ },
+ {
+  "code": "IS-1",
+  "en": "Capital",
+  "ar": "عاصمة"
+ },
+ {
+  "code": "IS-DAB",
+  "en": "Dalabyggð",
+  "ar": "دالابيغ"
+ },
+ {
+  "code": "IS-DAV",
+  "en": "Dalvíkurbyggð",
+  "ar": "Dalvíkurbyggð"
+ },
+ {
+  "code": "IS-7",
+  "en": "Eastern",
+  "ar": "شرقي"
+ },
+ {
+  "code": "IS-EOM",
+  "en": "Eyja- og Miklaholtshreppur",
+  "ar": "Eyja- og Miklaholtshreppur"
+ },
+ {
+  "code": "IS-EYF",
+  "en": "Eyjafjarðarsveit",
+  "ar": "Eyjafjarðarsveit"
+ },
+ {
+  "code": "IS-FJL",
+  "en": "Fjallabyggð",
+  "ar": "فيالابيغد"
+ },
+ {
+  "code": "IS-FJD",
+  "en": "Fjarðabyggð",
+  "ar": "فياردابيغد"
+ },
+ {
+  "code": "IS-FLR",
+  "en": "Fljótsdalshreppur",
+  "ar": "فليوتسدالشريبور"
+ },
+ {
+  "code": "IS-FLA",
+  "en": "Flóahreppur",
+  "ar": "فلوهريبور"
+ },
+ {
+  "code": "IS-GAR",
+  "en": "Garðabær",
+  "ar": "غارذاباير"
+ },
+ {
+  "code": "IS-GRN",
+  "en": "Grindavík",
+  "ar": "غريندافيك"
+ },
+ {
+  "code": "IS-GRU",
+  "en": "Grundarfjörður",
+  "ar": "جروندارفيوردور"
+ },
+ {
+  "code": "IS-GOG",
+  "en": "Grímsnes- og Grafningshreppur",
+  "ar": "Grímsnes- og Grafningshreppur"
+ },
+ {
+  "code": "IS-GRY",
+  "en": "Grýtubakkahreppur",
+  "ar": "جريتوباكاهريبور"
+ },
+ {
+  "code": "IS-HAF",
+  "en": "Hafnarfjörður",
+  "ar": "هافنارفيوردور"
+ },
+ {
+  "code": "IS-SHF",
+  "en": "Hornafjörður",
+  "ar": "هورنافجوردور"
+ },
+ {
+  "code": "IS-HRU",
+  "en": "Hrunamannahreppur",
+  "ar": "هروناماناهريبور"
+ },
+ {
+  "code": "IS-HVA",
+  "en": "Hvalfjarðarsveit",
+  "ar": "هفالفياردارسفيت"
+ },
+ {
+  "code": "IS-HVE",
+  "en": "Hveragerði",
+  "ar": "هفيراجيردي"
+ },
+ {
+  "code": "IS-HRG",
+  "en": "Hörgársveit",
+  "ar": "هوردارسفيت"
+ },
+ {
+  "code": "IS-HUG",
+  "en": "Húnabyggð",
+  "ar": "هونابيغد"
+ },
+ {
+  "code": "IS-HUV",
+  "en": "Húnaþing vestra",
+  "ar": "Húnaþing vestra"
+ },
+ {
+  "code": "IS-KAL",
+  "en": "Kaldrananeshreppur",
+  "ar": "كالدرانانشريبور"
+ },
+ {
+  "code": "IS-KJO",
+  "en": "Kjósarhreppur",
+  "ar": "كجوسارهريبور"
+ },
+ {
+  "code": "IS-KOP",
+  "en": "Kópavogur",
+  "ar": "كوبافوغور"
+ },
+ {
+  "code": "IS-LAN",
+  "en": "Langanesbyggð",
+  "ar": "Langanesbyggð"
+ },
+ {
+  "code": "IS-MOS",
+  "en": "Mosfellsbær",
+  "ar": "موسفلسبير"
+ },
+ {
+  "code": "IS-MUL",
+  "en": "Múlaþing",
+  "ar": "مولاثينغ"
+ },
+ {
+  "code": "IS-MYR",
+  "en": "Mýrdalshreppur",
+  "ar": "ميردالشريبور"
+ },
+ {
+  "code": "IS-6",
+  "en": "Northeastern",
+  "ar": "شمال شرقي"
+ },
+ {
+  "code": "IS-5",
+  "en": "Northwestern",
+  "ar": "شمال غرب"
+ },
+ {
+  "code": "IS-NOR",
+  "en": "Norðurþing",
+  "ar": "نوردورسينغ"
+ },
+ {
+  "code": "IS-RGE",
+  "en": "Rangárþing eystra",
+  "ar": "Rangárþing eystra"
+ },
+ {
+  "code": "IS-RGY",
+  "en": "Rangárþing ytra",
+  "ar": "Rangárþing ytra"
+ },
+ {
+  "code": "IS-RHH",
+  "en": "Reykhólahreppur",
+  "ar": "ريكولاهريبور"
+ },
+ {
+  "code": "IS-RKN",
+  "en": "Reykjanesbær",
+  "ar": "رايكيانسبير"
+ },
+ {
+  "code": "IS-RKV",
+  "en": "Reykjavík",
+  "ar": "ريكيافيك"
+ },
+ {
+  "code": "IS-SEL",
+  "en": "Seltjarnarnes",
+  "ar": "سيلتجارنارنيس"
+ },
+ {
+  "code": "IS-SKF",
+  "en": "Skaftárhreppur",
+  "ar": "سكافتارهريبور"
+ },
+ {
+  "code": "IS-SKG",
+  "en": "Skagabyggð",
+  "ar": "سكاجابيغد"
+ },
+ {
+  "code": "IS-SKR",
+  "en": "Skagafjörður",
+  "ar": "سكاغافيوردور"
+ },
+ {
+  "code": "IS-SSS",
+  "en": "Skagaströnd",
+  "ar": "سكاجاستروند"
+ },
+ {
+  "code": "IS-SOG",
+  "en": "Skeiða- og Gnúpverjahreppur",
+  "ar": "Skeiða- og Gnúpverjahreppur"
+ },
+ {
+  "code": "IS-SKO",
+  "en": "Skorradalshreppur",
+  "ar": "سكوررادالشريبور"
+ },
+ {
+  "code": "IS-SNF",
+  "en": "Snæfellsbær",
+  "ar": "سنيفيلسبير"
+ },
+ {
+  "code": "IS-8",
+  "en": "Southern",
+  "ar": "جنوبي"
+ },
+ {
+  "code": "IS-2",
+  "en": "Southern Peninsula",
+  "ar": "شبه الجزيرة الجنوبية"
+ },
+ {
+  "code": "IS-STR",
+  "en": "Strandabyggð",
+  "ar": "ستراندابيج"
+ },
+ {
+  "code": "IS-STY",
+  "en": "Stykkishólmur",
+  "ar": "ستيكيشولمور"
+ },
+ {
+  "code": "IS-SDN",
+  "en": "Suðurnesjabær",
+  "ar": "سوورنيسجابير"
+ },
+ {
+  "code": "IS-SBT",
+  "en": "Svalbardsstrandarhreppur",
+  "ar": "سفالباردستراندارهيبور"
+ },
+ {
+  "code": "IS-SDV",
+  "en": "Súðavík",
+  "ar": "سوذافيك"
+ },
+ {
+  "code": "IS-TJO",
+  "en": "Tjörneshreppur",
+  "ar": "تيورنيشريبور"
+ },
+ {
+  "code": "IS-TAL",
+  "en": "Tálknafjarðarhreppur",
+  "ar": "تالكنافجارهاربور"
+ },
+ {
+  "code": "IS-VEM",
+  "en": "Vestmannaeyjar",
+  "ar": "يستمان"
+ },
+ {
+  "code": "IS-VER",
+  "en": "Vesturbyggð",
+  "ar": "فيستوربيغد"
+ },
+ {
+  "code": "IS-SVG",
+  "en": "Vogar",
+  "ar": "فوغار"
+ },
+ {
+  "code": "IS-VOP",
+  "en": "Vopnafjarðarhreppur",
+  "ar": "فوبنافجارداربور"
+ },
+ {
+  "code": "IS-3",
+  "en": "Western",
+  "ar": "الغربي"
+ },
+ {
+  "code": "IS-4",
+  "en": "Westfjords",
+  "ar": "المضايق الغربية"
+ },
+ {
+  "code": "IS-SFA",
+  "en": "Árborg",
+  "ar": "أربورغ"
+ },
+ {
+  "code": "IS-ARN",
+  "en": "Árneshreppur",
+  "ar": "أرنيشريبور"
+ },
+ {
+  "code": "IS-ASA",
+  "en": "Ásahreppur",
+  "ar": "آساهريبور"
+ },
+ {
+  "code": "IS-ISA",
+  "en": "Ísafjörður",
+  "ar": "اسافيوردور"
+ },
+ {
+  "code": "IS-SOL",
+  "en": "Ölfus",
+  "ar": "أولفوس"
+ },
+ {
+  "code": "IS-THG",
+  "en": "Þingeyjarsveit",
+  "ar": "Þingeyjarsveit"
+ }
+]

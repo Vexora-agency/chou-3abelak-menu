@@ -1,0 +1,47 @@
+[
+ {
+  "code": "BM-DEV",
+  "en": "Devonshire",
+  "ar": "ديفونشاير"
+ },
+ {
+  "code": "BM-HA",
+  "en": "Hamilton",
+  "ar": "هاميلتون"
+ },
+ {
+  "code": "BM-PAG",
+  "en": "Paget",
+  "ar": "باجيت"
+ },
+ {
+  "code": "BM-PEM",
+  "en": "Pembroke",
+  "ar": "بيمبروك"
+ },
+ {
+  "code": "BM-SGE",
+  "en": "Saint George's",
+  "ar": "سانت جورج"
+ },
+ {
+  "code": "BM-SAN",
+  "en": "Sandys",
+  "ar": "سانديز"
+ },
+ {
+  "code": "BM-SMI",
+  "en": "Smith's",
+  "ar": "سميث"
+ },
+ {
+  "code": "BM-SOU",
+  "en": "Southampton",
+  "ar": "ساوثهامبتون"
+ },
+ {
+  "code": "BM-WAR",
+  "en": "Warwick",
+  "ar": "وارويك"
+ }
+]

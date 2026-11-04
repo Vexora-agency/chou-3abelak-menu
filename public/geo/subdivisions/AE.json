@@ -1,0 +1,37 @@
+[
+ {
+  "code": "AE-AZ",
+  "en": "Abu Dhabi",
+  "ar": "أبو ظبي"
+ },
+ {
+  "code": "AE-AJ",
+  "en": "Ajman",
+  "ar": "عجمان"
+ },
+ {
+  "code": "AE-DU",
+  "en": "Dubai",
+  "ar": "دبي"
+ },
+ {
+  "code": "AE-FU",
+  "en": "Fujairah",
+  "ar": "الفجيرة"
+ },
+ {
+  "code": "AE-RK",
+  "en": "Ras Al Khaimah",
+  "ar": "رأس الخيمة"
+ },
+ {
+  "code": "AE-SH",
+  "en": "Sharjah",
+  "ar": "الشارقة"
+ },
+ {
+  "code": "AE-UQ",
+  "en": "Umm Al Quwain",
+  "ar": "أم القيوين"
+ }
+]

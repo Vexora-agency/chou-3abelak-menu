@@ -1,0 +1,437 @@
+[
+ {
+  "code": "MA-AGD",
+  "en": "Agadir-Ida-Ou-Tanane",
+  "ar": "أكادير-إيدا-أو-تانان"
+ },
+ {
+  "code": "MA-HAO",
+  "en": "Al Haouz",
+  "ar": "الحوز"
+ },
+ {
+  "code": "MA-HOC",
+  "en": "Al Hoceïma",
+  "ar": "الحسيمة"
+ },
+ {
+  "code": "MA-AOU",
+  "en": "Aousserd (EH)",
+  "ar": "أوسرد (EH)"
+ },
+ {
+  "code": "MA-ASZ",
+  "en": "Assa-Zag (EH-partial)",
+  "ar": "Assa-Zag (EH-جزئي)"
+ },
+ {
+  "code": "MA-AZI",
+  "en": "Azilal",
+  "ar": "أزيلال"
+ },
+ {
+  "code": "MA-BES",
+  "en": "Benslimane",
+  "ar": "بنسليمان"
+ },
+ {
+  "code": "MA-BER",
+  "en": "Berkane",
+  "ar": "بركان"
+ },
+ {
+  "code": "MA-BRR",
+  "en": "Berrechid",
+  "ar": "برشيد"
+ },
+ {
+  "code": "MA-BOD",
+  "en": "Boujdour (EH)",
+  "ar": "بوجدور (EH)"
+ },
+ {
+  "code": "MA-BOM",
+  "en": "Boulemane",
+  "ar": "بولمان"
+ },
+ {
+  "code": "MA-BEM",
+  "en": "Béni Mellal",
+  "ar": "بني ملال"
+ },
+ {
+  "code": "MA-05",
+  "en": "Béni Mellal-Khénifra",
+  "ar": "بني ملال خنيفرة"
+ },
+ {
+  "code": "MA-CAS",
+  "en": "Casablanca",
+  "ar": "الدار البيضاء"
+ },
+ {
+  "code": "MA-06",
+  "en": "Casablanca-Settat",
+  "ar": "الدار البيضاء-سطات"
+ },
+ {
+  "code": "MA-CHE",
+  "en": "Chefchaouen",
+  "ar": "شفشاون"
+ },
+ {
+  "code": "MA-CHI",
+  "en": "Chichaoua",
+  "ar": "شيشاوة"
+ },
+ {
+  "code": "MA-CHT",
+  "en": "Chtouka-Ait Baha",
+  "ar": "شتوكة-آيت باها"
+ },
+ {
+  "code": "MA-12",
+  "en": "Dakhla-Oued Ed-Dahab (EH)",
+  "ar": "الداخلة-وادي الذهب (EH)"
+ },
+ {
+  "code": "MA-DRI",
+  "en": "Driouch",
+  "ar": "دريوش"
+ },
+ {
+  "code": "MA-08",
+  "en": "Drâa-Tafilalet",
+  "ar": "درعة تافيلالت"
+ },
+ {
+  "code": "MA-HAJ",
+  "en": "El Hajeb",
+  "ar": "الحاجب"
+ },
+ {
+  "code": "MA-JDI",
+  "en": "El Jadida",
+  "ar": "الجديدة"
+ },
+ {
+  "code": "MA-KES",
+  "en": "El Kelâa des Sraghna",
+  "ar": "قلعة السراغنة"
+ },
+ {
+  "code": "MA-ERR",
+  "en": "Errachidia",
+  "ar": "الرشيدية"
+ },
+ {
+  "code": "MA-ESM",
+  "en": "Es-Semara (EH-partial)",
+  "ar": "السمارة (EH-جزئي)"
+ },
+ {
+  "code": "MA-ESI",
+  "en": "Essaouira",
+  "ar": "الصويرة"
+ },
+ {
+  "code": "MA-FAH",
+  "en": "Fahs-Anjra",
+  "ar": "فحص-أنجرة"
+ },
+ {
+  "code": "MA-FIG",
+  "en": "Figuig",
+  "ar": "فجيج"
+ },
+ {
+  "code": "MA-FQH",
+  "en": "Fquih Ben Salah",
+  "ar": "الفقيه بن صالح"
+ },
+ {
+  "code": "MA-FES",
+  "en": "Fès",
+  "ar": "فاس"
+ },
+ {
+  "code": "MA-03",
+  "en": "Fès-Meknès",
+  "ar": "فاس-مكناس"
+ },
+ {
+  "code": "MA-GUE",
+  "en": "Guelmim",
+  "ar": "كلميم"
+ },
+ {
+  "code": "MA-10",
+  "en": "Guelmim-Oued Noun (EH-partial)",
+  "ar": "كلميم-واد نون (EH-جزئي)"
+ },
+ {
+  "code": "MA-GUF",
+  "en": "Guercif",
+  "ar": "جرسيف"
+ },
+ {
+  "code": "MA-IFR",
+  "en": "Ifrane",
+  "ar": "إفران"
+ },
+ {
+  "code": "MA-INE",
+  "en": "Inezgane-Ait Melloul",
+  "ar": "إنزكان-آيت ملول"
+ },
+ {
+  "code": "MA-JRA",
+  "en": "Jerada",
+  "ar": "جرادة"
+ },
+ {
+  "code": "MA-KHO",
+  "en": "Khouribga",
+  "ar": "خريبكة"
+ },
+ {
+  "code": "MA-KHE",
+  "en": "Khémisset",
+  "ar": "الخميسات"
+ },
+ {
+  "code": "MA-KHN",
+  "en": "Khénifra",
+  "ar": "خنيفرة"
+ },
+ {
+  "code": "MA-KEN",
+  "en": "Kénitra",
+  "ar": "القنيطرة"
+ },
+ {
+  "code": "MA-02",
+  "en": "L'Oriental",
+  "ar": "لورينتال"
+ },
+ {
+  "code": "MA-LAR",
+  "en": "Larache",
+  "ar": "العرائش"
+ },
+ {
+  "code": "MA-LAA",
+  "en": "Laâyoune (EH)",
+  "ar": "العيون (EH)"
+ },
+ {
+  "code": "MA-11",
+  "en": "Laâyoune-Sakia El Hamra (EH-partial)",
+  "ar": "العيون - الساقية الحمراء (EH-جزئي)"
+ },
+ {
+  "code": "MA-MAR",
+  "en": "Marrakech",
+  "ar": "مراكش"
+ },
+ {
+  "code": "MA-07",
+  "en": "Marrakesh-Safi",
+  "ar": "مراكش-آسفي"
+ },
+ {
+  "code": "MA-MEK",
+  "en": "Meknès",
+  "ar": "مكناس"
+ },
+ {
+  "code": "MA-MID",
+  "en": "Midelt",
+  "ar": "ميدلت"
+ },
+ {
+  "code": "MA-MOH",
+  "en": "Mohammadia",
+  "ar": "المحمدية"
+ },
+ {
+  "code": "MA-MOU",
+  "en": "Moulay Yacoub",
+  "ar": "مولاي يعقوب"
+ },
+ {
+  "code": "MA-MED",
+  "en": "Médiouna",
+  "ar": "مديونة"
+ },
+ {
+  "code": "MA-MDF",
+  "en": "M’diq-Fnideq",
+  "ar": "المضيق-الفنيدق"
+ },
+ {
+  "code": "MA-NAD",
+  "en": "Nador",
+  "ar": "الناظور"
+ },
+ {
+  "code": "MA-NOU",
+  "en": "Nouaceur",
+  "ar": "النواصر"
+ },
+ {
+  "code": "MA-OUA",
+  "en": "Ouarzazate",
+  "ar": "ورزازات"
+ },
+ {
+  "code": "MA-OUD",
+  "en": "Oued Ed-Dahab (EH)",
+  "ar": "وادي الذهب (EH)"
+ },
+ {
+  "code": "MA-OUZ",
+  "en": "Ouezzane",
+  "ar": "وزان"
+ },
+ {
+  "code": "MA-OUJ",
+  "en": "Oujda-Angad",
+  "ar": "وجدة أنجاد"
+ },
+ {
+  "code": "MA-RAB",
+  "en": "Rabat",
+  "ar": "الرباط"
+ },
+ {
+  "code": "MA-04",
+  "en": "Rabat-Salé-Kénitra",
+  "ar": "الرباط-سلا-القنيطرة"
+ },
+ {
+  "code": "MA-REH",
+  "en": "Rehamna",
+  "ar": "رحمنة"
+ },
+ {
+  "code": "MA-SAF",
+  "en": "Safi",
+  "ar": "صافي"
+ },
+ {
+  "code": "MA-SAL",
+  "en": "Salé",
+  "ar": "سلا"
+ },
+ {
+  "code": "MA-SEF",
+  "en": "Sefrou",
+  "ar": "صفرو"
+ },
+ {
+  "code": "MA-SET",
+  "en": "Settat",
+  "ar": "سطات"
+ },
+ {
+  "code": "MA-SIB",
+  "en": "Sidi Bennour",
+  "ar": "سيدي بنور"
+ },
+ {
+  "code": "MA-SIF",
+  "en": "Sidi Ifni",
+  "ar": "سيدي إفني"
+ },
+ {
+  "code": "MA-SIK",
+  "en": "Sidi Kacem",
+  "ar": "سيدي قاسم"
+ },
+ {
+  "code": "MA-SIL",
+  "en": "Sidi Slimane",
+  "ar": "سيدي سليمان"
+ },
+ {
+  "code": "MA-SKH",
+  "en": "Skhirate-Témara",
+  "ar": "الصخيرات-تمارة"
+ },
+ {
+  "code": "MA-09",
+  "en": "Souss-Massa",
+  "ar": "سوس ماسة"
+ },
+ {
+  "code": "MA-TNT",
+  "en": "Tan-Tan (EH-partial)",
+  "ar": "تان تان (EH-جزئي)"
+ },
+ {
+  "code": "MA-TNG",
+  "en": "Tanger-Assilah",
+  "ar": "طنجة أصيلة"
+ },
+ {
+  "code": "MA-01",
+  "en": "Tanger-Tétouan-Al Hoceïma",
+  "ar": "طنجة-تطوان-الحسيمة"
+ },
+ {
+  "code": "MA-TAO",
+  "en": "Taounate",
+  "ar": "تاونات"
+ },
+ {
+  "code": "MA-TAI",
+  "en": "Taourirt",
+  "ar": "تاوريرت"
+ },
+ {
+  "code": "MA-TAF",
+  "en": "Tarfaya (EH-partial)",
+  "ar": "طرفاية (EH-جزئي)"
+ },
+ {
+  "code": "MA-TAR",
+  "en": "Taroudannt",
+  "ar": "تارودانت"
+ },
+ {
+  "code": "MA-TAT",
+  "en": "Tata",
+  "ar": "تاتا"
+ },
+ {
+  "code": "MA-TAZ",
+  "en": "Taza",
+  "ar": "تازة"
+ },
+ {
+  "code": "MA-TIN",
+  "en": "Tinghir",
+  "ar": "تنغير"
+ },
+ {
+  "code": "MA-TIZ",
+  "en": "Tiznit",
+  "ar": "تزنيت"
+ },
+ {
+  "code": "MA-TET",
+  "en": "Tétouan",
+  "ar": "تطوان"
+ },
+ {
+  "code": "MA-YUS",
+  "en": "Youssoufia",
+  "ar": "اليوسفية"
+ },
+ {
+  "code": "MA-ZAG",
+  "en": "Zagora",
+  "ar": "زاكورة"
+ }
+]

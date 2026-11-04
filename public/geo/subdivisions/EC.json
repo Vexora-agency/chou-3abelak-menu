@@ -1,0 +1,122 @@
+[
+ {
+  "code": "EC-A",
+  "en": "Azuay",
+  "ar": "أزواي"
+ },
+ {
+  "code": "EC-B",
+  "en": "Bolívar",
+  "ar": "بوليفار"
+ },
+ {
+  "code": "EC-C",
+  "en": "Carchi",
+  "ar": "كارشي"
+ },
+ {
+  "code": "EC-F",
+  "en": "Cañar",
+  "ar": "كانيار"
+ },
+ {
+  "code": "EC-H",
+  "en": "Chimborazo",
+  "ar": "تشيمبورازو"
+ },
+ {
+  "code": "EC-X",
+  "en": "Cotopaxi",
+  "ar": "كوتوباكسي"
+ },
+ {
+  "code": "EC-O",
+  "en": "El Oro",
+  "ar": "مقاطعة إل أورو"
+ },
+ {
+  "code": "EC-E",
+  "en": "Esmeraldas",
+  "ar": "إزميرالدا"
+ },
+ {
+  "code": "EC-W",
+  "en": "Galápagos",
+  "ar": "جزر غالاباغوس"
+ },
+ {
+  "code": "EC-G",
+  "en": "Guayas",
+  "ar": "غواياس"
+ },
+ {
+  "code": "EC-I",
+  "en": "Imbabura",
+  "ar": "إمبابورا"
+ },
+ {
+  "code": "EC-L",
+  "en": "Loja",
+  "ar": "لوجا"
+ },
+ {
+  "code": "EC-R",
+  "en": "Los Ríos",
+  "ar": "لوس ريوس"
+ },
+ {
+  "code": "EC-M",
+  "en": "Manabí",
+  "ar": "مانابي"
+ },
+ {
+  "code": "EC-S",
+  "en": "Morona-Santiago",
+  "ar": "مورونا-سانتياغو"
+ },
+ {
+  "code": "EC-N",
+  "en": "Napo",
+  "ar": "نابو"
+ },
+ {
+  "code": "EC-D",
+  "en": "Orellana",
+  "ar": "أوريلانا"
+ },
+ {
+  "code": "EC-Y",
+  "en": "Pastaza",
+  "ar": "باستازا"
+ },
+ {
+  "code": "EC-P",
+  "en": "Pichincha",
+  "ar": "بيتشينشا"
+ },
+ {
+  "code": "EC-SE",
+  "en": "Santa Elena",
+  "ar": "سانتا إيلينا"
+ },
+ {
+  "code": "EC-SD",
+  "en": "Santo Domingo de los Tsáchilas",
+  "ar": "سانتو دومينغو دي لوس تساتشيلاس"
+ },
+ {
+  "code": "EC-U",
+  "en": "Sucumbíos",
+  "ar": "سوكومبيوس"
+ },
+ {
+  "code": "EC-T",
+  "en": "Tungurahua",
+  "ar": "تونغوراهوا"
+ },
+ {
+  "code": "EC-Z",
+  "en": "Zamora Chinchipe",
+  "ar": "زامورا تشينشيبي"
+ }
+]

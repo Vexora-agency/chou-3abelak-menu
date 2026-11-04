@@ -1,0 +1,407 @@
+[
+ {
+  "code": "TR-01",
+  "en": "Adana",
+  "ar": "أضنة"
+ },
+ {
+  "code": "TR-02",
+  "en": "Adıyaman",
+  "ar": "أديامان"
+ },
+ {
+  "code": "TR-03",
+  "en": "Afyonkarahisar",
+  "ar": "أفيون قره حصار"
+ },
+ {
+  "code": "TR-68",
+  "en": "Aksaray",
+  "ar": "أكساراي"
+ },
+ {
+  "code": "TR-05",
+  "en": "Amasya",
+  "ar": "أماسيا"
+ },
+ {
+  "code": "TR-06",
+  "en": "Ankara",
+  "ar": "أنقرة"
+ },
+ {
+  "code": "TR-07",
+  "en": "Antalya",
+  "ar": "أنطاليا"
+ },
+ {
+  "code": "TR-75",
+  "en": "Ardahan",
+  "ar": "أرداهان"
+ },
+ {
+  "code": "TR-08",
+  "en": "Artvin",
+  "ar": "أرتفين"
+ },
+ {
+  "code": "TR-09",
+  "en": "Aydın",
+  "ar": "أيدين"
+ },
+ {
+  "code": "TR-04",
+  "en": "Ağrı",
+  "ar": "أغري"
+ },
+ {
+  "code": "TR-10",
+  "en": "Balıkesir",
+  "ar": "باليكسير"
+ },
+ {
+  "code": "TR-74",
+  "en": "Bartın",
+  "ar": "بارتين"
+ },
+ {
+  "code": "TR-72",
+  "en": "Batman",
+  "ar": "باتمان"
+ },
+ {
+  "code": "TR-69",
+  "en": "Bayburt",
+  "ar": "بايبورت"
+ },
+ {
+  "code": "TR-11",
+  "en": "Bilecik",
+  "ar": "بيلجيك"
+ },
+ {
+  "code": "TR-12",
+  "en": "Bingöl",
+  "ar": "بينجول"
+ },
+ {
+  "code": "TR-13",
+  "en": "Bitlis",
+  "ar": "بتليس"
+ },
+ {
+  "code": "TR-14",
+  "en": "Bolu",
+  "ar": "بولو"
+ },
+ {
+  "code": "TR-15",
+  "en": "Burdur",
+  "ar": "بوردور"
+ },
+ {
+  "code": "TR-16",
+  "en": "Bursa",
+  "ar": "بورصة"
+ },
+ {
+  "code": "TR-20",
+  "en": "Denizli",
+  "ar": "دنيزلي"
+ },
+ {
+  "code": "TR-21",
+  "en": "Diyarbakır",
+  "ar": "ديار بكر"
+ },
+ {
+  "code": "TR-81",
+  "en": "Düzce",
+  "ar": "دوزجي"
+ },
+ {
+  "code": "TR-22",
+  "en": "Edirne",
+  "ar": "أدرنة"
+ },
+ {
+  "code": "TR-23",
+  "en": "Elazığ",
+  "ar": "إلازيغ"
+ },
+ {
+  "code": "TR-24",
+  "en": "Erzincan",
+  "ar": "إرزينجان"
+ },
+ {
+  "code": "TR-25",
+  "en": "Erzurum",
+  "ar": "أرضروم"
+ },
+ {
+  "code": "TR-26",
+  "en": "Eskişehir",
+  "ar": "إسكي شهير"
+ },
+ {
+  "code": "TR-27",
+  "en": "Gaziantep",
+  "ar": "غازي عنتاب"
+ },
+ {
+  "code": "TR-28",
+  "en": "Giresun",
+  "ar": "جيرسون"
+ },
+ {
+  "code": "TR-29",
+  "en": "Gümüşhane",
+  "ar": "جوموشانه"
+ },
+ {
+  "code": "TR-30",
+  "en": "Hakkâri",
+  "ar": "هكاري"
+ },
+ {
+  "code": "TR-31",
+  "en": "Hatay",
+  "ar": "هاتاي"
+ },
+ {
+  "code": "TR-32",
+  "en": "Isparta",
+  "ar": "إسبرطة"
+ },
+ {
+  "code": "TR-76",
+  "en": "Iğdır",
+  "ar": "إغدير"
+ },
+ {
+  "code": "TR-46",
+  "en": "Kahramanmaraş",
+  "ar": "كهرمان مرعش"
+ },
+ {
+  "code": "TR-78",
+  "en": "Karabük",
+  "ar": "كارابوك"
+ },
+ {
+  "code": "TR-70",
+  "en": "Karaman",
+  "ar": "كارامان"
+ },
+ {
+  "code": "TR-36",
+  "en": "Kars",
+  "ar": "كارس"
+ },
+ {
+  "code": "TR-37",
+  "en": "Kastamonu",
+  "ar": "كاستامونو"
+ },
+ {
+  "code": "TR-38",
+  "en": "Kayseri",
+  "ar": "قيصري"
+ },
+ {
+  "code": "TR-79",
+  "en": "Kilis",
+  "ar": "كيليس"
+ },
+ {
+  "code": "TR-41",
+  "en": "Kocaeli",
+  "ar": "كوجالي"
+ },
+ {
+  "code": "TR-42",
+  "en": "Konya",
+  "ar": "قونية"
+ },
+ {
+  "code": "TR-43",
+  "en": "Kütahya",
+  "ar": "كوتاهيا"
+ },
+ {
+  "code": "TR-39",
+  "en": "Kırklareli",
+  "ar": "كيركلاريلي"
+ },
+ {
+  "code": "TR-71",
+  "en": "Kırıkkale",
+  "ar": "كيريكالي"
+ },
+ {
+  "code": "TR-40",
+  "en": "Kırşehir",
+  "ar": "كيرشهير"
+ },
+ {
+  "code": "TR-44",
+  "en": "Malatya",
+  "ar": "ملاطيا"
+ },
+ {
+  "code": "TR-45",
+  "en": "Manisa",
+  "ar": "مانيسا"
+ },
+ {
+  "code": "TR-47",
+  "en": "Mardin",
+  "ar": "ماردين"
+ },
+ {
+  "code": "TR-33",
+  "en": "Mersin",
+  "ar": "مرسين"
+ },
+ {
+  "code": "TR-48",
+  "en": "Muğla",
+  "ar": "موغلا"
+ },
+ {
+  "code": "TR-49",
+  "en": "Muş",
+  "ar": "موس"
+ },
+ {
+  "code": "TR-50",
+  "en": "Nevşehir",
+  "ar": "نيفشهير"
+ },
+ {
+  "code": "TR-51",
+  "en": "Niğde",
+  "ar": "نيغدة"
+ },
+ {
+  "code": "TR-52",
+  "en": "Ordu",
+  "ar": "أوردو"
+ },
+ {
+  "code": "TR-80",
+  "en": "Osmaniye",
+  "ar": "عثمانية"
+ },
+ {
+  "code": "TR-53",
+  "en": "Rize",
+  "ar": "ريزي"
+ },
+ {
+  "code": "TR-54",
+  "en": "Sakarya",
+  "ar": "ساكاريا"
+ },
+ {
+  "code": "TR-55",
+  "en": "Samsun",
+  "ar": "سامسون"
+ },
+ {
+  "code": "TR-56",
+  "en": "Siirt",
+  "ar": "سيرت"
+ },
+ {
+  "code": "TR-57",
+  "en": "Sinop",
+  "ar": "سينوب"
+ },
+ {
+  "code": "TR-58",
+  "en": "Sivas",
+  "ar": "سيواس"
+ },
+ {
+  "code": "TR-59",
+  "en": "Tekirdağ",
+  "ar": "تيكيرداغ"
+ },
+ {
+  "code": "TR-60",
+  "en": "Tokat",
+  "ar": "توكات"
+ },
+ {
+  "code": "TR-61",
+  "en": "Trabzon",
+  "ar": "طرابزون"
+ },
+ {
+  "code": "TR-62",
+  "en": "Tunceli",
+  "ar": "تونجلي"
+ },
+ {
+  "code": "TR-64",
+  "en": "Uşak",
+  "ar": "أوشاك"
+ },
+ {
+  "code": "TR-65",
+  "en": "Van",
+  "ar": "فان"
+ },
+ {
+  "code": "TR-77",
+  "en": "Yalova",
+  "ar": "يالوفا"
+ },
+ {
+  "code": "TR-66",
+  "en": "Yozgat",
+  "ar": "يوزغات"
+ },
+ {
+  "code": "TR-67",
+  "en": "Zonguldak",
+  "ar": "زونغولداك"
+ },
+ {
+  "code": "TR-17",
+  "en": "Çanakkale",
+  "ar": "تشاناكالي"
+ },
+ {
+  "code": "TR-18",
+  "en": "Çankırı",
+  "ar": "شانكيري"
+ },
+ {
+  "code": "TR-19",
+  "en": "Çorum",
+  "ar": "كوروم"
+ },
+ {
+  "code": "TR-34",
+  "en": "İstanbul",
+  "ar": "اسطنبول"
+ },
+ {
+  "code": "TR-35",
+  "en": "İzmir",
+  "ar": "إزمير"
+ },
+ {
+  "code": "TR-63",
+  "en": "Şanlıurfa",
+  "ar": "شانلي أورفا"
+ },
+ {
+  "code": "TR-73",
+  "en": "Şırnak",
+  "ar": "شرناق"
+ }
+]

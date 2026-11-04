@@ -1,0 +1,122 @@
+[
+ {
+  "code": "AR-C",
+  "en": "Autonomous City of Buenos Aires",
+  "ar": "مدينة بوينس آيرس المستقلة"
+ },
+ {
+  "code": "AR-B",
+  "en": "Buenos Aires",
+  "ar": "بوينس آيرس"
+ },
+ {
+  "code": "AR-K",
+  "en": "Catamarca",
+  "ar": "كاتاماركا"
+ },
+ {
+  "code": "AR-H",
+  "en": "Chaco",
+  "ar": "تشاكو"
+ },
+ {
+  "code": "AR-U",
+  "en": "Chubut",
+  "ar": "تشوبوت"
+ },
+ {
+  "code": "AR-W",
+  "en": "Corrientes",
+  "ar": "كورينتس"
+ },
+ {
+  "code": "AR-X",
+  "en": "Córdoba",
+  "ar": "قرطبة"
+ },
+ {
+  "code": "AR-E",
+  "en": "Entre Ríos",
+  "ar": "إنتري ريوس"
+ },
+ {
+  "code": "AR-P",
+  "en": "Formosa",
+  "ar": "فورموزا"
+ },
+ {
+  "code": "AR-Y",
+  "en": "Jujuy",
+  "ar": "جوجوي"
+ },
+ {
+  "code": "AR-L",
+  "en": "La Pampa",
+  "ar": "لا بامبا"
+ },
+ {
+  "code": "AR-F",
+  "en": "La Rioja",
+  "ar": "لا ريوخا"
+ },
+ {
+  "code": "AR-M",
+  "en": "Mendoza",
+  "ar": "مندوزا"
+ },
+ {
+  "code": "AR-N",
+  "en": "Misiones",
+  "ar": "ميسيونيس"
+ },
+ {
+  "code": "AR-Q",
+  "en": "Neuquén",
+  "ar": "نيوكوين"
+ },
+ {
+  "code": "AR-R",
+  "en": "Río Negro",
+  "ar": "ريو نيغرو"
+ },
+ {
+  "code": "AR-A",
+  "en": "Salta",
+  "ar": "سالتا"
+ },
+ {
+  "code": "AR-J",
+  "en": "San Juan",
+  "ar": "سان خوان"
+ },
+ {
+  "code": "AR-D",
+  "en": "San Luis",
+  "ar": "سان لويس"
+ },
+ {
+  "code": "AR-Z",
+  "en": "Santa Cruz",
+  "ar": "سانتا كروز"
+ },
+ {
+  "code": "AR-S",
+  "en": "Santa Fe",
+  "ar": "سانتا في"
+ },
+ {
+  "code": "AR-G",
+  "en": "Santiago del Estero",
+  "ar": "سانتياغو ديل استيرو"
+ },
+ {
+  "code": "AR-V",
+  "en": "Tierra del Fuego",
+  "ar": "تييرا ديل فويغو"
+ },
+ {
+  "code": "AR-T",
+  "en": "Tucumán",
+  "ar": "توكومان"
+ }
+]

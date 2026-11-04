@@ -1,0 +1,1062 @@
+[
+ {
+  "code": "SI-001",
+  "en": "Ajdovščina",
+  "ar": "أجدوفشينا"
+ },
+ {
+  "code": "SI-213",
+  "en": "Ankaran",
+  "ar": "أنقرةان"
+ },
+ {
+  "code": "SI-195",
+  "en": "Apače",
+  "ar": "أباتشي"
+ },
+ {
+  "code": "SI-002",
+  "en": "Beltinci",
+  "ar": "بلتينشي"
+ },
+ {
+  "code": "SI-148",
+  "en": "Benedikt",
+  "ar": "بينيديكت"
+ },
+ {
+  "code": "SI-149",
+  "en": "Bistrica ob Sotli",
+  "ar": "Bistrica ob Sotli"
+ },
+ {
+  "code": "SI-003",
+  "en": "Bled",
+  "ar": "بليد"
+ },
+ {
+  "code": "SI-150",
+  "en": "Bloke",
+  "ar": "بلدية بلوك"
+ },
+ {
+  "code": "SI-004",
+  "en": "Bohinj",
+  "ar": "بوهينج"
+ },
+ {
+  "code": "SI-005",
+  "en": "Borovnica",
+  "ar": "بوروفنيكا"
+ },
+ {
+  "code": "SI-006",
+  "en": "Bovec",
+  "ar": "بوفيك"
+ },
+ {
+  "code": "SI-151",
+  "en": "Braslovče",
+  "ar": "براسلوتشي"
+ },
+ {
+  "code": "SI-007",
+  "en": "Brda",
+  "ar": "بردا"
+ },
+ {
+  "code": "SI-008",
+  "en": "Brezovica",
+  "ar": "بريزوفيكا"
+ },
+ {
+  "code": "SI-009",
+  "en": "Brežice",
+  "ar": "بريزيس"
+ },
+ {
+  "code": "SI-152",
+  "en": "Cankova",
+  "ar": "كانكوفا"
+ },
+ {
+  "code": "SI-011",
+  "en": "Celje",
+  "ar": "سيلجي"
+ },
+ {
+  "code": "SI-012",
+  "en": "Cerklje na Gorenjskem",
+  "ar": "Cerklje na Gorenjskem"
+ },
+ {
+  "code": "SI-013",
+  "en": "Cerknica",
+  "ar": "سيركنيكا"
+ },
+ {
+  "code": "SI-014",
+  "en": "Cerkno",
+  "ar": "سيركنو"
+ },
+ {
+  "code": "SI-153",
+  "en": "Cerkvenjak",
+  "ar": "سيركفينجاك"
+ },
+ {
+  "code": "SI-196",
+  "en": "Cirkulane",
+  "ar": "سيركولاني"
+ },
+ {
+  "code": "SI-018",
+  "en": "Destrnik",
+  "ar": "ديسترنيك"
+ },
+ {
+  "code": "SI-019",
+  "en": "Divača",
+  "ar": "ديفاتشا"
+ },
+ {
+  "code": "SI-154",
+  "en": "Dobje",
+  "ar": "دوبجي"
+ },
+ {
+  "code": "SI-020",
+  "en": "Dobrepolje",
+  "ar": "دوبريبولجي"
+ },
+ {
+  "code": "SI-155",
+  "en": "Dobrna",
+  "ar": "دوبرنا"
+ },
+ {
+  "code": "SI-021",
+  "en": "Dobrova–Polhov Gradec",
+  "ar": "دوبروفا-بولهوف غراديك"
+ },
+ {
+  "code": "SI-156",
+  "en": "Dobrovnik",
+  "ar": "دوبروفنيك"
+ },
+ {
+  "code": "SI-022",
+  "en": "Dol pri Ljubljani",
+  "ar": "Dol pri Ljubljani"
+ },
+ {
+  "code": "SI-157",
+  "en": "Dolenjske Toplice",
+  "ar": "دولينجسكي توبليس"
+ },
+ {
+  "code": "SI-023",
+  "en": "Domžale",
+  "ar": "دومزالي"
+ },
+ {
+  "code": "SI-024",
+  "en": "Dornava",
+  "ar": "دورنافا"
+ },
+ {
+  "code": "SI-025",
+  "en": "Dravograd",
+  "ar": "درافوغراد"
+ },
+ {
+  "code": "SI-026",
+  "en": "Duplek",
+  "ar": "دوبلك"
+ },
+ {
+  "code": "SI-027",
+  "en": "Gorenja Vas–Poljane",
+  "ar": "جورينيا فاس-بولجان"
+ },
+ {
+  "code": "SI-028",
+  "en": "Gorišnica",
+  "ar": "جوريسنيكا"
+ },
+ {
+  "code": "SI-207",
+  "en": "Gorje",
+  "ar": "جورجي"
+ },
+ {
+  "code": "SI-029",
+  "en": "Gornja Radgona",
+  "ar": "غورنيا رادغونا"
+ },
+ {
+  "code": "SI-030",
+  "en": "Gornji Grad",
+  "ar": "غورني غراد"
+ },
+ {
+  "code": "SI-031",
+  "en": "Gornji Petrovci",
+  "ar": "غورني بتروفسي"
+ },
+ {
+  "code": "SI-158",
+  "en": "Grad",
+  "ar": "بلدية غراد"
+ },
+ {
+  "code": "SI-032",
+  "en": "Grosuplje",
+  "ar": "جروسوبلي"
+ },
+ {
+  "code": "SI-159",
+  "en": "Hajdina",
+  "ar": "هاجدينا"
+ },
+ {
+  "code": "SI-161",
+  "en": "Hodoš",
+  "ar": "هودوس"
+ },
+ {
+  "code": "SI-162",
+  "en": "Horjul",
+  "ar": "هورجول"
+ },
+ {
+  "code": "SI-160",
+  "en": "Hoče–Slivnica",
+  "ar": "هوتشي-سليفنيكا"
+ },
+ {
+  "code": "SI-034",
+  "en": "Hrastnik",
+  "ar": "هراستنيك"
+ },
+ {
+  "code": "SI-035",
+  "en": "Hrpelje–Kozina",
+  "ar": "هربيلي-كوزينا"
+ },
+ {
+  "code": "SI-036",
+  "en": "Idrija",
+  "ar": "إدريجا"
+ },
+ {
+  "code": "SI-037",
+  "en": "Ig",
+  "ar": "اي جي"
+ },
+ {
+  "code": "SI-038",
+  "en": "Ilirska Bistrica",
+  "ar": "إيليرسكا بيستريكا"
+ },
+ {
+  "code": "SI-039",
+  "en": "Ivančna Gorica",
+  "ar": "إيفانكنا جوريكا"
+ },
+ {
+  "code": "SI-040",
+  "en": "Izola",
+  "ar": "إيزولا"
+ },
+ {
+  "code": "SI-041",
+  "en": "Jesenice",
+  "ar": "جيسينيس"
+ },
+ {
+  "code": "SI-163",
+  "en": "Jezersko",
+  "ar": "جيزرسكو"
+ },
+ {
+  "code": "SI-042",
+  "en": "Juršinci",
+  "ar": "جورشينسي"
+ },
+ {
+  "code": "SI-043",
+  "en": "Kamnik",
+  "ar": "كامنيك"
+ },
+ {
+  "code": "SI-044",
+  "en": "Kanal ob Soči",
+  "ar": "Kanal ob Soči"
+ },
+ {
+  "code": "SI-045",
+  "en": "Kidričevo",
+  "ar": "كيدريتشيفو"
+ },
+ {
+  "code": "SI-046",
+  "en": "Kobarid",
+  "ar": "كوباريد"
+ },
+ {
+  "code": "SI-047",
+  "en": "Kobilje",
+  "ar": "كوبيلي"
+ },
+ {
+  "code": "SI-049",
+  "en": "Komen",
+  "ar": "كومن"
+ },
+ {
+  "code": "SI-164",
+  "en": "Komenda",
+  "ar": "كوميندا"
+ },
+ {
+  "code": "SI-050",
+  "en": "Koper",
+  "ar": "كوبر"
+ },
+ {
+  "code": "SI-197",
+  "en": "Kostanjevica na Krki",
+  "ar": "Kostanjevica na Krki"
+ },
+ {
+  "code": "SI-165",
+  "en": "Kostel",
+  "ar": "كوستيل"
+ },
+ {
+  "code": "SI-051",
+  "en": "Kozje",
+  "ar": "كوزجي"
+ },
+ {
+  "code": "SI-048",
+  "en": "Kočevje",
+  "ar": "كوشيفجي"
+ },
+ {
+  "code": "SI-052",
+  "en": "Kranj",
+  "ar": "كرانج"
+ },
+ {
+  "code": "SI-053",
+  "en": "Kranjska Gora",
+  "ar": "كرانجسكا غورا"
+ },
+ {
+  "code": "SI-166",
+  "en": "Križevci",
+  "ar": "كريزيفتشي"
+ },
+ {
+  "code": "SI-054",
+  "en": "Krško",
+  "ar": "كرشكو"
+ },
+ {
+  "code": "SI-055",
+  "en": "Kungota",
+  "ar": "كونغوتا"
+ },
+ {
+  "code": "SI-056",
+  "en": "Kuzma",
+  "ar": "كوزما"
+ },
+ {
+  "code": "SI-057",
+  "en": "Laško",
+  "ar": "لاشكو"
+ },
+ {
+  "code": "SI-058",
+  "en": "Lenart",
+  "ar": "لينارت"
+ },
+ {
+  "code": "SI-059",
+  "en": "Lendava",
+  "ar": "ليندافا"
+ },
+ {
+  "code": "SI-060",
+  "en": "Litija",
+  "ar": "ليتيجا"
+ },
+ {
+  "code": "SI-061",
+  "en": "Ljubljana",
+  "ar": "ليوبليانا"
+ },
+ {
+  "code": "SI-062",
+  "en": "Ljubno",
+  "ar": "ليوبنو"
+ },
+ {
+  "code": "SI-063",
+  "en": "Ljutomer",
+  "ar": "لجوتومر"
+ },
+ {
+  "code": "SI-064",
+  "en": "Logatec",
+  "ar": "لوغاتيك"
+ },
+ {
+  "code": "SI-208",
+  "en": "Log–Dragomer",
+  "ar": "سجل-دراغومر"
+ },
+ {
+  "code": "SI-167",
+  "en": "Lovrenc na Pohorju",
+  "ar": "Lovrenc na Pohorju"
+ },
+ {
+  "code": "SI-065",
+  "en": "Loška Dolina",
+  "ar": "لوسكا دولينا"
+ },
+ {
+  "code": "SI-066",
+  "en": "Loški Potok",
+  "ar": "لوسكي بوتوك"
+ },
+ {
+  "code": "SI-068",
+  "en": "Lukovica",
+  "ar": "لوكوفيتشا"
+ },
+ {
+  "code": "SI-067",
+  "en": "Luče",
+  "ar": "لوتشي"
+ },
+ {
+  "code": "SI-069",
+  "en": "Majšperk",
+  "ar": "ماجسبيرك"
+ },
+ {
+  "code": "SI-198",
+  "en": "Makole",
+  "ar": "ماكول"
+ },
+ {
+  "code": "SI-070",
+  "en": "Maribor",
+  "ar": "ماريبور"
+ },
+ {
+  "code": "SI-168",
+  "en": "Markovci",
+  "ar": "ماركوفشي"
+ },
+ {
+  "code": "SI-071",
+  "en": "Medvode",
+  "ar": "ميدفود"
+ },
+ {
+  "code": "SI-072",
+  "en": "Mengeš",
+  "ar": "منجيش"
+ },
+ {
+  "code": "SI-073",
+  "en": "Metlika",
+  "ar": "ميتليكا"
+ },
+ {
+  "code": "SI-074",
+  "en": "Mežica",
+  "ar": "ميزيكا"
+ },
+ {
+  "code": "SI-169",
+  "en": "Miklavž na Dravskem Polju",
+  "ar": "Miklavž na Dravskem Polju"
+ },
+ {
+  "code": "SI-075",
+  "en": "Miren–Kostanjevica",
+  "ar": "ميرين-كوستانجيفيكا"
+ },
+ {
+  "code": "SI-212",
+  "en": "Mirna",
+  "ar": "ميرنا"
+ },
+ {
+  "code": "SI-170",
+  "en": "Mirna Peč",
+  "ar": "ميرنا بيتش"
+ },
+ {
+  "code": "SI-076",
+  "en": "Mislinja",
+  "ar": "ميسلينجا"
+ },
+ {
+  "code": "SI-199",
+  "en": "Mokronog–Trebelno",
+  "ar": "موكرونوج-تريبلنو"
+ },
+ {
+  "code": "SI-078",
+  "en": "Moravske Toplice",
+  "ar": "مورافسكه توبليس"
+ },
+ {
+  "code": "SI-077",
+  "en": "Moravče",
+  "ar": "مورافتشي"
+ },
+ {
+  "code": "SI-079",
+  "en": "Mozirje",
+  "ar": "موزيرجي"
+ },
+ {
+  "code": "SI-080",
+  "en": "Murska Sobota",
+  "ar": "مورسكا سوبوتا"
+ },
+ {
+  "code": "SI-081",
+  "en": "Muta",
+  "ar": "موتا"
+ },
+ {
+  "code": "SI-082",
+  "en": "Naklo",
+  "ar": "ناكلو"
+ },
+ {
+  "code": "SI-083",
+  "en": "Nazarje",
+  "ar": "نازارجي"
+ },
+ {
+  "code": "SI-084",
+  "en": "Nova Gorica",
+  "ar": "نوفا جوريكا"
+ },
+ {
+  "code": "SI-085",
+  "en": "Novo Mesto",
+  "ar": "نوفو ميستو"
+ },
+ {
+  "code": "SI-086",
+  "en": "Odranci",
+  "ar": "أودرانسي"
+ },
+ {
+  "code": "SI-171",
+  "en": "Oplotnica",
+  "ar": "أوبلوتنيكا"
+ },
+ {
+  "code": "SI-087",
+  "en": "Ormož",
+  "ar": "أورموش"
+ },
+ {
+  "code": "SI-088",
+  "en": "Osilnica",
+  "ar": "أوسيلنيكا"
+ },
+ {
+  "code": "SI-089",
+  "en": "Pesnica",
+  "ar": "بيسنيكا"
+ },
+ {
+  "code": "SI-090",
+  "en": "Piran",
+  "ar": "بيران"
+ },
+ {
+  "code": "SI-091",
+  "en": "Pivka",
+  "ar": "بيفكا"
+ },
+ {
+  "code": "SI-172",
+  "en": "Podlehnik",
+  "ar": "بودليهنيك"
+ },
+ {
+  "code": "SI-093",
+  "en": "Podvelka",
+  "ar": "بودفيلكا"
+ },
+ {
+  "code": "SI-092",
+  "en": "Podčetrtek",
+  "ar": "بودتشيترتيك"
+ },
+ {
+  "code": "SI-200",
+  "en": "Poljčane",
+  "ar": "بوليكان"
+ },
+ {
+  "code": "SI-173",
+  "en": "Polzela",
+  "ar": "بولزيلا"
+ },
+ {
+  "code": "SI-094",
+  "en": "Postojna",
+  "ar": "بوستوينا"
+ },
+ {
+  "code": "SI-174",
+  "en": "Prebold",
+  "ar": "بلدية بريبولد"
+ },
+ {
+  "code": "SI-095",
+  "en": "Preddvor",
+  "ar": "بريدفور"
+ },
+ {
+  "code": "SI-175",
+  "en": "Prevalje",
+  "ar": "بريفالي"
+ },
+ {
+  "code": "SI-096",
+  "en": "Ptuj",
+  "ar": "بتوج"
+ },
+ {
+  "code": "SI-097",
+  "en": "Puconci",
+  "ar": "بوكونشي"
+ },
+ {
+  "code": "SI-100",
+  "en": "Radenci",
+  "ar": "رادينشي"
+ },
+ {
+  "code": "SI-099",
+  "en": "Radeče",
+  "ar": "راديتش"
+ },
+ {
+  "code": "SI-101",
+  "en": "Radlje ob Dravi",
+  "ar": "Radlje ob Dravi"
+ },
+ {
+  "code": "SI-102",
+  "en": "Radovljica",
+  "ar": "رادوفلييكا"
+ },
+ {
+  "code": "SI-103",
+  "en": "Ravne na Koroškem",
+  "ar": "Ravne na Koroškem"
+ },
+ {
+  "code": "SI-176",
+  "en": "Razkrižje",
+  "ar": "رازكريزي"
+ },
+ {
+  "code": "SI-098",
+  "en": "Rače–Fram",
+  "ar": "راسي-فرام"
+ },
+ {
+  "code": "SI-201",
+  "en": "Renče–Vogrsko",
+  "ar": "رينشي-فوجرسكو"
+ },
+ {
+  "code": "SI-209",
+  "en": "Rečica ob Savinji",
+  "ar": "Rečica ob Savinji"
+ },
+ {
+  "code": "SI-104",
+  "en": "Ribnica",
+  "ar": "ريبنيكا"
+ },
+ {
+  "code": "SI-177",
+  "en": "Ribnica na Pohorju",
+  "ar": "Ribnica na Pohorju"
+ },
+ {
+  "code": "SI-107",
+  "en": "Rogatec",
+  "ar": "روجاتك"
+ },
+ {
+  "code": "SI-106",
+  "en": "Rogaška Slatina",
+  "ar": "روغاسكا سلاتينا"
+ },
+ {
+  "code": "SI-105",
+  "en": "Rogašovci",
+  "ar": "روغاشوفتشي"
+ },
+ {
+  "code": "SI-108",
+  "en": "Ruše",
+  "ar": "بلدية روشه"
+ },
+ {
+  "code": "SI-178",
+  "en": "Selnica ob Dravi",
+  "ar": "Selnica ob Dravi"
+ },
+ {
+  "code": "SI-109",
+  "en": "Semič",
+  "ar": "سيميتش"
+ },
+ {
+  "code": "SI-110",
+  "en": "Sevnica",
+  "ar": "سيفنيكا"
+ },
+ {
+  "code": "SI-111",
+  "en": "Sežana",
+  "ar": "سيزانا"
+ },
+ {
+  "code": "SI-112",
+  "en": "Slovenj Gradec",
+  "ar": "السلوفينية غراديك"
+ },
+ {
+  "code": "SI-113",
+  "en": "Slovenska Bistrica",
+  "ar": "سلوفينسكا بيستريتسا"
+ },
+ {
+  "code": "SI-114",
+  "en": "Slovenske Konjice",
+  "ar": "سلوفينسكي كونجيتسه"
+ },
+ {
+  "code": "SI-179",
+  "en": "Sodražica",
+  "ar": "سودرازيكا"
+ },
+ {
+  "code": "SI-180",
+  "en": "Solčava",
+  "ar": "سولتشافا"
+ },
+ {
+  "code": "SI-202",
+  "en": "Središče ob Dravi",
+  "ar": "Središče ob Dravi"
+ },
+ {
+  "code": "SI-115",
+  "en": "Starše",
+  "ar": "ستارشي"
+ },
+ {
+  "code": "SI-203",
+  "en": "Straža",
+  "ar": "سترازا"
+ },
+ {
+  "code": "SI-181",
+  "en": "Sveta Ana",
+  "ar": "سفيتا آنا"
+ },
+ {
+  "code": "SI-204",
+  "en": "Sveta Trojica v Slovenskih Goricah",
+  "ar": "سفيتا تروجيكا ضد سلوفينسكي جوريكا"
+ },
+ {
+  "code": "SI-182",
+  "en": "Sveti Andraž v Slovenskih Goricah",
+  "ar": "سفيتي أندراز ضد سلوفينسكي جوريكا"
+ },
+ {
+  "code": "SI-116",
+  "en": "Sveti Jurij ob Ščavnici",
+  "ar": "Sveti Jurij ob Ščavnici"
+ },
+ {
+  "code": "SI-210",
+  "en": "Sveti Jurij v Slovenskih Goricah",
+  "ar": "سفيتي يوريج ضد سلوفينسكيه جوريكا"
+ },
+ {
+  "code": "SI-205",
+  "en": "Sveti Tomaž",
+  "ar": "سفيتي توماز"
+ },
+ {
+  "code": "SI-184",
+  "en": "Tabor",
+  "ar": "تابور"
+ },
+ {
+  "code": "SI-010",
+  "en": "Tišina",
+  "ar": "تيسينا"
+ },
+ {
+  "code": "SI-128",
+  "en": "Tolmin",
+  "ar": "تولمين"
+ },
+ {
+  "code": "SI-129",
+  "en": "Trbovlje",
+  "ar": "تربوفلي"
+ },
+ {
+  "code": "SI-130",
+  "en": "Trebnje",
+  "ar": "تريبني"
+ },
+ {
+  "code": "SI-185",
+  "en": "Trnovska Vas",
+  "ar": "ترنوفسكا فاس"
+ },
+ {
+  "code": "SI-186",
+  "en": "Trzin",
+  "ar": "ترزين"
+ },
+ {
+  "code": "SI-131",
+  "en": "Tržič",
+  "ar": "ترزيتش"
+ },
+ {
+  "code": "SI-132",
+  "en": "Turnišče",
+  "ar": "تورنيشتشي"
+ },
+ {
+  "code": "SI-133",
+  "en": "Velenje",
+  "ar": "فيلينيه"
+ },
+ {
+  "code": "SI-187",
+  "en": "Velika Polana",
+  "ar": "فيليكا بولانا"
+ },
+ {
+  "code": "SI-134",
+  "en": "Velike Lašče",
+  "ar": "فيليكي لاشتشي"
+ },
+ {
+  "code": "SI-188",
+  "en": "Veržej",
+  "ar": "فيرجي"
+ },
+ {
+  "code": "SI-135",
+  "en": "Videm",
+  "ar": "فيديم"
+ },
+ {
+  "code": "SI-136",
+  "en": "Vipava",
+  "ar": "فيبافا"
+ },
+ {
+  "code": "SI-137",
+  "en": "Vitanje",
+  "ar": "فيتاني"
+ },
+ {
+  "code": "SI-138",
+  "en": "Vodice",
+  "ar": "فوديس"
+ },
+ {
+  "code": "SI-139",
+  "en": "Vojnik",
+  "ar": "فوينيك"
+ },
+ {
+  "code": "SI-189",
+  "en": "Vransko",
+  "ar": "فرانسكو"
+ },
+ {
+  "code": "SI-140",
+  "en": "Vrhnika",
+  "ar": "فرهنيكا"
+ },
+ {
+  "code": "SI-141",
+  "en": "Vuzenica",
+  "ar": "فوزينيكا"
+ },
+ {
+  "code": "SI-142",
+  "en": "Zagorje ob Savi",
+  "ar": "Zagorje ob Savi"
+ },
+ {
+  "code": "SI-143",
+  "en": "Zavrč",
+  "ar": "زافريتش"
+ },
+ {
+  "code": "SI-144",
+  "en": "Zreče",
+  "ar": "زريتش"
+ },
+ {
+  "code": "SI-015",
+  "en": "Črenšovci",
+  "ar": "Črenšovci"
+ },
+ {
+  "code": "SI-016",
+  "en": "Črna na Koroškem",
+  "ar": "Črna na Koroškem"
+ },
+ {
+  "code": "SI-017",
+  "en": "Črnomelj",
+  "ar": "شرنوميلج"
+ },
+ {
+  "code": "SI-033",
+  "en": "Šalovci",
+  "ar": "سالوفتشي"
+ },
+ {
+  "code": "SI-183",
+  "en": "Šempeter–Vrtojba",
+  "ar": "Šempeter–Vrtojba"
+ },
+ {
+  "code": "SI-118",
+  "en": "Šentilj",
+  "ar": "شنتيلج"
+ },
+ {
+  "code": "SI-119",
+  "en": "Šentjernej",
+  "ar": "Šentjernej"
+ },
+ {
+  "code": "SI-120",
+  "en": "Šentjur",
+  "ar": "شنتجور"
+ },
+ {
+  "code": "SI-211",
+  "en": "Šentrupert",
+  "ar": "Šentrupert"
+ },
+ {
+  "code": "SI-117",
+  "en": "Šenčur",
+  "ar": "شينور"
+ },
+ {
+  "code": "SI-121",
+  "en": "Škocjan",
+  "ar": "سكوجان"
+ },
+ {
+  "code": "SI-122",
+  "en": "Škofja Loka",
+  "ar": "Škofja Loka"
+ },
+ {
+  "code": "SI-123",
+  "en": "Škofljica",
+  "ar": "شكوفليكا"
+ },
+ {
+  "code": "SI-124",
+  "en": "Šmarje pri Jelšah",
+  "ar": "Šmarje pri Jelšah"
+ },
+ {
+  "code": "SI-206",
+  "en": "Šmarješke Toplice",
+  "ar": "Šmarješke Toplice"
+ },
+ {
+  "code": "SI-125",
+  "en": "Šmartno ob Paki",
+  "ar": "Šmartno ob Paki"
+ },
+ {
+  "code": "SI-194",
+  "en": "Šmartno pri Litiji",
+  "ar": "Šmartno pri Litiji"
+ },
+ {
+  "code": "SI-126",
+  "en": "Šoštanj",
+  "ar": "شوشتاني"
+ },
+ {
+  "code": "SI-127",
+  "en": "Štore",
+  "ar": "بلدية شتوره"
+ },
+ {
+  "code": "SI-190",
+  "en": "Žalec",
+  "ar": "زاليك"
+ },
+ {
+  "code": "SI-146",
+  "en": "Železniki",
+  "ar": "جيليزنيكي"
+ },
+ {
+  "code": "SI-191",
+  "en": "Žetale",
+  "ar": "زيتالي"
+ },
+ {
+  "code": "SI-147",
+  "en": "Žiri",
+  "ar": "زيري"
+ },
+ {
+  "code": "SI-192",
+  "en": "Žirovnica",
+  "ar": "زيروفنيكا"
+ },
+ {
+  "code": "SI-193",
+  "en": "Žužemberk",
+  "ar": "زوزيمبيرك"
+ }
+]

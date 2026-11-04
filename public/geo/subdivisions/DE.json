@@ -1,0 +1,82 @@
+[
+ {
+  "code": "DE-BW",
+  "en": "Baden-Württemberg",
+  "ar": "بادن فورتمبيرغ"
+ },
+ {
+  "code": "DE-BY",
+  "en": "Bavaria",
+  "ar": "بافاريا"
+ },
+ {
+  "code": "DE-BE",
+  "en": "Berlin",
+  "ar": "برلين"
+ },
+ {
+  "code": "DE-BB",
+  "en": "Brandenburg",
+  "ar": "براندنبورغ"
+ },
+ {
+  "code": "DE-HB",
+  "en": "Bremen",
+  "ar": "بريمن"
+ },
+ {
+  "code": "DE-HH",
+  "en": "Hamburg",
+  "ar": "هامبورغ"
+ },
+ {
+  "code": "DE-HE",
+  "en": "Hessen",
+  "ar": "هيسن"
+ },
+ {
+  "code": "DE-NI",
+  "en": "Lower Saxony",
+  "ar": "ساكسونيا السفلى"
+ },
+ {
+  "code": "DE-MV",
+  "en": "Mecklenburg-Vorpommern",
+  "ar": "مكلنبورغ فوربومرن"
+ },
+ {
+  "code": "DE-NW",
+  "en": "North Rhine-Westphalia",
+  "ar": "شمال الراين-وستفاليا"
+ },
+ {
+  "code": "DE-RP",
+  "en": "Rhineland-Palatinate",
+  "ar": "راينلاند بالاتينات"
+ },
+ {
+  "code": "DE-SL",
+  "en": "Saarland",
+  "ar": "سارلاند"
+ },
+ {
+  "code": "DE-SN",
+  "en": "Saxony",
+  "ar": "ساكسونيا"
+ },
+ {
+  "code": "DE-ST",
+  "en": "Saxony-Anhalt",
+  "ar": "ساكسونيا أنهالت"
+ },
+ {
+  "code": "DE-SH",
+  "en": "Schleswig-Holstein",
+  "ar": "شليسفيغ هولشتاين"
+ },
+ {
+  "code": "DE-TH",
+  "en": "Thuringia",
+  "ar": "تورينجيا"
+ }
+]

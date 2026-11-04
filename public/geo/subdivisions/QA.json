@@ -1,0 +1,42 @@
+[
+ {
+  "code": "QA-ZA",
+  "en": "Al Daayen",
+  "ar": "الضعاين"
+ },
+ {
+  "code": "QA-KH",
+  "en": "Al Khor",
+  "ar": "الخور"
+ },
+ {
+  "code": "QA-RA",
+  "en": "Al Rayyan",
+  "ar": "الريان"
+ },
+ {
+  "code": "QA-WA",
+  "en": "Al Wakrah",
+  "ar": "الوكرة"
+ },
+ {
+  "code": "QA-SH",
+  "en": "Al-Shahaniya",
+  "ar": "الشحانية"
+ },
+ {
+  "code": "QA-DA",
+  "en": "Doha",
+  "ar": "الدوحة"
+ },
+ {
+  "code": "QA-MS",
+  "en": "Madinat ash Shamal",
+  "ar": "مدينة الشمال"
+ },
+ {
+  "code": "QA-US",
+  "en": "Umm Salal",
+  "ar": "أم صلال"
+ }
+]

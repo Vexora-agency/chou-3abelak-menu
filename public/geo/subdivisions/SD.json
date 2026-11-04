@@ -1,0 +1,92 @@
+[
+ {
+  "code": "SD-GZ",
+  "en": "Al Jazirah",
+  "ar": "الجزيرة"
+ },
+ {
+  "code": "SD-GD",
+  "en": "Al Qadarif",
+  "ar": "القضارف"
+ },
+ {
+  "code": "SD-NB",
+  "en": "Blue Nile",
+  "ar": "النيل الأزرق"
+ },
+ {
+  "code": "SD-DC",
+  "en": "Central Darfur",
+  "ar": "وسط دارفور"
+ },
+ {
+  "code": "SD-DE",
+  "en": "East Darfur",
+  "ar": "شرق دارفور"
+ },
+ {
+  "code": "SD-KA",
+  "en": "Kassala",
+  "ar": "كسلا"
+ },
+ {
+  "code": "SD-KH",
+  "en": "Khartoum",
+  "ar": "الخرطوم"
+ },
+ {
+  "code": "SD-DN",
+  "en": "North Darfur",
+  "ar": "شمال دارفور"
+ },
+ {
+  "code": "SD-KN",
+  "en": "North Kordofan",
+  "ar": "شمال كردفان"
+ },
+ {
+  "code": "SD-NO",
+  "en": "Northern",
+  "ar": "شمالي"
+ },
+ {
+  "code": "SD-RS",
+  "en": "Red Sea",
+  "ar": "البحر الأحمر"
+ },
+ {
+  "code": "SD-NR",
+  "en": "River Nile",
+  "ar": "نهر النيل"
+ },
+ {
+  "code": "SD-SI",
+  "en": "Sennar",
+  "ar": "سنار"
+ },
+ {
+  "code": "SD-DS",
+  "en": "South Darfur",
+  "ar": "جنوب دارفور"
+ },
+ {
+  "code": "SD-KS",
+  "en": "South Kordofan",
+  "ar": "جنوب كردفان"
+ },
+ {
+  "code": "SD-DW",
+  "en": "West Darfur",
+  "ar": "غرب دارفور"
+ },
+ {
+  "code": "SD-GK",
+  "en": "West Kordofan",
+  "ar": "غرب كردفان"
+ },
+ {
+  "code": "SD-NW",
+  "en": "White Nile",
+  "ar": "النيل الأبيض"
+ }
+]

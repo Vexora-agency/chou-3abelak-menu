@@ -1,0 +1,157 @@
+[
+ {
+  "code": "IR-30",
+  "en": "Alborz",
+  "ar": "البرز"
+ },
+ {
+  "code": "IR-24",
+  "en": "Ardabil",
+  "ar": "أردبيل"
+ },
+ {
+  "code": "IR-18",
+  "en": "Bushehr",
+  "ar": "بوشهر"
+ },
+ {
+  "code": "IR-14",
+  "en": "Chaharmahal and Bakhtiari",
+  "ar": "جهارمحال وبختياري"
+ },
+ {
+  "code": "IR-03",
+  "en": "East Azerbaijan",
+  "ar": "أذربيجان الشرقية"
+ },
+ {
+  "code": "IR-07",
+  "en": "Fars",
+  "ar": "فارس"
+ },
+ {
+  "code": "IR-01",
+  "en": "Gilan",
+  "ar": "جيلان"
+ },
+ {
+  "code": "IR-27",
+  "en": "Golestan",
+  "ar": "جولستان"
+ },
+ {
+  "code": "IR-13",
+  "en": "Hamadan",
+  "ar": "همدان"
+ },
+ {
+  "code": "IR-22",
+  "en": "Hormozgan",
+  "ar": "هرمزجان"
+ },
+ {
+  "code": "IR-16",
+  "en": "Ilam",
+  "ar": "إيلام"
+ },
+ {
+  "code": "IR-10",
+  "en": "Isfahan",
+  "ar": "أصفهان"
+ },
+ {
+  "code": "IR-08",
+  "en": "Kerman",
+  "ar": "كرمان"
+ },
+ {
+  "code": "IR-05",
+  "en": "Kermanshah",
+  "ar": "كرمانشاه"
+ },
+ {
+  "code": "IR-06",
+  "en": "Khuzestan",
+  "ar": "خوزستان"
+ },
+ {
+  "code": "IR-17",
+  "en": "Kohgiluyeh and Boyer-Ahmad",
+  "ar": "كهجيلويه وبوير أحمد"
+ },
+ {
+  "code": "IR-12",
+  "en": "Kurdistan",
+  "ar": "كردستان"
+ },
+ {
+  "code": "IR-15",
+  "en": "Lorestan",
+  "ar": "لرستان"
+ },
+ {
+  "code": "IR-00",
+  "en": "Markazi",
+  "ar": "مركزي"
+ },
+ {
+  "code": "IR-02",
+  "en": "Mazandaran",
+  "ar": "مازندران"
+ },
+ {
+  "code": "IR-28",
+  "en": "North Khorasan",
+  "ar": "شمال خراسان"
+ },
+ {
+  "code": "IR-26",
+  "en": "Qazvin",
+  "ar": "قزوين"
+ },
+ {
+  "code": "IR-25",
+  "en": "Qom",
+  "ar": "قم"
+ },
+ {
+  "code": "IR-09",
+  "en": "Razavi Khorasan",
+  "ar": "خراسان رضوي"
+ },
+ {
+  "code": "IR-20",
+  "en": "Semnan",
+  "ar": "سمنان"
+ },
+ {
+  "code": "IR-11",
+  "en": "Sistan and Baluchestan",
+  "ar": "سيستان وبلوشستان"
+ },
+ {
+  "code": "IR-29",
+  "en": "South Khorasan",
+  "ar": "جنوب خراسان"
+ },
+ {
+  "code": "IR-23",
+  "en": "Tehran",
+  "ar": "طهران"
+ },
+ {
+  "code": "IR-04",
+  "en": "West Azarbaijan",
+  "ar": "غرب أذربيجان"
+ },
+ {
+  "code": "IR-21",
+  "en": "Yazd",
+  "ar": "يزد"
+ },
+ {
+  "code": "IR-19",
+  "en": "Zanjan",
+  "ar": "زنجان"
+ }
+]

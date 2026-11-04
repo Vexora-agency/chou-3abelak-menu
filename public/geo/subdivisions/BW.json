@@ -1,0 +1,82 @@
+[
+ {
+  "code": "BW-CE",
+  "en": "Central",
+  "ar": "مركزي"
+ },
+ {
+  "code": "BW-CH",
+  "en": "Chobe",
+  "ar": "تشوبي"
+ },
+ {
+  "code": "BW-FR",
+  "en": "Francistown",
+  "ar": "فرانسيستاون"
+ },
+ {
+  "code": "BW-GA",
+  "en": "Gaborone",
+  "ar": "غابورون"
+ },
+ {
+  "code": "BW-GH",
+  "en": "Ghanzi",
+  "ar": "غانزي"
+ },
+ {
+  "code": "BW-JW",
+  "en": "Jwaneng",
+  "ar": "جوانينج"
+ },
+ {
+  "code": "BW-KG",
+  "en": "Kgalagadi",
+  "ar": "كغالاغادي"
+ },
+ {
+  "code": "BW-KL",
+  "en": "Kgatleng",
+  "ar": "كجاتلينج"
+ },
+ {
+  "code": "BW-KW",
+  "en": "Kweneng",
+  "ar": "كوينينغ"
+ },
+ {
+  "code": "BW-LO",
+  "en": "Lobatse",
+  "ar": "لوباتس"
+ },
+ {
+  "code": "BW-NE",
+  "en": "North-East",
+  "ar": "شمال شرق"
+ },
+ {
+  "code": "BW-NW",
+  "en": "North-West",
+  "ar": "شمال غرب"
+ },
+ {
+  "code": "BW-SP",
+  "en": "Selibe Phikwe",
+  "ar": "سيليبي-فيكوي"
+ },
+ {
+  "code": "BW-SE",
+  "en": "South-East",
+  "ar": "جنوب شرق"
+ },
+ {
+  "code": "BW-SO",
+  "en": "Southern",
+  "ar": "جنوبي"
+ },
+ {
+  "code": "BW-ST",
+  "en": "Sowa Town",
+  "ar": "بلدة سوا"
+ }
+]

@@ -1,0 +1,82 @@
+[
+ {
+  "code": "KR-26",
+  "en": "Busan",
+  "ar": "بوسان"
+ },
+ {
+  "code": "KR-27",
+  "en": "Daegu",
+  "ar": "دايجو"
+ },
+ {
+  "code": "KR-30",
+  "en": "Daejeon",
+  "ar": "دايجون"
+ },
+ {
+  "code": "KR-42",
+  "en": "Gangwon",
+  "ar": "غانغوون"
+ },
+ {
+  "code": "KR-41",
+  "en": "Gyeonggi",
+  "ar": "جيونجي"
+ },
+ {
+  "code": "KR-28",
+  "en": "Incheon",
+  "ar": "إنتشون"
+ },
+ {
+  "code": "KR-49",
+  "en": "Jeju",
+  "ar": "جيجو"
+ },
+ {
+  "code": "KR-12",
+  "en": "Jeonnam-Gwangju Integrated Special City",
+  "ar": null
+ },
+ {
+  "code": "KR-43",
+  "en": "North Chungcheong",
+  "ar": "تشونغتشونغ الشمالية"
+ },
+ {
+  "code": "KR-47",
+  "en": "North Gyeongsang",
+  "ar": "شمال جيونج سانج"
+ },
+ {
+  "code": "KR-45",
+  "en": "North Jeolla",
+  "ar": "شمال جولا"
+ },
+ {
+  "code": "KR-50",
+  "en": "Sejong City",
+  "ar": "مدينة سيجونغ"
+ },
+ {
+  "code": "KR-11",
+  "en": "Seoul",
+  "ar": "سيول"
+ },
+ {
+  "code": "KR-44",
+  "en": "South Chungcheong",
+  "ar": "تشونغتشونغ الجنوبية"
+ },
+ {
+  "code": "KR-48",
+  "en": "South Gyeongsang",
+  "ar": "جيونج سانج الجنوبية"
+ },
+ {
+  "code": "KR-31",
+  "en": "Ulsan",
+  "ar": "أولسان"
+ }
+]

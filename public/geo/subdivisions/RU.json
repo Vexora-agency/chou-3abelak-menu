@@ -1,0 +1,417 @@
+[
+ {
+  "code": "RU-AD",
+  "en": "Adygea",
+  "ar": "أديغيا"
+ },
+ {
+  "code": "RU-ALT",
+  "en": "Altai",
+  "ar": "ألتاي"
+ },
+ {
+  "code": "RU-AL",
+  "en": "Altai",
+  "ar": "ألتاي"
+ },
+ {
+  "code": "RU-AMU",
+  "en": "Amur",
+  "ar": "أمور"
+ },
+ {
+  "code": "RU-ARK",
+  "en": "Arkhangelsk",
+  "ar": "أرخانجيلسك"
+ },
+ {
+  "code": "RU-AST",
+  "en": "Astrakhan",
+  "ar": "أستراخان"
+ },
+ {
+  "code": "RU-BA",
+  "en": "Bashkortostan",
+  "ar": "باشكورتوستان"
+ },
+ {
+  "code": "RU-BEL",
+  "en": "Belgorod",
+  "ar": "بيلغورود"
+ },
+ {
+  "code": "RU-BRY",
+  "en": "Bryansk",
+  "ar": "بريانسك"
+ },
+ {
+  "code": "RU-BU",
+  "en": "Buryatia",
+  "ar": "بورياتيا"
+ },
+ {
+  "code": "RU-CE",
+  "en": "Chechen",
+  "ar": "الشيشان"
+ },
+ {
+  "code": "RU-CHE",
+  "en": "Chelyabinsk",
+  "ar": "تشيليابينسك"
+ },
+ {
+  "code": "RU-CHU",
+  "en": "Chukotka",
+  "ar": "تشوكوتكا"
+ },
+ {
+  "code": "RU-CU",
+  "en": "Chuvash",
+  "ar": "تشوفاش"
+ },
+ {
+  "code": "RU-DA",
+  "en": "Dagestan",
+  "ar": "داغستان"
+ },
+ {
+  "code": "RU-IN",
+  "en": "Ingushetia",
+  "ar": "إنغوشيتيا"
+ },
+ {
+  "code": "RU-IRK",
+  "en": "Irkutsk",
+  "ar": "إيركوتسك"
+ },
+ {
+  "code": "RU-IVA",
+  "en": "Ivanovo",
+  "ar": "إيفانوفو"
+ },
+ {
+  "code": "RU-YEV",
+  "en": "Jewish",
+  "ar": "يهودي"
+ },
+ {
+  "code": "RU-KB",
+  "en": "Kabardino-Balkar",
+  "ar": "كاباردينو-بلقار"
+ },
+ {
+  "code": "RU-KGD",
+  "en": "Kaliningrad",
+  "ar": "كالينينغراد"
+ },
+ {
+  "code": "RU-KL",
+  "en": "Kalmykia",
+  "ar": "كالميكيا"
+ },
+ {
+  "code": "RU-KLU",
+  "en": "Kaluga",
+  "ar": "كالوغا"
+ },
+ {
+  "code": "RU-KAM",
+  "en": "Kamchatka",
+  "ar": "كامتشاتكا"
+ },
+ {
+  "code": "RU-KC",
+  "en": "Karachay-Cherkess",
+  "ar": "قراتشاي-شركيس"
+ },
+ {
+  "code": "RU-KR",
+  "en": "Karelia",
+  "ar": "كاريليا"
+ },
+ {
+  "code": "RU-KEM",
+  "en": "Kemerovo",
+  "ar": "كيميروفو"
+ },
+ {
+  "code": "RU-KHA",
+  "en": "Khabarovsk",
+  "ar": "خاباروفسك"
+ },
+ {
+  "code": "RU-KK",
+  "en": "Khakassia",
+  "ar": "خاكاسيا"
+ },
+ {
+  "code": "RU-KHM",
+  "en": "Khanty-Mansi",
+  "ar": "خانتي مانسي"
+ },
+ {
+  "code": "RU-KIR",
+  "en": "Kirov",
+  "ar": "كيروف"
+ },
+ {
+  "code": "RU-KO",
+  "en": "Komi",
+  "ar": "كومي"
+ },
+ {
+  "code": "RU-KOS",
+  "en": "Kostroma",
+  "ar": "كوستروما"
+ },
+ {
+  "code": "RU-KDA",
+  "en": "Krasnodar",
+  "ar": "كراسنودار"
+ },
+ {
+  "code": "RU-KYA",
+  "en": "Krasnoyarsk",
+  "ar": "كراسنويارسك"
+ },
+ {
+  "code": "RU-KGN",
+  "en": "Kurgan",
+  "ar": "كورغان"
+ },
+ {
+  "code": "RU-KRS",
+  "en": "Kursk",
+  "ar": "كورسك"
+ },
+ {
+  "code": "RU-LEN",
+  "en": "Leningrad",
+  "ar": "لينينغراد"
+ },
+ {
+  "code": "RU-LIP",
+  "en": "Lipetsk",
+  "ar": "ليبيتسك"
+ },
+ {
+  "code": "RU-MAG",
+  "en": "Magadan",
+  "ar": "ماجادان"
+ },
+ {
+  "code": "RU-ME",
+  "en": "Mari El",
+  "ar": "ماري إل"
+ },
+ {
+  "code": "RU-MO",
+  "en": "Mordovia",
+  "ar": "موردوفيا"
+ },
+ {
+  "code": "RU-MOS",
+  "en": "Moscow",
+  "ar": "موسكو"
+ },
+ {
+  "code": "RU-MOW",
+  "en": "Moscow",
+  "ar": "موسكو"
+ },
+ {
+  "code": "RU-MUR",
+  "en": "Murmansk",
+  "ar": "مورمانسك"
+ },
+ {
+  "code": "RU-NEN",
+  "en": "Nenets",
+  "ar": "نينيتس"
+ },
+ {
+  "code": "RU-NIZ",
+  "en": "Nizhny Novgorod",
+  "ar": "نيجني نوفغورود"
+ },
+ {
+  "code": "RU-SE",
+  "en": "North Ossetia-Alania",
+  "ar": "أوسيتيا الشمالية-ألانيا"
+ },
+ {
+  "code": "RU-NGR",
+  "en": "Novgorod",
+  "ar": "نوفغورود"
+ },
+ {
+  "code": "RU-NVS",
+  "en": "Novosibirsk",
+  "ar": "نوفوسيبيرسك"
+ },
+ {
+  "code": "RU-OMS",
+  "en": "Omsk",
+  "ar": "أومسك"
+ },
+ {
+  "code": "RU-ORE",
+  "en": "Orenburg",
+  "ar": "أورينبورغ"
+ },
+ {
+  "code": "RU-ORL",
+  "en": "Oryol",
+  "ar": "أوريول"
+ },
+ {
+  "code": "RU-PNZ",
+  "en": "Penza",
+  "ar": "بينزا"
+ },
+ {
+  "code": "RU-PER",
+  "en": "Perm",
+  "ar": "بيرم كراي"
+ },
+ {
+  "code": "RU-PRI",
+  "en": "Primorsky",
+  "ar": "بريمورسكي"
+ },
+ {
+  "code": "RU-PSK",
+  "en": "Pskov",
+  "ar": "بسكوف"
+ },
+ {
+  "code": "RU-ROS",
+  "en": "Rostov",
+  "ar": "روستوف"
+ },
+ {
+  "code": "RU-RYA",
+  "en": "Ryazan",
+  "ar": "ريازان"
+ },
+ {
+  "code": "RU-SPE",
+  "en": "Saint Petersburg",
+  "ar": "سانت بطرسبرغ"
+ },
+ {
+  "code": "RU-SA",
+  "en": "Sakha",
+  "ar": "سخا"
+ },
+ {
+  "code": "RU-SAK",
+  "en": "Sakhalin",
+  "ar": "سخالين"
+ },
+ {
+  "code": "RU-SAM",
+  "en": "Samara",
+  "ar": "سامارا"
+ },
+ {
+  "code": "RU-SAR",
+  "en": "Saratov",
+  "ar": "ساراتوف"
+ },
+ {
+  "code": "RU-SMO",
+  "en": "Smolensk",
+  "ar": "سمولينسك"
+ },
+ {
+  "code": "RU-STA",
+  "en": "Stavropol",
+  "ar": "ستافروبول"
+ },
+ {
+  "code": "RU-SVE",
+  "en": "Sverdlovsk",
+  "ar": "سفيردلوفسك"
+ },
+ {
+  "code": "RU-TAM",
+  "en": "Tambov",
+  "ar": "تامبوف"
+ },
+ {
+  "code": "RU-TA",
+  "en": "Tatarstan",
+  "ar": "تتارستان"
+ },
+ {
+  "code": "RU-TOM",
+  "en": "Tomsk",
+  "ar": "تومسك"
+ },
+ {
+  "code": "RU-TUL",
+  "en": "Tula",
+  "ar": "تولا"
+ },
+ {
+  "code": "RU-TY",
+  "en": "Tuva",
+  "ar": "توفا"
+ },
+ {
+  "code": "RU-TVE",
+  "en": "Tver",
+  "ar": "تفير"
+ },
+ {
+  "code": "RU-TYU",
+  "en": "Tyumen",
+  "ar": "تيومين"
+ },
+ {
+  "code": "RU-UD",
+  "en": "Udmurt",
+  "ar": "الأدمرت"
+ },
+ {
+  "code": "RU-ULY",
+  "en": "Ulyanovsk",
+  "ar": "أوليانوفسك"
+ },
+ {
+  "code": "RU-VLA",
+  "en": "Vladimir",
+  "ar": "فلاديمير"
+ },
+ {
+  "code": "RU-VGG",
+  "en": "Volgograd Oblast",
+  "ar": "منطقة فولغوغراد"
+ },
+ {
+  "code": "RU-VLG",
+  "en": "Vologda",
+  "ar": "فولوغدا"
+ },
+ {
+  "code": "RU-VOR",
+  "en": "Voronezh",
+  "ar": "فورونيج"
+ },
+ {
+  "code": "RU-YAN",
+  "en": "Yamalo-Nenets",
+  "ar": "يامالو نينيتس"
+ },
+ {
+  "code": "RU-YAR",
+  "en": "Yaroslavl",
+  "ar": "ياروسلافل"
+ },
+ {
+  "code": "RU-ZAB",
+  "en": "Zabaykalsky",
+  "ar": "زابايكالسكي"
+ }
+]

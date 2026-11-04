@@ -1,0 +1,102 @@
+[
+ {
+  "code": "IQ-AN",
+  "en": "Al Anbar",
+  "ar": "الأنبار"
+ },
+ {
+  "code": "IQ-MU",
+  "en": "Al Muthanna",
+  "ar": "المثنى"
+ },
+ {
+  "code": "IQ-QA",
+  "en": "Al-Qādisiyyah",
+  "ar": "القادسية"
+ },
+ {
+  "code": "IQ-BB",
+  "en": "Babylon",
+  "ar": "بابل"
+ },
+ {
+  "code": "IQ-BG",
+  "en": "Baghdad",
+  "ar": "بغداد"
+ },
+ {
+  "code": "IQ-BA",
+  "en": "Basra",
+  "ar": "البصرة"
+ },
+ {
+  "code": "IQ-DQ",
+  "en": "Dhi Qar",
+  "ar": "ذي قار"
+ },
+ {
+  "code": "IQ-DI",
+  "en": "Diyala",
+  "ar": "ديالى"
+ },
+ {
+  "code": "IQ-DA",
+  "en": "Dohuk",
+  "ar": "دهوك"
+ },
+ {
+  "code": "IQ-AR",
+  "en": "Erbil",
+  "ar": "أربيل"
+ },
+ {
+  "code": "IQ-HA",
+  "en": "Halabja",
+  "ar": null
+ },
+ {
+  "code": "IQ-KR",
+  "en": "Iqlim Kurdistan",
+  "ar": "إقليم كردستان العراق"
+ },
+ {
+  "code": "IQ-KA",
+  "en": "Karbala",
+  "ar": "كربلاء"
+ },
+ {
+  "code": "IQ-KI",
+  "en": "Kirkuk",
+  "ar": "كركوك"
+ },
+ {
+  "code": "IQ-MA",
+  "en": "Maysan",
+  "ar": "ميسان"
+ },
+ {
+  "code": "IQ-NA",
+  "en": "Najaf",
+  "ar": "النجف"
+ },
+ {
+  "code": "IQ-NI",
+  "en": "Nineveh",
+  "ar": "نينوى"
+ },
+ {
+  "code": "IQ-SD",
+  "en": "Saladin",
+  "ar": "صلاح الدين"
+ },
+ {
+  "code": "IQ-SU",
+  "en": "Sulaymaniyah",
+  "ar": "السليمانية"
+ },
+ {
+  "code": "IQ-WA",
+  "en": "Wasit",
+  "ar": "واسط"
+ }
+]

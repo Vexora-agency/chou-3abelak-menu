@@ -1,0 +1,52 @@
+[
+ {
+  "code": "ZM-02",
+  "en": "Central",
+  "ar": "مركزي"
+ },
+ {
+  "code": "ZM-08",
+  "en": "Copperbelt",
+  "ar": "حزام النحاس"
+ },
+ {
+  "code": "ZM-03",
+  "en": "Eastern",
+  "ar": "شرقي"
+ },
+ {
+  "code": "ZM-04",
+  "en": "Luapula",
+  "ar": "لوابولا"
+ },
+ {
+  "code": "ZM-09",
+  "en": "Lusaka",
+  "ar": "لوساكا"
+ },
+ {
+  "code": "ZM-10",
+  "en": "Muchinga",
+  "ar": "موتشينغا"
+ },
+ {
+  "code": "ZM-05",
+  "en": "Northern",
+  "ar": "شمالي"
+ },
+ {
+  "code": "ZM-06",
+  "en": "Northwestern",
+  "ar": "شمال غرب"
+ },
+ {
+  "code": "ZM-07",
+  "en": "Southern",
+  "ar": "جنوبي"
+ },
+ {
+  "code": "ZM-01",
+  "en": "Western",
+  "ar": "الغربي"
+ }
+]

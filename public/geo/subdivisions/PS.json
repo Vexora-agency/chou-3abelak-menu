@@ -1,0 +1,82 @@
+[
+ {
+  "code": "PS-BTH",
+  "en": "Bethlehem",
+  "ar": "بيت لحم"
+ },
+ {
+  "code": "PS-DEB",
+  "en": "Deir El Balah",
+  "ar": "دير البلح"
+ },
+ {
+  "code": "PS-GZA",
+  "en": "Gaza",
+  "ar": "غزة"
+ },
+ {
+  "code": "PS-HBN",
+  "en": "Hebron",
+  "ar": "الخليل"
+ },
+ {
+  "code": "PS-JEN",
+  "en": "Jenin",
+  "ar": "جنين"
+ },
+ {
+  "code": "PS-JRH",
+  "en": "Jericho",
+  "ar": "أريحا"
+ },
+ {
+  "code": "PS-JEM",
+  "en": "Jerusalem (Quds)",
+  "ar": "القدس"
+ },
+ {
+  "code": "PS-KYS",
+  "en": "Khan Yunis",
+  "ar": "خان يونس"
+ },
+ {
+  "code": "PS-NBS",
+  "en": "Nablus",
+  "ar": "نابلس"
+ },
+ {
+  "code": "PS-NGZ",
+  "en": "North Gaza",
+  "ar": "شمال غزة"
+ },
+ {
+  "code": "PS-QQA",
+  "en": "Qalqilya",
+  "ar": "قلقيلية"
+ },
+ {
+  "code": "PS-RFH",
+  "en": "Rafah",
+  "ar": "رفح"
+ },
+ {
+  "code": "PS-RBH",
+  "en": "Ramallah",
+  "ar": "رام الله"
+ },
+ {
+  "code": "PS-SLT",
+  "en": "Salfit",
+  "ar": "سلفيت"
+ },
+ {
+  "code": "PS-TBS",
+  "en": "Tubas",
+  "ar": "طوباس"
+ },
+ {
+  "code": "PS-TKM",
+  "en": "Tulkarm",
+  "ar": "طولكرم"
+ }
+]

@@ -1,0 +1,1107 @@
+[
+ {
+  "code": "GB-ABE",
+  "en": "Aberdeen",
+  "ar": "أبردين"
+ },
+ {
+  "code": "GB-ABD",
+  "en": "Aberdeenshire",
+  "ar": "أبردينشاير"
+ },
+ {
+  "code": "GB-ANS",
+  "en": "Angus",
+  "ar": "أنجوس"
+ },
+ {
+  "code": "GB-ANN",
+  "en": "Antrim and Newtownabbey",
+  "ar": "أنتريم ونيوتاونابي"
+ },
+ {
+  "code": "GB-AND",
+  "en": "Ards and North Down",
+  "ar": "أردز ونورث داون"
+ },
+ {
+  "code": "GB-AGB",
+  "en": "Argyll and Bute",
+  "ar": "أرغيل وبوت"
+ },
+ {
+  "code": "GB-ABC",
+  "en": "Armagh, Banbridge and Craigavon",
+  "ar": "أرماغ وبانبريدج وكرايجافون"
+ },
+ {
+  "code": "GB-BDG",
+  "en": "Barking and Dagenham",
+  "ar": "باركينج وداجنهام"
+ },
+ {
+  "code": "GB-BNE",
+  "en": "Barnet",
+  "ar": "بارنيت"
+ },
+ {
+  "code": "GB-BNS",
+  "en": "Barnsley",
+  "ar": "بارنسلي"
+ },
+ {
+  "code": "GB-BAS",
+  "en": "Bath and North East Somerset",
+  "ar": "باث وشمال شرق سومرست"
+ },
+ {
+  "code": "GB-BDF",
+  "en": "Bedford",
+  "ar": "بيدفورد"
+ },
+ {
+  "code": "GB-BFS",
+  "en": "Belfast",
+  "ar": "بلفاست"
+ },
+ {
+  "code": "GB-BEX",
+  "en": "Bexley",
+  "ar": "بيكسلي"
+ },
+ {
+  "code": "GB-BIR",
+  "en": "Birmingham",
+  "ar": "برمنغهام"
+ },
+ {
+  "code": "GB-BBD",
+  "en": "Blackburn with Darwen",
+  "ar": "بلاكبيرن مع داروين"
+ },
+ {
+  "code": "GB-BPL",
+  "en": "Blackpool",
+  "ar": "بلاكبول"
+ },
+ {
+  "code": "GB-BGW",
+  "en": "Blaenau Gwent",
+  "ar": "بلايناو جوينت"
+ },
+ {
+  "code": "GB-BOL",
+  "en": "Bolton",
+  "ar": "بولتون"
+ },
+ {
+  "code": "GB-BCP",
+  "en": "Bournemouth, Christchurch and Poole",
+  "ar": "بورنموث وكرايستشيرش وبول"
+ },
+ {
+  "code": "GB-BRC",
+  "en": "Bracknell Forest",
+  "ar": "غابة براكنيل"
+ },
+ {
+  "code": "GB-BRD",
+  "en": "Bradford",
+  "ar": "برادفورد"
+ },
+ {
+  "code": "GB-BEN",
+  "en": "Brent",
+  "ar": "برنت"
+ },
+ {
+  "code": "GB-BGE",
+  "en": "Bridgend",
+  "ar": "بريدجند"
+ },
+ {
+  "code": "GB-BNH",
+  "en": "Brighton and Hove",
+  "ar": "برايتون وهوف"
+ },
+ {
+  "code": "GB-BST",
+  "en": "Bristol",
+  "ar": "بريستول"
+ },
+ {
+  "code": "GB-BRY",
+  "en": "Bromley",
+  "ar": "بروملي"
+ },
+ {
+  "code": "GB-BKM",
+  "en": "Buckinghamshire",
+  "ar": "باكينجهامشير"
+ },
+ {
+  "code": "GB-BUR",
+  "en": "Bury",
+  "ar": null
+ },
+ {
+  "code": "GB-CAY",
+  "en": "Caerphilly",
+  "ar": "كيرفيلي"
+ },
+ {
+  "code": "GB-CLD",
+  "en": "Calderdale",
+  "ar": "كالدرديل"
+ },
+ {
+  "code": "GB-CAM",
+  "en": "Cambridgeshire",
+  "ar": "كامبريدجشاير"
+ },
+ {
+  "code": "GB-CMD",
+  "en": "Camden",
+  "ar": "كامدن"
+ },
+ {
+  "code": "GB-CRF",
+  "en": "Cardiff",
+  "ar": "كارديف"
+ },
+ {
+  "code": "GB-CMN",
+  "en": "Carmarthenshire",
+  "ar": "كارمارثينشاير"
+ },
+ {
+  "code": "GB-CCG",
+  "en": "Causeway Coast and Glens",
+  "ar": "ساحل كوزواي وجلينز"
+ },
+ {
+  "code": "GB-CBF",
+  "en": "Central Bedfordshire",
+  "ar": "وسط بيدفوردشير"
+ },
+ {
+  "code": "GB-CGN",
+  "en": "Ceredigion",
+  "ar": "سيريديجون"
+ },
+ {
+  "code": "GB-CHE",
+  "en": "Cheshire East",
+  "ar": "تشيشاير الشرقية"
+ },
+ {
+  "code": "GB-CHW",
+  "en": "Cheshire West and Chester",
+  "ar": "تشيشاير الغربية وتشيستر"
+ },
+ {
+  "code": "GB-KHL",
+  "en": "City of Kingston upon Hull",
+  "ar": "مدينة كينغستون أبون هال"
+ },
+ {
+  "code": "GB-STH",
+  "en": "City of Southampton",
+  "ar": "مدينة ساوثهامبتون"
+ },
+ {
+  "code": "GB-CLK",
+  "en": "Clackmannanshire",
+  "ar": "كلاكمانانشاير"
+ },
+ {
+  "code": "GB-CWY",
+  "en": "Conwy",
+  "ar": "كونوي"
+ },
+ {
+  "code": "GB-CON",
+  "en": "Cornwall",
+  "ar": "كورنوال"
+ },
+ {
+  "code": "GB-COV",
+  "en": "Coventry",
+  "ar": "كوفنتري"
+ },
+ {
+  "code": "GB-CRY",
+  "en": "Croydon",
+  "ar": "كرويدون"
+ },
+ {
+  "code": "GB-CMA",
+  "en": "Cumbria",
+  "ar": "كمبريا"
+ },
+ {
+  "code": "GB-DAL",
+  "en": "Darlington",
+  "ar": "دارلينجتون"
+ },
+ {
+  "code": "GB-DEN",
+  "en": "Denbighshire",
+  "ar": "دينبيشاير"
+ },
+ {
+  "code": "GB-DER",
+  "en": "Derby",
+  "ar": "ديربي"
+ },
+ {
+  "code": "GB-DBY",
+  "en": "Derbyshire",
+  "ar": "ديربيشاير"
+ },
+ {
+  "code": "GB-DRS",
+  "en": "Derry City and Strabane",
+  "ar": "ديري سيتي وسترابان"
+ },
+ {
+  "code": "GB-DEV",
+  "en": "Devon",
+  "ar": "ديفون"
+ },
+ {
+  "code": "GB-DNC",
+  "en": "Doncaster",
+  "ar": "دونكاستر"
+ },
+ {
+  "code": "GB-DOR",
+  "en": "Dorset",
+  "ar": "دورست"
+ },
+ {
+  "code": "GB-DUD",
+  "en": "Dudley",
+  "ar": "دودلي"
+ },
+ {
+  "code": "GB-DGY",
+  "en": "Dumfries and Galloway",
+  "ar": "دومفريز وجالواي"
+ },
+ {
+  "code": "GB-DND",
+  "en": "Dundee",
+  "ar": "دندي"
+ },
+ {
+  "code": "GB-DUR",
+  "en": "Durham",
+  "ar": "دورهام"
+ },
+ {
+  "code": "GB-EAL",
+  "en": "Ealing",
+  "ar": "إيلينغ"
+ },
+ {
+  "code": "GB-EAY",
+  "en": "East Ayrshire",
+  "ar": "شرق أيرشاير"
+ },
+ {
+  "code": "GB-EDU",
+  "en": "East Dunbartonshire",
+  "ar": "شرق دنبارتونشاير"
+ },
+ {
+  "code": "GB-ELN",
+  "en": "East Lothian",
+  "ar": "شرق لوثيان"
+ },
+ {
+  "code": "GB-ERW",
+  "en": "East Renfrewshire",
+  "ar": "شرق رينفروشاير"
+ },
+ {
+  "code": "GB-ERY",
+  "en": "East Riding of Yorkshire",
+  "ar": "إيست رايدينج أوف يوركشاير"
+ },
+ {
+  "code": "GB-ESX",
+  "en": "East Sussex",
+  "ar": "شرق ساسكس"
+ },
+ {
+  "code": "GB-EDH",
+  "en": "Edinburgh",
+  "ar": "إدنبرة"
+ },
+ {
+  "code": "GB-ENF",
+  "en": "Enfield",
+  "ar": "إنفيلد"
+ },
+ {
+  "code": "GB-ENG",
+  "en": "England",
+  "ar": "إنجلترا"
+ },
+ {
+  "code": "GB-ESS",
+  "en": "Essex",
+  "ar": "إسيكس"
+ },
+ {
+  "code": "GB-FAL",
+  "en": "Falkirk",
+  "ar": "فالكيرك"
+ },
+ {
+  "code": "GB-FMO",
+  "en": "Fermanagh and Omagh",
+  "ar": "فيرماناغ وأوماغ"
+ },
+ {
+  "code": "GB-FIF",
+  "en": "Fife",
+  "ar": "فايف"
+ },
+ {
+  "code": "GB-FLN",
+  "en": "Flintshire",
+  "ar": "فلينتشاير"
+ },
+ {
+  "code": "GB-GAT",
+  "en": "Gateshead",
+  "ar": "جيتسهيد"
+ },
+ {
+  "code": "GB-GLG",
+  "en": "Glasgow",
+  "ar": "غلاسكو"
+ },
+ {
+  "code": "GB-GLS",
+  "en": "Gloucestershire",
+  "ar": "غلوسترشاير"
+ },
+ {
+  "code": "GB-GRE",
+  "en": "Greenwich",
+  "ar": "غرينتش"
+ },
+ {
+  "code": "GB-GWN",
+  "en": "Gwynedd",
+  "ar": "جوينيد"
+ },
+ {
+  "code": "GB-HCK",
+  "en": "Hackney",
+  "ar": "هاكني"
+ },
+ {
+  "code": "GB-HAL",
+  "en": "Halton",
+  "ar": "هالتون"
+ },
+ {
+  "code": "GB-HMF",
+  "en": "Hammersmith and Fulham",
+  "ar": "هامرسميث وفولهام"
+ },
+ {
+  "code": "GB-HAM",
+  "en": "Hampshire",
+  "ar": "هامبشاير"
+ },
+ {
+  "code": "GB-HRY",
+  "en": "Haringey",
+  "ar": "هارينجي"
+ },
+ {
+  "code": "GB-HRW",
+  "en": "Harrow",
+  "ar": "حي هرو لندن"
+ },
+ {
+  "code": "GB-HPL",
+  "en": "Hartlepool",
+  "ar": "هارتلبول"
+ },
+ {
+  "code": "GB-HAV",
+  "en": "Havering",
+  "ar": "هافرينج"
+ },
+ {
+  "code": "GB-HEF",
+  "en": "Herefordshire",
+  "ar": "هيريفوردشاير"
+ },
+ {
+  "code": "GB-HRT",
+  "en": "Hertfordshire",
+  "ar": "هيرتفوردشاير"
+ },
+ {
+  "code": "GB-HLD",
+  "en": "Highland",
+  "ar": "هايلاند"
+ },
+ {
+  "code": "GB-HIL",
+  "en": "Hillingdon",
+  "ar": "هيلينغدون"
+ },
+ {
+  "code": "GB-HNS",
+  "en": "Hounslow",
+  "ar": "هونسلو"
+ },
+ {
+  "code": "GB-IVC",
+  "en": "Inverclyde",
+  "ar": "إنفركلايد"
+ },
+ {
+  "code": "GB-AGY",
+  "en": "Isle of Anglesey",
+  "ar": "جزيرة أنجلسي"
+ },
+ {
+  "code": "GB-IOW",
+  "en": "Isle of Wight",
+  "ar": "جزيرة وايت"
+ },
+ {
+  "code": "GB-IOS",
+  "en": "Isles of Scilly",
+  "ar": "جزر سيلي"
+ },
+ {
+  "code": "GB-ISL",
+  "en": "Islington",
+  "ar": "إزلنجتون"
+ },
+ {
+  "code": "GB-KEC",
+  "en": "Kensington and Chelsea",
+  "ar": "كينسينغتون وتشيلسي"
+ },
+ {
+  "code": "GB-KEN",
+  "en": "Kent",
+  "ar": "كينت"
+ },
+ {
+  "code": "GB-KTT",
+  "en": "Kingston upon Thames",
+  "ar": "كينغستون أبون تيمز"
+ },
+ {
+  "code": "GB-KIR",
+  "en": "Kirklees",
+  "ar": "كيركليز"
+ },
+ {
+  "code": "GB-KWL",
+  "en": "Knowsley",
+  "ar": "نوسلي"
+ },
+ {
+  "code": "GB-LBH",
+  "en": "Lambeth",
+  "ar": "لامبث"
+ },
+ {
+  "code": "GB-LAN",
+  "en": "Lancashire",
+  "ar": "لانكشاير"
+ },
+ {
+  "code": "GB-LDS",
+  "en": "Leeds",
+  "ar": "ليدز"
+ },
+ {
+  "code": "GB-LCE",
+  "en": "Leicester",
+  "ar": "ليستر"
+ },
+ {
+  "code": "GB-LEC",
+  "en": "Leicestershire",
+  "ar": "ليسترشاير"
+ },
+ {
+  "code": "GB-LEW",
+  "en": "Lewisham",
+  "ar": "لويشام"
+ },
+ {
+  "code": "GB-LIN",
+  "en": "Lincolnshire",
+  "ar": "لينكولنشاير"
+ },
+ {
+  "code": "GB-LBC",
+  "en": "Lisburn and Castlereagh",
+  "ar": "ليزبورن وكاسلري"
+ },
+ {
+  "code": "GB-LIV",
+  "en": "Liverpool",
+  "ar": "ليفربول"
+ },
+ {
+  "code": "GB-LND",
+  "en": "London",
+  "ar": "لندن"
+ },
+ {
+  "code": "GB-LUT",
+  "en": "Luton",
+  "ar": "لوتون"
+ },
+ {
+  "code": "GB-MAN",
+  "en": "Manchester",
+  "ar": "مانشستر"
+ },
+ {
+  "code": "GB-MDW",
+  "en": "Medway",
+  "ar": "ميدواي"
+ },
+ {
+  "code": "GB-MTY",
+  "en": "Merthyr Tydfil",
+  "ar": "ميرثير تيدفيل"
+ },
+ {
+  "code": "GB-MRT",
+  "en": "Merton",
+  "ar": "ميرتون"
+ },
+ {
+  "code": "GB-MUL",
+  "en": "Mid Ulster",
+  "ar": "ميد أولستر"
+ },
+ {
+  "code": "GB-MEA",
+  "en": "Mid and East Antrim",
+  "ar": "وسط وشرق أنتريم"
+ },
+ {
+  "code": "GB-MDB",
+  "en": "Middlesbrough",
+  "ar": "ميدلسبره"
+ },
+ {
+  "code": "GB-MLN",
+  "en": "Midlothian",
+  "ar": "ميدلوثيان"
+ },
+ {
+  "code": "GB-MIK",
+  "en": "Milton Keynes",
+  "ar": "ميلتون كينز"
+ },
+ {
+  "code": "GB-MON",
+  "en": "Monmouthshire",
+  "ar": "مونماوثشاير"
+ },
+ {
+  "code": "GB-MRY",
+  "en": "Moray",
+  "ar": "موراي"
+ },
+ {
+  "code": "GB-NTL",
+  "en": "Neath Port Talbot",
+  "ar": "نيث بورت تالبوت"
+ },
+ {
+  "code": "GB-NET",
+  "en": "Newcastle upon Tyne",
+  "ar": "نيوكاسل أبون تاين"
+ },
+ {
+  "code": "GB-NWM",
+  "en": "Newham",
+  "ar": "نيوهام"
+ },
+ {
+  "code": "GB-NWP",
+  "en": "Newport",
+  "ar": "نيوبورت"
+ },
+ {
+  "code": "GB-NMD",
+  "en": "Newry, Mourne and Down",
+  "ar": "نيوراي ومورن وداون"
+ },
+ {
+  "code": "GB-NFK",
+  "en": "Norfolk",
+  "ar": "نورفولك"
+ },
+ {
+  "code": "GB-NAY",
+  "en": "North Ayrshire",
+  "ar": "شمال أيرشاير"
+ },
+ {
+  "code": "GB-NEL",
+  "en": "North East Lincolnshire",
+  "ar": "شمال شرق لينكولنشاير"
+ },
+ {
+  "code": "GB-NLK",
+  "en": "North Lanarkshire",
+  "ar": "شمال لاناركشاير"
+ },
+ {
+  "code": "GB-NLN",
+  "en": "North Lincolnshire",
+  "ar": "شمال لينكولنشاير"
+ },
+ {
+  "code": "GB-NNH",
+  "en": "North Northamptonshire",
+  "ar": "شمال نورثهامبتونشاير"
+ },
+ {
+  "code": "GB-NSM",
+  "en": "North Somerset",
+  "ar": "شمال سومرست"
+ },
+ {
+  "code": "GB-NTY",
+  "en": "North Tyneside",
+  "ar": "شمال تاينسايد"
+ },
+ {
+  "code": "GB-NYK",
+  "en": "North Yorkshire",
+  "ar": "شمال يوركشاير"
+ },
+ {
+  "code": "GB-NIR",
+  "en": "Northern Ireland",
+  "ar": "أيرلندا الشمالية"
+ },
+ {
+  "code": "GB-NBL",
+  "en": "Northumberland",
+  "ar": "نورثمبرلاند"
+ },
+ {
+  "code": "GB-NGM",
+  "en": "Nottingham",
+  "ar": "نوتنغهام"
+ },
+ {
+  "code": "GB-NTT",
+  "en": "Nottinghamshire",
+  "ar": "نوتنغهامشاير"
+ },
+ {
+  "code": "GB-OLD",
+  "en": "Oldham",
+  "ar": "أولدهام"
+ },
+ {
+  "code": "GB-ORK",
+  "en": "Orkney Islands",
+  "ar": "جزر أوركني"
+ },
+ {
+  "code": "GB-ELS",
+  "en": "Outer Hebrides",
+  "ar": "جزر هبريدس الخارجية"
+ },
+ {
+  "code": "GB-OXF",
+  "en": "Oxfordshire",
+  "ar": "أوكسفوردشاير"
+ },
+ {
+  "code": "GB-PEM",
+  "en": "Pembrokeshire",
+  "ar": "بيمبروكشاير"
+ },
+ {
+  "code": "GB-PKN",
+  "en": "Perth and Kinross",
+  "ar": "بيرث وكينروس"
+ },
+ {
+  "code": "GB-PTE",
+  "en": "Peterborough",
+  "ar": "بيتربورو"
+ },
+ {
+  "code": "GB-PLY",
+  "en": "Plymouth",
+  "ar": "بليموث"
+ },
+ {
+  "code": "GB-POR",
+  "en": "Portsmouth",
+  "ar": "بورتسموث"
+ },
+ {
+  "code": "GB-POW",
+  "en": "Powys",
+  "ar": "بويز"
+ },
+ {
+  "code": "GB-RDG",
+  "en": "Reading",
+  "ar": null
+ },
+ {
+  "code": "GB-RDB",
+  "en": "Redbridge",
+  "ar": "ريدبريدج"
+ },
+ {
+  "code": "GB-RCC",
+  "en": "Redcar and Cleveland",
+  "ar": "ريدكار وكليفلاند"
+ },
+ {
+  "code": "GB-RFW",
+  "en": "Renfrewshire",
+  "ar": "رينفروشاير"
+ },
+ {
+  "code": "GB-RCT",
+  "en": "Rhondda Cynon Taf",
+  "ar": "روندا سينون تاف"
+ },
+ {
+  "code": "GB-RIC",
+  "en": "Richmond upon Thames",
+  "ar": "ريتشموند على نهر التايمز"
+ },
+ {
+  "code": "GB-RCH",
+  "en": "Rochdale",
+  "ar": "روتشديل"
+ },
+ {
+  "code": "GB-ROT",
+  "en": "Rotherham",
+  "ar": "روثرهام"
+ },
+ {
+  "code": "GB-RUT",
+  "en": "Rutland",
+  "ar": "روتلاند"
+ },
+ {
+  "code": "GB-SLF",
+  "en": "Salford",
+  "ar": "سالفورد"
+ },
+ {
+  "code": "GB-SAW",
+  "en": "Sandwell",
+  "ar": "ساندويل"
+ },
+ {
+  "code": "GB-SCT",
+  "en": "Scotland",
+  "ar": "اسكتلندا"
+ },
+ {
+  "code": "GB-SCB",
+  "en": "Scottish Borders",
+  "ar": "الحدود الاسكتلندية"
+ },
+ {
+  "code": "GB-SFT",
+  "en": "Sefton",
+  "ar": "سيفتون"
+ },
+ {
+  "code": "GB-SHF",
+  "en": "Sheffield",
+  "ar": "شيفيلد"
+ },
+ {
+  "code": "GB-ZET",
+  "en": "Shetland Islands",
+  "ar": "جزر شيتلاند"
+ },
+ {
+  "code": "GB-SHR",
+  "en": "Shropshire",
+  "ar": "شروبشاير"
+ },
+ {
+  "code": "GB-SLG",
+  "en": "Slough",
+  "ar": "سلاو"
+ },
+ {
+  "code": "GB-SOL",
+  "en": "Solihull",
+  "ar": "سوليهل"
+ },
+ {
+  "code": "GB-SOM",
+  "en": "Somerset",
+  "ar": "سومرست"
+ },
+ {
+  "code": "GB-SAY",
+  "en": "South Ayrshire",
+  "ar": "جنوب أيرشاير"
+ },
+ {
+  "code": "GB-SGC",
+  "en": "South Gloucestershire",
+  "ar": "جنوب جلوسيسترشاير"
+ },
+ {
+  "code": "GB-SLK",
+  "en": "South Lanarkshire",
+  "ar": "جنوب لاناركشاير"
+ },
+ {
+  "code": "GB-STY",
+  "en": "South Tyneside",
+  "ar": "جنوب تاينسايد"
+ },
+ {
+  "code": "GB-SOS",
+  "en": "Southend-on-Sea",
+  "ar": "ساوثيند أون سي"
+ },
+ {
+  "code": "GB-SWK",
+  "en": "Southwark",
+  "ar": "ساوثوارك"
+ },
+ {
+  "code": "GB-SHN",
+  "en": "St Helens",
+  "ar": "سانت هيلينز"
+ },
+ {
+  "code": "GB-STS",
+  "en": "Staffordshire",
+  "ar": "ستافوردشاير"
+ },
+ {
+  "code": "GB-STG",
+  "en": "Stirling",
+  "ar": "ستيرلنغ"
+ },
+ {
+  "code": "GB-SKP",
+  "en": "Stockport",
+  "ar": "ستوكبورت"
+ },
+ {
+  "code": "GB-STT",
+  "en": "Stockton-on-Tees",
+  "ar": "ستوكتون أون تيز"
+ },
+ {
+  "code": "GB-STE",
+  "en": "Stoke-on-Trent",
+  "ar": "ستوك أون ترينت"
+ },
+ {
+  "code": "GB-SFK",
+  "en": "Suffolk",
+  "ar": "سوفولك"
+ },
+ {
+  "code": "GB-SND",
+  "en": "Sunderland",
+  "ar": "سندرلاند"
+ },
+ {
+  "code": "GB-SRY",
+  "en": "Surrey",
+  "ar": "سري"
+ },
+ {
+  "code": "GB-STN",
+  "en": "Sutton",
+  "ar": "ساتون"
+ },
+ {
+  "code": "GB-SWA",
+  "en": "Swansea",
+  "ar": "سوانزي"
+ },
+ {
+  "code": "GB-SWD",
+  "en": "Swindon",
+  "ar": "سويندون"
+ },
+ {
+  "code": "GB-TAM",
+  "en": "Tameside",
+  "ar": "تامسايد"
+ },
+ {
+  "code": "GB-TFW",
+  "en": "Telford and Wrekin",
+  "ar": "تيلفورد وريكين"
+ },
+ {
+  "code": "GB-THR",
+  "en": "Thurrock",
+  "ar": "ثوروك"
+ },
+ {
+  "code": "GB-TOB",
+  "en": "Torbay",
+  "ar": "تورباي"
+ },
+ {
+  "code": "GB-TOF",
+  "en": "Torfaen",
+  "ar": "تورفاين"
+ },
+ {
+  "code": "GB-TWH",
+  "en": "Tower Hamlets",
+  "ar": "برج هاملتس"
+ },
+ {
+  "code": "GB-TRF",
+  "en": "Trafford",
+  "ar": "ترافورد"
+ },
+ {
+  "code": "GB-VGL",
+  "en": "Vale of Glamorgan",
+  "ar": "وادي غلامورغان"
+ },
+ {
+  "code": "GB-WKF",
+  "en": "Wakefield",
+  "ar": "ويكفيلد"
+ },
+ {
+  "code": "GB-WLS",
+  "en": "Wales",
+  "ar": "ويلز"
+ },
+ {
+  "code": "GB-WLL",
+  "en": "Walsall",
+  "ar": "والسال"
+ },
+ {
+  "code": "GB-WFT",
+  "en": "Waltham Forest",
+  "ar": "غابة والتهام"
+ },
+ {
+  "code": "GB-WND",
+  "en": "Wandsworth",
+  "ar": "واندزورث"
+ },
+ {
+  "code": "GB-WRT",
+  "en": "Warrington",
+  "ar": "وارينغتون"
+ },
+ {
+  "code": "GB-WAR",
+  "en": "Warwickshire",
+  "ar": "وارويكشاير"
+ },
+ {
+  "code": "GB-WBK",
+  "en": "West Berkshire",
+  "ar": "غرب بيركشاير"
+ },
+ {
+  "code": "GB-WDU",
+  "en": "West Dunbartonshire",
+  "ar": "غرب دنبارتونشاير"
+ },
+ {
+  "code": "GB-WLN",
+  "en": "West Lothian",
+  "ar": "غرب لوثيان"
+ },
+ {
+  "code": "GB-WNH",
+  "en": "West Northamptonshire",
+  "ar": "غرب نورثهامبتونشاير"
+ },
+ {
+  "code": "GB-WSX",
+  "en": "West Sussex",
+  "ar": "غرب ساسكس"
+ },
+ {
+  "code": "GB-WSM",
+  "en": "Westminster",
+  "ar": "وستمنستر"
+ },
+ {
+  "code": "GB-WGN",
+  "en": "Wigan",
+  "ar": "ويجان"
+ },
+ {
+  "code": "GB-WIL",
+  "en": "Wiltshire",
+  "ar": "ويلتشير"
+ },
+ {
+  "code": "GB-WNM",
+  "en": "Windsor and Maidenhead",
+  "ar": "وندسور وميدنهيد"
+ },
+ {
+  "code": "GB-WRL",
+  "en": "Wirral",
+  "ar": "ويرال"
+ },
+ {
+  "code": "GB-WOK",
+  "en": "Wokingham",
+  "ar": "ووكينغهام"
+ },
+ {
+  "code": "GB-WLV",
+  "en": "Wolverhampton",
+  "ar": "وولفرهامبتون"
+ },
+ {
+  "code": "GB-WOR",
+  "en": "Worcestershire",
+  "ar": "ووسترشاير"
+ },
+ {
+  "code": "GB-WRX",
+  "en": "Wrexham",
+  "ar": "ريكسهام"
+ },
+ {
+  "code": "GB-YOR",
+  "en": "York",
+  "ar": "يورك"
+ }
+]

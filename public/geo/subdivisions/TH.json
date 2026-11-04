@@ -1,0 +1,392 @@
+[
+ {
+  "code": "TH-37",
+  "en": "Amnat Charoen",
+  "ar": "أمنات تشاروين"
+ },
+ {
+  "code": "TH-15",
+  "en": "Ang Thong",
+  "ar": "أنج ثونغ"
+ },
+ {
+  "code": "TH-10",
+  "en": "Bangkok",
+  "ar": "بانكوك"
+ },
+ {
+  "code": "TH-38",
+  "en": "Bueng Kan",
+  "ar": "بوينج كان"
+ },
+ {
+  "code": "TH-31",
+  "en": "Buri Ram",
+  "ar": "بوري رام"
+ },
+ {
+  "code": "TH-24",
+  "en": "Chachoengsao",
+  "ar": "تشاتشونجساو"
+ },
+ {
+  "code": "TH-18",
+  "en": "Chai Nat",
+  "ar": "شاي نات"
+ },
+ {
+  "code": "TH-36",
+  "en": "Chaiyaphum",
+  "ar": "تشايافوم"
+ },
+ {
+  "code": "TH-22",
+  "en": "Chanthaburi",
+  "ar": "تشانثابوري"
+ },
+ {
+  "code": "TH-50",
+  "en": "Chiang Mai",
+  "ar": "شيانغ ماي"
+ },
+ {
+  "code": "TH-57",
+  "en": "Chiang Rai",
+  "ar": "شيانغ راي"
+ },
+ {
+  "code": "TH-20",
+  "en": "Chon Buri",
+  "ar": "تشون بوري"
+ },
+ {
+  "code": "TH-86",
+  "en": "Chumphon",
+  "ar": "تشومفون"
+ },
+ {
+  "code": "TH-46",
+  "en": "Kalasin",
+  "ar": "كالاسين"
+ },
+ {
+  "code": "TH-62",
+  "en": "Kamphaeng Phet",
+  "ar": "كامفاينج فيت"
+ },
+ {
+  "code": "TH-71",
+  "en": "Kanchanaburi",
+  "ar": "كانشانابوري"
+ },
+ {
+  "code": "TH-40",
+  "en": "Khon Kaen",
+  "ar": "خون كاين"
+ },
+ {
+  "code": "TH-81",
+  "en": "Krabi",
+  "ar": "كرابي"
+ },
+ {
+  "code": "TH-52",
+  "en": "Lampang",
+  "ar": "لامبانج"
+ },
+ {
+  "code": "TH-51",
+  "en": "Lamphun",
+  "ar": "لامفون"
+ },
+ {
+  "code": "TH-42",
+  "en": "Loei",
+  "ar": "لوي"
+ },
+ {
+  "code": "TH-16",
+  "en": "Lop Buri",
+  "ar": "لوب بوري"
+ },
+ {
+  "code": "TH-58",
+  "en": "Mae Hong Son",
+  "ar": "ماي هونغ سون"
+ },
+ {
+  "code": "TH-44",
+  "en": "Maha Sarakham",
+  "ar": "مها ساراخام"
+ },
+ {
+  "code": "TH-49",
+  "en": "Mukdahan",
+  "ar": "موكداهان"
+ },
+ {
+  "code": "TH-26",
+  "en": "Nakhon Nayok",
+  "ar": "ناخون نايوك"
+ },
+ {
+  "code": "TH-73",
+  "en": "Nakhon Pathom",
+  "ar": "ناخون باثوم"
+ },
+ {
+  "code": "TH-48",
+  "en": "Nakhon Phanom",
+  "ar": "ناخون فانوم"
+ },
+ {
+  "code": "TH-30",
+  "en": "Nakhon Ratchasima",
+  "ar": "ناخون راتشاسيما"
+ },
+ {
+  "code": "TH-60",
+  "en": "Nakhon Sawan",
+  "ar": "ناخون ساوان"
+ },
+ {
+  "code": "TH-80",
+  "en": "Nakhon Si Thammarat",
+  "ar": "ناخون سي ثامارات"
+ },
+ {
+  "code": "TH-55",
+  "en": "Nan",
+  "ar": "نان"
+ },
+ {
+  "code": "TH-96",
+  "en": "Narathiwat",
+  "ar": "ناراثيوات"
+ },
+ {
+  "code": "TH-39",
+  "en": "Nong Bua Lam Phu",
+  "ar": "نونغ بوا لام فو"
+ },
+ {
+  "code": "TH-43",
+  "en": "Nong Khai",
+  "ar": "نونغ خاي"
+ },
+ {
+  "code": "TH-12",
+  "en": "Nonthaburi",
+  "ar": "نونثابوري"
+ },
+ {
+  "code": "TH-13",
+  "en": "Pathum Thani",
+  "ar": "باثوم ثاني"
+ },
+ {
+  "code": "TH-94",
+  "en": "Pattani",
+  "ar": "باتاني"
+ },
+ {
+  "code": "TH-S",
+  "en": "Pattaya",
+  "ar": "باتايا"
+ },
+ {
+  "code": "TH-82",
+  "en": "Phangnga",
+  "ar": "فانجنجا"
+ },
+ {
+  "code": "TH-93",
+  "en": "Phatthalung",
+  "ar": "فاتالونغ"
+ },
+ {
+  "code": "TH-56",
+  "en": "Phayao",
+  "ar": "فاياو"
+ },
+ {
+  "code": "TH-67",
+  "en": "Phetchabun",
+  "ar": "فيتشابون"
+ },
+ {
+  "code": "TH-76",
+  "en": "Phetchaburi",
+  "ar": "فيتشابوري"
+ },
+ {
+  "code": "TH-66",
+  "en": "Phichit",
+  "ar": "فيتشيت"
+ },
+ {
+  "code": "TH-65",
+  "en": "Phitsanulok",
+  "ar": "فيتسانولوك"
+ },
+ {
+  "code": "TH-14",
+  "en": "Phra Nakhon Si Ayutthaya",
+  "ar": "فرا ناخون سي أيوثايا"
+ },
+ {
+  "code": "TH-54",
+  "en": "Phrae",
+  "ar": "فراي"
+ },
+ {
+  "code": "TH-83",
+  "en": "Phuket",
+  "ar": "بوكيت"
+ },
+ {
+  "code": "TH-25",
+  "en": "Prachin Buri",
+  "ar": "براشين بوري"
+ },
+ {
+  "code": "TH-77",
+  "en": "Prachuap Khiri Khan",
+  "ar": "براشواب خيري خان"
+ },
+ {
+  "code": "TH-85",
+  "en": "Ranong",
+  "ar": "رانونغ"
+ },
+ {
+  "code": "TH-70",
+  "en": "Ratchaburi",
+  "ar": "راتشابوري"
+ },
+ {
+  "code": "TH-21",
+  "en": "Rayong",
+  "ar": "رايونغ"
+ },
+ {
+  "code": "TH-45",
+  "en": "Roi Et",
+  "ar": "روي إت"
+ },
+ {
+  "code": "TH-27",
+  "en": "Sa Kaeo",
+  "ar": "سا كايو"
+ },
+ {
+  "code": "TH-47",
+  "en": "Sakon Nakhon",
+  "ar": "ساكون ناخون"
+ },
+ {
+  "code": "TH-11",
+  "en": "Samut Prakan",
+  "ar": "ساموت براكان"
+ },
+ {
+  "code": "TH-74",
+  "en": "Samut Sakhon",
+  "ar": "ساموت ساخون"
+ },
+ {
+  "code": "TH-75",
+  "en": "Samut Songkhram",
+  "ar": "ساموت سونغخرام"
+ },
+ {
+  "code": "TH-19",
+  "en": "Saraburi",
+  "ar": "سارابوري"
+ },
+ {
+  "code": "TH-91",
+  "en": "Satun",
+  "ar": "ساتون"
+ },
+ {
+  "code": "TH-33",
+  "en": "Si Sa Ket",
+  "ar": "سي سا كيت"
+ },
+ {
+  "code": "TH-17",
+  "en": "Sing Buri",
+  "ar": "سينغ بوري"
+ },
+ {
+  "code": "TH-90",
+  "en": "Songkhla",
+  "ar": "سونغكلا"
+ },
+ {
+  "code": "TH-64",
+  "en": "Sukhothai",
+  "ar": "سوخوثاي"
+ },
+ {
+  "code": "TH-72",
+  "en": "Suphan Buri",
+  "ar": "سوفان بوري"
+ },
+ {
+  "code": "TH-84",
+  "en": "Surat Thani",
+  "ar": "سورات ثاني"
+ },
+ {
+  "code": "TH-32",
+  "en": "Surin",
+  "ar": "سورين"
+ },
+ {
+  "code": "TH-63",
+  "en": "Tak",
+  "ar": "تاك"
+ },
+ {
+  "code": "TH-92",
+  "en": "Trang",
+  "ar": "ترانج"
+ },
+ {
+  "code": "TH-23",
+  "en": "Trat",
+  "ar": "ترات"
+ },
+ {
+  "code": "TH-34",
+  "en": "Ubon Ratchathani",
+  "ar": "أوبون راتشاثاني"
+ },
+ {
+  "code": "TH-41",
+  "en": "Udon Thani",
+  "ar": "أودون ثاني"
+ },
+ {
+  "code": "TH-61",
+  "en": "Uthai Thani",
+  "ar": "أوثاي ثاني"
+ },
+ {
+  "code": "TH-53",
+  "en": "Uttaradit",
+  "ar": "أوتاراديت"
+ },
+ {
+  "code": "TH-95",
+  "en": "Yala",
+  "ar": "يالا"
+ },
+ {
+  "code": "TH-35",
+  "en": "Yasothon",
+  "ar": "ياسوثون"
+ }
+]

@@ -1,0 +1,62 @@
+[
+ {
+  "code": "LU-CA",
+  "en": "Capellen",
+  "ar": "كابيلين"
+ },
+ {
+  "code": "LU-CL",
+  "en": "Clervaux",
+  "ar": "كليرفو"
+ },
+ {
+  "code": "LU-DI",
+  "en": "Diekirch",
+  "ar": "ديكيرش"
+ },
+ {
+  "code": "LU-EC",
+  "en": "Echternach",
+  "ar": "إخترناخ"
+ },
+ {
+  "code": "LU-ES",
+  "en": "Esch-sur-Alzette",
+  "ar": "إيش سور ألزيت"
+ },
+ {
+  "code": "LU-GR",
+  "en": "Grevenmacher",
+  "ar": null
+ },
+ {
+  "code": "LU-LU",
+  "en": "Luxembourg",
+  "ar": null
+ },
+ {
+  "code": "LU-ME",
+  "en": "Mersch",
+  "ar": "ميرش"
+ },
+ {
+  "code": "LU-RD",
+  "en": "Redange",
+  "ar": "ريدانج"
+ },
+ {
+  "code": "LU-RM",
+  "en": "Remich",
+  "ar": "ريميش"
+ },
+ {
+  "code": "LU-VD",
+  "en": "Vianden",
+  "ar": "فياندن"
+ },
+ {
+  "code": "LU-WI",
+  "en": "Wiltz",
+  "ar": "ويلتز"
+ }
+]

@@ -1,0 +1,57 @@
+[
+ {
+  "code": "BB-01",
+  "en": "Christ Church",
+  "ar": "كنيسة المسيح"
+ },
+ {
+  "code": "BB-02",
+  "en": "Saint Andrew",
+  "ar": "القديس أندرو"
+ },
+ {
+  "code": "BB-03",
+  "en": "Saint George",
+  "ar": "القديس جورج"
+ },
+ {
+  "code": "BB-04",
+  "en": "Saint James",
+  "ar": "القديس جيمس"
+ },
+ {
+  "code": "BB-05",
+  "en": "Saint John",
+  "ar": "القديس يوحنا"
+ },
+ {
+  "code": "BB-06",
+  "en": "Saint Joseph",
+  "ar": "القديس يوسف"
+ },
+ {
+  "code": "BB-07",
+  "en": "Saint Lucy",
+  "ar": "سانت لوسي"
+ },
+ {
+  "code": "BB-08",
+  "en": "Saint Michael",
+  "ar": "القديس ميخائيل"
+ },
+ {
+  "code": "BB-09",
+  "en": "Saint Peter",
+  "ar": "القديس بطرس"
+ },
+ {
+  "code": "BB-10",
+  "en": "Saint Philip",
+  "ar": "القديس فيليب"
+ },
+ {
+  "code": "BB-11",
+  "en": "Saint Thomas",
+  "ar": "القديس توماس"
+ }
+]

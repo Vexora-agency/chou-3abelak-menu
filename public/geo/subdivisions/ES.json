@@ -1,0 +1,347 @@
+[
+ {
+  "code": "ES-C",
+  "en": "A Coruña",
+  "ar": "لا كورونيا"
+ },
+ {
+  "code": "ES-AB",
+  "en": "Albacete",
+  "ar": "ألباسيتي"
+ },
+ {
+  "code": "ES-A",
+  "en": "Alicante",
+  "ar": "أليكانتي"
+ },
+ {
+  "code": "ES-AL",
+  "en": "Almeria",
+  "ar": "ألميريا"
+ },
+ {
+  "code": "ES-AN",
+  "en": "Andalusia",
+  "ar": "الأندلس"
+ },
+ {
+  "code": "ES-VI",
+  "en": "Araba",
+  "ar": "عربة"
+ },
+ {
+  "code": "ES-AR",
+  "en": "Aragon",
+  "ar": "أراغون"
+ },
+ {
+  "code": "ES-O",
+  "en": "Asturias",
+  "ar": "أستورياس"
+ },
+ {
+  "code": "ES-AS",
+  "en": "Asturias, Principality of",
+  "ar": "أشتورية"
+ },
+ {
+  "code": "ES-BA",
+  "en": "Badajoz",
+  "ar": "بطليوس"
+ },
+ {
+  "code": "ES-IB",
+  "en": "Balearic Islands",
+  "ar": "جزر البليار"
+ },
+ {
+  "code": "ES-B",
+  "en": "Barcelona",
+  "ar": "برشلونة"
+ },
+ {
+  "code": "ES-PV",
+  "en": "Basque Country",
+  "ar": "إقليم الباسك"
+ },
+ {
+  "code": "ES-BI",
+  "en": "Bizkaia",
+  "ar": "بيزكايا"
+ },
+ {
+  "code": "ES-BU",
+  "en": "Burgos",
+  "ar": "بورغوس"
+ },
+ {
+  "code": "ES-CC",
+  "en": "Caceres",
+  "ar": "كاسيريس"
+ },
+ {
+  "code": "ES-CN",
+  "en": "Canary Islands",
+  "ar": "جزر الكناري"
+ },
+ {
+  "code": "ES-S",
+  "en": "Cantabria",
+  "ar": "كانتابريا"
+ },
+ {
+  "code": "ES-CB",
+  "en": "Cantabria",
+  "ar": "قنطبرية"
+ },
+ {
+  "code": "ES-CS",
+  "en": "Castellón",
+  "ar": "كاستيلون"
+ },
+ {
+  "code": "ES-CL",
+  "en": "Castile and Leon",
+  "ar": "قشتالة وليون"
+ },
+ {
+  "code": "ES-CM",
+  "en": "Castilla-La Mancha",
+  "ar": "كاستيا لا مانشا"
+ },
+ {
+  "code": "ES-CT",
+  "en": "Catalonia",
+  "ar": "كاتالونيا"
+ },
+ {
+  "code": "ES-CE",
+  "en": "Ceuta",
+  "ar": "سبتة"
+ },
+ {
+  "code": "ES-CR",
+  "en": "Ciudad Real",
+  "ar": "سيوداد ريال"
+ },
+ {
+  "code": "ES-MD",
+  "en": "Community of Madrid",
+  "ar": "مجتمع مدريد"
+ },
+ {
+  "code": "ES-CU",
+  "en": "Cuenca",
+  "ar": "كوينكا"
+ },
+ {
+  "code": "ES-CA",
+  "en": "Cádiz",
+  "ar": "قادس"
+ },
+ {
+  "code": "ES-CO",
+  "en": "Córdoba",
+  "ar": "قرطبة"
+ },
+ {
+  "code": "ES-EX",
+  "en": "Extremadura",
+  "ar": "إستريمادورا"
+ },
+ {
+  "code": "ES-GA",
+  "en": "Galicia",
+  "ar": "غاليسيا"
+ },
+ {
+  "code": "ES-SS",
+  "en": "Gipuzkoa",
+  "ar": "جيبوثكوا"
+ },
+ {
+  "code": "ES-GI",
+  "en": "Girona",
+  "ar": "جيرونا"
+ },
+ {
+  "code": "ES-GR",
+  "en": "Granada",
+  "ar": "غرناطة"
+ },
+ {
+  "code": "ES-GU",
+  "en": "Guadalajara",
+  "ar": "غوادالاخارا"
+ },
+ {
+  "code": "ES-H",
+  "en": "Huelva",
+  "ar": "هويلفا"
+ },
+ {
+  "code": "ES-HU",
+  "en": "Huesca",
+  "ar": "هويسكا"
+ },
+ {
+  "code": "ES-PM",
+  "en": "Islas Baleares",
+  "ar": "جزر البليار"
+ },
+ {
+  "code": "ES-J",
+  "en": "Jaén",
+  "ar": "جيان"
+ },
+ {
+  "code": "ES-RI",
+  "en": "La Rioja",
+  "ar": "منطقة لا ريوخا"
+ },
+ {
+  "code": "ES-LO",
+  "en": "La Rioja",
+  "ar": "لا ريوخا"
+ },
+ {
+  "code": "ES-GC",
+  "en": "Las Palmas",
+  "ar": "لاس بالماس"
+ },
+ {
+  "code": "ES-LE",
+  "en": "León",
+  "ar": "ليون"
+ },
+ {
+  "code": "ES-L",
+  "en": "Lleida",
+  "ar": "ليدا"
+ },
+ {
+  "code": "ES-LU",
+  "en": "Lugo",
+  "ar": "لوغو"
+ },
+ {
+  "code": "ES-M",
+  "en": "Madrid",
+  "ar": "مدريد"
+ },
+ {
+  "code": "ES-ML",
+  "en": "Melilla",
+  "ar": "مليلية"
+ },
+ {
+  "code": "ES-MU",
+  "en": "Murcia",
+  "ar": "مورسيا"
+ },
+ {
+  "code": "ES-MA",
+  "en": "Málaga",
+  "ar": "مالقة"
+ },
+ {
+  "code": "ES-NA",
+  "en": "Navarra",
+  "ar": "نافارا"
+ },
+ {
+  "code": "ES-NC",
+  "en": "Navarre",
+  "ar": "نافارا"
+ },
+ {
+  "code": "ES-OR",
+  "en": "Ourense",
+  "ar": "أورينسي"
+ },
+ {
+  "code": "ES-P",
+  "en": "Palencia",
+  "ar": "بلنسية"
+ },
+ {
+  "code": "ES-PO",
+  "en": "Pontevedra",
+  "ar": "بونتيفيدرا"
+ },
+ {
+  "code": "ES-MC",
+  "en": "Region of Murcia",
+  "ar": "منطقة مورسيا"
+ },
+ {
+  "code": "ES-SA",
+  "en": "Salamanca",
+  "ar": "سالامانكا"
+ },
+ {
+  "code": "ES-TF",
+  "en": "Santa Cruz de Tenerife",
+  "ar": "سانتا كروز دي تينيريفي"
+ },
+ {
+  "code": "ES-SG",
+  "en": "Segovia",
+  "ar": "سيغوفيا"
+ },
+ {
+  "code": "ES-SE",
+  "en": "Sevilla",
+  "ar": "إشبيلية"
+ },
+ {
+  "code": "ES-SO",
+  "en": "Soria",
+  "ar": "سوريا"
+ },
+ {
+  "code": "ES-T",
+  "en": "Tarragona",
+  "ar": "تاراغونا"
+ },
+ {
+  "code": "ES-TE",
+  "en": "Teruel",
+  "ar": "تيرويل"
+ },
+ {
+  "code": "ES-TO",
+  "en": "Toledo",
+  "ar": "توليدو"
+ },
+ {
+  "code": "ES-V",
+  "en": "Valencia",
+  "ar": "فالنسيا"
+ },
+ {
+  "code": "ES-VC",
+  "en": "Valencian Community",
+  "ar": "مجتمع فالنسيا"
+ },
+ {
+  "code": "ES-VA",
+  "en": "Valladolid",
+  "ar": "بلد الوليد"
+ },
+ {
+  "code": "ES-ZA",
+  "en": "Zamora",
+  "ar": "زامورا"
+ },
+ {
+  "code": "ES-Z",
+  "en": "Zaragoza",
+  "ar": "سرقسطة"
+ },
+ {
+  "code": "ES-AV",
+  "en": "Ávila",
+  "ar": "أفيلا"
+ }
+]

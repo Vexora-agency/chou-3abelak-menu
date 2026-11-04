@@ -1,0 +1,27 @@
+[
+ {
+  "code": "PF-01",
+  "en": "Austral Islands",
+  "ar": "الجزر الأسترالية"
+ },
+ {
+  "code": "PF-02",
+  "en": "Leeward Islands",
+  "ar": "جزر ليوارد"
+ },
+ {
+  "code": "PF-03",
+  "en": "Marquesas Islands",
+  "ar": "جزر ماركيساس"
+ },
+ {
+  "code": "PF-04",
+  "en": "Tuamotu-Gambier",
+  "ar": "تواموتو-جامبير"
+ },
+ {
+  "code": "PF-05",
+  "en": "Windward Islands",
+  "ar": "جزر ويندوارد"
+ }
+]

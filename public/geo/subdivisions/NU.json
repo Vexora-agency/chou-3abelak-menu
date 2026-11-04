@@ -1,0 +1,72 @@
+[
+ {
+  "code": "NU-14",
+  "en": "Alofi North",
+  "ar": "ألوفي نورث"
+ },
+ {
+  "code": "NU-13",
+  "en": "Alofi South",
+  "ar": "ألوفي ساوث"
+ },
+ {
+  "code": "NU-11",
+  "en": "Avatele",
+  "ar": "أفاتيلي"
+ },
+ {
+  "code": "NU-09",
+  "en": "Hakupu",
+  "ar": "هاكوبو"
+ },
+ {
+  "code": "NU-04",
+  "en": "Hikutavake",
+  "ar": "هيكوتافاكي"
+ },
+ {
+  "code": "NU-07",
+  "en": "Lakepa",
+  "ar": "لاكيبا"
+ },
+ {
+  "code": "NU-08",
+  "en": "Liku",
+  "ar": "ليكو"
+ },
+ {
+  "code": "NU-01",
+  "en": "Makefu",
+  "ar": "ماكفو"
+ },
+ {
+  "code": "NU-06",
+  "en": "Mutalau",
+  "ar": "موتالاو"
+ },
+ {
+  "code": "NU-03",
+  "en": "Namukulu",
+  "ar": "ناموكولو"
+ },
+ {
+  "code": "NU-12",
+  "en": "Tamakautoga",
+  "ar": "تاماكاوتوغا"
+ },
+ {
+  "code": "NU-05",
+  "en": "Toi",
+  "ar": "توي"
+ },
+ {
+  "code": "NU-02",
+  "en": "Tuapa",
+  "ar": "توابا"
+ },
+ {
+  "code": "NU-10",
+  "en": "Vaiea",
+  "ar": "فاييا"
+ }
+]

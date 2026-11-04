@@ -1,0 +1,62 @@
+[
+ {
+  "code": "GE-AB",
+  "en": "Abkhazia",
+  "ar": "أبخازيا"
+ },
+ {
+  "code": "GE-AJ",
+  "en": "Adjara",
+  "ar": "أدجارا"
+ },
+ {
+  "code": "GE-GU",
+  "en": "Guria",
+  "ar": "غوريا"
+ },
+ {
+  "code": "GE-IM",
+  "en": "Imereti",
+  "ar": "إيميريتي"
+ },
+ {
+  "code": "GE-KA",
+  "en": "Kakheti",
+  "ar": "كاخيتي"
+ },
+ {
+  "code": "GE-KK",
+  "en": "Kvemo Kartli",
+  "ar": "كفيمو كارتلي"
+ },
+ {
+  "code": "GE-MM",
+  "en": "Mtskheta-Mtianeti",
+  "ar": "متسخيتا-متيانيتي"
+ },
+ {
+  "code": "GE-RL",
+  "en": "Racha-Lechkhumi and Kvemo Svaneti",
+  "ar": "راشا ليخومي وكفيمو سفانيتي"
+ },
+ {
+  "code": "GE-SZ",
+  "en": "Samegrelo-Zemo Svaneti",
+  "ar": "ساميغريلو-زيمو سفانيتي"
+ },
+ {
+  "code": "GE-SJ",
+  "en": "Samtskhe-Javakheti",
+  "ar": "سامتسخه-جافاخيتي"
+ },
+ {
+  "code": "GE-SK",
+  "en": "Shida Kartli",
+  "ar": "شيدا كارتلي"
+ },
+ {
+  "code": "GE-TB",
+  "en": "Tbilisi",
+  "ar": "تبليسي"
+ }
+]

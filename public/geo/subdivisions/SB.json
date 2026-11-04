@@ -1,0 +1,52 @@
+[
+ {
+  "code": "SB-CE",
+  "en": "Central",
+  "ar": "مركزي"
+ },
+ {
+  "code": "SB-CH",
+  "en": "Choiseul",
+  "ar": "تشويسيول"
+ },
+ {
+  "code": "SB-GU",
+  "en": "Guadalcanal",
+  "ar": "غوادالكانال"
+ },
+ {
+  "code": "SB-CT",
+  "en": "Honiara",
+  "ar": "هونيارا"
+ },
+ {
+  "code": "SB-IS",
+  "en": "Isabel",
+  "ar": "إيزابيل"
+ },
+ {
+  "code": "SB-MK",
+  "en": "Makira-Ulawa",
+  "ar": "ماكيرا-أولاوا"
+ },
+ {
+  "code": "SB-ML",
+  "en": "Malaita",
+  "ar": "ماليتا"
+ },
+ {
+  "code": "SB-RB",
+  "en": "Rennell and Bellona",
+  "ar": "رينيل وبيلونا"
+ },
+ {
+  "code": "SB-TE",
+  "en": "Temotu",
+  "ar": "تيموتو"
+ },
+ {
+  "code": "SB-WE",
+  "en": "Western",
+  "ar": "الغربي"
+ }
+]

@@ -1,0 +1,107 @@
+[
+ {
+  "code": "SE-K",
+  "en": "Blekinge",
+  "ar": "بليكينج"
+ },
+ {
+  "code": "SE-W",
+  "en": "Dalarna",
+  "ar": "دالارنا"
+ },
+ {
+  "code": "SE-I",
+  "en": "Gotland",
+  "ar": "جوتلاند"
+ },
+ {
+  "code": "SE-X",
+  "en": "Gävleborg",
+  "ar": "جافلبورغ"
+ },
+ {
+  "code": "SE-N",
+  "en": "Halland",
+  "ar": "هالاند"
+ },
+ {
+  "code": "SE-Z",
+  "en": "Jämtland",
+  "ar": "يمتلاند"
+ },
+ {
+  "code": "SE-F",
+  "en": "Jönköping",
+  "ar": "يونشوبينغ"
+ },
+ {
+  "code": "SE-H",
+  "en": "Kalmar",
+  "ar": "كالمار"
+ },
+ {
+  "code": "SE-G",
+  "en": "Kronoberg",
+  "ar": "كرونوبيرج"
+ },
+ {
+  "code": "SE-BD",
+  "en": "Norrbotten",
+  "ar": "نوربوتن"
+ },
+ {
+  "code": "SE-M",
+  "en": "Skåne",
+  "ar": "سكاني"
+ },
+ {
+  "code": "SE-AB",
+  "en": "Stockholm",
+  "ar": "ستوكهولم"
+ },
+ {
+  "code": "SE-D",
+  "en": "Södermanland",
+  "ar": "سودرمانلاند"
+ },
+ {
+  "code": "SE-C",
+  "en": "Uppsala",
+  "ar": "أوبسالا"
+ },
+ {
+  "code": "SE-S",
+  "en": "Värmland",
+  "ar": "فارملاند"
+ },
+ {
+  "code": "SE-AC",
+  "en": "Västerbotten",
+  "ar": "فاستربوتن"
+ },
+ {
+  "code": "SE-Y",
+  "en": "Västernorrland",
+  "ar": "فاسترنورلاند"
+ },
+ {
+  "code": "SE-U",
+  "en": "Västmanland",
+  "ar": "فاستمانلاند"
+ },
+ {
+  "code": "SE-O",
+  "en": "Västra Götaland",
+  "ar": "فاسترا جوتالاند"
+ },
+ {
+  "code": "SE-T",
+  "en": "Örebro",
+  "ar": "أوريبرو"
+ },
+ {
+  "code": "SE-E",
+  "en": "Östergötland",
+  "ar": "أوسترجوتلاند"
+ }
+]

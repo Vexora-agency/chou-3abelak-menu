@@ -1,0 +1,87 @@
+[
+ {
+  "code": "NZ-AUK",
+  "en": "Auckland",
+  "ar": "أوكلاند"
+ },
+ {
+  "code": "NZ-BOP",
+  "en": "Bay of Plenty",
+  "ar": "خليج بلنتي"
+ },
+ {
+  "code": "NZ-CAN",
+  "en": "Canterbury",
+  "ar": "كانتربري"
+ },
+ {
+  "code": "NZ-CIT",
+  "en": "Chatham Islands",
+  "ar": "جزر تشاتام"
+ },
+ {
+  "code": "NZ-GIS",
+  "en": "Gisborne",
+  "ar": "جيسبورن"
+ },
+ {
+  "code": "NZ-HKB",
+  "en": "Hawke's Bay",
+  "ar": "خليج هوك"
+ },
+ {
+  "code": "NZ-MWT",
+  "en": "Manawatu-Whanganui",
+  "ar": "ماناواتو-وانجانوي"
+ },
+ {
+  "code": "NZ-MBH",
+  "en": "Marlborough",
+  "ar": "مارلبورو"
+ },
+ {
+  "code": "NZ-NSN",
+  "en": "Nelson",
+  "ar": "نيلسون"
+ },
+ {
+  "code": "NZ-NTL",
+  "en": "Northland",
+  "ar": "نورثلاند"
+ },
+ {
+  "code": "NZ-OTA",
+  "en": "Otago",
+  "ar": "أوتاجو"
+ },
+ {
+  "code": "NZ-STL",
+  "en": "Southland",
+  "ar": "ساوثلاند"
+ },
+ {
+  "code": "NZ-TKI",
+  "en": "Taranaki",
+  "ar": "تاراناكي"
+ },
+ {
+  "code": "NZ-TAS",
+  "en": "Tasman",
+  "ar": "تسمان"
+ },
+ {
+  "code": "NZ-WKO",
+  "en": "Waikato",
+  "ar": "وايكاتو"
+ },
+ {
+  "code": "NZ-WGN",
+  "en": "Wellington",
+  "ar": "ويلينغتون"
+ },
+ {
+  "code": "NZ-WTC",
+  "en": "West Coast",
+  "ar": "الساحل الغربي"
+ }
+]

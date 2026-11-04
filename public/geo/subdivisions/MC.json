@@ -1,0 +1,87 @@
+[
+ {
+  "code": "MC-FO",
+  "en": "Fontvieille",
+  "ar": "فونتفيي"
+ },
+ {
+  "code": "MC-JE",
+  "en": "Jardin Exotique",
+  "ar": "الحديقة الغريبة"
+ },
+ {
+  "code": "MC-CL",
+  "en": "La Colle",
+  "ar": "لا كول"
+ },
+ {
+  "code": "MC-CO",
+  "en": "La Condamine",
+  "ar": "لا كوندامين"
+ },
+ {
+  "code": "MC-GA",
+  "en": "La Gare",
+  "ar": "لا غار"
+ },
+ {
+  "code": "MC-SO",
+  "en": "La Source",
+  "ar": "لا سورس"
+ },
+ {
+  "code": "MC-LA",
+  "en": "Larvotto",
+  "ar": "لارفوتو"
+ },
+ {
+  "code": "MC-MA",
+  "en": "Malbousquet",
+  "ar": "مالبوسكيه"
+ },
+ {
+  "code": "MC-MO",
+  "en": "Monaco-Ville",
+  "ar": "موناكو فيل"
+ },
+ {
+  "code": "MC-MG",
+  "en": "Moneghetti",
+  "ar": "مونيجيتي"
+ },
+ {
+  "code": "MC-MC",
+  "en": "Monte-Carlo",
+  "ar": "مونت كارلو"
+ },
+ {
+  "code": "MC-MU",
+  "en": "Moulins",
+  "ar": "مولان"
+ },
+ {
+  "code": "MC-PH",
+  "en": "Port-Hercule",
+  "ar": "ميناء هرقل"
+ },
+ {
+  "code": "MC-SR",
+  "en": "Saint-Roman",
+  "ar": "سان رومان"
+ },
+ {
+  "code": "MC-SD",
+  "en": "Sainte-Dévote",
+  "ar": "سانت ديفوت"
+ },
+ {
+  "code": "MC-SP",
+  "en": "Spélugues",
+  "ar": "سبيلوغ"
+ },
+ {
+  "code": "MC-VR",
+  "en": "Vallon de la Rousse",
+  "ar": "فالون دو لا روس"
+ }
+]

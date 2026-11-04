@@ -1,0 +1,72 @@
+[
+ {
+  "code": "SY-HA",
+  "en": "Al-Hasakah",
+  "ar": "الحسكة"
+ },
+ {
+  "code": "SY-RA",
+  "en": "Al-Raqqah",
+  "ar": "الرقة"
+ },
+ {
+  "code": "SY-HL",
+  "en": "Aleppo",
+  "ar": "حلب"
+ },
+ {
+  "code": "SY-SU",
+  "en": "As-Suwayda",
+  "ar": "السويداء"
+ },
+ {
+  "code": "SY-DI",
+  "en": "Damascus",
+  "ar": "دمشق"
+ },
+ {
+  "code": "SY-DR",
+  "en": "Daraa",
+  "ar": "درعا"
+ },
+ {
+  "code": "SY-DY",
+  "en": "Deir ez-Zor",
+  "ar": "دير الزور"
+ },
+ {
+  "code": "SY-HM",
+  "en": "Hama",
+  "ar": "حماة"
+ },
+ {
+  "code": "SY-HI",
+  "en": "Homs",
+  "ar": "حمص"
+ },
+ {
+  "code": "SY-ID",
+  "en": "Idlib",
+  "ar": "إدلب"
+ },
+ {
+  "code": "SY-LA",
+  "en": "Latakia",
+  "ar": "اللاذقية"
+ },
+ {
+  "code": "SY-QU",
+  "en": "Quneitra",
+  "ar": "القنيطرة"
+ },
+ {
+  "code": "SY-RD",
+  "en": "Rif Dimashq",
+  "ar": "ريف دمشق"
+ },
+ {
+  "code": "SY-TA",
+  "en": "Tartus",
+  "ar": "طرطوس"
+ }
+]

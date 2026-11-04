@@ -1,0 +1,92 @@
+[
+ {
+  "code": "HK-HCW",
+  "en": "Central and Western",
+  "ar": "الوسطى والغربية"
+ },
+ {
+  "code": "HK-HEA",
+  "en": "Eastern",
+  "ar": "شرقي"
+ },
+ {
+  "code": "HK-NIS",
+  "en": "Islands",
+  "ar": "الجزر"
+ },
+ {
+  "code": "HK-KKC",
+  "en": "Kowloon City",
+  "ar": "مدينة كاولون"
+ },
+ {
+  "code": "HK-NKT",
+  "en": "Kwai Tsing",
+  "ar": "كواي تسينغ"
+ },
+ {
+  "code": "HK-KKT",
+  "en": "Kwun Tong",
+  "ar": "كوون تونغ"
+ },
+ {
+  "code": "HK-NNO",
+  "en": "North",
+  "ar": "شمال"
+ },
+ {
+  "code": "HK-NSK",
+  "en": "Sai Kung",
+  "ar": "ساي كونغ"
+ },
+ {
+  "code": "HK-NST",
+  "en": "Sha Tin",
+  "ar": "شا تين"
+ },
+ {
+  "code": "HK-KSS",
+  "en": "Sham Shui Po",
+  "ar": "شام شوي بو"
+ },
+ {
+  "code": "HK-HSO",
+  "en": "Southern",
+  "ar": "جنوبي"
+ },
+ {
+  "code": "HK-NTP",
+  "en": "Tai Po",
+  "ar": "تاي بو"
+ },
+ {
+  "code": "HK-NTW",
+  "en": "Tsuen Wan",
+  "ar": "تسوين وان"
+ },
+ {
+  "code": "HK-NTM",
+  "en": "Tuen Mun",
+  "ar": "توين مون"
+ },
+ {
+  "code": "HK-HWC",
+  "en": "Wan Chai",
+  "ar": "وان تشاي"
+ },
+ {
+  "code": "HK-KWT",
+  "en": "Wong Tai Sin",
+  "ar": "وونغ تاي سين"
+ },
+ {
+  "code": "HK-KYT",
+  "en": "Yau Tsim Mong",
+  "ar": "ياو تسيم مونغ"
+ },
+ {
+  "code": "HK-NYL",
+  "en": "Yuen Long",
+  "ar": "يوين لونغ"
+ }
+]

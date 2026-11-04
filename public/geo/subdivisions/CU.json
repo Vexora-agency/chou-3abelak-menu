@@ -1,0 +1,82 @@
+[
+ {
+  "code": "CU-15",
+  "en": "Artemisa",
+  "ar": "أرتيميسا"
+ },
+ {
+  "code": "CU-09",
+  "en": "Camagüey",
+  "ar": "كاماجوي"
+ },
+ {
+  "code": "CU-08",
+  "en": "Ciego de Ávila",
+  "ar": "سييغو دي أفيلا"
+ },
+ {
+  "code": "CU-06",
+  "en": "Cienfuegos",
+  "ar": "سيينفويغوس"
+ },
+ {
+  "code": "CU-12",
+  "en": "Granma",
+  "ar": "غرانما"
+ },
+ {
+  "code": "CU-14",
+  "en": "Guantánamo",
+  "ar": "غوانتانامو"
+ },
+ {
+  "code": "CU-03",
+  "en": "Havana",
+  "ar": "هافانا"
+ },
+ {
+  "code": "CU-11",
+  "en": "Holguín",
+  "ar": "هولغوين"
+ },
+ {
+  "code": "CU-99",
+  "en": "Isla de la Juventud",
+  "ar": "جزيرة الشباب"
+ },
+ {
+  "code": "CU-10",
+  "en": "Las Tunas",
+  "ar": "لاس توناس"
+ },
+ {
+  "code": "CU-04",
+  "en": "Matanzas",
+  "ar": "ماتانزاس"
+ },
+ {
+  "code": "CU-16",
+  "en": "Mayabeque",
+  "ar": "مايابيك"
+ },
+ {
+  "code": "CU-01",
+  "en": "Pinar del Río",
+  "ar": "بينار ديل ريو"
+ },
+ {
+  "code": "CU-07",
+  "en": "Sancti Spíritus",
+  "ar": "سانكتي سبيريتوس"
+ },
+ {
+  "code": "CU-13",
+  "en": "Santiago de Cuba",
+  "ar": "سانتياغو دي كوبا"
+ },
+ {
+  "code": "CU-05",
+  "en": "Villa Clara",
+  "ar": "فيلا كلارا"
+ }
+]

@@ -14,6 +14,7 @@ import { ShowMoreSection } from '../ShowMoreSection';
 import { AccessSection } from '../AccessSection';
 import { TelegramSection } from '../TelegramSection';
 import { SoundsSection } from '../SoundsSection';
+import { NotifyEmailSection } from '../NotifyEmailSection';
 import { AutoplaySection } from '../AutoplaySection';
 
 interface AdminSettingsTabProps {
@@ -176,6 +177,26 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
 
       {featuresConfig.enableOrdering && (
         <TelegramSection lang={lang} adminFetch={adminFetch} onConfirm={onConfirm} collapsed={!!collapsedGroups['telegram']} onToggleCollapse={() => onToggleCollapse('telegram')} />
+      )}
+
+      {featuresConfig.enableOrdering && (
+      <NotifyEmailSection
+        collapsed={!!collapsedGroups['notify-email']}
+        onToggleCollapse={() => onToggleCollapse('notify-email')}
+        notifications={menu.settings.notifications ?? { senderName: '', replyTo: '', events: { placed: true, confirmed: true, completed: true, cancelled: true } }}
+        lang={lang}
+        onUpdate={(updater) =>
+          onUpdateMenu((m) => ({
+            ...m,
+            settings: {
+              ...m.settings,
+              notifications: updater(
+                m.settings.notifications ?? { senderName: '', replyTo: '', events: { placed: true, confirmed: true, completed: true, cancelled: true } }
+              ),
+            },
+          }))
+        }
+      />
       )}
 
       {featuresConfig.enableOrdering && (

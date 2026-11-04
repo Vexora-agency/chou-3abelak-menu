@@ -181,6 +181,22 @@ export async function onRequest(context) {
         });
       }
     } catch {}
+    // Customer email (completed): best-effort only.
+    try {
+      const { mapOrderRow } = await import('../../_shared/orders.js');
+      const { notifyCustomerOrderEvent } = await import('../../_shared/customer-email.js');
+      const fresh = await findOrderByNumber(db, number);
+      if (fresh) {
+        const mapped = mapOrderRow(fresh);
+        if (mapped && mapped.customer && typeof mapped.customer.email === 'string' && mapped.customer.email) {
+          let origin = '';
+          try {
+            origin = new URL(request.url).origin;
+          } catch {}
+          await notifyCustomerOrderEvent(db, env, { order: mapped, event: 'completed', origin });
+        }
+      }
+    } catch {}
   })();
   if (context.waitUntil) {
     try {

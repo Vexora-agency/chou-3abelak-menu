@@ -218,6 +218,16 @@ export function normalizeMenu(menu) {
   const receiveDelayPickupMin = receiveDelayOr(ord.receiveDelayPickupMin, 15);
   const bRaw = settings.badges && typeof settings.badges === 'object' ? settings.badges : {};
   const intOr = (v, fb, min, max) => (Number.isInteger(v) && v >= min && v <= max ? v : fb);
+  // Customer email notifications mirror (validate-settings.js): never throws,
+  // invalid replyTo falls back to '' (validation surfaces the error).
+  const notifRaw = settings.notifications && typeof settings.notifications === 'object' && !Array.isArray(settings.notifications)
+    ? settings.notifications
+    : {};
+  const notifSender = typeof notifRaw.senderName === 'string' ? notifRaw.senderName.trim().slice(0, 80) : '';
+  let notifReply = typeof notifRaw.replyTo === 'string' ? notifRaw.replyTo.trim().toLowerCase().slice(0, 254) : '';
+  if (notifReply && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(notifReply)) notifReply = '';
+  const notifEv = notifRaw.events && typeof notifRaw.events === 'object' && !Array.isArray(notifRaw.events) ? notifRaw.events : {};
+  const boolOrTrue = (v) => (typeof v === 'boolean' ? v : true);
   out.settings = {
     ...settings,
     ordering: {
@@ -238,6 +248,16 @@ export function normalizeMenu(menu) {
       newDays: intOr(bRaw.newDays, 14, 1, 365),
       topDays: intOr(bRaw.topDays, 30, 1, 365),
       topCount: intOr(bRaw.topCount, 6, 1, 50),
+    },
+    notifications: {
+      senderName: notifSender,
+      replyTo: notifReply,
+      events: {
+        placed: boolOrTrue(notifEv.placed),
+        confirmed: boolOrTrue(notifEv.confirmed),
+        completed: boolOrTrue(notifEv.completed),
+        cancelled: boolOrTrue(notifEv.cancelled),
+      },
     },
     featureDefs: defs,
     featureGroups: groups,

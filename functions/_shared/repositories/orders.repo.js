@@ -470,48 +470,75 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
   const parent = cleaned && Number.isInteger(cleaned.parentNumber) && cleaned.parentNumber > 0
     ? cleaned.parentNumber
     : null;
-  const runInsert = (withParent) =>
-    db.batch([
-      db
-        .prepare(
-          withParent
-            ? 'INSERT INTO orders (id, number, idem_key, track_token, created_at, updated_at, status, type, customer_name, customer_phone, phone_norm, customer_address, customer_table, notes, location_lat, location_lng, items_json, subtotal, delivery_fee, total, lang, parent_number) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22)'
-            : 'INSERT INTO orders (id, number, idem_key, track_token, created_at, updated_at, status, type, customer_name, customer_phone, phone_norm, customer_address, customer_table, notes, location_lat, location_lng, items_json, subtotal, delivery_fee, total, lang) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21)'
-        )
-        .bind(
-          id,
-          num,
-          cleaned.idemKey,
-          typeof cleaned.trackToken === 'string' ? cleaned.trackToken : null,
-          stamp,
-          stamp,
-          'new',
-          cleaned.type,
-          cleaned.name,
-          cleaned.phone,
-          cleaned.phoneNorm,
-          cleaned.address,
-          cleaned.table,
-          cleaned.notes,
-          cleaned.location ? cleaned.location.lat : null,
-          cleaned.location ? cleaned.location.lng : null,
-          JSON.stringify(cleaned.items),
-          cleaned.subtotal,
-          cleaned.deliveryFee,
-          cleaned.total,
-          cleaned.lang,
-          ...(withParent ? [parent] : [])
-        ),
-    ]);
-  try {
-    await runInsert(parent !== null);
-  } catch (e) {
-    // Unmigrated DB (no parent_number column yet): retry without the link —
-    // the order itself must never fail because of the new column.
-    const msg = e && typeof e.message === 'string' ? e.message : '';
-    if (parent !== null && /no such column/i.test(msg)) {
-      await runInsert(false);
-    } else {
+  const emailVal = cleaned && typeof cleaned.email === 'string' && cleaned.email ? cleaned.email : null;
+  const runInsert = (withParent, withEmail) => {
+    const cols = ['id', 'number', 'idem_key', 'track_token', 'created_at', 'updated_at', 'status', 'type', 'customer_name', 'customer_phone', 'phone_norm'];
+    if (withEmail) cols.push('customer_email');
+    cols.push('customer_address', 'customer_table', 'notes', 'location_lat', 'location_lng', 'items_json', 'subtotal', 'delivery_fee', 'total', 'lang');
+    if (withParent) cols.push('parent_number');
+    const placeholders = cols.map((_, i) => `?${i + 1}`).join(',');
+    const values = [
+      id,
+      num,
+      cleaned.idemKey,
+      typeof cleaned.trackToken === 'string' ? cleaned.trackToken : null,
+      stamp,
+      stamp,
+      'new',
+      cleaned.type,
+      cleaned.name,
+      cleaned.phone,
+      cleaned.phoneNorm,
+    ];
+    if (withEmail) values.push(emailVal);
+    values.push(
+      cleaned.address,
+      cleaned.table,
+      cleaned.notes,
+      cleaned.location ? cleaned.location.lat : null,
+      cleaned.location ? cleaned.location.lng : null,
+      JSON.stringify(cleaned.items),
+      cleaned.subtotal,
+      cleaned.deliveryFee,
+      cleaned.total,
+      cleaned.lang
+    );
+    if (withParent) values.push(parent);
+    return db.batch([db.prepare(`INSERT INTO orders (${cols.join(', ')}) VALUES (${placeholders})`).bind(...values)]);
+  };
+  let withParent = parent !== null;
+  // Omit the column when there is no email: legacy fakes + unmigrated DBs
+  // keep the exact pre-0024 shape for the common email-less order, while
+  // email orders carry the new column (NULL default covers the rest).
+  let withEmail = emailVal !== null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      await runInsert(withParent, withEmail);
+      break;
+    } catch (e) {
+      // Unmigrated DB (missing parent_number and/or customer_email): drop
+      // the missing column and retry — the order itself must never fail
+      // because of a new column.
+      const msg = e && typeof e.message === 'string' ? e.message : '';
+      if (!/no such column/i.test(msg)) throw e;
+      const missingEmail = /customer_email/i.test(msg);
+      const missingParent = /parent_number/i.test(msg);
+      if (missingEmail && withEmail) {
+        withEmail = false;
+        continue;
+      }
+      if (missingParent && withParent) {
+        withParent = false;
+        continue;
+      }
+      if (withEmail) {
+        withEmail = false;
+        continue;
+      }
+      if (withParent) {
+        withParent = false;
+        continue;
+      }
       throw e;
     }
   }

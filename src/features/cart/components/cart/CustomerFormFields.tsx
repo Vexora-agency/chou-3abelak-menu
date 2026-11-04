@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CustomerDetails } from '@/src/types/menu';
 import { cleanPhoneInput } from '@/src/utils/digits';
 import { MapPin, Navigation, X } from 'lucide-react';
@@ -31,6 +31,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   onClearLocation,
 }) => {
   const isAr = lang === 'ar';
+  const [emailOpen, setEmailOpen] = useState(() => !!(customer.email && customer.email.trim()));
   return (
     <div className="space-y-3">
       <div>
@@ -187,6 +188,53 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-500 shadow-xs'
           }`}
         />
+      </div>
+
+      {/* Optional order-status email: collapsed by default, opens on tap. */}
+      <div className={`rounded-xl border ${darkMode ? 'border-neutral-700' : 'border-neutral-300'}`}>
+        <button
+          type="button"
+          onClick={() => setEmailOpen((v) => !v)}
+          aria-expanded={emailOpen}
+          className="w-full flex items-center justify-between gap-3 text-start min-h-[44px] px-3.5 py-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+        >
+          <span className="min-w-0">
+            <span className={`block text-xs font-bold ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
+              {isAr ? 'هل تود تتبع طلبك عبر البريد؟' : 'Want order updates by email?'}
+            </span>
+            <span className={`block text-[11px] mt-0.5 ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
+              {isAr ? 'أدخل بريدك لنرسل لك حالة طلبك لحظة بلحظة.' : 'Enter your email and we’ll send live updates for your order.'}
+            </span>
+          </span>
+          <span aria-hidden="true" className={`shrink-0 text-lg leading-none transition-transform duration-200 ${emailOpen ? 'rotate-180' : ''} ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
+            ▾
+          </span>
+        </button>
+        {emailOpen && (
+          <div className="px-3.5 pb-3.5 anim-fade-in">
+            <label className={`block text-xs font-bold mb-1 ${
+              darkMode ? 'text-neutral-200' : 'text-neutral-800'
+            }`}>
+              {isAr ? 'البريد الإلكتروني (اختياري)' : 'Email (optional)'}
+            </label>
+            <input
+              type="email"
+              inputMode="email"
+              dir="ltr"
+              value={customer.email ?? ''}
+              onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
+              placeholder="name@example.com"
+              maxLength={254}
+              autoComplete="email"
+              enterKeyHint="done"
+              className={`w-full h-11 px-3.5 rounded-xl border text-base text-start focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
+                darkMode
+                  ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-400'
+                  : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-500 shadow-xs'
+              }`}
+            />
+          </div>
+        )}
       </div>
 
       {/* Honeypot: invisible to real users, bots fill it and get a fake success */}

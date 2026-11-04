@@ -6,7 +6,7 @@ import { publicPostRaw } from '@/src/lib/api-client';
 export interface SubmitOrderPayload {
   idemKey: string;
   type: string;
-  customer: { name: string; phone: string; address: string };
+  customer: { name: string; phone: string; address: string; email?: string };
   notes: string;
   // Split quantities: present ONLY when the line actually uses splits
   // (non-trivial per-option counts). Legacy lines omit the key entirely so

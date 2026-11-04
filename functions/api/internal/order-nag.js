@@ -267,6 +267,19 @@ export async function onRequest(context) {
           customerName: cand.customer_name,
         });
       } catch {}
+      // Customer email (completed): best-effort only.
+      try {
+        const { findOrderById } = await import('../../_shared/repositories/orders.repo.js');
+        const { mapOrderRow } = await import('../../_shared/orders.js');
+        const { notifyCustomerOrderEvent } = await import('../../_shared/customer-email.js');
+        const fresh = await findOrderById(db, cand.id);
+        if (fresh) {
+          const mapped = mapOrderRow(fresh);
+          if (mapped && mapped.customer && typeof mapped.customer.email === 'string' && mapped.customer.email) {
+            await notifyCustomerOrderEvent(db, env, { order: mapped, event: 'completed', origin });
+          }
+        }
+      } catch {}
     }
   } catch {}
   } catch (sweepErr) {

@@ -286,6 +286,40 @@ function validateSettings(s, errors) {
     batch: intOr(smRaw.batch, 8, 4, 50),
   };
 
+  // Customer order-status email notifications (all optional, safe defaults:
+  // sender '' + replyTo '' + every event enabled). Invalid replyTo is
+  // rejected with an error and reset to '' (never stored blindly).
+  const notifRaw = s.notifications && typeof s.notifications === 'object' && !Array.isArray(s.notifications)
+    ? s.notifications
+    : {};
+  const senderName = typeof notifRaw.senderName === 'string'
+    ? stripControls(notifRaw.senderName).trim().slice(0, 80)
+    : '';
+  let replyTo = typeof notifRaw.replyTo === 'string' ? notifRaw.replyTo.trim().slice(0, 254) : '';
+  if (replyTo) {
+    const lowered = replyTo.toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(lowered)) {
+      errors.push('settings.notifications.replyTo must be a valid email address or empty');
+      replyTo = '';
+    } else {
+      replyTo = lowered;
+    }
+  }
+  const evRaw = notifRaw.events && typeof notifRaw.events === 'object' && !Array.isArray(notifRaw.events)
+    ? notifRaw.events
+    : {};
+  const boolOrTrue = (v) => (typeof v === 'boolean' ? v : true);
+  const notifications = {
+    senderName,
+    replyTo,
+    events: {
+      placed: boolOrTrue(evRaw.placed),
+      confirmed: boolOrTrue(evRaw.confirmed),
+      completed: boolOrTrue(evRaw.completed),
+      cancelled: boolOrTrue(evRaw.cancelled),
+    },
+  };
+
   // Feature groups + library (names only; prices live per item) are parsed
   // by the feature-library module so settings can carry them; legacy docs
   // migrate into the library during items validation below.
@@ -350,6 +384,7 @@ function validateSettings(s, errors) {
       speed: announcementSpeed,
     },
     privacy,
+    notifications,
   };
   return { cleanSettings, featureById, groupById, ensureFeature };
 }

@@ -961,6 +961,16 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
         subject: undefined,
       });
     } catch {}
+    // Customer email (confirmed/completed/cancelled): best-effort only,
+    // never blocks the callback answer. 'ready' counts as 'confirmed'.
+    try {
+      const map = { confirmed: 'confirmed', ready: 'confirmed', completed: 'completed', cancelled: 'cancelled' };
+      const ev = map[parsed.status];
+      if (ev && updated && updated.customer && typeof updated.customer.email === 'string' && updated.customer.email) {
+        const { notifyCustomerOrderEvent } = await import('./customer-email.js');
+        await notifyCustomerOrderEvent(db, env, { order: updated, event: ev, origin: '' });
+      }
+    } catch {}
     return { handled: true, status: parsed.status };
   } catch {
     return noop('error');

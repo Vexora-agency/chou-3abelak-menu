@@ -72,6 +72,11 @@ export function validateOrderInput(body, menu) {
   const phoneDigits = westernDigits(typeof c.phone === 'string' ? c.phone : '').replace(/[^0-9]/g, '');
   if (phoneDigits.length < 6 || phoneDigits.length > 15) errors.push('invalid_phone');
 
+  // Customer email (opt-in, never blocks the order): trim + lowercase +
+  // max 254 + simple shape check. Invalid or missing reads as ''.
+  const rawEmail = typeof c.email === 'string' ? c.email.trim().toLowerCase().slice(0, 254) : '';
+  const email = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(rawEmail) ? rawEmail : '';
+
   const address = cleanStr(c.address, 200);
   if (type === 'delivery' && !address) errors.push('invalid_address');
 
@@ -282,6 +287,7 @@ export function validateOrderInput(body, menu) {
       name,
       phone: phoneDigits,
       phoneNorm: phoneDigits,
+      email,
       address: address || null,
       table: table || null,
       notes: notes || null,
@@ -352,6 +358,9 @@ export function mapOrderRow(row) {
     customer: {
       name: row.customer_name || '',
       phone: row.customer_phone || '',
+      // Email is opt-in: only present when non-empty so legacy rows and
+      // email-less orders keep the exact pre-0024 API shape (no '' key).
+      ...(typeof row.customer_email === 'string' && row.customer_email ? { email: row.customer_email } : {}),
       ...(row.customer_address ? { address: row.customer_address } : {}),
       ...(row.customer_table ? { table: row.customer_table } : {}),
     },

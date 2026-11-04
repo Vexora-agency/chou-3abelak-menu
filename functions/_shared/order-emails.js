@@ -175,7 +175,10 @@ export function buildOrderEmail({ event, order, storeName, currency, lang, track
     ...(eta ? [[t.meta.eta, eta]] : []),
   ]
     .map(
-      ([k, v]) => `<tr><td style="padding:7px 0;border-bottom:1px solid ${LINE};"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      // dir on the two-column table (not only on <html>): Gmail/Apps strip
+      // the root tags and lose <html dir>, which would flip label/value to
+      // the wrong sides. An explicit dir here keeps them glued correctly.
+      ([k, v]) => `<tr><td style="padding:7px 0;border-bottom:1px solid ${LINE};"><table role="presentation" dir="${dir}" width="100%" cellpadding="0" cellspacing="0"><tr>
         <td class="em-tgrey" style="font-size:12px;color:${GREY};text-align:${align};" width="38%">${esc(k)}</td>
         <td class="em-tink" dir="ltr" style="font-size:14px;font-weight:bold;color:${BLACK};text-align:${isAr ? 'left' : 'right'};">${esc(v)}</td></tr></table></td></tr>`
     )
@@ -204,8 +207,8 @@ export function buildOrderEmail({ event, order, storeName, currency, lang, track
 [data-ogsc] .em-barbg{background-color:#EDEDED!important;}[data-ogsc] .em-bylbrd{border-color:#FFC400!important;}</style></head>
 <body style="margin:0;padding:0;background:#EDEDED;font-family:${font};">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${esc(subject)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#EDEDED"><tr><td align="center" style="padding:24px 12px;">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;">
+<table role="presentation" dir="${dir}" width="100%" cellpadding="0" cellspacing="0" bgcolor="#EDEDED"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" dir="${dir}" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;">
   <tr><td class="em-dark-keep" bgcolor="${BLACK}" align="center" style="background:${BLACK};border-radius:20px 20px 0 0;padding:30px 24px 24px;">
     ${logo ? `<img src="${esc(logo)}" width="180" alt="${esc(store)}" style="display:block;margin:0 auto;border:0;max-width:180px;height:auto;font-family:${font};font-size:18px;font-weight:bold;color:${YELLOW};">` : `<div class="em-ylt" style="font-size:20px;font-weight:bold;color:${YELLOW};">${esc(store)}</div>`}
     <div class="em-ylt" style="margin-top:16px;font-size:12px;font-weight:bold;letter-spacing:${isAr ? '0' : '3px'};text-transform:${isAr ? 'none' : 'uppercase'};color:${YELLOW};">${esc(ev.label)}</div>

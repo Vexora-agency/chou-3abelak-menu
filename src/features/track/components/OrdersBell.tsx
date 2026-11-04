@@ -692,7 +692,10 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                         {isAr ? `🔗 سيصل مع الطلب #${o.parentNumber} — نفس التوصيلة` : `🔗 Arriving with order #${o.parentNumber} — same delivery`}
                       </p>
                     )}
-                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                    {/* Top-aligned (not centered): the received button carries
+                        the waiting hint underneath it, so centering would drag
+                        "track live" out of line with it — tops stay parallel. */}
+                    <div className="mt-2 flex items-start gap-2 flex-wrap">
                       {o.status === 'new' && (
                         <CancelOrderButton
                           number={o.n}

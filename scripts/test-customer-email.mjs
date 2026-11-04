@@ -34,7 +34,8 @@ const MENU_BASE = {
 function bodyWithEmail(email) {
   const customer = { name: 'John Doe', phone: '70123456', address: 'Hamra' };
   if (email !== undefined) customer.email = email;
-  return { type: 'delivery', customer, items: [{ id: 'zaatar', qty: 1 }], lang: 'en' };
+  // Delivery requires a freshly picked pin every order (never remembered).
+  return { type: 'delivery', customer, items: [{ id: 'zaatar', qty: 1 }], lang: 'en', location: { lat: 33.8938, lng: 35.5018, accuracy: 30 } };
 }
 
 function menuWithNotifications(notif) {
@@ -102,7 +103,7 @@ function orderRow(num, email, extra) {
   const empty = validateOrderInput(bodyWithEmail(''), MENU_BASE);
   ok(empty.ok === true && empty.cleaned.email === '', 'empty string reads as empty');
 
-  const nonStr = validateOrderInput({ type: 'delivery', customer: { name: 'John Doe', phone: '70123456', address: 'Hamra', email: 123 }, items: [{ id: 'zaatar', qty: 1 }], lang: 'en' }, MENU_BASE);
+  const nonStr = validateOrderInput({ type: 'delivery', customer: { name: 'John Doe', phone: '70123456', address: 'Hamra', email: 123 }, items: [{ id: 'zaatar', qty: 1 }], lang: 'en', location: { lat: 33.8938, lng: 35.5018, accuracy: 30 } }, MENU_BASE);
   ok(nonStr.ok === true && nonStr.cleaned.email === '', 'non-string email reads as empty');
 
   const longLocal = `a@${'b'.repeat(300)}.com`;

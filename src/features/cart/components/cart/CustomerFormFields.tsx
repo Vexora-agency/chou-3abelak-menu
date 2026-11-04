@@ -95,7 +95,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               if (location) onClearLocation();
               setCustomer({ ...customer, address: e.target.value });
             }}
-            placeholder={isAr ? 'المنطقة والشارع ورقم العمارة… أو حدد موقعك بالدبوس' : 'Area, street, building… or pin your location'}
+            placeholder={isAr ? 'المنطقة والشارع ورقم العمارة… ثم حدد موقعك بالدبوس (إجباري)' : 'Area, street, building… then pin your location (required)'}
             maxLength={200}
             autoComplete="street-address"
             enterKeyHint="next"

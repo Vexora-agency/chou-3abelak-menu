@@ -1,6 +1,6 @@
 // Customer order shelf: 12h window, validation, dedupe (pure logic).
 // Run: node scripts/test-customer-orders.mjs
-import { isStoredOrder, pruneOrders, CUSTOMER_ORDERS_TTL_MS, isSoundOff, setSoundOff, loadRememberedDetails, saveRememberedDetails, saveCustomerOrder, loadPinnedLocation, savePinnedLocation, loadRung, markRung } from '../src/utils/customerOrders.ts';
+import { isStoredOrder, pruneOrders, CUSTOMER_ORDERS_TTL_MS, isSoundOff, setSoundOff, loadRememberedDetails, saveRememberedDetails, saveCustomerOrder, loadRung, markRung } from '../src/utils/customerOrders.ts';
 
 // In-memory localStorage stub (node has none).
 const mem = new Map();
@@ -76,16 +76,11 @@ setSoundOff(false);
 saveCustomerOrder(2002, T, NOW + 2000);
 ok('next new order rings again', isSoundOff() === false);
 
-// Remembered pin: a repeat order re-sends the validated pin, never none.
-ok('no pin initially', loadPinnedLocation() === null);
-savePinnedLocation({ lat: 33.9, lng: 35.5, accuracy: 25 });
-const pin = loadPinnedLocation();
-ok('pin roundtrips', pin !== null && pin.lat === 33.9 && pin.lng === 35.5 && pin.accuracy === 25);
-savePinnedLocation({ lat: 999, lng: 0, accuracy: 1 });
-ok('out-of-range pin rejected', loadPinnedLocation() === null);
-savePinnedLocation({ lat: 33.9, lng: 35.5, accuracy: 25 });
-savePinnedLocation(null);
-ok('null forgets the pin', loadPinnedLocation() === null);
+// Pins are session-only and never remembered: a remembered record carries
+// no location, so no stale pin from another visit/city can hide inside it.
+saveRememberedDetails({ name: 'Ali', phone: '70123456', address: 'Hamra', remember: true });
+const det = loadRememberedDetails();
+ok('remembered details carry no pin', det !== null && !('location' in det) && !('lat' in det) && !('lng' in det));
 
 delete globalThis.localStorage;
 delete globalThis.window;

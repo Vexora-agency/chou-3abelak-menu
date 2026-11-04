@@ -85,17 +85,21 @@ export function validateOrderInput(body, menu) {
 
   const notes = cleanStr(body.notes, 200);
 
-  // Optional delivery coordinates: finite numbers in range, rounded to
-  // 5 decimals. Only for delivery; ignored for other types. Accuracy
-  // (meters, from the OS fix) rides along when sane — downstream uses it
-  // to distrust coarse cell-tower fixes instead of mislabeling them
-  // "precise". Never blocks the order; never stored (transient hint).
-  // Coarse fixes (>250m, mirrors MAPS_ACCURACY_OK_M in telegram.js) are
-  // dropped to null so the order stores no pin and Telegram falls back to
-  // the address-query link. Storing them would upgrade to a fake "exact"
-  // pin after the DB round-trip (accuracy column does not exist, and a
-  // missing accuracy reads as sharp) — the WRONG-pin bug on remembered
-  // coarse pins.
+  // Delivery REQUIRES a freshly picked pin every order (the client never
+  // remembers it): presence is mandatory, precision is not. Finite numbers
+  // in range, rounded to 5 decimals. Only for delivery; ignored for other
+  // types. Accuracy (meters, from the OS fix) rides along when sane —
+  // downstream uses it to distrust coarse cell-tower fixes instead of
+  // mislabeling them "precise". Coarse fixes (>250m, mirrors
+  // MAPS_ACCURACY_OK_M in telegram.js) are still dropped to null so the
+  // order stores no pin and Telegram falls back to the address-query link —
+  // but the order itself is never rejected for imprecision. Storing coarse
+  // fixes would upgrade to a fake "exact" pin after the DB round-trip
+  // (accuracy column does not exist, and a missing accuracy reads as
+  // sharp).
+  if (type === 'delivery' && (!body.location || typeof body.location !== 'object')) {
+    errors.push('invalid_location');
+  }
   let location = null;
   if (type === 'delivery' && body.location && typeof body.location === 'object') {
     const lat = typeof body.location.lat === 'number' ? body.location.lat : NaN;

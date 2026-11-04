@@ -24,8 +24,16 @@ const json = readJson;
   ok(rounded.ok && rounded.cleaned.location.lat === 33.89352 && rounded.cleaned.location.lng === 35.50162, 'rounded to 5 decimals');
   const pickup = validateOrderInput(orderBody({ type: 'pickup', location: { lat: 10, lng: 10 } }), { ...m, settings: { ...m.settings, ordering: { ...m.settings.ordering, types: ['delivery', 'pickup'] } } });
   ok(pickup.ok && pickup.cleaned.location === null, 'location ignored for non-delivery');
-  ok(validateOrderInput(orderBody(), m).cleaned.location === null, 'absent location is null');
-  ok(validateOrderInput(orderBody(), m).cleaned.phoneNorm === '70123456', 'phone_norm filled');
+  const pickupNoPin = validateOrderInput(orderBody({ type: 'pickup' }), { ...m, settings: { ...m.settings, ordering: { ...m.settings.ordering, types: ['delivery', 'pickup'] } } });
+  ok(pickupNoPin.ok === true, 'pickup needs no pin');
+  // Delivery REQUIRES a freshly picked pin every order (pins are never
+  // remembered): absent/null/non-object locations fail closed.
+  const noPin = validateOrderInput(orderBody(), m);
+  ok(noPin.ok === false && noPin.errors.includes('invalid_location') && noPin.cleaned === null, 'absent location rejected for delivery');
+  ok(validateOrderInput(orderBody({ location: null }), m).errors.includes('invalid_location'), 'null location rejected');
+  ok(validateOrderInput(orderBody({ location: 'Beirut' }), m).errors.includes('invalid_location'), 'non-object location rejected');
+  const withPin = validateOrderInput(orderBody({ location: { lat: 33.9, lng: 35.5, accuracy: 30 } }), m);
+  ok(withPin.ok === true && withPin.cleaned.phoneNorm === '70123456', 'phone_norm filled');
 }
 
 /* ---------------- 2. POST /api/orders gating + insert ---------------- */

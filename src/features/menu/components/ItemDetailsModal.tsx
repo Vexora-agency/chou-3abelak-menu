@@ -308,6 +308,15 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                     {badgeLabel(b, lang)}
                 </span>
               ))}
+              {/* Live spicy pick: the moment the customer taps the spicy
+                  option it appears next to the name as a pro red pill —
+                  no "add spicy" wording, the label IS the confirmation. */}
+              {(addonIds.includes('spicy') || (addonCounts['spicy'] ?? 0) > 0) && !item.badges.includes('spicy') && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-600/10 text-red-600 border border-red-600/25 dark:bg-red-500/10 dark:text-red-400 dark:border-red-400/30">
+                  <Flame size={12} />
+                  {isAr ? 'حار' : 'Spicy'}
+                </span>
+              )}
               {!item.available && (
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-neutral-600 text-white">
                   {isAr ? 'نفذت الكمية' : 'Sold out'}

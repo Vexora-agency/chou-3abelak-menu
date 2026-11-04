@@ -190,31 +190,30 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         />
       </div>
 
-      {/* Optional order-status email: collapsed by default, opens on tap. */}
-      <div className={`rounded-xl border ${darkMode ? 'border-neutral-700' : 'border-neutral-300'}`}>
+      {/* Order-status email: RECOMMENDED (still optional). High-visibility
+          yellow card with black text in both themes so nobody misses it. */}
+      <div className="rounded-xl border border-[var(--primary)] bg-[var(--primary)] text-[#0A0A0A]">
         <button
           type="button"
           onClick={() => setEmailOpen((v) => !v)}
           aria-expanded={emailOpen}
-          className="w-full flex items-center justify-between gap-3 text-start min-h-[44px] px-3.5 py-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+          className="w-full flex items-center justify-between gap-3 text-start min-h-[44px] px-3.5 py-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] text-[#0A0A0A]"
         >
           <span className="min-w-0">
-            <span className={`block text-xs font-bold ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
-              {isAr ? 'هل تود تتبع طلبك عبر البريد؟' : 'Want order updates by email?'}
+            <span className="block text-xs font-black">
+              {isAr ? 'يُنصح بإضافة البريد الإلكتروني' : 'Email recommended'}
             </span>
-            <span className={`block text-[11px] mt-0.5 ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-              {isAr ? 'أدخل بريدك لنرسل لك حالة طلبك لحظة بلحظة.' : 'Enter your email and we’ll send live updates for your order.'}
+            <span className="block text-[11px] mt-0.5 font-bold text-black/70">
+              {isAr ? 'لتوصلك تحديثات طلبك لحظة بلحظة.' : 'To receive instant updates about your order.'}
             </span>
           </span>
-          <span aria-hidden="true" className={`shrink-0 text-lg leading-none transition-transform duration-200 ${emailOpen ? 'rotate-180' : ''} ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-            ▾
+          <span aria-hidden="true" className="shrink-0 text-lg leading-none transition-transform duration-200 text-[#0A0A0A]">
+            <span className={`inline-block transition-transform duration-200 ${emailOpen ? 'rotate-180' : ''}`}>▾</span>
           </span>
         </button>
         {emailOpen && (
           <div className="px-3.5 pb-3.5 anim-fade-in">
-            <label className={`block text-xs font-bold mb-1 ${
-              darkMode ? 'text-neutral-200' : 'text-neutral-800'
-            }`}>
+            <label className="block text-xs font-bold mb-1 text-[#0A0A0A]">
               {isAr ? 'البريد الإلكتروني (اختياري)' : 'Email (optional)'}
             </label>
             <input
@@ -227,11 +226,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               maxLength={254}
               autoComplete="email"
               enterKeyHint="done"
-              className={`w-full h-11 px-3.5 rounded-xl border text-base text-start focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
-                darkMode
-                  ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-400'
-                  : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-500 shadow-xs'
-              }`}
+              className="w-full h-11 px-3.5 rounded-xl border border-black/20 bg-white text-[#0A0A0A] placeholder-neutral-500 text-base text-start shadow-xs focus:outline-none focus:ring-2 focus:ring-[#0A0A0A] transition-colors"
             />
           </div>
         )}

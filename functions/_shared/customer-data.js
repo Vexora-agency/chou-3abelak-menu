@@ -25,6 +25,20 @@ export function maskPhone(phone) {
   return `${d.slice(0, 2)}${'*'.repeat(Math.max(0, d.length - 4))}${d.slice(-2)}`;
 }
 
+export function maskEmail(email) {
+  if (typeof email !== 'string' || !email || !email.includes('@')) return '****';
+  const at = email.lastIndexOf('@');
+  const local = email.slice(0, at);
+  const domain = email.slice(at + 1);
+  if (!local || !domain) return '****';
+  const first = [...local][0] || '*';
+  const parts = domain.split('.');
+  const head = parts[0] || '';
+  const headFirst = [...head][0] || '*';
+  const tld = parts.length > 1 ? `.${parts[parts.length - 1]}` : '';
+  return `${first}***@${headFirst}***${tld}`;
+}
+
 export function maskRow(r) {
   return {
     id: r.id,
@@ -34,6 +48,7 @@ export function maskRow(r) {
     type: r.type,
     name: maskName(r.customer_name),
     phone: maskPhone(r.customer_phone),
+    email: maskEmail(r.customer_email),
     total: r.total,
     anonymized: r.pii_purged_at !== null && r.pii_purged_at !== undefined,
   };
@@ -41,7 +56,7 @@ export function maskRow(r) {
 
 export async function findMatches(db, q) {
   const res = await db
-    .prepare('SELECT id, number, created_at, status, type, customer_name, customer_phone, total, pii_purged_at FROM orders WHERE phone_norm LIKE ?1 ORDER BY created_at DESC LIMIT 50')
+    .prepare('SELECT id, number, created_at, status, type, customer_name, customer_phone, customer_email, total, pii_purged_at FROM orders WHERE phone_norm LIKE ?1 ORDER BY created_at DESC LIMIT 50')
     .bind(`%${q}%`)
     .all();
   return (res && res.results) || [];

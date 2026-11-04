@@ -62,10 +62,10 @@ export async function onRequest(context) {
       await anonymizeByPhoneNorm(env.ORDERS_DB, nowIso, q);
     } else {
       const list = await exportByPhoneNorm(env.ORDERS_DB, q);
-      const lines = ['order_id,order_number,created_at,updated_at,status,type,customer_name,customer_phone,phone_norm,customer_address,customer_table,notes,location_lat,location_lng,items_json,subtotal,delivery_fee,total,lang,pii_purged_at'];
+      const lines = ['order_id,order_number,created_at,updated_at,status,type,customer_name,customer_phone,phone_norm,customer_email,customer_address,customer_table,notes,location_lat,location_lng,items_json,subtotal,delivery_fee,total,lang,pii_purged_at'];
       for (const r of list) {
         lines.push(
-          [r.id, r.number, r.created_at, r.updated_at, r.status, r.type, r.customer_name, r.customer_phone, r.phone_norm, r.customer_address, r.customer_table, r.notes, r.location_lat, r.location_lng, r.items_json, r.subtotal, r.delivery_fee, r.total, r.lang, r.pii_purged_at]
+          [r.id, r.number, r.created_at, r.updated_at, r.status, r.type, r.customer_name, r.customer_phone, r.phone_norm, r.customer_email, r.customer_address, r.customer_table, r.notes, r.location_lat, r.location_lng, r.items_json, r.subtotal, r.delivery_fee, r.total, r.lang, r.pii_purged_at]
             .map(escapeCSV)
             .join(',')
         );

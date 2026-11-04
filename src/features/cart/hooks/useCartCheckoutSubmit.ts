@@ -252,13 +252,27 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       return;
     }
 
+    // Optional order-status email: trimmed + lowercased, sent/stored only
+    // when it matches the ReportsPanel pattern; empty or invalid is dropped
+    // silently (never blocks the order).
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    const emailRaw = typeof customer.email === 'string' ? customer.email.trim().toLowerCase() : '';
+    const validEmail = emailRaw && EMAIL_RE.test(emailRaw) ? emailRaw : '';
+    const customerToSave = validEmail
+      ? { ...customer, email: validEmail }
+      : (() => {
+          const { email: _omit, ...rest } = customer as CustomerDetails & { email?: string };
+          void _omit;
+          return rest;
+        })();
+
     // Save remember details (checked = persist, unchecked = erase).
     // The pin + address travel as ONE atomic pair: storage is synced here
     // (not at pick time) so a pick without a submit, a sheet dismiss, or a
     // drawer close can never strand a new pin against an old address in
     // localStorage. Coarse fixes (>250m) are never persisted — they ride as
     // an address-query fallback, never as a fake "exact" pin.
-    saveRememberedDetails(customer);
+    saveRememberedDetails(customerToSave);
     const sendableLocation = location && location.accuracy <= PIN_ACCURACY_OK_M ? location : null;
     if (!customer.remember) {
       try {
@@ -293,6 +307,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
             name: customer.name.trim(),
             phone: customer.phone.trim(),
             address: customer.address.trim(),
+            ...(validEmail ? { email: validEmail } : {}),
           },
           notes: customer.notes.trim(),
           items: lines.map((l) => ({

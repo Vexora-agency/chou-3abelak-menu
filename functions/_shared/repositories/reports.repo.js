@@ -105,7 +105,7 @@ export async function getOldestOrderMonth(db) {
 export async function purgeOldPII(db, nowIso, cutoff) {
   const r = await db
     .prepare(
-      'UPDATE orders SET customer_name = NULL, customer_phone = NULL, phone_norm = NULL, customer_address = NULL, notes = NULL, location_lat = NULL, location_lng = NULL, pii_purged_at = ?1 WHERE created_at < ?2 AND pii_purged_at IS NULL'
+      'UPDATE orders SET customer_name = NULL, customer_phone = NULL, phone_norm = NULL, customer_email = NULL, customer_address = NULL, notes = NULL, location_lat = NULL, location_lng = NULL, pii_purged_at = ?1 WHERE created_at < ?2 AND pii_purged_at IS NULL'
     )
     .bind(nowIso, cutoff)
     .run();

@@ -217,6 +217,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </a>
               </div>
             )}
+            {customer.email && customer.email.trim() && (
+              <p className={`text-xs max-w-xs mx-auto leading-relaxed ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                {isAr ? 'سنرسل تحديثات طلبك إلى بريدك.' : 'We’ll send your order updates to your email.'}
+              </p>
+            )}
           </div>
         ) : lines.length === 0 ? (
           <div className="py-12 text-center">

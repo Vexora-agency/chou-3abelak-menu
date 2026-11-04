@@ -258,6 +258,8 @@ export function normalizeMenu<T>(menu: T): T {
   const annTextRaw = (annRaw.text && typeof annRaw.text === 'object' ? annRaw.text : {}) as Record<string, unknown>;
   const privRaw = (settings.privacy && typeof settings.privacy === 'object' ? settings.privacy : {}) as Record<string, unknown>;
   const privExtraRaw = (privRaw.extra && typeof privRaw.extra === 'object' ? privRaw.extra : {}) as Record<string, unknown>;
+  const notifRaw = (settings.notifications && typeof settings.notifications === 'object' ? settings.notifications : {}) as Record<string, unknown>;
+  const notifEventsRaw = (notifRaw.events && typeof notifRaw.events === 'object' ? notifRaw.events : {}) as Record<string, unknown>;
   const ordNoteRaw = (ordRaw.note && typeof ordRaw.note === 'object' ? ordRaw.note : {}) as Record<string, unknown>;
   const ordPausedMsgRaw = (ordRaw.pausedMessage && typeof ordRaw.pausedMessage === 'object' ? ordRaw.pausedMessage : {}) as Record<string, unknown>;
   const validTypes = ['delivery', 'pickup', 'dinein'];
@@ -307,6 +309,16 @@ export function normalizeMenu<T>(menu: T): T {
       defaultDeliveryMinutes: etaMinutesOrDefault(ordRaw.defaultDeliveryMinutes, 20),
       receiveDelayDeliveryMin: receiveDelayOrDefault(ordRaw.receiveDelayDeliveryMin, 30),
       receiveDelayPickupMin: receiveDelayOrDefault(ordRaw.receiveDelayPickupMin, 15),
+    },
+    notifications: {
+      senderName: typeof notifRaw.senderName === 'string' ? (notifRaw.senderName as string).slice(0, 80) : '',
+      replyTo: typeof notifRaw.replyTo === 'string' ? (notifRaw.replyTo as string).slice(0, 254) : '',
+      events: {
+        placed: notifEventsRaw.placed !== false,
+        confirmed: notifEventsRaw.confirmed !== false,
+        completed: notifEventsRaw.completed !== false,
+        cancelled: notifEventsRaw.cancelled !== false,
+      },
     },
     announcement: {
       enabled: annRaw.enabled === true,

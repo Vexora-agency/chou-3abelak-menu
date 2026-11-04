@@ -127,6 +127,16 @@ export async function onRequest(context) {
             adminUrl: origin ? `${origin}/admin/dashboard` : '',
           });
         } catch {}
+        // Customer email (confirmed/completed/cancelled): best-effort only.
+        // 'ready' counts as 'confirmed' for the customer (no ready template).
+        try {
+          const map = { confirmed: 'confirmed', ready: 'confirmed', completed: 'completed', cancelled: 'cancelled' };
+          const ev = map[status];
+          if (ev && order && order.customer && typeof order.customer.email === 'string' && order.customer.email) {
+            const { notifyCustomerOrderEvent } = await import('../../../_shared/customer-email.js');
+            await notifyCustomerOrderEvent(db, env, { order, event: ev, origin });
+          }
+        } catch {}
       })();
       if (context.waitUntil) {
         try {

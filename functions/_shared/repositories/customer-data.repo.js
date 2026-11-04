@@ -17,7 +17,7 @@ export async function deleteByPhoneNorm(db, phoneDigits) {
 export async function anonymizeByPhoneNorm(db, nowIso, phoneDigits) {
   await db
     .prepare(
-      'UPDATE orders SET customer_name = NULL, customer_phone = NULL, phone_norm = NULL, customer_address = NULL, customer_table = NULL, notes = NULL, location_lat = NULL, location_lng = NULL, pii_purged_at = ?1 WHERE phone_norm LIKE ?2'
+      'UPDATE orders SET customer_name = NULL, customer_phone = NULL, phone_norm = NULL, customer_email = NULL, customer_address = NULL, customer_table = NULL, notes = NULL, location_lat = NULL, location_lng = NULL, pii_purged_at = ?1 WHERE phone_norm LIKE ?2'
     )
     .bind(nowIso, likePhoneNorm(phoneDigits))
     .run();
@@ -26,7 +26,7 @@ export async function anonymizeByPhoneNorm(db, nowIso, phoneDigits) {
 export async function exportByPhoneNorm(db, phoneDigits) {
   const full = await db
     .prepare(
-      'SELECT id, number, created_at, updated_at, status, type, customer_name, customer_phone, phone_norm, customer_address, customer_table, notes, location_lat, location_lng, items_json, subtotal, delivery_fee, total, lang, pii_purged_at FROM orders WHERE phone_norm LIKE ?1 ORDER BY created_at DESC LIMIT 50'
+      'SELECT id, number, created_at, updated_at, status, type, customer_name, customer_phone, phone_norm, customer_email, customer_address, customer_table, notes, location_lat, location_lng, items_json, subtotal, delivery_fee, total, lang, pii_purged_at FROM orders WHERE phone_norm LIKE ?1 ORDER BY created_at DESC LIMIT 50'
     )
     .bind(likePhoneNorm(phoneDigits))
     .all();

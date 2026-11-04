@@ -186,6 +186,14 @@ export interface MenuSettings {  name: { en: string; ar: string };
     /** Receive-delay window for pickup orders (smart ETA). */
     receiveDelayPickupMin: number;
   };
+  /** Order status emails to the customer (frontend stores the prefs;
+   *  the server decides the actual send). Missing in old docs → defaults
+   *  (empty sender/reply-to, all events on). */
+  notifications: {
+    senderName: string;
+    replyTo: string;
+    events: { placed: boolean; confirmed: boolean; completed: boolean; cancelled: boolean };
+  };
   announcement: {
     enabled: boolean;
     text: { en: string; ar: string };
@@ -269,6 +277,8 @@ export interface CustomerDetails {
   address: string;
   tableNumber: string;
   notes: string;
+  /** Optional email for order status updates. Absent/empty = no emails. */
+  email?: string;
   orderType: OrderType;
   remember: boolean;
   /** Opt-in: WhatsApp order confirmations (used only if the restaurant enabled the Cloud API sender). */

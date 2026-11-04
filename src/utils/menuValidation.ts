@@ -25,6 +25,9 @@ type AnnouncementInput = Partial<MenuData['settings']['announcement']> & {
 type PrivacyInput = Partial<MenuData['settings']['privacy']> & {
   extra?: Partial<{ en: string; ar: string }>;
 };
+type NotificationsInput = Partial<MenuData['settings']['notifications']> & {
+  events?: Partial<MenuData['settings']['notifications']['events']>;
+};
 
 /** Fill optional settings blocks missing from old/seed docs so editors never
  *  read `undefined`. Mirrors the server validator's defaults (validate.js).
@@ -37,6 +40,8 @@ export function ensureSettingsBlocks(menu: MenuData): MenuData {
   const a = s.announcement || {};
   const p = s.privacy || {};
   const o = (s as unknown as { ordering?: Record<string, unknown> }).ordering || {};
+  const n = ((s as unknown as { notifications?: unknown }).notifications || {}) as NotificationsInput;
+  const ne = (n.events && typeof n.events === 'object' ? n.events : {}) as Partial<MenuData['settings']['notifications']['events']>;
   return {
     ...menu,
     settings: {
@@ -107,6 +112,16 @@ export function ensureSettingsBlocks(menu: MenuData): MenuData {
         defaultDeliveryMinutes: etaMinutesOrDefault((o as { defaultDeliveryMinutes?: unknown }).defaultDeliveryMinutes, 20),
         receiveDelayDeliveryMin: receiveDelayOrDefault((o as { receiveDelayDeliveryMin?: unknown }).receiveDelayDeliveryMin, 30),
         receiveDelayPickupMin: receiveDelayOrDefault((o as { receiveDelayPickupMin?: unknown }).receiveDelayPickupMin, 15),
+      },
+      notifications: {
+        senderName: typeof n.senderName === 'string' ? n.senderName.slice(0, 80) : '',
+        replyTo: typeof n.replyTo === 'string' ? n.replyTo.slice(0, 254) : '',
+        events: {
+          placed: ne.placed !== false,
+          confirmed: ne.confirmed !== false,
+          completed: ne.completed !== false,
+          cancelled: ne.cancelled !== false,
+        },
       },
       announcement: {
         enabled: a.enabled === true,

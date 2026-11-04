@@ -2,7 +2,7 @@ import React from 'react';
 import { Flame, Plus, Trash2, X, Star } from 'lucide-react';
 import type { FeatureGroup, ItemAddon, MenuData, MenuItem } from '@/src/types/menu';
 import { featureName, featuresByGroup } from '@/src/utils/pricing';
-import { isSpicyAddon } from '@/src/utils/menuHelpers';
+import { isSpicyAddon, isSpicyFeatureId } from '@/src/utils/menuHelpers';
 
 interface ItemAddonsEditorProps {
   item: MenuItem;
@@ -29,10 +29,10 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
   onCloseAddonPicker,
 }) => {
   const isAr = lang === 'ar';
-  // A badged-spicy item offering a "Make It Spicy" option is a contradiction:
-  // the badge says the heat is inherent, the option says it's optional.
+  // A badged-spicy item offering a "Make It Spicy" level is a contradiction:
+  // the badge says the heat is inherent, the slider says it's optional.
   const spicyOverlap = (item.badges || []).includes('spicy')
-    && (item.addons || []).some((a) => a.featureId === 'spicy');
+    && (item.addons || []).some((a) => isSpicyFeatureId(a.featureId));
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
@@ -48,7 +48,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
           </p>
           <button
             type="button"
-            onClick={() => onChange({ ...item, addons: (item.addons || []).filter((a) => a.featureId !== 'spicy') })}
+            onClick={() => onChange({ ...item, addons: (item.addons || []).filter((a) => !isSpicyFeatureId(a.featureId)) })}
             className="btn-tactile shrink-0 px-2.5 py-1 rounded-full bg-red-500 text-white text-[10px] font-bold hover:brightness-110"
           >
             {isAr ? 'أزل خيار الحار' : 'Remove spicy option'}

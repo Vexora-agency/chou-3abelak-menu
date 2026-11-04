@@ -1,7 +1,8 @@
 import React from 'react';
-import { ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, Lock, Plus, Trash2 } from 'lucide-react';
 import type { MenuData, MenuSettings } from '@/src/types/menu';
 import { featuresByGroup, normalizePricing } from '@/src/utils/pricing';
+import { isProtectedGroupId } from '@/src/utils/menuHelpers';
 import { FeatureRow } from './features/FeatureRow';
 import { FeatureSectionFooter } from './features/FeatureSectionFooter';
 
@@ -44,8 +45,9 @@ interface GroupChoiceModeProps {
   onUpdate: (updater: (prev: LibraryValues) => LibraryValues) => void;
 }
 
-/** Per-section choice mode + optional customer title. Sizes stay
- *  single-required by design, so their toggle renders disabled. */
+/** Per-section choice mode + optional customer title. The sizes section stays
+ *  single-required by design and the locked spicy section stays
+ *  single-choice (mild/medium/extra-hot) — both toggles render disabled. */
 const GroupChoiceMode: React.FC<GroupChoiceModeProps> = ({
   group,
   isAr,
@@ -54,6 +56,7 @@ const GroupChoiceMode: React.FC<GroupChoiceModeProps> = ({
   onTogglePrompt,
   onUpdate,
 }) => {
+  const isLockedSingle = isSizes || isProtectedGroupId(group.id);
   const sel = group.selection === 'single' ? 'single' : 'multi';
   const open = promptOpen || !!((group.prompt?.en || '').trim() || (group.prompt?.ar || '').trim());
   const setSel = (mode: 'single' | 'multi') =>
@@ -81,13 +84,13 @@ const GroupChoiceMode: React.FC<GroupChoiceModeProps> = ({
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="text-xs text-neutral-400">{isAr ? 'وضع الاختيار' : 'Choice mode'}</span>
         <div
-          className={`inline-flex rounded-full border border-neutral-700 overflow-hidden ${isSizes ? 'opacity-50' : ''}`}
+          className={`inline-flex rounded-full border border-neutral-700 overflow-hidden ${isLockedSingle ? 'opacity-50' : ''}`}
           role="group"
           aria-label={isAr ? 'وضع الاختيار' : 'Choice mode'}
         >
           <button
             type="button"
-            disabled={isSizes}
+            disabled={isLockedSingle}
             aria-pressed={sel === 'single'}
             onClick={() => setSel('single')}
             className={btn(sel === 'single')}
@@ -97,7 +100,7 @@ const GroupChoiceMode: React.FC<GroupChoiceModeProps> = ({
           </button>
           <button
             type="button"
-            disabled={isSizes}
+            disabled={isLockedSingle}
             aria-pressed={sel === 'multi'}
             onClick={() => setSel('multi')}
             className={`${btn(sel === 'multi')} border-s border-neutral-700`}
@@ -107,11 +110,15 @@ const GroupChoiceMode: React.FC<GroupChoiceModeProps> = ({
           </button>
         </div>
       </div>
-      {isSizes && (
+      {isLockedSingle && (
         <p className="text-[11px] text-neutral-500">
-          {isAr
-            ? 'الأحجام اختيار واحد إجباري بطبيعتها — لا وضع اختيار هنا.'
-            : 'Sizes stay single-required by design — no choice mode here.'}
+          {isProtectedGroupId(group.id)
+            ? (isAr
+              ? 'قسم الحار اختيار واحد بطبيعته (درجة واحدة للطلب) — لا وضع اختيار هنا.'
+              : 'The spicy section is one choice by design (one heat level per order) — no choice mode here.')
+            : (isAr
+              ? 'الأحجام اختيار واحد إجباري بطبيعتها — لا وضع اختيار هنا.'
+              : 'Sizes stay single-required by design — no choice mode here.')}
         </p>
       )}
       <button
@@ -202,6 +209,15 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
               <span className="shrink-0 text-[11px] text-neutral-500 tabular-nums">{features.length}</span>
             </span>
             {group.id ? (
+              isProtectedGroupId(group.id) ? (
+                <span
+                  className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[var(--primary)] text-[11px] font-bold"
+                  title={isAr ? 'قسم ثابت لا يمكن حذفه' : 'Locked section, cannot be deleted'}
+                >
+                  <Lock size={12} />
+                  {isAr ? 'ثابت' : 'Locked'}
+                </span>
+              ) : (
               <span
                 role="button"
                 tabIndex={0}
@@ -270,6 +286,7 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                 <Trash2 size={12} />
                 {isAr ? 'حذف القسم' : 'Delete section'}
               </span>
+              )
             ) : null}
           </button>
 

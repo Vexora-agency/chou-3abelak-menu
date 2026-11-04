@@ -154,6 +154,9 @@ function featureGroupId(menu: MenuData, featureId: string): string | null {
  */
 function groupSelection(menu: MenuData, groupId: string | null): 'single' | 'multi' {
   if (groupId === 'sizes') return 'multi';
+  // The locked spicy section is exactly one choice (mild/medium/extra-hot),
+  // even if an old document stored another mode.
+  if (groupId === 'spicy') return 'single';
   try {
     const st = menu && (menu.settings as unknown) && typeof (menu.settings as unknown) === 'object'
       ? (menu.settings as unknown as { featureGroups?: unknown })

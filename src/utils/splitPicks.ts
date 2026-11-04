@@ -48,6 +48,8 @@ export function groupIdOfFeature(menu: MenuData, featureId: string): string | nu
 /** Add-on selection rule for a group — mirrors the pricing engine. */
 export function addonGroupSelection(menu: MenuData, groupId: string | null): AddonSelection {
   if (!groupId || groupId === 'sizes') return 'multi';
+  // The locked spicy section is exactly one choice (mild/medium/extra-hot).
+  if (groupId === 'spicy') return 'single';
   const g = allGroups(menu).find((x) => x && x.id === groupId);
   return g && g.selection === 'single' ? 'single' : 'multi';
 }

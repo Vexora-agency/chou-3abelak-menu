@@ -104,9 +104,10 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
               <div className="flex flex-wrap gap-1.5 mt-2">
               {l.addonIds.map((id) => {
                   const addonPrice = (l.item.addons || []).find((a) => a && a.featureId === id)?.price ?? 0;
-                  // Spicy is a red pro pill (Flame + label), never "+ name".
+                  // Spicy is a red pro pill (Flame + level label, e.g. "حار وسط"),
+                  // never "+ name".
                   const spicy = isSpicyFeatureId(id);
-                  const spicyText = spicy ? spicyLabel(lang) : '';
+                  const spicyText = spicy ? spicyLabel(lang, id) : '';
                   // Split lines: partial picks (0 < count < qty) render as
                   // `name ×n`; full-count and legacy picks render exactly as
                   // today (non-spicy add-ons keep the `+ name` receipt shape).

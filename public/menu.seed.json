@@ -69,6 +69,18 @@
           "en": "Add-ons",
           "ar": "إضافات"
         }
+      },
+      {
+        "id": "spicy",
+        "name": {
+          "en": "Make it Spicy",
+          "ar": "خليه حار"
+        },
+        "selection": "single",
+        "prompt": {
+          "en": "Add heat to your order — pick your spice level",
+          "ar": "إضافة حار للطلب — اختر درجة الحار المناسبة"
+        }
       }
     ],
     "featureDefs": [
@@ -119,6 +131,30 @@
           "ar": "إضافة خضرة"
         },
         "groupId": "addons"
+      },
+      {
+        "id": "spicy-mild",
+        "name": {
+          "en": "Mild",
+          "ar": "خفيف"
+        },
+        "groupId": "spicy"
+      },
+      {
+        "id": "spicy-medium",
+        "name": {
+          "en": "Medium",
+          "ar": "متوسط"
+        },
+        "groupId": "spicy"
+      },
+      {
+        "id": "spicy-hot",
+        "name": {
+          "en": "Extra Hot",
+          "ar": "حار جداً"
+        },
+        "groupId": "spicy"
       }
     ],
     "ordering": {
@@ -268,6 +304,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -306,6 +354,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -344,6 +404,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -382,6 +454,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -420,6 +504,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -460,6 +556,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -500,6 +608,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -538,6 +658,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -576,6 +708,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -614,6 +758,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -652,6 +808,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -690,6 +858,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -728,6 +908,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -766,6 +958,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -804,6 +1008,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -843,6 +1059,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -881,6 +1109,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -919,6 +1159,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -957,6 +1209,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -995,6 +1259,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -1033,6 +1309,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -1151,6 +1439,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -1189,6 +1489,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -1227,6 +1539,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -1376,6 +1700,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -1406,6 +1742,18 @@
         {
           "featureId": "extra-veg",
           "price": 30000
+        },
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -1579,6 +1927,20 @@
           "featureId": "large",
           "price": 700000
         }
+      ],
+      "addons": [
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
+        }
       ]
     },
     {
@@ -1610,6 +1972,20 @@
         {
           "featureId": "large",
           "price": 800000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -1643,6 +2019,20 @@
           "featureId": "large",
           "price": 800000
         }
+      ],
+      "addons": [
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
+        }
       ]
     },
     {
@@ -1675,6 +2065,20 @@
           "featureId": "large",
           "price": 800000
         }
+      ],
+      "addons": [
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
+        }
       ]
     },
     {
@@ -1706,6 +2110,20 @@
         {
           "featureId": "large",
           "price": 800000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -1741,6 +2159,20 @@
           "featureId": "large",
           "price": 700000
         }
+      ],
+      "addons": [
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
+        }
       ]
     },
     {
@@ -1772,6 +2204,20 @@
         {
           "featureId": "large",
           "price": 800000
+        }
+      ],
+      "addons": [
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
         }
       ]
     },
@@ -1806,7 +2252,21 @@
           "price": 800000
         }
       ],
-      "addedAt": "2026-10-24T17:31:03Z"
+      "addedAt": "2026-10-24T17:31:03Z",
+      "addons": [
+        {
+          "featureId": "spicy-mild",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-medium",
+          "price": 0
+        },
+        {
+          "featureId": "spicy-hot",
+          "price": 0
+        }
+      ]
     },
     {
       "id": "fatayer-spinach",

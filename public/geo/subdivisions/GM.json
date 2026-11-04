@@ -1,0 +1,32 @@
+[
+ {
+  "code": "GM-B",
+  "en": "Banjul",
+  "ar": "بانجول"
+ },
+ {
+  "code": "GM-M",
+  "en": "Central River",
+  "ar": "نهر سنترال"
+ },
+ {
+  "code": "GM-L",
+  "en": "Lower River",
+  "ar": "النهر السفلي"
+ },
+ {
+  "code": "GM-N",
+  "en": "North Bank",
+  "ar": "الضفة الشمالية"
+ },
+ {
+  "code": "GM-U",
+  "en": "Upper River",
+  "ar": "النهر العلوي"
+ },
+ {
+  "code": "GM-W",
+  "en": "West Coast",
+  "ar": "الساحل الغربي"
+ }
+]

@@ -1,0 +1,52 @@
+[
+ {
+  "code": "SS-EC",
+  "en": "Central Equatoria",
+  "ar": "وسط الاستوائية"
+ },
+ {
+  "code": "SS-EE",
+  "en": "Eastern Equatoria",
+  "ar": "شرق الاستوائية"
+ },
+ {
+  "code": "SS-JG",
+  "en": "Jonglei State",
+  "ar": "ولاية جونقلي"
+ },
+ {
+  "code": "SS-LK",
+  "en": "Lakes",
+  "ar": "البحيرات"
+ },
+ {
+  "code": "SS-BN",
+  "en": "Northern Bahr el Ghazal",
+  "ar": "شمال بحر الغزال"
+ },
+ {
+  "code": "SS-UY",
+  "en": "Unity",
+  "ar": "الوحدة"
+ },
+ {
+  "code": "SS-NU",
+  "en": "Upper Nile",
+  "ar": "أعالي النيل"
+ },
+ {
+  "code": "SS-WR",
+  "en": "Warrap",
+  "ar": "واراب"
+ },
+ {
+  "code": "SS-BW",
+  "en": "Western Bahr el Ghazal",
+  "ar": "غرب بحر الغزال"
+ },
+ {
+  "code": "SS-EW",
+  "en": "Western Equatoria",
+  "ar": "غرب الاستوائية"
+ }
+]

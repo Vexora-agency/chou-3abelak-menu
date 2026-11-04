@@ -1,0 +1,237 @@
+[
+ {
+  "code": "JP-23",
+  "en": "Aichi",
+  "ar": "آيتشي"
+ },
+ {
+  "code": "JP-05",
+  "en": "Akita",
+  "ar": "أكيتا"
+ },
+ {
+  "code": "JP-02",
+  "en": "Aomori",
+  "ar": "أوموري"
+ },
+ {
+  "code": "JP-12",
+  "en": "Chiba",
+  "ar": "تشيبا"
+ },
+ {
+  "code": "JP-38",
+  "en": "Ehime",
+  "ar": "إهيمي"
+ },
+ {
+  "code": "JP-18",
+  "en": "Fukui",
+  "ar": "فوكوي"
+ },
+ {
+  "code": "JP-40",
+  "en": "Fukuoka",
+  "ar": "فوكوكا"
+ },
+ {
+  "code": "JP-07",
+  "en": "Fukushima",
+  "ar": "فوكوشيما"
+ },
+ {
+  "code": "JP-21",
+  "en": "Gifu",
+  "ar": "جيفو"
+ },
+ {
+  "code": "JP-10",
+  "en": "Gunma",
+  "ar": "غونما"
+ },
+ {
+  "code": "JP-34",
+  "en": "Hiroshima",
+  "ar": "هيروشيما"
+ },
+ {
+  "code": "JP-01",
+  "en": "Hokkaidō",
+  "ar": "هوكايدو"
+ },
+ {
+  "code": "JP-28",
+  "en": "Hyōgo",
+  "ar": "هيوغو"
+ },
+ {
+  "code": "JP-08",
+  "en": "Ibaraki",
+  "ar": "إيباراكي"
+ },
+ {
+  "code": "JP-17",
+  "en": "Ishikawa",
+  "ar": "إيشيكاوا"
+ },
+ {
+  "code": "JP-03",
+  "en": "Iwate",
+  "ar": "إيواتي"
+ },
+ {
+  "code": "JP-37",
+  "en": "Kagawa",
+  "ar": "كاغاوا"
+ },
+ {
+  "code": "JP-46",
+  "en": "Kagoshima",
+  "ar": "كاجوشيما"
+ },
+ {
+  "code": "JP-14",
+  "en": "Kanagawa",
+  "ar": "كاناغاوا"
+ },
+ {
+  "code": "JP-43",
+  "en": "Kumamoto",
+  "ar": "كوماموتو"
+ },
+ {
+  "code": "JP-26",
+  "en": "Kyōto",
+  "ar": "كيوتو"
+ },
+ {
+  "code": "JP-39",
+  "en": "Kōchi",
+  "ar": "كوتشي"
+ },
+ {
+  "code": "JP-24",
+  "en": "Mie",
+  "ar": "مي"
+ },
+ {
+  "code": "JP-04",
+  "en": "Miyagi",
+  "ar": "مياجي"
+ },
+ {
+  "code": "JP-45",
+  "en": "Miyazaki",
+  "ar": "ميازاكي"
+ },
+ {
+  "code": "JP-20",
+  "en": "Nagano",
+  "ar": "ناغانو"
+ },
+ {
+  "code": "JP-42",
+  "en": "Nagasaki",
+  "ar": "ناغازاكي"
+ },
+ {
+  "code": "JP-29",
+  "en": "Nara",
+  "ar": "نارا"
+ },
+ {
+  "code": "JP-15",
+  "en": "Niigata",
+  "ar": "نيغاتا"
+ },
+ {
+  "code": "JP-33",
+  "en": "Okayama",
+  "ar": "أوكاياما"
+ },
+ {
+  "code": "JP-47",
+  "en": "Okinawa",
+  "ar": "أوكيناوا"
+ },
+ {
+  "code": "JP-41",
+  "en": "Saga",
+  "ar": "ساغا"
+ },
+ {
+  "code": "JP-11",
+  "en": "Saitama",
+  "ar": "سايتاما"
+ },
+ {
+  "code": "JP-25",
+  "en": "Shiga",
+  "ar": "شيغا"
+ },
+ {
+  "code": "JP-32",
+  "en": "Shimane",
+  "ar": "شيمانه"
+ },
+ {
+  "code": "JP-22",
+  "en": "Shizuoka",
+  "ar": "شيزوكا"
+ },
+ {
+  "code": "JP-09",
+  "en": "Tochigi",
+  "ar": "توتشيغي"
+ },
+ {
+  "code": "JP-36",
+  "en": "Tokushima",
+  "ar": "توكوشيما"
+ },
+ {
+  "code": "JP-13",
+  "en": "Tokyo",
+  "ar": "طوكيو"
+ },
+ {
+  "code": "JP-31",
+  "en": "Tottori",
+  "ar": "توتوري"
+ },
+ {
+  "code": "JP-16",
+  "en": "Toyama",
+  "ar": "توياما"
+ },
+ {
+  "code": "JP-30",
+  "en": "Wakayama",
+  "ar": "واكاياما"
+ },
+ {
+  "code": "JP-06",
+  "en": "Yamagata",
+  "ar": "ياماغاتا"
+ },
+ {
+  "code": "JP-35",
+  "en": "Yamaguchi",
+  "ar": "ياماغوتشي"
+ },
+ {
+  "code": "JP-19",
+  "en": "Yamanashi",
+  "ar": "ياماناشي"
+ },
+ {
+  "code": "JP-44",
+  "en": "Ōita",
+  "ar": "أويتا"
+ },
+ {
+  "code": "JP-27",
+  "en": "Ōsaka",
+  "ar": "أوساكا"
+ }
+]

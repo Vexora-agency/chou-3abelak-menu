@@ -1,0 +1,227 @@
+[
+ {
+  "code": "ID-AC",
+  "en": "Aceh",
+  "ar": "آتشيه"
+ },
+ {
+  "code": "ID-BA",
+  "en": "Bali",
+  "ar": "بالي"
+ },
+ {
+  "code": "ID-BT",
+  "en": "Banten",
+  "ar": "بانتن"
+ },
+ {
+  "code": "ID-BE",
+  "en": "Bengkulu",
+  "ar": "بنجكولو"
+ },
+ {
+  "code": "ID-YO",
+  "en": "DI Yogyakarta",
+  "ar": "دي يوجياكارتا"
+ },
+ {
+  "code": "ID-JK",
+  "en": "DKI Jakarta",
+  "ar": "DKI جاكرتا"
+ },
+ {
+  "code": "ID-GO",
+  "en": "Gorontalo",
+  "ar": "جورونتالو"
+ },
+ {
+  "code": "ID-JA",
+  "en": "Jambi",
+  "ar": "جامبي"
+ },
+ {
+  "code": "ID-JW",
+  "en": "Jawa",
+  "ar": "جاوة"
+ },
+ {
+  "code": "ID-JB",
+  "en": "Jawa Barat",
+  "ar": "جاوا بارات"
+ },
+ {
+  "code": "ID-JT",
+  "en": "Jawa Tengah",
+  "ar": "جاوا تينغا"
+ },
+ {
+  "code": "ID-JI",
+  "en": "Jawa Timur",
+  "ar": "جاوة تيمور"
+ },
+ {
+  "code": "ID-KA",
+  "en": "Kalimantan",
+  "ar": "كليمنتان"
+ },
+ {
+  "code": "ID-KB",
+  "en": "Kalimantan Barat",
+  "ar": "كاليمانتان بارات"
+ },
+ {
+  "code": "ID-KS",
+  "en": "Kalimantan Selatan",
+  "ar": "كاليمانتان سيلاتان"
+ },
+ {
+  "code": "ID-KT",
+  "en": "Kalimantan Tengah",
+  "ar": "كاليمانتان تينغا"
+ },
+ {
+  "code": "ID-KI",
+  "en": "Kalimantan Timur",
+  "ar": "كاليمانتان تيمور"
+ },
+ {
+  "code": "ID-KU",
+  "en": "Kalimantan Utara",
+  "ar": "كاليمانتان أوتارا"
+ },
+ {
+  "code": "ID-BB",
+  "en": "Kepulauan Bangka Belitung",
+  "ar": "Kepulauan Bangka Belitung"
+ },
+ {
+  "code": "ID-KR",
+  "en": "Kepulauan Riau",
+  "ar": "كيبولاوان رياو"
+ },
+ {
+  "code": "ID-LA",
+  "en": "Lampung",
+  "ar": "لامبونج"
+ },
+ {
+  "code": "ID-ML",
+  "en": "Maluku",
+  "ar": "جزر الملوك"
+ },
+ {
+  "code": "ID-MA",
+  "en": "Maluku",
+  "ar": "مالوكو"
+ },
+ {
+  "code": "ID-MU",
+  "en": "Maluku Utara",
+  "ar": "مالوكو أوتارا"
+ },
+ {
+  "code": "ID-NU",
+  "en": "Nusa Tenggara",
+  "ar": "جزر سوندا الصغرى"
+ },
+ {
+  "code": "ID-NB",
+  "en": "Nusa Tenggara Barat",
+  "ar": "نوسا تينجارا بارات"
+ },
+ {
+  "code": "ID-NT",
+  "en": "Nusa Tenggara Timur",
+  "ar": "نوسا تينجارا تيمور"
+ },
+ {
+  "code": "ID-PA",
+  "en": "Papua",
+  "ar": "بابوا"
+ },
+ {
+  "code": "ID-PP",
+  "en": "Papua",
+  "ar": "غرب غينيا الجديدة"
+ },
+ {
+  "code": "ID-PB",
+  "en": "Papua Barat",
+  "ar": "بابوا بارات"
+ },
+ {
+  "code": "ID-PD",
+  "en": "Papua Barat Daya",
+  "ar": "بابوا بارات دايا"
+ },
+ {
+  "code": "ID-PE",
+  "en": "Papua Pegunungan",
+  "ar": "بابوا بيغونونجان"
+ },
+ {
+  "code": "ID-PS",
+  "en": "Papua Selatan",
+  "ar": "بابوا سيلاتان"
+ },
+ {
+  "code": "ID-PT",
+  "en": "Papua Tengah",
+  "ar": "بابوا تينغا"
+ },
+ {
+  "code": "ID-RI",
+  "en": "Riau",
+  "ar": "رياو"
+ },
+ {
+  "code": "ID-SL",
+  "en": "Sulawesi",
+  "ar": "سولاوسي"
+ },
+ {
+  "code": "ID-SR",
+  "en": "Sulawesi Barat",
+  "ar": "سولاويزي بارات"
+ },
+ {
+  "code": "ID-SN",
+  "en": "Sulawesi Selatan",
+  "ar": "سولاويزي سيلاتان"
+ },
+ {
+  "code": "ID-ST",
+  "en": "Sulawesi Tengah",
+  "ar": "سولاويزي تينغا"
+ },
+ {
+  "code": "ID-SG",
+  "en": "Sulawesi Tenggara",
+  "ar": "سولاويزي تينجارا"
+ },
+ {
+  "code": "ID-SA",
+  "en": "Sulawesi Utara",
+  "ar": "سولاويزي أوتارا"
+ },
+ {
+  "code": "ID-SM",
+  "en": "Sumatera",
+  "ar": "سومطرة"
+ },
+ {
+  "code": "ID-SB",
+  "en": "Sumatera Barat",
+  "ar": "سومطرة بارات"
+ },
+ {
+  "code": "ID-SS",
+  "en": "Sumatera Selatan",
+  "ar": "سومطرة سيلاتان"
+ },
+ {
+  "code": "ID-SU",
+  "en": "Sumatera Utara",
+  "ar": "سومطرة أوتارا"
+ }
+]

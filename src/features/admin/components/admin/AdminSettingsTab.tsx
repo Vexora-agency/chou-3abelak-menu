@@ -4,6 +4,7 @@ import type { AdminFetch } from '@/src/lib/api-client';
 import { featuresConfig } from '@/src/config/features.config';
 import { socialOrderOrDefault } from '@/src/utils/settingsDefaults';
 import { AnnouncementSection } from '../AnnouncementSection';
+import { DeliveryZonesSection } from '../DeliveryZonesSection';
 import { WorkingHoursSection } from '../WorkingHoursSection';
 import { OrderingSection } from '../OrderingSection';
 import { IdentitySection } from '../IdentitySection';
@@ -170,6 +171,24 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           onUpdateMenu((m) => ({
             ...m,
             settings: { ...m.settings, ordering: updater(m.settings.ordering) },
+          }))
+        }
+      />
+      )}
+
+      {featuresConfig.enableOrdering && (
+      <DeliveryZonesSection
+        collapsed={!!collapsedGroups['delivery-zones']}
+        onToggleCollapse={() => onToggleCollapse('delivery-zones')}
+        zones={menu.settings.ordering.deliveryZones}
+        lang={lang}
+        onUpdate={(updater) =>
+          onUpdateMenu((m) => ({
+            ...m,
+            settings: {
+              ...m.settings,
+              ordering: { ...m.settings.ordering, deliveryZones: updater(m.settings.ordering.deliveryZones) },
+            },
           }))
         }
       />

@@ -1,0 +1,67 @@
+[
+ {
+  "code": "SA-11",
+  "en": "Al Bahah",
+  "ar": "الباحة"
+ },
+ {
+  "code": "SA-12",
+  "en": "Al Jawf",
+  "ar": "الجوف"
+ },
+ {
+  "code": "SA-03",
+  "en": "Al Madinah",
+  "ar": "المدينة المنورة"
+ },
+ {
+  "code": "SA-05",
+  "en": "Al-Qassim",
+  "ar": "القصيم"
+ },
+ {
+  "code": "SA-14",
+  "en": "Asir",
+  "ar": "عسير"
+ },
+ {
+  "code": "SA-04",
+  "en": "Eastern Province",
+  "ar": "المنطقة الشرقية"
+ },
+ {
+  "code": "SA-06",
+  "en": "Ha'il",
+  "ar": "منطقة حائل"
+ },
+ {
+  "code": "SA-09",
+  "en": "Jizan",
+  "ar": "جيزان"
+ },
+ {
+  "code": "SA-02",
+  "en": "Makkah",
+  "ar": "مكة المكرمة"
+ },
+ {
+  "code": "SA-10",
+  "en": "Najran",
+  "ar": "نجران"
+ },
+ {
+  "code": "SA-08",
+  "en": "Northern Borders",
+  "ar": "الحدود الشمالية"
+ },
+ {
+  "code": "SA-01",
+  "en": "Riyadh",
+  "ar": "الرياض"
+ },
+ {
+  "code": "SA-07",
+  "en": "Tabuk",
+  "ar": "تبوك"
+ }
+]

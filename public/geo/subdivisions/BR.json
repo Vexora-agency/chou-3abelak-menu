@@ -1,0 +1,137 @@
+[
+ {
+  "code": "BR-AC",
+  "en": "Acre",
+  "ar": "أكري"
+ },
+ {
+  "code": "BR-AL",
+  "en": "Alagoas",
+  "ar": "ألاغواس"
+ },
+ {
+  "code": "BR-AP",
+  "en": "Amapá",
+  "ar": "أمابا"
+ },
+ {
+  "code": "BR-AM",
+  "en": "Amazonas",
+  "ar": "أمازوناس"
+ },
+ {
+  "code": "BR-BA",
+  "en": "Bahia",
+  "ar": "باهيا"
+ },
+ {
+  "code": "BR-CE",
+  "en": "Ceará",
+  "ar": "سيارا"
+ },
+ {
+  "code": "BR-DF",
+  "en": "Distrito Federal",
+  "ar": "مقاطعة فيدرالية"
+ },
+ {
+  "code": "BR-ES",
+  "en": "Espírito Santo",
+  "ar": "إسبيريتو سانتو"
+ },
+ {
+  "code": "BR-GO",
+  "en": "Goiás",
+  "ar": "غوياس"
+ },
+ {
+  "code": "BR-MA",
+  "en": "Maranhão",
+  "ar": "مارانهاو"
+ },
+ {
+  "code": "BR-MT",
+  "en": "Mato Grosso",
+  "ar": "ماتو غروسو"
+ },
+ {
+  "code": "BR-MS",
+  "en": "Mato Grosso do Sul",
+  "ar": "ماتو غروسو دو سول"
+ },
+ {
+  "code": "BR-MG",
+  "en": "Minas Gerais",
+  "ar": "ميناس جيرايس"
+ },
+ {
+  "code": "BR-PR",
+  "en": "Paraná",
+  "ar": "بارانا"
+ },
+ {
+  "code": "BR-PB",
+  "en": "Paraíba",
+  "ar": "بارايبا"
+ },
+ {
+  "code": "BR-PA",
+  "en": "Pará",
+  "ar": "بارا"
+ },
+ {
+  "code": "BR-PE",
+  "en": "Pernambuco",
+  "ar": "بيرنامبوكو"
+ },
+ {
+  "code": "BR-PI",
+  "en": "Piauí",
+  "ar": "بياوي"
+ },
+ {
+  "code": "BR-RN",
+  "en": "Rio Grande do Norte",
+  "ar": "ريو غراندي دو نورتي"
+ },
+ {
+  "code": "BR-RS",
+  "en": "Rio Grande do Sul",
+  "ar": "ريو غراندي دو سول"
+ },
+ {
+  "code": "BR-RJ",
+  "en": "Rio de Janeiro",
+  "ar": "ريو دي جانيرو"
+ },
+ {
+  "code": "BR-RO",
+  "en": "Rondônia",
+  "ar": "روندونيا"
+ },
+ {
+  "code": "BR-RR",
+  "en": "Roraima",
+  "ar": "رورايما"
+ },
+ {
+  "code": "BR-SC",
+  "en": "Santa Catarina",
+  "ar": "سانتا كاتارينا"
+ },
+ {
+  "code": "BR-SE",
+  "en": "Sergipe",
+  "ar": "سيرجيبي"
+ },
+ {
+  "code": "BR-SP",
+  "en": "São Paulo",
+  "ar": "ساو باولو"
+ },
+ {
+  "code": "BR-TO",
+  "en": "Tocantins",
+  "ar": "توكانتينز"
+ }
+]

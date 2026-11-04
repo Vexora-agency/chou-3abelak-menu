@@ -1,0 +1,32 @@
+[
+ {
+  "code": "VC-01",
+  "en": "Charlotte",
+  "ar": "شارلوت"
+ },
+ {
+  "code": "VC-06",
+  "en": "Grenadines",
+  "ar": "جزر غرينادين"
+ },
+ {
+  "code": "VC-02",
+  "en": "Saint Andrew",
+  "ar": "القديس أندرو"
+ },
+ {
+  "code": "VC-03",
+  "en": "Saint David",
+  "ar": "القديس داود"
+ },
+ {
+  "code": "VC-04",
+  "en": "Saint George",
+  "ar": "القديس جورج"
+ },
+ {
+  "code": "VC-05",
+  "en": "Saint Patrick",
+  "ar": "القديس باتريك"
+ }
+]

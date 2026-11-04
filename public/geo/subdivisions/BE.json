@@ -1,0 +1,67 @@
+[
+ {
+  "code": "BE-VAN",
+  "en": "Antwerp",
+  "ar": "أنتويرب"
+ },
+ {
+  "code": "BE-BRU",
+  "en": "Brussels-Capital",
+  "ar": "بروكسل العاصمة"
+ },
+ {
+  "code": "BE-VOV",
+  "en": "East Flanders",
+  "ar": "فلاندرز الشرقية"
+ },
+ {
+  "code": "BE-VLG",
+  "en": "Flanders",
+  "ar": "فلاندرز"
+ },
+ {
+  "code": "BE-VBR",
+  "en": "Flemish Brabant",
+  "ar": "برابانت الفلمنكية"
+ },
+ {
+  "code": "BE-WHT",
+  "en": "Hainaut",
+  "ar": "هينو"
+ },
+ {
+  "code": "BE-VLI",
+  "en": "Limburg",
+  "ar": "ليمبورغ"
+ },
+ {
+  "code": "BE-WLG",
+  "en": "Liège",
+  "ar": "لييج"
+ },
+ {
+  "code": "BE-WLX",
+  "en": "Luxembourg",
+  "ar": "لوكسمبورغ"
+ },
+ {
+  "code": "BE-WNA",
+  "en": "Namur",
+  "ar": "نامور"
+ },
+ {
+  "code": "BE-WAL",
+  "en": "Wallonia",
+  "ar": "والونيا"
+ },
+ {
+  "code": "BE-WBR",
+  "en": "Walloon Brabant",
+  "ar": "برابانت والون"
+ },
+ {
+  "code": "BE-VWV",
+  "en": "West Flanders",
+  "ar": "فلاندرز الغربية"
+ }
+]

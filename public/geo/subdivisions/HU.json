@@ -1,0 +1,217 @@
+[
+ {
+  "code": "HU-BA",
+  "en": "Baranya",
+  "ar": "بارانيا"
+ },
+ {
+  "code": "HU-BZ",
+  "en": "Borsod-Abaúj-Zemplén",
+  "ar": "بورسود-أباوج-زيمبلين"
+ },
+ {
+  "code": "HU-BU",
+  "en": "Budapest",
+  "ar": "بودابست"
+ },
+ {
+  "code": "HU-BK",
+  "en": "Bács-Kiskun",
+  "ar": "باكس-كيسكون"
+ },
+ {
+  "code": "HU-BE",
+  "en": "Békés",
+  "ar": "بيكيس"
+ },
+ {
+  "code": "HU-BC",
+  "en": "Békéscsaba",
+  "ar": "بيكيسكاسابا"
+ },
+ {
+  "code": "HU-CS",
+  "en": "Csongrád County",
+  "ar": "مقاطعة تشونغراد"
+ },
+ {
+  "code": "HU-DE",
+  "en": "Debrecen",
+  "ar": "ديبريسين"
+ },
+ {
+  "code": "HU-DU",
+  "en": "Dunaújváros",
+  "ar": "دوناوجفاروس"
+ },
+ {
+  "code": "HU-EG",
+  "en": "Eger",
+  "ar": "إيجر"
+ },
+ {
+  "code": "HU-FE",
+  "en": "Fejér County",
+  "ar": "مقاطعة فيير"
+ },
+ {
+  "code": "HU-GY",
+  "en": "Győr",
+  "ar": "جيور"
+ },
+ {
+  "code": "HU-GS",
+  "en": "Győr-Moson-Sopron County",
+  "ar": "مقاطعة جيور-موسون-سوبرون"
+ },
+ {
+  "code": "HU-HB",
+  "en": "Hajdú-Bihar County",
+  "ar": "مقاطعة هاجدو-بيهار"
+ },
+ {
+  "code": "HU-HE",
+  "en": "Heves County",
+  "ar": "مقاطعة هيفز"
+ },
+ {
+  "code": "HU-HV",
+  "en": "Hódmezővásárhely",
+  "ar": "هودميزوفاسارهيلي"
+ },
+ {
+  "code": "HU-JN",
+  "en": "Jász-Nagykun-Szolnok County",
+  "ar": "مقاطعة جاس-ناغيكون-سولنوك"
+ },
+ {
+  "code": "HU-KV",
+  "en": "Kaposvár",
+  "ar": "كابوسفار"
+ },
+ {
+  "code": "HU-KM",
+  "en": "Kecskemét",
+  "ar": "كيسكيميت"
+ },
+ {
+  "code": "HU-KE",
+  "en": "Komárom-Esztergom",
+  "ar": "كوماروم-إزترغوم"
+ },
+ {
+  "code": "HU-MI",
+  "en": "Miskolc",
+  "ar": "ميسكولك"
+ },
+ {
+  "code": "HU-NK",
+  "en": "Nagykanizsa",
+  "ar": "ناجيكانيزسا"
+ },
+ {
+  "code": "HU-NY",
+  "en": "Nyíregyháza",
+  "ar": "نيريغيهازا"
+ },
+ {
+  "code": "HU-NO",
+  "en": "Nógrád County",
+  "ar": "مقاطعة نوغراد"
+ },
+ {
+  "code": "HU-PE",
+  "en": "Pest County",
+  "ar": "مقاطعة بيست"
+ },
+ {
+  "code": "HU-PS",
+  "en": "Pécs",
+  "ar": "بيكس"
+ },
+ {
+  "code": "HU-ST",
+  "en": "Salgótarján",
+  "ar": "سالغوتارجان"
+ },
+ {
+  "code": "HU-SO",
+  "en": "Somogy County",
+  "ar": "مقاطعة سوموجي"
+ },
+ {
+  "code": "HU-SN",
+  "en": "Sopron",
+  "ar": "سوبرون"
+ },
+ {
+  "code": "HU-SZ",
+  "en": "Szabolcs-Szatmár-Bereg County",
+  "ar": "مقاطعة زابولكس-زاتمار-بيرج"
+ },
+ {
+  "code": "HU-SD",
+  "en": "Szeged",
+  "ar": "سيجد"
+ },
+ {
+  "code": "HU-SS",
+  "en": "Szekszárd",
+  "ar": "سيكسزارد"
+ },
+ {
+  "code": "HU-SK",
+  "en": "Szolnok",
+  "ar": "زولنوك"
+ },
+ {
+  "code": "HU-SH",
+  "en": "Szombathely",
+  "ar": "زومباثيلي"
+ },
+ {
+  "code": "HU-SF",
+  "en": "Székesfehérvár",
+  "ar": "سيكيسفيرفار"
+ },
+ {
+  "code": "HU-TB",
+  "en": "Tatabánya",
+  "ar": "تاتابانيا"
+ },
+ {
+  "code": "HU-TO",
+  "en": "Tolna County",
+  "ar": "مقاطعة تولنا"
+ },
+ {
+  "code": "HU-VA",
+  "en": "Vas County",
+  "ar": "مقاطعة فاس"
+ },
+ {
+  "code": "HU-VM",
+  "en": "Veszprém",
+  "ar": "فيسبريم"
+ },
+ {
+  "code": "HU-VE",
+  "en": "Veszprém County",
+  "ar": "مقاطعة فيزبرم"
+ },
+ {
+  "code": "HU-ZA",
+  "en": "Zala County",
+  "ar": "مقاطعة زالا"
+ },
+ {
+  "code": "HU-ZE",
+  "en": "Zalaegerszeg",
+  "ar": "زالاجيرزيج"
+ },
+ {
+  "code": "HU-ER",
+  "en": "Érd",
+  "ar": "إيرد"
+ }
+]

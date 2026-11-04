@@ -1,0 +1,292 @@
+[
+ {
+  "code": "DZ-01",
+  "en": "Adrar",
+  "ar": "أدرار"
+ },
+ {
+  "code": "DZ-16",
+  "en": "Algiers",
+  "ar": "الجزائر"
+ },
+ {
+  "code": "DZ-23",
+  "en": "Annaba",
+  "ar": "عنابة"
+ },
+ {
+  "code": "DZ-44",
+  "en": "Aïn Defla",
+  "ar": "عين الدفلى"
+ },
+ {
+  "code": "DZ-46",
+  "en": "Aïn Témouchent",
+  "ar": "عين تموشنت"
+ },
+ {
+  "code": "DZ-05",
+  "en": "Batna",
+  "ar": "باتنة"
+ },
+ {
+  "code": "DZ-07",
+  "en": "Biskra",
+  "ar": "بسكرة"
+ },
+ {
+  "code": "DZ-09",
+  "en": "Blida",
+  "ar": "البليدة"
+ },
+ {
+  "code": "DZ-50",
+  "en": "Bordj Baji Mokhtar",
+  "ar": "برج باجي مختار"
+ },
+ {
+  "code": "DZ-34",
+  "en": "Bordj Bou Arréridj",
+  "ar": "برج بوعريريج"
+ },
+ {
+  "code": "DZ-35",
+  "en": "Boumerdès",
+  "ar": "بومرداس"
+ },
+ {
+  "code": "DZ-10",
+  "en": "Bouïra",
+  "ar": "بويرة"
+ },
+ {
+  "code": "DZ-08",
+  "en": "Béchar",
+  "ar": "بشار"
+ },
+ {
+  "code": "DZ-06",
+  "en": "Béjaïa",
+  "ar": "بجاية"
+ },
+ {
+  "code": "DZ-52",
+  "en": "Béni Abbès",
+  "ar": "بني عباس"
+ },
+ {
+  "code": "DZ-02",
+  "en": "Chlef",
+  "ar": "الشلف"
+ },
+ {
+  "code": "DZ-25",
+  "en": "Constantine",
+  "ar": "قسطنطين"
+ },
+ {
+  "code": "DZ-56",
+  "en": "Djanet",
+  "ar": "جانت"
+ },
+ {
+  "code": "DZ-17",
+  "en": "Djelfa",
+  "ar": "الجلفة"
+ },
+ {
+  "code": "DZ-32",
+  "en": "El Bayadh",
+  "ar": "البيض"
+ },
+ {
+  "code": "DZ-57",
+  "en": "El M'ghair",
+  "ar": "المغير"
+ },
+ {
+  "code": "DZ-58",
+  "en": "El Menia",
+  "ar": "المنيا"
+ },
+ {
+  "code": "DZ-39",
+  "en": "El Oued",
+  "ar": "الواد"
+ },
+ {
+  "code": "DZ-36",
+  "en": "El Tarf",
+  "ar": "الطارف"
+ },
+ {
+  "code": "DZ-47",
+  "en": "Ghardaïa",
+  "ar": "غرداية"
+ },
+ {
+  "code": "DZ-24",
+  "en": "Guelma",
+  "ar": "قالمة"
+ },
+ {
+  "code": "DZ-33",
+  "en": "Illizi",
+  "ar": "إليزي"
+ },
+ {
+  "code": "DZ-54",
+  "en": "In Guezzam",
+  "ar": "في قزام"
+ },
+ {
+  "code": "DZ-53",
+  "en": "In Salah",
+  "ar": "ولاية عين صالح"
+ },
+ {
+  "code": "DZ-18",
+  "en": "Jijel",
+  "ar": "جيجل"
+ },
+ {
+  "code": "DZ-40",
+  "en": "Khenchela",
+  "ar": "خنشلة"
+ },
+ {
+  "code": "DZ-03",
+  "en": "Laghouat",
+  "ar": "الأغواط"
+ },
+ {
+  "code": "DZ-28",
+  "en": "M'Sila",
+  "ar": "مسيلة"
+ },
+ {
+  "code": "DZ-29",
+  "en": "Mascara",
+  "ar": "ماسكارا"
+ },
+ {
+  "code": "DZ-43",
+  "en": "Mila",
+  "ar": "ميلا"
+ },
+ {
+  "code": "DZ-27",
+  "en": "Mostaganem",
+  "ar": "مستغانم"
+ },
+ {
+  "code": "DZ-26",
+  "en": "Médéa",
+  "ar": "ميديا"
+ },
+ {
+  "code": "DZ-45",
+  "en": "Naama",
+  "ar": "نعمة"
+ },
+ {
+  "code": "DZ-31",
+  "en": "Oran",
+  "ar": "وهران"
+ },
+ {
+  "code": "DZ-30",
+  "en": "Ouargla",
+  "ar": "ورقلة"
+ },
+ {
+  "code": "DZ-51",
+  "en": "Ouled Djellal",
+  "ar": "أولاد جلال"
+ },
+ {
+  "code": "DZ-04",
+  "en": "Oum El Bouaghi",
+  "ar": "أم البواقي"
+ },
+ {
+  "code": "DZ-48",
+  "en": "Relizane",
+  "ar": "غليزان"
+ },
+ {
+  "code": "DZ-20",
+  "en": "Saïda",
+  "ar": "صيدا"
+ },
+ {
+  "code": "DZ-22",
+  "en": "Sidi Bel Abbès",
+  "ar": "سيدي بلعباس"
+ },
+ {
+  "code": "DZ-21",
+  "en": "Skikda",
+  "ar": "سكيكدة"
+ },
+ {
+  "code": "DZ-41",
+  "en": "Souk Ahras",
+  "ar": "سوق أهراس"
+ },
+ {
+  "code": "DZ-19",
+  "en": "Sétif",
+  "ar": "سطيف"
+ },
+ {
+  "code": "DZ-11",
+  "en": "Tamanghasset",
+  "ar": "تمنغست"
+ },
+ {
+  "code": "DZ-14",
+  "en": "Tiaret",
+  "ar": "تيارت"
+ },
+ {
+  "code": "DZ-49",
+  "en": "Timimoun",
+  "ar": "تيميمون"
+ },
+ {
+  "code": "DZ-37",
+  "en": "Tindouf",
+  "ar": "تندوف"
+ },
+ {
+  "code": "DZ-42",
+  "en": "Tipasa",
+  "ar": "تيبازة"
+ },
+ {
+  "code": "DZ-38",
+  "en": "Tissemsilt",
+  "ar": "تيسمسيلت"
+ },
+ {
+  "code": "DZ-15",
+  "en": "Tizi Ouzou",
+  "ar": "تيزي وزو"
+ },
+ {
+  "code": "DZ-13",
+  "en": "Tlemcen",
+  "ar": "تلمسان"
+ },
+ {
+  "code": "DZ-55",
+  "en": "Touggourt",
+  "ar": "تقرت"
+ },
+ {
+  "code": "DZ-12",
+  "en": "Tébessa",
+  "ar": "تبسة"
+ }
+]

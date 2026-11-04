@@ -1,0 +1,67 @@
+[
+ {
+  "code": "KP-04",
+  "en": "Chagang",
+  "ar": "تشاجانج"
+ },
+ {
+  "code": "KP-15",
+  "en": "Kaesong",
+  "ar": "كايسونغ"
+ },
+ {
+  "code": "KP-07",
+  "en": "Kangwon",
+  "ar": "كانغوون"
+ },
+ {
+  "code": "KP-14",
+  "en": "Nampho",
+  "ar": "نامبو (مدينة خاصة)"
+ },
+ {
+  "code": "KP-09",
+  "en": "North Hamgyong",
+  "ar": "هامغيونغ الشمالية"
+ },
+ {
+  "code": "KP-06",
+  "en": "North Hwanghae",
+  "ar": "شمال هوانغهاي"
+ },
+ {
+  "code": "KP-03",
+  "en": "North Pyongan",
+  "ar": "شمال بيونغان"
+ },
+ {
+  "code": "KP-01",
+  "en": "Pyongyang",
+  "ar": "بيونغ يانغ"
+ },
+ {
+  "code": "KP-13",
+  "en": "Rason",
+  "ar": "راسون"
+ },
+ {
+  "code": "KP-10",
+  "en": "Ryanggang",
+  "ar": "ريانغانغ"
+ },
+ {
+  "code": "KP-08",
+  "en": "South Hamgyong",
+  "ar": "هامغيونغ الجنوبية"
+ },
+ {
+  "code": "KP-05",
+  "en": "South Hwanghae",
+  "ar": "جنوب هوانغهاي"
+ },
+ {
+  "code": "KP-02",
+  "en": "South Pyongan",
+  "ar": "جنوب بيونغان"
+ }
+]

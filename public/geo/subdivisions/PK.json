@@ -1,0 +1,37 @@
+[
+ {
+  "code": "PK-JK",
+  "en": "Azad Kashmir",
+  "ar": "آزاد كشمير"
+ },
+ {
+  "code": "PK-BA",
+  "en": "Balochistan",
+  "ar": "بلوشستان"
+ },
+ {
+  "code": "PK-GB",
+  "en": "Gilgit-Baltistan",
+  "ar": "جيلجيت بالتستان"
+ },
+ {
+  "code": "PK-IS",
+  "en": "Islamabad",
+  "ar": "إسلام آباد"
+ },
+ {
+  "code": "PK-KP",
+  "en": "Khyber Pakhtunkhwa",
+  "ar": "خيبر باختونخوا"
+ },
+ {
+  "code": "PK-PB",
+  "en": "Punjab",
+  "ar": "البنجاب"
+ },
+ {
+  "code": "PK-SD",
+  "en": "Sindh",
+  "ar": "السند"
+ }
+]

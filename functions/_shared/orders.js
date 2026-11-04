@@ -15,6 +15,8 @@ import {
   round2,
   validatePicks,
 } from './pricing.js';
+import { normalizeDeliveryZones } from './delivery-zones.js';
+import { haversineKm, parseMapUrlCoordsJs } from './eta.js';
 
 export function newOrderId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -127,6 +129,52 @@ export function validateOrderInput(body, menu) {
   // invalid add-ons or quantities; prices + names always come from the menu).
   const norm = normalizeMenu(menu);
   const menuItems = Array.isArray(norm?.items) ? norm.items : [];
+
+  // Delivery-zone gate (selected zones only): the pin must resolve inside
+  // a served country/subdivision AND within maxKm of the restaurant. The
+  // client sends its reverse-geocode claim (best effort). A missing or
+  // malformed claim is NOT itself a rejection — old cached clients predate
+  // zones, so they fall back to the distance backstop alone. The backstop
+  // needs no external data and cannot be tampered around: a forged claim
+  // can at most deliver to a pin inside the served radius, which is
+  // exactly what an honest user could do anyway.
+  if (type === 'delivery' && !errors.length) {
+    const zones = normalizeDeliveryZones(norm?.settings?.ordering?.deliveryZones);
+    if (zones && zones.mode === 'selected') {
+      let blocked = false;
+      const claim = body.zone && typeof body.zone === 'object' ? body.zone : null;
+      const claimCc = claim && typeof claim.cc === 'string' ? claim.cc.trim().toUpperCase() : '';
+      if (/^[A-Z]{2}$/.test(claimCc)) {
+        const served = zones.countries.find((z) => z && z.cc === claimCc);
+        if (!served) {
+          blocked = true;
+        } else if (served.subdivisions !== 'ALL') {
+          const sub = claim && typeof claim.subCode === 'string' ? claim.subCode.trim().toUpperCase()
+            : (claim && typeof claim.sub === 'string' ? claim.sub.trim().toUpperCase() : '');
+          if (!sub || !/^[A-Za-z0-9-]{2,16}$/.test(sub) || !served.subdivisions.some((a) => a.toUpperCase() === sub)) {
+            blocked = true;
+          }
+        }
+      }
+      if (!blocked) {
+        if (!location) {
+          // No verifiable pin (coarse fix dropped above): cannot prove the
+          // point is served, so it does not go through as delivery.
+          blocked = true;
+        } else {
+          try {
+            const rest = parseMapUrlCoordsJs(typeof norm?.settings?.mapUrl === 'string' ? norm.settings.mapUrl : '');
+            if (rest && Number.isFinite(haversineKm(location.lat, location.lng, rest.lat, rest.lng))) {
+              if (haversineKm(location.lat, location.lng, rest.lat, rest.lng) > zones.maxKm) blocked = true;
+            }
+          } catch {
+            blocked = true;
+          }
+        }
+      }
+      if (blocked) errors.push('out_of_zone');
+    }
+  }
   const resolved = [];
   if (lines.length >= 1 && lines.length <= 30) {
     for (const line of lines) {

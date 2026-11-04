@@ -1,0 +1,372 @@
+[
+ {
+  "code": "MT-01",
+  "en": "Attard",
+  "ar": "أتارد"
+ },
+ {
+  "code": "MT-02",
+  "en": "Balzan",
+  "ar": "بلزان"
+ },
+ {
+  "code": "MT-03",
+  "en": "Birgu",
+  "ar": "بيرجو"
+ },
+ {
+  "code": "MT-04",
+  "en": "Birkirkara",
+  "ar": "بيركيركارا"
+ },
+ {
+  "code": "MT-05",
+  "en": "Birżebbuġa",
+  "ar": "بيرزيبوغا"
+ },
+ {
+  "code": "MT-06",
+  "en": "Cospicua",
+  "ar": "كوسبيكوا"
+ },
+ {
+  "code": "MT-07",
+  "en": "Dingli",
+  "ar": "دينجلي"
+ },
+ {
+  "code": "MT-R02",
+  "en": "Eastern Region",
+  "ar": null
+ },
+ {
+  "code": "MT-08",
+  "en": "Fgura",
+  "ar": "فغورا"
+ },
+ {
+  "code": "MT-09",
+  "en": "Floriana",
+  "ar": "فلوريانا"
+ },
+ {
+  "code": "MT-10",
+  "en": "Fontana",
+  "ar": "فونتانا"
+ },
+ {
+  "code": "MT-R06",
+  "en": "Gozo Region",
+  "ar": "غودش"
+ },
+ {
+  "code": "MT-11",
+  "en": "Gudja",
+  "ar": "جودجا"
+ },
+ {
+  "code": "MT-13",
+  "en": "Għajnsielem",
+  "ar": "غاينسيلم"
+ },
+ {
+  "code": "MT-14",
+  "en": "Għarb",
+  "ar": "غرب"
+ },
+ {
+  "code": "MT-15",
+  "en": "Għargħur",
+  "ar": "غارغور"
+ },
+ {
+  "code": "MT-16",
+  "en": "Għasri",
+  "ar": "غاسري"
+ },
+ {
+  "code": "MT-17",
+  "en": "Għaxaq",
+  "ar": "جاكساك"
+ },
+ {
+  "code": "MT-12",
+  "en": "Gżira",
+  "ar": "جزيرة"
+ },
+ {
+  "code": "MT-19",
+  "en": "Iklin",
+  "ar": "إيكلين"
+ },
+ {
+  "code": "MT-21",
+  "en": "Kalkara",
+  "ar": "كالكارا"
+ },
+ {
+  "code": "MT-22",
+  "en": "Kerċem",
+  "ar": "كيرسيم"
+ },
+ {
+  "code": "MT-23",
+  "en": "Kirkop",
+  "ar": "كيركوب"
+ },
+ {
+  "code": "MT-24",
+  "en": "Lija",
+  "ar": "ليجا"
+ },
+ {
+  "code": "MT-25",
+  "en": "Luqa",
+  "ar": "لوقا"
+ },
+ {
+  "code": "MT-26",
+  "en": "Marsa",
+  "ar": "مرسى"
+ },
+ {
+  "code": "MT-27",
+  "en": "Marsaskala",
+  "ar": "مارساسكالا"
+ },
+ {
+  "code": "MT-28",
+  "en": "Marsaxlokk",
+  "ar": "مارساكسلوك"
+ },
+ {
+  "code": "MT-29",
+  "en": "Mdina",
+  "ar": "مدينا"
+ },
+ {
+  "code": "MT-30",
+  "en": "Mellieħa",
+  "ar": "مليحة"
+ },
+ {
+  "code": "MT-32",
+  "en": "Mosta",
+  "ar": "موستا"
+ },
+ {
+  "code": "MT-33",
+  "en": "Mqabba",
+  "ar": "مقابة"
+ },
+ {
+  "code": "MT-34",
+  "en": "Msida",
+  "ar": "مسيدا"
+ },
+ {
+  "code": "MT-35",
+  "en": "Mtarfa",
+  "ar": "مطرفة"
+ },
+ {
+  "code": "MT-36",
+  "en": "Munxar",
+  "ar": "مونكسار"
+ },
+ {
+  "code": "MT-31",
+  "en": "Mġarr",
+  "ar": "مجار"
+ },
+ {
+  "code": "MT-37",
+  "en": "Nadur",
+  "ar": "نادور"
+ },
+ {
+  "code": "MT-38",
+  "en": "Naxxar",
+  "ar": "ناكسار"
+ },
+ {
+  "code": "MT-R01",
+  "en": "Northern Region",
+  "ar": "المنطقة الشمالية"
+ },
+ {
+  "code": "MT-39",
+  "en": "Paola",
+  "ar": "باولا"
+ },
+ {
+  "code": "MT-40",
+  "en": "Pembroke",
+  "ar": "بيمبروك"
+ },
+ {
+  "code": "MT-41",
+  "en": "Pietà",
+  "ar": "بيتا"
+ },
+ {
+  "code": "MT-R04",
+  "en": "Port Region",
+  "ar": null
+ },
+ {
+  "code": "MT-42",
+  "en": "Qala",
+  "ar": "قلعة"
+ },
+ {
+  "code": "MT-43",
+  "en": "Qormi",
+  "ar": "قورمي"
+ },
+ {
+  "code": "MT-44",
+  "en": "Qrendi",
+  "ar": "قريندي"
+ },
+ {
+  "code": "MT-46",
+  "en": "Rabat",
+  "ar": "الرباط"
+ },
+ {
+  "code": "MT-47",
+  "en": "Safi",
+  "ar": "صافي"
+ },
+ {
+  "code": "MT-50",
+  "en": "San Lawrenz",
+  "ar": "سان لورينز"
+ },
+ {
+  "code": "MT-49",
+  "en": "San Ġwann",
+  "ar": "سان غوان"
+ },
+ {
+  "code": "MT-52",
+  "en": "Sannat",
+  "ar": "سانات"
+ },
+ {
+  "code": "MT-53",
+  "en": "Santa Luċija",
+  "ar": "سانتا لوسيا"
+ },
+ {
+  "code": "MT-54",
+  "en": "Santa Venera",
+  "ar": "سانتا فينيرا"
+ },
+ {
+  "code": "MT-20",
+  "en": "Senglea",
+  "ar": "سينجليا"
+ },
+ {
+  "code": "MT-55",
+  "en": "Siġġiewi",
+  "ar": "سيجييوي"
+ },
+ {
+  "code": "MT-56",
+  "en": "Sliema",
+  "ar": "سليما"
+ },
+ {
+  "code": "MT-R05",
+  "en": "Southern Region",
+  "ar": "المنطقة الجنوبية"
+ },
+ {
+  "code": "MT-48",
+  "en": "St. Julian's",
+  "ar": "سانت جوليان"
+ },
+ {
+  "code": "MT-51",
+  "en": "St. Paul's Bay",
+  "ar": "خليج سانت بول"
+ },
+ {
+  "code": "MT-57",
+  "en": "Swieqi",
+  "ar": "سويقي"
+ },
+ {
+  "code": "MT-58",
+  "en": "Ta' Xbiex",
+  "ar": "تا زبييكس"
+ },
+ {
+  "code": "MT-59",
+  "en": "Tarxien",
+  "ar": "تاركسين"
+ },
+ {
+  "code": "MT-60",
+  "en": "Valletta",
+  "ar": "فاليتا"
+ },
+ {
+  "code": "MT-45",
+  "en": "Victoria",
+  "ar": "فيكتوريا"
+ },
+ {
+  "code": "MT-R03",
+  "en": "Western Region",
+  "ar": null
+ },
+ {
+  "code": "MT-61",
+  "en": "Xagħra",
+  "ar": "زاجرا"
+ },
+ {
+  "code": "MT-62",
+  "en": "Xewkija",
+  "ar": "شوكيا"
+ },
+ {
+  "code": "MT-63",
+  "en": "Xgħajra",
+  "ar": "Xgħajra"
+ },
+ {
+  "code": "MT-18",
+  "en": "Ħamrun",
+  "ar": "عمرون"
+ },
+ {
+  "code": "MT-64",
+  "en": "Żabbar",
+  "ar": "زبار"
+ },
+ {
+  "code": "MT-65",
+  "en": "Żebbuġ Gozo",
+  "ar": "Żebbuġ Gozo"
+ },
+ {
+  "code": "MT-66",
+  "en": "Żebbuġ Malta",
+  "ar": "Żebbuġ Malta"
+ },
+ {
+  "code": "MT-67",
+  "en": "Żejtun",
+  "ar": "زيجتون"
+ },
+ {
+  "code": "MT-68",
+  "en": "Żurrieq",
+  "ar": "زوريق"
+ }
+]

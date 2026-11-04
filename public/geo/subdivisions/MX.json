@@ -1,0 +1,162 @@
+[
+ {
+  "code": "MX-AGU",
+  "en": "Aguascalientes",
+  "ar": "أغواسكاليينتس"
+ },
+ {
+  "code": "MX-BCN",
+  "en": "Baja California",
+  "ar": "باجا كاليفورنيا"
+ },
+ {
+  "code": "MX-BCS",
+  "en": "Baja California Sur",
+  "ar": "باجا كاليفورنيا سور"
+ },
+ {
+  "code": "MX-CAM",
+  "en": "Campeche",
+  "ar": "كامبيتشي"
+ },
+ {
+  "code": "MX-CHP",
+  "en": "Chiapas",
+  "ar": "تشياباس"
+ },
+ {
+  "code": "MX-CHH",
+  "en": "Chihuahua",
+  "ar": "شيواوا"
+ },
+ {
+  "code": "MX-CMX",
+  "en": "Ciudad de México",
+  "ar": "سيوداد دي مكسيكو"
+ },
+ {
+  "code": "MX-COA",
+  "en": "Coahuila de Zaragoza",
+  "ar": "كواهويلا دي سرقسطة"
+ },
+ {
+  "code": "MX-COL",
+  "en": "Colima",
+  "ar": "كوليما"
+ },
+ {
+  "code": "MX-DUR",
+  "en": "Durango",
+  "ar": "دورانجو"
+ },
+ {
+  "code": "MX-MEX",
+  "en": "Estado de México",
+  "ar": "ولاية المكسيك"
+ },
+ {
+  "code": "MX-GUA",
+  "en": "Guanajuato",
+  "ar": "غواناخواتو"
+ },
+ {
+  "code": "MX-GRO",
+  "en": "Guerrero",
+  "ar": "غيريرو"
+ },
+ {
+  "code": "MX-HID",
+  "en": "Hidalgo",
+  "ar": "هيدالغو"
+ },
+ {
+  "code": "MX-JAL",
+  "en": "Jalisco",
+  "ar": "خاليسكو"
+ },
+ {
+  "code": "MX-MIC",
+  "en": "Michoacán de Ocampo",
+  "ar": "ميتشواكان دي أوكامبو"
+ },
+ {
+  "code": "MX-MOR",
+  "en": "Morelos",
+  "ar": "موريلوس"
+ },
+ {
+  "code": "MX-NAY",
+  "en": "Nayarit",
+  "ar": "ناياريت"
+ },
+ {
+  "code": "MX-NLE",
+  "en": "Nuevo León",
+  "ar": "نويفو ليون"
+ },
+ {
+  "code": "MX-OAX",
+  "en": "Oaxaca",
+  "ar": "أواكساكا"
+ },
+ {
+  "code": "MX-PUE",
+  "en": "Puebla",
+  "ar": "بويبلا"
+ },
+ {
+  "code": "MX-QUE",
+  "en": "Querétaro",
+  "ar": "كويريتارو"
+ },
+ {
+  "code": "MX-ROO",
+  "en": "Quintana Roo",
+  "ar": "كوينتانا رو"
+ },
+ {
+  "code": "MX-SLP",
+  "en": "San Luis Potosí",
+  "ar": "سان لويس بوتوسي"
+ },
+ {
+  "code": "MX-SIN",
+  "en": "Sinaloa",
+  "ar": "سينالوا"
+ },
+ {
+  "code": "MX-SON",
+  "en": "Sonora",
+  "ar": "سونورا"
+ },
+ {
+  "code": "MX-TAB",
+  "en": "Tabasco",
+  "ar": "تاباسكو"
+ },
+ {
+  "code": "MX-TAM",
+  "en": "Tamaulipas",
+  "ar": "تاماوليباس"
+ },
+ {
+  "code": "MX-TLA",
+  "en": "Tlaxcala",
+  "ar": "تلاكسكالا"
+ },
+ {
+  "code": "MX-VER",
+  "en": "Veracruz de Ignacio de la Llave",
+  "ar": "فيراكروز دي إجناسيو دي لا لاف"
+ },
+ {
+  "code": "MX-YUC",
+  "en": "Yucatán",
+  "ar": "يوكاتان"
+ },
+ {
+  "code": "MX-ZAC",
+  "en": "Zacatecas",
+  "ar": "زاكاتيكاس"
+ }
+]

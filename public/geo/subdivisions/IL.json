@@ -1,0 +1,32 @@
+[
+ {
+  "code": "IL-M",
+  "en": "Central",
+  "ar": "مركزي"
+ },
+ {
+  "code": "IL-HA",
+  "en": "Haifa",
+  "ar": "حيفا"
+ },
+ {
+  "code": "IL-JM",
+  "en": "Jerusalem",
+  "ar": "القدس"
+ },
+ {
+  "code": "IL-Z",
+  "en": "Northern",
+  "ar": "شمالي"
+ },
+ {
+  "code": "IL-D",
+  "en": "Southern",
+  "ar": "جنوبي"
+ },
+ {
+  "code": "IL-TA",
+  "en": "Tel Aviv",
+  "ar": "تل أبيب"
+ }
+]

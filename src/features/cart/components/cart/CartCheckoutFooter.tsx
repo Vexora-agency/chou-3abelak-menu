@@ -9,6 +9,8 @@ interface CartCheckoutFooterProps {
   darkMode: boolean;
   /** In-flight send: button locks so double-taps can't fire concurrent POSTs. */
   sending: boolean;
+  /** Delivery-zone hard block (explained by the panel above): same disabled skin. */
+  sendLocked?: boolean;
   onSend: () => void;
   onClearCart: () => void;
 }
@@ -20,10 +22,12 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
   lang,
   darkMode,
   sending,
+  sendLocked = false,
   onSend,
   onClearCart,
 }) => {
   const isAr = lang === 'ar';
+  const locked = orderBlocked || sendLocked;
   return (
     <>
       {/* Availability status line */}
@@ -39,14 +43,14 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
         <button
           type="button"
           onClick={onSend}
-          disabled={orderBlocked || sending}
+          disabled={locked || sending}
           aria-describedby={orderBlocked ? 'order-status-line' : undefined}
-          className={`btn-tactile w-full rounded-full font-black text-sm flex items-center justify-center gap-2 shadow-lg ${orderBlocked ? 'min-h-12 h-auto py-2.5 px-4 text-xs leading-snug bg-neutral-700 text-neutral-300 cursor-not-allowed' : 'h-12 bg-[var(--primary)] text-[#0A0A0A] hover:brightness-110'} ${sending && !orderBlocked ? 'opacity-70 cursor-wait' : ''}`}
+          className={`btn-tactile w-full rounded-full font-black text-sm flex items-center justify-center gap-2 shadow-lg ${locked ? 'min-h-12 h-auto py-2.5 px-4 text-xs leading-snug bg-neutral-700 text-neutral-300 cursor-not-allowed' : 'h-12 bg-[var(--primary)] text-[#0A0A0A] hover:brightness-110'} ${sending && !locked ? 'opacity-70 cursor-wait' : ''}`}
         >
-          {orderBlocked ? (
-            /* Blocked: the status line above already says why (once). The button
-               keeps its action label in a disabled skin so the layout never
-               jumps and the CTA stays recognizable. */
+          {locked ? (
+            /* Blocked: the status line above (or the zone panel) already says
+               why (once). The button keeps its action label in a disabled
+               skin so the layout never jumps and the CTA stays recognizable. */
             <>
               <Send size={18} className="opacity-60" />
               <span>{isAr ? 'إرسال الطلب' : 'Send Order'}</span>

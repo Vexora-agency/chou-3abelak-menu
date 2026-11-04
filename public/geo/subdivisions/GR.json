@@ -1,0 +1,77 @@
+[
+ {
+  "code": "GR-I",
+  "en": "Attica",
+  "ar": "أتيكا"
+ },
+ {
+  "code": "GR-H",
+  "en": "Central Greece",
+  "ar": "وسط اليونان"
+ },
+ {
+  "code": "GR-B",
+  "en": "Central Macedonia",
+  "ar": "مقدونيا الوسطى"
+ },
+ {
+  "code": "GR-M",
+  "en": "Crete",
+  "ar": "كريت"
+ },
+ {
+  "code": "GR-A2",
+  "en": "East Attica",
+  "ar": "شرق أتيكا"
+ },
+ {
+  "code": "GR-A",
+  "en": "East Macedonia and Thrace",
+  "ar": "مقدونيا الشرقية وتراقيا"
+ },
+ {
+  "code": "GR-D",
+  "en": "Epirus",
+  "ar": "إبيروس"
+ },
+ {
+  "code": "GR-F",
+  "en": "Ionian Islands",
+  "ar": "الجزر الأيونية"
+ },
+ {
+  "code": "GR-69",
+  "en": "Mount Athos",
+  "ar": null
+ },
+ {
+  "code": "GR-K",
+  "en": "North Aegean",
+  "ar": "شمال بحر إيجة"
+ },
+ {
+  "code": "GR-J",
+  "en": "Peloponnese",
+  "ar": "بيلوبونيز"
+ },
+ {
+  "code": "GR-L",
+  "en": "South Aegean",
+  "ar": "جنوب بحر إيجة"
+ },
+ {
+  "code": "GR-E",
+  "en": "Thessaly",
+  "ar": "ثيساليا"
+ },
+ {
+  "code": "GR-G",
+  "en": "West Greece",
+  "ar": "غرب اليونان"
+ },
+ {
+  "code": "GR-C",
+  "en": "West Macedonia",
+  "ar": "مقدونيا الغربية"
+ }
+]

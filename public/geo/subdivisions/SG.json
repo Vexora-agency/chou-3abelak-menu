@@ -1,0 +1,27 @@
+[
+ {
+  "code": "SG-01",
+  "en": "Central Singapore",
+  "ar": "وسط سنغافورة"
+ },
+ {
+  "code": "SG-02",
+  "en": "North East",
+  "ar": "شمال شرق"
+ },
+ {
+  "code": "SG-03",
+  "en": "North West",
+  "ar": "الشمال الغربي"
+ },
+ {
+  "code": "SG-04",
+  "en": "South East",
+  "ar": "جنوب شرق"
+ },
+ {
+  "code": "SG-05",
+  "en": "South West",
+  "ar": "الجنوب الغربي"
+ }
+]

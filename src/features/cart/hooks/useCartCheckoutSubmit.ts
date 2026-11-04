@@ -11,6 +11,7 @@ import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { formatMMSS } from '@/src/utils/countdown';
 import { clientConfig } from '@/src/config/client.config';
 import { submitOrder } from '../services/cart.api';
+import { useDeliveryZoneCheck } from './useDeliveryZoneCheck';
 
 interface UseCartCheckoutSubmitArgs {
   menu: MenuData;
@@ -80,7 +81,17 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // (see the address field), which then must be re-picked.
   const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [locSheetOpen, setLocSheetOpen] = useState(false);
-  // Last address WE auto-filled from the picker (or the coords fallback).
+  // Delivery-zone gate: resolves the pin to country/subdivision (BigDataCloud
+  // client-side reverse-geocode, fail-soft) and hard-blocks delivery pins
+  // outside the admin's selected zones. Pickup/dinein unaffected (this
+  // drawer is delivery-only, but the hook keeps the orderType gate anyway).
+  const zoneCheck = useDeliveryZoneCheck(
+    ordering.deliveryZones,
+    'delivery',
+    location,
+    lang,
+  );
+  const zoneBlocked = zoneCheck.status === 'outside';
   // A re-pin overwrites the field only when it is empty or still holds our
   // own previous auto-fill — genuinely typed text (building, floor,
   // landmark) is never destroyed. Without this, a first wrong auto-fill
@@ -242,6 +253,12 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       setErrorMsg(isAr ? 'يرجى تحديد موقعك على الخريطة بالدبوس (خطوة إجبارية)' : 'Please pin your location on the map (required step)');
       return;
     }
+    // Delivery-zone hard block (selected zones only): the pin resolved
+    // outside the served area. Same copy as the on-screen panel.
+    if (zoneBlocked) {
+      setErrorMsg(isAr ? 'مكانك غير مدعوم للتوصيل حالياً، تواصل معنا' : 'Your location isn’t in our delivery area right now — contact us.');
+      return;
+    }
     if (isBelowMin) {
       setErrorMsg(
         isAr
@@ -314,6 +331,10 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         // coarse — the server degrades coarse fixes to the address-query
         // fallback instead of a fake "exact" pin, but never rejects).
         ...(location ? { location: { lat: location.lat, lng: location.lng, accuracy: Math.round(location.accuracy) } } : {}),
+        // Zone claim for the server-side gate: resolved country (+
+        // subdivision when known). Omit when unresolved — the server
+        // falls back to the distance backstop alone.
+        ...(zoneCheck.pin ? { zone: { cc: zoneCheck.pin.cc, subCode: zoneCheck.pin.subCode, subName: zoneCheck.pin.subName } } : {}),
         lang,
         website: honeypot,
         },
@@ -403,5 +424,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     idemKeyRef,
     sending,
     handleSendOrder,
+    zoneBlocked,
+    zoneStatus: zoneCheck.status,
+    zonePlaceName: zoneCheck.placeName,
   };
 }

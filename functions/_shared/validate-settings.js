@@ -4,6 +4,14 @@
  */
 import { stripControls, validateBilingual, validateBilingualOpt, TIME_REGEX, PHONE_REGEX, WHATSAPP_REGEX } from './validate-core.js';
 import { buildFeatureLibrary } from './validate-feature-library.js';
+import VALID_COUNTRIES from './geodata/countries.json' with { type: 'json' };
+
+/** ISO 3166-1 alpha-2 codes we serve zone data for. */
+const VALID_CC = new Set(
+  (Array.isArray(VALID_COUNTRIES) ? VALID_COUNTRIES : [])
+    .map((c) => c && typeof c.cc === 'string' ? c.cc.toUpperCase() : '')
+    .filter((cc) => /^[A-Z]{2}$/.test(cc)),
+);
 
 /**
  * Validates the settings block and builds the feature-library state.
@@ -157,6 +165,82 @@ function validateSettings(s, errors) {
   // value means enabled (so real menus without the flags still enforce them).
   const minOrderEnabled = typeof ord.minOrderEnabled === 'boolean' ? ord.minOrderEnabled : minOrder > 0;
   const deliveryFeeEnabled = typeof ord.deliveryFeeEnabled === 'boolean' ? ord.deliveryFeeEnabled : deliveryFee > 0;
+
+  // Delivery zones: 'all' serves everywhere (legacy behavior); 'selected'
+  // restricts delivery pins to the listed countries, each either fully
+  // open ('ALL' subdivisions) or narrowed to explicit subdivision codes.
+  // Subdivision existence is guaranteed by the admin UI (same generated
+  // lists), so the server checks shape only — plus the pin↔restaurant
+  // distance backstop in orders.js, which needs no external data.
+  const dzRaw = ord.deliveryZones && typeof ord.deliveryZones === 'object' && !Array.isArray(ord.deliveryZones)
+    ? ord.deliveryZones
+    : {};
+  const dzMode = dzRaw.mode === 'selected' ? 'selected' : 'all';
+  let dzMaxKm = 100;
+  if (dzRaw.maxKm !== undefined) {
+    if (typeof dzRaw.maxKm !== 'number' || !Number.isFinite(dzRaw.maxKm) || dzRaw.maxKm < 1 || dzRaw.maxKm > 2000) {
+      errors.push('settings.ordering.deliveryZones.maxKm must be a number between 1 and 2000');
+    } else {
+      dzMaxKm = Math.round(dzRaw.maxKm);
+    }
+  }
+  const dzCountries = [];
+  if (dzRaw.countries !== undefined) {
+    if (!Array.isArray(dzRaw.countries)) {
+      errors.push('settings.ordering.deliveryZones.countries must be an array');
+    } else {
+      if (dzRaw.countries.length > 249) errors.push('Maximum 249 delivery-zone countries allowed');
+      const seenCc = new Set();
+      for (const z of dzRaw.countries) {
+        if (!z || typeof z !== 'object') continue;
+        const cc = typeof z.cc === 'string' ? z.cc.trim().toUpperCase() : '';
+        if (!/^[A-Z]{2}$/.test(cc)) {
+          errors.push(`Invalid delivery-zone country code: "${typeof z.cc === 'string' ? z.cc : ''}"`);
+          continue;
+        }
+        if (!VALID_CC.has(cc)) {
+          errors.push(`Unknown delivery-zone country code: "${cc}"`);
+          continue;
+        }
+        if (seenCc.has(cc)) {
+          errors.push(`Duplicate delivery-zone country: "${cc}"`);
+          continue;
+        }
+        seenCc.add(cc);
+        if (z.subdivisions === undefined || z.subdivisions === null || z.subdivisions === 'ALL') {
+          dzCountries.push({ cc, subdivisions: 'ALL' });
+          continue;
+        }
+        if (!Array.isArray(z.subdivisions)) {
+          errors.push(`Delivery-zone "${cc}" subdivisions must be "ALL" or an array of codes`);
+          continue;
+        }
+        if (z.subdivisions.length > 200) {
+          errors.push(`Delivery-zone "${cc}" allows at most 200 subdivisions`);
+          continue;
+        }
+        const codes = [];
+        const seenSub = new Set();
+        for (const code of z.subdivisions) {
+          if (typeof code !== 'string' || !/^[A-Za-z0-9-]{2,16}$/.test(code.trim())) {
+            errors.push(`Delivery-zone "${cc}" has an invalid subdivision code`);
+            continue;
+          }
+          const up = code.trim().toUpperCase();
+          if (!seenSub.has(up)) {
+            seenSub.add(up);
+            codes.push(up);
+          }
+        }
+        if (!codes.length) {
+          errors.push(`Delivery-zone "${cc}" lists no valid subdivisions (use "ALL" for the whole country)`);
+          continue;
+        }
+        dzCountries.push({ cc, subdivisions: codes });
+      }
+    }
+  }
+  const deliveryZones = { mode: dzMode, maxKm: dzMaxKm, countries: dzCountries };
 
   const note = validateBilingualOpt(ord.note, 120);
 
@@ -363,6 +447,7 @@ function validateSettings(s, errors) {
       deliveryFee,
       deliveryFeeEnabled,
       note,
+      deliveryZones,
       paused,
       pausedUntil,
       pausedAt,

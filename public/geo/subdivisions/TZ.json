@@ -1,0 +1,157 @@
+[
+ {
+  "code": "TZ-01",
+  "en": "Arusha",
+  "ar": "أروشا"
+ },
+ {
+  "code": "TZ-02",
+  "en": "Dar es Salaam",
+  "ar": "دار السلام"
+ },
+ {
+  "code": "TZ-03",
+  "en": "Dodoma",
+  "ar": "دودوما"
+ },
+ {
+  "code": "TZ-27",
+  "en": "Geita",
+  "ar": "جيتا"
+ },
+ {
+  "code": "TZ-04",
+  "en": "Iringa",
+  "ar": "إيرينغا"
+ },
+ {
+  "code": "TZ-05",
+  "en": "Kagera",
+  "ar": "كاجيرا"
+ },
+ {
+  "code": "TZ-28",
+  "en": "Katavi",
+  "ar": "كاتافي"
+ },
+ {
+  "code": "TZ-08",
+  "en": "Kigoma",
+  "ar": "كيغوما"
+ },
+ {
+  "code": "TZ-09",
+  "en": "Kilimanjaro",
+  "ar": "كليمنجارو"
+ },
+ {
+  "code": "TZ-12",
+  "en": "Lindi",
+  "ar": "ليندي"
+ },
+ {
+  "code": "TZ-26",
+  "en": "Manyara",
+  "ar": "مانيارا"
+ },
+ {
+  "code": "TZ-13",
+  "en": "Mara",
+  "ar": "مارا"
+ },
+ {
+  "code": "TZ-14",
+  "en": "Mbeya",
+  "ar": "مبيا"
+ },
+ {
+  "code": "TZ-16",
+  "en": "Morogoro",
+  "ar": "موروغورو"
+ },
+ {
+  "code": "TZ-17",
+  "en": "Mtwara",
+  "ar": "متوارا"
+ },
+ {
+  "code": "TZ-18",
+  "en": "Mwanza",
+  "ar": "موانزا"
+ },
+ {
+  "code": "TZ-29",
+  "en": "Njombe",
+  "ar": "نجومبي"
+ },
+ {
+  "code": "TZ-06",
+  "en": "Pemba North",
+  "ar": "شمال بيمبا"
+ },
+ {
+  "code": "TZ-10",
+  "en": "Pemba South",
+  "ar": "جنوب بيمبا"
+ },
+ {
+  "code": "TZ-19",
+  "en": "Pwani",
+  "ar": "بواني"
+ },
+ {
+  "code": "TZ-20",
+  "en": "Rukwa",
+  "ar": "روكوا"
+ },
+ {
+  "code": "TZ-21",
+  "en": "Ruvuma",
+  "ar": "روفوما"
+ },
+ {
+  "code": "TZ-22",
+  "en": "Shinyanga",
+  "ar": "شينيانجا"
+ },
+ {
+  "code": "TZ-30",
+  "en": "Simiyu",
+  "ar": "سيميو"
+ },
+ {
+  "code": "TZ-23",
+  "en": "Singida",
+  "ar": "سينجيدا"
+ },
+ {
+  "code": "TZ-31",
+  "en": "Songwe",
+  "ar": "سونغوي"
+ },
+ {
+  "code": "TZ-24",
+  "en": "Tabora",
+  "ar": "تابورا"
+ },
+ {
+  "code": "TZ-25",
+  "en": "Tanga",
+  "ar": "تانجا"
+ },
+ {
+  "code": "TZ-07",
+  "en": "Zanzibar North",
+  "ar": "شمال زنجبار"
+ },
+ {
+  "code": "TZ-11",
+  "en": "Zanzibar South",
+  "ar": "جنوب زنجبار"
+ },
+ {
+  "code": "TZ-15",
+  "en": "Zanzibar West",
+  "ar": "زنجبار الغربية"
+ }
+]

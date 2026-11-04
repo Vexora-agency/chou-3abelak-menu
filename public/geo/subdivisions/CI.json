@@ -1,0 +1,72 @@
+[
+ {
+  "code": "CI-AB",
+  "en": "Abidjan",
+  "ar": "أبيدجان"
+ },
+ {
+  "code": "CI-BS",
+  "en": "Bas-Sassandra",
+  "ar": "باس ساساندرا"
+ },
+ {
+  "code": "CI-CM",
+  "en": "Comoé",
+  "ar": "كوموي"
+ },
+ {
+  "code": "CI-DN",
+  "en": "Denguélé",
+  "ar": "دينغيلي"
+ },
+ {
+  "code": "CI-GD",
+  "en": "Gôh-Djiboua",
+  "ar": "جوه جيبوا"
+ },
+ {
+  "code": "CI-LC",
+  "en": "Lacs",
+  "ar": "البحيرات"
+ },
+ {
+  "code": "CI-LG",
+  "en": "Lagunes",
+  "ar": "لاجونيس"
+ },
+ {
+  "code": "CI-MG",
+  "en": "Montagnes",
+  "ar": "مونتاني"
+ },
+ {
+  "code": "CI-SM",
+  "en": "Sassandra-Marahoué",
+  "ar": "ساساندرا-ماراهوي"
+ },
+ {
+  "code": "CI-SV",
+  "en": "Savanes",
+  "ar": "السافانيون"
+ },
+ {
+  "code": "CI-VB",
+  "en": "Vallée du Bandama",
+  "ar": "وادي بانداما"
+ },
+ {
+  "code": "CI-WR",
+  "en": "Woroba",
+  "ar": "ووروبا"
+ },
+ {
+  "code": "CI-YM",
+  "en": "Yamoussoukro",
+  "ar": "ياموسوكرو"
+ },
+ {
+  "code": "CI-ZZ",
+  "en": "Zanzan",
+  "ar": "زانزان"
+ }
+]

@@ -1,0 +1,622 @@
+[
+ {
+  "code": "FR-01",
+  "en": "Ain",
+  "ar": "عين"
+ },
+ {
+  "code": "FR-02",
+  "en": "Aisne",
+  "ar": "أيسن"
+ },
+ {
+  "code": "FR-03",
+  "en": "Allier",
+  "ar": "أليير"
+ },
+ {
+  "code": "FR-06",
+  "en": "Alpes-Maritimes",
+  "ar": "الألب البحرية"
+ },
+ {
+  "code": "FR-04",
+  "en": "Alpes-de-Haute-Provence",
+  "ar": "ألب دو هوت بروفانس"
+ },
+ {
+  "code": "FR-6AE",
+  "en": "Alsace",
+  "ar": "الألزاس"
+ },
+ {
+  "code": "FR-08",
+  "en": "Ardennes",
+  "ar": "آردين"
+ },
+ {
+  "code": "FR-07",
+  "en": "Ardèche",
+  "ar": "أرديش"
+ },
+ {
+  "code": "FR-09",
+  "en": "Ariège",
+  "ar": "أرييج"
+ },
+ {
+  "code": "FR-10",
+  "en": "Aube",
+  "ar": "أوبي"
+ },
+ {
+  "code": "FR-11",
+  "en": "Aude",
+  "ar": "أود"
+ },
+ {
+  "code": "FR-ARA",
+  "en": "Auvergne-Rhône-Alpes",
+  "ar": "أوفيرني-رون ألب"
+ },
+ {
+  "code": "FR-12",
+  "en": "Aveyron",
+  "ar": "أفيرون"
+ },
+ {
+  "code": "FR-67",
+  "en": "Bas-Rhin",
+  "ar": "الراين الأسفل"
+ },
+ {
+  "code": "FR-13",
+  "en": "Bouches-du-Rhône",
+  "ar": "بوش دو رون"
+ },
+ {
+  "code": "FR-BFC",
+  "en": "Bourgogne-Franche-Comté",
+  "ar": "بورغون-فرانش-كونتيه"
+ },
+ {
+  "code": "FR-BRE",
+  "en": "Bretagne",
+  "ar": "بريتاني"
+ },
+ {
+  "code": "FR-14",
+  "en": "Calvados",
+  "ar": "كالفادوس"
+ },
+ {
+  "code": "FR-15",
+  "en": "Cantal",
+  "ar": "كانتال"
+ },
+ {
+  "code": "FR-CVL",
+  "en": "Centre-Val de Loire",
+  "ar": "مركز فال دو لوار"
+ },
+ {
+  "code": "FR-16",
+  "en": "Charente",
+  "ar": "شارانت"
+ },
+ {
+  "code": "FR-17",
+  "en": "Charente-Maritime",
+  "ar": "شارينت ماريتيم"
+ },
+ {
+  "code": "FR-18",
+  "en": "Cher",
+  "ar": "شير"
+ },
+ {
+  "code": "FR-CP",
+  "en": "Clipperton",
+  "ar": "كليبرتون"
+ },
+ {
+  "code": "FR-19",
+  "en": "Corrèze",
+  "ar": "كوريز"
+ },
+ {
+  "code": "FR-20R",
+  "en": "Corse",
+  "ar": "كورس"
+ },
+ {
+  "code": "FR-2A",
+  "en": "Corse-du-Sud",
+  "ar": "كورس دو سود"
+ },
+ {
+  "code": "FR-23",
+  "en": "Creuse",
+  "ar": "كروز"
+ },
+ {
+  "code": "FR-21",
+  "en": "Côte-d'Or",
+  "ar": "كوت دور"
+ },
+ {
+  "code": "FR-22",
+  "en": "Côtes-d'Armor",
+  "ar": "كوت دارمور"
+ },
+ {
+  "code": "FR-79",
+  "en": "Deux-Sèvres",
+  "ar": "دو سيفر"
+ },
+ {
+  "code": "FR-24",
+  "en": "Dordogne",
+  "ar": "دوردوني"
+ },
+ {
+  "code": "FR-25",
+  "en": "Doubs",
+  "ar": "دوبس"
+ },
+ {
+  "code": "FR-26",
+  "en": "Drôme",
+  "ar": "دروم"
+ },
+ {
+  "code": "FR-91",
+  "en": "Essonne",
+  "ar": "إيسون"
+ },
+ {
+  "code": "FR-27",
+  "en": "Eure",
+  "ar": "يور"
+ },
+ {
+  "code": "FR-28",
+  "en": "Eure-et-Loir",
+  "ar": "أور ولوار"
+ },
+ {
+  "code": "FR-29",
+  "en": "Finistère",
+  "ar": "فينيستير"
+ },
+ {
+  "code": "FR-973",
+  "en": "French Guiana",
+  "ar": "غيانا الفرنسية"
+ },
+ {
+  "code": "FR-PF",
+  "en": "French Polynesia",
+  "ar": "بولينيزيا الفرنسية"
+ },
+ {
+  "code": "FR-TF",
+  "en": "French Southern and Antarctic Lands",
+  "ar": "الأراضي الفرنسية الجنوبية والقطبية الجنوبية"
+ },
+ {
+  "code": "FR-30",
+  "en": "Gard",
+  "ar": "جارد"
+ },
+ {
+  "code": "FR-32",
+  "en": "Gers",
+  "ar": "جيرز"
+ },
+ {
+  "code": "FR-33",
+  "en": "Gironde",
+  "ar": "جيروند"
+ },
+ {
+  "code": "FR-GES",
+  "en": "Grand-Est",
+  "ar": "جراند-إيست"
+ },
+ {
+  "code": "FR-971",
+  "en": "Guadeloupe",
+  "ar": "غوادلوب"
+ },
+ {
+  "code": "FR-68",
+  "en": "Haut-Rhin",
+  "ar": "أوت رين"
+ },
+ {
+  "code": "FR-2B",
+  "en": "Haute-Corse",
+  "ar": "هوت كورس"
+ },
+ {
+  "code": "FR-31",
+  "en": "Haute-Garonne",
+  "ar": "غارون العليا"
+ },
+ {
+  "code": "FR-43",
+  "en": "Haute-Loire",
+  "ar": "هوت لوار"
+ },
+ {
+  "code": "FR-52",
+  "en": "Haute-Marne",
+  "ar": "هوت مارن"
+ },
+ {
+  "code": "FR-74",
+  "en": "Haute-Savoie",
+  "ar": "هوت سافوا"
+ },
+ {
+  "code": "FR-70",
+  "en": "Haute-Saône",
+  "ar": "هوت ساون"
+ },
+ {
+  "code": "FR-87",
+  "en": "Haute-Vienne",
+  "ar": "هوت فيين"
+ },
+ {
+  "code": "FR-05",
+  "en": "Hautes-Alpes",
+  "ar": "جبال الألب العليا"
+ },
+ {
+  "code": "FR-65",
+  "en": "Hautes-Pyrénées",
+  "ar": "جبال البرانس العليا"
+ },
+ {
+  "code": "FR-HDF",
+  "en": "Hauts-de-France",
+  "ar": "أوت دو فرانس"
+ },
+ {
+  "code": "FR-92",
+  "en": "Hauts-de-Seine",
+  "ar": "أوت دو سين"
+ },
+ {
+  "code": "FR-34",
+  "en": "Hérault",
+  "ar": "هيرولت"
+ },
+ {
+  "code": "FR-35",
+  "en": "Ille-et-Vilaine",
+  "ar": "إيل-إي-فيلين"
+ },
+ {
+  "code": "FR-36",
+  "en": "Indre",
+  "ar": "إندري"
+ },
+ {
+  "code": "FR-37",
+  "en": "Indre-et-Loire",
+  "ar": "أندر ولوار"
+ },
+ {
+  "code": "FR-38",
+  "en": "Isère",
+  "ar": "إيزير"
+ },
+ {
+  "code": "FR-39",
+  "en": "Jura",
+  "ar": "جورا"
+ },
+ {
+  "code": "FR-974",
+  "en": "La Réunion",
+  "ar": "لا ريونيون"
+ },
+ {
+  "code": "FR-40",
+  "en": "Landes",
+  "ar": "لانديس"
+ },
+ {
+  "code": "FR-41",
+  "en": "Loir-et-Cher",
+  "ar": "لوار إيه شير"
+ },
+ {
+  "code": "FR-42",
+  "en": "Loire",
+  "ar": "لوار"
+ },
+ {
+  "code": "FR-44",
+  "en": "Loire-Atlantique",
+  "ar": "لوار أتلانتيك"
+ },
+ {
+  "code": "FR-45",
+  "en": "Loiret",
+  "ar": "لوار"
+ },
+ {
+  "code": "FR-46",
+  "en": "Lot",
+  "ar": "لوت"
+ },
+ {
+  "code": "FR-47",
+  "en": "Lot-et-Garonne",
+  "ar": "لوت وغارون"
+ },
+ {
+  "code": "FR-48",
+  "en": "Lozère",
+  "ar": "لوزير"
+ },
+ {
+  "code": "FR-49",
+  "en": "Maine-et-Loire",
+  "ar": "مين ولوار"
+ },
+ {
+  "code": "FR-50",
+  "en": "Manche",
+  "ar": "مانشي"
+ },
+ {
+  "code": "FR-51",
+  "en": "Marne",
+  "ar": "مارن"
+ },
+ {
+  "code": "FR-972",
+  "en": "Martinique",
+  "ar": "مارتينيك"
+ },
+ {
+  "code": "FR-53",
+  "en": "Mayenne",
+  "ar": "ماين"
+ },
+ {
+  "code": "FR-976",
+  "en": "Mayotte",
+  "ar": "مايوت"
+ },
+ {
+  "code": "FR-54",
+  "en": "Meurthe-et-Moselle",
+  "ar": "مورت وموزيل"
+ },
+ {
+  "code": "FR-55",
+  "en": "Meuse",
+  "ar": "ميوز"
+ },
+ {
+  "code": "FR-56",
+  "en": "Morbihan",
+  "ar": "موربيهان"
+ },
+ {
+  "code": "FR-57",
+  "en": "Moselle",
+  "ar": "موزيل"
+ },
+ {
+  "code": "FR-69M",
+  "en": "Métropole de Lyon",
+  "ar": "متروبول ليون"
+ },
+ {
+  "code": "FR-58",
+  "en": "Nièvre",
+  "ar": "نيفر"
+ },
+ {
+  "code": "FR-59",
+  "en": "Nord",
+  "ar": "نورد"
+ },
+ {
+  "code": "FR-NOR",
+  "en": "Normandie",
+  "ar": "نورماندي"
+ },
+ {
+  "code": "FR-NAQ",
+  "en": "Nouvelle-Aquitaine",
+  "ar": "نوفيل آكيتين"
+ },
+ {
+  "code": "FR-NC",
+  "en": "Nouvelle-Calédonie",
+  "ar": "كاليدونيا الجديدة"
+ },
+ {
+  "code": "FR-OCC",
+  "en": "Occitanie",
+  "ar": "أوكسيتانيا"
+ },
+ {
+  "code": "FR-60",
+  "en": "Oise",
+  "ar": "واز"
+ },
+ {
+  "code": "FR-61",
+  "en": "Orne",
+  "ar": "أورن"
+ },
+ {
+  "code": "FR-75C",
+  "en": "Paris",
+  "ar": "باريس"
+ },
+ {
+  "code": "FR-62",
+  "en": "Pas-de-Calais",
+  "ar": "با دو كاليه"
+ },
+ {
+  "code": "FR-PDL",
+  "en": "Pays-de-la-Loire",
+  "ar": "باي دو لا لوار"
+ },
+ {
+  "code": "FR-PAC",
+  "en": "Provence-Alpes-Côte-d’Azur",
+  "ar": "بروفانس ألب كوت دازور"
+ },
+ {
+  "code": "FR-63",
+  "en": "Puy-de-Dôme",
+  "ar": "بوي دو دوم"
+ },
+ {
+  "code": "FR-64",
+  "en": "Pyrénées-Atlantiques",
+  "ar": "جبال البرانس الأطلسية"
+ },
+ {
+  "code": "FR-66",
+  "en": "Pyrénées-Orientales",
+  "ar": "جبال البرانس الشرقية"
+ },
+ {
+  "code": "FR-69",
+  "en": "Rhône",
+  "ar": "الرون"
+ },
+ {
+  "code": "FR-PM",
+  "en": "Saint Pierre and Miquelon",
+  "ar": "سان بيير وميكلون"
+ },
+ {
+  "code": "FR-BL",
+  "en": "Saint-Barthélemy",
+  "ar": "سان بارتيليمي"
+ },
+ {
+  "code": "FR-MF",
+  "en": "Saint-Martin",
+  "ar": "سان مارتن"
+ },
+ {
+  "code": "FR-72",
+  "en": "Sarthe",
+  "ar": "سارث"
+ },
+ {
+  "code": "FR-73",
+  "en": "Savoie",
+  "ar": "سافوي"
+ },
+ {
+  "code": "FR-71",
+  "en": "Saône-et-Loire",
+  "ar": "ساون ولوار"
+ },
+ {
+  "code": "FR-76",
+  "en": "Seine-Maritime",
+  "ar": "نهر السين البحري"
+ },
+ {
+  "code": "FR-93",
+  "en": "Seine-Saint-Denis",
+  "ar": "سين سان دوني"
+ },
+ {
+  "code": "FR-77",
+  "en": "Seine-et-Marne",
+  "ar": "نهر السين ومارن"
+ },
+ {
+  "code": "FR-80",
+  "en": "Somme",
+  "ar": "السوم"
+ },
+ {
+  "code": "FR-81",
+  "en": "Tarn",
+  "ar": "تَرن"
+ },
+ {
+  "code": "FR-82",
+  "en": "Tarn-et-Garonne",
+  "ar": "تارن وغارون"
+ },
+ {
+  "code": "FR-90",
+  "en": "Territoire de Belfort",
+  "ar": "إقليم بلفور"
+ },
+ {
+  "code": "FR-95",
+  "en": "Val-d'Oise",
+  "ar": "فال دواز"
+ },
+ {
+  "code": "FR-94",
+  "en": "Val-de-Marne",
+  "ar": "فال دي مارن"
+ },
+ {
+  "code": "FR-83",
+  "en": "Var",
+  "ar": "فار"
+ },
+ {
+  "code": "FR-84",
+  "en": "Vaucluse",
+  "ar": "فوكلوز"
+ },
+ {
+  "code": "FR-85",
+  "en": "Vendée",
+  "ar": "فيندي"
+ },
+ {
+  "code": "FR-86",
+  "en": "Vienne",
+  "ar": "فيين"
+ },
+ {
+  "code": "FR-88",
+  "en": "Vosges",
+  "ar": "فوج"
+ },
+ {
+  "code": "FR-WF",
+  "en": "Wallis and Futuna",
+  "ar": "واليس وفوتونا"
+ },
+ {
+  "code": "FR-89",
+  "en": "Yonne",
+  "ar": "يون"
+ },
+ {
+  "code": "FR-78",
+  "en": "Yvelines",
+  "ar": "إيفلين"
+ },
+ {
+  "code": "FR-IDF",
+  "en": "Île-de-France",
+  "ar": "إيل دو فرانس"
+ }
+]

@@ -13,6 +13,8 @@ export interface SubmitOrderPayload {
   // the payload byte-shape is untouched until a real split is sent.
   items: Array<{ id: string; variantId?: string; addonIds?: string[]; addonQty?: Record<string, number>; qty: number }>;
   location?: { lat: number; lng: number; accuracy: number };
+  /** Reverse-geocoded pin zone for the server-side delivery gate (best effort — omit when unresolved). */
+  zone?: { cc: string; subCode: string | null; subName: string | null };
   lang: string;
   website: string;
 }
@@ -52,10 +54,31 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
       if (!orderNumber) return fail('invalid');
       return { orderNumber, trackToken, blockedMessage: null, failure: null };
     }
-    if (res.status === 403) {
+    // Delivery-zone rejection carries the bilingual reason — surface it
+    // verbatim (same copy as the on-screen block panel).
+    try {
       const data: unknown = await readJson(res);
-      const msg = isRecord(data) && isRecord(data.message) ? str(lang === 'ar' ? data.message.ar : data.message.en) : '';
-      return { orderNumber: null, trackToken: null, blockedMessage: msg || null, failure: 'blocked' };
+      if (isRecord(data) && data.error === 'out_of_zone') {
+        const msg = isRecord(data.message) ? str(lang === 'ar' ? data.message.ar : data.message.en) : '';
+        return {
+          orderNumber: null,
+          trackToken: null,
+          blockedMessage: msg || (lang === 'ar'
+            ? 'مكانك غير مدعوم للتوصيل حالياً، تواصل معنا'
+            : 'Your location isn’t in our delivery area right now — contact us.'),
+          failure: 'blocked',
+        };
+      }
+      if (res.status === 403) {
+        const msg = isRecord(data) && isRecord(data.message) ? str(lang === 'ar' ? data.message.ar : data.message.en) : '';
+        return { orderNumber: null, trackToken: null, blockedMessage: msg || null, failure: 'blocked' };
+      }
+    } catch {
+      /* fall through to status-based handling below */
+    }
+    if (res.status === 403) {
+      // Ordering-state gate with an unreadable body (same as before).
+      return { orderNumber: null, trackToken: null, blockedMessage: null, failure: 'blocked' };
     }
     if (res.status === 429) {
       // Too fast: show it and STOP (no numberless ghost message to the

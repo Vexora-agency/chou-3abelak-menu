@@ -1,0 +1,112 @@
+[
+ {
+  "code": "PG-NSB",
+  "en": "Bougainville",
+  "ar": "بوغانفيل"
+ },
+ {
+  "code": "PG-CPM",
+  "en": "Central",
+  "ar": "مركزي"
+ },
+ {
+  "code": "PG-CPK",
+  "en": "Chimbu",
+  "ar": "شيمبو"
+ },
+ {
+  "code": "PG-EBR",
+  "en": "East New Britain",
+  "ar": "شرق بريطانيا الجديدة"
+ },
+ {
+  "code": "PG-ESW",
+  "en": "East Sepik",
+  "ar": "شرق سيبيك"
+ },
+ {
+  "code": "PG-EHG",
+  "en": "Eastern Highlands",
+  "ar": "المرتفعات الشرقية"
+ },
+ {
+  "code": "PG-EPW",
+  "en": "Enga",
+  "ar": "إنجا"
+ },
+ {
+  "code": "PG-GPK",
+  "en": "Gulf",
+  "ar": "الخليج"
+ },
+ {
+  "code": "PG-HLA",
+  "en": "Hela",
+  "ar": "هيلا"
+ },
+ {
+  "code": "PG-JWK",
+  "en": "Jiwaka",
+  "ar": "جيواكا"
+ },
+ {
+  "code": "PG-MPM",
+  "en": "Madang",
+  "ar": "مادانغ"
+ },
+ {
+  "code": "PG-MRL",
+  "en": "Manus",
+  "ar": "مانوس"
+ },
+ {
+  "code": "PG-MBA",
+  "en": "Milne Bay",
+  "ar": "خليج ميلن"
+ },
+ {
+  "code": "PG-MPL",
+  "en": "Morobe",
+  "ar": "موروبي"
+ },
+ {
+  "code": "PG-NIK",
+  "en": "New Ireland",
+  "ar": "أيرلندا الجديدة"
+ },
+ {
+  "code": "PG-NPP",
+  "en": "Oro",
+  "ar": "أورو"
+ },
+ {
+  "code": "PG-NCD",
+  "en": "Port Moresby",
+  "ar": "بورت مورسبي"
+ },
+ {
+  "code": "PG-SAN",
+  "en": "Sandaun",
+  "ar": "ساندون"
+ },
+ {
+  "code": "PG-SHM",
+  "en": "Southern Highlands",
+  "ar": "المرتفعات الجنوبية"
+ },
+ {
+  "code": "PG-WBK",
+  "en": "West New Britain",
+  "ar": "غرب نيو بريتين"
+ },
+ {
+  "code": "PG-WPD",
+  "en": "Western",
+  "ar": "الغربي"
+ },
+ {
+  "code": "PG-WHM",
+  "en": "Western Highlands",
+  "ar": "المرتفعات الغربية"
+ }
+]

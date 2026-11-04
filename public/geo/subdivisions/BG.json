@@ -1,0 +1,142 @@
+[
+ {
+  "code": "BG-01",
+  "en": "Blagoevgrad",
+  "ar": "بلاغويفغراد"
+ },
+ {
+  "code": "BG-02",
+  "en": "Burgas",
+  "ar": "بورغاس"
+ },
+ {
+  "code": "BG-08",
+  "en": "Dobrich",
+  "ar": "دوبريتش"
+ },
+ {
+  "code": "BG-07",
+  "en": "Gabrovo",
+  "ar": "غابروفو"
+ },
+ {
+  "code": "BG-26",
+  "en": "Haskovo",
+  "ar": "هاسكوفو"
+ },
+ {
+  "code": "BG-09",
+  "en": "Kardzhali",
+  "ar": "كاردجالي"
+ },
+ {
+  "code": "BG-10",
+  "en": "Kyustendil",
+  "ar": "كيوستينديل"
+ },
+ {
+  "code": "BG-11",
+  "en": "Lovech",
+  "ar": "لوفيتش"
+ },
+ {
+  "code": "BG-12",
+  "en": "Montana",
+  "ar": "مونتانا"
+ },
+ {
+  "code": "BG-13",
+  "en": "Pazardzhik",
+  "ar": "بازارجيك"
+ },
+ {
+  "code": "BG-14",
+  "en": "Pernik",
+  "ar": "بيرنيك"
+ },
+ {
+  "code": "BG-15",
+  "en": "Pleven",
+  "ar": "بليفين"
+ },
+ {
+  "code": "BG-16",
+  "en": "Plovdiv",
+  "ar": "بلوفديف"
+ },
+ {
+  "code": "BG-17",
+  "en": "Razgrad",
+  "ar": "رازغراد"
+ },
+ {
+  "code": "BG-18",
+  "en": "Ruse",
+  "ar": "مقاطعة روسه"
+ },
+ {
+  "code": "BG-27",
+  "en": "Shumen",
+  "ar": "شومن"
+ },
+ {
+  "code": "BG-19",
+  "en": "Silistra",
+  "ar": "سيليسترا"
+ },
+ {
+  "code": "BG-20",
+  "en": "Sliven",
+  "ar": "سليفن"
+ },
+ {
+  "code": "BG-21",
+  "en": "Smolyan",
+  "ar": "سموليان"
+ },
+ {
+  "code": "BG-23",
+  "en": "Sofia",
+  "ar": "صوفيا"
+ },
+ {
+  "code": "BG-22",
+  "en": "Sofia City",
+  "ar": "مدينة صوفيا"
+ },
+ {
+  "code": "BG-24",
+  "en": "Stara Zagora",
+  "ar": "ستارا زاغورا"
+ },
+ {
+  "code": "BG-25",
+  "en": "Targovishte",
+  "ar": "تارغوفيشته"
+ },
+ {
+  "code": "BG-03",
+  "en": "Varna",
+  "ar": "فارنا"
+ },
+ {
+  "code": "BG-04",
+  "en": "Veliko Tarnovo",
+  "ar": "فيليكو تارنوفو"
+ },
+ {
+  "code": "BG-05",
+  "en": "Vidin",
+  "ar": "فيدين"
+ },
+ {
+  "code": "BG-06",
+  "en": "Vratsa",
+  "ar": "فراتسا"
+ },
+ {
+  "code": "BG-28",
+  "en": "Yambol",
+  "ar": "يامبول"
+ }
+]

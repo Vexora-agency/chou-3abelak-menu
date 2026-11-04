@@ -1,0 +1,152 @@
+[
+ {
+  "code": "IE-CW",
+  "en": "Carlow",
+  "ar": "كارلو"
+ },
+ {
+  "code": "IE-CN",
+  "en": "Cavan",
+  "ar": "كافان"
+ },
+ {
+  "code": "IE-CE",
+  "en": "Clare",
+  "ar": "كلير"
+ },
+ {
+  "code": "IE-C",
+  "en": "Connacht",
+  "ar": "كوناخت"
+ },
+ {
+  "code": "IE-CO",
+  "en": "Cork",
+  "ar": "مقاطعة كورك"
+ },
+ {
+  "code": "IE-DL",
+  "en": "Donegal",
+  "ar": "دونيجال"
+ },
+ {
+  "code": "IE-D",
+  "en": "Dublin",
+  "ar": "دبلن"
+ },
+ {
+  "code": "IE-G",
+  "en": "Galway",
+  "ar": "غالواي"
+ },
+ {
+  "code": "IE-KY",
+  "en": "Kerry",
+  "ar": "كيري"
+ },
+ {
+  "code": "IE-KE",
+  "en": "Kildare",
+  "ar": "كيلدير"
+ },
+ {
+  "code": "IE-KK",
+  "en": "Kilkenny",
+  "ar": "كيلكيني"
+ },
+ {
+  "code": "IE-LS",
+  "en": "Laois",
+  "ar": "لاويس"
+ },
+ {
+  "code": "IE-L",
+  "en": "Leinster",
+  "ar": "لينستر"
+ },
+ {
+  "code": "IE-LM",
+  "en": "Leitrim",
+  "ar": "ليتريم"
+ },
+ {
+  "code": "IE-LK",
+  "en": "Limerick",
+  "ar": "ليمريك"
+ },
+ {
+  "code": "IE-LD",
+  "en": "Longford",
+  "ar": "لونجفورد"
+ },
+ {
+  "code": "IE-LH",
+  "en": "Louth",
+  "ar": "لاوث"
+ },
+ {
+  "code": "IE-MO",
+  "en": "Mayo",
+  "ar": "مايو"
+ },
+ {
+  "code": "IE-MH",
+  "en": "Meath",
+  "ar": "ميث"
+ },
+ {
+  "code": "IE-MN",
+  "en": "Monaghan",
+  "ar": "موناجان"
+ },
+ {
+  "code": "IE-M",
+  "en": "Munster",
+  "ar": "مونستر"
+ },
+ {
+  "code": "IE-OY",
+  "en": "Offaly",
+  "ar": "أوفالي"
+ },
+ {
+  "code": "IE-RN",
+  "en": "Roscommon",
+  "ar": "روسكومون"
+ },
+ {
+  "code": "IE-SO",
+  "en": "Sligo",
+  "ar": "سليجو"
+ },
+ {
+  "code": "IE-TA",
+  "en": "Tipperary",
+  "ar": "تيبيراري"
+ },
+ {
+  "code": "IE-U",
+  "en": "Ulster",
+  "ar": "أولستر"
+ },
+ {
+  "code": "IE-WD",
+  "en": "Waterford",
+  "ar": "ووترفورد"
+ },
+ {
+  "code": "IE-WH",
+  "en": "Westmeath",
+  "ar": "ويستميث"
+ },
+ {
+  "code": "IE-WX",
+  "en": "Wexford",
+  "ar": "ويكسفورد"
+ },
+ {
+  "code": "IE-WW",
+  "en": "Wicklow",
+  "ar": "ويكلو"
+ }
+]

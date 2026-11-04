@@ -1,0 +1,452 @@
+[
+ {
+  "code": "CZ-201",
+  "en": "Benešov",
+  "ar": "بينيشوف"
+ },
+ {
+  "code": "CZ-202",
+  "en": "Beroun",
+  "ar": "بيرون"
+ },
+ {
+  "code": "CZ-641",
+  "en": "Blansko",
+  "ar": "بلانسكو"
+ },
+ {
+  "code": "CZ-642",
+  "en": "Brno-město",
+  "ar": "برنو ميستو"
+ },
+ {
+  "code": "CZ-643",
+  "en": "Brno-venkov",
+  "ar": "برنو-فينكوف"
+ },
+ {
+  "code": "CZ-801",
+  "en": "Bruntál",
+  "ar": "برونتال"
+ },
+ {
+  "code": "CZ-644",
+  "en": "Břeclav",
+  "ar": "بريكلاف"
+ },
+ {
+  "code": "CZ-411",
+  "en": "Cheb",
+  "ar": "مقاطعة خب"
+ },
+ {
+  "code": "CZ-422",
+  "en": "Chomutov",
+  "ar": "تشوموتوف"
+ },
+ {
+  "code": "CZ-531",
+  "en": "Chrudim",
+  "ar": "شروديم"
+ },
+ {
+  "code": "CZ-321",
+  "en": "Domažlice",
+  "ar": "دومازيليسي"
+ },
+ {
+  "code": "CZ-421",
+  "en": "Děčín",
+  "ar": "ديتشين"
+ },
+ {
+  "code": "CZ-802",
+  "en": "Frýdek-Místek",
+  "ar": "فريدك-ميستيك"
+ },
+ {
+  "code": "CZ-631",
+  "en": "Havlíčkův Brod",
+  "ar": "هافليتشكوف برود"
+ },
+ {
+  "code": "CZ-645",
+  "en": "Hodonín",
+  "ar": "هودونين"
+ },
+ {
+  "code": "CZ-521",
+  "en": "Hradec Králové",
+  "ar": "هراديك كرالوف"
+ },
+ {
+  "code": "CZ-512",
+  "en": "Jablonec nad Nisou",
+  "ar": "جابلونك ناد نيسو"
+ },
+ {
+  "code": "CZ-711",
+  "en": "Jeseník",
+  "ar": "جيسينيك"
+ },
+ {
+  "code": "CZ-632",
+  "en": "Jihlava",
+  "ar": "جيهلافا"
+ },
+ {
+  "code": "CZ-64",
+  "en": "Jihomoravský kraj",
+  "ar": "Jihomoravský kraj"
+ },
+ {
+  "code": "CZ-31",
+  "en": "Jihočeský kraj",
+  "ar": "Jihočeský kraj"
+ },
+ {
+  "code": "CZ-313",
+  "en": "Jindřichův Hradec",
+  "ar": "جيندريشوف هراديك"
+ },
+ {
+  "code": "CZ-522",
+  "en": "Jičín",
+  "ar": "جيشين"
+ },
+ {
+  "code": "CZ-41",
+  "en": "Karlovarský kraj",
+  "ar": "كارلوفارسك كراج"
+ },
+ {
+  "code": "CZ-412",
+  "en": "Karlovy Vary",
+  "ar": "كارلوفي فاري"
+ },
+ {
+  "code": "CZ-803",
+  "en": "Karviná",
+  "ar": "كارفينا"
+ },
+ {
+  "code": "CZ-203",
+  "en": "Kladno",
+  "ar": "كلادنو"
+ },
+ {
+  "code": "CZ-322",
+  "en": "Klatovy",
+  "ar": "كلاتوفي"
+ },
+ {
+  "code": "CZ-204",
+  "en": "Kolín",
+  "ar": "كولين"
+ },
+ {
+  "code": "CZ-63",
+  "en": "Kraj Vysočina",
+  "ar": "كراج فيسوتشينا"
+ },
+ {
+  "code": "CZ-721",
+  "en": "Kroměříž",
+  "ar": "كروميريز"
+ },
+ {
+  "code": "CZ-52",
+  "en": "Královéhradecký kraj",
+  "ar": "Královéhradecký kraj"
+ },
+ {
+  "code": "CZ-205",
+  "en": "Kutná Hora",
+  "ar": "كوتنا هورا"
+ },
+ {
+  "code": "CZ-513",
+  "en": "Liberec",
+  "ar": "ليبيريتس"
+ },
+ {
+  "code": "CZ-51",
+  "en": "Liberecký kraj",
+  "ar": "Liberecký kraj"
+ },
+ {
+  "code": "CZ-423",
+  "en": "Litoměřice",
+  "ar": "ليتوميريتسه"
+ },
+ {
+  "code": "CZ-424",
+  "en": "Louny",
+  "ar": "مجنون"
+ },
+ {
+  "code": "CZ-207",
+  "en": "Mladá Boleslav",
+  "ar": "ملادا بوليسلاف"
+ },
+ {
+  "code": "CZ-80",
+  "en": "Moravskoslezský kraj",
+  "ar": "Moravskoslezský kraj"
+ },
+ {
+  "code": "CZ-425",
+  "en": "Most",
+  "ar": "مقاطعة موست"
+ },
+ {
+  "code": "CZ-206",
+  "en": "Mělník",
+  "ar": "ميلنيك"
+ },
+ {
+  "code": "CZ-804",
+  "en": "Nový Jičín",
+  "ar": "نوفي جيسين"
+ },
+ {
+  "code": "CZ-208",
+  "en": "Nymburk",
+  "ar": "نيمبورك"
+ },
+ {
+  "code": "CZ-523",
+  "en": "Náchod",
+  "ar": "ناشود"
+ },
+ {
+  "code": "CZ-712",
+  "en": "Olomouc",
+  "ar": "أولوموك"
+ },
+ {
+  "code": "CZ-71",
+  "en": "Olomoucký kraj",
+  "ar": "Olomoucký kraj"
+ },
+ {
+  "code": "CZ-805",
+  "en": "Opava",
+  "ar": "أوبافا"
+ },
+ {
+  "code": "CZ-806",
+  "en": "Ostrava-město",
+  "ar": "أوسترافا ميستو"
+ },
+ {
+  "code": "CZ-532",
+  "en": "Pardubice",
+  "ar": "باردوبيتسه"
+ },
+ {
+  "code": "CZ-53",
+  "en": "Pardubický kraj",
+  "ar": "Pardubický kraj"
+ },
+ {
+  "code": "CZ-633",
+  "en": "Pelhřimov",
+  "ar": "بيلهريموف"
+ },
+ {
+  "code": "CZ-324",
+  "en": "Plzeň-jih",
+  "ar": "Plzeň-jih"
+ },
+ {
+  "code": "CZ-323",
+  "en": "Plzeň-město",
+  "ar": "مدينة بلزن"
+ },
+ {
+  "code": "CZ-325",
+  "en": "Plzeň-sever",
+  "ar": "بلزن-سيفر"
+ },
+ {
+  "code": "CZ-32",
+  "en": "Plzeňský kraj",
+  "ar": "Plzeňský kraj"
+ },
+ {
+  "code": "CZ-315",
+  "en": "Prachatice",
+  "ar": "براخاتيس"
+ },
+ {
+  "code": "CZ-10",
+  "en": "Praha, Hlavní město",
+  "ar": "Praha, Hlavní město"
+ },
+ {
+  "code": "CZ-209",
+  "en": "Praha-východ",
+  "ar": "Praha-východ"
+ },
+ {
+  "code": "CZ-20A",
+  "en": "Praha-západ",
+  "ar": "براغ-زاباد"
+ },
+ {
+  "code": "CZ-713",
+  "en": "Prostějov",
+  "ar": "بروستيوف"
+ },
+ {
+  "code": "CZ-314",
+  "en": "Písek",
+  "ar": "بيسيك"
+ },
+ {
+  "code": "CZ-714",
+  "en": "Přerov",
+  "ar": "بريروف"
+ },
+ {
+  "code": "CZ-20B",
+  "en": "Příbram",
+  "ar": "بريبرام"
+ },
+ {
+  "code": "CZ-20C",
+  "en": "Rakovník",
+  "ar": "راكوفنيك"
+ },
+ {
+  "code": "CZ-326",
+  "en": "Rokycany",
+  "ar": "روكيكاني"
+ },
+ {
+  "code": "CZ-524",
+  "en": "Rychnov nad Kněžnou",
+  "ar": "Rychnov nad Kněžnou"
+ },
+ {
+  "code": "CZ-514",
+  "en": "Semily",
+  "ar": "مقاطعة سيميلي"
+ },
+ {
+  "code": "CZ-413",
+  "en": "Sokolov",
+  "ar": "سوكولوف"
+ },
+ {
+  "code": "CZ-316",
+  "en": "Strakonice",
+  "ar": "ستراكونيس"
+ },
+ {
+  "code": "CZ-20",
+  "en": "Středočeský kraj",
+  "ar": "Středočeský kraj"
+ },
+ {
+  "code": "CZ-533",
+  "en": "Svitavy",
+  "ar": "سفيتافي"
+ },
+ {
+  "code": "CZ-327",
+  "en": "Tachov",
+  "ar": "تاشوف"
+ },
+ {
+  "code": "CZ-426",
+  "en": "Teplice",
+  "ar": "تبليتسه"
+ },
+ {
+  "code": "CZ-525",
+  "en": "Trutnov",
+  "ar": "تروتنوف"
+ },
+ {
+  "code": "CZ-317",
+  "en": "Tábor",
+  "ar": "تابور"
+ },
+ {
+  "code": "CZ-634",
+  "en": "Třebíč",
+  "ar": "تريبيتش"
+ },
+ {
+  "code": "CZ-722",
+  "en": "Uherské Hradiště",
+  "ar": "Uherské Hradiště"
+ },
+ {
+  "code": "CZ-723",
+  "en": "Vsetín",
+  "ar": "فسيتين"
+ },
+ {
+  "code": "CZ-646",
+  "en": "Vyškov",
+  "ar": "فيشكوف"
+ },
+ {
+  "code": "CZ-724",
+  "en": "Zlín",
+  "ar": "زلين"
+ },
+ {
+  "code": "CZ-72",
+  "en": "Zlínský kraj",
+  "ar": "Zlínský kraj"
+ },
+ {
+  "code": "CZ-647",
+  "en": "Znojmo",
+  "ar": "زنويمو"
+ },
+ {
+  "code": "CZ-42",
+  "en": "Ústecký kraj",
+  "ar": "Ústecký kraj"
+ },
+ {
+  "code": "CZ-427",
+  "en": "Ústí nad Labem",
+  "ar": "Ústí nad Labem"
+ },
+ {
+  "code": "CZ-534",
+  "en": "Ústí nad Orlicí",
+  "ar": "Ústí nad Orlicí"
+ },
+ {
+  "code": "CZ-511",
+  "en": "Česká Lípa",
+  "ar": "تشيسكا ليبا"
+ },
+ {
+  "code": "CZ-311",
+  "en": "České Budějovice",
+  "ar": "تشيسكي بوديوفيتش"
+ },
+ {
+  "code": "CZ-312",
+  "en": "Český Krumlov",
+  "ar": "تشيسكي كروملوف"
+ },
+ {
+  "code": "CZ-715",
+  "en": "Šumperk",
+  "ar": "شومبيرك"
+ },
+ {
+  "code": "CZ-635",
+  "en": "Žďár nad Sázavou",
+  "ar": "Žďár nad Sázavou"
+ }
+]

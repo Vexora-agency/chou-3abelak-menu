@@ -1,0 +1,362 @@
+[
+ {
+  "code": "BD-05",
+  "en": "Bagerhat",
+  "ar": "باجيرهات"
+ },
+ {
+  "code": "BD-01",
+  "en": "Bandarban",
+  "ar": "باندربان"
+ },
+ {
+  "code": "BD-02",
+  "en": "Barguna",
+  "ar": "بارغونا"
+ },
+ {
+  "code": "BD-A",
+  "en": "Barisal",
+  "ar": "باريسال"
+ },
+ {
+  "code": "BD-06",
+  "en": "Barishal",
+  "ar": "مديرية بريسال"
+ },
+ {
+  "code": "BD-07",
+  "en": "Bhola",
+  "ar": "بهولا"
+ },
+ {
+  "code": "BD-03",
+  "en": "Bogura",
+  "ar": "بوغورا"
+ },
+ {
+  "code": "BD-04",
+  "en": "Brahmanbaria",
+  "ar": "براهمانباريا"
+ },
+ {
+  "code": "BD-09",
+  "en": "Chandpur",
+  "ar": "تشاندبور"
+ },
+ {
+  "code": "BD-45",
+  "en": "Chapai Nawabganj",
+  "ar": "تشاباي نوابغانج"
+ },
+ {
+  "code": "BD-10",
+  "en": "Chattogram",
+  "ar": "مديرية جاتجام"
+ },
+ {
+  "code": "BD-B",
+  "en": "Chittagong",
+  "ar": "شيتاغونغ"
+ },
+ {
+  "code": "BD-12",
+  "en": "Chuadanga",
+  "ar": "تشوادانجا"
+ },
+ {
+  "code": "BD-11",
+  "en": "Cox's Bazar",
+  "ar": "كوكس بازار"
+ },
+ {
+  "code": "BD-08",
+  "en": "Cumilla",
+  "ar": "ناحية كملا"
+ },
+ {
+  "code": "BD-13",
+  "en": "Dhaka",
+  "ar": "ناحية دكا"
+ },
+ {
+  "code": "BD-C",
+  "en": "Dhaka",
+  "ar": "دكا"
+ },
+ {
+  "code": "BD-14",
+  "en": "Dinajpur",
+  "ar": "ديناجبور"
+ },
+ {
+  "code": "BD-15",
+  "en": "Faridpur",
+  "ar": "ناحية فريدبور"
+ },
+ {
+  "code": "BD-16",
+  "en": "Feni",
+  "ar": "فيني"
+ },
+ {
+  "code": "BD-19",
+  "en": "Gaibandha",
+  "ar": "غايباندا"
+ },
+ {
+  "code": "BD-18",
+  "en": "Gazipur",
+  "ar": "غازيبور"
+ },
+ {
+  "code": "BD-17",
+  "en": "Gopalganj",
+  "ar": "جوبالجانج"
+ },
+ {
+  "code": "BD-20",
+  "en": "Habiganj",
+  "ar": "هابيجانج"
+ },
+ {
+  "code": "BD-21",
+  "en": "Jamalpur",
+  "ar": "جمالبور"
+ },
+ {
+  "code": "BD-22",
+  "en": "Jashore",
+  "ar": "جاشور"
+ },
+ {
+  "code": "BD-25",
+  "en": "Jhalakathi",
+  "ar": "جالاكاثي"
+ },
+ {
+  "code": "BD-23",
+  "en": "Jhenaidah",
+  "ar": "جينيدا"
+ },
+ {
+  "code": "BD-24",
+  "en": "Joypurhat",
+  "ar": "جويبورهات"
+ },
+ {
+  "code": "BD-29",
+  "en": "Khagrachhari",
+  "ar": "خاجراتشاري"
+ },
+ {
+  "code": "BD-27",
+  "en": "Khulna",
+  "ar": "خولنا"
+ },
+ {
+  "code": "BD-D",
+  "en": "Khulna",
+  "ar": "خولنا"
+ },
+ {
+  "code": "BD-26",
+  "en": "Kishoreganj",
+  "ar": "كيشورغانج"
+ },
+ {
+  "code": "BD-28",
+  "en": "Kurigram",
+  "ar": "كوريجرام"
+ },
+ {
+  "code": "BD-30",
+  "en": "Kushtia",
+  "ar": "كوشتيا"
+ },
+ {
+  "code": "BD-31",
+  "en": "Lakshmipur",
+  "ar": "لاكشميبور"
+ },
+ {
+  "code": "BD-32",
+  "en": "Lalmonirhat",
+  "ar": "لالمونيرات"
+ },
+ {
+  "code": "BD-36",
+  "en": "Madaripur",
+  "ar": "ناحية مداربور"
+ },
+ {
+  "code": "BD-37",
+  "en": "Magura",
+  "ar": "ماغورا"
+ },
+ {
+  "code": "BD-33",
+  "en": "Manikganj",
+  "ar": "مانيكجانج"
+ },
+ {
+  "code": "BD-39",
+  "en": "Meherpur",
+  "ar": "مهيربور"
+ },
+ {
+  "code": "BD-38",
+  "en": "Moulvibazar",
+  "ar": "مولفيبازار"
+ },
+ {
+  "code": "BD-35",
+  "en": "Munshiganj",
+  "ar": "مونشيجاني"
+ },
+ {
+  "code": "BD-34",
+  "en": "Mymensingh",
+  "ar": "ميمينسينغ"
+ },
+ {
+  "code": "BD-H",
+  "en": "Mymensingh",
+  "ar": "ميمينسينغ"
+ },
+ {
+  "code": "BD-48",
+  "en": "Naogaon",
+  "ar": "ناوغاون"
+ },
+ {
+  "code": "BD-43",
+  "en": "Narail",
+  "ar": "نارايل"
+ },
+ {
+  "code": "BD-40",
+  "en": "Narayanganj",
+  "ar": "نارايانجانج"
+ },
+ {
+  "code": "BD-42",
+  "en": "Narsingdi",
+  "ar": "نارسينجدي"
+ },
+ {
+  "code": "BD-44",
+  "en": "Natore",
+  "ar": "ناتوري"
+ },
+ {
+  "code": "BD-41",
+  "en": "Netrakona",
+  "ar": "نيتراكونا"
+ },
+ {
+  "code": "BD-46",
+  "en": "Nilphamari",
+  "ar": "نيلفاماري"
+ },
+ {
+  "code": "BD-47",
+  "en": "Noakhali",
+  "ar": "نواخالي"
+ },
+ {
+  "code": "BD-49",
+  "en": "Pabna",
+  "ar": "بابنا (بنغلاديش)"
+ },
+ {
+  "code": "BD-52",
+  "en": "Panchagarh",
+  "ar": "بانشاجاره"
+ },
+ {
+  "code": "BD-51",
+  "en": "Patuakhali",
+  "ar": "باتواخالي"
+ },
+ {
+  "code": "BD-50",
+  "en": "Pirojpur",
+  "ar": "فيروزبور"
+ },
+ {
+  "code": "BD-53",
+  "en": "Rajbari",
+  "ar": "راجباري"
+ },
+ {
+  "code": "BD-54",
+  "en": "Rajshahi",
+  "ar": "راجشاهي"
+ },
+ {
+  "code": "BD-E",
+  "en": "Rajshahi",
+  "ar": "راجشاهي"
+ },
+ {
+  "code": "BD-56",
+  "en": "Rangamati",
+  "ar": "رانجاماتي"
+ },
+ {
+  "code": "BD-F",
+  "en": "Rangpur",
+  "ar": "رانجبور"
+ },
+ {
+  "code": "BD-55",
+  "en": "Rangpur",
+  "ar": "رانجبور"
+ },
+ {
+  "code": "BD-58",
+  "en": "Satkhira",
+  "ar": "شات خيرا"
+ },
+ {
+  "code": "BD-62",
+  "en": "Shariatpur",
+  "ar": "شريعتبور"
+ },
+ {
+  "code": "BD-57",
+  "en": "Sherpur",
+  "ar": "شيربور"
+ },
+ {
+  "code": "BD-59",
+  "en": "Sirajganj",
+  "ar": "سيراججانج"
+ },
+ {
+  "code": "BD-61",
+  "en": "Sunamganj",
+  "ar": "سونامغانج"
+ },
+ {
+  "code": "BD-G",
+  "en": "Sylhet",
+  "ar": "سيلهيت"
+ },
+ {
+  "code": "BD-60",
+  "en": "Sylhet",
+  "ar": "سيلهيت"
+ },
+ {
+  "code": "BD-63",
+  "en": "Tangail",
+  "ar": "تانجيل"
+ },
+ {
+  "code": "BD-64",
+  "en": "Thakurgaon",
+  "ar": "ثاكورجاون"
+ }
+]

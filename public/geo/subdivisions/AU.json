@@ -1,0 +1,42 @@
+[
+ {
+  "code": "AU-ACT",
+  "en": "Australian Capital Territory",
+  "ar": "إقليم العاصمة الأسترالية"
+ },
+ {
+  "code": "AU-NSW",
+  "en": "New South Wales",
+  "ar": "نيو ساوث ويلز"
+ },
+ {
+  "code": "AU-NT",
+  "en": "Northern Territory",
+  "ar": "الإقليم الشمالي"
+ },
+ {
+  "code": "AU-QLD",
+  "en": "Queensland",
+  "ar": "كوينزلاند"
+ },
+ {
+  "code": "AU-SA",
+  "en": "South Australia",
+  "ar": "جنوب أستراليا"
+ },
+ {
+  "code": "AU-TAS",
+  "en": "Tasmania",
+  "ar": "تسمانيا"
+ },
+ {
+  "code": "AU-VIC",
+  "en": "Victoria",
+  "ar": "فيكتوريا"
+ },
+ {
+  "code": "AU-WA",
+  "en": "Western Australia",
+  "ar": "غرب أستراليا"
+ }
+]

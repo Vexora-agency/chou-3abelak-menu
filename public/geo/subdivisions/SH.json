@@ -1,0 +1,57 @@
+[
+ {
+  "code": "SH-01",
+  "en": "Alarm Forest",
+  "ar": "غابة الإنذار"
+ },
+ {
+  "code": "SH-AC",
+  "en": "Ascension",
+  "ar": null
+ },
+ {
+  "code": "SH-02",
+  "en": "Blue Hill",
+  "ar": "التل الأزرق"
+ },
+ {
+  "code": "SH-03",
+  "en": "Half Tree Hollow",
+  "ar": null
+ },
+ {
+  "code": "SH-04",
+  "en": "Jamestown",
+  "ar": "جيمستاون"
+ },
+ {
+  "code": "SH-05",
+  "en": "Levelwood",
+  "ar": "ليفوود"
+ },
+ {
+  "code": "SH-06",
+  "en": "Longwood",
+  "ar": "لونجوود"
+ },
+ {
+  "code": "SH-HL",
+  "en": "Saint Helena",
+  "ar": null
+ },
+ {
+  "code": "SH-08",
+  "en": "Saint Paul's",
+  "ar": "سانت بول"
+ },
+ {
+  "code": "SH-07",
+  "en": "Sandy Bay",
+  "ar": "خليج ساندي"
+ },
+ {
+  "code": "SH-TA",
+  "en": "Tristan da Cunha",
+  "ar": null
+ }
+]

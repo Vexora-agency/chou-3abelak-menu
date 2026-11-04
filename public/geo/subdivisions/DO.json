@@ -1,0 +1,212 @@
+[
+ {
+  "code": "DO-02",
+  "en": "Azua",
+  "ar": "أزوا"
+ },
+ {
+  "code": "DO-03",
+  "en": "Baoruco",
+  "ar": "باووروكو"
+ },
+ {
+  "code": "DO-04",
+  "en": "Barahona",
+  "ar": "باراهونا"
+ },
+ {
+  "code": "DO-33",
+  "en": "Cibao Nordeste",
+  "ar": "سيباو نوردستي"
+ },
+ {
+  "code": "DO-34",
+  "en": "Cibao Noroeste",
+  "ar": "سيباو نورويست"
+ },
+ {
+  "code": "DO-35",
+  "en": "Cibao Norte",
+  "ar": "سيباو نورتي"
+ },
+ {
+  "code": "DO-36",
+  "en": "Cibao Sur",
+  "ar": "سيباو سور"
+ },
+ {
+  "code": "DO-05",
+  "en": "Dajabón",
+  "ar": "داجابون"
+ },
+ {
+  "code": "DO-01",
+  "en": "Distrito Nacional",
+  "ar": "المنطقة الوطنية"
+ },
+ {
+  "code": "DO-06",
+  "en": "Duarte",
+  "ar": "دوارتي"
+ },
+ {
+  "code": "DO-08",
+  "en": "El Seibo",
+  "ar": "إل سيبو"
+ },
+ {
+  "code": "DO-37",
+  "en": "El Valle",
+  "ar": "إل فالي"
+ },
+ {
+  "code": "DO-07",
+  "en": "Elías Piña",
+  "ar": "إلياس بينيا"
+ },
+ {
+  "code": "DO-38",
+  "en": "Enriquillo",
+  "ar": "إنريكييو"
+ },
+ {
+  "code": "DO-09",
+  "en": "Espaillat",
+  "ar": "إسبايلات"
+ },
+ {
+  "code": "DO-30",
+  "en": "Hato Mayor",
+  "ar": "مقاطعة هاتو مايور"
+ },
+ {
+  "code": "DO-19",
+  "en": "Hermanas Mirabal",
+  "ar": "الأخوات ميرابال"
+ },
+ {
+  "code": "DO-39",
+  "en": "Higuamo",
+  "ar": "هيغوامو"
+ },
+ {
+  "code": "DO-10",
+  "en": "Independencia",
+  "ar": "الاستقلال"
+ },
+ {
+  "code": "DO-11",
+  "en": "La Altagracia",
+  "ar": "لا ألتاجراسيا"
+ },
+ {
+  "code": "DO-12",
+  "en": "La Romana",
+  "ar": "لا رومانا"
+ },
+ {
+  "code": "DO-13",
+  "en": "La Vega",
+  "ar": "لا فيغا"
+ },
+ {
+  "code": "DO-14",
+  "en": "María Trinidad Sánchez",
+  "ar": "ماريا ترينيداد سانشيز"
+ },
+ {
+  "code": "DO-28",
+  "en": "Monseñor Nouel",
+  "ar": "مونسينور نويل"
+ },
+ {
+  "code": "DO-15",
+  "en": "Monte Cristi",
+  "ar": "مونتي كريستي"
+ },
+ {
+  "code": "DO-29",
+  "en": "Monte Plata",
+  "ar": "مونتي بلاتا"
+ },
+ {
+  "code": "DO-40",
+  "en": "Ozama",
+  "ar": "أوزاما"
+ },
+ {
+  "code": "DO-16",
+  "en": "Pedernales",
+  "ar": "بيديرناليس"
+ },
+ {
+  "code": "DO-17",
+  "en": "Peravia",
+  "ar": "بيرافيا"
+ },
+ {
+  "code": "DO-18",
+  "en": "Puerto Plata",
+  "ar": "بويرتو بلاتا"
+ },
+ {
+  "code": "DO-20",
+  "en": "Samaná",
+  "ar": "سامانا"
+ },
+ {
+  "code": "DO-21",
+  "en": "San Cristóbal",
+  "ar": "سان كريستوبال"
+ },
+ {
+  "code": "DO-31",
+  "en": "San José de Ocoa",
+  "ar": "سان خوسيه دي أوكوا"
+ },
+ {
+  "code": "DO-22",
+  "en": "San Juan",
+  "ar": "سان خوان"
+ },
+ {
+  "code": "DO-23",
+  "en": "San Pedro de Macorís",
+  "ar": "سان بيدرو دي ماكوريس"
+ },
+ {
+  "code": "DO-25",
+  "en": "Santiago",
+  "ar": "سانتياغو"
+ },
+ {
+  "code": "DO-26",
+  "en": "Santiago Rodríguez",
+  "ar": "سانتياغو رودريغيز"
+ },
+ {
+  "code": "DO-32",
+  "en": "Santo Domingo",
+  "ar": "سانتو دومينغو"
+ },
+ {
+  "code": "DO-24",
+  "en": "Sánchez Ramírez",
+  "ar": "سانشيز راميريز"
+ },
+ {
+  "code": "DO-41",
+  "en": "Valdesia",
+  "ar": "فالديسيا"
+ },
+ {
+  "code": "DO-27",
+  "en": "Valverde",
+  "ar": "فالفيردي"
+ },
+ {
+  "code": "DO-42",
+  "en": "Yuma",
+  "ar": "يوما"
+ }
+]

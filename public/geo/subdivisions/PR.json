@@ -1,0 +1,392 @@
+[
+ {
+  "code": "PR-001",
+  "en": "Adjuntas",
+  "ar": "أدجونتاس"
+ },
+ {
+  "code": "PR-003",
+  "en": "Aguada",
+  "ar": "أغوادا"
+ },
+ {
+  "code": "PR-005",
+  "en": "Aguadilla",
+  "ar": "أغواديلا"
+ },
+ {
+  "code": "PR-007",
+  "en": "Aguas Buenas",
+  "ar": "أغواس بويناس"
+ },
+ {
+  "code": "PR-009",
+  "en": "Aibonito",
+  "ar": "أيبونيتو"
+ },
+ {
+  "code": "PR-AR",
+  "en": "Arecibo",
+  "ar": "أريسيبو"
+ },
+ {
+  "code": "PR-015",
+  "en": "Arroyo",
+  "ar": "أرويو"
+ },
+ {
+  "code": "PR-011",
+  "en": "Añasco",
+  "ar": "أنياسكو"
+ },
+ {
+  "code": "PR-017",
+  "en": "Barceloneta",
+  "ar": "برشلونيتا"
+ },
+ {
+  "code": "PR-019",
+  "en": "Barranquitas",
+  "ar": "بارانكيتاس"
+ },
+ {
+  "code": "PR-BY",
+  "en": "Bayamon",
+  "ar": "بايامون"
+ },
+ {
+  "code": "PR-023",
+  "en": "Cabo Rojo",
+  "ar": "كابو روجو"
+ },
+ {
+  "code": "PR-CG",
+  "en": "Caguas",
+  "ar": "كاغواس"
+ },
+ {
+  "code": "PR-027",
+  "en": "Camuy",
+  "ar": "كاموي"
+ },
+ {
+  "code": "PR-029",
+  "en": "Canóvanas",
+  "ar": "كانوفاناس"
+ },
+ {
+  "code": "PR-CL",
+  "en": "Carolina",
+  "ar": "كارولينا"
+ },
+ {
+  "code": "PR-033",
+  "en": "Cataño",
+  "ar": "كاتانو"
+ },
+ {
+  "code": "PR-035",
+  "en": "Cayey",
+  "ar": "كايي"
+ },
+ {
+  "code": "PR-037",
+  "en": "Ceiba",
+  "ar": "سيبا"
+ },
+ {
+  "code": "PR-039",
+  "en": "Ciales",
+  "ar": "سياليس"
+ },
+ {
+  "code": "PR-041",
+  "en": "Cidra",
+  "ar": "سيدرا"
+ },
+ {
+  "code": "PR-043",
+  "en": "Coamo",
+  "ar": "كوامو"
+ },
+ {
+  "code": "PR-045",
+  "en": "Comerío",
+  "ar": "كوميريو"
+ },
+ {
+  "code": "PR-047",
+  "en": "Corozal",
+  "ar": "كوروزال"
+ },
+ {
+  "code": "PR-049",
+  "en": "Culebra",
+  "ar": "كوليبرا"
+ },
+ {
+  "code": "PR-051",
+  "en": "Dorado",
+  "ar": "دورادو"
+ },
+ {
+  "code": "PR-053",
+  "en": "Fajardo",
+  "ar": "فاخاردو"
+ },
+ {
+  "code": "PR-054",
+  "en": "Florida",
+  "ar": "فلوريدا"
+ },
+ {
+  "code": "PR-057",
+  "en": "Guayama",
+  "ar": "غواياما"
+ },
+ {
+  "code": "PR-059",
+  "en": "Guayanilla",
+  "ar": "غوايانيلا"
+ },
+ {
+  "code": "PR-GN",
+  "en": "Guaynabo",
+  "ar": "غواينابو"
+ },
+ {
+  "code": "PR-063",
+  "en": "Gurabo",
+  "ar": "جورابو"
+ },
+ {
+  "code": "PR-055",
+  "en": "Guánica",
+  "ar": "غوانيكا"
+ },
+ {
+  "code": "PR-065",
+  "en": "Hatillo",
+  "ar": "هاتيلو"
+ },
+ {
+  "code": "PR-067",
+  "en": "Hormigueros",
+  "ar": "هورميغويروس"
+ },
+ {
+  "code": "PR-069",
+  "en": "Humacao",
+  "ar": "هوماكاو"
+ },
+ {
+  "code": "PR-071",
+  "en": "Isabela",
+  "ar": "إيزابيلا"
+ },
+ {
+  "code": "PR-073",
+  "en": "Jayuya",
+  "ar": "جايويا"
+ },
+ {
+  "code": "PR-075",
+  "en": "Juana Díaz",
+  "ar": "خوانا دياز"
+ },
+ {
+  "code": "PR-077",
+  "en": "Juncos",
+  "ar": "جونكو"
+ },
+ {
+  "code": "PR-079",
+  "en": "Lajas",
+  "ar": "لاجاس"
+ },
+ {
+  "code": "PR-081",
+  "en": "Lares",
+  "ar": "لاريس"
+ },
+ {
+  "code": "PR-083",
+  "en": "Las Marías",
+  "ar": "لاس مارياس"
+ },
+ {
+  "code": "PR-085",
+  "en": "Las Piedras",
+  "ar": "لاس بيدراس"
+ },
+ {
+  "code": "PR-087",
+  "en": "Loíza",
+  "ar": "لويزا"
+ },
+ {
+  "code": "PR-089",
+  "en": "Luquillo",
+  "ar": "لوكويلو"
+ },
+ {
+  "code": "PR-091",
+  "en": "Manatí",
+  "ar": "ماناتي"
+ },
+ {
+  "code": "PR-093",
+  "en": "Maricao",
+  "ar": "ماريكاو"
+ },
+ {
+  "code": "PR-095",
+  "en": "Maunabo",
+  "ar": "ماونابو"
+ },
+ {
+  "code": "PR-MG",
+  "en": "Mayagüez",
+  "ar": "ماياجويز"
+ },
+ {
+  "code": "PR-099",
+  "en": "Moca",
+  "ar": "موكا"
+ },
+ {
+  "code": "PR-101",
+  "en": "Morovis",
+  "ar": "موروفيس"
+ },
+ {
+  "code": "PR-103",
+  "en": "Naguabo",
+  "ar": "ناجوابو"
+ },
+ {
+  "code": "PR-105",
+  "en": "Naranjito",
+  "ar": "نارانجيتو"
+ },
+ {
+  "code": "PR-107",
+  "en": "Orocovis",
+  "ar": "أوروكوفيس"
+ },
+ {
+  "code": "PR-109",
+  "en": "Patillas",
+  "ar": "باتيلاس"
+ },
+ {
+  "code": "PR-111",
+  "en": "Peñuelas",
+  "ar": "بينويلاس"
+ },
+ {
+  "code": "PR-PO",
+  "en": "Ponce",
+  "ar": "بونس"
+ },
+ {
+  "code": "PR-115",
+  "en": "Quebradillas",
+  "ar": "كيبرادياس"
+ },
+ {
+  "code": "PR-117",
+  "en": "Rincón",
+  "ar": "رينكون"
+ },
+ {
+  "code": "PR-119",
+  "en": "Río Grande",
+  "ar": "ريو غراندي"
+ },
+ {
+  "code": "PR-121",
+  "en": "Sabana Grande",
+  "ar": "سابانا غراندي"
+ },
+ {
+  "code": "PR-123",
+  "en": "Salinas",
+  "ar": "ساليناس"
+ },
+ {
+  "code": "PR-125",
+  "en": "San Germán",
+  "ar": "سان جيرمان"
+ },
+ {
+  "code": "PR-SJ",
+  "en": "San Juan",
+  "ar": "سان خوان"
+ },
+ {
+  "code": "PR-129",
+  "en": "San Lorenzo",
+  "ar": "سان لورينزو"
+ },
+ {
+  "code": "PR-131",
+  "en": "San Sebastián",
+  "ar": "سان سيباستيان"
+ },
+ {
+  "code": "PR-133",
+  "en": "Santa Isabel",
+  "ar": "سانتا إيزابيل"
+ },
+ {
+  "code": "PR-135",
+  "en": "Toa Alta",
+  "ar": "توا ألتا"
+ },
+ {
+  "code": "PR-TB",
+  "en": "Toa Baja",
+  "ar": "توا باجا"
+ },
+ {
+  "code": "PR-TA",
+  "en": "Trujillo Alto",
+  "ar": "تروخيو ألتو"
+ },
+ {
+  "code": "PR-141",
+  "en": "Utuado",
+  "ar": "أوتوادو"
+ },
+ {
+  "code": "PR-143",
+  "en": "Vega Alta",
+  "ar": "فيغا ألتا"
+ },
+ {
+  "code": "PR-145",
+  "en": "Vega Baja",
+  "ar": "فيغا باجا"
+ },
+ {
+  "code": "PR-147",
+  "en": "Vieques",
+  "ar": "فييكيس"
+ },
+ {
+  "code": "PR-149",
+  "en": "Villalba",
+  "ar": "فيلالبا"
+ },
+ {
+  "code": "PR-151",
+  "en": "Yabucoa",
+  "ar": "يابوكوا"
+ },
+ {
+  "code": "PR-153",
+  "en": "Yauco",
+  "ar": "ياوكو"
+ }
+]

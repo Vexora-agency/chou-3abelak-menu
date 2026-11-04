@@ -1,0 +1,392 @@
+[
+ {
+  "code": "AZ-ABS",
+  "en": "Absheron",
+  "ar": "أبشيرون"
+ },
+ {
+  "code": "AZ-AGM",
+  "en": "Agdam",
+  "ar": "آغدام"
+ },
+ {
+  "code": "AZ-AGS",
+  "en": "Agdash",
+  "ar": "أغداش"
+ },
+ {
+  "code": "AZ-AGC",
+  "en": "Aghjabadi",
+  "ar": "آقجبدي"
+ },
+ {
+  "code": "AZ-AGA",
+  "en": "Agstafa",
+  "ar": "آقستافا"
+ },
+ {
+  "code": "AZ-AGU",
+  "en": "Agsu",
+  "ar": "أغسو"
+ },
+ {
+  "code": "AZ-AST",
+  "en": "Astara",
+  "ar": "أستارا"
+ },
+ {
+  "code": "AZ-BAB",
+  "en": "Babek",
+  "ar": "بابك"
+ },
+ {
+  "code": "AZ-BA",
+  "en": "Baku",
+  "ar": "باكو"
+ },
+ {
+  "code": "AZ-BAL",
+  "en": "Balakan",
+  "ar": "بالاكان"
+ },
+ {
+  "code": "AZ-BAR",
+  "en": "Barda",
+  "ar": "باردا"
+ },
+ {
+  "code": "AZ-BEY",
+  "en": "Beylagan",
+  "ar": "مقاطعة بيلقان"
+ },
+ {
+  "code": "AZ-BIL",
+  "en": "Bilasuvar",
+  "ar": "بيلاسوار"
+ },
+ {
+  "code": "AZ-DAS",
+  "en": "Dashkasan",
+  "ar": "داشكيسان"
+ },
+ {
+  "code": "AZ-FUZ",
+  "en": "Fizuli",
+  "ar": "فيزولي"
+ },
+ {
+  "code": "AZ-GA",
+  "en": "Ganja",
+  "ar": "غانجا"
+ },
+ {
+  "code": "AZ-QOB",
+  "en": "Gobustan",
+  "ar": "قوبوستان"
+ },
+ {
+  "code": "AZ-GOR",
+  "en": "Goranboy",
+  "ar": "جورانبوي"
+ },
+ {
+  "code": "AZ-GOY",
+  "en": "Goychay",
+  "ar": "جويتشاي"
+ },
+ {
+  "code": "AZ-GYG",
+  "en": "Goygol",
+  "ar": "جويجول"
+ },
+ {
+  "code": "AZ-GAD",
+  "en": "Gədəbəy",
+  "ar": "غدابيغ"
+ },
+ {
+  "code": "AZ-HAC",
+  "en": "Hajigabul",
+  "ar": "مقاطعة حاجي قبول"
+ },
+ {
+  "code": "AZ-IMI",
+  "en": "Imishli",
+  "ar": "مقاطعة إيميشلي"
+ },
+ {
+  "code": "AZ-ISM",
+  "en": "Ismailli",
+  "ar": "مقاطعة إسماعيلي"
+ },
+ {
+  "code": "AZ-CAB",
+  "en": "Jabrayil",
+  "ar": "مقاطعة جبرائيل"
+ },
+ {
+  "code": "AZ-CAL",
+  "en": "Jalilabad",
+  "ar": "جليل آباد"
+ },
+ {
+  "code": "AZ-CUL",
+  "en": "Julfa",
+  "ar": "جولفا"
+ },
+ {
+  "code": "AZ-KAL",
+  "en": "Kalbajar",
+  "ar": "كالبجار"
+ },
+ {
+  "code": "AZ-KAN",
+  "en": "Kangarli",
+  "ar": "كانجارلي"
+ },
+ {
+  "code": "AZ-XAC",
+  "en": "Khachmaz",
+  "ar": "خاشماز"
+ },
+ {
+  "code": "AZ-XA",
+  "en": "Khankendi",
+  "ar": "خانكندي"
+ },
+ {
+  "code": "AZ-XIZ",
+  "en": "Khizi",
+  "ar": "خيزي"
+ },
+ {
+  "code": "AZ-XCI",
+  "en": "Khojali",
+  "ar": "خوجالي"
+ },
+ {
+  "code": "AZ-KUR",
+  "en": "Kurdamir",
+  "ar": "كردامير"
+ },
+ {
+  "code": "AZ-LAC",
+  "en": "Lachin",
+  "ar": "لاتشين"
+ },
+ {
+  "code": "AZ-LAN",
+  "en": "Lankaran",
+  "ar": "لنكران"
+ },
+ {
+  "code": "AZ-LA",
+  "en": "Lankaran",
+  "ar": "لنكران"
+ },
+ {
+  "code": "AZ-LER",
+  "en": "Lerik",
+  "ar": "ليريك"
+ },
+ {
+  "code": "AZ-XVD",
+  "en": "Martuni",
+  "ar": "مارتوني"
+ },
+ {
+  "code": "AZ-MAS",
+  "en": "Masally",
+  "ar": "ماساللي"
+ },
+ {
+  "code": "AZ-MI",
+  "en": "Mingachevir",
+  "ar": "مينجاشيفير"
+ },
+ {
+  "code": "AZ-NA",
+  "en": "Naftalan",
+  "ar": "نفتالان"
+ },
+ {
+  "code": "AZ-NV",
+  "en": "Nakhchivan",
+  "ar": "نخجوان"
+ },
+ {
+  "code": "AZ-NX",
+  "en": "Nakhchivan",
+  "ar": "نخجوان"
+ },
+ {
+  "code": "AZ-NEF",
+  "en": "Neftchala",
+  "ar": "نفطشالا"
+ },
+ {
+  "code": "AZ-OGU",
+  "en": "Oghuz",
+  "ar": "أوغوز"
+ },
+ {
+  "code": "AZ-ORD",
+  "en": "Ordubad",
+  "ar": "أردوباد"
+ },
+ {
+  "code": "AZ-QAB",
+  "en": "Qabala",
+  "ar": "قابالا"
+ },
+ {
+  "code": "AZ-QAX",
+  "en": "Qakh",
+  "ar": "مقاطعة قاخ"
+ },
+ {
+  "code": "AZ-QAZ",
+  "en": "Qazakh",
+  "ar": "قازاخ"
+ },
+ {
+  "code": "AZ-QBA",
+  "en": "Quba",
+  "ar": "مدينة قوبا"
+ },
+ {
+  "code": "AZ-QBI",
+  "en": "Qubadli",
+  "ar": "قبادلی"
+ },
+ {
+  "code": "AZ-QUS",
+  "en": "Qusar",
+  "ar": "مقاطعة قوسار"
+ },
+ {
+  "code": "AZ-SAT",
+  "en": "Saatly",
+  "ar": "مقاطعة ساتلي"
+ },
+ {
+  "code": "AZ-SAB",
+  "en": "Sabirabad",
+  "ar": "صابر آباد"
+ },
+ {
+  "code": "AZ-SAD",
+  "en": "Sadarak",
+  "ar": "ساداراك"
+ },
+ {
+  "code": "AZ-SAL",
+  "en": "Salyan",
+  "ar": "ساليان"
+ },
+ {
+  "code": "AZ-SMX",
+  "en": "Samukh",
+  "ar": "ساموخ"
+ },
+ {
+  "code": "AZ-SBN",
+  "en": "Shabran",
+  "ar": "مقاطعة شابران"
+ },
+ {
+  "code": "AZ-SAH",
+  "en": "Shahbuz",
+  "ar": "شاهبوز"
+ },
+ {
+  "code": "AZ-SA",
+  "en": "Shaki",
+  "ar": "شاكي"
+ },
+ {
+  "code": "AZ-SAK",
+  "en": "Shaki",
+  "ar": "شاكي"
+ },
+ {
+  "code": "AZ-SMI",
+  "en": "Shamakhi",
+  "ar": "شماخى"
+ },
+ {
+  "code": "AZ-SKR",
+  "en": "Shamkir",
+  "ar": "شامكير"
+ },
+ {
+  "code": "AZ-SAR",
+  "en": "Sharur",
+  "ar": "شرور"
+ },
+ {
+  "code": "AZ-SR",
+  "en": "Shirvan",
+  "ar": "شروان"
+ },
+ {
+  "code": "AZ-SUS",
+  "en": "Shusha",
+  "ar": "مقاطعة شوشا"
+ },
+ {
+  "code": "AZ-SIY",
+  "en": "Siazan",
+  "ar": "سيازان"
+ },
+ {
+  "code": "AZ-SM",
+  "en": "Sumqayit",
+  "ar": "سومقاييت"
+ },
+ {
+  "code": "AZ-TAR",
+  "en": "Tartar",
+  "ar": "التارتار"
+ },
+ {
+  "code": "AZ-TOV",
+  "en": "Tovuz",
+  "ar": "توفوز"
+ },
+ {
+  "code": "AZ-UCA",
+  "en": "Ujar",
+  "ar": "أوجار"
+ },
+ {
+  "code": "AZ-YAR",
+  "en": "Yardymli",
+  "ar": "مقاطعة يارديملي"
+ },
+ {
+  "code": "AZ-YEV",
+  "en": "Yevlakh",
+  "ar": "يفلاكس"
+ },
+ {
+  "code": "AZ-YE",
+  "en": "Yevlakh",
+  "ar": "يفلاكس"
+ },
+ {
+  "code": "AZ-ZAN",
+  "en": "Zangilan",
+  "ar": "زنجيلان"
+ },
+ {
+  "code": "AZ-ZAQ",
+  "en": "Zaqatala",
+  "ar": "زقاتالا"
+ },
+ {
+  "code": "AZ-ZAR",
+  "en": "Zardab",
+  "ar": "زرداب"
+ }
+]

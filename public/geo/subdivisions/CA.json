@@ -1,0 +1,67 @@
+[
+ {
+  "code": "CA-AB",
+  "en": "Alberta",
+  "ar": "ألبرتا"
+ },
+ {
+  "code": "CA-BC",
+  "en": "British Columbia",
+  "ar": "كولومبيا البريطانية"
+ },
+ {
+  "code": "CA-MB",
+  "en": "Manitoba",
+  "ar": "مانيتوبا"
+ },
+ {
+  "code": "CA-NB",
+  "en": "New Brunswick",
+  "ar": "نيو برونزويك"
+ },
+ {
+  "code": "CA-NL",
+  "en": "Newfoundland and Labrador",
+  "ar": "نيوفاوندلاند ولابرادور"
+ },
+ {
+  "code": "CA-NT",
+  "en": "Northwest Territories",
+  "ar": "الأقاليم الشمالية الغربية"
+ },
+ {
+  "code": "CA-NS",
+  "en": "Nova Scotia",
+  "ar": "نوفا سكوشا"
+ },
+ {
+  "code": "CA-NU",
+  "en": "Nunavut",
+  "ar": "نونافوت"
+ },
+ {
+  "code": "CA-ON",
+  "en": "Ontario",
+  "ar": "أونتاريو"
+ },
+ {
+  "code": "CA-PE",
+  "en": "Prince Edward Island",
+  "ar": "جزيرة الأمير إدوارد"
+ },
+ {
+  "code": "CA-QC",
+  "en": "Quebec",
+  "ar": "كيبيك"
+ },
+ {
+  "code": "CA-SK",
+  "en": "Saskatchewan",
+  "ar": "ساسكاتشوان"
+ },
+ {
+  "code": "CA-YT",
+  "en": "Yukon",
+  "ar": "يوكون"
+ }
+]

@@ -1,0 +1,42 @@
+[
+ {
+  "code": "SK-BC",
+  "en": "Banská Bystrica",
+  "ar": "بانسكا بيستريتسا"
+ },
+ {
+  "code": "SK-BL",
+  "en": "Bratislava",
+  "ar": "براتيسلافا"
+ },
+ {
+  "code": "SK-KI",
+  "en": "Košice",
+  "ar": "كوشيتسه"
+ },
+ {
+  "code": "SK-NI",
+  "en": "Nitra",
+  "ar": "نيترا"
+ },
+ {
+  "code": "SK-PV",
+  "en": "Prešov",
+  "ar": "بريشوف"
+ },
+ {
+  "code": "SK-TC",
+  "en": "Trenčín",
+  "ar": "ترينشين"
+ },
+ {
+  "code": "SK-TA",
+  "en": "Trnava",
+  "ar": "ترنافا"
+ },
+ {
+  "code": "SK-ZI",
+  "en": "Žilina",
+  "ar": "زيلينا"
+ }
+]

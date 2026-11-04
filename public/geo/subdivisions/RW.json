@@ -1,0 +1,27 @@
+[
+ {
+  "code": "RW-02",
+  "en": "Eastern",
+  "ar": "شرقي"
+ },
+ {
+  "code": "RW-01",
+  "en": "Kigali",
+  "ar": "كيغالي"
+ },
+ {
+  "code": "RW-03",
+  "en": "Northern",
+  "ar": "شمالي"
+ },
+ {
+  "code": "RW-05",
+  "en": "Southern",
+  "ar": "جنوبي"
+ },
+ {
+  "code": "RW-04",
+  "en": "Western",
+  "ar": "الغربي"
+ }
+]

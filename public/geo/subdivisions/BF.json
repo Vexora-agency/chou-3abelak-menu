@@ -1,0 +1,292 @@
+[
+ {
+  "code": "BF-BAL",
+  "en": "Balé",
+  "ar": "بالة"
+ },
+ {
+  "code": "BF-BAM",
+  "en": "Bam",
+  "ar": "بام"
+ },
+ {
+  "code": "BF-BAN",
+  "en": "Banwa",
+  "ar": "بانوا"
+ },
+ {
+  "code": "BF-BAZ",
+  "en": "Bazèga",
+  "ar": "بازيغا"
+ },
+ {
+  "code": "BF-01",
+  "en": "Boucle du Mouhoun",
+  "ar": "بوكل دو موهون"
+ },
+ {
+  "code": "BF-BGR",
+  "en": "Bougouriba",
+  "ar": "بوغريبة"
+ },
+ {
+  "code": "BF-BLG",
+  "en": "Boulgou",
+  "ar": "بولغو"
+ },
+ {
+  "code": "BF-BLK",
+  "en": "Boulkiemde",
+  "ar": "بولكيمدي"
+ },
+ {
+  "code": "BF-02",
+  "en": "Cascades",
+  "ar": "شلالات"
+ },
+ {
+  "code": "BF-03",
+  "en": "Centre",
+  "ar": "مركز"
+ },
+ {
+  "code": "BF-04",
+  "en": "Centre-Est",
+  "ar": "المركز الشرقي"
+ },
+ {
+  "code": "BF-05",
+  "en": "Centre-Nord",
+  "ar": "وسط الشمال"
+ },
+ {
+  "code": "BF-06",
+  "en": "Centre-Ouest",
+  "ar": "وسط غرب"
+ },
+ {
+  "code": "BF-07",
+  "en": "Centre-Sud",
+  "ar": "وسط الجنوب"
+ },
+ {
+  "code": "BF-COM",
+  "en": "Comoé",
+  "ar": "كوموي"
+ },
+ {
+  "code": "BF-08",
+  "en": "Est",
+  "ar": "EST"
+ },
+ {
+  "code": "BF-GAN",
+  "en": "Ganzourgou",
+  "ar": "غنزورغو"
+ },
+ {
+  "code": "BF-GNA",
+  "en": "Gnagna",
+  "ar": "غناغنا"
+ },
+ {
+  "code": "BF-GOU",
+  "en": "Gourma",
+  "ar": "غورما"
+ },
+ {
+  "code": "BF-09",
+  "en": "Hauts-Bassins",
+  "ar": "هوت باسين"
+ },
+ {
+  "code": "BF-HOU",
+  "en": "Houet",
+  "ar": "هويت"
+ },
+ {
+  "code": "BF-IOB",
+  "en": "Ioba",
+  "ar": "أيوبا"
+ },
+ {
+  "code": "BF-KAD",
+  "en": "Kadiogo",
+  "ar": "كاديوغو"
+ },
+ {
+  "code": "BF-KMD",
+  "en": "Komondjari",
+  "ar": "كومونجاري"
+ },
+ {
+  "code": "BF-KMP",
+  "en": "Kompienga",
+  "ar": "كومبينجا"
+ },
+ {
+  "code": "BF-KOS",
+  "en": "Kossi",
+  "ar": "كوسي"
+ },
+ {
+  "code": "BF-KOP",
+  "en": "Koulpélogo",
+  "ar": "كولبيلوغو"
+ },
+ {
+  "code": "BF-KOT",
+  "en": "Kouritenga",
+  "ar": "كوريتينجا"
+ },
+ {
+  "code": "BF-KOW",
+  "en": "Kourwéogo",
+  "ar": "كورويوغو"
+ },
+ {
+  "code": "BF-KEN",
+  "en": "Kénédougou",
+  "ar": "كينيدوغو"
+ },
+ {
+  "code": "BF-LOR",
+  "en": "Loroum",
+  "ar": "لوروم"
+ },
+ {
+  "code": "BF-LER",
+  "en": "Léraba",
+  "ar": "ليرابا"
+ },
+ {
+  "code": "BF-MOU",
+  "en": "Mouhoun",
+  "ar": "موهون"
+ },
+ {
+  "code": "BF-NAO",
+  "en": "Nahouri",
+  "ar": "نهوري"
+ },
+ {
+  "code": "BF-NAM",
+  "en": "Namentenga",
+  "ar": "نامينتينجا"
+ },
+ {
+  "code": "BF-NAY",
+  "en": "Nayala",
+  "ar": "نايلا"
+ },
+ {
+  "code": "BF-10",
+  "en": "Nord",
+  "ar": "نورد"
+ },
+ {
+  "code": "BF-NOU",
+  "en": "Noumbiel",
+  "ar": "نومبيل"
+ },
+ {
+  "code": "BF-OUB",
+  "en": "Oubritenga",
+  "ar": "أوبريتينجا"
+ },
+ {
+  "code": "BF-OUD",
+  "en": "Oudalan",
+  "ar": "أودالان"
+ },
+ {
+  "code": "BF-PAS",
+  "en": "Passoré",
+  "ar": "باسوري"
+ },
+ {
+  "code": "BF-11",
+  "en": "Plateau-Central",
+  "ar": "الهضبة الوسطى"
+ },
+ {
+  "code": "BF-PON",
+  "en": "Poni",
+  "ar": "بوني"
+ },
+ {
+  "code": "BF-12",
+  "en": "Sahel",
+  "ar": "الساحل"
+ },
+ {
+  "code": "BF-SNG",
+  "en": "Sanguié",
+  "ar": "سانجي"
+ },
+ {
+  "code": "BF-SMT",
+  "en": "Sanmatenga",
+  "ar": "سانماتنجا"
+ },
+ {
+  "code": "BF-SIS",
+  "en": "Sissili",
+  "ar": "سيسيلي"
+ },
+ {
+  "code": "BF-SOM",
+  "en": "Soum",
+  "ar": "سوم"
+ },
+ {
+  "code": "BF-SOR",
+  "en": "Sourou",
+  "ar": "سورو"
+ },
+ {
+  "code": "BF-13",
+  "en": "Sud-Ouest",
+  "ar": "جنوب غرب"
+ },
+ {
+  "code": "BF-SEN",
+  "en": "Séno",
+  "ar": "سينو"
+ },
+ {
+  "code": "BF-TAP",
+  "en": "Tapoa",
+  "ar": "تابوا"
+ },
+ {
+  "code": "BF-TUI",
+  "en": "Tuy",
+  "ar": "توي"
+ },
+ {
+  "code": "BF-YAG",
+  "en": "Yagha",
+  "ar": "ياغا"
+ },
+ {
+  "code": "BF-YAT",
+  "en": "Yatenga",
+  "ar": "ياتينجا"
+ },
+ {
+  "code": "BF-ZIR",
+  "en": "Ziro",
+  "ar": "زيرو"
+ },
+ {
+  "code": "BF-ZON",
+  "en": "Zondoma",
+  "ar": "زوندوما"
+ },
+ {
+  "code": "BF-ZOU",
+  "en": "Zoundwéogo",
+  "ar": "زوندويوغو"
+ }
+]

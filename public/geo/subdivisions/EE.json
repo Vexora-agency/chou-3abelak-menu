@@ -1,0 +1,467 @@
+[
+ {
+  "code": "EE-130",
+  "en": "Alutaguse",
+  "ar": "ألوتاغوس"
+ },
+ {
+  "code": "EE-141",
+  "en": "Anija",
+  "ar": "أنيجا"
+ },
+ {
+  "code": "EE-142",
+  "en": "Antsla",
+  "ar": "أنتسلا"
+ },
+ {
+  "code": "EE-171",
+  "en": "Elva",
+  "ar": "إيلفا"
+ },
+ {
+  "code": "EE-184",
+  "en": "Haapsalu",
+  "ar": "هابسالو"
+ },
+ {
+  "code": "EE-191",
+  "en": "Haljala",
+  "ar": "هلجالا"
+ },
+ {
+  "code": "EE-37",
+  "en": "Harju",
+  "ar": "هارجو"
+ },
+ {
+  "code": "EE-198",
+  "en": "Harku",
+  "ar": "هاركو"
+ },
+ {
+  "code": "EE-39",
+  "en": "Hiiu",
+  "ar": "هيو"
+ },
+ {
+  "code": "EE-205",
+  "en": "Hiiumaa",
+  "ar": "هيوما"
+ },
+ {
+  "code": "EE-214",
+  "en": "Häädemeeste",
+  "ar": "هاديميستي"
+ },
+ {
+  "code": "EE-45",
+  "en": "Ida-Viru",
+  "ar": "إيدا-فيرو"
+ },
+ {
+  "code": "EE-245",
+  "en": "Joelähtme",
+  "ar": "جويلايتمي"
+ },
+ {
+  "code": "EE-255",
+  "en": "Järva",
+  "ar": "جارفا"
+ },
+ {
+  "code": "EE-52",
+  "en": "Järva",
+  "ar": "جارفا"
+ },
+ {
+  "code": "EE-50",
+  "en": "Jõgeva",
+  "ar": "جوغيفا"
+ },
+ {
+  "code": "EE-247",
+  "en": "Jõgeva",
+  "ar": "جوغيفا"
+ },
+ {
+  "code": "EE-250",
+  "en": "Jõhvi",
+  "ar": null
+ },
+ {
+  "code": "EE-272",
+  "en": "Kadrina",
+  "ar": "كادرينا"
+ },
+ {
+  "code": "EE-283",
+  "en": "Kambja",
+  "ar": "كامبجا"
+ },
+ {
+  "code": "EE-284",
+  "en": "Kanepi",
+  "ar": "كانيبي"
+ },
+ {
+  "code": "EE-291",
+  "en": "Kastre",
+  "ar": "كاستر"
+ },
+ {
+  "code": "EE-293",
+  "en": "Kehtna",
+  "ar": "كيهتنا"
+ },
+ {
+  "code": "EE-296",
+  "en": "Keila",
+  "ar": null
+ },
+ {
+  "code": "EE-303",
+  "en": "Kihnu",
+  "ar": "كينو"
+ },
+ {
+  "code": "EE-305",
+  "en": "Kiili",
+  "ar": "كيلي"
+ },
+ {
+  "code": "EE-317",
+  "en": "Kohila",
+  "ar": "كوهيلا"
+ },
+ {
+  "code": "EE-321",
+  "en": "Kohtla-Järve",
+  "ar": "كوتلا-يارفي"
+ },
+ {
+  "code": "EE-338",
+  "en": "Kose",
+  "ar": "كوسه"
+ },
+ {
+  "code": "EE-353",
+  "en": "Kuusalu",
+  "ar": "كوسالو"
+ },
+ {
+  "code": "EE-424",
+  "en": "Loksa",
+  "ar": "لوكسا"
+ },
+ {
+  "code": "EE-432",
+  "en": "Luunja",
+  "ar": "لونجا"
+ },
+ {
+  "code": "EE-56",
+  "en": "Lääne",
+  "ar": "لين"
+ },
+ {
+  "code": "EE-431",
+  "en": "Lääne-Harju",
+  "ar": "لاني-هارجو"
+ },
+ {
+  "code": "EE-441",
+  "en": "Lääne-Nigula",
+  "ar": "لين-نيجولا"
+ },
+ {
+  "code": "EE-60",
+  "en": "Lääne-Viru",
+  "ar": "لين-فيرو"
+ },
+ {
+  "code": "EE-430",
+  "en": "Lääneranna",
+  "ar": "لانيرانا"
+ },
+ {
+  "code": "EE-442",
+  "en": "Lüganuse",
+  "ar": "لوغانوس"
+ },
+ {
+  "code": "EE-446",
+  "en": "Maardu",
+  "ar": "ماردو"
+ },
+ {
+  "code": "EE-478",
+  "en": "Muhu",
+  "ar": "أبرشية موهو"
+ },
+ {
+  "code": "EE-480",
+  "en": "Mulgi",
+  "ar": "مولجي"
+ },
+ {
+  "code": "EE-486",
+  "en": "Mustvee",
+  "ar": null
+ },
+ {
+  "code": "EE-503",
+  "en": "Märjamaa",
+  "ar": "دائرة ماريما"
+ },
+ {
+  "code": "EE-511",
+  "en": "Narva",
+  "ar": "نارفا"
+ },
+ {
+  "code": "EE-514",
+  "en": "Narva-Jõesuu",
+  "ar": "نارفا-جويسو"
+ },
+ {
+  "code": "EE-528",
+  "en": "Noo",
+  "ar": "نو"
+ },
+ {
+  "code": "EE-557",
+  "en": "Otepää",
+  "ar": "أوتيبا"
+ },
+ {
+  "code": "EE-567",
+  "en": "Paide",
+  "ar": "بايده"
+ },
+ {
+  "code": "EE-586",
+  "en": "Peipsiääre",
+  "ar": "بيبسيار"
+ },
+ {
+  "code": "EE-618",
+  "en": "Poltsamaa",
+  "ar": "بولتساما"
+ },
+ {
+  "code": "EE-624",
+  "en": "Pärnu",
+  "ar": "بارنو"
+ },
+ {
+  "code": "EE-68",
+  "en": "Pärnu",
+  "ar": "بارنو"
+ },
+ {
+  "code": "EE-638",
+  "en": "Põhja-Pärnumaa",
+  "ar": "بوهيا-بارنو"
+ },
+ {
+  "code": "EE-615",
+  "en": "Põhja-Sakala",
+  "ar": "بوهجا-ساكالا"
+ },
+ {
+  "code": "EE-622",
+  "en": "Põlva",
+  "ar": "بولفا"
+ },
+ {
+  "code": "EE-64",
+  "en": "Põlva",
+  "ar": "بولفا"
+ },
+ {
+  "code": "EE-651",
+  "en": "Raasiku",
+  "ar": "راسيكو"
+ },
+ {
+  "code": "EE-653",
+  "en": "Rae",
+  "ar": "راي"
+ },
+ {
+  "code": "EE-663",
+  "en": "Rakvere",
+  "ar": "راكفير"
+ },
+ {
+  "code": "EE-661",
+  "en": "Rakvere",
+  "ar": "راكفير"
+ },
+ {
+  "code": "EE-71",
+  "en": "Rapla",
+  "ar": "رابلا"
+ },
+ {
+  "code": "EE-668",
+  "en": "Rapla",
+  "ar": "رابلا"
+ },
+ {
+  "code": "EE-689",
+  "en": "Ruhnu",
+  "ar": "روهنو"
+ },
+ {
+  "code": "EE-708",
+  "en": "Räpina",
+  "ar": "رابينا"
+ },
+ {
+  "code": "EE-698",
+  "en": "Rõuge",
+  "ar": null
+ },
+ {
+  "code": "EE-712",
+  "en": "Saarde",
+  "ar": "ساردي"
+ },
+ {
+  "code": "EE-74",
+  "en": "Saare",
+  "ar": "ساري"
+ },
+ {
+  "code": "EE-714",
+  "en": "Saaremaa",
+  "ar": "أبرشية ساريما"
+ },
+ {
+  "code": "EE-719",
+  "en": "Saku",
+  "ar": "ساكو"
+ },
+ {
+  "code": "EE-726",
+  "en": "Saue",
+  "ar": null
+ },
+ {
+  "code": "EE-732",
+  "en": "Setomaa",
+  "ar": "سيتوما"
+ },
+ {
+  "code": "EE-735",
+  "en": "Sillamäe",
+  "ar": "سيلاما"
+ },
+ {
+  "code": "EE-784",
+  "en": "Tallinn",
+  "ar": "تالين"
+ },
+ {
+  "code": "EE-792",
+  "en": "Tapa",
+  "ar": "تابا"
+ },
+ {
+  "code": "EE-79",
+  "en": "Tartu",
+  "ar": "تارتو"
+ },
+ {
+  "code": "EE-793",
+  "en": "Tartu",
+  "ar": "تارتو"
+ },
+ {
+  "code": "EE-796",
+  "en": "Tartu",
+  "ar": "تارتو"
+ },
+ {
+  "code": "EE-809",
+  "en": "Tori",
+  "ar": "توري"
+ },
+ {
+  "code": "EE-824",
+  "en": "Tõrva",
+  "ar": "تورفا"
+ },
+ {
+  "code": "EE-834",
+  "en": "Türi",
+  "ar": "توري"
+ },
+ {
+  "code": "EE-855",
+  "en": "Valga",
+  "ar": "فالجا"
+ },
+ {
+  "code": "EE-81",
+  "en": "Valga",
+  "ar": "فالجا"
+ },
+ {
+  "code": "EE-890",
+  "en": "Viimsi",
+  "ar": "فيمسي"
+ },
+ {
+  "code": "EE-899",
+  "en": "Viljandi",
+  "ar": "فيلجاندي"
+ },
+ {
+  "code": "EE-897",
+  "en": "Viljandi",
+  "ar": "فيلياندي"
+ },
+ {
+  "code": "EE-84",
+  "en": "Viljandi",
+  "ar": "فيلجاندي"
+ },
+ {
+  "code": "EE-901",
+  "en": "Vinni",
+  "ar": "فيني"
+ },
+ {
+  "code": "EE-903",
+  "en": "Viru-Nigula",
+  "ar": "فيرو-نيجولا"
+ },
+ {
+  "code": "EE-907",
+  "en": "Vormsi",
+  "ar": "فورمسي"
+ },
+ {
+  "code": "EE-928",
+  "en": "Väike-Maarja",
+  "ar": "فايكي-ماريا"
+ },
+ {
+  "code": "EE-87",
+  "en": "Võru",
+  "ar": "فورو"
+ },
+ {
+  "code": "EE-917",
+  "en": "Võru",
+  "ar": "فورو"
+ },
+ {
+  "code": "EE-919",
+  "en": "Võru",
+  "ar": "فورو"
+ }
+]

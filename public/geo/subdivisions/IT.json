@@ -1,0 +1,647 @@
+[
+ {
+  "code": "IT-65",
+  "en": "Abruzzo",
+  "ar": "أبروتسو"
+ },
+ {
+  "code": "IT-AG",
+  "en": "Agrigento",
+  "ar": "أجريجينتو"
+ },
+ {
+  "code": "IT-AL",
+  "en": "Alessandria",
+  "ar": "ألساندريا"
+ },
+ {
+  "code": "IT-AN",
+  "en": "Ancona",
+  "ar": "أنكونا"
+ },
+ {
+  "code": "IT-23",
+  "en": "Aosta Valley",
+  "ar": "وادي أوستا"
+ },
+ {
+  "code": "IT-75",
+  "en": "Apulia",
+  "ar": "بوليا"
+ },
+ {
+  "code": "IT-AR",
+  "en": "Arezzo",
+  "ar": "أريتسو"
+ },
+ {
+  "code": "IT-AP",
+  "en": "Ascoli Piceno",
+  "ar": "أسكولي بيتشينو"
+ },
+ {
+  "code": "IT-AT",
+  "en": "Asti",
+  "ar": "أستي"
+ },
+ {
+  "code": "IT-AV",
+  "en": "Avellino",
+  "ar": "أفيلينو"
+ },
+ {
+  "code": "IT-BA",
+  "en": "Bari",
+  "ar": "باري"
+ },
+ {
+  "code": "IT-BT",
+  "en": "Barletta-Andria-Trani",
+  "ar": "بارليتا-أندريا-تراني"
+ },
+ {
+  "code": "IT-77",
+  "en": "Basilicata",
+  "ar": "بازيليكاتا"
+ },
+ {
+  "code": "IT-BL",
+  "en": "Belluno",
+  "ar": "بلونو"
+ },
+ {
+  "code": "IT-BN",
+  "en": "Benevento",
+  "ar": "بينيفينتو"
+ },
+ {
+  "code": "IT-BG",
+  "en": "Bergamo",
+  "ar": "بيرغامو"
+ },
+ {
+  "code": "IT-BI",
+  "en": "Biella",
+  "ar": "بييلا"
+ },
+ {
+  "code": "IT-BO",
+  "en": "Bologna",
+  "ar": "بولونيا"
+ },
+ {
+  "code": "IT-BS",
+  "en": "Brescia",
+  "ar": "بريشيا"
+ },
+ {
+  "code": "IT-BR",
+  "en": "Brindisi",
+  "ar": "برينديزي"
+ },
+ {
+  "code": "IT-CA",
+  "en": "Cagliari",
+  "ar": "كالياري"
+ },
+ {
+  "code": "IT-78",
+  "en": "Calabria",
+  "ar": "كالابريا"
+ },
+ {
+  "code": "IT-CL",
+  "en": "Caltanissetta",
+  "ar": "كالتانيسيتا"
+ },
+ {
+  "code": "IT-72",
+  "en": "Campania",
+  "ar": "كامبانيا"
+ },
+ {
+  "code": "IT-CB",
+  "en": "Campobasso",
+  "ar": "كامبوباسو"
+ },
+ {
+  "code": "IT-CE",
+  "en": "Caserta",
+  "ar": "كاسيرتا"
+ },
+ {
+  "code": "IT-CT",
+  "en": "Catania",
+  "ar": "كاتانيا"
+ },
+ {
+  "code": "IT-CZ",
+  "en": "Catanzaro",
+  "ar": "كاتانزارو"
+ },
+ {
+  "code": "IT-CH",
+  "en": "Chieti",
+  "ar": "كييتي"
+ },
+ {
+  "code": "IT-CO",
+  "en": "Como",
+  "ar": "كومو"
+ },
+ {
+  "code": "IT-CS",
+  "en": "Cosenza",
+  "ar": "كوزنسا"
+ },
+ {
+  "code": "IT-CR",
+  "en": "Cremona",
+  "ar": "كريمونا"
+ },
+ {
+  "code": "IT-KR",
+  "en": "Crotone",
+  "ar": "كروتوني"
+ },
+ {
+  "code": "IT-CN",
+  "en": "Cuneo",
+  "ar": "كونيو"
+ },
+ {
+  "code": "IT-45",
+  "en": "Emilia-Romagna",
+  "ar": "إميليا رومانيا"
+ },
+ {
+  "code": "IT-EN",
+  "en": "Enna",
+  "ar": "إينا"
+ },
+ {
+  "code": "IT-FM",
+  "en": "Fermo",
+  "ar": "فيرمو"
+ },
+ {
+  "code": "IT-FE",
+  "en": "Ferrara",
+  "ar": "فيرارا"
+ },
+ {
+  "code": "IT-FI",
+  "en": "Florence",
+  "ar": "فلورنسا"
+ },
+ {
+  "code": "IT-FG",
+  "en": "Foggia",
+  "ar": "فوجيا"
+ },
+ {
+  "code": "IT-FC",
+  "en": "Forlì-Cesena",
+  "ar": "فورلي تشيزينا"
+ },
+ {
+  "code": "IT-36",
+  "en": "Friuli–Venezia Giulia",
+  "ar": "فريولي فينيتسيا جوليا"
+ },
+ {
+  "code": "IT-FR",
+  "en": "Frosinone",
+  "ar": "فروزينوني"
+ },
+ {
+  "code": "IT-OT",
+  "en": "Gallura Nord-Est Sardegna",
+  "ar": null
+ },
+ {
+  "code": "IT-GE",
+  "en": "Genoa",
+  "ar": "جنوة"
+ },
+ {
+  "code": "IT-GO",
+  "en": "Gorizia",
+  "ar": "غوريزيا"
+ },
+ {
+  "code": "IT-GR",
+  "en": "Grosseto",
+  "ar": "غروسيتو"
+ },
+ {
+  "code": "IT-IM",
+  "en": "Imperia",
+  "ar": "إمبيريا"
+ },
+ {
+  "code": "IT-IS",
+  "en": "Isernia",
+  "ar": "إسيرنيا"
+ },
+ {
+  "code": "IT-AQ",
+  "en": "L'Aquila",
+  "ar": "لاكويلا"
+ },
+ {
+  "code": "IT-SP",
+  "en": "La Spezia",
+  "ar": "لا سبيتسيا"
+ },
+ {
+  "code": "IT-LT",
+  "en": "Latina",
+  "ar": "لاتينا"
+ },
+ {
+  "code": "IT-62",
+  "en": "Lazio",
+  "ar": "لاتسيو"
+ },
+ {
+  "code": "IT-LE",
+  "en": "Lecce",
+  "ar": "ليتشي"
+ },
+ {
+  "code": "IT-LC",
+  "en": "Lecco",
+  "ar": "ليكو"
+ },
+ {
+  "code": "IT-42",
+  "en": "Liguria",
+  "ar": "ليغوريا"
+ },
+ {
+  "code": "IT-LI",
+  "en": "Livorno",
+  "ar": "ليفورنو"
+ },
+ {
+  "code": "IT-LO",
+  "en": "Lodi",
+  "ar": "لودي"
+ },
+ {
+  "code": "IT-25",
+  "en": "Lombardy",
+  "ar": "لومباردي"
+ },
+ {
+  "code": "IT-LU",
+  "en": "Lucca",
+  "ar": "لوكا"
+ },
+ {
+  "code": "IT-MC",
+  "en": "Macerata",
+  "ar": "ماشيراتا"
+ },
+ {
+  "code": "IT-MN",
+  "en": "Mantua",
+  "ar": "مانتوا"
+ },
+ {
+  "code": "IT-57",
+  "en": "Marche",
+  "ar": "ماركي"
+ },
+ {
+  "code": "IT-MS",
+  "en": "Massa and Carrara",
+  "ar": "ماسا وكارارا"
+ },
+ {
+  "code": "IT-MT",
+  "en": "Matera",
+  "ar": "ماتيرا"
+ },
+ {
+  "code": "IT-VS",
+  "en": "Medio Campidano",
+  "ar": null
+ },
+ {
+  "code": "IT-ME",
+  "en": "Messina",
+  "ar": "ميسينا"
+ },
+ {
+  "code": "IT-MI",
+  "en": "Milan",
+  "ar": "ميلانو"
+ },
+ {
+  "code": "IT-MO",
+  "en": "Modena",
+  "ar": "مودينا"
+ },
+ {
+  "code": "IT-67",
+  "en": "Molise",
+  "ar": "موليزي"
+ },
+ {
+  "code": "IT-MB",
+  "en": "Monza and Brianza",
+  "ar": "مونزا وبريانزا"
+ },
+ {
+  "code": "IT-NA",
+  "en": "Naples",
+  "ar": "نابولي"
+ },
+ {
+  "code": "IT-NO",
+  "en": "Novara",
+  "ar": "نوفارا"
+ },
+ {
+  "code": "IT-NU",
+  "en": "Nuoro",
+  "ar": "نورو"
+ },
+ {
+  "code": "IT-OG",
+  "en": "Ogliastra",
+  "ar": null
+ },
+ {
+  "code": "IT-OR",
+  "en": "Oristano",
+  "ar": "أوريستانو"
+ },
+ {
+  "code": "IT-PD",
+  "en": "Padua",
+  "ar": "بادوفا"
+ },
+ {
+  "code": "IT-PA",
+  "en": "Palermo",
+  "ar": "باليرمو"
+ },
+ {
+  "code": "IT-PR",
+  "en": "Parma",
+  "ar": "بارما"
+ },
+ {
+  "code": "IT-PV",
+  "en": "Pavia",
+  "ar": "بافيا"
+ },
+ {
+  "code": "IT-PG",
+  "en": "Perugia",
+  "ar": "بيروجيا"
+ },
+ {
+  "code": "IT-PU",
+  "en": "Pesaro and Urbino",
+  "ar": "بيسارو وأوربينو"
+ },
+ {
+  "code": "IT-PE",
+  "en": "Pescara",
+  "ar": "بيسكارا"
+ },
+ {
+  "code": "IT-PC",
+  "en": "Piacenza",
+  "ar": "بياتشينزا"
+ },
+ {
+  "code": "IT-21",
+  "en": "Piedmont",
+  "ar": "بيدمونت"
+ },
+ {
+  "code": "IT-PI",
+  "en": "Pisa",
+  "ar": "بيزا"
+ },
+ {
+  "code": "IT-PT",
+  "en": "Pistoia",
+  "ar": "بيستويا"
+ },
+ {
+  "code": "IT-PN",
+  "en": "Pordenone",
+  "ar": "بوردينوني"
+ },
+ {
+  "code": "IT-PZ",
+  "en": "Potenza",
+  "ar": "بوتينزا"
+ },
+ {
+  "code": "IT-PO",
+  "en": "Prato",
+  "ar": "براتو"
+ },
+ {
+  "code": "IT-RG",
+  "en": "Ragusa",
+  "ar": "راغوزا"
+ },
+ {
+  "code": "IT-RA",
+  "en": "Ravenna",
+  "ar": "رافينا"
+ },
+ {
+  "code": "IT-RC",
+  "en": "Reggio Calabria",
+  "ar": "ريدجو كالابريا"
+ },
+ {
+  "code": "IT-RE",
+  "en": "Reggio Emilia",
+  "ar": "ريجيو إميليا"
+ },
+ {
+  "code": "IT-RI",
+  "en": "Rieti",
+  "ar": "رييتي"
+ },
+ {
+  "code": "IT-RN",
+  "en": "Rimini",
+  "ar": "ريميني"
+ },
+ {
+  "code": "IT-RM",
+  "en": "Rome",
+  "ar": "روما"
+ },
+ {
+  "code": "IT-RO",
+  "en": "Rovigo",
+  "ar": "روفيغو"
+ },
+ {
+  "code": "IT-SA",
+  "en": "Salerno",
+  "ar": "ساليرنو"
+ },
+ {
+  "code": "IT-88",
+  "en": "Sardinia",
+  "ar": "سردينيا"
+ },
+ {
+  "code": "IT-SS",
+  "en": "Sassari",
+  "ar": "ساساري"
+ },
+ {
+  "code": "IT-SV",
+  "en": "Savona",
+  "ar": "سافونا"
+ },
+ {
+  "code": "IT-82",
+  "en": "Sicily",
+  "ar": "صقلية"
+ },
+ {
+  "code": "IT-SI",
+  "en": "Siena",
+  "ar": "سيينا"
+ },
+ {
+  "code": "IT-SR",
+  "en": "Siracusa",
+  "ar": "سيراكوزا"
+ },
+ {
+  "code": "IT-SO",
+  "en": "Sondrio",
+  "ar": "سوندريو"
+ },
+ {
+  "code": "IT-BZ",
+  "en": "South Tyrol",
+  "ar": "تيرول الجنوبية"
+ },
+ {
+  "code": "IT-CI",
+  "en": "Sulcis Iglesiente",
+  "ar": null
+ },
+ {
+  "code": "IT-TA",
+  "en": "Taranto",
+  "ar": "تارانتو"
+ },
+ {
+  "code": "IT-TE",
+  "en": "Teramo",
+  "ar": "تيرامو"
+ },
+ {
+  "code": "IT-TR",
+  "en": "Terni",
+  "ar": "تيرني"
+ },
+ {
+  "code": "IT-TP",
+  "en": "Trapani",
+  "ar": "تراباني"
+ },
+ {
+  "code": "IT-TN",
+  "en": "Trentino",
+  "ar": "ترينتينو"
+ },
+ {
+  "code": "IT-32",
+  "en": "Trentino-South Tyrol",
+  "ar": "ترينتينو-جنوب تيرول"
+ },
+ {
+  "code": "IT-TV",
+  "en": "Treviso",
+  "ar": "تريفيزو"
+ },
+ {
+  "code": "IT-TS",
+  "en": "Trieste",
+  "ar": "ترييستي"
+ },
+ {
+  "code": "IT-TO",
+  "en": "Turin",
+  "ar": "تورينو"
+ },
+ {
+  "code": "IT-52",
+  "en": "Tuscany",
+  "ar": "توسكانا"
+ },
+ {
+  "code": "IT-UD",
+  "en": "Udine",
+  "ar": "أوديني"
+ },
+ {
+  "code": "IT-55",
+  "en": "Umbria",
+  "ar": "أومبريا"
+ },
+ {
+  "code": "IT-VA",
+  "en": "Varese",
+  "ar": "فاريزي"
+ },
+ {
+  "code": "IT-34",
+  "en": "Veneto",
+  "ar": "فينيتو"
+ },
+ {
+  "code": "IT-VE",
+  "en": "Venice",
+  "ar": "البندقية"
+ },
+ {
+  "code": "IT-VB",
+  "en": "Verbano-Cusio-Ossola",
+  "ar": "فيربانو-كوسيو-أوسولا"
+ },
+ {
+  "code": "IT-VC",
+  "en": "Vercelli",
+  "ar": "فيرتشيلي"
+ },
+ {
+  "code": "IT-VR",
+  "en": "Verona",
+  "ar": "فيرونا"
+ },
+ {
+  "code": "IT-VV",
+  "en": "Vibo Valentia",
+  "ar": "فيبو فالنتيا"
+ },
+ {
+  "code": "IT-VI",
+  "en": "Vicenza",
+  "ar": "فيتشنزا"
+ },
+ {
+  "code": "IT-VT",
+  "en": "Viterbo",
+  "ar": "فيتربو"
+ }
+]

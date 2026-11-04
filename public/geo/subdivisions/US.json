@@ -1,0 +1,302 @@
+[
+ {
+  "code": "US-AL",
+  "en": "Alabama",
+  "ar": "ألاباما"
+ },
+ {
+  "code": "US-AK",
+  "en": "Alaska",
+  "ar": "ألاسكا"
+ },
+ {
+  "code": "US-AS",
+  "en": "American Samoa",
+  "ar": "ساموا الأمريكية"
+ },
+ {
+  "code": "US-AZ",
+  "en": "Arizona",
+  "ar": "أريزونا"
+ },
+ {
+  "code": "US-AR",
+  "en": "Arkansas",
+  "ar": "أركنساس"
+ },
+ {
+  "code": "US-AE",
+  "en": "Armed Forces Europe",
+  "ar": null
+ },
+ {
+  "code": "US-AP",
+  "en": "Armed Forces Pacific",
+  "ar": null
+ },
+ {
+  "code": "US-AA",
+  "en": "Armed Forces of the Americas",
+  "ar": null
+ },
+ {
+  "code": "US-CA",
+  "en": "California",
+  "ar": "كاليفورنيا"
+ },
+ {
+  "code": "US-CO",
+  "en": "Colorado",
+  "ar": "كولورادو"
+ },
+ {
+  "code": "US-CT",
+  "en": "Connecticut",
+  "ar": "كونيتيكت"
+ },
+ {
+  "code": "US-DE",
+  "en": "Delaware",
+  "ar": "ديلاوير"
+ },
+ {
+  "code": "US-DC",
+  "en": "District of Columbia",
+  "ar": "مقاطعة كولومبيا"
+ },
+ {
+  "code": "US-FL",
+  "en": "Florida",
+  "ar": "فلوريدا"
+ },
+ {
+  "code": "US-GA",
+  "en": "Georgia",
+  "ar": "جورجيا"
+ },
+ {
+  "code": "US-GU",
+  "en": "Guam",
+  "ar": "غوام"
+ },
+ {
+  "code": "US-HI",
+  "en": "Hawaii",
+  "ar": "هاواي"
+ },
+ {
+  "code": "US-ID",
+  "en": "Idaho",
+  "ar": "أيداهو"
+ },
+ {
+  "code": "US-IL",
+  "en": "Illinois",
+  "ar": "إلينوي"
+ },
+ {
+  "code": "US-IN",
+  "en": "Indiana",
+  "ar": "إنديانا"
+ },
+ {
+  "code": "US-IA",
+  "en": "Iowa",
+  "ar": "أيوا"
+ },
+ {
+  "code": "US-KS",
+  "en": "Kansas",
+  "ar": "كانساس"
+ },
+ {
+  "code": "US-KY",
+  "en": "Kentucky",
+  "ar": "كنتاكي"
+ },
+ {
+  "code": "US-LA",
+  "en": "Louisiana",
+  "ar": "لويزيانا"
+ },
+ {
+  "code": "US-ME",
+  "en": "Maine",
+  "ar": "مين"
+ },
+ {
+  "code": "US-MD",
+  "en": "Maryland",
+  "ar": "ماريلاند"
+ },
+ {
+  "code": "US-MA",
+  "en": "Massachusetts",
+  "ar": "ماساتشوستس"
+ },
+ {
+  "code": "US-MI",
+  "en": "Michigan",
+  "ar": "ميشيغان"
+ },
+ {
+  "code": "US-MN",
+  "en": "Minnesota",
+  "ar": "مينيسوتا"
+ },
+ {
+  "code": "US-MS",
+  "en": "Mississippi",
+  "ar": "ميسيسيبي"
+ },
+ {
+  "code": "US-MO",
+  "en": "Missouri",
+  "ar": "ميسوري"
+ },
+ {
+  "code": "US-MT",
+  "en": "Montana",
+  "ar": "مونتانا"
+ },
+ {
+  "code": "US-NE",
+  "en": "Nebraska",
+  "ar": "نبراسكا"
+ },
+ {
+  "code": "US-NV",
+  "en": "Nevada",
+  "ar": "نيفادا"
+ },
+ {
+  "code": "US-NH",
+  "en": "New Hampshire",
+  "ar": "نيو هامبشاير"
+ },
+ {
+  "code": "US-NJ",
+  "en": "New Jersey",
+  "ar": "نيوجيرسي"
+ },
+ {
+  "code": "US-NM",
+  "en": "New Mexico",
+  "ar": "نيو مكسيكو"
+ },
+ {
+  "code": "US-NY",
+  "en": "New York",
+  "ar": "نيويورك"
+ },
+ {
+  "code": "US-NC",
+  "en": "North Carolina",
+  "ar": "كارولينا الشمالية"
+ },
+ {
+  "code": "US-ND",
+  "en": "North Dakota",
+  "ar": "داكوتا الشمالية"
+ },
+ {
+  "code": "US-MP",
+  "en": "Northern Mariana Islands",
+  "ar": "جزر ماريانا الشمالية"
+ },
+ {
+  "code": "US-OH",
+  "en": "Ohio",
+  "ar": "أوهايو"
+ },
+ {
+  "code": "US-OK",
+  "en": "Oklahoma",
+  "ar": "أوكلاهوما"
+ },
+ {
+  "code": "US-OR",
+  "en": "Oregon",
+  "ar": "أوريغون"
+ },
+ {
+  "code": "US-PA",
+  "en": "Pennsylvania",
+  "ar": "بنسلفانيا"
+ },
+ {
+  "code": "US-PR",
+  "en": "Puerto Rico",
+  "ar": "بورتوريكو"
+ },
+ {
+  "code": "US-RI",
+  "en": "Rhode Island",
+  "ar": "رود آيلاند"
+ },
+ {
+  "code": "US-SC",
+  "en": "South Carolina",
+  "ar": "كارولينا الجنوبية"
+ },
+ {
+  "code": "US-SD",
+  "en": "South Dakota",
+  "ar": "داكوتا الجنوبية"
+ },
+ {
+  "code": "US-TN",
+  "en": "Tennessee",
+  "ar": "تينيسي"
+ },
+ {
+  "code": "US-TX",
+  "en": "Texas",
+  "ar": "تكساس"
+ },
+ {
+  "code": "US-UM",
+  "en": "United States Minor Outlying Islands",
+  "ar": "جزر الولايات المتحدة الصغيرة النائية"
+ },
+ {
+  "code": "US-VI",
+  "en": "United States Virgin Islands",
+  "ar": "جزر فيرجن الأمريكية"
+ },
+ {
+  "code": "US-UT",
+  "en": "Utah",
+  "ar": "يوتا"
+ },
+ {
+  "code": "US-VT",
+  "en": "Vermont",
+  "ar": "فيرمونت"
+ },
+ {
+  "code": "US-VA",
+  "en": "Virginia",
+  "ar": "فرجينيا"
+ },
+ {
+  "code": "US-WA",
+  "en": "Washington",
+  "ar": "واشنطن"
+ },
+ {
+  "code": "US-WV",
+  "en": "West Virginia",
+  "ar": "ولاية فرجينيا الغربية"
+ },
+ {
+  "code": "US-WI",
+  "en": "Wisconsin",
+  "ar": "ويسكونسن"
+ },
+ {
+  "code": "US-WY",
+  "en": "Wyoming",
+  "ar": "وايومنغ"
+ }
+]

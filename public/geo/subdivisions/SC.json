@@ -1,0 +1,137 @@
+[
+ {
+  "code": "SC-02",
+  "en": "Anse Boileau",
+  "ar": "أنس بوالو"
+ },
+ {
+  "code": "SC-03",
+  "en": "Anse Etoile",
+  "ar": "آنس ایتوال"
+ },
+ {
+  "code": "SC-05",
+  "en": "Anse Royale",
+  "ar": "أنس رويال"
+ },
+ {
+  "code": "SC-01",
+  "en": "Anse-aux-Pins",
+  "ar": "أنس أو بينز"
+ },
+ {
+  "code": "SC-04",
+  "en": "Au Cap",
+  "ar": "أو كاب"
+ },
+ {
+  "code": "SC-06",
+  "en": "Baie Lazare",
+  "ar": "باي لازار"
+ },
+ {
+  "code": "SC-07",
+  "en": "Baie Sainte Anne",
+  "ar": "باي سانت آن"
+ },
+ {
+  "code": "SC-08",
+  "en": "Beau Vallon",
+  "ar": "بو فالون"
+ },
+ {
+  "code": "SC-09",
+  "en": "Bel Air",
+  "ar": "بيل إير"
+ },
+ {
+  "code": "SC-10",
+  "en": "Bel Ombre",
+  "ar": "بيل أومبري"
+ },
+ {
+  "code": "SC-11",
+  "en": "Cascade",
+  "ar": "كاسكاد"
+ },
+ {
+  "code": "SC-12",
+  "en": "Glacis",
+  "ar": "جلاسيس"
+ },
+ {
+  "code": "SC-13",
+  "en": "Grand'Anse Mahé",
+  "ar": "غراند آنس ماهي"
+ },
+ {
+  "code": "SC-14",
+  "en": "Grand'Anse Praslin",
+  "ar": "جراند آنس براسلين"
+ },
+ {
+  "code": "SC-26",
+  "en": "Ile Perseverance I",
+  "ar": "جزيرة المثابرة 1"
+ },
+ {
+  "code": "SC-27",
+  "en": "Ile Perseverance II",
+  "ar": "جزيرة المثابرة الثانية"
+ },
+ {
+  "code": "SC-15",
+  "en": "La Digue",
+  "ar": "لا ديج"
+ },
+ {
+  "code": "SC-16",
+  "en": "La Rivière Anglaise",
+  "ar": "لا ريفيير أنجليز"
+ },
+ {
+  "code": "SC-24",
+  "en": "Les Mamelles",
+  "ar": "المامال"
+ },
+ {
+  "code": "SC-17",
+  "en": "Mont Buxton",
+  "ar": "مونت بوكستون"
+ },
+ {
+  "code": "SC-18",
+  "en": "Mont Fleuri",
+  "ar": "مونت فلوري"
+ },
+ {
+  "code": "SC-19",
+  "en": "Plaisance",
+  "ar": "بليزانس"
+ },
+ {
+  "code": "SC-20",
+  "en": "Pointe La Rue",
+  "ar": "بوانت لا رو"
+ },
+ {
+  "code": "SC-21",
+  "en": "Port Glaud",
+  "ar": "بورت جلود"
+ },
+ {
+  "code": "SC-25",
+  "en": "Roche Caiman",
+  "ar": "روش كايمان"
+ },
+ {
+  "code": "SC-22",
+  "en": "Saint Louis",
+  "ar": "سانت لويس"
+ },
+ {
+  "code": "SC-23",
+  "en": "Takamaka",
+  "ar": "تاكاماكا"
+ }
+]

@@ -18,6 +18,7 @@ import {
   timezoneOrDefault,
   workingDaysOrAll,
 } from '@/src/utils/settingsDefaults';
+import { normalizeDeliveryZones } from '@/src/utils/deliveryZones';
 
 type AnnouncementInput = Partial<MenuData['settings']['announcement']> & {
   text?: Partial<{ en: string; ar: string }>;
@@ -112,6 +113,7 @@ export function ensureSettingsBlocks(menu: MenuData): MenuData {
         defaultDeliveryMinutes: etaMinutesOrDefault((o as { defaultDeliveryMinutes?: unknown }).defaultDeliveryMinutes, 20),
         receiveDelayDeliveryMin: receiveDelayOrDefault((o as { receiveDelayDeliveryMin?: unknown }).receiveDelayDeliveryMin, 30),
         receiveDelayPickupMin: receiveDelayOrDefault((o as { receiveDelayPickupMin?: unknown }).receiveDelayPickupMin, 15),
+        deliveryZones: normalizeDeliveryZones((o as { deliveryZones?: unknown }).deliveryZones),
       },
       notifications: {
         senderName: typeof n.senderName === 'string' ? n.senderName.slice(0, 80) : '',

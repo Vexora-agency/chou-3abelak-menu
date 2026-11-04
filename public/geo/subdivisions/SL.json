@@ -1,0 +1,27 @@
+[
+ {
+  "code": "SL-E",
+  "en": "Eastern",
+  "ar": "شرقي"
+ },
+ {
+  "code": "SL-NW",
+  "en": "North Western",
+  "ar": "شمال غرب"
+ },
+ {
+  "code": "SL-N",
+  "en": "Northern",
+  "ar": "شمالي"
+ },
+ {
+  "code": "SL-S",
+  "en": "Southern",
+  "ar": "جنوبي"
+ },
+ {
+  "code": "SL-W",
+  "en": "Western",
+  "ar": "الغربي"
+ }
+]

@@ -4,6 +4,7 @@
  * Pure functions only — no dependencies, works in Cloudflare Workers and Node.
  * Re-exported from ./pricing.js so existing importers keep working.
  */
+import { normalizeDeliveryZones } from './delivery-zones.js';
 
 export const UNITS = ['pc', 'portion', 'dozen', 'box', 'bottle', 'glass', 'kg'];
 
@@ -346,6 +347,7 @@ export function normalizeMenu(menu) {
       defaultDeliveryMinutes,
       receiveDelayDeliveryMin,
       receiveDelayPickupMin,
+      deliveryZones: normalizeDeliveryZones(ord.deliveryZones),
     },
     badges: {
       newDays: intOr(bRaw.newDays, 14, 1, 365),

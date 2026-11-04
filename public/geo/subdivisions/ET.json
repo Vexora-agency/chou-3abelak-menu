@@ -1,0 +1,72 @@
+[
+ {
+  "code": "ET-AA",
+  "en": "Addis Ababa",
+  "ar": "أديس أبابا"
+ },
+ {
+  "code": "ET-AF",
+  "en": "Afar",
+  "ar": "ولاية عفر"
+ },
+ {
+  "code": "ET-AM",
+  "en": "Amhara",
+  "ar": "أمهرة"
+ },
+ {
+  "code": "ET-BE",
+  "en": "Benishangul-Gumuz",
+  "ar": "بني شنقول-قماز"
+ },
+ {
+  "code": "ET-55",
+  "en": "Central Ethiopia",
+  "ar": null
+ },
+ {
+  "code": "ET-DD",
+  "en": "Dire Dawa",
+  "ar": "دير داوا"
+ },
+ {
+  "code": "ET-GA",
+  "en": "Gambela",
+  "ar": "غامبيلا"
+ },
+ {
+  "code": "ET-HA",
+  "en": "Harari",
+  "ar": "هراري"
+ },
+ {
+  "code": "ET-OR",
+  "en": "Oromia",
+  "ar": "أوروميا"
+ },
+ {
+  "code": "ET-SI",
+  "en": "Sidama",
+  "ar": "سيداما"
+ },
+ {
+  "code": "ET-SO",
+  "en": "Somali",
+  "ar": "الصومالية"
+ },
+ {
+  "code": "ET-56",
+  "en": "South Ethiopia",
+  "ar": null
+ },
+ {
+  "code": "ET-SW",
+  "en": "Southwest Ethiopia Peoples",
+  "ar": "شعوب جنوب غرب إثيوبيا"
+ },
+ {
+  "code": "ET-TI",
+  "en": "Tigray",
+  "ar": "تيغراي"
+ }
+]

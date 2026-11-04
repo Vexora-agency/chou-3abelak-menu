@@ -1,0 +1,27 @@
+[
+ {
+  "code": "TG-C",
+  "en": "Centrale",
+  "ar": "سنترالي"
+ },
+ {
+  "code": "TG-K",
+  "en": "Kara",
+  "ar": "كارا"
+ },
+ {
+  "code": "TG-M",
+  "en": "Maritime",
+  "ar": "البحرية"
+ },
+ {
+  "code": "TG-P",
+  "en": "Plateaux",
+  "ar": "الهضاب"
+ },
+ {
+  "code": "TG-S",
+  "en": "Savanes",
+  "ar": "السافانيون"
+ }
+]

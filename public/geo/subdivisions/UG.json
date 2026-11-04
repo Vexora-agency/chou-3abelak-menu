@@ -1,0 +1,697 @@
+[
+ {
+  "code": "UG-314",
+  "en": "Abim",
+  "ar": "أبيم"
+ },
+ {
+  "code": "UG-301",
+  "en": "Adjumani",
+  "ar": "أدجوماني"
+ },
+ {
+  "code": "UG-322",
+  "en": "Agago",
+  "ar": "أغاغو"
+ },
+ {
+  "code": "UG-323",
+  "en": "Alebtong",
+  "ar": "أليبتونغ"
+ },
+ {
+  "code": "UG-315",
+  "en": "Amolatar",
+  "ar": "أمولاتار"
+ },
+ {
+  "code": "UG-324",
+  "en": "Amudat",
+  "ar": "عامودات"
+ },
+ {
+  "code": "UG-216",
+  "en": "Amuria",
+  "ar": "أموريا"
+ },
+ {
+  "code": "UG-316",
+  "en": "Amuru",
+  "ar": "أمورو"
+ },
+ {
+  "code": "UG-302",
+  "en": "Apac",
+  "ar": "أباك"
+ },
+ {
+  "code": "UG-303",
+  "en": "Arua",
+  "ar": "أروا"
+ },
+ {
+  "code": "UG-217",
+  "en": "Budaka",
+  "ar": "بوداكا"
+ },
+ {
+  "code": "UG-218",
+  "en": "Bududa",
+  "ar": "بودودا"
+ },
+ {
+  "code": "UG-201",
+  "en": "Bugiri",
+  "ar": "بوجيري"
+ },
+ {
+  "code": "UG-235",
+  "en": "Bugweri",
+  "ar": "بوجويري"
+ },
+ {
+  "code": "UG-420",
+  "en": "Buhweju",
+  "ar": "بوهويجو"
+ },
+ {
+  "code": "UG-117",
+  "en": "Buikwe",
+  "ar": "بويكوي"
+ },
+ {
+  "code": "UG-219",
+  "en": "Bukedea",
+  "ar": "بوكيديا"
+ },
+ {
+  "code": "UG-118",
+  "en": "Bukomansimbi",
+  "ar": "بوكومانسيمبي"
+ },
+ {
+  "code": "UG-220",
+  "en": "Bukwo",
+  "ar": "بوكوو"
+ },
+ {
+  "code": "UG-225",
+  "en": "Bulambuli",
+  "ar": "بولامبولي"
+ },
+ {
+  "code": "UG-416",
+  "en": "Buliisa",
+  "ar": "بوليسا"
+ },
+ {
+  "code": "UG-401",
+  "en": "Bundibugyo",
+  "ar": "بونديبوجيو"
+ },
+ {
+  "code": "UG-430",
+  "en": "Bunyangabu",
+  "ar": "بونيانجابو"
+ },
+ {
+  "code": "UG-402",
+  "en": "Bushenyi",
+  "ar": "بوشيني"
+ },
+ {
+  "code": "UG-202",
+  "en": "Busia",
+  "ar": "بوسيا"
+ },
+ {
+  "code": "UG-221",
+  "en": "Butaleja",
+  "ar": "بوتاليا"
+ },
+ {
+  "code": "UG-119",
+  "en": "Butambala",
+  "ar": "بوتامبالا"
+ },
+ {
+  "code": "UG-233",
+  "en": "Butebo",
+  "ar": "بوتيبو"
+ },
+ {
+  "code": "UG-120",
+  "en": "Buvuma",
+  "ar": "بوفوما"
+ },
+ {
+  "code": "UG-226",
+  "en": "Buyende",
+  "ar": "بويندي"
+ },
+ {
+  "code": "UG-C",
+  "en": "Central",
+  "ar": "مركزي"
+ },
+ {
+  "code": "UG-317",
+  "en": "Dokolo",
+  "ar": "دوكولو"
+ },
+ {
+  "code": "UG-E",
+  "en": "Eastern",
+  "ar": "شرقي"
+ },
+ {
+  "code": "UG-121",
+  "en": "Gomba",
+  "ar": "جومبا"
+ },
+ {
+  "code": "UG-304",
+  "en": "Gulu",
+  "ar": "جولو"
+ },
+ {
+  "code": "UG-403",
+  "en": "Hoima",
+  "ar": "هويما"
+ },
+ {
+  "code": "UG-417",
+  "en": "Ibanda",
+  "ar": "إيباندا"
+ },
+ {
+  "code": "UG-203",
+  "en": "Iganga",
+  "ar": "إيغانغا"
+ },
+ {
+  "code": "UG-418",
+  "en": "Isingiro",
+  "ar": "إيسينجيرو"
+ },
+ {
+  "code": "UG-204",
+  "en": "Jinja",
+  "ar": "جينجا"
+ },
+ {
+  "code": "UG-318",
+  "en": "Kaabong",
+  "ar": "كابونغ"
+ },
+ {
+  "code": "UG-404",
+  "en": "Kabale",
+  "ar": "كابالي"
+ },
+ {
+  "code": "UG-405",
+  "en": "Kabarole",
+  "ar": "كابارول"
+ },
+ {
+  "code": "UG-213",
+  "en": "Kaberamaido",
+  "ar": "كابيرامايدو"
+ },
+ {
+  "code": "UG-427",
+  "en": "Kagadi",
+  "ar": "كاغادي"
+ },
+ {
+  "code": "UG-428",
+  "en": "Kakumiro",
+  "ar": "كاكوميرو"
+ },
+ {
+  "code": "UG-237",
+  "en": "Kalaki",
+  "ar": "كلاكي"
+ },
+ {
+  "code": "UG-101",
+  "en": "Kalangala",
+  "ar": "كالانجالا"
+ },
+ {
+  "code": "UG-222",
+  "en": "Kaliro",
+  "ar": "كاليرو"
+ },
+ {
+  "code": "UG-122",
+  "en": "Kalungu",
+  "ar": "كالونجو"
+ },
+ {
+  "code": "UG-102",
+  "en": "Kampala",
+  "ar": "كمبالا"
+ },
+ {
+  "code": "UG-205",
+  "en": "Kamuli",
+  "ar": "كامولي"
+ },
+ {
+  "code": "UG-413",
+  "en": "Kamwenge",
+  "ar": "كاموينجي"
+ },
+ {
+  "code": "UG-414",
+  "en": "Kanungu",
+  "ar": "كانونجو"
+ },
+ {
+  "code": "UG-206",
+  "en": "Kapchorwa",
+  "ar": "كابشوروا"
+ },
+ {
+  "code": "UG-236",
+  "en": "Kapelebyong",
+  "ar": "كابيليبيون"
+ },
+ {
+  "code": "UG-335",
+  "en": "Karenga",
+  "ar": "كارينجا"
+ },
+ {
+  "code": "UG-126",
+  "en": "Kasanda",
+  "ar": "كاساندا"
+ },
+ {
+  "code": "UG-406",
+  "en": "Kasese",
+  "ar": "كاسيسي"
+ },
+ {
+  "code": "UG-207",
+  "en": "Katakwi",
+  "ar": "كاتاكوي"
+ },
+ {
+  "code": "UG-112",
+  "en": "Kayunga",
+  "ar": "كايونجا"
+ },
+ {
+  "code": "UG-433",
+  "en": "Kazo",
+  "ar": "كازو"
+ },
+ {
+  "code": "UG-407",
+  "en": "Kibaale",
+  "ar": "كيبالي"
+ },
+ {
+  "code": "UG-103",
+  "en": "Kiboga",
+  "ar": "كيبوجا"
+ },
+ {
+  "code": "UG-227",
+  "en": "Kibuku",
+  "ar": "كيبوكو"
+ },
+ {
+  "code": "UG-432",
+  "en": "Kikuube",
+  "ar": "كيكوبي"
+ },
+ {
+  "code": "UG-419",
+  "en": "Kiruhura",
+  "ar": "كيروهورا"
+ },
+ {
+  "code": "UG-421",
+  "en": "Kiryandongo",
+  "ar": "كيرياندونجو"
+ },
+ {
+  "code": "UG-408",
+  "en": "Kisoro",
+  "ar": "كيسورو"
+ },
+ {
+  "code": "UG-434",
+  "en": "Kitagwenda",
+  "ar": "كيتاجويندا"
+ },
+ {
+  "code": "UG-305",
+  "en": "Kitgum",
+  "ar": "كيتجوم"
+ },
+ {
+  "code": "UG-319",
+  "en": "Koboko",
+  "ar": "كوبوكو"
+ },
+ {
+  "code": "UG-325",
+  "en": "Kole",
+  "ar": "كولي"
+ },
+ {
+  "code": "UG-306",
+  "en": "Kotido",
+  "ar": "كوتيدو"
+ },
+ {
+  "code": "UG-208",
+  "en": "Kumi",
+  "ar": "كومي"
+ },
+ {
+  "code": "UG-333",
+  "en": "Kwania",
+  "ar": "كوانيا"
+ },
+ {
+  "code": "UG-228",
+  "en": "Kween",
+  "ar": "كوين"
+ },
+ {
+  "code": "UG-123",
+  "en": "Kyankwanzi",
+  "ar": "كيانكوانزي"
+ },
+ {
+  "code": "UG-422",
+  "en": "Kyegegwa",
+  "ar": "كيجيجوا"
+ },
+ {
+  "code": "UG-415",
+  "en": "Kyenjojo",
+  "ar": "كينجوجو"
+ },
+ {
+  "code": "UG-125",
+  "en": "Kyotera",
+  "ar": "كيوتيرا"
+ },
+ {
+  "code": "UG-326",
+  "en": "Lamwo",
+  "ar": "لاموو"
+ },
+ {
+  "code": "UG-307",
+  "en": "Lira",
+  "ar": "ليرة"
+ },
+ {
+  "code": "UG-229",
+  "en": "Luuka",
+  "ar": "لوكا"
+ },
+ {
+  "code": "UG-104",
+  "en": "Luwero",
+  "ar": "لويرو"
+ },
+ {
+  "code": "UG-124",
+  "en": "Lwengo",
+  "ar": "لوينغو"
+ },
+ {
+  "code": "UG-114",
+  "en": "Lyantonde",
+  "ar": "ليانتوندي"
+ },
+ {
+  "code": "UG-336",
+  "en": "Madi-Okollo",
+  "ar": "مادي أوكولو"
+ },
+ {
+  "code": "UG-223",
+  "en": "Manafwa",
+  "ar": "منافوة"
+ },
+ {
+  "code": "UG-320",
+  "en": "Maracha",
+  "ar": "ماراشا"
+ },
+ {
+  "code": "UG-105",
+  "en": "Masaka",
+  "ar": "ماساكا"
+ },
+ {
+  "code": "UG-409",
+  "en": "Masindi",
+  "ar": "ماسيندي"
+ },
+ {
+  "code": "UG-214",
+  "en": "Mayuge",
+  "ar": "مايوج"
+ },
+ {
+  "code": "UG-209",
+  "en": "Mbale",
+  "ar": "مبالي"
+ },
+ {
+  "code": "UG-410",
+  "en": "Mbarara",
+  "ar": "مبارارا"
+ },
+ {
+  "code": "UG-423",
+  "en": "Mitooma",
+  "ar": "ميتوما"
+ },
+ {
+  "code": "UG-115",
+  "en": "Mityana",
+  "ar": "ميتيانا"
+ },
+ {
+  "code": "UG-308",
+  "en": "Moroto",
+  "ar": "موروتو"
+ },
+ {
+  "code": "UG-309",
+  "en": "Moyo",
+  "ar": "مويو"
+ },
+ {
+  "code": "UG-106",
+  "en": "Mpigi",
+  "ar": "مبيجي"
+ },
+ {
+  "code": "UG-107",
+  "en": "Mubende",
+  "ar": "موبيندي"
+ },
+ {
+  "code": "UG-108",
+  "en": "Mukono",
+  "ar": "موكونو"
+ },
+ {
+  "code": "UG-334",
+  "en": "Nabilatuk",
+  "ar": "نابيلاتوك"
+ },
+ {
+  "code": "UG-311",
+  "en": "Nakapiripirit",
+  "ar": "ناكابيريبيريت"
+ },
+ {
+  "code": "UG-116",
+  "en": "Nakaseke",
+  "ar": "ناكاسيكي"
+ },
+ {
+  "code": "UG-109",
+  "en": "Nakasongola",
+  "ar": "ناكاسونغولا"
+ },
+ {
+  "code": "UG-230",
+  "en": "Namayingo",
+  "ar": "ناماينغو"
+ },
+ {
+  "code": "UG-234",
+  "en": "Namisindwa",
+  "ar": "ناميسيندوا"
+ },
+ {
+  "code": "UG-224",
+  "en": "Namutumba",
+  "ar": "ناموتومبا"
+ },
+ {
+  "code": "UG-327",
+  "en": "Napak",
+  "ar": "ناباك"
+ },
+ {
+  "code": "UG-310",
+  "en": "Nebbi",
+  "ar": "نيبي"
+ },
+ {
+  "code": "UG-231",
+  "en": "Ngora",
+  "ar": "نغورا"
+ },
+ {
+  "code": "UG-N",
+  "en": "Northern",
+  "ar": "شمالي"
+ },
+ {
+  "code": "UG-424",
+  "en": "Ntoroko",
+  "ar": "نتوروكو"
+ },
+ {
+  "code": "UG-411",
+  "en": "Ntungamo",
+  "ar": "نتونغامو"
+ },
+ {
+  "code": "UG-328",
+  "en": "Nwoya",
+  "ar": "نوويا"
+ },
+ {
+  "code": "UG-337",
+  "en": "Obongi",
+  "ar": "أوبونجي"
+ },
+ {
+  "code": "UG-331",
+  "en": "Omoro",
+  "ar": "أومورو"
+ },
+ {
+  "code": "UG-329",
+  "en": "Otuke",
+  "ar": "أوتوكي"
+ },
+ {
+  "code": "UG-321",
+  "en": "Oyam",
+  "ar": "أويام"
+ },
+ {
+  "code": "UG-312",
+  "en": "Pader",
+  "ar": "بادر"
+ },
+ {
+  "code": "UG-332",
+  "en": "Pakwach",
+  "ar": "باكواتش"
+ },
+ {
+  "code": "UG-210",
+  "en": "Pallisa",
+  "ar": "باليسا"
+ },
+ {
+  "code": "UG-110",
+  "en": "Rakai",
+  "ar": "راكاي"
+ },
+ {
+  "code": "UG-429",
+  "en": "Rubanda",
+  "ar": "روباندا"
+ },
+ {
+  "code": "UG-425",
+  "en": "Rubirizi",
+  "ar": "روبيريزي"
+ },
+ {
+  "code": "UG-431",
+  "en": "Rukiga",
+  "ar": "روكيغا"
+ },
+ {
+  "code": "UG-412",
+  "en": "Rukungiri",
+  "ar": "روكونجيري"
+ },
+ {
+  "code": "UG-435",
+  "en": "Rwampara",
+  "ar": "روامبارا"
+ },
+ {
+  "code": "UG-111",
+  "en": "Sembabule",
+  "ar": "سيمبابول"
+ },
+ {
+  "code": "UG-232",
+  "en": "Serere",
+  "ar": "سيريري"
+ },
+ {
+  "code": "UG-426",
+  "en": "Sheema",
+  "ar": "شيما"
+ },
+ {
+  "code": "UG-215",
+  "en": "Sironko",
+  "ar": "سيرونكو"
+ },
+ {
+  "code": "UG-211",
+  "en": "Soroti",
+  "ar": "سوروتي"
+ },
+ {
+  "code": "UG-212",
+  "en": "Tororo",
+  "ar": "تورورو"
+ },
+ {
+  "code": "UG-113",
+  "en": "Wakiso",
+  "ar": "واكيسو"
+ },
+ {
+  "code": "UG-W",
+  "en": "Western",
+  "ar": "الغربي"
+ },
+ {
+  "code": "UG-313",
+  "en": "Yumbe",
+  "ar": "يومبي"
+ },
+ {
+  "code": "UG-330",
+  "en": "Zombo",
+  "ar": "زومبو"
+ }
+]

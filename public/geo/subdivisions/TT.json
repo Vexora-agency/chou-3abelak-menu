@@ -1,0 +1,77 @@
+[
+ {
+  "code": "TT-ARI",
+  "en": "Arima",
+  "ar": "أريما"
+ },
+ {
+  "code": "TT-CHA",
+  "en": "Chaguanas",
+  "ar": "تشاغواناس"
+ },
+ {
+  "code": "TT-CTT",
+  "en": "Couva-Tabaquite-Talparo",
+  "ar": "كوفا-تاباكيت-تالبارو"
+ },
+ {
+  "code": "TT-DMN",
+  "en": "Diego Martin",
+  "ar": "دييغو مارتن"
+ },
+ {
+  "code": "TT-PED",
+  "en": "Penal-Debe",
+  "ar": "شركة بينال ديب الإقليمية"
+ },
+ {
+  "code": "TT-PTF",
+  "en": "Point Fortin",
+  "ar": "نقطة فورتين"
+ },
+ {
+  "code": "TT-POS",
+  "en": "Port of Spain",
+  "ar": "ميناء إسبانيا"
+ },
+ {
+  "code": "TT-PRT",
+  "en": "Princes Town",
+  "ar": "مدينة الأمراء"
+ },
+ {
+  "code": "TT-MRC",
+  "en": "Rio Claro-Mayaro",
+  "ar": "ريو كلارو-مايارو"
+ },
+ {
+  "code": "TT-SFO",
+  "en": "San Fernando",
+  "ar": "سان فرناندو"
+ },
+ {
+  "code": "TT-SJL",
+  "en": "San Juan-Laventille",
+  "ar": "سان خوان-لافينتيل"
+ },
+ {
+  "code": "TT-SGE",
+  "en": "Sangre Grande",
+  "ar": "سانجري جراندي"
+ },
+ {
+  "code": "TT-SIP",
+  "en": "Siparia",
+  "ar": "سيباريا"
+ },
+ {
+  "code": "TT-TOB",
+  "en": "Tobago",
+  "ar": "توباغو"
+ },
+ {
+  "code": "TT-TUP",
+  "en": "Tunapuna-Piarco",
+  "ar": "تونابونا-بياركو"
+ }
+]

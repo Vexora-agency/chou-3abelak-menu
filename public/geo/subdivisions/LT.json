@@ -1,0 +1,352 @@
+[
+ {
+  "code": "LT-01",
+  "en": "Akmenė",
+  "ar": "أكميني"
+ },
+ {
+  "code": "LT-03",
+  "en": "Alytus",
+  "ar": "أليتوس"
+ },
+ {
+  "code": "LT-02",
+  "en": "Alytus",
+  "ar": "أليتوس"
+ },
+ {
+  "code": "LT-AL",
+  "en": "Alytus",
+  "ar": "أليتوس"
+ },
+ {
+  "code": "LT-04",
+  "en": "Anykščiai",
+  "ar": "أنيكستشياي"
+ },
+ {
+  "code": "LT-05",
+  "en": "Birštonas",
+  "ar": "بيرشتوناس"
+ },
+ {
+  "code": "LT-06",
+  "en": "Biržai",
+  "ar": "بيرزاي"
+ },
+ {
+  "code": "LT-07",
+  "en": "Druskininkai",
+  "ar": "دروسكينينكاي"
+ },
+ {
+  "code": "LT-08",
+  "en": "Elektrėnai",
+  "ar": "إليكتروناي"
+ },
+ {
+  "code": "LT-09",
+  "en": "Ignalina",
+  "ar": "إغنالينا"
+ },
+ {
+  "code": "LT-10",
+  "en": "Jonava",
+  "ar": "جونافا"
+ },
+ {
+  "code": "LT-11",
+  "en": "Joniškis",
+  "ar": "جونيسكيس"
+ },
+ {
+  "code": "LT-12",
+  "en": "Jurbarkas",
+  "ar": "جورباركاس"
+ },
+ {
+  "code": "LT-13",
+  "en": "Kaišiadorys",
+  "ar": "كايسيادوريس"
+ },
+ {
+  "code": "LT-14",
+  "en": "Kalvarija",
+  "ar": "كالفاريا"
+ },
+ {
+  "code": "LT-KU",
+  "en": "Kaunas",
+  "ar": "كاوناس"
+ },
+ {
+  "code": "LT-16",
+  "en": "Kaunas",
+  "ar": "كاوناس"
+ },
+ {
+  "code": "LT-15",
+  "en": "Kaunas",
+  "ar": "كاوناس"
+ },
+ {
+  "code": "LT-17",
+  "en": "Kazlų Rūda",
+  "ar": "كازلو رودا"
+ },
+ {
+  "code": "LT-19",
+  "en": "Kelmė",
+  "ar": "كيلمي"
+ },
+ {
+  "code": "LT-KL",
+  "en": "Klaipėda",
+  "ar": "كلايبيدا"
+ },
+ {
+  "code": "LT-21",
+  "en": "Klaipėda",
+  "ar": "كلايبيدا"
+ },
+ {
+  "code": "LT-20",
+  "en": "Klaipėdos miestas",
+  "ar": "كلايبيدا"
+ },
+ {
+  "code": "LT-22",
+  "en": "Kretinga",
+  "ar": "كريتينجا"
+ },
+ {
+  "code": "LT-23",
+  "en": "Kupiškis",
+  "ar": "كوبيسكيس"
+ },
+ {
+  "code": "LT-18",
+  "en": "Kėdainiai",
+  "ar": "كيداينياي"
+ },
+ {
+  "code": "LT-24",
+  "en": "Lazdijai",
+  "ar": "لازديجاي"
+ },
+ {
+  "code": "LT-25",
+  "en": "Marijampolė",
+  "ar": "ماريجامبولي"
+ },
+ {
+  "code": "LT-MR",
+  "en": "Marijampolė",
+  "ar": "ماريجامبولي"
+ },
+ {
+  "code": "LT-26",
+  "en": "Mažeikiai",
+  "ar": "مازييكياي"
+ },
+ {
+  "code": "LT-27",
+  "en": "Molėtai",
+  "ar": "موليتاي"
+ },
+ {
+  "code": "LT-28",
+  "en": "Neringa",
+  "ar": "نرينجا"
+ },
+ {
+  "code": "LT-29",
+  "en": "Pagėgiai",
+  "ar": "باجيجياي"
+ },
+ {
+  "code": "LT-30",
+  "en": "Pakruojis",
+  "ar": "باكروجيس"
+ },
+ {
+  "code": "LT-31",
+  "en": "Palanga",
+  "ar": "بالانغا"
+ },
+ {
+  "code": "LT-32",
+  "en": "Panevėžio miestas",
+  "ar": "بانيفيزيس"
+ },
+ {
+  "code": "LT-33",
+  "en": "Panevėžys",
+  "ar": "بانيفيزيس"
+ },
+ {
+  "code": "LT-PN",
+  "en": "Panevėžys",
+  "ar": "بانيفيزيس"
+ },
+ {
+  "code": "LT-34",
+  "en": "Pasvalys",
+  "ar": "باسفاليس"
+ },
+ {
+  "code": "LT-35",
+  "en": "Plungė",
+  "ar": null
+ },
+ {
+  "code": "LT-36",
+  "en": "Prienai",
+  "ar": "بريناي"
+ },
+ {
+  "code": "LT-37",
+  "en": "Radviliškis",
+  "ar": "رادفيليسكيس"
+ },
+ {
+  "code": "LT-38",
+  "en": "Raseiniai",
+  "ar": "راسينياي"
+ },
+ {
+  "code": "LT-39",
+  "en": "Rietavas",
+  "ar": "رييتافاس"
+ },
+ {
+  "code": "LT-40",
+  "en": "Rokiškis",
+  "ar": "روكيسكيس"
+ },
+ {
+  "code": "LT-48",
+  "en": "Skuodas",
+  "ar": "سكوداس"
+ },
+ {
+  "code": "LT-TA",
+  "en": "Tauragė",
+  "ar": "توراج"
+ },
+ {
+  "code": "LT-50",
+  "en": "Tauragė",
+  "ar": "توراج"
+ },
+ {
+  "code": "LT-51",
+  "en": "Telšiai",
+  "ar": "تيلشياي"
+ },
+ {
+  "code": "LT-TE",
+  "en": "Telšiai",
+  "ar": "تيلشياي"
+ },
+ {
+  "code": "LT-52",
+  "en": "Trakai",
+  "ar": "تراكاي"
+ },
+ {
+  "code": "LT-53",
+  "en": "Ukmergė",
+  "ar": "أوكميرجي"
+ },
+ {
+  "code": "LT-54",
+  "en": "Utena",
+  "ar": "أوتينا"
+ },
+ {
+  "code": "LT-UT",
+  "en": "Utena",
+  "ar": "أوتينا"
+ },
+ {
+  "code": "LT-55",
+  "en": "Varėna",
+  "ar": "فارينا"
+ },
+ {
+  "code": "LT-56",
+  "en": "Vilkaviškis",
+  "ar": "فيلكافيشكيس"
+ },
+ {
+  "code": "LT-58",
+  "en": "Vilnius",
+  "ar": "فيلنيوس"
+ },
+ {
+  "code": "LT-57",
+  "en": "Vilnius",
+  "ar": "فيلنيوس"
+ },
+ {
+  "code": "LT-VL",
+  "en": "Vilnius",
+  "ar": "فيلنيوس"
+ },
+ {
+  "code": "LT-59",
+  "en": "Visaginas",
+  "ar": "فيساجيناس"
+ },
+ {
+  "code": "LT-60",
+  "en": "Zarasai",
+  "ar": "زاراساي"
+ },
+ {
+  "code": "LT-41",
+  "en": "Šakiai",
+  "ar": "شاكياي"
+ },
+ {
+  "code": "LT-42",
+  "en": "Šalčininkai",
+  "ar": "Šalčininkai"
+ },
+ {
+  "code": "LT-SA",
+  "en": "Šiauliai",
+  "ar": "شياولياي"
+ },
+ {
+  "code": "LT-43",
+  "en": "Šiauliai",
+  "ar": "شياولياي"
+ },
+ {
+  "code": "LT-44",
+  "en": "Šiauliai",
+  "ar": "شياولياي"
+ },
+ {
+  "code": "LT-45",
+  "en": "Šilalė",
+  "ar": "شيلالي"
+ },
+ {
+  "code": "LT-46",
+  "en": "Šilutė",
+  "ar": "شيلوتي"
+ },
+ {
+  "code": "LT-47",
+  "en": "Širvintos",
+  "ar": "شيرفينتوس"
+ },
+ {
+  "code": "LT-49",
+  "en": "Švenčionys",
+  "ar": "شفينتشيونيس"
+ }
+]

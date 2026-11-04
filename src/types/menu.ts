@@ -185,6 +185,15 @@ export interface MenuSettings {  name: { en: string; ar: string };
     receiveDelayDeliveryMin: number;
     /** Receive-delay window for pickup orders (smart ETA). */
     receiveDelayPickupMin: number;
+    /** Delivery area: 'all' serves everywhere (legacy behavior); 'selected'
+     *  restricts delivery pins to the listed countries, each either fully
+     *  open ('ALL' subdivisions) or narrowed to explicit subdivision codes.
+     *  maxKm is the server-enforced backstop radius from the restaurant. */
+    deliveryZones: {
+      mode: 'all' | 'selected';
+      maxKm: number;
+      countries: Array<{ cc: string; subdivisions: 'ALL' | string[] }>;
+    };
   };
   /** Order status emails to the customer (frontend stores the prefs;
    *  the server decides the actual send). Missing in old docs → defaults

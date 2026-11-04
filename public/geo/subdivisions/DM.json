@@ -1,0 +1,52 @@
+[
+ {
+  "code": "DM-02",
+  "en": "Saint Andrew",
+  "ar": "القديس أندرو"
+ },
+ {
+  "code": "DM-03",
+  "en": "Saint David",
+  "ar": "القديس داود"
+ },
+ {
+  "code": "DM-04",
+  "en": "Saint George",
+  "ar": "القديس جورج"
+ },
+ {
+  "code": "DM-05",
+  "en": "Saint John",
+  "ar": "القديس يوحنا"
+ },
+ {
+  "code": "DM-06",
+  "en": "Saint Joseph",
+  "ar": "القديس يوسف"
+ },
+ {
+  "code": "DM-07",
+  "en": "Saint Luke",
+  "ar": "القديس لوقا"
+ },
+ {
+  "code": "DM-08",
+  "en": "Saint Mark",
+  "ar": "القديس مرقس"
+ },
+ {
+  "code": "DM-09",
+  "en": "Saint Patrick",
+  "ar": "القديس باتريك"
+ },
+ {
+  "code": "DM-10",
+  "en": "Saint Paul",
+  "ar": "القديس بولس"
+ },
+ {
+  "code": "DM-11",
+  "en": "Saint Peter",
+  "ar": "القديس بطرس"
+ }
+]

@@ -244,17 +244,37 @@ export function normalizeMenu(menu) {
     ensureDef(lvl.id, lvl.name, 'spicy', 'addon');
   }
   // Legacy upgrade: a per-item 'spicy' row becomes 'spicy-medium' at the
-  // same price (the generic heat ≈ the middle level). Runs on the
-  // normalized copy only — persisted on the next admin save.
+  // same price (the generic heat ≈ the middle level). Its siblings are
+  // added at the SAME price — the owner's heat price carries over to every
+  // level instead of stranding the item with a degenerate one-dot slider
+  // (a single medium that looks broken and reads as "default medium").
+  // Runs on the normalized copy only — persisted on the next admin save.
+  // Any other partial heat set (e.g. only hot attached) is completed with
+  // free levels for the same reason; the admin can still detach or reprice
+  // per item as usual.
+  // TWIN: src/utils/pricing-menu.ts — keep the rule identical.
   if (Array.isArray(out.items)) {
     for (const item of out.items) {
       if (!item || typeof item !== 'object' || !Array.isArray(item.addons)) continue;
       const list = item.addons;
       const legacyIdx = list.findIndex((a) => a && a.featureId === 'spicy');
-      if (legacyIdx === -1) continue;
-      const hasMedium = list.some((a) => a && a.featureId === 'spicy-medium');
-      if (hasMedium) list.splice(legacyIdx, 1);
-      else list[legacyIdx] = { ...list[legacyIdx], featureId: 'spicy-medium' };
+      let heatPrice = null;
+      if (legacyIdx !== -1) {
+        const p = list[legacyIdx].price;
+        heatPrice = typeof p === 'number' && Number.isFinite(p) && p >= 0 ? p : 0;
+        const hasMedium = list.some((a) => a && a.featureId === 'spicy-medium');
+        if (hasMedium) list.splice(legacyIdx, 1);
+        else list[legacyIdx] = { ...list[legacyIdx], featureId: 'spicy-medium' };
+      }
+      const have = new Set(
+        list.filter((a) => a && (a.featureId === 'spicy-mild' || a.featureId === 'spicy-medium' || a.featureId === 'spicy-hot')).map((a) => a.featureId),
+      );
+      if (have.size > 0 && have.size < 3) {
+        const fill = heatPrice !== null ? heatPrice : 0;
+        for (const id of ['spicy-mild', 'spicy-medium', 'spicy-hot']) {
+          if (!have.has(id)) list.push({ featureId: id, price: fill });
+        }
+      }
     }
   }
   // Fixed global option: any customizable item (has add-on rows) that

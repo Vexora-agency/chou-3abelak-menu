@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-10-28T12:40:03.296Z",
+  "baseUrl": "http://127.0.0.1:3000",
+  "metrics": {
+    "http_req_duration": {
+      "p(95)": 495.82360499999993,
+      "avg": 307.309725,
+      "min": 198.7761,
+      "med": 248.98395,
+      "max": 532.4949,
+      "p(90)": 459.15231000000006
+    },
+    "http_req_failed": {
+      "rate": 0,
+      "passes": 0,
+      "fails": 4
+    },
+    "http_reqs": {
+      "count": 4,
+      "rate": 0.8428745858456702
+    },
+    "vus_max": {
+      "min": 2,
+      "max": 2,
+      "value": 2
+    }
+  },
+  "checks": {
+    "rate": 0.6666666666666666,
+    "passes": 8,
+    "fails": 4
+  }
+}

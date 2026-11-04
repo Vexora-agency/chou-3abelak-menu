@@ -4,7 +4,7 @@
  */
 import { stripControls, validateBilingual, validateBilingualOpt, TIME_REGEX, PHONE_REGEX, WHATSAPP_REGEX } from './validate-core.js';
 import { buildFeatureLibrary } from './validate-feature-library.js';
-import VALID_COUNTRIES from './geodata/countries.json' with { type: 'json' };
+import VALID_COUNTRIES from './geodata/countries.js';
 
 /** ISO 3166-1 alpha-2 codes we serve zone data for. */
 const VALID_CC = new Set(

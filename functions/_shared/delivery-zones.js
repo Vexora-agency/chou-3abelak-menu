@@ -8,7 +8,7 @@
  * where subdivisions is 'ALL' (whole country open) or explicit codes.
  * Matching is code-first, name-second (see the client copy for why).
  */
-import COUNTRIES from './geodata/countries.json' with { type: 'json' };
+import COUNTRIES from './geodata/countries.js';
 
 export const DEFAULT_DELIVERY_ZONES = { mode: 'all', maxKm: 100, countries: [] };
 

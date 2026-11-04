@@ -98,11 +98,14 @@ function main(countriesUp, statesUp) {
   };
 
   const clientCountries = join(ROOT, 'src/data/geo/countries.json');
-  const serverCountries = join(ROOT, 'functions/_shared/geodata/countries.json');
+  // Server twin: plain .js data module (Cloudflare's esbuild predates
+  // `import ... with {type:'json'}`, so the server cannot import JSON).
+  // Same content as the client JSON, written by this same script.
+  const serverCountries = join(ROOT, 'functions/_shared/geodata/countries.js');
   mkdirSync(dirname(clientCountries), { recursive: true });
   mkdirSync(dirname(serverCountries), { recursive: true });
   writeFileSync(clientCountries, JSON.stringify(countries, null, 1) + '\n');
-  writeFileSync(serverCountries, JSON.stringify(countries, null, 1) + '\n');
+  writeFileSync(serverCountries, 'export default ' + JSON.stringify(countries) + ';\n');
   writeFileSync(join(dirname(clientCountries), 'geodata.meta.json'), JSON.stringify(meta, null, 1) + '\n');
   writeFileSync(join(dirname(serverCountries), 'geodata.meta.json'), JSON.stringify(meta, null, 1) + '\n');
 

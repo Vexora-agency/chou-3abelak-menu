@@ -13,9 +13,9 @@ interface NotifyEmailSectionProps {
   onToggleCollapse?: () => void;
 }
 
-const DEFAULT_EVENTS: Notifications['events'] = { placed: true, confirmed: true, completed: true, cancelled: true };
+const DEFAULT_EVENTS: Notifications['events'] = { placed: true, confirmed: true, completed: true, cancelled: true, receipt_check: true };
 
-const EVENT_KEYS: NotifyEventKey[] = ['placed', 'confirmed', 'completed', 'cancelled'];
+const EVENT_KEYS: NotifyEventKey[] = ['placed', 'confirmed', 'completed', 'cancelled', 'receipt_check'];
 
 /** Order notification email card of the admin Settings tab. */
 export const NotifyEmailSection: React.FC<NotifyEmailSectionProps> = ({
@@ -39,6 +39,8 @@ export const NotifyEmailSection: React.FC<NotifyEmailSectionProps> = ({
         return isAr ? 'اكتمال الطلب' : 'Order completed';
       case 'cancelled':
         return isAr ? 'إلغاء الطلب' : 'Order cancelled';
+      case 'receipt_check':
+        return isAr ? 'تأكيد الاستلام' : 'Receipt check';
     }
   };
 

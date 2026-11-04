@@ -2,7 +2,7 @@
  * Customer order-status emails (best-effort, never throws, never logs PII).
  * Contract: notifyCustomerOrderEvent(db, env, { order, event, origin })
  *   - order: mapOrderRow shape (includes customer.email when opted-in).
- *   - event: 'placed' | 'confirmed' | 'completed' | 'cancelled'.
+ *   - event: 'placed' | 'confirmed' | 'completed' | 'cancelled' | 'receipt_check'.
  *   - origin: request origin for the track link (may be '').
  * Behavior: missing email or disabled event -> { sent:false, reason } with
  * zero Resend traffic. Otherwise builds via buildOrderEmail() from
@@ -13,14 +13,14 @@
 
 import { sendEmail } from './mail.js';
 
-const EVENTS = ['placed', 'confirmed', 'completed', 'cancelled'];
+const EVENTS = ['placed', 'confirmed', 'completed', 'cancelled', 'receipt_check'];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 function defaultNotifications() {
   return {
     senderName: '',
     replyTo: '',
-    events: { placed: true, confirmed: true, completed: true, cancelled: true },
+    events: { placed: true, confirmed: true, completed: true, cancelled: true, receipt_check: true },
   };
 }
 
@@ -40,6 +40,7 @@ function normalizeNotifications(raw) {
       confirmed: b(ev.confirmed),
       completed: b(ev.completed),
       cancelled: b(ev.cancelled),
+      receipt_check: b(ev.receipt_check),
     },
   };
 }
@@ -161,6 +162,9 @@ export async function notifyCustomerOrderEvent(db, env, { order, event, origin }
     if (!to) return fail('no_email');
     const notifications = await loadNotifications(env);
     if (!notifications.events[event]) return fail('disabled');
+    // فحص الاستلام هو آخر بريد: إتمام لاحق لا يراسل مرتين.
+    // The receipt-check is the last email; a later completed must not double-mail.
+    if (event === 'completed' && order && order.receiptAskedAt) return fail('already_asked');
     const lang = order && order.lang === 'ar' ? 'ar' : 'en';
     const { storeName, currency, timezone, menu } = await loadMenuBits(env, lang);
     // Reuse the menu read above when possible (loadNotifications already

@@ -197,6 +197,46 @@ export async function claimOrderRelease(db, id, nowIso) {
 }
 
 /**
+ * وصل الاستلام: حدّ الدفعة + نافذة ٢٤ ساعة بعد الإنشاء.
+ * Receipt-check sweep bounds: past-ETA confirmed/ready, never asked, recent
+ * (upper bound mirrors the 24h freshness window so a stalled cron can't
+ * nag week-old orders). Bounded (oldest ETA first) so a minute-cron pass
+ * stays cheap.
+ */
+export const RECEIPT_CHECK_BATCH = 20;
+export const RECEIPT_CHECK_MAX_AGE_MS = 24 * 3600 * 1000;
+
+/**
+ * Receipt-check candidates: confirmed/ready + ETA passed + never asked +
+ * created within the freshness window. Bounded (earliest ETA first).
+ */
+export async function findDueForReceiptCheck(db, etaCutoffIso, recentCutoffIso, limit) {
+  const n = Number.isInteger(limit) ? Math.min(50, Math.max(1, limit)) : 20;
+  const res = await db
+    .prepare(
+      "SELECT * FROM orders WHERE status IN ('confirmed','ready') AND eta_at IS NOT NULL AND eta_at <= ?1 AND receipt_asked_at IS NULL AND created_at >= ?2 ORDER BY eta_at ASC LIMIT ?3"
+    )
+    .bind(etaCutoffIso, recentCutoffIso, n)
+    .all();
+  return (res && res.results) || [];
+}
+
+/**
+ * Atomic receipt-check claim: exactly one cron pass owns the ask
+ * (sets receipt_asked_at). Returns true only on a real claim — the caller
+ * sends the `receipt_check` email only then, so it never double-fires.
+ */
+export async function claimReceiptCheck(db, id, nowIso) {
+  const stamp = typeof nowIso === 'string' ? nowIso : new Date().toISOString();
+  const res = await db
+    .prepare('UPDATE orders SET receipt_asked_at = ?2 WHERE id = ?1 AND receipt_asked_at IS NULL')
+    .bind(id, stamp)
+    .run();
+  const changed = res && res.meta ? res.meta.changes : 0;
+  return changed === 1;
+}
+
+/**
  * Customer self-cancel: token-gated like the track page, atomic, and
  * time-boxed. Only a FRESH `new` order flips — once the kitchen confirms
  * (or the window lapses) the row is untouched and the caller gets `false`
@@ -270,6 +310,7 @@ export const CRON_CRITICAL_AFTER_MS = 5 * 60 * 1000;
  * @property {number} released
  * @property {number} autoCompleted
  * @property {number} lockNoticed
+ * @property {number} receiptChecked
  */
 
 /** Stamp sweep start (call once per pass, right after auth). */

@@ -257,6 +257,7 @@ export function normalizeMenu(menu) {
         confirmed: boolOrTrue(notifEv.confirmed),
         completed: boolOrTrue(notifEv.completed),
         cancelled: boolOrTrue(notifEv.cancelled),
+        receipt_check: boolOrTrue(notifEv.receipt_check),
       },
     },
     featureDefs: defs,

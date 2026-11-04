@@ -121,6 +121,7 @@ export function ensureSettingsBlocks(menu: MenuData): MenuData {
           confirmed: ne.confirmed !== false,
           completed: ne.completed !== false,
           cancelled: ne.cancelled !== false,
+          receipt_check: ne.receipt_check !== false,
         },
       },
       announcement: {

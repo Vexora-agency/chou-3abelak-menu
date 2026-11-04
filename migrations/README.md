@@ -20,5 +20,6 @@ Apply remote: `npx wrangler d1 migrations apply ORDERS_DB --remote` (needs the r
 | `0022_eta_times.sql` | Smart ETA + receive-unlock instants (`orders.confirmed_at`, `orders.eta_at`, both nullable, no backfill — legacy rows keep NULL and the code treats NULL safely via created_at+delay fallbacks). |
 | `0023_linked_orders.sql` | Follow-up link (`orders.parent_number` nullable, no backfill — NULL = standalone) + restores `idx_orders_phone_norm` (dropped by 0018) + `idx_orders_parent_number`. |
 | `0024_customer_email.sql` | Customer email for order status notifications (`orders.customer_email` TEXT nullable, no backfill — NULL = opt-out, reads as `''`). |
+| `0025_receipt_check.sql` | Receipt-check marker (`orders.receipt_asked_at` TEXT nullable, no backfill — NULL = not asked yet, stamped once by the order-nag sweep before the `receipt_check` email). |
 
 Rules: additive only, never edit an applied migration — add a new `00NN_*.sql` with the next free number (see `docs/ADD_NEW_FEATURE.md` step 1).

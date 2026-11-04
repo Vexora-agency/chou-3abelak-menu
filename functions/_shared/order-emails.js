@@ -102,6 +102,12 @@ const STR = {
       subject: (number, store) => `تم إلغاء الطلب رقم ${number} في ${store}`,
       body: (number) => `تم إلغاء طلبك رقم ${number}. نتطلع لخدمتك قريبًا.`,
     },
+    receipt_check: {
+      label: 'تحديث الطلب',
+      title: 'هل وصلك طلبك؟',
+      subject: (number, store) => `هل وصلك طلبك رقم ${number} من ${store}؟`,
+      body: (number, store) => `انتهى الوقت المتوقع لتوصيل طلبك رقم ${number}. لو وصلك، أكّد الاستلام من صفحة التتبع.`,
+    },
   },
   en: {
     meta: { number: 'Order number', total: 'Total', items: 'Items', eta: 'Estimated time' },
@@ -131,6 +137,12 @@ const STR = {
       title: 'Order cancelled',
       subject: (number, store) => `Order #${number} from ${store} has been cancelled`,
       body: (number) => `Your order #${number} has been cancelled. We look forward to serving you soon.`,
+    },
+    receipt_check: {
+      label: 'Order update',
+      title: 'Did your order arrive?',
+      subject: (number, store) => `Did order #${number} from ${store} arrive?`,
+      body: (number, store) => `The estimated delivery time for your order #${number} has passed. If it arrived, please confirm receipt on the tracking page.`,
     },
   },
 };

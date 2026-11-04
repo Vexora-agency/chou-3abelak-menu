@@ -317,6 +317,7 @@ function validateSettings(s, errors) {
       confirmed: boolOrTrue(evRaw.confirmed),
       completed: boolOrTrue(evRaw.completed),
       cancelled: boolOrTrue(evRaw.cancelled),
+      receipt_check: boolOrTrue(evRaw.receipt_check),
     },
   };
 

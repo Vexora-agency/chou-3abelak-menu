@@ -192,7 +192,7 @@ export interface MenuSettings {  name: { en: string; ar: string };
   notifications: {
     senderName: string;
     replyTo: string;
-    events: { placed: boolean; confirmed: boolean; completed: boolean; cancelled: boolean };
+    events: { placed: boolean; confirmed: boolean; completed: boolean; cancelled: boolean; receipt_check: boolean };
   };
   announcement: {
     enabled: boolean;

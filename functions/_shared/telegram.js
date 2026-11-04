@@ -975,7 +975,14 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
       const ev = map[parsed.status];
       if (ev && updated && updated.customer && typeof updated.customer.email === 'string' && updated.customer.email) {
         const { notifyCustomerOrderEvent } = await import('./customer-email.js');
-        await notifyCustomerOrderEvent(db, env, { order: updated, event: ev, origin: '' });
+        // No request URL in callback context: build the track link from the
+        // configured SITE_URL (same anti-spoofing convention as access.js).
+        // Empty when unconfigured → email sends without the button, as before.
+        let trackOrigin = '';
+        try {
+          trackOrigin = ((env && env.SITE_URL) || '').trim().replace(/\/+$/, '');
+        } catch {}
+        await notifyCustomerOrderEvent(db, env, { order: updated, event: ev, origin: trackOrigin });
       }
     } catch {}
     return { handled: true, status: parsed.status };

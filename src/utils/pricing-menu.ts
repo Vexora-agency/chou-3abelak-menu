@@ -318,6 +318,7 @@ export function normalizeMenu<T>(menu: T): T {
         confirmed: notifEventsRaw.confirmed !== false,
         completed: notifEventsRaw.completed !== false,
         cancelled: notifEventsRaw.cancelled !== false,
+        receipt_check: notifEventsRaw.receipt_check !== false,
       },
     },
     announcement: {

@@ -2,6 +2,7 @@ import React from 'react';
 import { Flame, Plus, Trash2, X, Star } from 'lucide-react';
 import type { FeatureGroup, ItemAddon, MenuData, MenuItem } from '@/src/types/menu';
 import { featureName, featuresByGroup } from '@/src/utils/pricing';
+import { isSpicyAddon } from '@/src/utils/menuHelpers';
 
 interface ItemAddonsEditorProps {
   item: MenuItem;
@@ -78,8 +79,9 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
           const ownFeats = gid ? (menu.settings.featureDefs || []).filter((d) => d.groupId === gid && isFree(d.id)) : null;
           // Spicy row marker: a native <select> can't render icons inside its
           // options, so the flame lives next to it — instantly visible while
-          // scanning the add-on list.
-          const spicyRow = a.featureId === 'spicy';
+          // scanning the add-on list. Matched by id OR display name so a
+          // custom-named spicy feature (any id) still gets its flame.
+          const spicyRow = isSpicyAddon(a.featureId, featureName(menu, a.featureId, lang));
           return (
           <div key={`${a.featureId}-${ai}`} className="flex items-end gap-1.5 sm:gap-2 mb-1.5">
             {spicyRow && (
@@ -254,15 +256,15 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                               addons: [...(item.addons || []), { featureId: d.id, price: 0 }],
                             });
                           }}
-                          className={`btn-tactile px-2.5 py-1 rounded-full border border-dashed text-[10px] font-bold hover:border-[var(--primary)] hover:text-[var(--primary)] ${
-                            d.id === 'spicy'
-                              ? 'border-red-500/60 text-red-300'
-                              : 'border-neutral-600 text-neutral-400'
-                          }`}
-                        >
-                          <Plus size={10} className="inline me-1" />
-                          {d.id === 'spicy' && <Flame size={10} className="inline me-0.5 -mt-0.5 text-red-400" aria-hidden="true" />}
-                          {isAr ? d.name.ar : d.name.en}
+                      className={`btn-tactile px-2.5 py-1 rounded-full border border-dashed text-[10px] font-bold hover:border-[var(--primary)] hover:text-[var(--primary)] ${
+                        isSpicyAddon(d.id, d.name.ar) || isSpicyAddon(d.id, d.name.en)
+                          ? 'border-red-500/60 text-red-300'
+                          : 'border-neutral-600 text-neutral-400'
+                      }`}
+                    >
+                      <Plus size={10} className="inline me-1" />
+                      {(isSpicyAddon(d.id, d.name.ar) || isSpicyAddon(d.id, d.name.en)) && <Flame size={10} className="inline me-0.5 -mt-0.5 text-red-400" aria-hidden="true" />}
+                      {isAr ? d.name.ar : d.name.en}
                         </button>
                       ))}
                     </div>

@@ -76,8 +76,21 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
           );
           const isFree = (id: string) => id === a.featureId || !takenElsewhere.has(id);
           const ownFeats = gid ? (menu.settings.featureDefs || []).filter((d) => d.groupId === gid && isFree(d.id)) : null;
+          // Spicy row marker: a native <select> can't render icons inside its
+          // options, so the flame lives next to it — instantly visible while
+          // scanning the add-on list.
+          const spicyRow = a.featureId === 'spicy';
           return (
           <div key={`${a.featureId}-${ai}`} className="flex items-end gap-1.5 sm:gap-2 mb-1.5">
+            {spicyRow && (
+              <span
+                className="shrink-0 w-9 h-9 min-w-[36px] min-h-[36px] rounded-full flex items-center justify-center bg-red-500/10 border border-red-500/40 text-red-400 self-center"
+                title={isAr ? 'خيار الحار' : 'Spicy option'}
+                aria-hidden="true"
+              >
+                <Flame size={15} />
+              </span>
+            )}
             <select
               value={a.featureId}
               onChange={(e) => {
@@ -241,9 +254,14 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                               addons: [...(item.addons || []), { featureId: d.id, price: 0 }],
                             });
                           }}
-                          className="btn-tactile px-2.5 py-1 rounded-full border border-dashed border-neutral-600 text-neutral-400 text-[10px] font-bold hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                          className={`btn-tactile px-2.5 py-1 rounded-full border border-dashed text-[10px] font-bold hover:border-[var(--primary)] hover:text-[var(--primary)] ${
+                            d.id === 'spicy'
+                              ? 'border-red-500/60 text-red-300'
+                              : 'border-neutral-600 text-neutral-400'
+                          }`}
                         >
                           <Plus size={10} className="inline me-1" />
+                          {d.id === 'spicy' && <Flame size={10} className="inline me-0.5 -mt-0.5 text-red-400" aria-hidden="true" />}
                           {isAr ? d.name.ar : d.name.en}
                         </button>
                       ))}

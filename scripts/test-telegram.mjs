@@ -7,12 +7,16 @@ import {
   buildMapsLink,
   buildOrderKeyboard,
   callTelegramApi,
+  consumePairingCode,
   escapeHtml,
   formatNewOrderMessage,
   handleOrderCallback,
   isBotUsernameFormat,
   isPairingCodeFormat,
   isTelegramTransitionAllowed,
+  issuePairingCode,
+  listDeliveryChats,
+  listOrderDeliveryMessages,
   newPairingCode,
   notifyNewOrderTelegram,
   notifyOwnerAutoCompleted,
@@ -23,11 +27,15 @@ import {
   readPendingPairing,
   readyBannerFor,
   rebuildOrderMessage,
+  removeDeliveryChat,
   resolveBotUsername,
+  saveDeliveryLink,
+  saveDeliveryMessage,
   syncOrderStatusToTelegram,
   verifyWebhookSecret,
 } from '../functions/_shared/telegram.js';
 import { sha256Hex } from '../functions/_shared/access.js';
+import { readFileSync } from 'node:fs';
 
 let pass = 0;
 let fail = 0;
@@ -370,7 +378,12 @@ dbSync.ledger.set('ord-s1', { status: 'sent', order_number: 11, chat_id: 111, me
 const s1 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-s1', status: 'confirmed', adminUrl: 'https://x/admin/dashboard' });
 const editText = syncCalls.find((c) => c.method === 'editMessageText');
 ok('sync stamps banner', s1.sent === 1 && editText && editText.body.text.includes('🔥 الطلب قيد التحضير') && editText.body.text.includes('#11'));
-ok('sync freezes buttons', syncCalls.some((c) => c.method === 'editMessageReplyMarkup' && c.body.reply_markup.inline_keyboard.length === 0));
+ok(
+  'sync keeps delivered buttons on confirm (no freeze)',
+  syncCalls.some(
+    (c) => c.method === 'editMessageReplyMarkup' && JSON.stringify(c.body.reply_markup).includes('tg:rcv:ord-s1')
+  )
+);
 const s2 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'missing', status: 'confirmed', adminUrl: '' });
 ok('sync skips unknown order silently', s2.sent === 0 && s2.reason === 'no_message');
 dbSync.ledger.set('ord-s2', { status: 'sent', order_number: 12, chat_id: null, message_id: null, message_text: null });
@@ -383,10 +396,18 @@ dbSync.ledger.set('ord-s3', { status: 'sent', order_number: 13, chat_id: 111, me
 const s5 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-s3', status: 'completed', adminUrl: '' });
 const editText3 = syncCalls.filter((c) => c.method === 'editMessageText').pop();
 ok('no double banner on restamp', s5.sent === 1 && editText3.body.text.includes('📦 تم الاستلام') && !editText3.body.text.includes('قيد التحضير') && !editText3.body.text.includes('تم تأكيد'));
+const freezeTerminal = syncCalls.filter((c) => c.method === 'editMessageReplyMarkup').pop();
+ok('terminal still freezes buttons', !!freezeTerminal && freezeTerminal.body.reply_markup.inline_keyboard.length === 0);
 dbSync.ledger.set('ord-r1', { status: 'sent', order_number: 14, chat_id: 111, message_id: 26, message_text: '<b>طلب #14</b>\n\n🔥 الطلب قيد التحضير' });
 const sR = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-r1', status: 'ready', adminUrl: 'https://x/admin/dashboard' });
 const editTextR = syncCalls.filter((c) => c.method === 'editMessageText').pop();
 ok('sync ready stamps out-for-delivery banner, old one cleared', sR.sent === 1 && editTextR.body.text.includes('🛵 الطلب خارج للتوصيل') && !editTextR.body.text.includes('قيد التحضير'));
+ok(
+  'sync keeps delivered buttons on ready (no freeze)',
+  syncCalls.some(
+    (c) => c.method === 'editMessageReplyMarkup' && JSON.stringify(c.body.reply_markup).includes('tg:rcv:ord-r1')
+  )
+);
 dbSync.ledger.set('ord-r2', { status: 'sent', order_number: 16, chat_id: 111, message_id: 27, message_text: '<b>طلب #16</b>\n\n🛵 الطلب خارج للتوصيل' });
 const sR2 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-r2', status: 'completed', adminUrl: '' });
 const editTextR2 = syncCalls.filter((c) => c.method === 'editMessageText').pop();
@@ -557,6 +578,329 @@ globalThis.fetch = realFetch;
 const last = await readLastTelegramNotification(dbBad);
 ok('last notification mapped', last && last.orderNumber === 10 && last.status === 'failed');
 ok('last notification null on empty', await readLastTelegramNotification(mockDb(true)) === null);
+
+// 11. Migration 0026 (delivery-crew sharing) ships the new tables + role column.
+{
+  const sql26 = readFileSync(new URL('../migrations/0026_telegram_delivery.sql', import.meta.url), 'utf8');
+  ok('0026 creates telegram_chats', sql26.includes('CREATE TABLE') && sql26.includes('telegram_chats'));
+  ok('0026 creates telegram_order_chats', sql26.includes('telegram_order_chats'));
+  ok('0026 adds pairing role column', sql26.includes('ADD COLUMN role') && sql26.includes("DEFAULT 'owner'"));
+}
+
+// 12. Pairing codes carry role (owner default, delivery opt-in).
+function mockRoleDb() {
+  const codes = new Map();
+  return {
+    codes,
+    prepare(sql) {
+      return {
+        bind(...args) {
+          return {
+            async run() {
+              if (sql.includes('INSERT INTO telegram_pairing_codes')) {
+                const role = args.length >= 4 ? args[3] : 'owner';
+                codes.set(args[0], { code_hash: args[0], created_at: args[1], expires_at: args[2], used_at: null, consumed_by_chat: null, role });
+                return { meta: { changes: 1 } };
+              }
+              if (sql.includes('UPDATE telegram_pairing_codes SET used_at')) {
+                const row = codes.get(args[0]);
+                if (!row || row.used_at) return { meta: { changes: 0 } };
+                if (!(row.expires_at > args[1])) return { meta: { changes: 0 } };
+                row.used_at = args[1];
+                row.consumed_by_chat = args[2];
+                return { meta: { changes: 1 } };
+              }
+              if (sql.includes('DELETE FROM telegram_pairing_codes')) return { meta: { changes: 0 } };
+              return { meta: { changes: 0 } };
+            },
+            async first() {
+              if (sql.includes('SELECT role FROM telegram_pairing_codes')) {
+                const row = codes.get(args[0]);
+                return row ? { role: row.role } : null;
+              }
+              if (sql.includes('SELECT COUNT(*)')) return { n: 0, exp: null };
+              return null;
+            },
+            async all() { return { results: [] }; },
+          };
+        },
+      };
+    },
+  };
+}
+{
+  const dbOwner = mockRoleDb();
+  const issuedOwner = await issuePairingCode(dbOwner);
+  ok('owner issue defaults to owner role', issuedOwner && issuedOwner.role === 'owner' && typeof issuedOwner.code === 'string');
+  const consumedOwner = await consumePairingCode(dbOwner, issuedOwner.code, 111);
+  ok('owner consume returns owner role', !!consumedOwner && consumedOwner.role === 'owner');
+  const dbCrew = mockRoleDb();
+  const issuedCrew = await issuePairingCode(dbCrew, 'delivery');
+  ok('delivery issue carries delivery role', issuedCrew && issuedCrew.role === 'delivery');
+  const consumedCrew = await consumePairingCode(dbCrew, issuedCrew.code, 222);
+  ok('delivery consume returns delivery role', !!consumedCrew && consumedCrew.role === 'delivery');
+  const badConsume = await consumePairingCode(dbCrew, issuedCrew.code, 333);
+  ok('reused code rejected (no oracle)', badConsume === false);
+}
+
+// 13. Delivery-chat CRUD round-trip (best-effort, never throws).
+function mockDeliveryStore({ linked = true } = {}) {
+  const chats = new Map();
+  const orderChats = new Map();
+  const ledger = new Map();
+  const orders = new Map();
+  const pairing = new Map();
+  return {
+    chats,
+    orderChats,
+    ledger,
+    orders,
+    pairing,
+    prepare(sql) {
+      const self = this;
+      return {
+        bind(...args) {
+          return {
+            async run() {
+              if (sql.includes('INSERT OR REPLACE INTO telegram_chats')) {
+                chats.set(args[0], { chat_id: args[0], role: args[1], label: args[2], linked_at: args[3] });
+                return { meta: { changes: 1 } };
+              }
+              if (sql.includes('DELETE FROM telegram_chats')) {
+                chats.delete(args[0]);
+                return { meta: { changes: 1 } };
+              }
+              if (sql.includes('INSERT INTO telegram_order_chats')) {
+                orderChats.set(`${args[0]}:${args[1]}`, { order_id: args[0], chat_id: args[1], message_id: args[2], message_text: args[3], status: args[4] });
+                return { meta: { changes: 1 } };
+              }
+              if (sql.includes('INSERT INTO telegram_notifications')) {
+                if (!ledger.has(args[0])) ledger.set(args[0], { status: 'pending', attempts: 0, order_number: args[1] });
+                return { meta: { changes: 1 } };
+              }
+              if (sql.includes('UPDATE telegram_notifications')) {
+                const row = ledger.get(args[0]) || {};
+                ledger.set(args[0], { ...row, status: args[1], attempts: args[2], last_error: args[3] });
+                return { meta: { changes: 1 } };
+              }
+              if (sql.includes('INSERT INTO telegram_pairing_codes')) {
+                const role = args.length >= 4 ? args[3] : 'owner';
+                pairing.set(args[0], { code_hash: args[0], created_at: args[1], expires_at: args[2], used_at: null, consumed_by_chat: null, role });
+                return { meta: { changes: 1 } };
+              }
+              if (sql.includes('UPDATE telegram_pairing_codes SET used_at')) {
+                const row = pairing.get(args[0]);
+                if (!row || row.used_at) return { meta: { changes: 0 } };
+                if (!(row.expires_at > args[1])) return { meta: { changes: 0 } };
+                row.used_at = args[1];
+                row.consumed_by_chat = args[2];
+                return { meta: { changes: 1 } };
+              }
+              if (sql.includes('DELETE FROM telegram_pairing_codes')) return { meta: { changes: 0 } };
+              if (sql.includes('UPDATE orders SET status')) {
+                const row = orders.get(args[2]);
+                if (!row) return { meta: { changes: 0 } };
+                row.status = args[0];
+                row.updated_at = args[1];
+                return { meta: { changes: 1 } };
+              }
+              if (sql.includes('UPDATE orders SET confirmed_at') || sql.includes('confirmed_at')) return { meta: { changes: 1 } };
+              return { meta: { changes: 0 } };
+            },
+            async first() {
+              if (sql.includes('SELECT role FROM telegram_pairing_codes')) {
+                const row = pairing.get(args[0]);
+                return row ? { role: row.role } : null;
+              }
+              if (sql.includes('SELECT COUNT(*)') && sql.includes('telegram_pairing_codes')) return { n: 0, exp: null };
+              if (sql.includes('SELECT COUNT(*) AS c FROM orders')) return { c: 0 };
+              if (sql.includes('FROM telegram_notifications') && sql.includes('order_id')) {
+                const row = ledger.get(args[0]);
+                return row ? { ...row } : null;
+              }
+              if (sql.includes('SELECT value FROM service_config')) {
+                return linked ? { value: JSON.stringify({ chat_id: 12345, linked_at: '2026-01-01' }) } : null;
+              }
+              if (sql.includes('FROM orders WHERE id')) {
+                return orders.get(args[0]) || null;
+              }
+              if (sql.includes('SELECT order_number')) {
+                const rows = [...ledger.entries()];
+                if (!rows.length) return null;
+                const r = rows[rows.length - 1][1];
+                return { order_number: r.order_number, status: r.status, attempts: r.attempts, updated_at: 't', sent_at: null };
+              }
+              return null;
+            },
+            async all() {
+              if (sql.includes('FROM telegram_chats')) {
+                return { results: [...chats.values()].filter((r) => r.role === 'delivery').map((r) => ({ chat_id: r.chat_id, label: r.label, linked_at: r.linked_at })) };
+              }
+              if (sql.includes('FROM telegram_order_chats')) {
+                return { results: [...orderChats.values()].filter((r) => r.order_id === args[0]).map((r) => ({ chat_id: r.chat_id, message_id: r.message_id, message_text: r.message_text, status: r.status })) };
+              }
+              if (sql.includes('FROM orders WHERE')) return { results: [] };
+              return { results: [] };
+            },
+          };
+        },
+      };
+    },
+  };
+}
+{
+  const db = mockDeliveryStore({ linked: true });
+  ok('delivery list empty initially', (await listDeliveryChats(db)).length === 0);
+  ok('save delivery link', await saveDeliveryLink(db, 777, 'Crew One') === true);
+  ok('save second delivery link', await saveDeliveryLink(db, 888) === true);
+  const chats = await listDeliveryChats(db);
+  ok('delivery list has two chats', chats.length === 2 && chats.some((c) => c.chatId === 777 && c.label === 'Crew One') && chats.some((c) => c.chatId === 888));
+  ok('remove delivery chat', await removeDeliveryChat(db, 777) === true);
+  const after = await listDeliveryChats(db);
+  ok('delivery remove drops only that chat', after.length === 1 && after[0].chatId === 888);
+  ok('save delivery message', await saveDeliveryMessage(db, { orderId: 'o-1', chatId: 888, messageId: 5, messageText: '<b>hi</b>', status: 'sent' }) === true);
+  const copies = await listOrderDeliveryMessages(db, 'o-1');
+  ok('list delivery copies', copies.length === 1 && copies[0].chatId === 888 && copies[0].messageId === 5);
+  ok('list empty for unknown order', (await listOrderDeliveryMessages(db, 'nope')).length === 0);
+  ok('delivery helpers never throw on null db', (await listDeliveryChats(null)).length === 0 && (await listOrderDeliveryMessages(null, 'x')).length === 0);
+}
+
+// 14. Delivery fan-out: owner send unchanged + crew copies without admin-url row.
+{
+  const prev = globalThis.fetch;
+  const sent = [];
+  globalThis.fetch = async (url, init) => {
+    const body = JSON.parse(init.body);
+    sent.push({ method: String(url).split('/').pop(), body });
+    return { ok: true, status: 200, json: async () => ({ ok: true, result: { message_id: 100 + sent.length } }) };
+  };
+  const db = mockDeliveryStore({ linked: true });
+  await saveDeliveryLink(db, 777);
+  await saveDeliveryLink(db, 888);
+  const r = await notifyNewOrderTelegram(db, 'tok', {
+    orderId: 'ord-fan', orderNumber: 2001, cleaned: sampleCleaned, storeName: 'مطعم', currency: 'ل.ل', adminUrl: 'https://x/admin/dashboard',
+  });
+  const sends = sent.filter((c) => c.method === 'sendMessage');
+  const ownerSend = sends.find((c) => c.body.chat_id === 12345);
+  const crewSends = sends.filter((c) => c.body.chat_id === 777 || c.body.chat_id === 888);
+  ok('fan-out sends owner + 2 crew', r.sent === 1 && sends.length === 3 && !!ownerSend && crewSends.length === 2);
+  ok('owner keeps admin-url view row', !!ownerSend && JSON.stringify(ownerSend.body.reply_markup).includes('https://x/admin/dashboard'));
+  ok(
+    'crew copies have no admin-url row (confirm+cancel only)',
+    crewSends.every((c) => !JSON.stringify(c.body.reply_markup).includes('https://x/admin') && JSON.stringify(c.body.reply_markup).includes('tg:cfm:ord-fan'))
+  );
+  ok(
+    'crew copies share owner text',
+    crewSends.every((c) => c.body.text === ownerSend.body.text && c.body.text.includes('#2001'))
+  );
+  const stored = await listOrderDeliveryMessages(db, 'ord-fan');
+  ok('crew copies recorded in ledger', stored.length === 2 && stored.every((s) => typeof s.messageId === 'number'));
+  globalThis.fetch = prev;
+}
+
+// 15. Delivery-chat callback auth: crew allowed, stranger rejected.
+{
+  const prev = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ ok: true, result: true }) });
+  const mkOrder = (db) => {
+    db.orders.set('ord-d1', {
+      id: 'ord-d1', number: 3001, status: 'new', type: 'delivery',
+      customer_name: 'Ali', customer_phone: '96170', customer_address: null, customer_table: null,
+      notes: null, location_lat: null, location_lng: null,
+      items_json: '[]', subtotal: 100, delivery_fee: 0, total: 100, lang: 'ar',
+      track_token: 't'.repeat(32), created_at: 't', updated_at: 't',
+    });
+  };
+  const dbCrewOnly = mockDeliveryStore({ linked: false });
+  mkOrder(dbCrewOnly);
+  await saveDeliveryLink(dbCrewOnly, 777);
+  const allowed = await handleOrderCallback(dbCrewOnly, 'tok', {
+    callbackId: 'cb-d1', clickerId: 777, chatId: 777, messageId: 11, data: 'tg:cfm:ord-d1', messageText: 'order', env: {},
+  });
+  ok('delivery chat click allowed', allowed.handled === true && allowed.status === 'confirmed' && dbCrewOnly.orders.get('ord-d1').status === 'confirmed');
+  const copiesAfter = await listOrderDeliveryMessages(dbCrewOnly, 'ord-d1');
+  ok('delivery tap heals crew copy (not owner ledger)', copiesAfter.length === 1 && copiesAfter[0].chatId === 777);
+  const stranger = await handleOrderCallback(dbCrewOnly, 'tok', {
+    callbackId: 'cb-d2', clickerId: 999, chatId: 999, messageId: 12, data: 'tg:cfm:ord-d1', messageText: 'order', env: {},
+  });
+  ok('stranger chat rejected', stranger.handled === false && stranger.reason === 'unauthorized');
+  const mismatched = await handleOrderCallback(dbCrewOnly, 'tok', {
+    callbackId: 'cb-d3', clickerId: 777, chatId: 888, messageId: 13, data: 'tg:cnl:ord-d1', messageText: 'order', env: {},
+  });
+  ok('clicker/chat mismatch rejected', mismatched.handled === false && mismatched.reason === 'unauthorized');
+  globalThis.fetch = prev;
+}
+
+// 16. Sync mirrors banner+keyboard to delivery copies (no admin-url row).
+{
+  const prev = globalThis.fetch;
+  const callsSync = [];
+  globalThis.fetch = async (url, init) => {
+    callsSync.push({ method: String(url).split('/').pop(), body: JSON.parse(init.body) });
+    return { ok: true, status: 200, json: async () => ({ ok: true, result: true }) };
+  };
+  const db = mockDeliveryStore({ linked: true });
+  db.ledger.set('ord-m1', { status: 'sent', order_number: 4001, chat_id: 111, message_id: 22, message_text: '<b>طلب جديد #4001</b>' });
+  await saveDeliveryMessage(db, { orderId: 'ord-m1', chatId: 777, messageId: 33, messageText: '<b>طلب جديد #4001</b>', status: 'sent' });
+  const s = await syncOrderStatusToTelegram(db, 'tok', { orderId: 'ord-m1', status: 'confirmed', adminUrl: 'https://x/admin/dashboard' });
+  const ownerKb = callsSync.find((c) => c.method === 'editMessageReplyMarkup' && c.body.chat_id === 111);
+  const crewKb = callsSync.find((c) => c.method === 'editMessageReplyMarkup' && c.body.chat_id === 777);
+  const crewText = callsSync.find((c) => c.method === 'editMessageText' && c.body.chat_id === 777);
+  ok('sync mirrors confirmed to crew', s.sent === 1 && !!crewText && crewText.body.text.includes('🔥 الطلب قيد التحضير'));
+  ok('owner confirm keeps admin view row', !!ownerKb && JSON.stringify(ownerKb.body.reply_markup).includes('https://x/admin/dashboard') && JSON.stringify(ownerKb.body.reply_markup).includes('tg:rcv:ord-m1'));
+  ok('crew confirm has delivered buttons without admin row', !!crewKb && JSON.stringify(crewKb.body.reply_markup).includes('tg:rcv:ord-m1') && !JSON.stringify(crewKb.body.reply_markup).includes('https://x/admin'));
+  // Terminal still freezes both.
+  callsSync.length = 0;
+  const t = await syncOrderStatusToTelegram(db, 'tok', { orderId: 'ord-m1', status: 'completed', adminUrl: 'https://x/admin/dashboard' });
+  const frozen = callsSync.filter((c) => c.method === 'editMessageReplyMarkup');
+  ok('terminal freezes owner + crew', t.sent === 1 && frozen.length === 2 && frozen.every((c) => c.body.reply_markup.inline_keyboard.length === 0));
+  globalThis.fetch = prev;
+}
+
+// 17. Admin delivery-code / delivery-remove + GET deliveryChats.
+{
+  const { onRequest: adminTelegram } = await import('../functions/api/admin/telegram.js');
+  const AH = { 'X-Requested-With': 'menu-admin', Origin: 'https://x' };
+  const envBase = (db) => ({ ORDERS_DB: db, SITE_PLAN: 'pro', TELEGRAM_BOT_TOKEN: 't', TELEGRAM_WEBHOOK_SECRET: 's', TELEGRAM_BOT_USERNAME: 'TestBot123' });
+  const db = mockDeliveryStore({ linked: true });
+  const codeReq = new Request('https://x/api/admin/telegram', {
+    method: 'POST',
+    headers: { ...AH, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delivery-code' }),
+  });
+  const codeRes = await adminTelegram({ request: codeReq, env: envBase(db) });
+  const codeBody = await codeRes.json().catch(() => null);
+  ok('admin delivery-code issues crew code', codeRes.status === 200 && !!codeBody && codeBody.ok === true && typeof codeBody.code === 'string' && typeof codeBody.deepLink === 'string' && codeBody.deepLink.includes('https://t.me/TestBot123'));
+  // Consume it as crew to prove the role survived the admin path.
+  const crewCode = codeBody.code;
+  const { sha256Hex: sha } = await import('../functions/_shared/access.js');
+  const h = await sha(crewCode);
+  const storedRole = db.pairing.get(h);
+  ok('delivery code stored with delivery role', !!storedRole && storedRole.role === 'delivery');
+  await saveDeliveryLink(db, 555, 'Crew Van');
+  const getReq = new Request('https://x/api/admin/telegram', { headers: AH });
+  const getRes = await adminTelegram({ request: getReq, env: envBase(db) });
+  const getBody = await getRes.json().catch(() => null);
+  ok('admin GET includes deliveryChats', getRes.status === 200 && !!getBody && Array.isArray(getBody.deliveryChats) && getBody.deliveryChats.some((c) => c.chatId === 555));
+  const rmReq = new Request('https://x/api/admin/telegram', {
+    method: 'POST',
+    headers: { ...AH, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delivery-remove', chatId: 555 }),
+  });
+  const rmRes = await adminTelegram({ request: rmReq, env: envBase(db) });
+  const rmBody = await rmRes.json().catch(() => null);
+  ok('admin delivery-remove drops chat', rmRes.status === 200 && !!rmBody && rmBody.ok === true);
+  const getRes2 = await adminTelegram({ request: getReq, env: envBase(db) });
+  const getBody2 = await getRes2.json().catch(() => null);
+  ok('delivery chat gone after remove', !!getBody2 && Array.isArray(getBody2.deliveryChats) && !getBody2.deliveryChats.some((c) => c.chatId === 555));
+  const badRmReq = new Request('https://x/api/admin/telegram', {
+    method: 'POST',
+    headers: { ...AH, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delivery-remove', chatId: 'nope' }),
+  });
+  const badRmRes = await adminTelegram({ request: badRmReq, env: envBase(db) });
+  ok('delivery-remove rejects bad chat id', badRmRes.status === 400);
+}
 
 console.log(`telegram: ${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

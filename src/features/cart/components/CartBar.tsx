@@ -30,8 +30,8 @@ export const CartBar: React.FC<CartBarProps> = ({
   // Delete confirmation dialog (opens on trash tap)
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // Shared counter lock while the confirm dialog is open.
-  useBodyScrollLock(confirmOpen);
+  // Per-sheet scroll lock while the confirm dialog is open.
+  useBodyScrollLock(confirmOpen, 'cartbar-confirm');
 
   // Close the confirmation on Escape (scroll lock lives in the hook above).
   useEffect(() => {

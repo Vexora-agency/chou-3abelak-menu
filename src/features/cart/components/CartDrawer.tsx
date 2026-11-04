@@ -73,13 +73,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     sending,
     handleSendOrder,
     zoneBlocked,
-    zoneStatus,
     zonePlaceName,
   } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart });
 
   // Radical phone-scroll fix: shared counter lock (iOS-safe, nested-sheet
   // aware) instead of a bare overflow flag that iOS Safari ignores.
-  useBodyScrollLock(isOpen);
+  useBodyScrollLock(isOpen, 'cart-drawer');
   useEffect(() => {
     if (!isOpen) {
       idemKeyRef.current = null;

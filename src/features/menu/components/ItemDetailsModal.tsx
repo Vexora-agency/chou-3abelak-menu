@@ -71,7 +71,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
 
   // Shared counter lock (iOS-safe) — replaces the bare overflow flag that
   // iOS Safari ignores, which let the page scroll behind the sheet.
-  useBodyScrollLock(!!item);
+  useBodyScrollLock(!!item, 'item-sheet');
 
   // Handle escape key
   useEffect(() => {

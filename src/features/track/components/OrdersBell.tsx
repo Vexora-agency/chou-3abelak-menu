@@ -462,8 +462,8 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
     return () => window.clearInterval(id);
   }, [open ]);
 
-  // Shared counter lock (iOS-safe, nested-sheet aware).
-  useBodyScrollLock(open);
+  // Per-sheet scroll lock (iOS-safe, nested-sheet aware).
+  useBodyScrollLock(open, 'orders-bell');
 
   useEffect(() => {
     if (!open) return;

@@ -57,6 +57,18 @@ export function spicyLabel(lang: 'en' | 'ar'): string {
 }
 
 /**
+ * Built-in features the admin UI must never delete (order flow, Telegram
+ * and email copy all key off the stable id). The library shows them with a
+ * locked "built-in" badge instead of a delete button, and the normalizer
+ * below re-adds them if an old document lacks them.
+ */
+export const PROTECTED_FEATURE_IDS: readonly string[] = ['spicy'];
+
+export function isProtectedFeatureId(featureId: unknown): boolean {
+  return typeof featureId === 'string' && (PROTECTED_FEATURE_IDS as readonly string[]).includes(featureId);
+}
+
+/**
  * "13:05" (24h) -> "1:05 PM" / "1:05 م", so AM/PM is never ambiguous.
  * Arabic uses the short م/ص (not the long صباحاً/مساءً): compact on phones
  * and the Levantine commercial convention. Shared by the admin preview

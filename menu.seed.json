@@ -105,6 +105,14 @@
           "ar": "إضافة خضرة"
         },
         "groupId": "addons"
+      },
+      {
+        "id": "spicy",
+        "name": {
+          "en": "Spicy",
+          "ar": "حار"
+        },
+        "groupId": "addons"
       }
     ],
     "ordering": {

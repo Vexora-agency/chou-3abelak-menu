@@ -5,7 +5,7 @@ import { formatPrice, round2 } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
 import { phoneDigitsOnly } from '@/src/utils/digits';
-import { loadRememberedDetails, loadSavedEmail, saveCustomerOrder, saveEmailAddress, saveRememberedDetails } from '@/src/utils/customerOrders';
+import { loadRememberedDetails, loadSavedEmail, saveCustomerOrder, saveEmailAddress, saveRememberedDetails, withoutAddress } from '@/src/utils/customerOrders';
 import { shouldOverwriteAddress } from './useMidSplitLocationMap';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { formatMMSS } from '@/src/utils/countdown';
@@ -31,6 +31,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // Retrieve remembered customer details if available (delivery only).
   // A saved record means the box was checked, so it loads checked —
   // the box stays on until the customer unchecks it themself.
+  // The delivery address is NEVER remembered (fresh every order by design):
+  // it is dropped on load even from legacy blobs, and never stored on save.
   const [customer, setCustomer] = useState<CustomerDetails>(() => {
     const base = {
       name: '',
@@ -45,6 +47,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     const merged: CustomerDetails = remembered
       ? { ...base, ...(remembered as Partial<CustomerDetails>) }
       : { ...base };
+    merged.address = '';
     // Smart email prefill: the standalone email memory survives even when
     // "remember my details" was never checked (legacy blobs carry no email).
     if (!merged.email) {
@@ -83,22 +86,12 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // landmark) is never destroyed. Without this, a first wrong auto-fill
   // (coarse fix) stuck forever: the field was non-empty so later correct
   // picks were ignored — the "address is wrong" bug.
-  // Seeded from the remembered address ALONE (pins are session-only now):
-  // an untouched remembered address belongs to a previous order and may be
-  // stale, so a fresh pick refreshes it — while text edited THIS session
-  // differs from the seed and is preserved. This keeps pin and address from
-  // ever disagreeing on the ticket.
-  const lastAutoFillRef = useRef<string | null>((() => {
-    try {
-      const rem = loadRememberedDetails();
-      const a = rem && typeof (rem as { address?: unknown }).address === 'string'
-        ? (rem as { address: string }).address.trim().slice(0, 200)
-        : '';
-      return a || null;
-    } catch {
-      return null;
-    }
-  })());
+  // No remembered-address seeding: the address is never stored, so every
+  // mount starts with a blank field. A re-pin overwrites it only while it
+  // is empty or a previous auto-fill/coords fallback — genuinely typed text
+  // (building, floor, landmark) is never destroyed. This keeps pin and
+  // address from ever disagreeing on the ticket.
+  const lastAutoFillRef = useRef<string | null>(null);
   // State-only clear. Storage is the remembered pair and is synced atomically
   // on submit (see sendOrder) so a pick without a submit, a sheet dismiss,
   // or a drawer close can never strand a new pin against an old address.
@@ -282,7 +275,9 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     // Save remember details (checked = persist, unchecked = erase). The pin
     // is deliberately NEVER persisted: every order needs a freshly picked
     // pin (validated mandatory above), so no stale pin can ever ride along.
-    saveRememberedDetails(customerToSave);
+    // Same for the delivery address: withoutAddress() drops it (old blobs
+    // keep their field but it is ignored on load above).
+    saveRememberedDetails(withoutAddress(customerToSave));
 
     // Record the order on the server. Transport lives in
     // features/cart/services/cart.api.ts (single place).

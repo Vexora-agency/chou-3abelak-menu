@@ -245,6 +245,11 @@ export function normalizeMenu<T>(menu: T): T {
       }
     }
   }
+  // Protected built-ins always exist (additive only — an existing def keeps
+  // its admin-edited name): item add-ons, the cart and Telegram all key off
+  // the stable 'spicy' id, so a document missing it would silently break
+  // them. Runs AFTER legacy expansion so group order stays untouched.
+  ensureDef('spicy', { en: 'Spicy', ar: 'حار' }, 'addons', 'addon');
   delete out.addonGroups; // replaced by settings.featureDefs + per-item addons
   const settings = m.settings && typeof m.settings === 'object' ? (m.settings as Record<string, unknown>) : {};
   const ordRaw = settings.ordering && typeof settings.ordering === 'object' ? (settings.ordering as Record<string, unknown>) : {};

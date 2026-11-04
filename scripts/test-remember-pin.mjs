@@ -22,6 +22,7 @@ import {
 import {
   loadRememberedDetails,
   saveRememberedDetails,
+  withoutAddress,
 } from '../src/utils/customerOrders.ts';
 import {
   shouldAutoLocateOnOpen,
@@ -53,6 +54,12 @@ ok(loadRememberedDetails() === null, 'unchecked forgets details');
   const m = JSON.parse(JSON.stringify(MENU));
   const noPin = validateOrderInput(orderBody(), m);
   ok(noPin.ok === false && noPin.errors.includes('invalid_location'), 'remembered details alone are not enough — pin required');
+}
+// The address is never stored: withoutAddress drops it, keeps the rest.
+{
+  const saved = withoutAddress({ name: 'Ali', phone: '70123456', address: 'Hamra, Main Rd', email: 'a@b.co', remember: true });
+  ok(!('address' in saved), 'withoutAddress drops the address key');
+  ok(saved.name === 'Ali' && saved.phone === '70123456' && saved.email === 'a@b.co' && saved.remember === true, 'withoutAddress keeps everything else');
 }
 
 /* 2. Server validation: good kept, coarse dropped (fallback), bad rejected. */

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Trash2 } from 'lucide-react';
+import { Flame, Lock, Trash2 } from 'lucide-react';
 import type { FeatureDef, MenuData, MenuSettings } from '@/src/types/menu';
 import { normalizePricing } from '@/src/utils/pricing';
+import { isProtectedFeatureId, isSpicyFeatureId } from '@/src/utils/menuHelpers';
 
 type LibraryValues = Pick<MenuSettings, 'featureGroups' | 'featureDefs'>;
 
@@ -72,11 +73,26 @@ export const FeatureRow: React.FC<FeatureRowProps> = ({
         </div>
       </div>
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[11px] text-neutral-500">
+        <span className="text-[11px] text-neutral-500 flex items-center gap-1.5">
+          {isSpicyFeatureId(f.id) && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-red-500/10 border border-red-500/40 text-red-400">
+              <Flame size={11} />
+              {isAr ? 'حار' : 'Spicy'}
+            </span>
+          )}
           {usage > 0
             ? isAr ? `مستخدمة في ${usage} أصناف` : `Used by ${usage} items`
             : isAr ? 'غير مستخدمة' : 'Unused'}
         </span>
+        {isProtectedFeatureId(f.id) ? (
+          <span
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[var(--primary)] text-[11px] font-bold"
+            title={isAr ? 'ميزة ثابتة لا يمكن حذفها' : 'Built-in feature, cannot be deleted'}
+          >
+            <Lock size={12} />
+            {isAr ? 'ثابتة' : 'Built-in'}
+          </span>
+        ) : (
         <button
           type="button"
           onClick={() => {
@@ -134,6 +150,7 @@ export const FeatureRow: React.FC<FeatureRowProps> = ({
           <Trash2 size={12} />
           {isAr ? 'حذف' : 'Delete'}
         </button>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { MenuData } from '@/src/types/menu';
-import { isProtectedFeatureId } from '@/src/utils/menuHelpers';
+import { isProtectedFeatureId, isProtectedGroupId } from '@/src/utils/menuHelpers';
 import { FeaturesSection } from '../FeaturesSection';
 
 interface AdminLibrariesTabProps {
@@ -34,9 +34,11 @@ export const AdminLibrariesTab: React.FC<AdminLibrariesTabProps> = ({
         onConfirm={onConfirm}
         onDeleteFeatures={(defIds, groupId) =>
           onUpdateMenu((m) => {
-            // Protected built-ins (e.g. spicy) survive any delete: group
-            // wipes, "remove everywhere" confirms, or direct calls.
+            // Protected built-ins (spicy levels) survive any delete: group
+            // wipes, "remove everywhere" confirms, or direct calls. The
+            // locked spicy SECTION itself is likewise never removed.
             const gone = new Set(defIds.filter((id) => !isProtectedFeatureId(id)));
+            const dropGroup = groupId && !isProtectedGroupId(groupId) ? groupId : null;
             const items = m.items.map((it) => {
               const hadSizes = Array.isArray(it.variants) && it.variants.length > 0;
               const variants = (it.variants || []).filter((v) => v && !gone.has(v.featureId));
@@ -71,8 +73,8 @@ export const AdminLibrariesTab: React.FC<AdminLibrariesTabProps> = ({
               items,
               settings: {
                 ...m.settings,
-                featureGroups: groupId
-                  ? (m.settings.featureGroups || []).filter((g) => g.id !== groupId)
+                featureGroups: dropGroup
+                  ? (m.settings.featureGroups || []).filter((g) => g.id !== dropGroup)
                   : m.settings.featureGroups,
                 featureDefs: (m.settings.featureDefs || []).filter((d) => !gone.has(d.id)),
               },

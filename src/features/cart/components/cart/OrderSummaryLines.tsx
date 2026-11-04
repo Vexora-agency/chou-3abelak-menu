@@ -69,7 +69,7 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
                 const count = l.addonQty?.[id] ?? l.quantity;
                 const partial = count > 0 && count < l.quantity;
                 const spicy = isSpicyFeatureId(id);
-                return { key: id, name: spicy ? spicyLabel(lang) : featureName(menu, id, lang), count: partial ? count : null, price, spicy };
+                return { key: id, name: spicy ? spicyLabel(lang, id) : featureName(menu, id, lang), count: partial ? count : null, price, spicy };
               });
               return (
                 <div key={l.key}>

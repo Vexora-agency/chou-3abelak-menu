@@ -598,9 +598,23 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
         const hasQty = !!(it.addonQty && typeof it.addonQty === 'object' && !Array.isArray(it.addonQty));
         const lineQty = Number.isFinite(it.qty) ? it.qty : 0;
         const isSpicyExtra = (fid, label) => {
-          if (typeof fid === 'string' && fid.trim().toLowerCase() === 'spicy') return true;
+          if (typeof fid === 'string') {
+            const id = fid.trim().toLowerCase();
+            // Locked spicy section: legacy 'spicy' + the three levels.
+            if (id === 'spicy' || id === 'spicy-mild' || id === 'spicy-medium' || id === 'spicy-hot') return true;
+          }
           const t = typeof label === 'string' ? label.trim().toLowerCase() : '';
-          return t === 'حار' || t === 'سبايسي' || t === 'spicy';
+          return t === 'حار' || t === 'سبايسي' || t === 'spicy'
+            || t === 'خفيف' || t === 'متوسط' || t === 'حار جداً'
+            || t === 'mild' || t === 'medium' || t === 'extra hot';
+        };
+        // Flame count follows the level so the kitchen reads the heat at a
+        // glance: mild 1, medium 2, extra-hot 3, legacy/unknown 1.
+        const spicyFlames = (fid) => {
+          const id = typeof fid === 'string' ? fid.trim().toLowerCase() : '';
+          if (id === 'spicy-hot') return '🌶️🌶️🌶️';
+          if (id === 'spicy-medium') return '🌶️🌶️';
+          return '🌶️';
         };
         for (let ai = 0; ai < it.addonNames.length; ai++) {
           const a = it.addonNames[ai];
@@ -608,7 +622,7 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
           if (!n) continue;
           const fid = Array.isArray(it.addonIds) ? it.addonIds[ai] : null;
           const spicy = isSpicyExtra(fid, n);
-          const base = spicy ? escapeHtml(String(n).trim()) + ' 🌶️' : '+' + escapeHtml(n);
+          const base = spicy ? escapeHtml(String(n).trim()) + ' ' + spicyFlames(fid) : '+' + escapeHtml(n);
           if (!hasQty) {
             extras.push(base);
             continue;

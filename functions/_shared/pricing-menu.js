@@ -202,11 +202,53 @@ export function normalizeMenu(menu) {
       }
     }
   }
-  // Protected built-ins always exist (additive only — an existing def keeps
-  // its admin-edited name): item add-ons, the cart and Telegram all key off
-  // the stable 'spicy' id, so a document missing it would silently break them.
-  // Runs AFTER legacy expansion so group order stays untouched.
+  // Protected built-ins always exist (additive only — existing rows keep
+  // their admin-edited names): item add-ons, the cart and Telegram all key
+  // off stable ids, so a document missing them would silently break.
+  //  - the legacy 'spicy' addon (old menus and stored carts key off it);
+  //  - the locked 'spicy' SECTION ("Make it Spicy") with its three
+  //    single-choice levels (mild / medium / extra-hot) and the customer
+  //    prompt. Runs AFTER legacy expansion so group order stays untouched.
+  // TWIN: src/utils/pricing-menu.ts — keep the ids, names, prompt and the
+  // legacy-upgrade rule identical on both sides.
   ensureDef('spicy', { en: 'Spicy', ar: 'حار' }, 'addons', 'addon');
+  const spicyGroup = ensureGroup(
+    'spicy',
+    { en: 'Make it Spicy', ar: 'خليه حار' },
+    'single',
+    { en: 'Add heat to your order — pick your spice level', ar: 'إضافة حار للطلب — اختر درجة الحار المناسبة' },
+    true,
+  );
+  if (spicyGroup) {
+    // A spice level is exactly one choice — never multi, even if an old
+    // document stored something else.
+    spicyGroup.selection = 'single';
+    const p = spicyGroup.prompt && typeof spicyGroup.prompt === 'object' ? spicyGroup.prompt : null;
+    if (!p || (!(p.en || '').trim() && !(p.ar || '').trim())) {
+      spicyGroup.prompt = { en: 'Add heat to your order — pick your spice level', ar: 'إضافة حار للطلب — اختر درجة الحار المناسبة' };
+    }
+  }
+  for (const lvl of [
+    { id: 'spicy-mild', name: { en: 'Mild', ar: 'خفيف' } },
+    { id: 'spicy-medium', name: { en: 'Medium', ar: 'متوسط' } },
+    { id: 'spicy-hot', name: { en: 'Extra Hot', ar: 'حار جداً' } },
+  ]) {
+    ensureDef(lvl.id, lvl.name, 'spicy', 'addon');
+  }
+  // Legacy upgrade: a per-item 'spicy' row becomes 'spicy-medium' at the
+  // same price (the generic heat ≈ the middle level). Runs on the
+  // normalized copy only — persisted on the next admin save.
+  if (Array.isArray(out.items)) {
+    for (const item of out.items) {
+      if (!item || typeof item !== 'object' || !Array.isArray(item.addons)) continue;
+      const list = item.addons;
+      const legacyIdx = list.findIndex((a) => a && a.featureId === 'spicy');
+      if (legacyIdx === -1) continue;
+      const hasMedium = list.some((a) => a && a.featureId === 'spicy-medium');
+      if (hasMedium) list.splice(legacyIdx, 1);
+      else list[legacyIdx] = { ...list[legacyIdx], featureId: 'spicy-medium' };
+    }
+  }
   delete out.addonGroups; // replaced by settings.featureDefs + per-item addons
   const settings = menu.settings && typeof menu.settings === 'object' ? menu.settings : {};
   const ord = settings.ordering && typeof settings.ordering === 'object' ? settings.ordering : {};

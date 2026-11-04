@@ -3,7 +3,7 @@ import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { useGuardedText } from '@/src/hooks/useGuardedText';
 import { MenuData, MenuItem } from '@/src/types/menu';
 import { X, Plus, Minus, Flame, Sparkles, Award } from 'lucide-react';
-import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
+import { pickLangText, badgeLabel, isSpicyFeatureId, spicyLabel, SPICY_GROUP_ID, SPICY_LEGACY_ID } from '@/src/utils/menuHelpers';
 import {
   hasOptions, hasVariants, getVariant,
   lineTotal, perUnitPrice, featureName, normalizePricing, priceLabel, formatPrice,
@@ -153,10 +153,13 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
 
   // 'single' groups at qty 1: radio — at most one selected, tapping the
   // selected one deselects (add-ons stay optional). Counts are trivial at
-  // qty 1, so any stale entries for the group are dropped.
+  // qty 1, so any stale entries for the group are dropped. The locked
+  // spicy section additionally absorbs the legacy 'spicy' id, so upgrading
+  // from an old pick can never leave two heat options on one line.
   const selectRadio = (groupId: string, id: string) => {
     const block = blocks.find((b) => (b.groupId ?? '') === groupId);
     const members = block ? block.addons.map((a) => a.featureId) : [id];
+    if (groupId === SPICY_GROUP_ID) members.push(SPICY_LEGACY_ID);
     setAddonIds((prev) =>
       prev.includes(id)
         ? prev.filter((a) => a !== id)
@@ -308,15 +311,19 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                     {badgeLabel(b, lang)}
                 </span>
               ))}
-              {/* Live spicy pick: the moment the customer taps the spicy
-                  option it appears next to the name as a pro red pill —
-                  no "add spicy" wording, the label IS the confirmation. */}
-              {(addonIds.includes('spicy') || (addonCounts['spicy'] ?? 0) > 0) && !item.badges.includes('spicy') && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-600/10 text-red-600 border border-red-600/25 dark:bg-red-500/10 dark:text-red-400 dark:border-red-400/30">
-                  <Flame size={12} />
-                  {isAr ? 'حار' : 'Spicy'}
-                </span>
-              )}
+              {/* Live spicy pick: the moment the customer sets a heat level
+                  it appears next to the name as a pro red pill — the level
+                  label IS the confirmation (e.g. "حار وسط", "Extra Hot"). */}
+              {(() => {
+                const pick = addonIds.find((id) => isSpicyFeatureId(id));
+                if (!pick || item.badges.includes('spicy')) return null;
+                return (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-600/10 text-red-600 border border-red-600/25 dark:bg-red-500/10 dark:text-red-400 dark:border-red-400/30">
+                    <Flame size={12} />
+                    {spicyLabel(lang, pick)}
+                  </span>
+                );
+              })()}
               {!item.available && (
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-neutral-600 text-white">
                   {isAr ? 'نفذت الكمية' : 'Sold out'}

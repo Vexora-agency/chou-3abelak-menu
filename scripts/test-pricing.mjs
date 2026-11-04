@@ -144,8 +144,12 @@ const legacy = normalizeMenu({ items: [{ id: 'x', categoryId: 'c', price: 250 }]
 ok(legacy.items[0].pricing.unit === 'portion' && legacy.items[0].pricing.price === 250, 'legacy price -> portion pricing');
 ok(legacy.items[0].price === undefined, 'legacy price field removed');
 ok(legacy.schemaVersion === 2, 'schemaVersion stamped');
-ok(Array.isArray(legacy.settings.featureDefs) && legacy.settings.featureDefs.length === 1 && legacy.settings.featureDefs[0].id === 'spicy', 'protected spicy def always present');
+ok(Array.isArray(legacy.settings.featureDefs) && legacy.settings.featureDefs.length === 4 && legacy.settings.featureDefs[0].id === 'spicy', 'protected spicy defs always present (legacy + 3 levels)');
 ok(legacy.settings.featureDefs[0].groupId === 'addons' && legacy.settings.featureDefs[0].name.en === 'Spicy' && legacy.settings.featureDefs[0].name.ar === 'حار', 'spicy def has bilingual name + addons group');
+ok(['spicy-mild', 'spicy-medium', 'spicy-hot'].every((id) => legacy.settings.featureDefs.some((d) => d.id === id && d.groupId === 'spicy')), 'spicy levels live in the locked spicy section');
+const spicyGroup = legacy.settings.featureGroups.find((g) => g.id === 'spicy');
+ok(spicyGroup && spicyGroup.selection === 'single' && spicyGroup.name.en === 'Make it Spicy', 'locked spicy section is single-choice with default name');
+ok(spicyGroup && spicyGroup.prompt && spicyGroup.prompt.en && spicyGroup.prompt.ar, 'locked spicy section carries the customer prompt');
 
 // legacy migration: inline variant names + category groups -> library + per-item
 const oldDoc = normalizeMenu({
@@ -157,7 +161,7 @@ const oldDoc = normalizeMenu({
   addonGroups: [{ id: 'extra-veg', name: { en: 'Extra vegetables', ar: 'خضرة' }, price: 30000, perUnit: true, categoryIds: ['manakish'] }],
   settings: { ordering: {} },
 });
-ok(oldDoc.settings.featureDefs.length === 3, 'library built from legacy names + protected spicy');
+ok(oldDoc.settings.featureDefs.length === 6, 'library built from legacy names + protected spicy (legacy + 3 levels)');
 ok(oldDoc.settings.featureDefs.some((d) => d.id === 'spicy' && d.groupId === 'addons'), 'protected spicy def auto-added');
 ok(oldDoc.items[0].variants[0].featureId === 'regular' && oldDoc.items[0].variants[0].name === undefined, 'variants converted');
 ok(oldDoc.items[0].addons.length === 1 && oldDoc.items[0].addons[0].price === 30000, 'groups expanded to manakish item');
@@ -167,14 +171,38 @@ ok(lineTotal(oldDoc.items[0], { variantId: 'regular', addonIds: ['extra-veg'], q
 
 // feature groups: defaults created on migration, grouped view
 const gids = (oldDoc.settings.featureGroups || []).map((g) => g.id).sort();
-ok(JSON.stringify(gids) === JSON.stringify(['addons', 'sizes']), 'default groups created');
+ok(JSON.stringify(gids) === JSON.stringify(['addons', 'sizes', 'spicy']), 'default groups created (incl. locked spicy)');
 const grouped = featuresByGroup(oldDoc);
-ok(grouped.length === 2 && grouped[0].features.length === 1 && grouped[1].features.length === 2, 'featuresByGroup buckets (addons holds extra-veg + spicy)');
+ok(grouped.length === 3 && grouped[0].features.length === 1 && grouped[1].features.length === 2 && grouped[2].features.length === 3, 'featuresByGroup buckets (addons holds extra-veg + spicy, spicy holds 3 levels)');
 ok(grouped[1].features.some((f) => f.id === 'spicy'), 'spicy visible in addons bucket');
 const custom = normalizeMenu({ items: [], settings: { ordering: {}, featureGroups: [{ id: 'cheese', name: { en: 'Cheese', ar: 'جبن' } }], featureDefs: [{ id: 'x', groupId: 'cheese', name: { en: 'X', ar: '' } }] } });
-ok(custom.settings.featureGroups.length === 2 && custom.settings.featureDefs[0].groupId === 'cheese', 'custom section without kind kept');
+ok(custom.settings.featureGroups.length === 3 && custom.settings.featureDefs[0].groupId === 'cheese', 'custom section without kind kept (+ locked spicy)');
 ok(custom.settings.featureDefs.some((d) => d.id === 'spicy' && d.groupId === 'addons'), 'protected spicy auto-created with addons group');
 ok(featuresByGroup(custom)[0].group.name.en === 'Cheese', 'group view keeps names');
+
+// locked spicy section: legacy per-item 'spicy' upgrades to medium, single forced
+{
+  const withLegacySpicy = normalizeMenu({
+    items: [{
+      id: 'm2', categoryId: 'manakish',
+      pricing: { unit: 'pc', minQty: 1, step: 1, maxQty: 50, showUnit: false },
+      addons: [
+        { featureId: 'spicy', price: 0 },
+        { featureId: 'extra-veg', price: 30000 },
+      ],
+    }],
+    settings: { ordering: {} },
+  });
+  const ids = withLegacySpicy.items[0].addons.map((a) => a.featureId);
+  ok(!ids.includes('spicy') && ids.includes('spicy-medium'), 'legacy per-item spicy upgrades to medium');
+  ok(withLegacySpicy.items[0].addons.find((a) => a.featureId === 'spicy-medium').price === 0, 'upgraded level keeps its price');
+  const sg = withLegacySpicy.settings.featureGroups.find((g) => g.id === 'spicy');
+  ok(sg && sg.selection === 'single', 'spicy section forced single even when stored otherwise');
+  // spicy single-select: full-qty legacy picks are always valid (no split math)
+  const lvlItem = withLegacySpicy.items[0];
+  ok((() => { validatePicks(withLegacySpicy, lvlItem, ['spicy-medium'], undefined, 4); return true; })(), 'single spicy level valid at any qty');
+  ok(lineTotal({ ...lvlItem, variants: [{ featureId: 'regular', price: 80000 }] }, { variantId: 'regular', addonIds: ['spicy-medium'], qty: 2 }) === 160000, 'free spicy level adds nothing');
+}
 
 // ordering flags default from values
 const ord = normalizeMenu({ items: [], settings: { ordering: { minOrder: 350000, deliveryFee: 100000 } } }).settings.ordering;

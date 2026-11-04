@@ -2,7 +2,9 @@ import React from 'react';
 import { Check, Minus, Plus } from 'lucide-react';
 import type { ItemAddon, MenuData, MenuItem } from '@/src/types/menu';
 import { featureName, formatPrice } from '@/src/utils/pricing';
+import { SPICY_GROUP_ID, isSpicyFeatureId } from '@/src/utils/menuHelpers';
 import { addonBlocks } from '@/src/utils/splitPicks';
+import { SpicySlider } from './SpicySlider';
 
 interface AddonPickerProps {
   menu: MenuData;
@@ -51,9 +53,36 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
 }) => {
   const blocks = addonBlocks(menu, item);
   if (blocks.length === 0) return null;
+  // The locked spicy section renders FIRST as its own heat slider — never
+  // mixed in with the generic add-on chips.
+  const ordered = [
+    ...blocks.filter((b) => b.groupId === SPICY_GROUP_ID),
+    ...blocks.filter((b) => b.groupId !== SPICY_GROUP_ID),
+  ];
   return (
     <div className="space-y-4">
-      {blocks.map((b) => {
+      {ordered.map((b) => {
+        if (b.groupId === SPICY_GROUP_ID) {
+          const selectedId = addonIds.find((id) => isSpicyFeatureId(id)) ?? null;
+          return (
+            <SpicySlider
+              key={b.key || 'spicy'}
+              levels={b.addons.map((a) => ({
+                featureId: a.featureId,
+                price: a.price,
+                nameEn: featureName(menu, a.featureId, 'en'),
+                nameAr: featureName(menu, a.featureId, 'ar'),
+              }))}
+              selectedId={selectedId}
+              onPick={(id) => onSelectRadio(b.groupId ?? '', id)}
+              prompt={b.prompt}
+              lang={lang}
+              isAr={isAr}
+              darkMode={darkMode}
+              currency={currency}
+            />
+          );
+        }
         const prompt = b.prompt ? (isAr ? b.prompt.ar : b.prompt.en) : '';
         const title =
           prompt && prompt.trim()

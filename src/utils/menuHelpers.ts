@@ -33,13 +33,26 @@ export function badgeLabel(key: string, lang: 'en' | 'ar'): string {
 }
 
 /**
- * Spicy add-on detection + label. The spicy option travels as a zero-price
- * addon with featureId 'spicy' (no featureDef needed); legacy rows may only
- * carry the resolved name. Both are recognised so the pill renders in the
- * modal, cart, admin and Telegram alike.
+ * Spicy add-on detection + label. The spicy option travels as zero-price
+ * addons. The modern shape is a locked "Make it Spicy" SECTION with three
+ * single-choice levels (mild / medium / extra-hot) rendered as a slider in
+ * the customer sheet. The legacy shape is one addon with featureId 'spicy'
+ * (old menus, old carts); it is still recognised everywhere so old lines
+ * keep rendering instead of breaking.
  */
+export const SPICY_GROUP_ID = 'spicy';
+
+export const SPICY_LEVEL_IDS = ['spicy-mild', 'spicy-medium', 'spicy-hot'] as const;
+
+export type SpicyLevelId = (typeof SPICY_LEVEL_IDS)[number];
+
+/** Legacy single-option id (pre-levels menus and carts). */
+export const SPICY_LEGACY_ID = 'spicy';
+
 export function isSpicyFeatureId(featureId: unknown): boolean {
-  return typeof featureId === 'string' && featureId.trim().toLowerCase() === 'spicy';
+  if (typeof featureId !== 'string') return false;
+  const id = featureId.trim().toLowerCase();
+  return id === SPICY_LEGACY_ID || (SPICY_LEVEL_IDS as readonly string[]).includes(id);
 }
 
 export function isSpicyName(name: unknown): boolean {
@@ -51,21 +64,83 @@ export function isSpicyAddon(featureId: unknown, name: unknown): boolean {
   return isSpicyFeatureId(featureId) || isSpicyName(name);
 }
 
-/** Short professional label used next to the item name (title-case EN). */
-export function spicyLabel(lang: 'en' | 'ar'): string {
-  return lang === 'ar' ? 'حار' : 'Spicy';
+/** 0-based position of a spice level on the customer slider (mild 0,
+ *  medium 1, extra-hot 2). Legacy 'spicy' and unknown ids return -1. */
+export function spicyLevelIndex(featureId: unknown): number {
+  if (typeof featureId !== 'string') return -1;
+  const id = featureId.trim().toLowerCase();
+  if (id === 'spicy-mild') return 0;
+  if (id === 'spicy-medium') return 1;
+  if (id === 'spicy-hot') return 2;
+  return -1;
 }
+
+/** Flame count for a spice level (mild 1, medium 2, extra-hot 3).
+ *  Legacy/unknown renders a single flame. */
+export function spicyFlames(featureId: unknown): number {
+  const i = spicyLevelIndex(featureId);
+  return i >= 0 ? i + 1 : 1;
+}
+
+/** Short professional label for a spice level (title-case EN). Without an
+ *  id (or with the legacy id) it falls back to the generic "Spicy"/"حار". */
+export function spicyLabel(lang: 'en' | 'ar', featureId?: unknown): string {
+  const i = spicyLevelIndex(featureId);
+  if (lang === 'ar') {
+    if (i === 0) return 'خفيف';
+    if (i === 1) return 'متوسط';
+    if (i === 2) return 'حار جداً';
+    return 'حار';
+  }
+  if (i === 0) return 'Mild';
+  if (i === 1) return 'Medium';
+  if (i === 2) return 'Extra Hot';
+  return 'Spicy';
+}
+
+/** Locked library section + level defaults (single source of truth for the
+ *  normalizers below and the admin UI). Names survive admin edits: the
+ *  normalizer only fills these in when the row is missing. */
+export const SPICY_SECTION_DEFAULT = {
+  id: SPICY_GROUP_ID,
+  name: { en: 'Make it Spicy', ar: 'خليه حار' },
+  selection: 'single' as const,
+  prompt: {
+    en: 'Add heat to your order — pick your spice level',
+    ar: 'إضافة حار للطلب — اختر درجة الحار المناسبة',
+  },
+};
+
+export const SPICY_LEVEL_DEFAULTS: ReadonlyArray<{
+  id: SpicyLevelId;
+  name: { en: string; ar: string };
+}> = [
+  { id: 'spicy-mild', name: { en: 'Mild', ar: 'خفيف' } },
+  { id: 'spicy-medium', name: { en: 'Medium', ar: 'متوسط' } },
+  { id: 'spicy-hot', name: { en: 'Extra Hot', ar: 'حار جداً' } },
+];
 
 /**
  * Built-in features the admin UI must never delete (order flow, Telegram
- * and email copy all key off the stable id). The library shows them with a
+ * and email copy all key off stable ids). The library shows them with a
  * locked "built-in" badge instead of a delete button, and the normalizer
  * below re-adds them if an old document lacks them.
  */
-export const PROTECTED_FEATURE_IDS: readonly string[] = ['spicy'];
+export const PROTECTED_FEATURE_IDS: readonly string[] = [
+  SPICY_LEGACY_ID,
+  ...SPICY_LEVEL_IDS,
+];
+
+/** Library sections the admin UI must never delete (the spicy levels live
+ *  here; the customer sheet, cart and Telegram all key off this section). */
+export const PROTECTED_GROUP_IDS: readonly string[] = [SPICY_GROUP_ID];
 
 export function isProtectedFeatureId(featureId: unknown): boolean {
-  return typeof featureId === 'string' && (PROTECTED_FEATURE_IDS as readonly string[]).includes(featureId);
+  return typeof featureId === 'string' && PROTECTED_FEATURE_IDS.includes(featureId);
+}
+
+export function isProtectedGroupId(groupId: unknown): boolean {
+  return typeof groupId === 'string' && PROTECTED_GROUP_IDS.includes(groupId);
 }
 
 /**

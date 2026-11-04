@@ -144,8 +144,8 @@ const legacy = normalizeMenu({ items: [{ id: 'x', categoryId: 'c', price: 250 }]
 ok(legacy.items[0].pricing.unit === 'portion' && legacy.items[0].pricing.price === 250, 'legacy price -> portion pricing');
 ok(legacy.items[0].price === undefined, 'legacy price field removed');
 ok(legacy.schemaVersion === 2, 'schemaVersion stamped');
-ok(Array.isArray(legacy.settings.featureDefs) && legacy.settings.featureDefs.length === 4 && legacy.settings.featureDefs[0].id === 'spicy', 'protected spicy defs always present (legacy + 3 levels)');
-ok(legacy.settings.featureDefs[0].groupId === 'addons' && legacy.settings.featureDefs[0].name.en === 'Spicy' && legacy.settings.featureDefs[0].name.ar === 'حار', 'spicy def has bilingual name + addons group');
+ok(Array.isArray(legacy.settings.featureDefs) && legacy.settings.featureDefs.length === 3 && legacy.settings.featureDefs.every((d) => d.id !== 'spicy'), 'legacy single spicy def retired (3 levels only)');
+ok(JSON.stringify(legacy.settings.featureGroups.map((g) => g.id)) === JSON.stringify(['spicy']), 'empty doc gains only the locked spicy section');
 ok(['spicy-mild', 'spicy-medium', 'spicy-hot'].every((id) => legacy.settings.featureDefs.some((d) => d.id === id && d.groupId === 'spicy')), 'spicy levels live in the locked spicy section');
 const spicyGroup = legacy.settings.featureGroups.find((g) => g.id === 'spicy');
 ok(spicyGroup && spicyGroup.selection === 'single' && spicyGroup.name.en === 'Make it Spicy', 'locked spicy section is single-choice with default name');
@@ -195,8 +195,8 @@ const oldDoc = normalizeMenu({
   addonGroups: [{ id: 'extra-veg', name: { en: 'Extra vegetables', ar: 'خضرة' }, price: 30000, perUnit: true, categoryIds: ['manakish'] }],
   settings: { ordering: {} },
 });
-ok(oldDoc.settings.featureDefs.length === 6, 'library built from legacy names + protected spicy (legacy + 3 levels)');
-ok(oldDoc.settings.featureDefs.some((d) => d.id === 'spicy' && d.groupId === 'addons'), 'protected spicy def auto-added');
+ok(oldDoc.settings.featureDefs.length === 5, 'library built from legacy names + 3 locked levels (no legacy single)');
+ok(!oldDoc.settings.featureDefs.some((d) => d.id === 'spicy'), 'legacy single spicy def not resurrected');
 ok(oldDoc.items[0].variants[0].featureId === 'regular' && oldDoc.items[0].variants[0].name === undefined, 'variants converted');
 ok(oldDoc.items[0].addons.length === 4 && oldDoc.items[0].addons[0].price === 30000, 'groups expanded to manakish item + heat levels auto-attached');
 ok(oldDoc.items[0].addons.slice(1).every((a) => a.price === 0 && ['spicy-mild', 'spicy-medium', 'spicy-hot'].includes(a.featureId)), 'auto-attached levels are free');
@@ -208,11 +208,11 @@ ok(lineTotal(oldDoc.items[0], { variantId: 'regular', addonIds: ['extra-veg'], q
 const gids = (oldDoc.settings.featureGroups || []).map((g) => g.id).sort();
 ok(JSON.stringify(gids) === JSON.stringify(['addons', 'sizes', 'spicy']), 'default groups created (incl. locked spicy)');
 const grouped = featuresByGroup(oldDoc);
-ok(grouped.length === 3 && grouped[0].features.length === 1 && grouped[1].features.length === 2 && grouped[2].features.length === 3, 'featuresByGroup buckets (addons holds extra-veg + spicy, spicy holds 3 levels)');
-ok(grouped[1].features.some((f) => f.id === 'spicy'), 'spicy visible in addons bucket');
+ok(grouped.length === 3 && grouped[0].features.length === 1 && grouped[1].features.length === 1 && grouped[2].features.length === 3, 'featuresByGroup buckets (addons holds extra-veg only, spicy holds 3 levels)');
+ok(!grouped[1].features.some((f) => f.id === 'spicy'), 'no legacy spicy in addons bucket');
 const custom = normalizeMenu({ items: [], settings: { ordering: {}, featureGroups: [{ id: 'cheese', name: { en: 'Cheese', ar: 'جبن' } }], featureDefs: [{ id: 'x', groupId: 'cheese', name: { en: 'X', ar: '' } }] } });
-ok(custom.settings.featureGroups.length === 3 && custom.settings.featureDefs[0].groupId === 'cheese', 'custom section without kind kept (+ locked spicy)');
-ok(custom.settings.featureDefs.some((d) => d.id === 'spicy' && d.groupId === 'addons'), 'protected spicy auto-created with addons group');
+ok(custom.settings.featureGroups.length === 2 && custom.settings.featureDefs[0].groupId === 'cheese', 'custom section without kind kept (+ locked spicy, no empty addons section)');
+ok(custom.settings.featureDefs.every((d) => d.id !== 'spicy') && ['spicy-mild', 'spicy-medium', 'spicy-hot'].every((id) => custom.settings.featureDefs.some((d) => d.id === id)), 'no legacy spicy resurrected in custom docs');
 ok(featuresByGroup(custom)[0].group.name.en === 'Cheese', 'group view keeps names');
 
 // locked spicy section: legacy per-item 'spicy' upgrades to medium, single forced
@@ -231,6 +231,24 @@ ok(featuresByGroup(custom)[0].group.name.en === 'Cheese', 'group view keeps name
   const ids = withLegacySpicy.items[0].addons.map((a) => a.featureId);
   ok(!ids.includes('spicy') && ids.includes('spicy-medium'), 'legacy per-item spicy upgrades to medium');
   ok(withLegacySpicy.items[0].addons.find((a) => a.featureId === 'spicy-medium').price === 0, 'upgraded level keeps its price');
+  // A stored doc that still carries the old def gets it retired too.
+  {
+    const retired = normalizeMenu({
+      items: [{
+        id: 'r1', categoryId: 'manakish',
+        pricing: { unit: 'pc', minQty: 1, step: 1, maxQty: 50, showUnit: false },
+        addons: [{ featureId: 'spicy', price: 0 }],
+      }],
+      settings: {
+        ordering: {},
+        featureGroups: [{ id: 'addons', name: { en: 'Add-ons', ar: 'إضافات' } }],
+        featureDefs: [{ id: 'spicy', groupId: 'addons', name: { en: 'Spicy', ar: 'حار' } }],
+      },
+    });
+    ok(!retired.settings.featureDefs.some((d) => d.id === 'spicy'), 'legacy def dropped from stored docs');
+    const rids = retired.items[0].addons.map((a) => a.featureId);
+    ok(['spicy-mild', 'spicy-medium', 'spicy-hot'].every((id) => rids.includes(id)), 'legacy rows upgraded even when the old def is present');
+  }
   // No degenerate one-dot slider: the legacy row expands to the FULL set.
   ok(['spicy-mild', 'spicy-medium', 'spicy-hot'].every((id) => ids.includes(id)), 'legacy spicy expands to all three levels');
   // A priced legacy heat carries its price to the sibling levels.

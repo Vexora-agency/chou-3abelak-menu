@@ -250,13 +250,16 @@ export function normalizeMenu<T>(menu: T): T {
     }
   }
   // Protected built-ins always exist (additive only — existing rows keep
-  // their admin-edited names): item add-ons, the cart and Telegram all key
-  // off stable ids, so a document missing them would silently break.
-  //  - the legacy 'spicy' addon (old menus and stored carts key off it);
-  //  - the locked 'spicy' SECTION ("Make it Spicy") with its three
-  //    single-choice levels (mild / medium / extra-hot) and the customer
-  //    prompt. Runs AFTER legacy expansion so group order stays untouched.
-  ensureDef('spicy', { en: 'Spicy', ar: 'حار' }, 'addons', 'addon');
+  // their admin-edited names): the locked 'spicy' SECTION ("Make it
+  // Spicy") with its three single-choice levels (mild / medium /
+  // extra-hot) and the customer prompt. Runs AFTER legacy expansion so
+  // group order stays untouched.
+  // NOTE: the legacy single 'spicy' addon (id 'spicy' under 'addons') is
+  // deliberately NOT ensured anymore — it duplicated the locked section
+  // in the Add-ons library and confused owners. Per-item rows were
+  // upgraded to the full level set above, so its def is orphaned and
+  // dropped below. Recognition helpers (cart pills, Telegram, dashboard)
+  // still understand the old id for already-stored orders and carts.
   const spicyGroup = ensureGroup(
     SPICY_SECTION_DEFAULT.id,
     SPICY_SECTION_DEFAULT.name,
@@ -288,6 +291,14 @@ export function normalizeMenu<T>(menu: T): T {
   }
   for (const lvl of SPICY_LEVEL_DEFAULTS) {
     ensureDef(lvl.id, lvl.name, SPICY_SECTION_DEFAULT.id, 'addon');
+  }
+  // Retire the legacy single 'spicy' def (see NOTE above): after the row
+  // upgrade nothing references it, so it is safe to remove — the Add-ons
+  // library stops showing the confusing duplicate for good.
+  const legacyDefIdx = defs.findIndex((d) => d && d.id === 'spicy');
+  if (legacyDefIdx !== -1) {
+    defs.splice(legacyDefIdx, 1);
+    defById.delete('spicy');
   }
   // Legacy upgrade: a per-item 'spicy' row becomes 'spicy-medium' at the
   // same price (the generic heat ≈ the middle level). Its siblings are

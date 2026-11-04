@@ -364,6 +364,9 @@ export function mapOrderRow(row) {
       ...(row.customer_address ? { address: row.customer_address } : {}),
       ...(row.customer_table ? { table: row.customer_table } : {}),
     },
+    // فحص الاستلام: يظهر فقط عند التعيين (مثل البريد الاختياري فوق).
+    // Receipt-check stamp: key absent when NULL, ISO string when set.
+    ...(row.receipt_asked_at ? { receiptAskedAt: row.receipt_asked_at } : {}),
     ...(row.notes ? { notes: row.notes } : {}),
     ...(row.location_lat !== null && row.location_lat !== undefined && row.location_lng !== null && row.location_lng !== undefined
       ? { location: { lat: row.location_lat, lng: row.location_lng } }

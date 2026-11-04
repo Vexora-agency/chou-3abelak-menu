@@ -306,4 +306,37 @@ function restoreFetch() { globalThis.fetch = realFetch; }
   restoreFetch();
 }
 
+/* ---------------- receipt_check event ---------------- */
+{
+  const trk = 'https://shop.example/?track=77&t=' + 'd'.repeat(32);
+  const ar = buildOrderEmail({ event: 'receipt_check', order: { number: 77, total: 100000 }, storeName: 'متجر الاختبار', currency: 'ل.ل', lang: 'ar', trackUrl: trk });
+  ok(ar.html.includes('dir="rtl"'), 'receipt_check ar: rtl root');
+  ok(ar.html.includes('هل وصلك طلبك؟'), 'receipt_check ar: Arabic title');
+  ok(ar.text.includes('77'), 'receipt_check ar: plain-text fallback');
+  ok(ar.html.includes('https://shop.example/?track=77&amp;t='), 'receipt_check ar: track button links the order');
+  const en = buildOrderEmail({ event: 'receipt_check', order: { number: 77, total: 100000 }, storeName: 'Test Store', currency: 'LBP', lang: 'en', trackUrl: trk });
+  ok(en.html.includes('dir="ltr"'), 'receipt_check en: ltr root');
+  ok(en.html.includes('Did your order arrive?'), 'receipt_check en: English title');
+  ok(en.text.includes('77'), 'receipt_check en: plain-text fallback');
+
+  stubFetchOk();
+  const disMenu = menuWithNotifications({ senderName: '', replyTo: '', events: { placed: true, confirmed: true, completed: true, cancelled: true, receipt_check: false } });
+  const disOrd = mapOrderRow(orderRow(7701, 'rc@example.com'));
+  const rDis = await notifyCustomerOrderEvent(null, envWithMenu(disMenu), { order: disOrd, event: 'receipt_check', origin: 'https://shop.example' });
+  ok(rDis && rDis.sent === false, 'receipt_check disabled -> not sent');
+  ok(calls.length === 0, 'receipt_check disabled -> no network');
+  restoreFetch();
+
+  stubFetchOk();
+  const askedOrd = { ...mapOrderRow(orderRow(7702, 'rc2@example.com')), receiptAskedAt: new Date().toISOString() };
+  const rSup = await notifyCustomerOrderEvent(null, envWithMenu(MENU_BASE), { order: askedOrd, event: 'completed', origin: 'https://shop.example' });
+  ok(rSup && rSup.sent === false, 'completed suppressed when receiptAskedAt present');
+  restoreFetch();
+
+  stubFetchOk();
+  const rBad = await notifyCustomerOrderEvent(null, envWithMenu(MENU_BASE), { order: mapOrderRow(orderRow(7703, 'rc3@example.com')), event: 'shipped', origin: 'https://x' });
+  ok(rBad && rBad.sent === false && rBad.reason === 'bad_event', 'unknown event still bad_event');
+  restoreFetch();
+}
+
 summary();

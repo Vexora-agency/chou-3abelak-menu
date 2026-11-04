@@ -107,9 +107,10 @@ ok(
     goodBody.released === 0 &&
     goodBody.autoCompleted === 0 &&
     goodBody.lockNoticed === 0 &&
+    goodBody.receiptChecked === 0 &&
     JSON.stringify(Object.keys(goodBody).sort()) ===
-      JSON.stringify(['autoCompleted', 'lockNoticed', 'nagged', 'ok', 'released']),
-  'idle body is exactly {ok:true,nagged:0,released:0,autoCompleted:0,lockNoticed:0}'
+      JSON.stringify(['autoCompleted', 'lockNoticed', 'nagged', 'ok', 'receiptChecked', 'released']),
+  'idle body is exactly {ok:true,nagged:0,released:0,autoCompleted:0,lockNoticed:0,receiptChecked:0}'
 );
 ok(
   goodCalls.secretLookups.length === 1 && goodCalls.secretLookups[0][0] === 'order-nag',

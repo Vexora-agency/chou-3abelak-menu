@@ -47,7 +47,12 @@
 }
 
 .anim-slide-up {
-  animation: slideUpDrawer 0.38s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  /* backwards (not both): after the entrance the sheet must keep
+     transform:none. A retained translateY(0)/scale(1) from `both` leaves a
+     permanent compositing layer on the sheet, which sticks scroll-up and
+     breaks sticky headers inside it on iOS WebKit (Chrome iOS included).
+     No visual change: there is no delay, so `backwards` is identical. */
+  animation: slideUpDrawer 0.38s cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
 }
 
 /* Premium drawer entrance: fades in while rising with a soft spring settle */
@@ -63,7 +68,11 @@
 }
 
 .anim-drawer-in {
-  animation: drawerIn 0.45s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+  /* backwards (not both): same reason as .anim-slide-up — the sheet shells
+     (cart drawer, item sheet, location sheet, orders bell) wrap the actual
+     scroll containers and must not keep a post-animation transform, or
+     iOS Chrome intermittently refuses to scroll back up ("stuck surface"). */
+  animation: drawerIn 0.45s cubic-bezier(0.22, 1.2, 0.36, 1) backwards;
 }
 
 /* Small centered pop for confirmation dialogs */

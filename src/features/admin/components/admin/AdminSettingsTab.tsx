@@ -183,7 +183,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
       <NotifyEmailSection
         collapsed={!!collapsedGroups['notify-email']}
         onToggleCollapse={() => onToggleCollapse('notify-email')}
-        notifications={menu.settings.notifications ?? { senderName: '', replyTo: '', events: { placed: true, confirmed: true, completed: true, cancelled: true } }}
+        notifications={menu.settings.notifications ?? { senderName: '', replyTo: '', events: { placed: true, confirmed: true, completed: true, cancelled: true, receipt_check: true } }}
         lang={lang}
         onUpdate={(updater) =>
           onUpdateMenu((m) => ({
@@ -191,7 +191,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
             settings: {
               ...m.settings,
               notifications: updater(
-                m.settings.notifications ?? { senderName: '', replyTo: '', events: { placed: true, confirmed: true, completed: true, cancelled: true } }
+                m.settings.notifications ?? { senderName: '', replyTo: '', events: { placed: true, confirmed: true, completed: true, cancelled: true, receipt_check: true } }
               ),
             },
           }))

@@ -19,8 +19,9 @@
  *   /api/orders route sends none (kitchen grace period). A customer cancel
  *   inside the window flips to `cancelled` and is visible immediately, so
  *   it never waits for release (the `cancelled` email is its first email).
- * - lock notice: still-`new` Telegram-notified orders past the window get
- *   ONE "final, proceed" notice (marked, never repeated).
+ * - receipt-check: CONFIRMED/READY orders past their ETA that were never
+ *   asked get ONE "did your order arrive?" customer email (owner gets
+ *   nothing new here — the redundant lock-notice ping was retired).
  * - auto-complete: CONFIRMED or READY orders older than 12h whose customer
  *   never pressed "received" are completed (stamp + owner ping).
  */
@@ -29,20 +30,21 @@ import { nagUnackedOrders, notifyNewOrder } from '../../_shared/push.js';
 import {
   ORDER_GRACE_MS,
   ORDER_NAG_SERVICE,
+  RECEIPT_CHECK_BATCH,
+  RECEIPT_CHECK_MAX_AGE_MS,
   claimOrderRelease,
+  claimReceiptCheck,
   completeOrderByIdIfActive,
+  findDueForReceiptCheck,
   findDueForRelease,
   findStaleActiveForAutoComplete,
-  findUnackedForLockNotice,
   hasUnackedOrders,
-  markLockNotified,
   recordCronRunError,
   recordCronRunStarted,
   recordCronRunSuccess,
 } from '../../_shared/repositories/orders.repo.js';
 import {
   notifyOwnerAutoCompleted,
-  notifyOwnerOrderLocked,
   notifyNewOrderTelegram,
   orderRowToCleaned,
   syncOrderStatusToTelegram,
@@ -56,11 +58,6 @@ import {
 
 const AUTO_COMPLETE_AFTER_MS = 12 * 3600 * 1000;
 const AUTO_COMPLETE_BATCH = 20;
-// Customer self-cancel window = kitchen grace period: 5 minutes from order
-// creation. Past that, a still-`new` Telegram-notified order gets ONE
-// "final, proceed" notice.
-const LOCK_NOTICE_AFTER_MS = ORDER_GRACE_MS;
-const LOCK_NOTICE_BATCH = 20;
 // Release sweep bounds: past the grace window, but not ancient (upper bound
 // mirrors the nag window so a stalled cron can't resurrect week-old
 // unacked orders with a first ping).
@@ -144,6 +141,7 @@ export async function onRequest(context) {
   let nagged = 0;
   let lockNoticed = 0;
   let released = 0;
+  let receiptChecked = 0;
   let autoCompleted = 0;
   // Outer guard: anything escaping the per-sweep swallowing try/catches
   // (auth already passed) records the error heartbeat, then returns the
@@ -171,33 +169,10 @@ export async function onRequest(context) {
     }
   } catch {}
 
-  // Lock-notice sweep: still-`new` and past the 5-minute customer-cancel
-  // window gets ONE "final, proceed" Telegram notice (marked, never repeated).
-  try {
-    const cutoff = new Date(Date.now() - LOCK_NOTICE_AFTER_MS).toISOString();
-    const candidates = await findUnackedForLockNotice(db, cutoff, LOCK_NOTICE_BATCH);
-    const token = env.TELEGRAM_BOT_TOKEN || null;
-    for (const cand of candidates) {
-      if (!cand || typeof cand.id !== 'string' || !cand.id) continue;
-      try {
-        await notifyOwnerOrderLocked(db, token, {
-          orderNumber: cand.number,
-          customerName: cand.customer_name,
-        });
-      } catch {}
-      try {
-        await markLockNotified(db, cand.id);
-      } catch {}
-      lockNoticed += 1;
-    }
-  } catch {}
-
-  // Release sweep (runs AFTER lock-notice in the same pass, so an order
-  // released right now waits one more minute for its lock notice instead
-  // of receiving both messages at once): still-`new`, past the grace
-  // window, never released — claim atomically, then send the FIRST
-  // Telegram order message + admin web push. Exactly-once per order:
-  // only the pass that wins the claim notifies.
+  // Release sweep: still-`new`, past the grace window, never released —
+  // claim atomically, then send the FIRST Telegram order message + admin
+  // web push. Exactly-once per order: only the pass that wins the claim
+  // notifies.
   try {
     const nowMs = Date.now();
     const releaseCutoff = new Date(nowMs - ORDER_GRACE_MS).toISOString();
@@ -255,6 +230,36 @@ export async function onRequest(context) {
     }
   } catch {}
 
+  // Receipt-check sweep (AFTER release, BEFORE auto-complete): confirmed/ready
+  // + ETA passed + never asked + created within 24h — claim atomically, then
+  // send the `receipt_check` customer email. Exactly-once per order: only the
+  // pass that wins the claim notifies. Best-effort only.
+  try {
+    const nowMs = Date.now();
+    const nowIso = new Date(nowMs).toISOString();
+    const recentCutoff = new Date(nowMs - RECEIPT_CHECK_MAX_AGE_MS).toISOString();
+    const due = await findDueForReceiptCheck(db, nowIso, recentCutoff, RECEIPT_CHECK_BATCH);
+    for (const row of due) {
+      if (!row || typeof row.id !== 'string' || !row.id) continue;
+      let claimed = false;
+      try {
+        claimed = await claimReceiptCheck(db, row.id, nowIso);
+      } catch {
+        claimed = false;
+      }
+      if (!claimed) continue;
+      receiptChecked += 1;
+      try {
+        const { mapOrderRow } = await import('../../_shared/orders.js');
+        const { notifyCustomerOrderEvent } = await import('../../_shared/customer-email.js');
+        const mapped = mapOrderRow(row);
+        if (mapped && mapped.customer && typeof mapped.customer.email === 'string' && mapped.customer.email) {
+          await notifyCustomerOrderEvent(db, env, { order: mapped, event: 'receipt_check', origin });
+        }
+      } catch {}
+    }
+  } catch {}
+
   // Auto-complete sweep: confirmed/ready + older than 12h + customer silent.
   try {
     const cutoff = new Date(Date.now() - AUTO_COMPLETE_AFTER_MS).toISOString();
@@ -302,10 +307,10 @@ export async function onRequest(context) {
       await recordCronRunError(db, ORDER_NAG_SERVICE, {
         endedIso: new Date().toISOString(),
         error: msg,
-        result: /** @type {CronCounts} */ ({ nagged, released, autoCompleted, lockNoticed }),
+        result: /** @type {CronCounts} */ ({ nagged, released, autoCompleted, lockNoticed, receiptChecked }),
       });
     } catch {}
-    return jsonNoStore(/** @type {{ ok: true } & CronCounts} */ ({ ok: true, nagged, released, autoCompleted, lockNoticed }));
+    return jsonNoStore(/** @type {{ ok: true } & CronCounts} */ ({ ok: true, nagged, released, autoCompleted, lockNoticed, receiptChecked }));
   }
 
   // Heartbeat: stamp sweep success with duration + counts (D1, never KV).
@@ -314,9 +319,9 @@ export async function onRequest(context) {
     await recordCronRunSuccess(db, ORDER_NAG_SERVICE, {
       endedIso: new Date().toISOString(),
       durationMs: Date.now() - sweepStartMs,
-      result: /** @type {CronCounts} */ ({ nagged, released, autoCompleted, lockNoticed }),
+      result: /** @type {CronCounts} */ ({ nagged, released, autoCompleted, lockNoticed, receiptChecked }),
     });
   } catch {}
 
-  return jsonNoStore(/** @type {{ ok: true } & CronCounts} */ ({ ok: true, nagged, released, autoCompleted, lockNoticed }));
+  return jsonNoStore(/** @type {{ ok: true } & CronCounts} */ ({ ok: true, nagged, released, autoCompleted, lockNoticed, receiptChecked }));
 }

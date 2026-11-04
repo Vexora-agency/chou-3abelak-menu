@@ -453,18 +453,25 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
         // Split quantities: `name ×n` ONLY when 0 < count < line qty;
         // full counts (or legacy lines without addonQty) render plain.
         // Zero-count options apply to zero units, so they are hidden.
+        // Spicy renders as `حار 🌶️` (no `+`): `• سجق (حار 🌶️) × 2 = …`.
         const hasQty = !!(it.addonQty && typeof it.addonQty === 'object' && !Array.isArray(it.addonQty));
         const lineQty = Number.isFinite(it.qty) ? it.qty : 0;
+        const isSpicyExtra = (fid, label) => {
+          if (typeof fid === 'string' && fid.trim().toLowerCase() === 'spicy') return true;
+          const t = typeof label === 'string' ? label.trim().toLowerCase() : '';
+          return t === 'حار' || t === 'سبايسي' || t === 'spicy';
+        };
         for (let ai = 0; ai < it.addonNames.length; ai++) {
           const a = it.addonNames[ai];
           const n = pickName(a);
           if (!n) continue;
-          const base = '+' + escapeHtml(n);
+          const fid = Array.isArray(it.addonIds) ? it.addonIds[ai] : null;
+          const spicy = isSpicyExtra(fid, n);
+          const base = spicy ? escapeHtml(String(n).trim()) + ' 🌶️' : '+' + escapeHtml(n);
           if (!hasQty) {
             extras.push(base);
             continue;
           }
-          const fid = Array.isArray(it.addonIds) ? it.addonIds[ai] : null;
           const raw = fid && Object.prototype.hasOwnProperty.call(it.addonQty, fid)
             ? it.addonQty[fid]
             : lineQty;

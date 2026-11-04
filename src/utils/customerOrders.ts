@@ -231,6 +231,44 @@ export function markRung(numbers: number[]): void {
   } catch {}
 }
 
+/**
+ * Standalone email memory (device-only, no account). The email is saved on
+ * EVERY successful submit — independent of the "remember my details"
+ * checkbox — so a customer who typed it once finds it prefilled on their
+ * next visit even if they never checked the box. Name/phone/address keep
+ * the strict opt-in rule; the email alone is low-risk and high-convenience.
+ */
+const CUSTOMER_EMAIL_KEY = 'customer_email_v1';
+const EMAIL_SHAPE_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function cleanEmail(v: unknown): string {
+  if (typeof v !== 'string') return '';
+  const out = v.trim().toLowerCase().slice(0, 254);
+  return EMAIL_SHAPE_RE.test(out) ? out : '';
+}
+
+/** Last validated email typed on this device ('' when none). */
+export function loadSavedEmail(): string {
+  try {
+    const shelf = detailsShelf();
+    if (!shelf) return '';
+    return cleanEmail(shelf.getItem(CUSTOMER_EMAIL_KEY));
+  } catch {
+    return '';
+  }
+}
+
+/** Persist a validated email; invalid/empty values never erase the stored one. */
+export function saveEmailAddress(email: unknown): void {
+  try {
+    const shelf = detailsShelf();
+    if (!shelf) return;
+    const v = cleanEmail(email);
+    if (!v) return;
+    shelf.setItem(CUSTOMER_EMAIL_KEY, v);
+  } catch {}
+}
+
 /** Remember a fresh order (newest first, deduped by number, 12h window). */
 export function saveCustomerOrder(n: number, t: string, nowMs: number = Date.now()): StoredCustomerOrder[] {
   if (!Number.isInteger(n) || n <= 0 || typeof t !== 'string' || !TOKEN_RE.test(t)) {

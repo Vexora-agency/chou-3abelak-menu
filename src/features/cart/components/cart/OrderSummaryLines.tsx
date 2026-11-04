@@ -1,7 +1,7 @@
 import React from 'react';
 import type { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { formatPrice, unitPrice, featureName } from '@/src/utils/pricing';
-import { pickLangText } from '@/src/utils/menuHelpers';
+import { pickLangText, isSpicyFeatureId, spicyLabel } from '@/src/utils/menuHelpers';
 import { useGuardedText } from '@/src/hooks/useGuardedText';
 import { AlertCircle } from 'lucide-react';
 
@@ -65,10 +65,11 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
                 // Split lines: partial picks (0 < count < qty) render as
                 // `name ×n`; full-count and legacy picks render exactly as
                 // today. Zero-price add-ons show no price text (mirrors
-                // the item modal).
+                // the item modal). Spicy renders as a (حار) parenthetical.
                 const count = l.addonQty?.[id] ?? l.quantity;
                 const partial = count > 0 && count < l.quantity;
-                return { key: id, name: featureName(menu, id, lang), count: partial ? count : null, price };
+                const spicy = isSpicyFeatureId(id);
+                return { key: id, name: spicy ? spicyLabel(lang) : featureName(menu, id, lang), count: partial ? count : null, price, spicy };
               });
               return (
                 <div key={l.key}>
@@ -86,17 +87,29 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
                     {base !== 0 && (
                       <>{' '}<bdi dir="ltr" className="tabular-nums">{formatPrice(base)}</bdi> <span dir="auto">{currency}</span></>
                     )}
-                    {addonParts.map((a) => (
-                      <React.Fragment key={a.key}>
-                        <span dir="ltr"> + </span><bdi dir="auto">{a.name}</bdi>
-                        {a.count !== null && (
-                          <><span dir="ltr"> ×</span><bdi dir="ltr" className="tabular-nums">{a.count}</bdi></>
-                        )}
-                        {a.price !== 0 && (
-                          <>{' '}<bdi dir="ltr" className="tabular-nums">{formatPrice(a.price)}</bdi> <span dir="auto">{currency}</span></>
-                        )}
-                      </React.Fragment>
-                    ))}
+                      {addonParts.map((a) => (
+                        <React.Fragment key={a.key}>
+                          {a.spicy ? (
+                            <>
+                              <span> (</span><bdi dir="auto">{a.name}</bdi>
+                              {a.count !== null && (
+                                <><span dir="ltr"> ×</span><bdi dir="ltr" className="tabular-nums">{a.count}</bdi></>
+                              )}
+                              <span>)</span>
+                            </>
+                          ) : (
+                            <>
+                              <span dir="ltr"> + </span><bdi dir="auto">{a.name}</bdi>
+                              {a.count !== null && (
+                                <><span dir="ltr"> ×</span><bdi dir="ltr" className="tabular-nums">{a.count}</bdi></>
+                              )}
+                              {a.price !== 0 && (
+                                <>{' '}<bdi dir="ltr" className="tabular-nums">{formatPrice(a.price)}</bdi> <span dir="auto">{currency}</span></>
+                              )}
+                            </>
+                          )}
+                        </React.Fragment>
+                      ))}
                   </p>
                 </div>
               );

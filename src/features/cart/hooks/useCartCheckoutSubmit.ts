@@ -5,7 +5,7 @@ import { formatPrice, round2 } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
 import { phoneDigitsOnly } from '@/src/utils/digits';
-import { loadPinnedLocation, loadRememberedDetails, saveCustomerOrder, savePinnedLocation, saveRememberedDetails } from '@/src/utils/customerOrders';
+import { loadPinnedLocation, loadRememberedDetails, loadSavedEmail, saveCustomerOrder, saveEmailAddress, savePinnedLocation, saveRememberedDetails } from '@/src/utils/customerOrders';
 import { shouldOverwriteAddress } from './useMidSplitLocationMap';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { formatMMSS } from '@/src/utils/countdown';
@@ -42,8 +42,18 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       remember: false,
     };
     const remembered = loadRememberedDetails();
-    if (remembered) return { ...base, ...(remembered as Partial<CustomerDetails>) };
-    return base;
+    const merged: CustomerDetails = remembered
+      ? { ...base, ...(remembered as Partial<CustomerDetails>) }
+      : { ...base };
+    // Smart email prefill: the standalone email memory survives even when
+    // "remember my details" was never checked (legacy blobs carry no email).
+    if (!merged.email) {
+      try {
+        const solo = loadSavedEmail();
+        if (solo) merged.email = solo;
+      } catch {}
+    }
+    return merged;
   });
 
   const [orderPrepared, setOrderPrepared] = useState(false);
@@ -258,6 +268,13 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
     const emailRaw = typeof customer.email === 'string' ? customer.email.trim().toLowerCase() : '';
     const validEmail = emailRaw && EMAIL_RE.test(emailRaw) ? emailRaw : '';
+    // Standalone email memory: saved on every submit, independent of the
+    // remember-me checkbox, so next visit pre-fills it automatically.
+    if (validEmail) {
+      try {
+        saveEmailAddress(validEmail);
+      } catch {}
+    }
     const customerToSave = validEmail
       ? { ...customer, email: validEmail }
       : (() => {

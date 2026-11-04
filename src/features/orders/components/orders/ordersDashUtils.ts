@@ -1,5 +1,6 @@
 import { Store, Truck, UtensilsCrossed } from 'lucide-react';
 import { STR } from './ordersDashTypes';
+import { isSpicyAddon } from '@/src/utils/menuHelpers';
 import type { OrderItem, OrderStatus } from './ordersDashTypes';
 
 /* ---------- Helpers ---------- */
@@ -65,35 +66,44 @@ export function relTime(iso: string, lang: 'en' | 'ar', now: Date) {  const t = 
 
 /* ---------- Small pieces ---------- */
 
-/** "Zaatar & Labneh (Mashrouha) + Extra vegetables" */
+/** "Zaatar & Labneh (Mashrouha) (حار) + Extra vegetables" — spicy always
+ *  rides in parentheses right after the name, other add-ons keep ` + `. */
 export function itemTitle(it: OrderItem, lang: 'en' | 'ar'): string {
   const base = lang === 'ar' ? it.name.ar : it.name.en;
   const v = it.variantName ? ` (${lang === 'ar' ? it.variantName.ar : it.variantName.en})` : '';
   const names = it.addonNames;
   const hasQty = !!(it.addonQty && typeof it.addonQty === 'object' && !Array.isArray(it.addonQty));
+  const fidOf = (i: number) => (Array.isArray(it.addonIds) ? it.addonIds[i] : null);
   if (!names?.length || !hasQty) {
-    const a = names?.length
-      ? ` + ${names.map((n) => (lang === 'ar' ? n.ar : n.en)).join(' + ')}`
-      : '';
-    return `${base}${v}${a}`;
+    const spicy: string[] = [];
+    const rest: string[] = [];
+    names?.forEach((n, i) => {
+      const label = lang === 'ar' ? n.ar : n.en;
+      if (!label) return;
+      (isSpicyAddon(fidOf(i), label) ? spicy : rest).push(label);
+    });
+    const s = spicy.map((x) => ` (${x})`).join('');
+    const a = rest.length ? ` + ${rest.join(' + ')}` : '';
+    return `${base}${v}${s}${a}`;
   }
   // Split quantities (same rule as Telegram): `name ×n` ONLY when
   // 0 < count < line qty; full counts render plain, zero-count is hidden.
   const lineQty = Number.isFinite(it.qty) ? it.qty : 0;
+  const spicy: string[] = [];
   const parts: string[] = [];
   for (let i = 0; i < names.length; i++) {
     const label = lang === 'ar' ? names[i].ar : names[i].en;
     if (!label) continue;
-    const fid = Array.isArray(it.addonIds) ? it.addonIds[i] : null;
+    const fid = fidOf(i);
     const raw = fid && Object.prototype.hasOwnProperty.call(it.addonQty, fid)
       ? (it.addonQty as Record<string, unknown>)[fid]
       : lineQty;
     const c = typeof raw === 'number' && Number.isInteger(raw) ? raw : lineQty;
     if (c === 0) continue;
-    if (c === lineQty) parts.push(label);
-    else if (c > 0 && c < lineQty) parts.push(`${label} ×${c}`);
-    else parts.push(label);
+    const text = c === lineQty || !(c > 0 && c < lineQty) ? label : `${label} ×${c}`;
+    (isSpicyAddon(fid, label) ? spicy : parts).push(text);
   }
+  const s = spicy.map((x) => ` (${x})`).join('');
   const a = parts.length ? ` + ${parts.join(' + ')}` : '';
-  return `${base}${v}${a}`;
+  return `${base}${v}${s}${a}`;
 }

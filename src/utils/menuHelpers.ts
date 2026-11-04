@@ -33,6 +33,30 @@ export function badgeLabel(key: string, lang: 'en' | 'ar'): string {
 }
 
 /**
+ * Spicy add-on detection + label. The spicy option travels as a zero-price
+ * addon with featureId 'spicy' (no featureDef needed); legacy rows may only
+ * carry the resolved name. Both are recognised so the pill renders in the
+ * modal, cart, admin and Telegram alike.
+ */
+export function isSpicyFeatureId(featureId: unknown): boolean {
+  return typeof featureId === 'string' && featureId.trim().toLowerCase() === 'spicy';
+}
+
+export function isSpicyName(name: unknown): boolean {
+  const t = typeof name === 'string' ? name.trim().toLowerCase() : '';
+  return t === 'حار' || t === 'سبايسي' || t === 'spicy';
+}
+
+export function isSpicyAddon(featureId: unknown, name: unknown): boolean {
+  return isSpicyFeatureId(featureId) || isSpicyName(name);
+}
+
+/** Short professional label used next to the item name (title-case EN). */
+export function spicyLabel(lang: 'en' | 'ar'): string {
+  return lang === 'ar' ? 'حار' : 'Spicy';
+}
+
+/**
  * "13:05" (24h) -> "1:05 PM" / "1:05 م", so AM/PM is never ambiguous.
  * Arabic uses the short م/ص (not the long صباحاً/مساءً): compact on phones
  * and the Levantine commercial convention. Shared by the admin preview

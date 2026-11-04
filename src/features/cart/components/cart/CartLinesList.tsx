@@ -1,8 +1,8 @@
 import React from 'react';
 import { MenuData, ResolvedCartLine } from '@/src/types/menu';
-import { pickLangText } from '@/src/utils/menuHelpers';
+import { pickLangText, isSpicyFeatureId, spicyLabel } from '@/src/utils/menuHelpers';
 import { getVariant, featureName, unitPrice, formatPrice, normalizePricing, unitLabel } from '@/src/utils/pricing';
-import { Plus, Minus, Trash2, X } from 'lucide-react';
+import { Plus, Minus, Trash2, X, Flame } from 'lucide-react';
 
 interface CartLinesListProps {
   menu: MenuData;
@@ -102,23 +102,29 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                collided with it on small phones. */}
             {l.addonIds.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
-                {l.addonIds.map((id) => {
+              {l.addonIds.map((id) => {
                   const addonPrice = (l.item.addons || []).find((a) => a && a.featureId === id)?.price ?? 0;
+                  // Spicy is a red pro pill (Flame + label), never "+ name".
+                  const spicy = isSpicyFeatureId(id);
+                  const spicyText = spicy ? spicyLabel(lang) : '';
                   // Split lines: partial picks (0 < count < qty) render as
                   // `name ×n`; full-count and legacy picks render exactly as
-                  // today (name only, no layout change).
+                  // today (non-spicy add-ons keep the `+ name` receipt shape).
                   const count = l.addonQty?.[id] ?? l.quantity;
                   const partial = count > 0 && count < l.quantity;
                   return (
                     <span
                       key={id}
                       className={`inline-flex items-center gap-1.5 ps-3 pe-1.5 py-1.5 rounded-full text-xs font-bold border max-w-full ${
-                        darkMode
+                        spicy
+                          ? 'border-red-600/30 bg-red-600/5 text-red-600 dark:border-red-400/30 dark:bg-red-400/5 dark:text-red-400'
+                          : darkMode
                           ? 'border-[var(--primary)]/30 bg-[var(--primary)]/5 text-[var(--primary)]'
                           : 'border-[#8a6d00]/30 bg-[#8a6d00]/5 text-[#8a6d00]'
                       }`}
                     >
-                      <bdi className="min-w-0 break-words">+ {featureName(menu, id, lang)}{partial ? ` ×${count}` : ''}</bdi>
+                      {spicy && <Flame size={12} className="shrink-0" aria-hidden="true" />}
+                      <bdi className="min-w-0 break-words">{spicy ? spicyText : `+ ${featureName(menu, id, lang)}`}{partial ? ` ×${count}` : ''}</bdi>
                       {/* Zero-price add-ons show no price text (mirrors the item modal). */}
                       {addonPrice !== 0 && (
                         <span className="tabular-nums opacity-80 shrink-0" dir="ltr">
@@ -131,8 +137,8 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                         className={`flex items-center justify-center w-8 h-8 min-w-[32px] min-h-[32px] rounded-full shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
                           darkMode ? 'hover:bg-red-500/20 hover:text-red-400' : 'hover:bg-red-500/10 hover:text-red-600'
                         }`}
-                        title={isAr ? 'إزالة الإضافة من السطر' : 'Remove add-on from this line'}
-                        aria-label={`${isAr ? 'إزالة الإضافة' : 'Remove add-on'} ${featureName(menu, id, lang)}${partial ? ` ×${count}` : ''}`}
+                        title={spicy ? (isAr ? 'إزالة الحار' : 'Remove Spicy') : (isAr ? 'إزالة الإضافة من السطر' : 'Remove add-on from this line')}
+                        aria-label={`${spicy ? (isAr ? 'إزالة الحار' : 'Remove Spicy') : `${isAr ? 'إزالة الإضافة' : 'Remove add-on'} ${featureName(menu, id, lang)}`}${partial ? ` ×${count}` : ''}`}
                       >
                         <X size={14} strokeWidth={3} />
                       </button>

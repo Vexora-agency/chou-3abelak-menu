@@ -290,19 +290,39 @@ export function normalizeMenu<T>(menu: T): T {
     ensureDef(lvl.id, lvl.name, SPICY_SECTION_DEFAULT.id, 'addon');
   }
   // Legacy upgrade: a per-item 'spicy' row becomes 'spicy-medium' at the
-  // same price (the generic heat ≈ the middle level). Runs on the
-  // normalized copy only — persisted on the next admin save.
+  // same price (the generic heat ≈ the middle level). Its siblings are
+  // added at the SAME price — the owner's heat price carries over to every
+  // level instead of stranding the item with a degenerate one-dot slider
+  // (a single medium that looks broken and reads as "default medium").
+  // Runs on the normalized copy only — persisted on the next admin save.
+  // Any other partial heat set (e.g. only hot attached) is completed with
+  // free levels for the same reason; the admin can still detach or reprice
+  // per item as usual.
+  const SPICY_LEVEL_IDS = ['spicy-mild', 'spicy-medium', 'spicy-hot'];
   if (Array.isArray(out.items)) {
     for (const item of out.items as Record<string, unknown>[]) {
       if (!item || typeof item !== 'object' || !Array.isArray(item.addons)) continue;
       const list = item.addons as Record<string, unknown>[];
       const legacyIdx = list.findIndex((a) => a && a.featureId === 'spicy');
-      if (legacyIdx === -1) continue;
-      const hasMedium = list.some((a) => a && a.featureId === 'spicy-medium');
-      if (hasMedium) {
-        list.splice(legacyIdx, 1);
-      } else {
-        list[legacyIdx] = { ...list[legacyIdx], featureId: 'spicy-medium' };
+      let heatPrice: number | null = null;
+      if (legacyIdx !== -1) {
+        const p = (list[legacyIdx] as Record<string, unknown>).price;
+        heatPrice = typeof p === 'number' && Number.isFinite(p) && p >= 0 ? p : 0;
+        const hasMedium = list.some((a) => a && a.featureId === 'spicy-medium');
+        if (hasMedium) {
+          list.splice(legacyIdx, 1);
+        } else {
+          list[legacyIdx] = { ...list[legacyIdx], featureId: 'spicy-medium' };
+        }
+      }
+      const have = new Set(
+        list.filter((a) => a && SPICY_LEVEL_IDS.includes(a.featureId as string)).map((a) => a.featureId as string),
+      );
+      if (have.size > 0 && have.size < SPICY_LEVEL_IDS.length) {
+        const fill = heatPrice ?? 0;
+        for (const id of SPICY_LEVEL_IDS) {
+          if (!have.has(id)) list.push({ featureId: id, price: fill });
+        }
       }
     }
   }

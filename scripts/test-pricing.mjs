@@ -231,6 +231,34 @@ ok(featuresByGroup(custom)[0].group.name.en === 'Cheese', 'group view keeps name
   const ids = withLegacySpicy.items[0].addons.map((a) => a.featureId);
   ok(!ids.includes('spicy') && ids.includes('spicy-medium'), 'legacy per-item spicy upgrades to medium');
   ok(withLegacySpicy.items[0].addons.find((a) => a.featureId === 'spicy-medium').price === 0, 'upgraded level keeps its price');
+  // No degenerate one-dot slider: the legacy row expands to the FULL set.
+  ok(['spicy-mild', 'spicy-medium', 'spicy-hot'].every((id) => ids.includes(id)), 'legacy spicy expands to all three levels');
+  // A priced legacy heat carries its price to the sibling levels.
+  {
+    const priced = normalizeMenu({
+      items: [{
+        id: 'm3', categoryId: 'manakish',
+        pricing: { unit: 'pc', minQty: 1, step: 1, maxQty: 50, showUnit: false },
+        addons: [{ featureId: 'spicy', price: 5000 }],
+      }],
+      settings: { ordering: {} },
+    });
+    const rows = priced.items[0].addons;
+    ok(rows.length === 3 && rows.every((a) => a.price === 5000), 'priced legacy heat shares its price with all levels');
+  }
+  // A partial non-legacy set is completed free (never a one-dot slider).
+  {
+    const partial = normalizeMenu({
+      items: [{
+        id: 'm4', categoryId: 'manakish',
+        pricing: { unit: 'pc', minQty: 1, step: 1, maxQty: 50, showUnit: false },
+        addons: [{ featureId: 'spicy-hot', price: 0 }],
+      }],
+      settings: { ordering: {} },
+    });
+    const pids = partial.items[0].addons.map((a) => a.featureId);
+    ok(['spicy-mild', 'spicy-medium', 'spicy-hot'].every((id) => pids.includes(id)), 'partial heat set completed to all three levels');
+  }
   const sg = withLegacySpicy.settings.featureGroups.find((g) => g.id === 'spicy');
   ok(sg && sg.selection === 'single', 'spicy section forced single even when stored otherwise');
   // spicy single-select: full-qty legacy picks are always valid (no split math)

@@ -161,9 +161,12 @@ export async function clearTelegramLink(db) {
 
 /**
  * Issue a code: prune expired rows, cap live codes, store ONLY the hash.
- * Returns { code, expiresAt } — the raw code is shown ONCE to the admin.
+ * Returns { code, expiresAt, role } — the raw code is shown ONCE to the admin.
+ * role is 'owner' (default, legacy) or 'delivery' (crew codes). Extra field
+ * is additive: existing `const { code, expiresAt } = ...` callers keep working.
  */
-export async function issuePairingCode(db) {
+export async function issuePairingCode(db, role = 'owner') {
+  const normRole = role === 'delivery' ? 'delivery' : 'owner';
   const nowIso = new Date().toISOString();
   try {
     await db
@@ -189,16 +192,28 @@ export async function issuePairingCode(db) {
   const nowMs = Date.now();
   const createdAt = new Date(nowMs).toISOString();
   const expiresAt = new Date(nowMs + PAIRING_TTL_SEC * 1000).toISOString();
-  await db
-    .prepare('INSERT INTO telegram_pairing_codes (code_hash, created_at, expires_at, used_at, consumed_by_chat) VALUES (?1, ?2, ?3, NULL, NULL)')
-    .bind(codeHash, createdAt, expiresAt)
-    .run();
-  return { code, expiresAt };
+  try {
+    await db
+      .prepare('INSERT INTO telegram_pairing_codes (code_hash, created_at, expires_at, used_at, consumed_by_chat, role) VALUES (?1, ?2, ?3, NULL, NULL, ?4)')
+      .bind(codeHash, createdAt, expiresAt, normRole)
+      .run();
+  } catch {
+    // Pre-0026 DB without the role column: legacy insert still works
+    // (role defaults to 'owner' once the migration lands).
+    await db
+      .prepare('INSERT INTO telegram_pairing_codes (code_hash, created_at, expires_at, used_at, consumed_by_chat) VALUES (?1, ?2, ?3, NULL, NULL)')
+      .bind(codeHash, createdAt, expiresAt)
+      .run();
+  }
+  return { code, expiresAt, role: normRole };
 }
 
 /**
- * Atomically consume a code for a chat. Returns true on success.
- * False covers expired / reused / unknown identically (no oracle).
+ * Atomically consume a code for a chat. Returns { role } on success.
+ * Returns false for expired / reused / unknown identically (no oracle).
+ * The { role } shape is truthy like the old `true`, so legacy
+ * `if (!consumed)` gates keep working; callers needing the role read
+ * `consumed.role` ('owner' default, 'delivery' for crew codes).
  */
 export async function consumePairingCode(db, code, chatId) {
   if (!isPairingCodeFormat(code) || !Number.isInteger(chatId)) return false;
@@ -217,9 +232,135 @@ export async function consumePairingCode(db, code, chatId) {
       .bind(codeHash, nowIso, String(chatId))
       .run();
     const changed = res && res.meta ? res.meta.changes : 0;
-    return changed === 1;
+    if (changed !== 1) return false;
   } catch {
     return false;
+  }
+  try {
+    const row = await db
+      .prepare('SELECT role FROM telegram_pairing_codes WHERE code_hash = ?1')
+      .bind(codeHash)
+      .first();
+    const r = row && typeof row.role === 'string' ? row.role : 'owner';
+    return { role: r === 'delivery' ? 'delivery' : 'owner' };
+  } catch {
+    return { role: 'owner' };
+  }
+}
+
+/* ---------- delivery-crew chats (multi-chat fan-out, migration 0026) ---------- */
+
+/**
+ * List linked delivery chats: [{ chatId, label, linkedAt }].
+ * Best-effort, never throws — returns [] when unlinked/unmigrated.
+ */
+export async function listDeliveryChats(db) {
+  try {
+    if (!db) return [];
+    const res = await db
+      .prepare('SELECT chat_id, label, linked_at FROM telegram_chats WHERE role = ?1 ORDER BY chat_id ASC')
+      .bind('delivery')
+      .all();
+    const rows = res && Array.isArray(res.results) ? res.results : [];
+    const out = [];
+    for (const r of rows) {
+      if (!r || !Number.isInteger(r.chat_id)) continue;
+      out.push({
+        chatId: r.chat_id,
+        label: typeof r.label === 'string' && r.label ? r.label : null,
+        linkedAt: typeof r.linked_at === 'string' ? r.linked_at : null,
+      });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Persist a delivery link (INSERT OR REPLACE). Best-effort, never throws.
+ */
+export async function saveDeliveryLink(db, chatId, label = null) {
+  try {
+    if (!db || !Number.isInteger(chatId)) return false;
+    const nowIso = new Date().toISOString();
+    const lbl = typeof label === 'string' && label.trim() ? label.trim().slice(0, 120) : null;
+    await db
+      .prepare('INSERT OR REPLACE INTO telegram_chats (chat_id, role, label, linked_at, last_seen_at) VALUES (?1, ?2, ?3, ?4, ?5)')
+      .bind(chatId, 'delivery', lbl, nowIso, nowIso)
+      .run();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Remove a delivery link. Best-effort, never throws.
+ * Order copies (telegram_order_chats) are kept for audit; fan-out stops
+ * because it reads the live set via listDeliveryChats.
+ */
+export async function removeDeliveryChat(db, chatId) {
+  try {
+    if (!db || !Number.isInteger(chatId)) return false;
+    await db
+      .prepare('DELETE FROM telegram_chats WHERE chat_id = ?1')
+      .bind(chatId)
+      .run();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Record a per-order delivery copy. Best-effort, never throws.
+ */
+export async function saveDeliveryMessage(db, { orderId, chatId, messageId, messageText, status }) {
+  try {
+    if (!db || typeof orderId !== 'string' || !orderId || !Number.isInteger(chatId)) return false;
+    const mid = Number.isInteger(messageId) ? messageId : null;
+    const mtext = typeof messageText === 'string' && messageText ? messageText.slice(0, 4000) : null;
+    const st = typeof status === 'string' && status ? status.slice(0, 20) : null;
+    await db
+      .prepare(
+        `INSERT INTO telegram_order_chats (order_id, chat_id, message_id, message_text, status)
+         VALUES (?1, ?2, ?3, ?4, ?5)
+         ON CONFLICT(order_id, chat_id) DO UPDATE SET message_id = ?3, message_text = ?4, status = ?5`
+      )
+      .bind(orderId, chatId, mid, mtext, st)
+      .run();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * List delivery copies for an order: [{ chatId, messageId, messageText, status }].
+ * Best-effort, never throws — returns [] when unmigrated/empty.
+ */
+export async function listOrderDeliveryMessages(db, orderId) {
+  try {
+    if (!db || typeof orderId !== 'string' || !orderId) return [];
+    const res = await db
+      .prepare('SELECT chat_id, message_id, message_text, status FROM telegram_order_chats WHERE order_id = ?1')
+      .bind(orderId)
+      .all();
+    const rows = res && Array.isArray(res.results) ? res.results : [];
+    const out = [];
+    for (const r of rows) {
+      if (!r || !Number.isInteger(r.chat_id)) continue;
+      out.push({
+        chatId: r.chat_id,
+        messageId: Number.isInteger(r.message_id) ? r.message_id : null,
+        messageText: typeof r.message_text === 'string' ? r.message_text : null,
+        status: typeof r.status === 'string' ? r.status : null,
+      });
+    }
+    return out;
+  } catch {
+    return [];
   }
 }
 
@@ -690,6 +831,44 @@ export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, 
         messageId: sentId,
         messageText: text,
       });
+      // Delivery-crew fan-out (best-effort, never fails the owner send):
+      // same text, no admin-url row, each copy recorded for later sync.
+      try {
+        const crew = await listDeliveryChats(db);
+        if (Array.isArray(crew) && crew.length) {
+          const crewKeyboard = buildOrderKeyboard('', orderId);
+          for (const dc of crew) {
+            try {
+              if (!dc || !Number.isInteger(dc.chatId)) continue;
+              const cres = await callTelegramApi(token, 'sendMessage', {
+                chat_id: dc.chatId,
+                text,
+                parse_mode: 'HTML',
+                reply_markup: crewKeyboard,
+              });
+              if (cres && cres.ok) {
+                const cmsg = cres.result && typeof cres.result === 'object' ? cres.result : null;
+                const cid = cmsg && Number.isInteger(cmsg.message_id) ? cmsg.message_id : null;
+                await saveDeliveryMessage(db, {
+                  orderId,
+                  chatId: dc.chatId,
+                  messageId: cid,
+                  messageText: text,
+                  status: 'sent',
+                });
+              } else {
+                await saveDeliveryMessage(db, {
+                  orderId,
+                  chatId: dc.chatId,
+                  messageId: null,
+                  messageText: text,
+                  status: 'failed',
+                });
+              }
+            } catch {}
+          }
+        }
+      } catch {}
       return { sent: 1 };
     }
     await stampLedger(db, orderId, 'failed', attempts, String(res.error || 'send_failed').slice(0, 200), false);
@@ -775,8 +954,10 @@ export async function rebuildOrderMessage(db, env, order) {
  * reject (`rdy`) → order exists → idempotent repeat → allowed transition
  * → write → announce.
  *
- * Only the linked owner chat can act (clicker AND message chat must equal
- * the stored chat_id — usernames never trusted). Terminal states
+ * Only the linked owner chat or a linked delivery chat can act (clicker
+ * AND message chat must equal the stored chat_id — usernames never
+ * trusted; delivery clicks additionally require clickerId === chatId and
+ * membership in the delivery set). Terminal states
  * (completed/cancelled) reject further presses; Cancel is allowed from
  * new/confirmed/ready. The write goes through the same
  * updateOrderStatus repository as the dashboard (one status model).
@@ -811,7 +992,25 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     } catch {
       link = null;
     }
-    if (!link || clickerId !== link.chatId || chatId !== link.chatId) {
+    const isOwner = !!(link && clickerId === link.chatId && chatId === link.chatId);
+    let isDelivery = false;
+    if (!isOwner) {
+      try {
+        // Delivery auth: clicker must be messaging from its own linked chat.
+        if (Number.isInteger(clickerId) && Number.isInteger(chatId) && clickerId === chatId) {
+          const crew = await listDeliveryChats(db);
+          if (Array.isArray(crew)) {
+            for (const c of crew) {
+              if (c && c.chatId === chatId) {
+                isDelivery = true;
+                break;
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+    if (!isOwner && !isDelivery) {
       await answer('Not linked.');
       return noop('unauthorized');
     }
@@ -912,20 +1111,32 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     // later dashboard change can sync back to it. Store the rebuilt HTML
     // (links intact), never the plain callback text. updated_at untouched —
     // the admin "last notification" view keeps send order.
+    // Delivery taps heal their own copy row, never the owner ledger.
     try {
-      await db
-        .prepare(
-          'UPDATE telegram_notifications SET chat_id = COALESCE(chat_id, ?2), message_id = COALESCE(message_id, ?3), message_text = COALESCE(message_text, ?4) WHERE order_id = ?1'
-        )
-        .bind(
-          parsed.orderId,
-          Number.isInteger(chatId) ? chatId : null,
-          Number.isInteger(messageId) ? messageId : null,
-          typeof rebuilt === 'string' && rebuilt
-            ? rebuilt.slice(0, 4000)
-            : (typeof messageText === 'string' && messageText ? messageText.slice(0, 4000) : null)
-        )
-        .run();
+      const healedText = typeof rebuilt === 'string' && rebuilt
+        ? rebuilt.slice(0, 4000)
+        : (typeof messageText === 'string' && messageText ? messageText.slice(0, 4000) : null);
+      if (isDelivery) {
+        await saveDeliveryMessage(db, {
+          orderId: parsed.orderId,
+          chatId,
+          messageId: Number.isInteger(messageId) ? messageId : null,
+          messageText: healedText,
+          status: parsed.status,
+        });
+      } else {
+        await db
+          .prepare(
+            'UPDATE telegram_notifications SET chat_id = COALESCE(chat_id, ?2), message_id = COALESCE(message_id, ?3), message_text = COALESCE(message_text, ?4) WHERE order_id = ?1'
+          )
+          .bind(
+            parsed.orderId,
+            Number.isInteger(chatId) ? chatId : null,
+            Number.isInteger(messageId) ? messageId : null,
+            healedText
+          )
+          .run();
+      }
     } catch {}
     await answer(banner);
     // Next-step buttons (no double-tap): a confirmed order now offers
@@ -1011,14 +1222,16 @@ function stripBanner(text) {
 
 /**
  * Site -> Telegram sync: a dashboard status change stamps the SAME order
- * message the owner got at order time (two-way sync with the buttons).
+ * message the owner got at order time (two-way sync with the buttons),
+ * plus every delivery-crew copy (same banner+keyboard, no admin-url row).
  * Best-effort and silent — NEVER throws, NEVER blocks the dashboard action:
  *   - no ledger row / no message refs (pre-0015 message, unlinked chat,
  *     deleted message) -> skipped with a reason, no error surfaced.
-  *   - confirmed/completed/cancelled -> banner stamped + buttons frozen.
-  *   - ready -> type-aware banner (out for delivery / ready for
-  *     pickup) stamped + buttons frozen (dashboard drives completion).
-  *   - new (reopened) -> buttons restored so the owner can act again.
+ *   - confirmed/ready -> banner stamped + delivered+cancel keyboard kept
+ *     (TG_TRANSITIONS allows rcv/cnl from both, so dashboard-confirm no
+ *     longer freezes while Telegram-confirm already offered delivered).
+ *   - completed/cancelled (terminal) -> banner stamped + buttons frozen.
+ *   - new (reopened) -> buttons restored so the owner/crew can act again.
  */
 export async function syncOrderStatusToTelegram(db, token, { orderId, status, adminUrl }) {
   const skip = (reason) => ({ sent: 0, reason });
@@ -1026,60 +1239,121 @@ export async function syncOrderStatusToTelegram(db, token, { orderId, status, ad
     if (!db || typeof token !== 'string' || !token) return skip('misconfigured');
     if (typeof orderId !== 'string' || !orderId) return skip('bad_order');
     if (typeof status !== 'string' || !(status === 'new' || status === 'ready' || STATUS_BANNERS[status])) return skip('bad_status');
-    let row = null;
-    try {
-      row = await db
-        .prepare('SELECT chat_id, message_id, message_text FROM telegram_notifications WHERE order_id = ?1')
-        .bind(orderId)
-        .first();
-    } catch {
-      return skip('ledger_unreadable');
-    }
-    if (!row || !Number.isInteger(row.chat_id) || !Number.isInteger(row.message_id)) {
-      return skip('no_message');
-    }
-    const chatId = row.chat_id;
-    const messageId = row.message_id;
-    if (status === 'new') {
-      try {
-        await callTelegramApi(token, 'editMessageReplyMarkup', {
-          chat_id: chatId,
-          message_id: messageId,
-          reply_markup: buildOrderKeyboard(adminUrl, orderId),
-        });
-      } catch {}
-      return { sent: 1 };
-    }
     // Ready banners are type-aware (delivery goes out, pickup/dine-in
     // waits): read the order type once, fall back to delivery wording.
-    let banner = STATUS_BANNERS[status];
-    if (status === 'ready') {
-      let orderType = 'delivery';
-      try {
-        const ord = await findOrderById(db, orderId);
-        if (ord && typeof ord.type === 'string' && ord.type) orderType = ord.type;
-      } catch {}
-      banner = readyBannerFor(orderType);
+    let banner = null;
+    if (status !== 'new') {
+      banner = STATUS_BANNERS[status];
+      if (status === 'ready') {
+        let orderType = 'delivery';
+        try {
+          const ord = await findOrderById(db, orderId);
+          if (ord && typeof ord.type === 'string' && ord.type) orderType = ord.type;
+        } catch {}
+        banner = readyBannerFor(orderType);
+      }
     }
-    const base = stripBanner(typeof row.message_text === 'string' && row.message_text ? row.message_text : '');
-    if (base) {
-      try {
-        await callTelegramApi(token, 'editMessageText', {
-          chat_id: chatId,
-          message_id: messageId,
-          text: `${base}\n\n${banner}`.slice(0, 4000),
-          parse_mode: 'HTML',
-        });
-      } catch {}
-    }
+    const keepDelivered = status === 'confirmed' || status === 'ready';
+    let ownerDone = false;
+    let ownerSkipReason = 'no_message';
     try {
-      await callTelegramApi(token, 'editMessageReplyMarkup', {
-        chat_id: chatId,
-        message_id: messageId,
-        reply_markup: { inline_keyboard: [] },
-      });
+      let row = null;
+      try {
+        row = await db
+          .prepare('SELECT chat_id, message_id, message_text FROM telegram_notifications WHERE order_id = ?1')
+          .bind(orderId)
+          .first();
+      } catch {
+        ownerSkipReason = 'ledger_unreadable';
+        row = null;
+      }
+      if (row && Number.isInteger(row.chat_id) && Number.isInteger(row.message_id)) {
+        const chatId = row.chat_id;
+        const messageId = row.message_id;
+        if (status === 'new') {
+          try {
+            await callTelegramApi(token, 'editMessageReplyMarkup', {
+              chat_id: chatId,
+              message_id: messageId,
+              reply_markup: buildOrderKeyboard(adminUrl, orderId),
+            });
+          } catch {}
+          ownerDone = true;
+        } else {
+          const base = stripBanner(typeof row.message_text === 'string' && row.message_text ? row.message_text : '');
+          if (base) {
+            try {
+              await callTelegramApi(token, 'editMessageText', {
+                chat_id: chatId,
+                message_id: messageId,
+                text: `${base}\n\n${banner}`.slice(0, 4000),
+                parse_mode: 'HTML',
+              });
+            } catch {}
+          }
+          try {
+            await callTelegramApi(token, 'editMessageReplyMarkup', {
+              chat_id: chatId,
+              message_id: messageId,
+              reply_markup: keepDelivered
+                ? buildOrderKeyboard(adminUrl, orderId, 'confirmed')
+                : { inline_keyboard: [] },
+            });
+          } catch {}
+          ownerDone = true;
+        }
+      } else if (ownerSkipReason !== 'ledger_unreadable') {
+        ownerSkipReason = 'no_message';
+      }
+    } catch {
+      ownerSkipReason = 'error';
+    }
+    // Delivery copies: mirror owner logic, never the admin-url row.
+    let deliveryDone = false;
+    try {
+      const copies = await listOrderDeliveryMessages(db, orderId);
+      if (Array.isArray(copies)) {
+        for (const cp of copies) {
+          try {
+            if (!cp || !Number.isInteger(cp.chatId) || !Number.isInteger(cp.messageId)) continue;
+            if (status === 'new') {
+              try {
+                await callTelegramApi(token, 'editMessageReplyMarkup', {
+                  chat_id: cp.chatId,
+                  message_id: cp.messageId,
+                  reply_markup: buildOrderKeyboard('', orderId),
+                });
+              } catch {}
+              deliveryDone = true;
+            } else {
+              const cbase = stripBanner(typeof cp.messageText === 'string' && cp.messageText ? cp.messageText : '');
+              if (cbase) {
+                try {
+                  await callTelegramApi(token, 'editMessageText', {
+                    chat_id: cp.chatId,
+                    message_id: cp.messageId,
+                    text: `${cbase}\n\n${banner}`.slice(0, 4000),
+                    parse_mode: 'HTML',
+                  });
+                } catch {}
+              }
+              try {
+                await callTelegramApi(token, 'editMessageReplyMarkup', {
+                  chat_id: cp.chatId,
+                  message_id: cp.messageId,
+                  reply_markup: keepDelivered
+                    ? buildOrderKeyboard('', orderId, 'confirmed')
+                    : { inline_keyboard: [] },
+                });
+              } catch {}
+              deliveryDone = true;
+            }
+          } catch {}
+        }
+      }
     } catch {}
-    return { sent: 1 };
+    if (ownerDone || deliveryDone) return { sent: 1 };
+    return skip(ownerSkipReason);
   } catch {
     return skip('error');
   }

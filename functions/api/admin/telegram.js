@@ -1,13 +1,15 @@
 /**
- * Admin Telegram integration: GET status / POST pair-code|save-username|disconnect.
+ * Admin Telegram integration: GET status / POST pair-code|delivery-code|delivery-remove|save-username|disconnect.
  * ADMIN SESSION REQUIRED (directory middleware) + checkApiHeaders, same as
  * the WhatsApp endpoint. Phase 2+3 scope: pairing ONLY — no order changes.
+ * Delivery-crew sharing (migration 0026): owner link stays in service_config,
+ * crew chats live in telegram_chats (role 'delivery').
  *
  * Secrets (TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET) are Cloudflare Pages
  * secrets (env), never stored in D1. GET exposes presence flags only.
  * The link (chat_id + bot_username, non-secret) lives in service_config
  * under the 'telegram' key; pairing codes live hashed in
- * telegram_pairing_codes (migration 0014).
+ * telegram_pairing_codes (migration 0014, role column in 0026).
  */
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../_shared/session.js';
 import { featureOffResponse, hasFeature } from '../../_shared/plan.js';
@@ -17,9 +19,11 @@ import {
   clearTelegramLink,
   isBotUsernameFormat,
   issuePairingCode,
+  listDeliveryChats,
   readLastTelegramNotification,
   readPendingPairing,
   readTelegramLink,
+  removeDeliveryChat,
   resolveBotUsername,
   saveTelegramBotUsername,
 } from '../../_shared/telegram.js';
@@ -47,12 +51,18 @@ export async function onRequest(context) {
     let link;
     let botUsername;
     let lastNotification;
+    let deliveryChats = [];
     let pendingPairing = { pending: false, expiresAt: null };
     try {
       link = await readTelegramLink(db);
       botUsername = await resolveBotUsername(db, env);
       lastNotification = await readLastTelegramNotification(db);
       if (!link) pendingPairing = await readPendingPairing(db);
+      try {
+        deliveryChats = await listDeliveryChats(db);
+      } catch {
+        deliveryChats = [];
+      }
     } catch {
       return jsonNoStore({ error: 'unavailable' }, 503);
     }
@@ -68,6 +78,7 @@ export async function onRequest(context) {
       hasWebhookSecret: hasWebhookSecret,
       pairingTtlSec: PAIRING_TTL_SEC,
       lastNotification,
+      deliveryChats,
     });
   }
 
@@ -120,6 +131,42 @@ export async function onRequest(context) {
         expiresAt,
         ttlSec: PAIRING_TTL_SEC,
       });
+    } catch {
+      return jsonNoStore({ error: 'unavailable' }, 503);
+    }
+  }
+
+  // Issue a delivery-crew pairing code (same response shape as pair-code).
+  // The crew chat links via /start and gets order copies without admin URL.
+  if (action === 'delivery-code') {
+    try {
+      const { code, expiresAt } = await issuePairingCode(db, 'delivery');
+      const botUsername = await resolveBotUsername(db, env);
+      const deepLink = botUsername ? buildDeepLink(botUsername, code) : null;
+      if (!deepLink) {
+        return jsonNoStore({ error: 'bot_not_configured' }, 503);
+      }
+      return jsonNoStore({
+        ok: true,
+        code,
+        deepLink,
+        expiresAt,
+        ttlSec: PAIRING_TTL_SEC,
+      });
+    } catch {
+      return jsonNoStore({ error: 'unavailable' }, 503);
+    }
+  }
+
+  // Remove a delivery chat: { chatId } — stops future fan-out to it.
+  if (action === 'delivery-remove') {
+    const chatId = body && Number.isInteger(body.chatId) ? body.chatId : null;
+    if (chatId === null) {
+      return jsonNoStore({ error: 'invalid_chat_id' }, 400);
+    }
+    try {
+      await removeDeliveryChat(db, chatId);
+      return jsonNoStore({ ok: true, chatId });
     } catch {
       return jsonNoStore({ error: 'unavailable' }, 503);
     }

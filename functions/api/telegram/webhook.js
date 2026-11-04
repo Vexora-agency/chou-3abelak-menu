@@ -24,7 +24,9 @@ import {
   consumePairingCode,
   handleOrderCallback,
   isPairingCodeFormat,
+  listDeliveryChats,
   readTelegramLink,
+  saveDeliveryLink,
   saveTelegramLink,
   verifyWebhookSecret,
 } from '../../_shared/telegram.js';
@@ -119,6 +121,8 @@ export async function onRequest(context) {
 
     // /start with a code -> pairing attempt. Expired/reused/unknown all
     // read identically (no oracle); only a valid consume links.
+    // Role routes the link: owner -> service_config (unchanged path),
+    // delivery -> telegram_chats crew table.
     if (param !== null) {
       if (!isPairingCodeFormat(param)) {
         await reply(chatId, 'This link is invalid. Please generate a new one from the admin dashboard.');
@@ -132,6 +136,19 @@ export async function onRequest(context) {
       }
       if (!consumed) {
         await reply(chatId, 'This link has expired or was already used. Please generate a new one from the admin dashboard.');
+        return jsonNoStore({ ok: true });
+      }
+      const role = consumed && typeof consumed === 'object' && consumed.role === 'delivery'
+        ? 'delivery'
+        : 'owner';
+      if (role === 'delivery') {
+        try {
+          await saveDeliveryLink(db, chatId);
+        } catch {
+          await reply(chatId, 'Linking failed on our side. Please generate a new link from the admin dashboard and try again.');
+          return jsonNoStore({ ok: true });
+        }
+        await reply(chatId, '✅ اتربط كدليفري — هتوصلك نسخة من كل طلب جديد هنا.\n✅ Linked as delivery — you will receive a copy of every new order here.');
         return jsonNoStore({ ok: true });
       }
       try {
@@ -151,9 +168,25 @@ export async function onRequest(context) {
     if (link && link.chatId === chatId) {
       await reply(chatId, '✅ This chat is linked and will receive new-order notifications.');
     } else {
-      // Generic pointer for unknown chats: pairing links are issued from
-      // the authenticated dashboard only (never guessable, never via chat).
-      await reply(chatId, 'To link, generate a pairing link from the admin dashboard (Telegram section).');
+      let isDeliveryChat = false;
+      try {
+        const crew = await listDeliveryChats(db);
+        if (Array.isArray(crew)) {
+          for (const c of crew) {
+            if (c && c.chatId === chatId) {
+              isDeliveryChat = true;
+              break;
+            }
+          }
+        }
+      } catch {}
+      if (isDeliveryChat) {
+        await reply(chatId, '✅ اتربط كدليفري — هتوصلك نسخة من كل طلب جديد هنا.\n✅ Linked as delivery — you will receive a copy of every new order here.');
+      } else {
+        // Generic pointer for unknown chats: pairing links are issued from
+        // the authenticated dashboard only (never guessable, never via chat).
+        await reply(chatId, 'To link, generate a pairing link from the admin dashboard (Telegram section).');
+      }
     }
     return jsonNoStore({ ok: true });
   } catch {

@@ -149,7 +149,41 @@ ok(legacy.settings.featureDefs[0].groupId === 'addons' && legacy.settings.featur
 ok(['spicy-mild', 'spicy-medium', 'spicy-hot'].every((id) => legacy.settings.featureDefs.some((d) => d.id === id && d.groupId === 'spicy')), 'spicy levels live in the locked spicy section');
 const spicyGroup = legacy.settings.featureGroups.find((g) => g.id === 'spicy');
 ok(spicyGroup && spicyGroup.selection === 'single' && spicyGroup.name.en === 'Make it Spicy', 'locked spicy section is single-choice with default name');
-ok(spicyGroup && spicyGroup.prompt && spicyGroup.prompt.en && spicyGroup.prompt.ar, 'locked spicy section carries the customer prompt');
+ok(spicyGroup && spicyGroup.prompt && spicyGroup.prompt.en === 'Want to add some heat?' && spicyGroup.prompt.ar === 'هل تريد شطة؟', 'locked spicy section asks the heat question');
+// First-shipped wording upgrades to the question style on normalize.
+{
+  const migrated = normalizeMenu({
+    items: [],
+    settings: {
+      ordering: {},
+      featureGroups: [{
+        id: 'spicy',
+        name: { en: 'Make it Spicy', ar: 'خليه حار' },
+        selection: 'multi',
+        prompt: { en: 'Add heat to your order — pick your spice level', ar: 'إضافة حار للطلب — اختر درجة الحار المناسبة' },
+      }],
+      featureDefs: [],
+    },
+  });
+  const sg = migrated.settings.featureGroups.find((g) => g.id === 'spicy');
+  ok(sg && sg.selection === 'single' && sg.prompt.en === 'Want to add some heat?' && sg.prompt.ar === 'هل تريد شطة؟', 'old spicy wording upgrades to the question');
+}
+// Fixed global option: customizable items gain the 3 heat levels free,
+// fixed-price items stay untouched.
+{
+  const grid = { unit: 'pc', minQty: 1, step: 1, maxQty: 50, showUnit: false };
+  const mixed = normalizeMenu({
+    items: [
+      { id: 'w1', categoryId: 'c', pricing: grid, addons: [{ featureId: 'extra-veg', price: 100 }] },
+      { id: 'w2', categoryId: 'c', pricing: { ...grid, price: 500 } },
+    ],
+    settings: { ordering: {} },
+  });
+  const w1 = mixed.items.find((i) => i.id === 'w1');
+  const w2 = mixed.items.find((i) => i.id === 'w2');
+  ok(w1.addons.length === 4 && w1.addons.slice(1).every((a) => a.price === 0), 'customizable items gain the 3 heat levels free');
+  ok(!w2.addons || w2.addons.length === 0, 'fixed-price items stay untouched');
+}
 
 // legacy migration: inline variant names + category groups -> library + per-item
 const oldDoc = normalizeMenu({
@@ -164,7 +198,8 @@ const oldDoc = normalizeMenu({
 ok(oldDoc.settings.featureDefs.length === 6, 'library built from legacy names + protected spicy (legacy + 3 levels)');
 ok(oldDoc.settings.featureDefs.some((d) => d.id === 'spicy' && d.groupId === 'addons'), 'protected spicy def auto-added');
 ok(oldDoc.items[0].variants[0].featureId === 'regular' && oldDoc.items[0].variants[0].name === undefined, 'variants converted');
-ok(oldDoc.items[0].addons.length === 1 && oldDoc.items[0].addons[0].price === 30000, 'groups expanded to manakish item');
+ok(oldDoc.items[0].addons.length === 4 && oldDoc.items[0].addons[0].price === 30000, 'groups expanded to manakish item + heat levels auto-attached');
+ok(oldDoc.items[0].addons.slice(1).every((a) => a.price === 0 && ['spicy-mild', 'spicy-medium', 'spicy-hot'].includes(a.featureId)), 'auto-attached levels are free');
 ok(!oldDoc.items[1].addons || oldDoc.items[1].addons.length === 0, 'pastry untouched by manakish group');
 ok(oldDoc.addonGroups === undefined, 'addonGroups removed');
 ok(lineTotal(oldDoc.items[0], { variantId: 'regular', addonIds: ['extra-veg'], qty: 2 }) === 220000, 'migrated math correct');

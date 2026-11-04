@@ -80,6 +80,7 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
               isAr={isAr}
               darkMode={darkMode}
               currency={currency}
+              chipBase={chipBase}
             />
           );
         }

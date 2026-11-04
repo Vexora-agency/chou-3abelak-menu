@@ -216,16 +216,24 @@ export function normalizeMenu(menu) {
     'spicy',
     { en: 'Make it Spicy', ar: 'خليه حار' },
     'single',
-    { en: 'Add heat to your order — pick your spice level', ar: 'إضافة حار للطلب — اختر درجة الحار المناسبة' },
+    { en: 'Want to add some heat?', ar: 'هل تريد شطة؟' },
     true,
   );
   if (spicyGroup) {
     // A spice level is exactly one choice — never multi, even if an old
     // document stored something else.
     spicyGroup.selection = 'single';
+    // The customer title is a short question ("هل تريد شطة؟"). A blank
+    // prompt — or the first-shipped wording, superseded by the question
+    // style — resets to the current default; an admin-edited prompt stays.
+    // TWIN: src/utils/pricing-menu.ts — keep both wordings identical.
     const p = spicyGroup.prompt && typeof spicyGroup.prompt === 'object' ? spicyGroup.prompt : null;
-    if (!p || (!(p.en || '').trim() && !(p.ar || '').trim())) {
-      spicyGroup.prompt = { en: 'Add heat to your order — pick your spice level', ar: 'إضافة حار للطلب — اختر درجة الحار المناسبة' };
+    const blank = !p || (!(p.en || '').trim() && !(p.ar || '').trim());
+    const superseded = !!p
+      && (p.en || '').trim() === 'Add heat to your order — pick your spice level'
+      && (p.ar || '').trim() === 'إضافة حار للطلب — اختر درجة الحار المناسبة';
+    if (blank || superseded) {
+      spicyGroup.prompt = { en: 'Want to add some heat?', ar: 'هل تريد شطة؟' };
     }
   }
   for (const lvl of [
@@ -247,6 +255,24 @@ export function normalizeMenu(menu) {
       const hasMedium = list.some((a) => a && a.featureId === 'spicy-medium');
       if (hasMedium) list.splice(legacyIdx, 1);
       else list[legacyIdx] = { ...list[legacyIdx], featureId: 'spicy-medium' };
+    }
+  }
+  // Fixed global option: any customizable item (has add-on rows) that
+  // carries no heat option at all gains the three levels at price 0, so
+  // the locked section shows without per-item admin work — old documents
+  // and the live menu included. Simple fixed-price items (no add-ons at
+  // all) stay untouched; the admin can still detach the section per item.
+  // TWIN: src/utils/pricing-menu.ts — keep the rule identical.
+  if (Array.isArray(out.items)) {
+    for (const item of out.items) {
+      if (!item || typeof item !== 'object' || !Array.isArray(item.addons) || item.addons.length === 0) continue;
+      const list = item.addons;
+      if (list.some((a) => a && (a.featureId === 'spicy' || a.featureId === 'spicy-mild' || a.featureId === 'spicy-medium' || a.featureId === 'spicy-hot'))) continue;
+      list.push(
+        { featureId: 'spicy-mild', price: 0 },
+        { featureId: 'spicy-medium', price: 0 },
+        { featureId: 'spicy-hot', price: 0 },
+      );
     }
   }
   delete out.addonGroups; // replaced by settings.featureDefs + per-item addons

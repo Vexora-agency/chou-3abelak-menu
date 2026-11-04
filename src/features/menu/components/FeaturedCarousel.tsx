@@ -230,7 +230,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           alt=""
           aria-hidden="true"
           draggable={false}
-          className={`absolute -end-3 -top-2 w-24 pointer-events-none select-none -rotate-12 transition-transform duration-500 group-hover:-rotate-3 group-hover:scale-110 ${
+          className={`absolute -end-3 -top-2 w-24 pointer-events-none select-none -rotate-12 rtl:rotate-12 transition-transform duration-500 group-hover:-rotate-3 rtl:group-hover:rotate-3 group-hover:scale-110 ${
             isYellowCard ? 'opacity-[0.16]' : 'opacity-[0.20]'
           }`}
           style={isYellowCard ? { filter: 'brightness(0)' } : undefined}

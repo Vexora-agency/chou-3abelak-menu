@@ -13,11 +13,12 @@
  *   acks, instead of staying silent after the first ping. Best-effort only.
  * - release: orders still `new` past the 5-minute customer-cancel window
  *   are "released" (released_at stamped, exactly once via atomic claim):
- *   the owner gets the Telegram order message + admin web push NOW — never
+ *   the owner gets the Telegram order message + admin web push NOW, and the
+ *   customer gets the FIRST email ("order received", full details) — never
  *   at order time. This is the ONLY sender of first notifications; the
  *   /api/orders route sends none (kitchen grace period). A customer cancel
  *   inside the window flips to `cancelled` and is visible immediately, so
- *   it never waits for release.
+ *   it never waits for release (the `cancelled` email is its first email).
  * - lock notice: still-`new` Telegram-notified orders past the window get
  *   ONE "final, proceed" notice (marked, never repeated).
  * - auto-complete: CONFIRMED or READY orders older than 12h whose customer
@@ -237,6 +238,19 @@ export async function onRequest(context) {
           subject: origin || undefined,
           tag: `new-order-${row.number}`,
         });
+      } catch {}
+      // Customer email (placed = "order received", full details): the FIRST
+      // customer email, sent only once the cancel window lapses — never at
+      // order time. Same exactly-once claim as Telegram/push above, so it
+      // can never double-fire; a cancel inside the window means the order
+      // never reaches this sweep and `cancelled` stays the first email.
+      try {
+        const { mapOrderRow } = await import('../../_shared/orders.js');
+        const { notifyCustomerOrderEvent } = await import('../../_shared/customer-email.js');
+        const mapped = mapOrderRow(row);
+        if (mapped && mapped.customer && typeof mapped.customer.email === 'string' && mapped.customer.email) {
+          await notifyCustomerOrderEvent(db, env, { order: mapped, event: 'placed', origin });
+        }
       } catch {}
     }
   } catch {}

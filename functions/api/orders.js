@@ -217,46 +217,20 @@ export async function onRequest(context) {
   // Fetch the stored row back so the response reflects exactly what was saved
   let savedTotal = c.total;
   let savedParent = typeof c.parentNumber === 'number' ? c.parentNumber : null;
-  let savedMapped = null;
   try {
     const row = await findOrderById(db, created.id);
     if (row) {
       const mapped = mapOrderRow(row);
       savedTotal = mapped.total;
       savedParent = typeof mapped.parentNumber === 'number' ? mapped.parentNumber : null;
-      savedMapped = mapped;
     }
   } catch {}
-  // Customer email (placed): best-effort via waitUntil, never blocks or
-  // breaks the order response. Reuses the re-read row (has customer_email).
-  try {
-    const emailOrder = savedMapped || {
-      number: created.num,
-      trackToken: c.trackToken,
-      lang: c.lang,
-      customer: { email: typeof c.email === 'string' ? c.email : '' },
-    };
-    const hasEmail = !!(emailOrder && emailOrder.customer && typeof emailOrder.customer.email === 'string' && emailOrder.customer.email);
-    if (hasEmail) {
-      let origin = '';
-      try {
-        origin = new URL(request.url).origin;
-      } catch {}
-      const p = (async () => {
-        try {
-          const { notifyCustomerOrderEvent } = await import('../_shared/customer-email.js');
-          await notifyCustomerOrderEvent(db, env, { order: emailOrder, event: 'placed', origin });
-        } catch {}
-      })();
-      if (context.waitUntil) {
-        try {
-          context.waitUntil(p);
-        } catch {}
-      } else {
-        await p;
-      }
-    }
-  } catch {}
+  // No customer email here by design: the order sits in the 5-minute
+  // customer-cancel window (ORDER_GRACE_MS) and the kitchen hasn't seen it
+  // yet. The FIRST email goes out from the release sweep in
+  // /api/internal/order-nag once the window lapses ("order received" with
+  // full details) — a cancel inside the window makes `cancelled` the first
+  // email instead. Same rule as Telegram/web push (release-only).
   const out = { ok: true, orderNumber: created.num, total: savedTotal, trackToken: c.trackToken };
   if (Number.isInteger(savedParent)) out.parentNumber = savedParent;
   return jsonNoStore(out);

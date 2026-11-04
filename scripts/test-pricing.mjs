@@ -144,7 +144,8 @@ const legacy = normalizeMenu({ items: [{ id: 'x', categoryId: 'c', price: 250 }]
 ok(legacy.items[0].pricing.unit === 'portion' && legacy.items[0].pricing.price === 250, 'legacy price -> portion pricing');
 ok(legacy.items[0].price === undefined, 'legacy price field removed');
 ok(legacy.schemaVersion === 2, 'schemaVersion stamped');
-ok(Array.isArray(legacy.settings.featureDefs) && legacy.settings.featureDefs.length === 0, 'featureDefs default []');
+ok(Array.isArray(legacy.settings.featureDefs) && legacy.settings.featureDefs.length === 1 && legacy.settings.featureDefs[0].id === 'spicy', 'protected spicy def always present');
+ok(legacy.settings.featureDefs[0].groupId === 'addons' && legacy.settings.featureDefs[0].name.en === 'Spicy' && legacy.settings.featureDefs[0].name.ar === 'حار', 'spicy def has bilingual name + addons group');
 
 // legacy migration: inline variant names + category groups -> library + per-item
 const oldDoc = normalizeMenu({
@@ -156,7 +157,8 @@ const oldDoc = normalizeMenu({
   addonGroups: [{ id: 'extra-veg', name: { en: 'Extra vegetables', ar: 'خضرة' }, price: 30000, perUnit: true, categoryIds: ['manakish'] }],
   settings: { ordering: {} },
 });
-ok(oldDoc.settings.featureDefs.length === 2, 'library built from legacy names');
+ok(oldDoc.settings.featureDefs.length === 3, 'library built from legacy names + protected spicy');
+ok(oldDoc.settings.featureDefs.some((d) => d.id === 'spicy' && d.groupId === 'addons'), 'protected spicy def auto-added');
 ok(oldDoc.items[0].variants[0].featureId === 'regular' && oldDoc.items[0].variants[0].name === undefined, 'variants converted');
 ok(oldDoc.items[0].addons.length === 1 && oldDoc.items[0].addons[0].price === 30000, 'groups expanded to manakish item');
 ok(!oldDoc.items[1].addons || oldDoc.items[1].addons.length === 0, 'pastry untouched by manakish group');
@@ -167,9 +169,11 @@ ok(lineTotal(oldDoc.items[0], { variantId: 'regular', addonIds: ['extra-veg'], q
 const gids = (oldDoc.settings.featureGroups || []).map((g) => g.id).sort();
 ok(JSON.stringify(gids) === JSON.stringify(['addons', 'sizes']), 'default groups created');
 const grouped = featuresByGroup(oldDoc);
-ok(grouped.length === 2 && grouped[0].features.length === 1 && grouped[1].features.length === 1, 'featuresByGroup buckets');
+ok(grouped.length === 2 && grouped[0].features.length === 1 && grouped[1].features.length === 2, 'featuresByGroup buckets (addons holds extra-veg + spicy)');
+ok(grouped[1].features.some((f) => f.id === 'spicy'), 'spicy visible in addons bucket');
 const custom = normalizeMenu({ items: [], settings: { ordering: {}, featureGroups: [{ id: 'cheese', name: { en: 'Cheese', ar: 'جبن' } }], featureDefs: [{ id: 'x', groupId: 'cheese', name: { en: 'X', ar: '' } }] } });
-ok(custom.settings.featureGroups.length === 1 && custom.settings.featureDefs[0].groupId === 'cheese', 'custom section without kind kept');
+ok(custom.settings.featureGroups.length === 2 && custom.settings.featureDefs[0].groupId === 'cheese', 'custom section without kind kept');
+ok(custom.settings.featureDefs.some((d) => d.id === 'spicy' && d.groupId === 'addons'), 'protected spicy auto-created with addons group');
 ok(featuresByGroup(custom)[0].group.name.en === 'Cheese', 'group view keeps names');
 
 // ordering flags default from values

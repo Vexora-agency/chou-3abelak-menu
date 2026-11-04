@@ -1,5 +1,6 @@
 import React from 'react';
 import type { MenuData } from '@/src/types/menu';
+import { isProtectedFeatureId } from '@/src/utils/menuHelpers';
 import { FeaturesSection } from '../FeaturesSection';
 
 interface AdminLibrariesTabProps {
@@ -33,7 +34,9 @@ export const AdminLibrariesTab: React.FC<AdminLibrariesTabProps> = ({
         onConfirm={onConfirm}
         onDeleteFeatures={(defIds, groupId) =>
           onUpdateMenu((m) => {
-            const gone = new Set(defIds);
+            // Protected built-ins (e.g. spicy) survive any delete: group
+            // wipes, "remove everywhere" confirms, or direct calls.
+            const gone = new Set(defIds.filter((id) => !isProtectedFeatureId(id)));
             const items = m.items.map((it) => {
               const hadSizes = Array.isArray(it.variants) && it.variants.length > 0;
               const variants = (it.variants || []).filter((v) => v && !gone.has(v.featureId));

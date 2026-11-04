@@ -109,8 +109,8 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             <button
               type="button"
               onClick={onOpenLocSheet}
-              title={isAr ? 'افتح الخريطة لتحديد موقعك' : 'Open the map to pin your location'}
-              aria-label={isAr ? 'افتح الخريطة لتحديد موقعك' : 'Open the map to pin your location'}
+              title={isAr ? 'افتح الخريطة لتحديد موقعك (إجباري)' : 'Open the map to pin your location (required)'}
+              aria-label={isAr ? 'افتح الخريطة لتحديد موقعك (إجباري)' : 'Open the map to pin your location (required)'}
               className={`absolute end-0.5 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                 darkMode
                   ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
@@ -121,6 +121,9 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             </button>
           )}
         </div>
+        <p className={`mt-1 text-[11px] ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>
+          {isAr ? 'يُكتب مع كل طلب ولا يُحفظ على الجهاز.' : 'Entered fresh each order — never saved on this device.'}
+        </p>
         {location && (
           <div className={`mt-1.5 flex items-center flex-wrap gap-x-2 gap-y-1 text-xs font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
             <MapPin size={13} className="shrink-0" />

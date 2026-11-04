@@ -106,10 +106,22 @@ function detailsShelf(): Storage | null {
 
 /**
  * Remembered checkout details ("remember me on this device").
- * Presence of a saved record MEANS the box was checked — so loading
+ * Presence of a saved record means the box was checked, so loading
  * always returns remember:true. Forcing false here was the "second visit
  * wipes everything" bug: unchecked box + submit = removeItem.
  */
+
+/**
+ * Strip the delivery address before remembering: the address is typed
+ * fresh on EVERY order and must never persist (a stale address from
+ * another visit/city is worse than an empty field). Everything else
+ * (name, phone, email, remember flag) passes through untouched.
+ */
+export function withoutAddress<T extends { address?: unknown }>(customer: T): Omit<T, 'address'> {
+  const { address: _omit, ...rest } = customer;
+  void _omit;
+  return rest;
+}
 const DETAILS_KEY = 'customer_details_v1';
 
 export function loadRememberedDetails(): Record<string, unknown> | null {

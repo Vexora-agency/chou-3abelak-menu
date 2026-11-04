@@ -306,7 +306,7 @@ export function normalizeMenu<T>(menu: T): T {
       const legacyIdx = list.findIndex((a) => a && a.featureId === 'spicy');
       let heatPrice: number | null = null;
       if (legacyIdx !== -1) {
-        const p = (list[legacyIdx] as Record<string, unknown>).price;
+        const p = list[legacyIdx].price;
         heatPrice = typeof p === 'number' && Number.isFinite(p) && p >= 0 ? p : 0;
         const hasMedium = list.some((a) => a && a.featureId === 'spicy-medium');
         if (hasMedium) {

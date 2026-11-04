@@ -33,10 +33,40 @@ const LEVEL_RANK = ['spicy-mild', 'spicy-medium', 'spicy-hot'];
  * it adds only the rail and its labels — no card, no hint paragraphs.
  *
  *  - Tap the Spicy chip → expands with Mild pre-selected (the default).
- *  - Tap the chip again (or the active dot) → clears and collapses.
- *  - Drag anywhere on the rail or tap a dot to change the level; dragging
- *    only ever SELECTS, so a wiggle over the active stop can't wipe the pick.
+ *  - Tap the chip again → clears and collapses. Dots NEVER toggle: every
+ *    dot/track gesture is select-only; the chip is the only toggle. (An
+ *    earlier revision let the active dot toggle the whole control off from
+ *    under the finger — unreadable on phones, removed.)
+ *  - Drag anywhere on the rail or tap a dot to change the level.
  *  - Arrow keys move across stops with roving focus (radio pattern).
+ *
+ * Mobile input notes (iOS Safari + Android Chrome):
+ *  - One gesture owner: dot pointerdowns BUBBLE to the track (no
+ *    stopPropagation, no explicit setPointerCapture — touch already
+ *    implicitly captures to the touched dot and the events bubble up).
+ *    Splitting the flow was the v1 bug: fingers always land on the 44px
+ *    dots, so the rail-only drag path never ran and taps depended on a
+ *    suppressible click that toggled the control away.
+ *  - `touch-action: pan-y` (never `none`): vertical pans keep scrolling
+ *    the sheet (browser fires pointercancel → we abort, no pick); only
+ *    horizontal movement drives picks. `none` trapped sheet scrolls and
+ *    read as "stuck".
+  *  - Pick on pointerdown + on horizontal move. Exactly one tap path (the
+  *    down-pick, select-only): no pointerup fallback — a same-task double
+  *    pick would chain off a stale closure and toggle the level back off.
+  *    A down lost to scroll-cancel surfaces as pointercancel, which only
+  *    resets state. Dots keep an onClick guarded by `e.detail === 0` —
+  *    the keyboard-only path (mouse / touch clicks carry detail >= 1 and
+  *    were already handled).
+ *
+ * Layout notes (narrow phones, both languages):
+ *  - Geometry is always LTR (mild left → extra-hot right); only TEXT
+ *    follows the locale. The two end labels/dots must NEVER overflow the
+ *    track box: on old iOS WebKit `overflow-x: clip` is unsupported, the
+ *    sheet scroller degrades to scrollable, and the RTL page parks at the
+ *    right end — hiding everything but Extra Hot. Margins (mx-8 = 32px)
+ *    swallow the worst overhang (44px dot halves = 22px, w-16 label
+ *    halves = 32px) so the scroller gets zero x-overflow on any browser.
  *
  * Perf: interaction flips classes + one fill width (transform/width-only,
  * motion-safe). No blur, no layout reads.
@@ -55,7 +85,8 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
   const trackRef = useRef<HTMLDivElement>(null);
   const stopRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [dragging, setDragging] = useState(false);
-  const dragId = useRef<number | null>(null);
+  // Active pointer only — used to ignore stray moves/ups from other touches.
+  const downId = useRef<number | null>(null);
 
   const ordered = useMemo(() => {
     const rank = (id: string) => {
@@ -99,24 +130,28 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
     [ordered, n, selectOnly],
   );
 
+  // Single tap path: pointerdown picks (select-only). There is deliberately
+  // NO pointerup fallback pick — down already handled the tap, and a second
+  // pick in the same task would chain off a stale closure and toggle the
+  // just-picked level back off. A down lost to scroll-cancel arrives as
+  // pointercancel (no gesture to complete), never as pointerup.
   const onTrackPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    dragId.current = e.pointerId;
+    downId.current = e.pointerId;
     setDragging(true);
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      /* older engines: dragging still works via move/up */
-    }
     pickFromClientX(e.clientX);
   };
   const onTrackPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (dragId.current !== e.pointerId) return;
+    if (downId.current === null || downId.current !== e.pointerId) return;
     pickFromClientX(e.clientX);
   };
   const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (dragId.current !== e.pointerId) return;
-    dragId.current = null;
+    if (downId.current === null || downId.current !== e.pointerId) return;
+    downId.current = null;
+    setDragging(false);
+  };
+  const cancelDrag = () => {
+    downId.current = null;
     setDragging(false);
   };
 
@@ -177,9 +212,9 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
             onPointerDown={onTrackPointerDown}
             onPointerMove={onTrackPointerMove}
             onPointerUp={endDrag}
-            onPointerCancel={endDrag}
+            onPointerCancel={cancelDrag}
             onKeyDown={onGroupKeyDown}
-            className={`relative h-11 mx-6 select-none ${dragging ? 'cursor-grabbing' : 'cursor-pointer'} touch-none`}
+            className={`relative h-11 mx-8 select-none ${dragging ? 'cursor-grabbing' : 'cursor-pointer'} touch-pan-y`}
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             {/* Rail */}
@@ -208,11 +243,17 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
                   ref={(el) => {
                     stopRefs.current[i] = el;
                   }}
-                  aria-label={`${labelOf(l)}${l.price !== 0 ? ` (+${formatPrice(l.price)} ${currency})` : ''}`}
-                  onClick={() => onPick(l.featureId)}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-                  style={{ left: `${pct(i)}%`, touchAction: 'none' }}
+                aria-label={`${labelOf(l)}${l.price !== 0 ? ` (+${formatPrice(l.price)} ${currency})` : ''}`}
+                // Select-only: taps (pointerdown already picked; keyboard
+                // clicks carry e.detail === 0) and keyboard Enter/Space all
+                // converge here without ever toggling — the Spicy chip is
+                // the only toggle. No pointerdown stopPropagation: the
+                // gesture must bubble to the track (see header notes).
+                onClick={(e) => {
+                  if (e.detail === 0) selectOnly(l.featureId);
+                }}
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center touch-pan-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                style={{ left: `${pct(i)}%` }}
                 >
                   <span
                     aria-hidden="true"
@@ -233,15 +274,17 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
             })}
           </div>
 
-          {/* Level names + flames (same geometry box as the track) */}
-          <div className="relative mx-6 h-12" aria-hidden="true">
+          {/* Level names + flames (same geometry box as the track; the mx-8
+              gutters swallow the w-16 label halves exactly, so no pixel of
+              this subtree can overflow horizontally — see header notes) */}
+          <div className="relative mx-8 h-12" aria-hidden="true">
             {ordered.map((l, i) => {
               const isActive = i === activeIdx;
               const flames = spicyFlames(l.featureId);
               return (
                 <div
                   key={l.featureId}
-                  className="absolute top-0 -translate-x-1/2 w-20 flex flex-col items-center gap-px"
+                  className="absolute top-0 -translate-x-1/2 w-16 flex flex-col items-center gap-px"
                   style={{ left: `${pct(i)}%` }}
                 >
                   <span className={`flex items-center ${isActive ? 'text-red-500' : darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>

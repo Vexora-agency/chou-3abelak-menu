@@ -106,8 +106,8 @@ export const SPICY_SECTION_DEFAULT = {
   name: { en: 'Make it Spicy', ar: 'خليه حار' },
   selection: 'single' as const,
   prompt: {
-    en: 'Add heat to your order — pick your spice level',
-    ar: 'إضافة حار للطلب — اختر درجة الحار المناسبة',
+    en: 'Want to add some heat?',
+    ar: 'هل تريد شطة؟',
   },
 };
 

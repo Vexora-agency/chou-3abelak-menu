@@ -268,10 +268,21 @@ export function normalizeMenu<T>(menu: T): T {
     // A spice level is exactly one choice — never multi, even if an old
     // document stored something else.
     spicyGroup.selection = 'single';
+    // The customer title is a short question ("هل تريد شطة؟"). A blank
+    // prompt — or the first-shipped wording, superseded by the question
+    // style — resets to the current default; an admin-edited prompt stays.
+    const SUPERSEDED_PROMPT = {
+      en: 'Add heat to your order — pick your spice level',
+      ar: 'إضافة حار للطلب — اختر درجة الحار المناسبة',
+    };
     const p = (spicyGroup.prompt && typeof spicyGroup.prompt === 'object'
       ? spicyGroup.prompt
       : null) as { en: string; ar: string } | null;
-    if (!p || (!(p.en || '').trim() && !(p.ar || '').trim())) {
+    const blank = !p || (!(p.en || '').trim() && !(p.ar || '').trim());
+    const superseded = !!p
+      && (p.en || '').trim() === SUPERSEDED_PROMPT.en
+      && (p.ar || '').trim() === SUPERSEDED_PROMPT.ar;
+    if (blank || superseded) {
       spicyGroup.prompt = { ...SPICY_SECTION_DEFAULT.prompt };
     }
   }
@@ -288,8 +299,29 @@ export function normalizeMenu<T>(menu: T): T {
       const legacyIdx = list.findIndex((a) => a && a.featureId === 'spicy');
       if (legacyIdx === -1) continue;
       const hasMedium = list.some((a) => a && a.featureId === 'spicy-medium');
-      if (hasMedium) list.splice(legacyIdx, 1);
-      else list[legacyIdx] = { ...list[legacyIdx], featureId: 'spicy-medium' };
+      if (hasMedium) {
+        list.splice(legacyIdx, 1);
+      } else {
+        list[legacyIdx] = { ...list[legacyIdx], featureId: 'spicy-medium' };
+      }
+    }
+  }
+  // Fixed global option: any customizable item (has add-on rows) that
+  // carries no heat option at all gains the three levels at price 0, so
+  // the locked section shows without per-item admin work — old documents
+  // and the live menu included. Simple fixed-price items (no add-ons at
+  // all) stay untouched; the admin can still detach the section per item.
+  const SPICY_IDS = new Set(['spicy', 'spicy-mild', 'spicy-medium', 'spicy-hot']);
+  if (Array.isArray(out.items)) {
+    for (const item of out.items as Record<string, unknown>[]) {
+      if (!item || typeof item !== 'object' || !Array.isArray(item.addons) || item.addons.length === 0) continue;
+      const list = item.addons as Record<string, unknown>[];
+      if (list.some((a) => a && SPICY_IDS.has(a.featureId as string))) continue;
+      list.push(
+        { featureId: 'spicy-mild', price: 0 },
+        { featureId: 'spicy-medium', price: 0 },
+        { featureId: 'spicy-hot', price: 0 },
+      );
     }
   }
   delete out.addonGroups; // replaced by settings.featureDefs + per-item addons

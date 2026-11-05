@@ -1,16 +1,19 @@
 /**
- * Pages Functions root middleware — request id + last-resort error log.
+ * Pages Functions root middleware — Sentry first, then request id + last-resort error log.
  *
- * Runs before every Function in this directory. Assigns each request a
- * short id (echoed back as `x-request-id`) and guarantees that an
+ * Runs before every Function in this directory. Sentry.sentryPagesPlugin
+ * captures unhandled throws (DSN-gated: without SENTRY_DSN it no-ops).
+ * The app middleware below preserves the original contract exactly:
+ * every request gets a short id (echoed as `x-request-id`) and an
  * unexpected throw becomes ONE structured JSON error line (see
  * _shared/log.js) plus a generic 500 — stack traces never reach clients.
  *
- * Zero dependencies. Pages Functions logs stream to the dashboard
- * (`wrangler pages deployment tail`); on the free plan they are NOT
- * stored, so this middleware only logs failures, never hot paths.
+ * Zero behavioral change when Sentry is unconfigured or unreachable:
+ * capture failures are swallowed so monitoring can never break a request.
  */
+import * as Sentry from '@sentry/cloudflare';
 import { logError } from './_shared/log.js';
+import { captureBackendException, sentryPluginOptions } from './_shared/sentry.js';
 
 function newReqId() {
   try {
@@ -23,7 +26,7 @@ function newReqId() {
   }
 }
 
-export async function onRequest(context) {
+async function appMiddleware(context) {
   const reqId = newReqId();
   try {
     const res = await context.next();
@@ -33,10 +36,16 @@ export async function onRequest(context) {
     } catch {}
     return out;
   } catch (err) {
+    // One console line for Workers Logs (existing behavior) + one Sentry
+    // event. The response stays a generic 500 with the request id only.
     const id = logError(context.request, err, { code: 'unhandled', status: 500, reqId });
+    captureBackendException(context, err, { code: 'unhandled', reqId: id });
     return new Response(JSON.stringify({ error: 'unavailable', reqId: id }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'x-request-id': reqId },
     });
   }
 }
+
+// Sentry MUST be the first middleware so it sees every downstream throw.
+export const onRequest = [Sentry.sentryPagesPlugin(sentryPluginOptions), appMiddleware];

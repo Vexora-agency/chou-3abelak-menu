@@ -24,6 +24,16 @@ REPORT_RETENTION_MONTHS=36
 BACKUP_SECRET=<64-hex-chars>
 AUDIT_SECRET=<64-hex-chars>
 
+# --- Sentry error monitoring (local test values; empty = SDK no-ops) ---
+# Backend DSN for `wrangler pages dev` / local runs. NEVER a real secret here.
+SENTRY_DSN=
+SENTRY_ENVIRONMENT=development
+SENTRY_RELEASE=
+# Frontend DSN for local Vite builds (public by design; still fake here).
+VITE_SENTRY_DSN=
+VITE_SENTRY_ENVIRONMENT=development
+VITE_SENTRY_RELEASE=
+
 # --- Telegram owner notifications (local test values) ---
 TELEGRAM_BOT_TOKEN=<bot-token-from-BotFather-or-any-fake-string>
 TELEGRAM_BOT_USERNAME=TestRestaurantBot

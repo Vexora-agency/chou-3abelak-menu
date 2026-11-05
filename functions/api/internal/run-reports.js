@@ -15,6 +15,7 @@
  */
 
 import { jsonNoStore, safeCompareStrings } from '../../_shared/session.js';
+import { captureBackendException } from '../../_shared/sentry.js';
 import { hasFeature } from '../../_shared/plan.js';
 import {
   buildEmailPayload,
@@ -184,7 +185,12 @@ export async function onRequest(context) {
                   await env.REPORTS.delete(k);
                 } catch {}
               }
-            } catch {}
+            } catch (err) {
+              // Best-effort R2 snapshot: the email backup above already
+              // succeeded, so the response is unchanged — but the missing
+              // snapshot is visible in Sentry when configured.
+              captureBackendException(context, err, { binding: 'r2', code: 'weekly_backup_snapshot', level: 'warning' });
+            }
           }
         }
       }

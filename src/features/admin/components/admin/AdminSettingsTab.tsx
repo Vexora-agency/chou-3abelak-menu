@@ -13,6 +13,7 @@ import { VisitorDefaultsSection } from '../VisitorDefaultsSection';
 import { SmartBadgesSection } from '../SmartBadgesSection';
 import { ShowMoreSection } from '../ShowMoreSection';
 import { AccessSection } from '../AccessSection';
+import { SentrySection } from '../SentrySection';
 import { TelegramSection } from '../TelegramSection';
 import { SoundsSection } from '../SoundsSection';
 import { NotifyEmailSection } from '../NotifyEmailSection';
@@ -297,6 +298,10 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
       {/* Client access: owner-minted invite links (hidden from client logins —
           the section hides itself on 403). Last: it is account-level, not menu. */}
       <AccessSection lang={lang} adminFetch={adminFetch} collapsed={!!collapsedGroups['access']} onToggleCollapse={() => onToggleCollapse('access')} />
+
+      {/* Error monitoring (Sentry) diagnostics: owner-only, same 403-hide
+          rule as AccessSection — client logins never see this. */}
+      <SentrySection lang={lang} adminFetch={adminFetch} collapsed={!!collapsedGroups['sentry']} onToggleCollapse={() => onToggleCollapse('sentry')} />
     </div>
   );
 };

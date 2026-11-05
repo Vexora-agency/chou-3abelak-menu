@@ -4,6 +4,11 @@
 # (git integration ignores this file), so this file never affects
 # production. Do NOT put secrets here.
 compatibility_date = "2025-06-01"
+# Required by @sentry/cloudflare (AsyncLocalStorage). Local tooling only —
+# production Pages deploys are configured in the Cloudflare dashboard
+# (git integration ignores this file), so mirror this flag there too:
+# Pages project -> Settings -> Functions -> Compatibility flags: nodejs_compat.
+compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding = "ORDERS_DB"

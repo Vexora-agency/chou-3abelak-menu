@@ -6,6 +6,7 @@
  * Never exposes versions, config, or row contents.
  */
 import { jsonNoStore } from '../_shared/session.js';
+import { captureBackendException } from '../_shared/sentry.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -26,7 +27,8 @@ export async function onRequest(context) {
   try {
     await db.prepare('SELECT 1').first();
     return jsonNoStore({ ok: true, deep: { d1: 'ok' } });
-  } catch {
+  } catch (err) {
+    captureBackendException(context, err, { binding: 'd1', code: 'health_deep' });
     return jsonNoStore({ ok: false, error: 'unavailable' }, 503);
   }
 }

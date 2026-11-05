@@ -6,6 +6,7 @@
  */
 
 import { jsonNoStore, readJsonBody } from '../_shared/session.js';
+import { captureBackendException } from '../_shared/sentry.js';
 import { mapOrderRow, validateOrderInput } from '../_shared/orders.js';
 import { newTrackToken } from '../_shared/push.js';
 import { LINK_WINDOW_MS, findLinkCandidate, findOrderById, findOrderByIdemKey, insertOrderWithNumber, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
@@ -83,7 +84,9 @@ export async function onRequest(context) {
   let menu = null;
   try {
     menu = await kv.get('menu', { type: 'json' });
-  } catch {}
+  } catch (err) {
+    captureBackendException(context, err, { binding: 'kv', code: 'order_menu_read' });
+  }
   if (!menu || !Array.isArray(menu.items)) {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
@@ -173,8 +176,11 @@ export async function onRequest(context) {
   try {
     const next = await nextOrderNumber(db);
     created = await insertWithNumber(next);
-  } catch {
-    created = null;
+  } catch (err) {
+    // D1 write failure: visible in Sentry, response contract unchanged (503
+    // unless the idempotency fallback below finds the original row).
+    // (created is already null on every path that lands here.)
+    captureBackendException(context, err, { binding: 'd1', code: 'order_insert' });
     if (c.idemKey) {
       try {
         const existing = await findOrderByIdemKey(db, c.idemKey);

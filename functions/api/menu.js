@@ -7,6 +7,7 @@
  */
 
 import { jsonNoStore } from '../_shared/session.js';
+import { captureBackendException } from '../_shared/sentry.js';
 
 const DEFAULT_EMPTY_MENU = {
   version: 1,
@@ -81,7 +82,10 @@ export async function onRequest(context) {
   if (env.MENU_KV) {
     try {
       menu = await env.MENU_KV.get('menu', { type: 'json', cacheTtl: 60 });
-    } catch {}
+    } catch (err) {
+      // Degraded (empty menu served below) but visible in Sentry when configured.
+      captureBackendException(context, err, { binding: 'kv', code: 'menu_kv_read' });
+    }
   }
 
   const responseData = menu || DEFAULT_EMPTY_MENU;

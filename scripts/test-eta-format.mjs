@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = readFileSync(join(root, 'src', 'utils', 'etaFormat.ts'), 'utf8');
-const { formatTime12, formatEtaRange, etaRange } = await import(
+const { formatTime12, formatEtaRange, etaRange, formatEtaDay, formatEtaRangeWithDay, dayKeyInZone } = await import(
   'data:text/javascript;charset=utf-8,' + encodeURIComponent(src)
 );
 
@@ -95,6 +95,36 @@ const AR_INDIC = /[\u0660-\u0669]/;
   const r = etaRange(eta, now);
   const label = r ? formatEtaRange(r.fromIso, r.toIso, 'ar') : '';
   check('composed banner range renders', label === '7:29 – 7:44 م', JSON.stringify(label));
+}
+
+// ---- day-aware labels: track page + email share one zone + one instant ----
+{
+  const BEIRUT = 'Asia/Beirut';
+  // Fixed wall-clock instants (offsets keep them exact in every CI zone).
+  const now = Date.parse('2026-11-05T19:00:00+02:00');
+  const sameDay = '2026-11-05T21:30:00+02:00';
+  const nextDay = '2026-11-06T08:00:00+02:00';
+  const farDay = '2026-11-10T08:00:00+02:00';
+  check('today (ar)', formatEtaDay(sameDay, 'ar', BEIRUT, now) === 'اليوم', formatEtaDay(sameDay, 'ar', BEIRUT, now));
+  check('today (en)', formatEtaDay(sameDay, 'en', BEIRUT, now) === 'Today', formatEtaDay(sameDay, 'en', BEIRUT, now));
+  check('tomorrow (ar)', formatEtaDay(nextDay, 'ar', BEIRUT, now) === 'غداً', formatEtaDay(nextDay, 'ar', BEIRUT, now));
+  check('tomorrow (en)', formatEtaDay(nextDay, 'en', BEIRUT, now) === 'Tomorrow', formatEtaDay(nextDay, 'en', BEIRUT, now));
+  const farAr = formatEtaDay(farDay, 'ar', BEIRUT, now);
+  check('far date (ar) has month + latin digits', farAr.includes('نوفمبر') && !AR_INDIC.test(farAr), JSON.stringify(farAr));
+  const farEn = formatEtaDay(farDay, 'en', BEIRUT, now);
+  check('far date (en) has month', farEn.includes('Nov'), JSON.stringify(farEn));
+  // Same instant, different zone key: 23:30Z is Nov 5 in UTC, Nov 6 in Beirut.
+  check('zone changes the day key', dayKeyInZone(Date.parse('2026-11-05T23:30:00Z'), 'UTC') === '2026-11-05' && dayKeyInZone(Date.parse('2026-11-05T23:30:00Z'), BEIRUT) === '2026-11-06');
+  // Range composes with the midpoint day (far windows start a day early).
+  const rFar = etaRange(new Date(Date.parse(farDay)).toISOString(), now);
+  const lblFar = rFar ? formatEtaRangeWithDay(rFar.fromIso, rFar.toIso, 'ar', BEIRUT, now) : '';
+  check('far range anchored on ETA day, latin digits', lblFar.startsWith('10 نوفمبر،') && !AR_INDIC.test(lblFar), JSON.stringify(lblFar));
+  const rToday = etaRange(new Date(Date.parse(sameDay)).toISOString(), now);
+  const lblToday = rToday ? formatEtaRangeWithDay(rToday.fromIso, rToday.toIso, 'ar', BEIRUT, now) : '';
+  check('today range prefixed', lblToday.startsWith('اليوم،'), JSON.stringify(lblToday));
+  const lblTodayEn = rToday ? formatEtaRangeWithDay(rToday.fromIso, rToday.toIso, 'en', BEIRUT, now) : '';
+  check('today range prefixed (en)', lblTodayEn.startsWith('Today,'), JSON.stringify(lblTodayEn));
+  check('garbage day -> empty', formatEtaDay('bogus', 'ar', BEIRUT, now) === '' && formatEtaRangeWithDay('x', 'y', 'ar', BEIRUT, now) === '');
 }
 
 console.log(fails ? `\n${fails} FAILED` : '\nall green');

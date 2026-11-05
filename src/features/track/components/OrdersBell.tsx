@@ -18,7 +18,7 @@ import { ReceivedButton } from './ReceivedButton';
 import { CancelOrderButton } from './CancelOrderButton';
 import { useNow } from '@/src/hooks/useNow';
 import { formatMMSS } from '@/src/utils/countdown';
-import { etaRange, formatEtaRange } from '@/src/utils/etaFormat';
+import { etaRange, formatEtaRangeWithDay } from '@/src/utils/etaFormat';
 import { cancelWindowRemainingMs } from '../orderPhases';
 import { publicPostRaw } from '@/src/lib/api-client';
 
@@ -198,6 +198,8 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // Menu currency for the compact totals (same /api/menu read as the chime).
   const [menuCurrency, setMenuCurrency] = useState<{ en: string; ar: string } | null>(null);
   const bellCurrency = menuCurrency ? (isAr ? menuCurrency.ar || menuCurrency.en : menuCurrency.en || menuCurrency.ar) : '';
+  // Store zone: ETA day + clock share ONE zone with the confirmation email.
+  const [storeTz, setStoreTz] = useState<string | undefined>(undefined);
 
   // Load the picked chime once + refresh every 5 min (the owner may change
   // it mid-day in settings). Unknown ids fall back to classic in the engine.
@@ -207,13 +209,15 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       try {
         const res = await fetch('/api/menu');
         if (!res.ok || stop) return;
-        const m = (await res.json()) as { settings?: { sounds?: { customer?: unknown }; currency?: { en?: unknown; ar?: unknown } } };
+        const m = (await res.json()) as { settings?: { sounds?: { customer?: unknown }; currency?: { en?: unknown; ar?: unknown }; timezone?: unknown } };
         const s = m?.settings?.sounds?.customer;
         if (!stop && typeof s === 'string' && s) setCustomerSound(s);
         const cc = m?.settings?.currency;
         if (!stop && cc && typeof cc.en === 'string' && typeof cc.ar === 'string') {
           setMenuCurrency({ en: cc.en, ar: cc.ar });
         }
+        const tz = m?.settings?.timezone;
+        if (!stop && typeof tz === 'string' && tz.trim()) setStoreTz(tz.trim());
       } catch {}
     };
     void load();
@@ -649,7 +653,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                   const etaWin = (o.status === 'confirmed' || o.status === 'ready') && typeof o.etaAt === 'string' && o.etaAt
                     ? etaRange(o.etaAt, displayNowMs)
                     : null;
-                  const etaText = etaWin ? formatEtaRange(etaWin.fromIso, etaWin.toIso, lang) : '';
+                  const etaText = etaWin ? formatEtaRangeWithDay(etaWin.fromIso, etaWin.toIso, lang, storeTz, displayNowMs) : '';
                   return (
                   <div
                     key={o.n}

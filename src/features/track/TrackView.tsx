@@ -3,7 +3,7 @@ import { CheckCircle2, Clock, CookingPot, ArrowUp, XCircle, ArrowLeft, BellRing,
 import { formatPrice, unitLabel } from '@/src/utils/pricing';
 import { formatMMSS } from '@/src/utils/countdown';
 import { useNow } from '@/src/hooks/useNow';
-import { etaRange, formatEtaRange } from '@/src/utils/etaFormat';
+import { etaRange, formatEtaRangeWithDay } from '@/src/utils/etaFormat';
 import { ReceivedButton } from './components/ReceivedButton';
 import { CancelOrderButton } from './components/CancelOrderButton';
 import { InstallAppCard } from './components/InstallAppCard';
@@ -79,6 +79,10 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   const [missing, setMissing] = useState(false);
   const [storeName, setStoreName] = useState('');
   const [currency, setCurrency] = useState('LBP');
+  // Store zone (Asia/Beirut default): the ETA day + clock share ONE zone so
+  // the date and the time can never disagree with the confirmation email
+  // (which formats in the same zone). Falls back to the device zone.
+  const [storeTz, setStoreTz] = useState<string | undefined>(undefined);
   // Render clock: poll stamp refreshed on every 10 s fetch (network stays
   // exactly at 10 s). While a delivery lock is armed the DISPLAY clock
   // below takes over at 1 s so the countdown ticks every second with zero
@@ -127,13 +131,15 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
         const res = await fetch('/api/menu');
         if (!res.ok) return;
         const m = (await res.json()) as {
-          settings?: { name?: { en: string; ar: string }; currency?: { en: string; ar: string } };
+          settings?: { name?: { en: string; ar: string }; currency?: { en: string; ar: string }; timezone?: string };
         };
         if (stop) return;
         const nm = m?.settings?.name;
         if (nm) setStoreName(lang === 'ar' ? nm.ar || nm.en : nm.en || nm.ar);
         const cur = m?.settings?.currency;
         if (cur) setCurrency(lang === 'ar' ? cur.ar || cur.en : cur.en || cur.ar);
+        const tz = m?.settings?.timezone;
+        if (typeof tz === 'string' && tz.trim()) setStoreTz(tz.trim());
       } catch {}
     };
     void loadMenu();
@@ -227,11 +233,14 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
     data?.status === 'new' ? cancelWindowRemainingMs(data.createdAt ?? null, displayNowMs) : null;
   const inCancelWindow = cancelRemainingMs !== null && cancelRemainingMs > 0;
   // ETA banner range: etaAt ±20% (min ±5 min each side), computed at render
-  // so the poll keeps it fresh (live while locked). Invalid/absent = no banner.
+  // so the poll keeps it fresh (live while locked). Day-aware ("اليوم /
+  // غداً / 6 نوفمبر") in the STORE zone — the same zone + same instant the
+  // confirmation email shows, so the two can never disagree. Invalid/absent
+  // = no banner.
   const etaWindow = data && !cancelled && data.status !== 'completed' && typeof data.etaAt === 'string' && data.etaAt
     ? etaRange(data.etaAt, displayNowMs)
     : null;
-  const etaLabel = etaWindow ? formatEtaRange(etaWindow.fromIso, etaWindow.toIso, lang) : '';
+  const etaLabel = etaWindow ? formatEtaRangeWithDay(etaWindow.fromIso, etaWindow.toIso, lang, storeTz, displayNowMs) : '';
 
   return (
     <div dir={isAr ? 'rtl' : 'ltr'} className="min-h-dvh bg-[#0A0A0A] text-white flex flex-col items-center px-5 pb-[max(2rem,env(safe-area-inset-bottom))]">

@@ -26,17 +26,70 @@ const esc = (s) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-/** Simple ETA formatting: valid dates become a short locale string in the
- *  store's timezone (UTC would show the wrong hour to the customer),
- *  anything else passes through raw. */
-function formatEta(etaAt, lang, tz) {
+/** Day key (YYYY-MM-DD) of an instant in a zone — "اليوم / غداً" compares.
+ *  Mirrors dayKeyInZone() in src/utils/etaFormat.ts (same rule, same zone). */
+function dayKeyInZone(ms, timeZone) {
+  if (typeof ms !== 'number' || Number.isNaN(ms)) return '';
+  const tryZone = (tz) => {
+    const opts = { year: 'numeric', month: '2-digit', day: '2-digit' };
+    if (tz) opts.timeZone = tz;
+    const parts = new Intl.DateTimeFormat('en-CA', opts).formatToParts(new Date(ms));
+    let y = '';
+    let m = '';
+    let d = '';
+    for (const p of parts) {
+      if (p.type === 'year') y = p.value;
+      else if (p.type === 'month') m = p.value;
+      else if (p.type === 'day') d = p.value;
+    }
+    return y && m && d ? `${y}-${m}-${d}` : '';
+  };
+  try {
+    const k = tryZone(timeZone);
+    if (k) return k;
+  } catch {}
+  try {
+    return tryZone(undefined);
+  } catch {
+    return '';
+  }
+}
+
+/** ETA formatting in the store's timezone (UTC would show the wrong hour),
+ *  day-aware so it points at the SAME calendar day as the track page range
+ *  ("اليوم، 7:37 م" / "غداً، 7:37 م" / "6 نوفمبر، 7:37 م").
+ *  The instant is the stamped eta_at itself — the track range is centered on
+ *  this exact instant, so the two can never disagree. Anything unparseable
+ *  passes through raw. */
+function formatEta(etaAt, lang, tz, nowMs) {
   const raw = String(etaAt ?? '').trim();
   if (!raw) return '';
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return raw;
   const timeZone = typeof tz === 'string' && tz ? tz : 'Asia/Beirut';
+  const now = typeof nowMs === 'number' && !Number.isNaN(nowMs) ? nowMs : Date.now();
+  const locale = lang === 'ar' ? 'ar-u-nu-latn' : 'en-US';
   try {
-    return d.toLocaleString(lang === 'ar' ? 'ar-u-nu-latn' : 'en-US', {
+    const clock = d.toLocaleString(locale, {
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone,
+    });
+    const etaDay = dayKeyInZone(d.getTime(), timeZone);
+    const today = dayKeyInZone(now, timeZone);
+    if (etaDay && today) {
+      if (etaDay === today) return lang === 'ar' ? `اليوم، ${clock}` : `Today, ${clock}`;
+      try {
+        if (etaDay === dayKeyInZone(now + 24 * 60 * 60 * 1000, timeZone)) {
+          return lang === 'ar' ? `غداً، ${clock}` : `Tomorrow, ${clock}`;
+        }
+      } catch {}
+      try {
+        const date = d.toLocaleString(locale, { day: 'numeric', month: 'short', timeZone });
+        return lang === 'ar' ? `${date}، ${clock}` : `${date}, ${clock}`;
+      } catch {}
+    }
+    return d.toLocaleString(locale, {
       day: 'numeric',
       month: 'short',
       hour: 'numeric',

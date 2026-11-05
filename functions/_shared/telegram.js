@@ -1157,17 +1157,17 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     // Mark-delivered/Cancel inline (no admin URL in callback context, so no
     // View row here — the dashboard keeps full controls); every other
     // terminal move freezes the keyboard. Then stamp the status.
-    try {
-      const nextKeyboard =
-        parsed.status === 'confirmed'
-          ? buildOrderKeyboard('', parsed.orderId, 'confirmed')
-          : { inline_keyboard: [] };
-      await callTelegramApi(token, 'editMessageReplyMarkup', {
-        chat_id: chatId,
-        message_id: messageId,
-        reply_markup: nextKeyboard,
-      });
-    } catch {}
+    // ORDER MATTERS: editMessageText WITHOUT reply_markup wipes the inline
+    // keyboard, so the text edit must carry the next keyboard with it (and
+    // the markup edit runs AFTER as an idempotent re-assert). The old order
+    // (markup first, text second) left confirmed orders with NO buttons —
+    // the owner saw "all buttons disappeared" after tapping بدء التحضير.
+    // No time lock here by design: the admin completes instantly, the ETA
+    // +5 min gate applies to the CUSTOMER track page only.
+    const nextKeyboard =
+      parsed.status === 'confirmed'
+        ? buildOrderKeyboard('', parsed.orderId, 'confirmed')
+        : { inline_keyboard: [] };
     try {
       const base = typeof rebuilt === 'string' && rebuilt
         ? rebuilt
@@ -1178,6 +1178,14 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
         message_id: messageId,
         text: stamped,
         parse_mode: 'HTML',
+        reply_markup: nextKeyboard,
+      });
+    } catch {}
+    try {
+      await callTelegramApi(token, 'editMessageReplyMarkup', {
+        chat_id: chatId,
+        message_id: messageId,
+        reply_markup: nextKeyboard,
       });
     } catch {}
     // Owner -> customer loop (same as the dashboard PATCH path): best-effort.

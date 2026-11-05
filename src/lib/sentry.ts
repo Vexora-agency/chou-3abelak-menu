@@ -46,25 +46,44 @@ function scrubUrl(url: string | undefined): string | undefined {
   }
 }
 
+function readDsn(): string {
+  try {
+    return (import.meta.env.VITE_SENTRY_DSN as string | undefined) || '';
+  } catch {
+    return '';
+  }
+}
+
+function readEnvName(): string {
+  try {
+    return (import.meta.env.VITE_SENTRY_ENVIRONMENT as string | undefined) || 'production';
+  } catch {
+    return 'production';
+  }
+}
+
+/** Honest client-side status: is the storefront SDK actually reporting? */
+export function frontendSentryStatus(): { enabled: boolean; environment: string } {
+  try {
+    return { enabled: Boolean(readDsn() && import.meta.env.PROD), environment: readEnvName() };
+  } catch {
+    return { enabled: false, environment: 'production' };
+  }
+}
+
 let initialized = false;
 
 export function initSentry(): void {
   if (initialized) return;
   initialized = true;
-  const readDsn = (): string => {
-    try {
-      return (import.meta.env.VITE_SENTRY_DSN as string | undefined) || '';
-    } catch {
-      return '';
-    }
-  };
   const dsn = readDsn();
+  const envName = readEnvName();
   // Dev / preview-local builds never report — production only.
   if (!dsn || !import.meta.env.PROD) return;
   try {
     Sentry.init({
       dsn,
-      environment: (import.meta.env.VITE_SENTRY_ENVIRONMENT as string | undefined) || 'production',
+      environment: envName,
       release: (import.meta.env.VITE_SENTRY_RELEASE as string | undefined) || undefined,
       // Error monitoring only: no tracing, no replay (keeps the bundle lean
       // and avoids collecting session data).

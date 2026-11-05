@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Activity, FlaskConical } from 'lucide-react';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { isRecord, readJson, str } from '@/src/utils/safeJson';
-import { captureFrontendError } from '@/src/lib/sentry';
+import { captureFrontendError, frontendSentryStatus } from '@/src/lib/sentry';
 import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 interface SentrySectionProps {
@@ -30,6 +30,8 @@ export const SentrySection: React.FC<SentrySectionProps> = ({ lang, adminFetch, 
   const [status, setStatus] = useState<SentryStatus | null>(null);
   const [busy, setBusy] = useState<'front' | 'back' | null>(null);
   const [result, setResult] = useState('');
+  // Client-side truth: was VITE_SENTRY_DSN baked into this build?
+  const [frontStatus] = useState(frontendSentryStatus);
 
   const refresh = useCallback(async () => {
     try {
@@ -65,6 +67,14 @@ export const SentrySection: React.FC<SentrySectionProps> = ({ lang, adminFetch, 
     setBusy('front');
     setResult('');
     try {
+      if (!frontStatus.enabled) {
+        setResult(
+          isAr
+            ? 'الواجهة غير مهيأة: VITE_SENTRY_DSN لم يصل للبناء — تأكد أنه في متغيرات Production وأعد النشر.'
+            : 'Frontend not configured: VITE_SENTRY_DSN missing from the build — set it under Production variables and redeploy.'
+        );
+        return;
+      }
       captureFrontendError(new Error('Sentry admin frontend test (deliberate, owner-triggered)'));
       setResult(isAr ? 'تم إرسال خطأ تجريبي من الواجهة — ابحث عنه في Sentry.' : 'Frontend test error sent — look for it in Sentry.');
     } catch {
@@ -130,6 +140,21 @@ export const SentrySection: React.FC<SentrySectionProps> = ({ lang, adminFetch, 
               : isAr
                 ? 'الخادم: غير مهيأ'
                 : 'Backend: not configured'}
+          </span>
+          <span
+            className={`rounded-full border px-2.5 py-1 font-bold ${
+              frontStatus.enabled
+                ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                : 'bg-amber-500/10 border-amber-400/30 text-amber-300'
+            }`}
+          >
+            {frontStatus.enabled
+              ? isAr
+                ? 'الواجهة: مهيأة'
+                : 'Frontend: configured'
+              : isAr
+                ? 'الواجهة: غير مهيأة'
+                : 'Frontend: not configured'}
           </span>
           {status?.release ? (
             <span dir="ltr" className="rounded-full border border-neutral-700 px-2.5 py-1 font-bold text-neutral-400 tabular-nums">

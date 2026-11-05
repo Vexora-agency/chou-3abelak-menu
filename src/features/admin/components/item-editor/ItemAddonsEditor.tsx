@@ -2,7 +2,7 @@ import React from 'react';
 import { Flame, Plus, Trash2, X, Star } from 'lucide-react';
 import type { FeatureGroup, ItemAddon, MenuData, MenuItem } from '@/src/types/menu';
 import { featureName, featuresByGroup } from '@/src/utils/pricing';
-import { isSpicyAddon, isSpicyFeatureId } from '@/src/utils/menuHelpers';
+import { SPICY_GROUP_ID, isSpicyAddon, isSpicyFeatureId } from '@/src/utils/menuHelpers';
 
 interface ItemAddonsEditorProps {
   item: MenuItem;
@@ -30,8 +30,9 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
 }) => {
   const isAr = lang === 'ar';
   // A badged-spicy item offering a "Make It Spicy" level is a contradiction:
-  // the badge says the heat is inherent, the slider says it's optional.
-  const spicyOverlap = (item.badges || []).includes('spicy')
+  // the badge says the heat is inherent, the slider stays optional.
+  const badgedSpicy = (item.badges || []).includes('spicy');
+  const spicyOverlap = badgedSpicy
     && (item.addons || []).some((a) => isSpicyFeatureId(a.featureId));
   return (
     <div>
@@ -244,7 +245,10 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                     .map((a, ai) => ({ a, ai }))
                     .filter((x) => validGroupOf(x.a.featureId) === g.id)
                     .map((x, gi) => box(x.a, x.ai, g.id, gi === 0))}
-                  {missing.length > 0 && (
+                  {/* No quick-add for the spicy section on a badged item:
+                      the badge already is the heat — adding levels here
+                      recreates the contradiction above (remove instead). */}
+                  {missing.length > 0 && !(badgedSpicy && g.id === SPICY_GROUP_ID) && (
                     <div className="flex flex-wrap gap-1.5 pt-0.5 pb-1.5">
                       {missing.map((d) => (
                         <button
@@ -291,14 +295,25 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
         const usedIds = new Set((item.addons || []).map((x) => x.featureId));
         const candidateSecs = nonEmptySections.filter((g) => !(sizesSection && g.id === sizesSection.id));
         const groupIdOf = (fid: string) => (menu.settings.featureDefs || []).find((d) => d.id === fid)?.groupId ?? '';
+        // A badged-spicy item can never attach the spicy section: the badge
+        // already is the heat, and an attachable level would reopen the
+        // contradiction (removable heat on an inherently hot item).
         const openSecs = candidateSecs.filter((g) =>
           !(item.addons || []).some((a) => groupIdOf(a.featureId) === g.id)
+          && !(badgedSpicy && g.id === SPICY_GROUP_ID)
         );
         return (
         <div className="mt-2 space-y-2">
           <p className="text-[11px] text-neutral-500">
             {isAr ? 'اختر مكتبة — كل ميزاتها ستُرفق بسعر 0 دفعة واحدة:' : 'Pick a library — all its features attach at price 0 at once:'}
           </p>
+          {badgedSpicy && (
+            <p className="text-[11px] leading-relaxed text-amber-300/90 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1.5">
+              {isAr
+                ? 'شارة «حار» مفعّلة — قسم درجات الحار مخفي هنا لأن الشارة تكفي. أزل الشارة أولاً لو تريد درجات اختيارية.'
+                : 'The Spicy badge is on — the heat-level section stays hidden because the badge is enough. Remove the badge first for optional levels.'}
+            </p>
+          )}
           {candidateSecs.length === 0 && (
             <p className="text-[11px] text-neutral-500">
               {isAr ? 'لا توجد أقسام — أنشئها من المكتبة أولاً' : 'No sections — create them in the library first'}

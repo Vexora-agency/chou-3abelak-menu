@@ -239,6 +239,35 @@ export function validateOrderInput(body, menu) {
         }));
       }
 
+      // Badged-spicy items ARE the heat (customer sheet hides the slider,
+      // admin editor blocks new attaches): drop any locked heat level
+      // riding the line — stale menu, old cart, or tampered payload — so
+      // the stored order never carries a removable "spicy" the badge
+      // already covers. Dropped, never rejected: the order stays valid.
+      const SPICY_IDS = new Set(['spicy', 'spicy-mild', 'spicy-medium', 'spicy-hot']);
+      let qtySrc = line.addonQty;
+      try {
+        const b = found && Array.isArray(found.badges) ? found.badges : [];
+        if (b.includes('spicy') && addonIds.some((id) => SPICY_IDS.has(id))) {
+          const keptIds = [];
+          const keptNames = [];
+          for (let i = 0; i < addonIds.length; i++) {
+            if (SPICY_IDS.has(addonIds[i])) continue;
+            keptIds.push(addonIds[i]);
+            keptNames.push(addonNames[i]);
+          }
+          addonIds = keptIds;
+          addonNames = keptNames;
+          if (qtySrc && typeof qtySrc === 'object' && !Array.isArray(qtySrc)) {
+            const next = {};
+            for (const k of Object.keys(qtySrc)) {
+              if (!SPICY_IDS.has(k)) next[k] = qtySrc[k];
+            }
+            qtySrc = Object.keys(next).length ? next : undefined;
+          }
+        }
+      } catch {}
+
       if (!isValidQty(found, qty)) {
         errors.push('invalid_qty');
         break;
@@ -247,21 +276,22 @@ export function validateOrderInput(body, menu) {
       // Split quantities (optional): validated after qty so a bad qty still
       // reports invalid_qty, not invalid_addon. Persisted ONLY when the
       // request carries it (legacy lines store no addonQty key at all).
+      // qtySrc is line.addonQty minus any stripped spicy keys (above).
       let addonQty;
-      if (line.addonQty !== undefined) {
-        if (!line.addonQty || typeof line.addonQty !== 'object' || Array.isArray(line.addonQty)) {
+      if (qtySrc !== undefined) {
+        if (!qtySrc || typeof qtySrc !== 'object' || Array.isArray(qtySrc)) {
           errors.push('invalid_addon');
           break;
         }
         try {
-          validatePicks(norm, found, addonIds, line.addonQty, qty);
+          validatePicks(norm, found, addonIds, qtySrc, qty);
         } catch {
           errors.push('invalid_addon');
           break;
         }
         const resolved = {};
         for (const a of addonIds) {
-          resolved[a] = Object.prototype.hasOwnProperty.call(line.addonQty, a) ? line.addonQty[a] : qty;
+          resolved[a] = Object.prototype.hasOwnProperty.call(qtySrc, a) ? qtySrc[a] : qty;
         }
         addonQty = resolved;
       }

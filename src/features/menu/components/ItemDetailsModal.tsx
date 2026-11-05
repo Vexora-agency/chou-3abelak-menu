@@ -53,9 +53,15 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
       // Default-on add-ons open pre-selected — the customer can remove them.
       // 'multi' groups take every default; 'single' groups take the FIRST
       // default in item order (deterministic when several are flagged).
+      // Badged-spicy items skip spicy defaults entirely: the badge IS the
+      // heat and the slider is hidden, so a pre-selected level would ride
+      // invisible on the order (and its cart chip would offer "remove" for
+      // something the customer never chose).
+      const badgedSpicyInit = (item.badges || []).includes('spicy');
       const blocks = addonBlocks(menu, item);
       const ids: string[] = [];
       for (const b of blocks) {
+        if (badgedSpicyInit && b.groupId === SPICY_GROUP_ID) continue;
         const defs = b.addons.filter((a) => a && a.default);
         if (b.selection === 'single') {
           if (defs.length) ids.push(defs[0].featureId);

@@ -75,6 +75,71 @@ async function postOrder(env, body) {
   ok(r5.status === 400 && db4.orders.length === 1, 'invalid location rejected');
 }
 
+/* ---------------- 2b. badged-spicy strips heat levels ---------------- */
+{
+  // A badged-spicy item IS the heat (sheet hides the slider, admin editor
+  // blocks new attaches): a stale/tampered line carrying a heat level must
+  // still record clean — dropped, never rejected.
+  const spicyMenu = JSON.parse(JSON.stringify(MENU));
+  spicyMenu.settings.featureGroups = [
+    { id: 'spicy', name: { en: 'Make it Spicy', ar: 'خليه حار' }, selection: 'single', prompt: { en: '', ar: '' } },
+  ];
+  spicyMenu.settings.featureDefs = [
+    { id: 'spicy-mild', groupId: 'spicy', name: { en: 'Mild', ar: 'خفيف' } },
+    { id: 'spicy-medium', groupId: 'spicy', name: { en: 'Medium', ar: 'متوسط' } },
+    { id: 'spicy-hot', groupId: 'spicy', name: { en: 'Extra Hot', ar: 'حار جداً' } },
+  ];
+  const shish = (badges) => ({
+    id: 'shish', categoryId: 'c1', name: { en: 'Shish', ar: 'شيش' }, description: { en: '', ar: '' },
+    pricing: { unit: 'pc', minQty: 1, step: 1, maxQty: 50, showUnit: false, price: 100000 },
+    addons: [{ featureId: 'spicy-mild', price: 0 }, { featureId: 'spicy-medium', price: 0 }, { featureId: 'spicy-hot', price: 0 }],
+    badges, featured: false, available: true,
+  });
+  const pin = { lat: 33.9, lng: 35.5, accuracy: 30 };
+  // Badged: heat level stripped, order accepted.
+  {
+    const m = { ...spicyMenu, items: [shish(['spicy'])] };
+    const kv = makeKV();
+    await kv.put('menu', JSON.stringify(m));
+    const db = makeDB([]);
+    const r = await postOrder(
+      { MENU_KV: kv, ORDERS_DB: db },
+      orderBody({ location: pin, items: [{ id: 'shish', qty: 1, addonIds: ['spicy-medium'] }] }),
+    );
+    ok(r.status === 200, 'badged-spicy order with heat level accepted');
+    const stored = JSON.parse(db.orders[0].items_json);
+    ok(Array.isArray(stored) && stored.length === 1 && stored[0].addonIds === undefined && stored[0].addonNames === undefined, 'heat level stripped from badged line');
+  }
+  // Badged + split counts: stripped too, nothing stored.
+  {
+    const m = { ...spicyMenu, items: [shish(['spicy'])] };
+    const kv = makeKV();
+    await kv.put('menu', JSON.stringify(m));
+    const db = makeDB([]);
+    const r = await postOrder(
+      { MENU_KV: kv, ORDERS_DB: db },
+      orderBody({ location: pin, items: [{ id: 'shish', qty: 2, addonIds: ['spicy-medium'], addonQty: { 'spicy-medium': 1 } }] }),
+    );
+    ok(r.status === 200, 'badged-spicy split heat accepted');
+    const stored = JSON.parse(db.orders[0].items_json);
+    ok(stored[0].addonIds === undefined && stored[0].addonQty === undefined, 'split heat stripped from badged line');
+  }
+  // Control: unbadged item keeps its picked level.
+  {
+    const m = { ...spicyMenu, items: [shish([])] };
+    const kv = makeKV();
+    await kv.put('menu', JSON.stringify(m));
+    const db = makeDB([]);
+    const r = await postOrder(
+      { MENU_KV: kv, ORDERS_DB: db },
+      orderBody({ location: pin, items: [{ id: 'shish', qty: 1, addonIds: ['spicy-medium'] }] }),
+    );
+    ok(r.status === 200, 'unbadged order with heat level accepted');
+    const stored = JSON.parse(db.orders[0].items_json);
+    ok(Array.isArray(stored[0].addonIds) && stored[0].addonIds.includes('spicy-medium'), 'heat level kept without badge');
+  }
+}
+
 /* ---------------- 3. ordering-state + pause endpoints ---------------- */
 {
   const kv = makeKV();

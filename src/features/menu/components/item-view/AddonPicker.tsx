@@ -53,13 +53,13 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
 }) => {
   const blocks = addonBlocks(menu, item);
   if (blocks.length === 0) return null;
-  // Badged-spicy items ARE the heat: the slider is hidden entirely (the
-  // badge alone communicates it). Offering a removable level on top would
-  // let the customer order a "spicy" item with no heat — a contradiction
-  // the admin editor already warns about. No pick UI, no deselect path.
+  // Badged-spicy items MUST pick a heat degree (the badge alone no longer
+  // implies a default): the slider shows first, expanded by default, and
+  // the pick can never be cleared. The prompt is reworded to mandatory —
+  // the library prompt ("Want some heat?") reads optional.
   const badgedSpicy = (item.badges || []).includes('spicy');
   const ordered = [
-    ...blocks.filter((b) => b.groupId === SPICY_GROUP_ID && !badgedSpicy),
+    ...blocks.filter((b) => b.groupId === SPICY_GROUP_ID),
     ...blocks.filter((b) => b.groupId !== SPICY_GROUP_ID),
   ];
   if (ordered.length === 0) return null;
@@ -68,6 +68,7 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
       {ordered.map((b) => {
         if (b.groupId === SPICY_GROUP_ID) {
           const selectedId = addonIds.find((id) => isSpicyFeatureId(id)) ?? null;
+          const required = badgedSpicy;
           return (
             <SpicySlider
               key={b.key || 'spicy'}
@@ -79,7 +80,12 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
               }))}
               selectedId={selectedId}
               onPick={(id) => onSelectRadio(b.groupId ?? '', id)}
-              prompt={b.prompt}
+              prompt={
+                required
+                  ? { en: 'Choose your heat level (required)', ar: 'اختار درجة الحار (إجباري)' }
+                  : b.prompt
+              }
+              required={required}
               lang={lang}
               isAr={isAr}
               darkMode={darkMode}

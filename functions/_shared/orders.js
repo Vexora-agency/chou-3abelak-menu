@@ -239,34 +239,19 @@ export function validateOrderInput(body, menu) {
         }));
       }
 
-      // Badged-spicy items ARE the heat (customer sheet hides the slider,
-      // admin editor blocks new attaches): drop any locked heat level
-      // riding the line — stale menu, old cart, or tampered payload — so
-      // the stored order never carries a removable "spicy" the badge
-      // already covers. Dropped, never rejected: the order stays valid.
+      // Badged-spicy items REQUIRE a heat degree (the customer sheet forces
+      // exactly one pick): every unit must carry exactly one heat level.
+      // Missing or partial heat is REJECTED (heat_required) — never
+      // silently dropped — so a tampered or stale request can never record
+      // a heatless "spicy" order. Non-badged items keep heat optional.
       const SPICY_IDS = new Set(['spicy', 'spicy-mild', 'spicy-medium', 'spicy-hot']);
+      const isBadgedSpicy = found && Array.isArray(found.badges) && found.badges.includes('spicy');
+      const heatIds = addonIds.filter((id) => SPICY_IDS.has(id));
+      if (isBadgedSpicy && heatIds.length < 1) {
+        errors.push('heat_required');
+        break;
+      }
       let qtySrc = line.addonQty;
-      try {
-        const b = found && Array.isArray(found.badges) ? found.badges : [];
-        if (b.includes('spicy') && addonIds.some((id) => SPICY_IDS.has(id))) {
-          const keptIds = [];
-          const keptNames = [];
-          for (let i = 0; i < addonIds.length; i++) {
-            if (SPICY_IDS.has(addonIds[i])) continue;
-            keptIds.push(addonIds[i]);
-            keptNames.push(addonNames[i]);
-          }
-          addonIds = keptIds;
-          addonNames = keptNames;
-          if (qtySrc && typeof qtySrc === 'object' && !Array.isArray(qtySrc)) {
-            const next = {};
-            for (const k of Object.keys(qtySrc)) {
-              if (!SPICY_IDS.has(k)) next[k] = qtySrc[k];
-            }
-            qtySrc = Object.keys(next).length ? next : undefined;
-          }
-        }
-      } catch {}
 
       if (!isValidQty(found, qty)) {
         errors.push('invalid_qty');
@@ -276,7 +261,6 @@ export function validateOrderInput(body, menu) {
       // Split quantities (optional): validated after qty so a bad qty still
       // reports invalid_qty, not invalid_addon. Persisted ONLY when the
       // request carries it (legacy lines store no addonQty key at all).
-      // qtySrc is line.addonQty minus any stripped spicy keys (above).
       let addonQty;
       if (qtySrc !== undefined) {
         if (!qtySrc || typeof qtySrc !== 'object' || Array.isArray(qtySrc)) {
@@ -294,6 +278,23 @@ export function validateOrderInput(body, menu) {
           resolved[a] = Object.prototype.hasOwnProperty.call(qtySrc, a) ? qtySrc[a] : qty;
         }
         addonQty = resolved;
+        // Badged heat must cover every unit: a qty-2 line with medium×1
+        // leaves one unit heatless (medium×1 + hot×1 is the way to split
+        // degrees across units). Legacy (no addonQty) lines carry each id
+        // at full qty, so exactly one heat id is full coverage.
+        if (isBadgedSpicy) {
+          let covered = 0;
+          for (const a of heatIds) covered += resolved[a];
+          if (covered !== qty) {
+            errors.push('heat_required');
+            break;
+          }
+        }
+      } else if (isBadgedSpicy && heatIds.length !== 1) {
+        // Legacy shape: each listed id rides all units, so two heat ids
+        // would double-cover (zero is already rejected above).
+        errors.push('heat_required');
+        break;
       }
 
       let unit;

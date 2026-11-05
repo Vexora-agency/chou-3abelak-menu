@@ -53,10 +53,10 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
       // Default-on add-ons open pre-selected — the customer can remove them.
       // 'multi' groups take every default; 'single' groups take the FIRST
       // default in item order (deterministic when several are flagged).
-      // Badged-spicy items skip spicy defaults entirely: the badge IS the
-      // heat and the slider is hidden, so a pre-selected level would ride
-      // invisible on the order (and its cart chip would offer "remove" for
-      // something the customer never chose).
+      // Badged-spicy items skip spicy defaults: the degree is REQUIRED, so
+      // the customer must actively pick a level (a pre-selected one would
+      // ride invisible on the order, and its cart chip would offer "remove"
+      // for something the customer never chose).
       const badgedSpicyInit = (item.badges || []).includes('spicy');
       const blocks = addonBlocks(menu, item);
       const ids: string[] = [];
@@ -102,10 +102,27 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
   const variants = item && hasVariants(item) ? item.variants || [] : [];
   const blocks = item ? addonBlocks(menu, item) : [];
   const hasAddons = blocks.length > 0;
+  // Badged-spicy items REQUIRE one heat degree (no default, no clear):
+  // the Add button stays disabled until the picked levels cover the qty.
+  const badgedSpicyItem = item ? (item.badges || []).includes('spicy') : false;
 
   // Canonical split map (undefined while the picks are legacy-shaped, so
   // keys/validation/money stay byte-identical to today until a real split).
   const effAddonQty = item ? effectiveAddonQty(addonIds, addonCounts, qty) : undefined;
+  // Heat coverage for the required badged-spicy pick: every unit must
+  // carry exactly one level (split degrees across units allowed, partial
+  // coverage not). Canonical map counts ride here, same as money/keys.
+  const heatCoveredQty = (() => {
+    if (!badgedSpicyItem || !item) return qty;
+    let covered = 0;
+    for (const id of addonIds) {
+      if (!isSpicyFeatureId(id)) continue;
+      const c = effAddonQty && typeof effAddonQty[id] === 'number' ? effAddonQty[id] : qty;
+      covered += c;
+    }
+    return covered;
+  })();
+  const heatOk = !badgedSpicyItem || heatCoveredQty === qty;
   // Live total for the configured selection + group-rule validity. lineTotal
   // is pure math (it does NOT enforce single/multi caps), so the Add button
   // additionally gates on validatePicks.
@@ -162,10 +179,13 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
   // qty 1, so any stale entries for the group are dropped. The locked
   // spicy section additionally absorbs the legacy 'spicy' id, so upgrading
   // from an old pick can never leave two heat options on one line.
+  // EXCEPTION: the required badged-spicy pick never deselects — tapping
+  // the active level keeps it (no valid heatless state to return to).
   const selectRadio = (groupId: string, id: string) => {
     const block = blocks.find((b) => (b.groupId ?? '') === groupId);
     const members = block ? block.addons.map((a) => a.featureId) : [id];
     if (groupId === SPICY_GROUP_ID) members.push(SPICY_LEGACY_ID);
+    if (badgedSpicyItem && groupId === SPICY_GROUP_ID && addonIds.includes(id)) return;
     setAddonIds((prev) =>
       prev.includes(id)
         ? prev.filter((a) => a !== id)
@@ -319,10 +339,11 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
               ))}
               {/* Live spicy pick: the moment the customer sets a heat level
                   it appears next to the name as a pro red pill — the level
-                  label IS the confirmation (e.g. "حار وسط", "Extra Hot"). */}
+                  label IS the confirmation (e.g. "حار وسط", "Extra Hot").
+                  Badged items show it too now that the degree is picked. */}
               {(() => {
                 const pick = addonIds.find((id) => isSpicyFeatureId(id));
-                if (!pick || item.badges.includes('spicy')) return null;
+                if (!pick) return null;
                 return (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-600/10 text-red-600 border border-red-600/25 dark:bg-red-500/10 dark:text-red-400 dark:border-red-400/30">
                     <Flame size={12} />
@@ -430,10 +451,12 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                 </div>
 
                 {/* Add button with live total — merges into the matching
-                    cart line (same config), so re-adding just tops up. */}
+                    cart line (same config), so re-adding just tops up.
+                    Badged-spicy lines additionally require full heat
+                    coverage (the slider is mandatory for them). */}
                 <button
                   type="button"
-                  disabled={liveTotal === null || !picksValid}
+                  disabled={liveTotal === null || !picksValid || !heatOk}
                   onClick={() => onAddConfigured(item, variantId, addonIds, qty, effAddonQty)}
                   className="btn-tactile w-full h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-extrabold text-base flex items-center justify-center gap-2 shadow-lg hover:brightness-110 disabled:opacity-50"
                 >

@@ -75,11 +75,12 @@ async function postOrder(env, body) {
   ok(r5.status === 400 && db4.orders.length === 1, 'invalid location rejected');
 }
 
-/* ---------------- 2b. badged-spicy strips heat levels ---------------- */
+/* ---------------- 2b. badged-spicy REQUIRES a heat degree ---------------- */
 {
-  // A badged-spicy item IS the heat (sheet hides the slider, admin editor
-  // blocks new attaches): a stale/tampered line carrying a heat level must
-  // still record clean — dropped, never rejected.
+  // A badged-spicy item forces one heat pick on the customer sheet, and
+  // the server rejects heatless (or partially heated) badged lines with
+  // heat_required — never silently drops. Unbadged items keep heat
+  // optional, exactly as before.
   const spicyMenu = JSON.parse(JSON.stringify(MENU));
   spicyMenu.settings.featureGroups = [
     { id: 'spicy', name: { en: 'Make it Spicy', ar: 'خليه حار' }, selection: 'single', prompt: { en: '', ar: '' } },
@@ -96,7 +97,7 @@ async function postOrder(env, body) {
     badges, featured: false, available: true,
   });
   const pin = { lat: 33.9, lng: 35.5, accuracy: 30 };
-  // Badged: heat level stripped, order accepted.
+  // Badged: exactly one heat level accepted AND kept (kitchen sees it).
   {
     const m = { ...spicyMenu, items: [shish(['spicy'])] };
     const kv = makeKV();
@@ -108,9 +109,35 @@ async function postOrder(env, body) {
     );
     ok(r.status === 200, 'badged-spicy order with heat level accepted');
     const stored = JSON.parse(db.orders[0].items_json);
-    ok(Array.isArray(stored) && stored.length === 1 && stored[0].addonIds === undefined && stored[0].addonNames === undefined, 'heat level stripped from badged line');
+    ok(Array.isArray(stored) && stored.length === 1 && Array.isArray(stored[0].addonIds) && stored[0].addonIds.includes('spicy-medium'), 'heat level kept on badged line');
   }
-  // Badged + split counts: stripped too, nothing stored.
+  // Badged: split degrees across units accepted when fully covered.
+  {
+    const m = { ...spicyMenu, items: [shish(['spicy'])] };
+    const kv = makeKV();
+    await kv.put('menu', JSON.stringify(m));
+    const db = makeDB([]);
+    const r = await postOrder(
+      { MENU_KV: kv, ORDERS_DB: db },
+      orderBody({ location: pin, items: [{ id: 'shish', qty: 2, addonIds: ['spicy-medium', 'spicy-hot'], addonQty: { 'spicy-medium': 1, 'spicy-hot': 1 } }] }),
+    );
+    ok(r.status === 200, 'badged-spicy fully covered split accepted');
+    const stored = JSON.parse(db.orders[0].items_json);
+    ok(stored[0].addonQty && stored[0].addonQty['spicy-medium'] === 1 && stored[0].addonQty['spicy-hot'] === 1, 'split heat kept on badged line');
+  }
+  // Badged: heatless line rejected.
+  {
+    const m = { ...spicyMenu, items: [shish(['spicy'])] };
+    const kv = makeKV();
+    await kv.put('menu', JSON.stringify(m));
+    const db = makeDB([]);
+    const r = await postOrder(
+      { MENU_KV: kv, ORDERS_DB: db },
+      orderBody({ location: pin, items: [{ id: 'shish', qty: 1 }] }),
+    );
+    ok(r.status === 400 && r.data.error === 'heat_required' && db.orders.length === 0, 'badged-spicy heatless line rejected with heat_required');
+  }
+  // Badged: partial split (one of two units heatless) rejected.
   {
     const m = { ...spicyMenu, items: [shish(['spicy'])] };
     const kv = makeKV();
@@ -120,11 +147,21 @@ async function postOrder(env, body) {
       { MENU_KV: kv, ORDERS_DB: db },
       orderBody({ location: pin, items: [{ id: 'shish', qty: 2, addonIds: ['spicy-medium'], addonQty: { 'spicy-medium': 1 } }] }),
     );
-    ok(r.status === 200, 'badged-spicy split heat accepted');
-    const stored = JSON.parse(db.orders[0].items_json);
-    ok(stored[0].addonIds === undefined && stored[0].addonQty === undefined, 'split heat stripped from badged line');
+    ok(r.status === 400 && r.data.error === 'heat_required' && db.orders.length === 0, 'badged-spicy partial heat rejected');
   }
-  // Control: unbadged item keeps its picked level.
+  // Badged: two full levels on one unit rejected (double cover).
+  {
+    const m = { ...spicyMenu, items: [shish(['spicy'])] };
+    const kv = makeKV();
+    await kv.put('menu', JSON.stringify(m));
+    const db = makeDB([]);
+    const r = await postOrder(
+      { MENU_KV: kv, ORDERS_DB: db },
+      orderBody({ location: pin, items: [{ id: 'shish', qty: 1, addonIds: ['spicy-medium', 'spicy-hot'] }] }),
+    );
+    ok(r.status === 400 && r.data.error === 'heat_required' && db.orders.length === 0, 'badged-spicy double heat rejected');
+  }
+  // Control: unbadged item without heat still accepted (optional as before).
   {
     const m = { ...spicyMenu, items: [shish([])] };
     const kv = makeKV();
@@ -132,11 +169,9 @@ async function postOrder(env, body) {
     const db = makeDB([]);
     const r = await postOrder(
       { MENU_KV: kv, ORDERS_DB: db },
-      orderBody({ location: pin, items: [{ id: 'shish', qty: 1, addonIds: ['spicy-medium'] }] }),
+      orderBody({ location: pin, items: [{ id: 'shish', qty: 1 }] }),
     );
-    ok(r.status === 200, 'unbadged order with heat level accepted');
-    const stored = JSON.parse(db.orders[0].items_json);
-    ok(Array.isArray(stored[0].addonIds) && stored[0].addonIds.includes('spicy-medium'), 'heat level kept without badge');
+    ok(r.status === 200, 'unbadged heatless order still accepted');
   }
 }
 

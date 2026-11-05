@@ -342,12 +342,22 @@ export function normalizeMenu<T>(menu: T): T {
   // carries no heat option at all gains the three levels at price 0, so
   // the locked section shows without per-item admin work — old documents
   // and the live menu included. Simple fixed-price items (no add-ons at
-  // all) stay untouched; the admin can still detach the section per item.
+  // all) stay untouched — EXCEPT badged-spicy ones: the customer sheet
+  // REQUIRES a heat degree for them, so they must always carry the levels
+  // (the server rejects heatless badged lines). Self-healing: a badged
+  // item whose levels were all detached regains them here at price 0.
   const SPICY_IDS = new Set(['spicy', 'spicy-mild', 'spicy-medium', 'spicy-hot']);
   if (Array.isArray(out.items)) {
     for (const item of out.items as Record<string, unknown>[]) {
-      if (!item || typeof item !== 'object' || !Array.isArray(item.addons) || item.addons.length === 0) continue;
-      const list = item.addons as Record<string, unknown>[];
+      if (!item || typeof item !== 'object') continue;
+      const rec = item as { badges?: unknown; addons?: unknown };
+      const badgedSpicy = Array.isArray(rec.badges) && (rec.badges as unknown[]).includes('spicy');
+      if (!Array.isArray(rec.addons)) {
+        if (!badgedSpicy) continue;
+        rec.addons = [];
+      }
+      const list = rec.addons as Record<string, unknown>[];
+      if (list.length === 0 && !badgedSpicy) continue;
       if (list.some((a) => a && SPICY_IDS.has(a.featureId as string))) continue;
       list.push(
         { featureId: 'spicy-mild', price: 0 },

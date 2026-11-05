@@ -292,11 +292,20 @@ export function normalizeMenu(menu) {
   // carries no heat option at all gains the three levels at price 0, so
   // the locked section shows without per-item admin work — old documents
   // and the live menu included. Simple fixed-price items (no add-ons at
-  // all) stay untouched; the admin can still detach the section per item.
+  // all) stay untouched — EXCEPT badged-spicy ones: the customer sheet
+  // REQUIRES a heat degree for them, so they must always carry the levels
+  // (the server rejects heatless badged lines). Self-healing: a badged
+  // item whose levels were all detached regains them here at price 0.
   // TWIN: src/utils/pricing-menu.ts — keep the rule identical.
   if (Array.isArray(out.items)) {
     for (const item of out.items) {
-      if (!item || typeof item !== 'object' || !Array.isArray(item.addons) || item.addons.length === 0) continue;
+      if (!item || typeof item !== 'object') continue;
+      const badgedSpicy = Array.isArray(item.badges) && item.badges.includes('spicy');
+      if (!Array.isArray(item.addons)) {
+        if (!badgedSpicy) continue;
+        item.addons = [];
+      }
+      if (item.addons.length === 0 && !badgedSpicy) continue;
       const list = item.addons;
       if (list.some((a) => a && (a.featureId === 'spicy' || a.featureId === 'spicy-mild' || a.featureId === 'spicy-medium' || a.featureId === 'spicy-hot'))) continue;
       list.push(

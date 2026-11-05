@@ -69,6 +69,19 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
           failure: 'blocked',
         };
       }
+      // Missing heat degree (badged-spicy line recorded without one — stale
+      // cart or tampered payload): tell the customer exactly how to fix it
+      // (re-add the line and pick a degree) instead of a generic error.
+      if (isRecord(data) && data.error === 'heat_required') {
+        return {
+          orderNumber: null,
+          trackToken: null,
+          blockedMessage: lang === 'ar'
+            ? 'صنف حار ناقص درجة الحرارة — احذف السطر من السلة وأعده مع اختيار الدرجة'
+            : 'A spicy item is missing its heat level — remove the line and re-add it with a level',
+          failure: 'blocked',
+        };
+      }
       if (res.status === 403) {
         const msg = isRecord(data) && isRecord(data.message) ? str(lang === 'ar' ? data.message.ar : data.message.en) : '';
         return { orderNumber: null, trackToken: null, blockedMessage: msg || null, failure: 'blocked' };

@@ -20,6 +20,9 @@ interface SpicySliderProps {
   darkMode: boolean;
   currency: string;
   chipBase: string;
+  /** Required mode (badged-spicy items): the track stays expanded and the
+      choice can never be cleared — every tap only changes the level. */
+  required?: boolean;
 }
 
 /** Canonical slider order: mild → medium → extra-hot, anything else trails.
@@ -81,6 +84,7 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
   darkMode,
   currency,
   chipBase,
+  required = false,
 }) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const stopRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -98,7 +102,9 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
 
   const n = ordered.length;
   const activeIdx = selectedId ? ordered.findIndex((l) => l.featureId === selectedId) : -1;
-  const expanded = selectedId !== null;
+  // Required mode never collapses: the choice is mandatory, so the track
+  // stays visible until a level is picked (and stays after).
+  const expanded = selectedId !== null || required;
   // Geometry is always LTR (mild left → extra-hot right) so dots, fill and
   // labels line up in both languages; only the TEXT follows the locale.
   const pct = (i: number) => (n <= 1 ? 0 : (i / (n - 1)) * 100);
@@ -185,18 +191,27 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={() => (selectedId ? onPick(selectedId) : onPick(firstId))}
-          aria-pressed={expanded}
+          onClick={() => {
+            // Required mode has no clear path: tapping the chip only picks
+            // (never clears). The chip is the only toggle — dots stay
+            // select-only (see header notes).
+            if (selectedId) {
+              if (!required) onPick(selectedId);
+            } else {
+              onPick(firstId);
+            }
+          }}
+          aria-pressed={selectedId !== null}
           className={`${chipBase} ${
-            expanded
+            selectedId !== null
               ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
               : darkMode
                 ? 'border-neutral-700 text-neutral-200 hover:border-[var(--primary)]'
                 : 'border-neutral-300 text-neutral-800 hover:border-[#0A0A0A]'
           }`}
         >
-          {expanded && <Check size={13} strokeWidth={3} />}
-          <Flame size={13} className={expanded ? '' : 'text-red-500'} aria-hidden="true" />
+          {selectedId !== null && <Check size={13} strokeWidth={3} />}
+          <Flame size={13} className={selectedId !== null ? '' : 'text-red-500'} aria-hidden="true" />
           <span dir="auto">{spicyLabel(lang)}</span>
         </button>
       </div>

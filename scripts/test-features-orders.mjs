@@ -75,6 +75,78 @@ async function postOrder(env, body) {
   ok(r5.status === 400 && db4.orders.length === 1, 'invalid location rejected');
 }
 
+/* ---------------- 2c. atomic spam cap (15/10min/IP, D1 UPSERT) ---------------- */
+{
+  const pin = { lat: 33.9, lng: 35.5, accuracy: 30 };
+  const freshEnv = () => {
+    const kv = makeKV();
+    return { kv, db: makeDB([]), ready: kv.put('menu', JSON.stringify(MENU)) };
+  };
+  // 15 distinct orders pass, the 16th is capped — sequentially.
+  {
+    const { kv, db, ready } = freshEnv();
+    await ready;
+    const statuses = [];
+    for (let i = 0; i < 16; i++) {
+      const r = await postOrder({ MENU_KV: kv, ORDERS_DB: db }, orderBody({ location: pin, idemKey: `seq-${i}` }));
+      statuses.push(r.status);
+    }
+    ok(statuses.slice(0, 15).every((s) => s === 200), 'first 15 distinct orders accepted');
+    ok(statuses[15] === 429, '16th distinct order rate_limited');
+    ok(db.orders.length === 15, 'exactly 15 rows stored');
+  }
+  // Parallel burst (30 at once): the atomic reserve holds the cap exactly.
+  {
+    const { kv, db, ready } = freshEnv();
+    await ready;
+    const results = await Promise.all(
+      Array.from({ length: 30 }, (_, i) => postOrder({ MENU_KV: kv, ORDERS_DB: db }, orderBody({ location: pin, idemKey: `burst-${i}` })))
+    );
+    const okCount = results.filter((r) => r.status === 200).length;
+    const limitedCount = results.filter((r) => r.status === 429).length;
+    ok(okCount === 15 && limitedCount === 15, `parallel burst capped exactly (200x${okCount}, 429x${limitedCount})`);
+    ok(db.orders.length === 15, 'burst stores exactly 15 rows');
+  }
+  // Same-key retries are free: 20 repeats, one row, budget untouched.
+  {
+    const { kv, db, ready } = freshEnv();
+    await ready;
+    const body = orderBody({ location: pin, idemKey: 'retry-same' });
+    const results = [];
+    for (let i = 0; i < 20; i++) results.push(await postOrder({ MENU_KV: kv, ORDERS_DB: db }, body));
+    ok(results.every((r) => r.status === 200), '20 same-key retries all accepted');
+    ok(db.orders.length === 1, 'retry stores a single row');
+    ok(results.every((r) => r.data.orderNumber === results[0].data.orderNumber), 'retries return the original number');
+  }
+  // Rejected bodies (400) consume no budget: 15 still pass afterwards.
+  {
+    const { kv, db, ready } = freshEnv();
+    await ready;
+    const env = { MENU_KV: kv, ORDERS_DB: db };
+    const bad = await postOrder(env, orderBody({ location: { lat: 200, lng: 0 }, idemKey: 'bad-1' }));
+    ok(bad.status === 400, 'invalid body rejected');
+    const statuses = [];
+    for (let i = 0; i < 15; i++) {
+      statuses.push((await postOrder(env, orderBody({ location: pin, idemKey: `after-bad-${i}` }))).status);
+    }
+    ok(statuses.every((s) => s === 200), '400s consumed no budget');
+  }
+  // D1 failure on the counter fails OPEN (dinner orders survive a blip).
+  {
+    const { kv, db, ready } = freshEnv();
+    await ready;
+    const basePrepare = db.prepare.bind(db);
+    db.prepare = (sql) => {
+      if (typeof sql === 'string' && sql.includes('rate_counters')) {
+        return { bind: () => ({ first: async () => { throw new Error('d1 down'); }, all: async () => { throw new Error('d1 down'); }, run: async () => { throw new Error('d1 down'); } }) };
+      }
+      return basePrepare(sql);
+    };
+    const r = await postOrder({ MENU_KV: kv, ORDERS_DB: db }, orderBody({ location: pin, idemKey: 'failopen-1' }));
+    ok(r.status === 200 && db.orders.length === 1, 'counter failure fails open, order recorded');
+  }
+}
+
 /* ---------------- 2b. badged-spicy REQUIRES a heat degree ---------------- */
 {
   // A badged-spicy item forces one heat pick on the customer sheet, and

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { KeyRound, Copy, Check, Ban, Plus, Power, Trash2 } from 'lucide-react';
+import { Copy, Check, Ban, Plus, Power, Trash2, LogOut } from 'lucide-react';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { readJson } from '@/src/utils/safeJson';
 import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
@@ -179,6 +179,30 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
     else void fire();
   };
 
+  /** Kill every master session (stolen cookie response). Ours dies too —
+   *  the reload below lands on the sign-in screen by design. */
+  const revokeAllSessions = () =>
+    armed('revoke-all-sessions', async () => {
+      setActing('revoke-all');
+      setFormErr('');
+      try {
+        const res = await adminFetch('/api/admin/sessions/revoke', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        });
+        if (res.ok) {
+          window.location.reload();
+          return;
+        }
+        setFormErr(isAr ? 'تعذر إلغاء الجلسات' : 'Could not revoke sessions');
+      } catch {
+        setFormErr(isAr ? 'تعذر الاتصال' : 'Connection problem');
+      } finally {
+        setActing(null);
+      }
+    });
+
   const invitePill = (s: InviteRow['status']) =>
     s === 'pending'
       ? 'bg-amber-500/10 border-amber-400/30 text-amber-300'
@@ -352,6 +376,30 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
             {isAr ? 'لا توجد روابط دعوة بعد.' : 'No invite links yet.'}
           </p>
         )}
+      </div>
+      {/* Master kill switch: a compromised cookie dies everywhere at once. */}
+      <div className="rounded-xl border border-red-500/30 bg-black p-3 space-y-2">
+        <p className="text-[11px] font-bold text-red-400">
+          {isAr ? 'جلسات المالك' : 'Master sessions'}
+        </p>
+        <p className="text-[11px] text-neutral-500">
+          {isAr
+            ? 'لو شككت أن كلمة السر اتسربت: هذا يطرد كل الأجهزة فورًا (وأنت منهم — ستدخل من جديد).'
+            : 'If the password may have leaked: this signs out every device at once (including you — you will sign in again).'}
+        </p>
+        <button
+          type="button"
+          disabled={acting !== null}
+          onClick={() => revokeAllSessions()}
+          className={`h-11 min-h-[44px] px-5 rounded-full text-xs font-extrabold border transition-colors flex items-center gap-1.5 whitespace-nowrap disabled:opacity-40 ${
+            confirmKey === 'revoke-all-sessions'
+              ? 'border-red-500 text-red-400 hover:bg-red-500 hover:text-black'
+              : 'border-neutral-700 text-neutral-400 hover:text-red-400 hover:border-red-500/50'
+          }`}
+        >
+          <LogOut size={14} />
+          {confirmKey === 'revoke-all-sessions' ? (isAr ? 'تأكيد الطرد؟' : 'Confirm sign-out?') : (isAr ? 'طرد كل الأجهزة' : 'Sign out all devices')}
+        </button>
       </div>
       </SettingsGroupBody>
     </div>

@@ -19,6 +19,8 @@ import {
   sha256Hex,
   siteBaseUrl,
 } from '../functions/_shared/access.js';
+import { createSessionToken } from '../functions/_shared/session.js';
+import { onRequest as revokeReq } from '../functions/api/admin/sessions/revoke.js';
 
 let fails = 0;
 const check = (name, cond) => {
@@ -103,9 +105,10 @@ check('attempt cap sane', INVITE_MAX_ATTEMPTS >= 10 && INVITE_MAX_ATTEMPTS <= 50
     delete: async (k) => { store.delete(k); },
   };
   const now = Math.floor(Date.now() / 1000);
-  check('owner never revoked', (await isSessionRevoked(kv, 'admin', now - 100)) === false);
+  check('owner passes with no stamp', (await isSessionRevoked(kv, 'admin', now - 100)) === false);
   check('other subs pass', (await isSessionRevoked(kv, 'x', now)) === false);
   check('fresh client passes', (await isSessionRevoked(kv, 'client:layali', now)) === false);
+  check('empty sub passes', (await isSessionRevoked(kv, '', now)) === false);
   await revokeSessions(kv, 'layali');
   check('old session dies', (await isSessionRevoked(kv, 'client:layali', now - 5)) === true);
   check('boundary dies', (await isSessionRevoked(kv, 'client:layali', now)) === true);
@@ -114,7 +117,58 @@ check('attempt cap sane', INVITE_MAX_ATTEMPTS >= 10 && INVITE_MAX_ATTEMPTS <= 50
   await clearRevocation(kv, 'layali');
   check('enable clears', (await isSessionRevoked(kv, 'client:layali', now - 5)) === false);
   check('no store fails closed', (await isSessionRevoked(null, 'client:layali', now)) === true);
+  // Owner kill switch: stamping `admin` kills master sessions too (F1 fix —
+  // this line asserted the old never-revoked policy and must stay flipped).
+  await revokeSessions(kv, 'admin');
+  check('owner old session dies', (await isSessionRevoked(kv, 'admin', now - 5)) === true);
+  check('owner boundary dies', (await isSessionRevoked(kv, 'admin', now)) === true);
+  check('owner newer session lives', (await isSessionRevoked(kv, 'admin', now + 3600)) === false);
+  check('owner stamp spares clients', (await isSessionRevoked(kv, 'client:layali', now - 5)) === false);
+  check('owner no store fails closed', (await isSessionRevoked(null, 'admin', now)) === true);
+  await clearRevocation(kv, 'admin');
+  check('owner enable clears', (await isSessionRevoked(kv, 'admin', now - 5)) === false);
   check('revoke TTL covers longest session', REVOKE_TTL_SEC >= 30 * 24 * 3600);
+}
+
+// POST /api/admin/sessions/revoke: owner-only kill switch (route-level).
+{
+  const secretBytes = crypto.getRandomValues(new Uint8Array(32));
+  let s = '';
+  for (let i = 0; i < secretBytes.length; i++) s += String.fromCharCode(secretBytes[i]);
+  const b64 = btoa(s);
+  const store = new Map();
+  const kv = {
+    get: async (k) => (store.has(k) ? store.get(k) : null),
+    put: async (k, v) => { store.set(k, v); },
+    delete: async (k) => { store.delete(k); },
+  };
+  const env = { SESSION_SECRET: b64, MENU_KV: kv };
+  const call = (method, cookie) =>
+    revokeReq({
+      request: new Request('https://x/api/admin/sessions/revoke', {
+        method,
+        headers: {
+          'X-Requested-With': 'menu-admin',
+          Origin: 'https://x',
+          'Content-Type': 'application/json',
+          ...(cookie ? { Cookie: cookie } : {}),
+        },
+        body: method === 'POST' ? '{}' : undefined,
+      }),
+      env,
+    });
+  const ownerTok = await createSessionToken(secretBytes, 'admin', 3600);
+  const clientTok = await createSessionToken(secretBytes, 'client:layali', 3600);
+  const ownerCookie = `__Host-admin-session=${ownerTok}`;
+  const clientCookie = `__Host-admin-session=${clientTok}`;
+
+  check('revoke rejects GET', (await call('GET')).status === 405);
+  check('revoke rejects anonymous', (await call('POST')).status === 403);
+  check('revoke rejects client login', (await call('POST', clientCookie)).status === 403);
+  const r = await call('POST', ownerCookie);
+  check('owner revokes ok', r.status === 200 && (await r.json().catch(() => ({}))).ok === true);
+  check('caller session dies at once', (await isSessionRevoked(kv, 'admin', Math.floor(Date.now() / 1000) - 5)) === true);
+  check('revoked caller gets 403', (await call('POST', ownerCookie)).status === 403);
 }
 
 // Fail-only limiter (powers GET /api/track): reads are free, only failed

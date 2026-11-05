@@ -246,14 +246,21 @@ export async function clearRevocation(kv, username) {
 }
 
 /**
- * True when this session must die: a client session older than (or equal
- * to) its user's revocation stamp. Owner sessions ('admin') are never
- * revoked. Fails CLOSED when the store is unreachable — a revoked user
- * must not slip through on a blip (the owner is unaffected either way).
+ * True when this session must die: a session older than (or equal to) its
+ * user's revocation stamp. Applies to client sessions AND the owner
+ * ('admin'): stamping `admin` kills every master session, including the
+ * one that requested it (see POST /api/admin/sessions/revoke — the UI
+ * signs out right after). Fails CLOSED when the store is unreachable — a
+ * revoked session must not slip through on a blip. Per-request check, so a
+ * recovered store un-breaks legitimate sessions by itself; nothing is
+ * destroyed, only rejected until then.
  */
 export async function isSessionRevoked(kv, sub, iat) {
-  if (typeof sub !== 'string' || !sub.startsWith('client:')) return false;
-  const username = sub.slice('client:'.length);
+  if (typeof sub !== 'string' || !sub) return false;
+  let username;
+  if (sub === 'admin') username = 'admin';
+  else if (sub.startsWith('client:')) username = sub.slice('client:'.length);
+  else return false;
   if (!username || !kv) return true;
   try {
     const raw = await kv.get(revokeKey(username));

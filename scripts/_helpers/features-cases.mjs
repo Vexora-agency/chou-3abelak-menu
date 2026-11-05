@@ -42,7 +42,29 @@ export function makeDB(orderRows) {
     if (sql.includes('SELECT MAX(number)')) {
       return { m: db.orders.reduce((m, o) => Math.max(m, o.number || 0), 1000) };
     }
-    if (sql.includes('FROM orders WHERE idem_key')) return null;
+    if (sql.includes('FROM orders WHERE idem_key')) {
+      const row = db.orders.find((o) => o.idem_key === a[0]);
+      return row ? { number: row.number, total: row.total, track_token: row.track_token, sent_via: null } : null;
+    }
+    if (sql.includes('INTO "rate_counters"')) {
+      // Mirrors checkAndReserveOrderBudget(): atomic check-and-reserve.
+      // Synchronous Map op = atomic in-process, like the single-statement
+      // UPSERT is atomic in D1. Bind order: key, reset, now.
+      db.rates = db.rates || {};
+      const [key, reset, now] = a;
+      const cur = db.rates[key];
+      let count;
+      let windowReset;
+      if (!cur || !(cur.windowReset > now)) {
+        count = 1;
+        windowReset = reset;
+      } else {
+        count = cur.count + 1;
+        windowReset = cur.windowReset;
+      }
+      db.rates[key] = { count, windowReset };
+      return { hits: count };
+    }
     if (sql.includes('SELECT MIN(created_at)')) {
       const ms = db.orders.map((o) => o.created_at).sort();
       return { m: ms.length ? ms[0] : null };

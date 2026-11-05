@@ -19,6 +19,32 @@ export async function findOrderByIdemKey(db, idemKey) {
   return db.prepare('SELECT number, total, track_token, sent_via FROM orders WHERE idem_key = ?1').bind(idemKey).first();
 }
 
+/**
+ * Order spam cap (15 orders / 10 min / IP): check AND reserve in ONE
+ * atomic UPSERT, so parallel bursts cannot all read the old counter and
+ * slip past (the old KV read-then-increment-after-insert could). Returns
+ * `{ allowed, count }`. Expired windows reset to 1 in place, so the
+ * `rate_counters` table (migration 0027) never grows past distinct keys.
+ * Throws on DB failure — callers fail OPEN (availability: a blip must not
+ * eat real dinner orders) and log the error.
+ */
+export async function checkAndReserveOrderBudget(db, key, max, windowSec, nowSec) {
+  const now = Number.isFinite(nowSec) ? nowSec : Math.floor(Date.now() / 1000);
+  const reset = now + windowSec;
+  const row = await db
+    .prepare(
+      'INSERT INTO "rate_counters" ("key", "hits", "window_reset") VALUES (?1, 1, ?2) ' +
+        'ON CONFLICT ("key") DO UPDATE SET ' +
+        '"hits" = CASE WHEN "rate_counters"."window_reset" > ?3 THEN "rate_counters"."hits" + 1 ELSE 1 END, ' +
+        '"window_reset" = CASE WHEN "rate_counters"."window_reset" > ?3 THEN "rate_counters"."window_reset" ELSE ?2 END ' +
+        'RETURNING "hits" AS "hits"'
+    )
+    .bind(key, reset, now)
+    .first();
+  const n = row && typeof row.hits === 'number' ? row.hits : 0;
+  return { allowed: n >= 1 && n <= max, count: n };
+}
+
 export async function findOrderById(db, id) {
   return db.prepare('SELECT * FROM orders WHERE id = ?1').bind(id).first();
 }

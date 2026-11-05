@@ -1,7 +1,11 @@
 // Request-id middleware + structured error log tests (zero-dep).
 // Run: node scripts/test-middleware-log.mjs
-import { onRequest as rootMw } from '../functions/_middleware.js';
+import { onRequest as chain } from '../functions/_middleware.js';
 import { logError } from '../functions/_shared/log.js';
+
+// _middleware.js exports the Pages chain [sentryPlugin, appMiddleware]
+// (array since the Sentry integration) — run it in order like the runtime.
+const rootMw = (ctx) => chain[0]({ ...ctx, next: () => chain[1](ctx) });
 
 let pass = 0, fail = 0;
 const ok = (c, n, x = '') => { if (c) { pass++; } else { fail++; console.error(`FAIL ${n} ${x}`); } };

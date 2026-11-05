@@ -9,16 +9,16 @@ import { jsonNoStore, readJsonBody } from '../_shared/session.js';
 import { captureBackendException } from '../_shared/sentry.js';
 import { mapOrderRow, validateOrderInput } from '../_shared/orders.js';
 import { newTrackToken } from '../_shared/push.js';
-import { LINK_WINDOW_MS, findLinkCandidate, findOrderById, findOrderByIdemKey, insertOrderWithNumber, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
+import { LINK_WINDOW_MS, checkAndReserveOrderBudget, findLinkCandidate, findOrderById, findOrderByIdemKey, insertOrderWithNumber, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
 import { getOrderingState } from '../_shared/status.js';
 
 const MAX_BODY_BYTES = 8 * 1024;
-const RATE_PREFIX = 'order:ip:';
-const RATE_TTL_SEC = 10 * 60;
+const RATE_KEY_PREFIX = 'order:ip:';
+const RATE_WINDOW_SEC = 10 * 60;
+const RATE_MAX = 15;
 // Human bursts welcome (family + guests ordering together), bots capped:
 // 15 distinct orders per 10 minutes per IP. Same-key retries never consume
 // budget (a retry is not a new order — the dedupe returns the stored row).
-const RATE_MAX = 15;
 
 function clientIp(request) {
   return request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -120,27 +120,9 @@ export async function onRequest(context) {
   // row's token below), gates the public /api/track page. No PII in it.
   c.trackToken = newTrackToken();
 
-  // Rate limit: 15 orders per 10 minutes per IP
-  const ip = clientIp(request);
-  const nowSec = Math.floor(Date.now() / 1000);
-  let used = 0;
-  let windowReset = nowSec + RATE_TTL_SEC;
-  try {
-    const raw = await kv.get(RATE_PREFIX + ip);
-    if (raw) {
-      const state = JSON.parse(raw);
-      if (state && typeof state.n === 'number' && typeof state.reset === 'number' && nowSec < state.reset) {
-        used = state.n;
-        windowReset = state.reset;
-      }
-    }
-  } catch {}
-  if (used >= RATE_MAX) {
-    return jsonNoStore({ error: 'rate_limited' }, 429);
-  }
-
-  // Idempotency: a repeated key returns the original order (stored totals, not
-  // freshly computed ones — the menu may have changed since the first insert).
+  // Idempotency FIRST (free retries): a repeated key returns the original
+  // order — stored totals win, the menu may have changed since the first
+  // insert — without consuming rate budget. A retry is not a new order.
   if (c.idemKey) {
     try {
       const existing = await findOrderByIdemKey(db, c.idemKey);
@@ -153,6 +135,27 @@ export async function onRequest(context) {
         });
       }
     } catch {}
+  }
+
+  // Rate limit: 15 orders per 10 minutes per IP (atomic check-and-reserve
+  // BEFORE the insert, so parallel bursts cannot slip past a stale read).
+  // Same-key retries were already deduped above and cost no budget.
+  const ip = clientIp(request);
+  try {
+    const budget = await checkAndReserveOrderBudget(
+      db,
+      RATE_KEY_PREFIX + ip,
+      RATE_MAX,
+      RATE_WINDOW_SEC,
+      Math.floor(Date.now() / 1000)
+    );
+    if (!budget.allowed) {
+      return jsonNoStore({ error: 'rate_limited' }, 429);
+    }
+  } catch (err) {
+    // Fail OPEN (a blip must not eat real dinner orders — the insert itself
+    // would 503 anyway) and log for the owner.
+    captureBackendException(context, err, { binding: 'd1', code: 'order_rate_reserve' });
   }
 
   // One timestamp per request (verbatim original: created_at/updated_at identical, even on retry).
@@ -201,27 +204,13 @@ export async function onRequest(context) {
 
   // Bookkeeping (never blocks the response). Retention lives in the daily
   // /api/internal/run-reports job now — never here.
+  // (Rate budget was already reserved atomically BEFORE the insert, so no
+  // post-insert counter write is needed here.)
   // Kitchen grace period: NO owner notification here (no Telegram message,
   // no admin push). The 1-minute /api/internal/order-nag sweep "releases"
   // the order once the 5-minute customer-cancel window lapses — only then
   // does it appear in the admin dashboard + Telegram. A customer cancel
   // inside the window pings the owner from /api/track/cancel instead.
-  const after = (async () => {
-    try {
-      await kv.put(
-        RATE_PREFIX + ip,
-        JSON.stringify({ n: used + 1, reset: windowReset }),
-        { expirationTtl: RATE_TTL_SEC }
-      );
-    } catch {}
-  })();
-  if (context.waitUntil) {
-    try {
-      context.waitUntil(after);
-    } catch {}
-  } else {
-    await after;
-  }
 
   // Fetch the stored row back so the response reflects exactly what was saved
   let savedTotal = c.total;

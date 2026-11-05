@@ -62,6 +62,14 @@ function readEnvName(): string {
   }
 }
 
+/** True when the SDK client actually initialized (not just DSN present). */
+export function isSentryActive(): boolean {
+  try {
+    return Boolean(Sentry.getClient());
+  } catch {
+    return false;
+  }
+}
 /** Honest client-side status: is the storefront SDK actually reporting? */
 export function frontendSentryStatus(): { enabled: boolean; environment: string } {
   try {
@@ -120,18 +128,21 @@ export function initSentry(): void {
   }
 }
 
-/** Send one manually-caught frontend error (used by the admin test button). */
-export function captureFrontendError(err: unknown, extra?: Record<string, string>): void {
+/** Send one manually-caught frontend error. Returns the Sentry event id, or null when it could not be captured. */
+export function captureFrontendError(err: unknown, extra?: Record<string, string>): string | null {
   try {
+    let eventId: string | null = null;
     Sentry.withScope((scope) => {
       scope.setLevel('error');
       scope.setTag('source', 'admin-test');
       if (extra) {
         for (const [k, v] of Object.entries(extra)) scope.setTag(k, v);
       }
-      Sentry.captureException(err);
+      eventId = Sentry.captureException(err);
     });
+    return typeof eventId === 'string' && eventId ? eventId : null;
   } catch {
     // Never break the UI because monitoring is down.
+    return null;
   }
 }

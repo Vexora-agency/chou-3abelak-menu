@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Activity, FlaskConical } from 'lucide-react';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { isRecord, readJson, str } from '@/src/utils/safeJson';
-import { captureFrontendError, frontendSentryStatus } from '@/src/lib/sentry';
+import { captureFrontendError, frontendSentryStatus, isSentryActive } from '@/src/lib/sentry';
 import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 interface SentrySectionProps {
@@ -75,8 +75,21 @@ export const SentrySection: React.FC<SentrySectionProps> = ({ lang, adminFetch, 
         );
         return;
       }
-      captureFrontendError(new Error('Sentry admin frontend test (deliberate, owner-triggered)'));
-      setResult(isAr ? 'تم إرسال خطأ تجريبي من الواجهة — ابحث عنه في Sentry.' : 'Frontend test error sent — look for it in Sentry.');
+      const active = isSentryActive();
+      const eventId = captureFrontendError(new Error('Sentry admin frontend test (deliberate, owner-triggered)'));
+      if (eventId) {
+        setResult(
+          isAr
+            ? `تم إنشاء الحدث (id: ${eventId}) — انتظر دقيقتين ثم ابحث عنه في Sentry.`
+            : `Event created (id: ${eventId}) — wait two minutes, then look for it in Sentry.`
+        );
+      } else {
+        setResult(
+          isAr
+            ? `تعذر إنشاء الحدث (SDK نشط: ${active ? 'نعم' : 'لا'}) — ابعتلي سكرين شوت لتبويب Console بعد الضغط (F12).`
+            : `Could not create the event (SDK active: ${active ? 'yes' : 'no'}) — send me a Console tab screenshot after pressing (F12).`
+        );
+      }
     } catch {
       setResult(isAr ? 'تعذر الإرسال' : 'Could not send');
     } finally {

@@ -53,12 +53,16 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
 }) => {
   const blocks = addonBlocks(menu, item);
   if (blocks.length === 0) return null;
-  // The locked spicy section renders FIRST as its own heat slider — never
-  // mixed in with the generic add-on chips.
+  // Badged-spicy items ARE the heat: the slider is hidden entirely (the
+  // badge alone communicates it). Offering a removable level on top would
+  // let the customer order a "spicy" item with no heat — a contradiction
+  // the admin editor already warns about. No pick UI, no deselect path.
+  const badgedSpicy = (item.badges || []).includes('spicy');
   const ordered = [
-    ...blocks.filter((b) => b.groupId === SPICY_GROUP_ID),
+    ...blocks.filter((b) => b.groupId === SPICY_GROUP_ID && !badgedSpicy),
     ...blocks.filter((b) => b.groupId !== SPICY_GROUP_ID),
   ];
+  if (ordered.length === 0) return null;
   return (
     <div className="space-y-4">
       {ordered.map((b) => {

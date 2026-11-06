@@ -250,6 +250,13 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
     const badges = Array.isArray(item.badges)
       ? item.badges.filter((b) => allowedBadges.includes(b))
       : [];
+    // Heat opt-out (drinks, desserts): incompatible with the Spicy badge,
+    // whose heat degree is mandatory — fail closed instead of saving a
+    // contradictory item the customer could never order.
+    if (item.noHeat === true && badges.includes('spicy')) {
+      errors.push(`Item "${id}" cannot combine the Spicy badge with no-heat (heat is required for badged items)`);
+      continue;
+    }
     const pricing = { unit, minQty, step, maxQty, showUnit: praw.showUnit === true };
     // With variants the variant price rules; a base price is dropped to
     // avoid two competing sources of truth.
@@ -264,6 +271,7 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
       featured: Boolean(item.featured),
       available: item.available !== false,
     };
+    if (item.noHeat === true) cleanItem.noHeat = true;
     if (variants) cleanItem.variants = variants;
     // Explicit default (★ marks in place, order untouched): must point at a size.
     // Raw ids pass through the same alias map as the variants above, so a

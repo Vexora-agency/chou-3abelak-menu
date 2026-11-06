@@ -50,6 +50,38 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
           </p>
         </div>
       )}
+      {/* Heat opt-out (drinks, desserts, never-spicy items): hides the heat
+          section for this item entirely — otherwise every customizable item
+          is offered heat degrees. Incompatible with the Spicy badge (heat is
+          mandatory there), so the switch locks while the badge is on. */}
+      <label className={`flex items-center gap-2 mb-2 text-xs cursor-pointer ${badgedSpicy ? 'opacity-50 cursor-not-allowed' : ''}`}>
+        <input
+          type="checkbox"
+          checked={item.noHeat === true}
+          disabled={badgedSpicy}
+          onChange={(e) => {
+            const list = [...(item.addons || [])];
+            const stripped = list.filter(
+              (a) => !a || (a.featureId !== 'spicy' && !isSpicyFeatureId(a.featureId)),
+            );
+            const next: MenuItem = { ...item, addons: stripped };
+            if (e.target.checked) next.noHeat = true;
+            else delete next.noHeat;
+            onChange(next);
+          }}
+          className="w-4 h-4 rounded text-[var(--primary)]"
+        />
+        <span className="text-neutral-300">
+          {isAr ? 'بدون حار لهذا الصنف (مشروبات/حلويات)' : 'No heat for this item (drinks/desserts)'}
+        </span>
+      </label>
+      {badgedSpicy && (
+        <p className="text-[11px] text-neutral-500 mb-2">
+          {isAr
+            ? 'شيل شارة «حار» الأول عشان تقفل الحار خالص.'
+            : 'Remove the Spicy badge first to turn heat off completely.'}
+        </p>
+      )}
       {((item.addons || []).length === 0) && (
         <p className="text-[11px] text-neutral-500 mb-1.5">
           {isAr ? 'لا توجد مكتبات مرفقة — أرفق واحدة أدناه.' : 'No libraries attached — attach one below.'}

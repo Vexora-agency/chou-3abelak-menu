@@ -285,6 +285,39 @@ ok(featuresByGroup(custom)[0].group.name.en === 'Cheese', 'group view keeps name
   ok(lineTotal({ ...lvlItem, variants: [{ featureId: 'regular', price: 80000 }] }, { variantId: 'regular', addonIds: ['spicy-medium'], qty: 2 }) === 160000, 'free spicy level adds nothing');
 }
 
+// noHeat opt-out (drinks, desserts): no heat offer, nothing injected, stored
+// heat rows stripped. The customer sheet hides the section and tampered
+// heat ids fail as invalid add-ons (see test-features-orders 2c).
+{
+  const noHeatDoc = normalizeMenu({
+    items: [
+      {
+        id: 'cola', categoryId: 'drinks',
+        pricing: { unit: 'pc', minQty: 1, step: 1, maxQty: 50, showUnit: false, price: 150 },
+        badges: [], featured: false, available: true, noHeat: true,
+        addons: [
+          { featureId: 'regular', price: 0 },
+          { featureId: 'spicy-hot', price: 0 },
+        ],
+      },
+      {
+        id: 'meal', categoryId: 'manakish',
+        pricing: { unit: 'pc', minQty: 1, step: 1, maxQty: 50, showUnit: false, price: 100 },
+        badges: [], featured: false, available: true,
+        addons: [{ featureId: 'extra-veg', price: 30000 }],
+      },
+    ],
+    settings: { ordering: {} },
+  });
+  const cola = noHeatDoc.items.find((i) => i.id === 'cola');
+  const colaIds = (cola.addons || []).map((a) => a.featureId);
+  ok(!colaIds.some((id) => ['spicy', 'spicy-mild', 'spicy-medium', 'spicy-hot'].includes(id)), 'noHeat strips stored heat rows and injects nothing');
+  ok(colaIds.includes('regular'), 'noHeat keeps the non-heat add-ons');
+  ok(cola.noHeat === true, 'noHeat flag survives normalize');
+  const mealIds = (noHeatDoc.items.find((i) => i.id === 'meal').addons || []).map((a) => a.featureId);
+  ok(['spicy-mild', 'spicy-medium', 'spicy-hot'].every((id) => mealIds.includes(id)), 'regular customizable item still gains heat levels');
+}
+
 // ordering flags default from values
 const ord = normalizeMenu({ items: [], settings: { ordering: { minOrder: 350000, deliveryFee: 100000 } } }).settings.ordering;
 ok(ord.minOrderEnabled === true && ord.deliveryFeeEnabled === true, 'missing flags default from values');

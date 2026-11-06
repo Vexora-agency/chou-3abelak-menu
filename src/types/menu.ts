@@ -82,6 +82,12 @@ export interface MenuItem {
   addedAt?: string;
   featured: boolean;
   available: boolean;
+  /** Opt out of heat entirely: no heat section is offered for this item
+      (normalize strips any heat rows and never injects them), even though it
+      has other add-ons. For drinks, desserts and other never-spicy items.
+      Incompatible with the Spicy badge (heat is mandatory for badged items)
+      — the admin UI and the server validator both reject the combination. */
+  noHeat?: boolean;
 }
 
 export interface Category {

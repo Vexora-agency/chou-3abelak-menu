@@ -319,11 +319,11 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             options scroll — the standard food-app sheet pattern. Full-bleed
             (-mx/px mirror the scroller padding) so content slides under a
             solid bar, not under text. */}
-        <div className={`sticky top-0 z-10 -mx-6 sm:-mx-8 px-6 sm:px-8 pt-4 sm:pt-6 pb-3 flex justify-between items-start gap-3 border-b ${
+        <div className={`sticky top-0 z-10 -mx-6 sm:-mx-8 px-6 sm:px-8 pt-4 sm:pt-6 pb-3 flex justify-between items-start gap-2 sm:gap-3 border-b ${
           darkMode ? 'bg-[#141414] border-neutral-800' : 'bg-white border-neutral-200'
         }`}>
           <div className="min-w-0 flex-1">
-            <h3 dir="auto" className={`text-lg min-[380px]:text-xl sm:text-2xl font-black leading-tight ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+            <h3 dir="auto" className={`text-base min-[380px]:text-xl sm:text-2xl font-black leading-tight break-words ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
               {headerTitle}
             </h3>
             {/* Badges */}
@@ -361,7 +361,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             </div>
           </div>
 
-      <div ref={headerPriceRef} className="flex-shrink-0 px-3 py-1 min-[380px]:px-3.5 min-[380px]:py-1.5 rounded-full text-base min-[380px]:text-lg font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap tabular-nums" dir="auto">
+      <div ref={headerPriceRef} className="flex-shrink-0 px-2.5 py-1 min-[380px]:px-3 min-[380px]:py-1 rounded-full text-sm min-[380px]:text-base font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap tabular-nums" dir="auto">
         {headerPriceText}
       </div>
 

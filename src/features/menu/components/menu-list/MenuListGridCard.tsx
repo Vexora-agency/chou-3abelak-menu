@@ -69,6 +69,18 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
       transition={{ duration: 0.5, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
       style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
       onClick={() => interactive && onOpenItem(item)}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency)}` : undefined}
+      data-testid={`menu-card-${item.id}`}
+      data-item-id={item.id}
+      onKeyDown={(e) => {
+        if (!interactive) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenItem(item);
+        }
+      }}
       className={`grid-card relative flex flex-col justify-between p-3.5 rounded-2xl border-2 ${sectionMark ? 'overflow-hidden' : ''} ${
         darkMode
           ? 'bg-[#141414] border-[var(--primary)] offset-shadow-dark'

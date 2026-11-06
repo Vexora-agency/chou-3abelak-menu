@@ -308,6 +308,8 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={headerTitle}
+        data-testid="item-modal"
+        data-item-id={item.id}
         className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-6 sm:px-8 pb-[max(1.25rem,env(safe-area-inset-bottom))] overflow-x-clip"
       >
         {/* Drag Pill Handle (Mobile only) */}
@@ -457,6 +459,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                 <button
                   type="button"
                   disabled={liveTotal === null || !picksValid || !heatOk}
+                  data-testid="item-modal-add"
                   onClick={() => onAddConfigured(item, variantId, addonIds, qty, effAddonQty)}
                   className="btn-tactile w-full h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-extrabold text-base flex items-center justify-center gap-2 shadow-lg hover:brightness-110 disabled:opacity-50"
                 >

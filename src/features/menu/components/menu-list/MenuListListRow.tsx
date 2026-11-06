@@ -52,6 +52,18 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
       transition={{ duration: 0.5, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
       style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
       onClick={() => interactive && onOpenItem(item)}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency)}` : undefined}
+      data-testid={`menu-row-${item.id}`}
+      data-item-id={item.id}
+      onKeyDown={(e) => {
+        if (!interactive) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenItem(item);
+        }
+      }}
       className={`group relative pb-4 border-b transition-colors ${
         darkMode ? 'border-neutral-800' : 'border-neutral-200'
       } ${interactive ? 'cursor-pointer' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${leaveDelayMs != null ? ' row-leaving' : ''}`}

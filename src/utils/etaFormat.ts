@@ -93,8 +93,17 @@ export function formatTime12(iso, lang, timeZone) {
 
 /**
  * ETA window around one ETA instant: ±20% of the remaining wait, with a
- * minimum of ±5 minutes on each side. Returns symmetric ISO bounds, or null
- * when the ETA is unparseable (caller hides the banner — never trap).
+ * minimum of ±5 minutes and a MAXIMUM of ±30 minutes on each side. Returns
+ * symmetric ISO bounds, or null when the ETA is unparseable (caller hides
+ * the banner — never trap).
+ *
+ * Why the cap: kitchen uncertainty does not grow with calendar distance —
+ * a next-day ETA 30 h out is not ±6 h uncertain. An uncapped window prints a
+ * start edge ("tomorrow 4:05 PM") that reads as a different promise than
+ * the confirmation email's center instant ("tomorrow 10:04 PM") for the
+ * SAME order, while both day labels still agree. The cap keeps the site
+ * banner an honest "around the promised time" on every surface that shares
+ * this helper (track page, order bell).
  * @param {string} etaIso ISO ETA instant
  * @param {number} [nowMs] defaults to Date.now()
  * @returns {{ fromIso: string, toIso: string } | null}
@@ -104,7 +113,8 @@ export function etaRange(etaIso, nowMs) {
   const now = typeof nowMs === 'number' ? nowMs : Date.now();
   if (Number.isNaN(etaMs) || Number.isNaN(now)) return null;
   const MIN_HALF_MS = 5 * 60 * 1000;
-  const half = Math.max(MIN_HALF_MS, 0.2 * Math.max(0, etaMs - now));
+  const MAX_HALF_MS = 30 * 60 * 1000;
+  const half = Math.min(MAX_HALF_MS, Math.max(MIN_HALF_MS, 0.2 * Math.max(0, etaMs - now)));
   return {
     fromIso: new Date(etaMs - half).toISOString(),
     toIso: new Date(etaMs + half).toISOString(),

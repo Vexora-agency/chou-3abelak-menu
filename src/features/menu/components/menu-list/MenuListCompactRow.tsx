@@ -89,6 +89,18 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
       transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.05, ease: [0.22, 1, 0.36, 1] }}
       style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
       onClick={() => interactive && onOpenItem(item)}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency)}` : undefined}
+      data-testid={`menu-compact-${item.id}`}
+      data-item-id={item.id}
+      onKeyDown={(e) => {
+        if (!interactive) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenItem(item);
+        }
+      }}
       className={`group relative flex items-center gap-3 py-3 px-2 -mx-2 rounded-xl border-b transition-colors ${
         darkMode ? 'border-neutral-800 hover:bg-white/[0.04]' : 'border-neutral-200 hover:bg-black/[0.04]'
       } ${interactive ? 'cursor-pointer' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${leaveDelayMs != null ? ' row-leaving' : ''}`}

@@ -61,6 +61,32 @@ const AR_INDIC = /[\u0660-\u0669]/;
     JSON.stringify(rPast),
   );
   check('garbage eta -> null', etaRange('bogus', now) === null);
+  // Owner-reported bug: a ~30 h ETA printed a ±6 h site window whose start
+  // edge ("tomorrow 4:05 PM") contradicted the email center ("10:04 PM").
+  const rFar = etaRange(new Date(now + 30 * 3600000).toISOString(), now);
+  check(
+    '30h wait -> capped at ±30min window',
+    rFar !== null && Date.parse(rFar.toIso) - Date.parse(rFar.fromIso) === 60 * 60000,
+    JSON.stringify(rFar),
+  );
+  const rHuge = etaRange(new Date(now + 5 * 24 * 3600000).toISOString(), now);
+  check(
+    '5d wait -> still ±30min, never wider',
+    rHuge !== null && Date.parse(rHuge.toIso) - Date.parse(rHuge.fromIso) === 60 * 60000,
+    JSON.stringify(rHuge),
+  );
+  // The email center must always sit inside the site window, at most the cap
+  // away from either edge — same order, same promise on both surfaces.
+  const center = now + 30 * 3600000;
+  const rC = etaRange(new Date(center).toISOString(), now);
+  check(
+    'site window brackets the email center within the cap',
+    rC !== null &&
+      Date.parse(rC.fromIso) <= center && center <= Date.parse(rC.toIso) &&
+      center - Date.parse(rC.fromIso) <= 30 * 60000 &&
+      Date.parse(rC.toIso) - center <= 30 * 60000,
+    JSON.stringify(rC),
+  );
 }
 
 // ---- formatEtaRange ----

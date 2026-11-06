@@ -39,6 +39,12 @@ export default defineConfig(() => {
       },
     },
     server: {
+      // TestSprite (and any tunnel-based E2E) reaches this dev server under
+      // a random tunnel hostname. Vite 6+ rejects unknown Host headers with
+      // 403, which kills the JS bundle through the tunnel (page stuck on the
+      // boot-splash logo). Allow all hosts for LOCAL DEV ONLY — never expose
+      // `vite dev` publicly; production is a static build with no dev server.
+      allowedHosts: true as const,
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',

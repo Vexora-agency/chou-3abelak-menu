@@ -217,6 +217,12 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
           aOk = false;
           break;
         }
+        // Heat opt-out: stored heat rows are dropped (the section X removed
+        // them) — normalize would strip them at read time anyway, so the
+        // saved doc stays clean and re-imports can't resurrect them.
+        if (item.noHeat === true && (aid === 'spicy' || aid === 'spicy-mild' || aid === 'spicy-medium' || aid === 'spicy-hot')) {
+          continue;
+        }
         // Unknown ids with names auto-create/alias like variants (flexible
         // imports); accepted shape gains optional name/groupId.
         if (!featureById.has(aid)) {

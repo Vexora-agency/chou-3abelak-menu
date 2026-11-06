@@ -316,6 +316,16 @@ async function postOrder(env, body) {
     const v = validateMenu(good);
     ok(v.ok === true && v.value.items[0].noHeat === true, 'lone noHeat preserved at save');
   }
+  // Save strips stored heat rows on noHeat items (the section X removed
+  // them) — re-imports and manual edits cannot resurrect them.
+  {
+    const doc = JSON.parse(JSON.stringify(MENU));
+    doc.settings = heatLib.settings;
+    doc.items = [{ ...cola(), id: 'colax', addons: [{ featureId: 'regular', price: 0 }, { featureId: 'spicy-medium', price: 0 }] }];
+    const v = validateMenu(doc);
+    const rows = (v.value && v.value.items[0] && v.value.items[0].addons) || [];
+    ok(v.ok === true && rows.length === 1 && rows[0].featureId === 'regular', 'stored heat rows stripped on noHeat save');
+  }
 }
 
 /* ---------------- 3. ordering-state + pause endpoints ---------------- */

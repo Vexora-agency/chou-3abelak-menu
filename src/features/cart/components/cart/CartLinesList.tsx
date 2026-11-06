@@ -39,6 +39,9 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
         return (
           <div
             key={l.key}
+            data-testid={`cart-line-${l.item.id}`}
+            data-line-key={l.key}
+            data-qty={l.quantity}
             className={`p-3.5 rounded-xl border transition-colors ${
               darkMode
                 ? 'bg-[#1c1c1c] border-neutral-800 text-white'

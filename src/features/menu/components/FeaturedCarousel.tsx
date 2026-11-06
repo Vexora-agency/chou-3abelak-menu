@@ -208,10 +208,24 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
       ? (isAr ? 'حار و مقرمش' : 'HOT & SPICY')
       : (isAr ? 'جديد' : 'NEW');
 
+    const cardLabel = `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency)}`;
     return (
       <motion.div
         key={item.id}
         onClick={() => interactive && onOpenItem(item)}
+        onPointerDown={pause}
+        role={interactive ? 'button' : undefined}
+        tabIndex={interactive ? 0 : undefined}
+        aria-label={interactive ? cardLabel : undefined}
+        data-testid={`featured-card-${item.id}`}
+        data-item-id={item.id}
+        onKeyDown={(e) => {
+          if (!interactive) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onOpenItem(item);
+          }
+        }}
         initial={{ opacity: 0, y: 22 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-40px' }}

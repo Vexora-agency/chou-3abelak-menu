@@ -31,6 +31,7 @@
 import { sha256Hex } from './access.js';
 import { unitLabel } from './pricing.js';
 import { safeCompareStrings } from './session.js';
+import { captureBackendException } from './sentry.js';
 import { findOrderById, countActiveKitchenOrders, updateOrderStatus } from './repositories/orders.repo.js';
 import { orderDistanceKm, orderingEtaOrDefaults } from './eta.js';
 import { notifyOrderStatus } from './push.js';
@@ -447,6 +448,31 @@ export async function callTelegramApi(token, method, params, timeoutMs = 8000, f
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * Best-effort Bot API edit that distinguishes "already converged" from real
+ * failures. Telegram answers 400 "message is not modified" when the markup
+ * (or text) we push is already in place — that is success, not an error.
+ * Anything else is captured for diagnosis: without this, the owner sees
+ * buttons that never change (e.g. بدء تحضير stuck after a tap) with no
+ * trace anywhere, and repeat taps could never heal it.
+ */
+async function checkedTelegramEdit(token, env, method, params, code) {
+  let res = null;
+  try {
+    res = await callTelegramApi(token, method, params);
+  } catch {
+    res = null;
+  }
+  if (!res) return false;
+  if (res.ok) return true;
+  const msg = typeof res.error === 'string' ? res.error : '';
+  if (/message is not modified/i.test(msg)) return true;
+  try {
+    captureBackendException({ env }, new Error(`telegram ${method} failed: ${msg || 'unknown'}`), { code });
+  } catch {}
+  return false;
 }
 
 /** Escape for parse_mode HTML (order text uses this). */
@@ -1068,6 +1094,21 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
           ? 'Already marked ready ✅'
           : parsed.status === 'completed' ? 'Already marked received 📦' : 'Already cancelled.';
       await answer(already);
+      // Self-heal: the classic stuck-Prepare case is a row that already
+      // flipped while its message edit was lost (network/429/parse). A repeat
+      // tap used to answer without touching the message, stranding the old
+      // buttons forever — re-assert the correct keyboard for the CURRENT
+      // status instead. "Message is not modified" just means already fixed.
+      try {
+        const healKeyboard = current === 'confirmed'
+          ? buildOrderKeyboard('', parsed.orderId, 'confirmed')
+          : { inline_keyboard: [] };
+        await checkedTelegramEdit(token, env, 'editMessageReplyMarkup', {
+          chat_id: chatId,
+          message_id: messageId,
+          reply_markup: healKeyboard,
+        }, 'telegram_edit_heal');
+      } catch {}
       return { handled: true, noop: true, status: current };
     }
     if (!isTelegramTransitionAllowed(current, parsed.status)) {
@@ -1173,20 +1214,20 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
         ? rebuilt
         : (typeof messageText === 'string' && messageText ? messageText : `طلب #${order.number ?? ''}`);
       const stamped = `${base}\n\n${banner}`.slice(0, 4000);
-      await callTelegramApi(token, 'editMessageText', {
+      await checkedTelegramEdit(token, env, 'editMessageText', {
         chat_id: chatId,
         message_id: messageId,
         text: stamped,
         parse_mode: 'HTML',
         reply_markup: nextKeyboard,
-      });
+      }, 'telegram_edit_text');
     } catch {}
     try {
-      await callTelegramApi(token, 'editMessageReplyMarkup', {
+      await checkedTelegramEdit(token, env, 'editMessageReplyMarkup', {
         chat_id: chatId,
         message_id: messageId,
         reply_markup: nextKeyboard,
-      });
+      }, 'telegram_edit_markup');
     } catch {}
     // Owner -> customer loop (same as the dashboard PATCH path): best-effort.
     try {
@@ -1255,7 +1296,7 @@ function stripBanner(text) {
  *   - completed/cancelled (terminal) -> banner stamped + buttons frozen.
  *   - new (reopened) -> buttons restored so the owner/crew can act again.
  */
-export async function syncOrderStatusToTelegram(db, token, { orderId, status, adminUrl }) {
+export async function syncOrderStatusToTelegram(db, token, { orderId, status, adminUrl, env }) {
   const skip = (reason) => ({ sent: 0, reason });
   try {
     if (!db || typeof token !== 'string' || !token) return skip('misconfigured');
@@ -1294,33 +1335,39 @@ export async function syncOrderStatusToTelegram(db, token, { orderId, status, ad
         const messageId = row.message_id;
         if (status === 'new') {
           try {
-            await callTelegramApi(token, 'editMessageReplyMarkup', {
+            await checkedTelegramEdit(token, env, 'editMessageReplyMarkup', {
               chat_id: chatId,
               message_id: messageId,
               reply_markup: buildOrderKeyboard(adminUrl, orderId),
-            });
+            }, 'telegram_sync_markup');
           } catch {}
           ownerDone = true;
         } else {
+          // Atomicity: a text edit WITHOUT its keyboard wipes the inline
+          // buttons, so the text edit carries the next keyboard too (same
+          // rule as the tap path) — a dropped follow-up markup edit can no
+          // longer leave the message buttonless.
+          const ownerKb = keepDelivered
+            ? buildOrderKeyboard(adminUrl, orderId, 'confirmed')
+            : { inline_keyboard: [] };
           const base = stripBanner(typeof row.message_text === 'string' && row.message_text ? row.message_text : '');
           if (base) {
             try {
-              await callTelegramApi(token, 'editMessageText', {
+              await checkedTelegramEdit(token, env, 'editMessageText', {
                 chat_id: chatId,
                 message_id: messageId,
                 text: `${base}\n\n${banner}`.slice(0, 4000),
                 parse_mode: 'HTML',
-              });
+                reply_markup: ownerKb,
+              }, 'telegram_sync_text');
             } catch {}
           }
           try {
-            await callTelegramApi(token, 'editMessageReplyMarkup', {
+            await checkedTelegramEdit(token, env, 'editMessageReplyMarkup', {
               chat_id: chatId,
               message_id: messageId,
-              reply_markup: keepDelivered
-                ? buildOrderKeyboard(adminUrl, orderId, 'confirmed')
-                : { inline_keyboard: [] },
-            });
+              reply_markup: ownerKb,
+            }, 'telegram_sync_markup');
           } catch {}
           ownerDone = true;
         }
@@ -1340,33 +1387,35 @@ export async function syncOrderStatusToTelegram(db, token, { orderId, status, ad
             if (!cp || !Number.isInteger(cp.chatId) || !Number.isInteger(cp.messageId)) continue;
             if (status === 'new') {
               try {
-                await callTelegramApi(token, 'editMessageReplyMarkup', {
+                await checkedTelegramEdit(token, env, 'editMessageReplyMarkup', {
                   chat_id: cp.chatId,
                   message_id: cp.messageId,
                   reply_markup: buildOrderKeyboard('', orderId),
-                });
+                }, 'telegram_sync_markup');
               } catch {}
               deliveryDone = true;
             } else {
+              const copyKb = keepDelivered
+                ? buildOrderKeyboard('', orderId, 'confirmed')
+                : { inline_keyboard: [] };
               const cbase = stripBanner(typeof cp.messageText === 'string' && cp.messageText ? cp.messageText : '');
               if (cbase) {
                 try {
-                  await callTelegramApi(token, 'editMessageText', {
+                  await checkedTelegramEdit(token, env, 'editMessageText', {
                     chat_id: cp.chatId,
                     message_id: cp.messageId,
                     text: `${cbase}\n\n${banner}`.slice(0, 4000),
                     parse_mode: 'HTML',
-                  });
+                    reply_markup: copyKb,
+                  }, 'telegram_sync_text');
                 } catch {}
               }
               try {
-                await callTelegramApi(token, 'editMessageReplyMarkup', {
+                await checkedTelegramEdit(token, env, 'editMessageReplyMarkup', {
                   chat_id: cp.chatId,
                   message_id: cp.messageId,
-                  reply_markup: keepDelivered
-                    ? buildOrderKeyboard('', orderId, 'confirmed')
-                    : { inline_keyboard: [] },
-                });
+                  reply_markup: copyKb,
+                }, 'telegram_sync_markup');
               } catch {}
               deliveryDone = true;
             }

@@ -125,6 +125,7 @@ export async function onRequest(context) {
             orderId: id,
             status,
             adminUrl: origin ? `${origin}/admin/dashboard` : '',
+            env,
           });
         } catch {}
         // Customer email (confirmed/completed/cancelled): best-effort only.

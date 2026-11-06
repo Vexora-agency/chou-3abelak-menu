@@ -332,6 +332,40 @@ ok('rebuild keeps delivery fee line', !!rebuilt2 && rebuilt2.includes('30,000'))
 ok('confirm stamps preparing banner', !!stamped && stamped.body.text.includes('🔥 الطلب قيد التحضير'));
 const repeat = await handleOrderCallback(dbNew, 'tok', { ...cbBase, callbackId: 'cb2', data: `tg:cfm:ord-1` });
 ok('repeat confirm is noop', repeat.handled === true && repeat.noop === true && cbCalls.filter((c) => c.method === 'editMessageText').length === 1);
+const healKb = cbCalls.filter((c) => c.method === 'editMessageReplyMarkup' && JSON.stringify(c.body.reply_markup || {}).includes('tg:rcv:ord-1'));
+ok('repeat confirm re-asserts delivered keyboard (self-heal)', healKb.length >= 2);
+// Lost-edit recovery: if the swap edits fail (deleted message), the DB still
+// flips and the answer still clears the spinner; the NEXT tap on the stale
+// buttons heals them instead of stranding them forever.
+const failCalls = [];
+const okMock = globalThis.fetch;
+globalThis.fetch = async (url, init) => {
+  const method = String(url).split('/').pop();
+  failCalls.push({ method, body: JSON.parse(init.body) });
+  if (method === 'editMessageText' || method === 'editMessageReplyMarkup') {
+    return { ok: false, status: 400, json: async () => ({ ok: false, error_code: 400, description: 'Bad Request: message to edit not found' }) };
+  }
+  return { ok: true, status: 200, json: async () => ({ ok: true, result: true }) };
+};
+const dbFail = orderDb(true, 'new');
+const rFail = await handleOrderCallback(dbFail, 'tok', { ...cbBase, callbackId: 'cbF1', data: 'tg:cfm:ord-1' });
+ok('confirm survives lost message edit', rFail.handled === true && rFail.status === 'confirmed' && dbFail.orders.get('ord-1').status === 'confirmed');
+const rHeal = await handleOrderCallback(dbFail, 'tok', { ...cbBase, callbackId: 'cbF2', data: 'tg:cfm:ord-1' });
+ok(
+  'repeat tap re-asserts delivered keyboard after lost edit',
+  rHeal.handled === true && failCalls.some((c) => c.method === 'editMessageReplyMarkup' && JSON.stringify(c.body.reply_markup || {}).includes('tg:rcv:ord-1')),
+);
+// 'message is not modified' means already converged — benign, never an error.
+globalThis.fetch = async (url, init) => {
+  const method = String(url).split('/').pop();
+  if (method === 'editMessageText' || method === 'editMessageReplyMarkup') {
+    return { ok: false, status: 400, json: async () => ({ ok: false, error_code: 400, description: 'Bad Request: message is not modified' }) };
+  }
+  return { ok: true, status: 200, json: async () => ({ ok: true, result: true }) };
+};
+const rBenign = await handleOrderCallback(orderDb(true, 'new'), 'tok', { ...cbBase, callbackId: 'cbF3', data: 'tg:cfm:ord-1' });
+ok('not-modified edit treated as converged', rBenign.handled === true && rBenign.status === 'confirmed');
+globalThis.fetch = okMock;
 const badTrans = await handleOrderCallback(orderDb(true, 'completed'), 'tok', { ...cbBase, callbackId: 'cb3', data: `tg:cfm:ord-1` });
 ok('terminal order rejected', badTrans.handled === false && badTrans.reason === 'bad_transition');
 const unlinked = await handleOrderCallback(orderDb(false), 'tok', { ...cbBase, callbackId: 'cb4', data: `tg:cfm:ord-1` });
@@ -378,6 +412,10 @@ dbSync.ledger.set('ord-s1', { status: 'sent', order_number: 11, chat_id: 111, me
 const s1 = await syncOrderStatusToTelegram(dbSync, 'tok', { orderId: 'ord-s1', status: 'confirmed', adminUrl: 'https://x/admin/dashboard' });
 const editText = syncCalls.find((c) => c.method === 'editMessageText');
 ok('sync stamps banner', s1.sent === 1 && editText && editText.body.text.includes('🔥 الطلب قيد التحضير') && editText.body.text.includes('#11'));
+ok(
+  'sync text edit carries keyboard (atomic, no wipe)',
+  !!editText && JSON.stringify(editText.body.reply_markup || {}).includes('tg:rcv:ord-s1')
+);
 ok(
   'sync keeps delivered buttons on confirm (no freeze)',
   syncCalls.some(

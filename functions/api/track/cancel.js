@@ -95,6 +95,7 @@ export async function onRequest(context) {
           orderId: row.id,
           status: 'cancelled',
           adminUrl: origin ? `${origin}/admin/dashboard` : '',
+          env,
         });
       }
     } catch {}

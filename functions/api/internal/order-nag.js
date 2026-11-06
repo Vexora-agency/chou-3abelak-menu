@@ -280,6 +280,7 @@ export async function onRequest(context) {
           orderId: cand.id,
           status: 'completed',
           adminUrl: origin ? `${origin}/admin/dashboard` : '',
+          env,
         });
         await notifyOwnerAutoCompleted(db, token, {
           orderNumber: cand.number,

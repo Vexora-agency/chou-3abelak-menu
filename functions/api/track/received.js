@@ -178,6 +178,7 @@ export async function onRequest(context) {
           orderId: row.id,
           status: 'completed',
           adminUrl: origin ? `${origin}/admin/dashboard` : '',
+          env,
         });
       }
     } catch {}

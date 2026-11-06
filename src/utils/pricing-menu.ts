@@ -315,6 +315,19 @@ export function normalizeMenu<T>(menu: T): T {
     for (const item of out.items as Record<string, unknown>[]) {
       if (!item || typeof item !== 'object' || !Array.isArray(item.addons)) continue;
       const list = item.addons as Record<string, unknown>[];
+      // Heat opt-out (drinks, desserts — item.noHeat): strip any stored
+      // heat rows now and skip the completion below; the injection block
+      // further down skips noHeat items too, so the section never exists
+      // for them — stored or injected. TWIN: functions/_shared/pricing-menu.js.
+      if ((item as { noHeat?: unknown }).noHeat === true) {
+        const kept = list.filter(
+          (a) => !a || (a.featureId !== 'spicy' && !SPICY_LEVEL_IDS.includes(a.featureId as string)),
+        );
+        if (kept.length !== list.length) {
+          (item as { addons: unknown }).addons = kept;
+        }
+        continue;
+      }
       const legacyIdx = list.findIndex((a) => a && a.featureId === 'spicy');
       let heatPrice: number | null = null;
       if (legacyIdx !== -1) {
@@ -350,7 +363,10 @@ export function normalizeMenu<T>(menu: T): T {
   if (Array.isArray(out.items)) {
     for (const item of out.items as Record<string, unknown>[]) {
       if (!item || typeof item !== 'object') continue;
-      const rec = item as { badges?: unknown; addons?: unknown };
+      const rec = item as { badges?: unknown; addons?: unknown; noHeat?: unknown };
+      // Heat opt-out: no offer and nothing to inject (any stored rows were
+      // stripped above). TWIN: functions/_shared/pricing-menu.js.
+      if (rec.noHeat === true) continue;
       const badgedSpicy = Array.isArray(rec.badges) && (rec.badges as unknown[]).includes('spicy');
       if (!Array.isArray(rec.addons)) {
         if (!badgedSpicy) continue;

@@ -2,6 +2,7 @@
 // ordering-state + pause endpoints. Pure split of test-features.mjs.
 // Run: node scripts/test-features-orders.mjs
 import { validateOrderInput } from '../functions/_shared/orders.js';
+import { validateMenu } from '../functions/_shared/validate.js';
 import { onRequest as ordersReq } from '../functions/api/orders.js';
 import { onRequest as stateReq } from '../functions/api/ordering-state.js';
 import { onRequest as pauseReq } from '../functions/api/admin/ordering/pause.js';
@@ -244,6 +245,76 @@ async function postOrder(env, body) {
       orderBody({ location: pin, items: [{ id: 'shish', qty: 1 }] }),
     );
     ok(r.status === 200, 'unbadged heatless order still accepted');
+  }
+}
+
+/* ---------------- 2c. noHeat opt-out: no offer, tamper-proof, save gate ---------------- */
+{
+  // A drink-style item: customizable (has add-ons) but heat makes no sense.
+  const pin = { lat: 33.9, lng: 35.5, accuracy: 30 };
+  const heatLib = {
+    settings: {
+      ...(MENU.settings || {}),
+      featureGroups: [
+        { id: 'spicy', name: { en: 'Make it Spicy', ar: 'خليه حار' }, selection: 'single', prompt: { en: '', ar: '' } },
+        { id: 'choice', name: { en: 'Choice', ar: 'الاختيار' }, selection: 'single', prompt: { en: 'Pick one', ar: 'اختار' } },
+      ],
+      featureDefs: [
+        { id: 'spicy-mild', groupId: 'spicy', name: { en: 'Mild', ar: 'خفيف' } },
+        { id: 'spicy-medium', groupId: 'spicy', name: { en: 'Medium', ar: 'متوسط' } },
+        { id: 'spicy-hot', groupId: 'spicy', name: { en: 'Extra Hot', ar: 'حار جداً' } },
+        { id: 'regular', groupId: 'choice', name: { en: 'Regular', ar: 'عادي' } },
+      ],
+    },
+  };
+  const cola = () => ({
+    id: 'cola', categoryId: 'c1', name: { en: 'Cola', ar: 'كولا' }, description: { en: '', ar: '' },
+    pricing: { unit: 'pc', minQty: 1, step: 1, maxQty: 50, showUnit: false, price: 150 },
+    badges: [], featured: false, available: true, noHeat: true,
+    addons: [{ featureId: 'regular', price: 0 }],
+  });
+  const m = { ...MENU, ...heatLib, items: [cola()] };
+  // Heatless order accepted; the stored line carries no heat.
+  {
+    const kv = makeKV();
+    await kv.put('menu', JSON.stringify(m));
+    const db = makeDB([]);
+    const r = await postOrder(
+      { MENU_KV: kv, ORDERS_DB: db },
+      orderBody({ location: pin, items: [{ id: 'cola', qty: 1 }] }),
+    );
+    ok(r.status === 200, 'noHeat heatless order accepted');
+    const stored = JSON.parse(db.orders[0].items_json);
+    ok(Array.isArray(stored) && stored.length === 1 && !stored[0].addonIds, 'noHeat stored line has no heat');
+  }
+  // A tampered heat id is an unknown add-on after normalize strips/injects
+  // nothing — rejected, nothing stored.
+  {
+    const kv = makeKV();
+    await kv.put('menu', JSON.stringify(m));
+    const db = makeDB([]);
+    const r = await postOrder(
+      { MENU_KV: kv, ORDERS_DB: db },
+      orderBody({ location: pin, idemKey: 'noheat-tamper', items: [{ id: 'cola', qty: 1, addonIds: ['spicy-medium'] }] }),
+    );
+    ok(r.status === 400 && db.orders.length === 0, 'tampered heat on noHeat item rejected');
+  }
+  // Save gate: Spicy badge + noHeat is contradictory (heat would be both
+  // required and impossible) — rejected instead of saved.
+  {
+    const bad = JSON.parse(JSON.stringify(MENU));
+    bad.settings = heatLib.settings;
+    bad.items = [{ ...cola(), id: 'colax', badges: ['spicy'] }];
+    const v = validateMenu(bad);
+    ok(v.ok === false && v.errors.some((e) => String(e).includes('no-heat')), 'spicy badge + noHeat rejected at save');
+  }
+  // Save gate: lone noHeat survives validation untouched.
+  {
+    const good = JSON.parse(JSON.stringify(MENU));
+    good.settings = heatLib.settings;
+    good.items = [cola()];
+    const v = validateMenu(good);
+    ok(v.ok === true && v.value.items[0].noHeat === true, 'lone noHeat preserved at save');
   }
 }
 

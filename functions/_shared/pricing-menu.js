@@ -268,6 +268,14 @@ export function normalizeMenu(menu) {
     for (const item of out.items) {
       if (!item || typeof item !== 'object' || !Array.isArray(item.addons)) continue;
       const list = item.addons;
+      // Heat opt-out (drinks, desserts — item.noHeat): strip stored heat
+      // rows now and skip the completion below; the injection block further
+      // down skips noHeat items too. TWIN: src/utils/pricing-menu.ts.
+      if (item.noHeat === true) {
+        const kept = list.filter((a) => !a || (a.featureId !== 'spicy' && a.featureId !== 'spicy-mild' && a.featureId !== 'spicy-medium' && a.featureId !== 'spicy-hot'));
+        if (kept.length !== list.length) item.addons = kept;
+        continue;
+      }
       const legacyIdx = list.findIndex((a) => a && a.featureId === 'spicy');
       let heatPrice = null;
       if (legacyIdx !== -1) {
@@ -300,6 +308,9 @@ export function normalizeMenu(menu) {
   if (Array.isArray(out.items)) {
     for (const item of out.items) {
       if (!item || typeof item !== 'object') continue;
+      // Heat opt-out: no offer and nothing to inject (stored rows were
+      // stripped above). TWIN: src/utils/pricing-menu.ts.
+      if (item.noHeat === true) continue;
       const badgedSpicy = Array.isArray(item.badges) && item.badges.includes('spicy');
       if (!Array.isArray(item.addons)) {
         if (!badgedSpicy) continue;

@@ -185,6 +185,39 @@ ok(same(feN.settings.badges, beN.settings.badges), 'normalizeMenu badges');
 ok(feN.schemaVersion === beN.schemaVersion && !('addonGroups' in feN) && !('addonGroups' in beN), 'normalizeMenu version + addonGroups dropped');
 ok(same(FE.normalizeMenu(null), BE.normalizeMenu(null)) && same(FE.normalizeMenu([1]), BE.normalizeMenu([1])), 'normalizeMenu garbage passthrough');
 
+// ---------- 9b. normalizeMenu noHeat opt-out (twins must agree) ----------
+const heatMenu = {
+  version: 2, schemaVersion: 2, updatedAt: '2026-01-01T00:00:00.000Z',
+  settings: { ordering: {} },
+  categories: [{ id: 'c1', name: { en: 'Cat', ar: 'صنف' }, visible: true }],
+  items: [
+    {
+      id: 'drink', categoryId: 'c1',
+      pricing: { unit: 'pc', price: 150, minQty: 1, step: 1, maxQty: 50, showUnit: false },
+      badges: [], featured: false, available: true, noHeat: true,
+      addons: [{ featureId: 'regular', price: 0 }, { featureId: 'spicy-hot', price: 0 }],
+    },
+    {
+      id: 'meal', categoryId: 'c1',
+      pricing: { unit: 'pc', price: 100, minQty: 1, step: 1, maxQty: 50, showUnit: false },
+      badges: [], featured: false, available: true,
+      addons: [{ featureId: 'extra-veg', price: 30000 }],
+    },
+  ],
+  addonGroups: [],
+};
+const feH = FE.normalizeMenu(heatMenu);
+const beH = BE.normalizeMenu(heatMenu);
+ok(same(feH.items, beH.items), 'normalizeMenu noHeat twins agree',
+  `\nFE=${stable(feH.items)}\nBE=${stable(beH.items)}`);
+{
+  const drink = feH.items.find((i) => i.id === 'drink');
+  const drinkIds = (drink.addons || []).map((a) => a.featureId);
+  ok(!drinkIds.some((id) => ['spicy', 'spicy-mild', 'spicy-medium', 'spicy-hot'].includes(id)), 'noHeat item carries no heat rows on either twin');
+  const meal = feH.items.find((i) => i.id === 'meal');
+  ok(['spicy-mild', 'spicy-medium', 'spicy-hot'].every((id) => (meal.addons || []).some((a) => a.featureId === id)), 'regular item still gains heat levels on either twin');
+}
+
 // ---------- 10. smart badges ----------
 const NOW = Date.UTC(2026, 5, 15, 12, 0, 0);
 const newItem = { ...plain, addedAt: new Date(NOW - 3 * 86400000).toISOString() };

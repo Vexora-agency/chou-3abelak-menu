@@ -2,7 +2,7 @@ import React from 'react';
 import { Flame, Plus, Trash2, X, Star } from 'lucide-react';
 import type { FeatureGroup, ItemAddon, MenuData, MenuItem } from '@/src/types/menu';
 import { featureName, featuresByGroup } from '@/src/utils/pricing';
-import { isSpicyAddon, isSpicyFeatureId } from '@/src/utils/menuHelpers';
+import { isSpicyAddon, isSpicyFeatureId, SPICY_GROUP_ID } from '@/src/utils/menuHelpers';
 
 interface ItemAddonsEditorProps {
   item: MenuItem;
@@ -50,36 +50,15 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
           </p>
         </div>
       )}
-      {/* Heat opt-out (drinks, desserts, never-spicy items): hides the heat
-          section for this item entirely — otherwise every customizable item
-          is offered heat degrees. Incompatible with the Spicy badge (heat is
-          mandatory there), so the switch locks while the badge is on. */}
-      <label className={`flex items-center gap-2 mb-2 text-xs cursor-pointer ${badgedSpicy ? 'opacity-50 cursor-not-allowed' : ''}`}>
-        <input
-          type="checkbox"
-          checked={item.noHeat === true}
-          disabled={badgedSpicy}
-          onChange={(e) => {
-            const list = [...(item.addons || [])];
-            const stripped = list.filter(
-              (a) => !a || (a.featureId !== 'spicy' && !isSpicyFeatureId(a.featureId)),
-            );
-            const next: MenuItem = { ...item, addons: stripped };
-            if (e.target.checked) next.noHeat = true;
-            else delete next.noHeat;
-            onChange(next);
-          }}
-          className="w-4 h-4 rounded text-[var(--primary)]"
-        />
-        <span className="text-neutral-300">
-          {isAr ? 'بدون حار لهذا الصنف (مشروبات/حلويات)' : 'No heat for this item (drinks/desserts)'}
-        </span>
-      </label>
-      {badgedSpicy && (
+      {/* Heat state: removing the spicy section below opts the item out
+          (noHeat) — the customer sheet hides the heat section entirely and
+          re-attaching any heat row opts back in. No checkbox: the section X
+          is the single control. */}
+      {item.noHeat === true && !badgedSpicy && (
         <p className="text-[11px] text-neutral-500 mb-2">
           {isAr
-            ? 'شيل شارة «حار» الأول عشان تقفل الحار خالص.'
-            : 'Remove the Spicy badge first to turn heat off completely.'}
+            ? 'الحار مطفي لهذا الصنف — أعد إرفاق قسم Make it Spicy لإرجاعه.'
+            : 'Heat is off for this item — re-attach the Make it Spicy section to bring it back.'}
         </p>
       )}
       {((item.addons || []).length === 0) && (
@@ -125,7 +104,10 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
               onChange={(e) => {
               const list = [...(item.addons || [])];
               list[ai] = { ...list[ai], featureId: e.target.value };
-              onChange({ ...item, addons: list });
+              const next: MenuItem = { ...item, addons: list };
+              // Re-picking a heat option opts back in (clears a prior opt-out).
+              if (isSpicyFeatureId(e.target.value)) delete next.noHeat;
+              onChange(next);
             }}
               className="w-full min-w-0 h-11 min-h-[44px] px-2 rounded-lg bg-black border border-neutral-700 text-xs"
               aria-label={isAr ? 'الميزة' : 'Feature'}
@@ -201,7 +183,18 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
             <button
               type="button"
               onClick={() => {
-                onChange({ ...item, addons: (item.addons || []).filter((_, i) => i !== ai) });
+                const removed = (item.addons || [])[ai];
+                const kept = (item.addons || []).filter((_, i) => i !== ai);
+                const next: MenuItem = { ...item, addons: kept };
+                // Deleting heat rows until none remain is the same opt-out as
+                // removing the whole spicy section (badged-spicy excluded).
+                // Deleting non-heat rows never touches the flag.
+                if (
+                  !badgedSpicy &&
+                  removed && isSpicyFeatureId(removed.featureId) &&
+                  !kept.some((a) => a && isSpicyFeatureId(a.featureId))
+                ) next.noHeat = true;
+                onChange(next);
               }}
               className="p-1 self-center text-neutral-400 hover:text-red-400"
               title="Remove"
@@ -245,10 +238,17 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                       type="button"
                       onClick={() => {
                         if (!window.confirm(isAr ? 'حذف كل ميزات هذا القسم من الصنف؟' : 'Remove all features of this section from this item?')) return;
-                        onChange({
+                        const next: MenuItem = {
                           ...item,
                           addons: (item.addons || []).filter((a) => validGroupOf(a.featureId) !== g.id),
-                        });
+                        };
+                        // Removing the spicy section opts the item out of heat
+                        // entirely (noHeat): the customer sheet hides the heat
+                        // section and tampered heat is rejected server-side.
+                        // Re-attaching any heat row opts back in. Blocked for
+                        // badged-spicy items (heat is mandatory there).
+                        if (g.id === SPICY_GROUP_ID && !badgedSpicy) next.noHeat = true;
+                        onChange(next);
                       }}
                       className="btn-tactile shrink-0 w-6 h-6 rounded-full border border-neutral-700 text-neutral-500 hover:border-red-500 hover:text-red-400 hover:bg-red-900/30 transition-colors flex items-center justify-center"
                       title={isAr ? 'حذف القسم كاملاً' : 'Remove whole section'}
@@ -281,10 +281,13 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                           key={d.id}
                           type="button"
                           onClick={() => {
-                            onChange({
+                            const next: MenuItem = {
                               ...item,
                               addons: [...(item.addons || []), { featureId: d.id, price: 0 }],
-                            });
+                            };
+                            // Re-adding a heat level opts back in.
+                            if (isSpicyFeatureId(d.id)) delete next.noHeat;
+                            onChange(next);
                           }}
                       className={`btn-tactile px-2.5 py-1 rounded-full border border-dashed text-[10px] font-bold hover:border-[var(--primary)] hover:text-[var(--primary)] ${
                         isSpicyAddon(d.id, d.name.ar) || isSpicyAddon(d.id, d.name.en)
@@ -356,16 +359,19 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
               <button
                 key={g.id}
                 type="button"
-                onClick={() => {
+                  onClick={() => {
                   const fresh = feats.filter((d) => !usedIds.has(d.id));
                   if (fresh.length === 0) {
                     alert(isAr ? 'كل ميزات هذا القسم مضافة بالفعل' : 'All features of this section already added');
                     return;
                   }
-                  onChange({
+                  const next: MenuItem = {
                     ...item,
                     addons: [...(item.addons || []), ...fresh.map((d) => ({ featureId: d.id, price: 0 }))],
-                  });
+                  };
+                  // Re-attaching the spicy section opts back in.
+                  if (fresh.some((d) => isSpicyFeatureId(d.id))) delete next.noHeat;
+                  onChange(next);
                   onCloseAddonPicker();
                 }}
                 className="btn-tactile w-full text-start rounded-xl border border-neutral-700 bg-black/40 px-3 py-2 hover:border-[var(--primary)] transition-colors"

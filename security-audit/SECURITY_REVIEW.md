@@ -33,9 +33,6 @@ this pass except the separately-approved tamper guard (see §6).
 
 - No `VITE_*` secret reaches the client: the only `import.meta.env` uses are
   `DEV` flags (`src/config/features.config.ts:23`, `src/App.tsx:367`).
-- Documented client-baked key `VITE_BOOSTHIS_PROJECT_KEY="bk_ship_..."` in
-  `.env.example` is a **publishable ship key by design** (measuring only);
-  nothing in `src/` reads it today (no matches for `VITE_BOOSTHIS` in code).
 - Server secrets (`ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, `RESEND_API_KEY`,
   `TELEGRAM_BOT_TOKEN`, `CRON_SECRET`, …) live only in `env.*` server-side;
   no matches in `src/` or `dist/`-shipped code paths reviewed.

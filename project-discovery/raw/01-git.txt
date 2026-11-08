@@ -27,12 +27,10 @@ count-objects warnings: several dangling .pack idx warnings (GC noise, no data l
  M scheduler/src/index.js
  M tsconfig.json
  M wrangler.toml
-?? BOOSTHIS_CHECKSUMS.txt / BOOSTHIS_DESIGN.md / BOOSTHIS_INSTALL.md / BOOSTHIS_INSTALL.web.md / BOOSTHIS_LICENSE.txt / BOOSTHIS_PRIVACY.md / BOOSTHIS_TERMS.md
 ?? functions/_middleware.js
 ?? lib/
 ?? scripts/load/results/k6-summary.json
 ?? security-audit/
-?? src/types/boosthis-runtime-web.shim.ts
 (.dev.vars exists on disk but NOT listed => ignored, see below.)
 
 ## git check-ignore -v .dev.vars

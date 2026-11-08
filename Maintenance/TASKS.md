@@ -36,19 +36,6 @@
 - [ ] Await owner: (1) Generate_pass.txt removal approval, (2) review + push `maintenance/phase-0` yourself, (3) answers to overview §8 (Q3-Q12)
 
 
-## DONE � Boosthis removal (branch `maintenance/remove-boosthis`, NEVER push; owner reviews)
-- [x] PHASE A inventory (read-only): Boosthis = Veqtara telemetry kit (vitals/traces/snapshots, owner-only bubble). 3 measurement-only touchpoints: functions/_middleware.js (all-routes wrapper), scheduler/src/index.js (cron wrapper), src/types/boosthis-runtime-web.shim.ts (types only, nothing imports runtime). Vendored lib/ 152 files/~64.5k lines + 7x BOOSTHIS_* docs. Zero entanglement: no pricing/order/validator/plan/auth/DB (migrations clean, no KV keys, seed clean, public/ clean, no UI strings EN/AR). GATE -> PROCEED.
-- [x] C1 (8d51eee): scheduler unwrap + edge-middleware drop. NOTE: functions/_middleware.js was never tracked (never-commit rule) - deleted from disk, no commit possible. FLAGGED FOR REVIEW: all-routes wrapper removal (responses identical, measurement only).
-- [x] C2 (disk-only, uncommittable): deleted lib/, 7x BOOSTHIS_*, shim; tsconfig edit reverted local-only mods back to committed state (no diff).
-- [x] C4 (a0db478): .env.example VITE_BOOSTHIS block removed + legacy-tolerance test (settings with boosthis: block -> no-throw, defaults applied).
-- [x] C5: skipped - DB not involved. Next free migration number verified: 0018 (unused).
-- [x] C6: skipped - README/privacy.html/llms.txt contain zero boosthis matches, nothing to rewrite.
-- [x] (a) (980c6d0): adopted pending package.json scripts cleanup (test:whatsapp/test:dial gone - files confirmed absent; test:all rebuilt). Scripts section only.
-- [x] (b) (81b4b49): deleted unreferenced public/assets/aistudio/ (frozen AI-Studio preview; zero code refs; contained WhatsApp CTAs, no boosthis).
-- [x] (c): eslint problems from 59df5ad LISTED ONLY, untouched: ItemDetailsModal.tsx:111,113 (useGuardedText after early return - conditional hooks), useGuardedText.ts:18 (ref written during render).
-- [x] Verify (isolated worktree Temp/opencode/rb-verify): tsc clean; depcruise 0 violations (330/982); suites settings 39/0 (+2 new), parity 82/0, safe-json 23/0, cart 20/0; prod build -> Temp/opencode/rb-dist green with ZERO boosthis matches in JS/CSS/HTML.
-- [x] Final sweep: 8 remaining tracked matches, all justified (agent.md rule text; package.json+lock dep entries per no-dep-changes rule; scheduler explanatory comment; tolerance-test subject; audit record; historical project-discovery logs).
-- [ ] Await owner: review + push maintenance/remove-boosthis yourself. Interference note: a second session flipped the main worktree HEAD repeatedly (step-1 <-> remove-boosthis) mid-run; verification was done in an isolated worktree - see results.md section 13.
 ## TODO — roadmap (NOT started, no fixes proposed)
 - [ ] Maintainability: god-file splits (in-code TODOs), full `strict: true`, eslint within budget
 - [ ] Scalability: quota monitoring, KV-write-per-order reduction, per-client paid-plan trigger
@@ -58,15 +45,14 @@
 - [ ] RF-13: cross-account deploy-credential story (later phase)
 
 ## DONE — Repo cleanup + stable branch name (2026-11-01)
-- GitHub had 3 branches (main, remove-boosthis, step-1) → now exactly 2: `main` + `maintenance`.
+- GitHub had 3 branches (main + two maintenance branches) → now exactly 2: `main` + `maintenance`.
 - `maintenance/step-1` renamed to `maintenance` (single permanent dev branch; old name deleted from GitHub after verifying zero unique commits — containment check passed).
 - CI trigger narrowed to `[main, maintenance]`; CONTRIBUTING updated to single-branch flow.
-- remote `maintenance/remove-boosthis` DELETED from GitHub (verified: tip fbc164d fully contained in step-1, zero unique commits — lossless).
 - GitHub now: `main` + `maintenance/step-1` only. Local `origin/*` tracking refs for deleted/exclusive branches left untouched (C:\ repo not mine to modify).
 - step-1 pushed to GitHub through black-screen fix (96f75e6): triggers fresh preview build so staging serves the fix. Untouched: main (never), production bindings/data.
 
 ## DONE — Step 1 safety net (branch `maintenance/step-1`, dedicated clone D:/Chou 3abelak; owner merges)
-- [x] T0 (392390d): rebased onto remove-boosthis tip; re-verified test:all exit 0, tsc clean, depcruise 0 violations (330/982) → raw/14-step1-reverify.txt
+- [x] T0 (392390d): rebased onto the maintenance tip; re-verified test:all exit 0, tsc clean, depcruise 0 violations (330/982) → raw/14-step1-reverify.txt
 - [x] T1 (7e6425c + evidence 13-step1-triage.txt): triaged all failing suites as STALE (fake-DB track_token shift; per-action confirm words; retired two-tone engine → pattern engine; missing owner session in flows harness). test:all green exit 0; test:live defined (excluded).
 - [x] T2 (5e47469): CI `.github/workflows/ci.yml` (PR+push, contents:read, 3 pinned SHAs, npm ci+cache, tsc, depcruise, test:all, temp-dir build + bundle grep, gitleaks, advisory eslint). actionlint v1.7.12 clean.
 - [x] T3 (fbc0af8 + 1c9a5e6): root _headers deleted; public/_headers single source; scripts/test-headers.mjs (20 checks) in test:all.

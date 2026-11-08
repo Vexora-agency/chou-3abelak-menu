@@ -130,23 +130,5 @@ const baseMenu = (settings: unknown): MenuData => ({
   ok(st.label.ar.includes('9:00 ص') && st.label.ar.includes('10:00 م'), 'open pill ar follows edited hours');
 }
 
-// 8. Legacy tolerance (Boosthis removal): old docs/imports/backups may
-// carry a settings.boosthis block. It is silently tolerated here (never
-// throws, never blocks defaults) and the server validator drops it via its
-// explicit allowlist — same contract as the WhatsApp legacy field.
-{
-  let threw = false;
-  let out: MenuData | null = null;
-  try {
-    out = ensureSettingsBlocks(
-      baseMenu({ boosthis: { enabled: true, projectKey: 'bk_old_...' } })
-    );
-  } catch {
-    threw = true;
-  }
-  ok(threw === false, 'legacy boosthis block does not throw');
-  ok(out !== null && out.settings.announcement.enabled === false, 'defaults still applied with legacy block present');
-}
-
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

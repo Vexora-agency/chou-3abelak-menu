@@ -14,8 +14,6 @@
  */
 
 export default {
-  // Measurement wrapper removed with the Boosthis kit
-  // (maintenance/remove-boosthis): the cron handler runs directly.
   scheduled,
 };
 

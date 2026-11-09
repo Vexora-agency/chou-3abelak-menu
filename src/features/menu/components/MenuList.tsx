@@ -492,8 +492,10 @@ export const MenuList: React.FC<MenuListProps> = ({
         // so the anchored header never hides underneath after chip taps.
         // Round sections break out full-bleed (edge to edge) with a dense
         // grid; every other layout keeps the centered readable column.
+        // The round wrapper is a showcase band: vertical padding reveals
+        // its branded backdrop above and below the grid.
         const sectionWrapClass = kind === 'round'
-          ? 'w-full px-3 sm:px-6'
+          ? `w-full px-3 sm:px-6 py-8 sm:py-10 ${darkMode ? 'round-band' : 'round-band-light'}`
           : 'px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full';
         return (
           <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-[160px] menu-section">

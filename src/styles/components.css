@@ -368,8 +368,12 @@
     box-shadow: 0 22px 44px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
   }
   .round-card-light:hover {
-    /* Glass lift: deeper floor shadow only, the film stays sheer. */
-    box-shadow: 0 22px 42px rgba(10, 10, 10, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.45);
+    /* Glass lift: deeper shadow stack only. */
+    box-shadow:
+      0 2px 4px rgba(10, 10, 10, 0.06),
+      0 20px 44px rgba(10, 10, 10, 0.13),
+      0 40px 80px rgba(10, 10, 10, 0.07),
+      inset 0 1px 0 rgba(255, 255, 255, 0.75);
   }
   .round-card:active {
     translate: 0 -3px;
@@ -440,15 +444,28 @@
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transition: translate 0.28s ease, scale 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
 }
-/* Light glass, grounded build: the shell stays edgeless (no drawn
-   perimeter) but its lower third carries a touch more fill plus a soft
-   floor shadow, so the bottom reads as a finished edge instead of
-   fading out cut-off. Top sheen kept for balance. */
+/* Light glass, shadow-built (no library — research verdict: every glass
+   library is backdrop-filter + translucency + hairline border under the
+   hood (GlassKit, liquid-glass-component-kit, open-glass-ui, glinui,
+   frostglass…), and the advanced ones add SVG refraction/WebGL renderers.
+   Two disqualifiers for this menu: (1) our cards sit on a FLAT page
+   background, so backdrop blur would burn phone GPUs for literally zero
+   visual effect — the documented anti-pattern; (2) unaudited
+   third-party UI deps (single-maintainer, ~5 downloads/week in cases)
+   violate this repo's pinned-action/gitleaks supply-chain stance for
+   what amounts to 10 lines of CSS. The consensus recipes — layered soft
+   shadows, hairline light border, top inner highlight — are hand-rolled
+   below. Presence here is carried by a three-layer shadow composition
+   (contact + ambient lift + far halo) with a transparent fill: no box
+   edge anywhere. */
 .round-card-light {
   border-color: transparent;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.22) 55%, rgba(255, 255, 255, 0.44) 100%);
-  box-shadow: 0 18px 36px rgba(10, 10, 10, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.4);
+  background: transparent;
+  box-shadow:
+    0 1px 2px rgba(10, 10, 10, 0.05),
+    0 12px 32px rgba(10, 10, 10, 0.1),
+    0 32px 64px rgba(10, 10, 10, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 /* Keyboard focus must stay visible now that neither shell paints a box. */
 .round-card:focus-visible {

@@ -86,7 +86,7 @@ async function decode(file: File): Promise<ImageBitmap | HTMLImageElement> {
   });
 }
 
-function renderToBlob(source: ImageBitmap | HTMLImageElement, width: number, height: number, type: string, quality: number): Promise<Blob | null> {
+function renderToBlob(source: ImageBitmap | HTMLImageElement | HTMLCanvasElement, width: number, height: number, type: string, quality: number): Promise<Blob | null> {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -104,15 +104,15 @@ function renderToBlob(source: ImageBitmap | HTMLImageElement, width: number, hei
 }
 
 /** A decoded photo, ready to draw. Call `close()` when done (frees the
- *  decoded pixels on browsers with ImageBitmap; no-op for <img>). */
+ *  decoded pixels on browsers with ImageBitmap; no-op for <img>/<canvas>). */
 export interface DecodedSource {
-  source: ImageBitmap | HTMLImageElement;
+  source: ImageBitmap | HTMLImageElement | HTMLCanvasElement;
   width: number;
   height: number;
   close: () => void;
 }
 
-function closeSource(source: ImageBitmap | HTMLImageElement): void {
+function closeSource(source: ImageBitmap | HTMLImageElement | HTMLCanvasElement): void {
   if (typeof ImageBitmap !== 'undefined' && source instanceof ImageBitmap) source.close();
 }
 
@@ -140,12 +140,47 @@ export async function decodeSourceImage(file: File): Promise<DecodedSource> {
 }
 
 /**
+ * Rotate a decoded source ±90° (editor "flip"/rotate buttons). Renders onto a
+ * fresh canvas — a 90° canvas transpose maps pixels exactly, no blur — then
+ * re-wraps as a bitmap when possible. The old source is closed; the editor
+ * resets its framing because width/height swap. Throws ImagePrepareError.
+ */
+export async function rotateSource90(decoded: DecodedSource, dir: 1 | -1): Promise<DecodedSource> {
+  const { source, width, height } = decoded;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, height);
+  canvas.height = Math.max(1, width);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new ImagePrepareError('encode_failed');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate((dir * Math.PI) / 2);
+  try {
+    ctx.drawImage(source, -width / 2, -height / 2, width, height);
+  } catch {
+    throw new ImagePrepareError('encode_failed');
+  }
+
+  let next: ImageBitmap | HTMLImageElement | HTMLCanvasElement = canvas;
+  if (typeof createImageBitmap === 'function') {
+    try {
+      next = await createImageBitmap(canvas);
+    } catch {
+      next = canvas;
+    }
+  }
+  decoded.close();
+  return { source: next, width: height, height: width, close: () => closeSource(next) };
+}
+
+/**
  * Export a 16:10 crop rect (source pixels, from the crop editor) to an
  * upload-ready blob. Output width follows the rect (320..1280px) so a deep
  * zoom never upscales into blur; the server re-validates everything anyway.
  */
 export async function exportCrop(
-  source: ImageBitmap | HTMLImageElement,
+  source: ImageBitmap | HTMLImageElement | HTMLCanvasElement,
   rect: CropRect,
 ): Promise<PreparedImage> {
   const outW = Math.min(1280, Math.max(320, Math.round(rect.w)));

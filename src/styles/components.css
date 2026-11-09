@@ -360,20 +360,21 @@
     scale: 1.07;
     rotate: 5deg;
   }
-  .round-card:hover .photo-card-shine {
-    animation: photo-shine 0.95s cubic-bezier(0.22, 1, 0.36, 1);
-  }
   .round-card:hover {
     translate: 0 -6px;
     box-shadow: 0 22px 44px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
   }
   .round-card-light:hover {
-    /* Glass lift: deeper shadow stack only. */
+    /* Glass lift, spec-exact shadow stack. */
     box-shadow:
-      0 2px 4px rgba(10, 10, 10, 0.06),
-      0 20px 44px rgba(10, 10, 10, 0.13),
-      0 40px 80px rgba(10, 10, 10, 0.07),
-      inset 0 1px 0 rgba(255, 255, 255, 0.75);
+      0 0 0 0.5px rgba(0, 0, 0, 0.08),
+      0 26px 48px -8px rgba(0, 0, 0, 0.26),
+      0 4px 10px rgba(0, 0, 0, 0.09),
+      inset 0 1px 0 rgba(255, 255, 255, 1),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.4);
+  }
+  .round-card-light:hover::before {
+    transform: translateX(55%) rotate(12deg);
   }
   .round-card:active {
     translate: 0 -3px;
@@ -444,28 +445,56 @@
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transition: translate 0.28s ease, scale 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
 }
-/* Light glass, shadow-built (no library — research verdict: every glass
-   library is backdrop-filter + translucency + hairline border under the
-   hood (GlassKit, liquid-glass-component-kit, open-glass-ui, glinui,
-   frostglass…), and the advanced ones add SVG refraction/WebGL renderers.
-   Two disqualifiers for this menu: (1) our cards sit on a FLAT page
-   background, so backdrop blur would burn phone GPUs for literally zero
-   visual effect — the documented anti-pattern; (2) unaudited
-   third-party UI deps (single-maintainer, ~5 downloads/week in cases)
-   violate this repo's pinned-action/gitleaks supply-chain stance for
-   what amounts to 10 lines of CSS. The consensus recipes — layered soft
-   shadows, hairline light border, top inner highlight — are hand-rolled
-   below. Presence here is carried by a three-layer shadow composition
-   (contact + ambient lift + far halo) with a transparent fill: no box
-   edge anywhere. */
+/* Light glass: exact port of the owner-approved Apple-style liquid-glass
+   spec (gradient fill + 22px backdrop blur/saturate + hairline edge +
+   specular sweep + @supports fallback). Consciously NOT a library.
+   Backdrop cost accepted by owner decision here (unlike the auto-shipped
+   defaults): regions are small (~200px cards) and GPUs handle a dozen
+   small blurs; over flat page white the blur itself is invisible — the
+   read comes from fill + edge + shadow, which degrade gracefully. */
 .round-card-light {
   border-color: transparent;
-  background: transparent;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.26) 55%, rgba(255, 255, 255, 0.4) 100%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
   box-shadow:
-    0 1px 2px rgba(10, 10, 10, 0.05),
-    0 12px 32px rgba(10, 10, 10, 0.1),
-    0 32px 64px rgba(10, 10, 10, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    0 18px 40px -8px rgba(0, 0, 0, 0.2),
+    0 3px 8px rgba(0, 0, 0, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+}
+/* Gradient hairline edge (masked ring, spec-exact). */
+.round-card-light::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0.55));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+/* Specular sweep layer, parked off-canvas until hover (spec-exact). */
+.round-card-light::before {
+  content: "";
+  position: absolute;
+  inset: -60% -80%;
+  pointer-events: none;
+  background:
+    linear-gradient(110deg, transparent 44%, rgba(255, 255, 255, 0.55) 50%, transparent 56%);
+  transform: translateX(-55%) rotate(12deg);
+  transition: transform 0.9s ease;
+}
+/* Fallback where backdrop-filter isn't supported (spec-exact). */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .round-card-light {
+    background: rgba(255, 255, 255, 0.9);
+  }
 }
 /* Keyboard focus must stay visible now that neither shell paints a box. */
 .round-card:focus-visible {

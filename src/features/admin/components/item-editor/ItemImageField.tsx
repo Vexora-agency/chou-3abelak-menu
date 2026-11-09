@@ -589,8 +589,8 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
           </div>
           <p id="item-image-hint" className="text-[10px] leading-relaxed text-neutral-500">
             {isAr
-              ? 'الرابط لازم يبدأ بـ https:// أو /. بيظهر في عرض «صور» وخلفية «بطاقات» وكارت الكاروسيل.'
-              : 'The URL must start with https:// or /. Shown in the "Photos" layout, "Cards" backgrounds and featured carousel cards.'}
+              ? 'الرابط لازم يبدأ بـ https:// أو /. بيظهر في «معرض» وخلفية «بطاقات» والكروت الدائرية والكاروسيل.'
+              : 'The URL must start with https:// or /. Shown in Gallery, Cards backgrounds, round cards and featured carousel cards.'}
           </p>
         </div>
       </details>

@@ -94,7 +94,7 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
       }}
       className={`round-card photo-card group relative flex flex-col items-center overflow-hidden rounded-[22px] border-2 p-4 pt-5 text-center ${
         darkMode ? 'bg-[#141414] border-[var(--primary)]' : 'bg-white border-[#0A0A0A]'
-      } ${interactive ? 'cursor-pointer photo-card-interactive' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${
+      } ${interactive ? 'cursor-pointer photo-card-interactive card-lift' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${
         leaveDelayMs != null ? ' row-leaving' : ''
       }`}
     >
@@ -166,7 +166,10 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
         {descText}
       </p>
 
-      <div className="mt-auto flex items-center justify-center gap-2 pt-2">
+      {/* Vertical stack (phones first): name, description, price, then the
+          add action under it — side-by-side squeezes Arabic prices and the
+          button into ~150px columns. */}
+      <div className="mt-auto flex flex-col items-center gap-1.5 pt-2">
         <span className={`font-extrabold text-sm tabular-nums ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`} dir="auto">
           {price}
         </span>

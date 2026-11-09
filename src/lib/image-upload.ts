@@ -175,6 +175,49 @@ export async function rotateSource90(decoded: DecodedSource, dir: 1 | -1): Promi
 }
 
 /**
+ * Mirror a decoded source (editor flip buttons): 'horizontal' turns right
+ * into left, 'vertical' turns top into bottom. Pixel-exact like rotation,
+ * dimensions unchanged so the editor keeps its framing. Throws
+ * ImagePrepareError.
+ */
+export async function flipSource(
+  decoded: DecodedSource,
+  axis: 'horizontal' | 'vertical',
+): Promise<DecodedSource> {
+  const { source, width, height } = decoded;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, width);
+  canvas.height = Math.max(1, height);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new ImagePrepareError('encode_failed');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  if (axis === 'horizontal') {
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+  } else {
+    ctx.translate(0, canvas.height);
+    ctx.scale(1, -1);
+  }
+  try {
+    ctx.drawImage(source, 0, 0, width, height);
+  } catch {
+    throw new ImagePrepareError('encode_failed');
+  }
+
+  let next: ImageBitmap | HTMLImageElement | HTMLCanvasElement = canvas;
+  if (typeof createImageBitmap === 'function') {
+    try {
+      next = await createImageBitmap(canvas);
+    } catch {
+      next = canvas;
+    }
+  }
+  decoded.close();
+  return { source: next, width, height, close: () => closeSource(next) };
+}
+
+/**
  * Export a 16:10 crop rect (source pixels, from the crop editor) to an
  * upload-ready blob. Output width follows the rect (320..1280px) so a deep
  * zoom never upscales into blur; the server re-validates everything anyway.

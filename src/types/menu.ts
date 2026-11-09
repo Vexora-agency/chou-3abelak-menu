@@ -82,7 +82,8 @@ export interface MenuItem {
   addedAt?: string;
   featured: boolean;
   available: boolean;
-  /** Photo for the "photos" layout and the "cards" background. A public URL (https:// or
+  /** Photo for the "photos" layout, the "cards" background and featured
+      carousel cards. A public URL (https:// or
       root-relative `/...`) — never a data URL: the menu save payload is
       capped at 256 KB, so inline images would blow the budget fast.
       Absent/broken images fall back to the branded category placeholder. */

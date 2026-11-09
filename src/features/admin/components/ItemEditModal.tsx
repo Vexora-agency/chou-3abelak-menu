@@ -42,6 +42,17 @@ export const ItemEditModal: React.FC<ItemEditModalProps> = ({
 }) => {
   const isAr = lang === 'ar';
   const { nonEmptySections, sizesSection } = useItemEditorSections(menu);
+  // The photo field only matters where a photo is actually shown: the photos
+  // layout, cards backgrounds, and the featured carousel. List/compact rows
+  // never render one — except when the item already HAS a photo (kept
+  // visible so it can be replaced or removed, never stranded).
+  const cat = menu.categories.find((c) => c.id === item.categoryId);
+  const catLayout = cat?.layout || (cat?.id === 'manakish' ? 'list' : 'cards');
+  const photoRelevant =
+    catLayout === 'photos' ||
+    catLayout === 'cards' ||
+    item.featured ||
+    Boolean(item.imageUrl?.trim());
   // Escape closes the topmost layer: the addon picker first, the modal after.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -77,7 +88,7 @@ export const ItemEditModal: React.FC<ItemEditModalProps> = ({
 
     <ItemBasicFields item={item} menu={menu} lang={lang} onChange={onChange} />
 
-    <ItemImageField item={item} lang={lang} onChange={onChange} />
+    {photoRelevant && <ItemImageField item={item} lang={lang} onChange={onChange} />}
 
     <ItemPricingFields item={item} lang={lang} onChange={onChange} />
 

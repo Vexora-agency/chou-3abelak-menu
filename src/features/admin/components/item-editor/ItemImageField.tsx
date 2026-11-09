@@ -6,6 +6,7 @@ import {
   UploadError,
   decodeSourceImage,
   exportCrop,
+  flipSource,
   rotateSource90,
   uploadItemImage,
   type DecodedSource,
@@ -277,6 +278,21 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
     }
   };
 
+  /** Mirror the decoded photo (framing is kept — dimensions don't change).
+   *  The file stays pending so confirming still uploads the mirrored crop. */
+  const handleFlip = async (axis: 'horizontal' | 'vertical') => {
+    const current = cropSrc;
+    if (!current) return;
+    setErrorCode(null);
+    try {
+      const next = await flipSource(current, axis);
+      pickedRef.current = pickedRef.current ?? pendingRef.current;
+      setCropSrc(next);
+    } catch (error) {
+      fail(error);
+    }
+  };
+
   /** Reopen the editor on the last confirmed file to adjust the framing. */
   const openRecrop = async () => {
     const file = pendingRef.current;
@@ -343,6 +359,7 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
           onConfirm={(rect) => void handleCropConfirm(rect)}
           onCancel={handleCropCancel}
           onRotate={(dir) => void handleRotate(dir)}
+          onFlip={(axis) => void handleFlip(axis)}
         />
       ) : (
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg border border-neutral-800 bg-black">
@@ -493,8 +510,8 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
           </div>
           <p id="item-image-hint" className="text-[10px] leading-relaxed text-neutral-500">
             {isAr
-              ? 'الرابط لازم يبدأ بـ https:// أو /. بيظهر في عرض «صور» وخلفية «بطاقات».'
-              : 'The URL must start with https:// or /. Shown in the "Photos" layout and as "Cards" backgrounds.'}
+              ? 'الرابط لازم يبدأ بـ https:// أو /. بيظهر في عرض «صور» وخلفية «بطاقات» وكارت الكاروسيل.'
+              : 'The URL must start with https:// or /. Shown in the "Photos" layout, "Cards" backgrounds and featured carousel cards.'}
           </p>
         </div>
       </details>

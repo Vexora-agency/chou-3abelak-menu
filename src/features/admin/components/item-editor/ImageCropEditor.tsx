@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, Maximize, Minus, Plus, RotateCcw, RotateCw, X } from 'lucide-react';
+import { Check, FlipHorizontal2, FlipVertical2, Maximize, Minus, Plus, RotateCcw, RotateCw, X } from 'lucide-react';
 import {
   CROP_MAX_ZOOM,
   CROP_MIN_ZOOM,
@@ -18,6 +18,8 @@ interface ImageCropEditorProps {
   onCancel: () => void;
   /** Rotate the photo ±90° (framing resets — width/height swap). */
   onRotate: (dir: 1 | -1) => void;
+  /** Mirror the photo (dimensions unchanged — framing is kept). */
+  onFlip: (axis: 'horizontal' | 'vertical') => void;
 }
 
 const ZOOM_STEP = 0.25;
@@ -35,6 +37,7 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
   onConfirm,
   onCancel,
   onRotate,
+  onFlip,
 }) => {
   const isAr = lang === 'ar';
   const [zoom, setZoom] = useState(CROP_MIN_ZOOM);
@@ -48,11 +51,13 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
     viewRef.current = { zoom, cx: center.cx, cy: center.cy };
   });
 
-  // A new photo resets the framing (compare-and-adjust during render — the
-  // endorsed pattern for prop-driven resets, no cascading effect).
-  const [prevSource, setPrevSource] = useState(source);
-  if (prevSource !== source) {
-    setPrevSource(source);
+  // A new photo (or a rotation) resets the framing. Keyed on dimensions —
+  // flips keep the identity change but not the size, so zoom/pan survive a
+  // mirror (compare-and-adjust during render, no cascading effect).
+  const dimsKey = `${srcWidth}x${srcHeight}`;
+  const [prevDims, setPrevDims] = useState(dimsKey);
+  if (prevDims !== dimsKey) {
+    setPrevDims(dimsKey);
     setZoom(CROP_MIN_ZOOM);
     setCenter({ cx: srcWidth / 2, cy: srcHeight / 2 });
   }
@@ -181,9 +186,8 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
         </span>
       </div>
 
-      {/* Rotate / reset row: 90° steps (framing resets), then back to the
-          full-frame fit. */}
-      <div className="flex items-center gap-1.5" dir="ltr">
+      {/* Rotate / mirror / reset row. Wraps on narrow phones. */}
+      <div className="flex flex-wrap items-center gap-1.5" dir="ltr">
         <button
           type="button"
           onClick={() => onRotate(-1)}
@@ -203,6 +207,24 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
         >
           <RotateCw size={14} aria-hidden="true" />
           90°
+        </button>
+        <button
+          type="button"
+          onClick={() => onFlip('horizontal')}
+          aria-label={isAr ? 'عكس الصورة أفقيًا (اليمين يبقى شمال)' : 'Mirror photo horizontally (right becomes left)'}
+          title={isAr ? 'عكس أفقي' : 'Flip horizontal'}
+          className="inline-flex h-8 items-center gap-1 rounded-full bg-neutral-800 px-3 text-[11px] font-bold text-neutral-200 hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+        >
+          <FlipHorizontal2 size={14} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onFlip('vertical')}
+          aria-label={isAr ? 'عكس الصورة رأسيًا (فوق يبقى تحت)' : 'Mirror photo vertically (top becomes bottom)'}
+          title={isAr ? 'عكس رأسي' : 'Flip vertical'}
+          className="inline-flex h-8 items-center gap-1 rounded-full bg-neutral-800 px-3 text-[11px] font-bold text-neutral-200 hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+        >
+          <FlipVertical2 size={14} aria-hidden="true" />
         </button>
         <button
           type="button"

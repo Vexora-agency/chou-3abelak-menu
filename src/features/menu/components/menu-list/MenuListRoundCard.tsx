@@ -92,9 +92,9 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
           onOpenItem(item);
         }
       }}
-      className={`round-card photo-card group relative flex flex-col items-center overflow-hidden rounded-[22px] border-2 p-4 pt-5 text-center ${
-        darkMode ? 'bg-[#141414] border-[var(--primary)]' : 'bg-white border-[#0A0A0A]'
-      } ${interactive ? 'cursor-pointer photo-card-interactive card-lift' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${
+      className={`round-card group relative flex flex-col items-center overflow-hidden rounded-[22px] border p-4 pt-5 text-center ${
+        darkMode ? '' : 'round-card-light'
+      } ${interactive ? 'cursor-pointer card-lift' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${
         leaveDelayMs != null ? ' row-leaving' : ''
       }`}
     >
@@ -155,16 +155,19 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
         {name}
       </h3>
 
-      {/* Reserved 2-line slot (even when empty): rows of round cards stay
-          level instead of staggering. */}
-      <p
-        dir="auto"
-        className={`mt-1 w-full text-center text-[11px] line-clamp-2 min-h-[2.6em] ${isAr ? 'leading-relaxed' : ''} ${
-          darkMode ? 'text-neutral-400' : 'text-neutral-600'
-        }`}
-      >
-        {descText}
-      </p>
+      {/* Description only when the admin wrote one: without it the title
+          sits closer to the price + action instead of floating over an
+          empty reserved slot. */}
+      {descText ? (
+        <p
+          dir="auto"
+          className={`mt-1 w-full text-center text-[11px] line-clamp-2 min-h-[2.6em] ${isAr ? 'leading-relaxed' : ''} ${
+            darkMode ? 'text-neutral-400' : 'text-neutral-600'
+          }`}
+        >
+          {descText}
+        </p>
+      ) : null}
 
       {/* Vertical stack (phones first): name, description, price, then the
           add action under it — side-by-side squeezes Arabic prices and the

@@ -44,6 +44,9 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
   const [addonIds, setAddonIds] = useState<string[]>([]);
   const [addonCounts, setAddonCounts] = useState<Record<string, number>>({});
   const [qty, setQty] = useState(1);
+  // Broken/removed photo URL: the hero collapses away and the sheet reads
+  // exactly like an item without a photo (same fallback as the cards).
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const [lastItemId, setLastItemId] = useState<string | null>(null);
   const openItemId = item?.id ?? null;
   if (openItemId !== lastItemId) {
@@ -168,6 +171,11 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
   const addTotalRef = useGuardedText(addTotalText);
 
   if (!item) return null;
+
+  // Dish hero photo. `failedSrc` records WHICH url broke — a changed url
+  // retries automatically, same pattern as the menu photo cards.
+  const showPhoto = Boolean(item.imageUrl) && failedSrc !== (item.imageUrl ?? '');
+  const itemName = pickLangText(item.name, lang);
 
   // 'multi' groups: independent checkbox toggles (unchanged behavior).
   const toggleMulti = (id: string) => {
@@ -318,9 +326,13 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         {/* Sticky header: title + live price + close stay visible while the
             options scroll — the standard food-app sheet pattern. Full-bleed
             (-mx/px mirror the scroller padding) so content slides under a
-            solid bar, not under text. */}
+            solid bar, not under text. The bg stays solid in both modes; with
+            a hero photo the photo's top edge is the separator, so the rule
+            hides to avoid a double line. */}
         <div className={`sticky top-0 z-10 -mx-6 sm:-mx-8 px-6 sm:px-8 pt-4 sm:pt-6 pb-3 flex justify-between items-start gap-2 sm:gap-3 border-b ${
-          darkMode ? 'bg-[#141414] border-neutral-800' : 'bg-white border-neutral-200'
+          darkMode ? 'bg-[#141414]' : 'bg-white'
+        } ${
+          showPhoto ? 'border-transparent' : darkMode ? 'border-neutral-800' : 'border-neutral-200'
         }`}>
           <div className="min-w-0 flex-1">
             <h3 dir="auto" className={`text-base min-[380px]:text-xl sm:text-2xl font-black leading-tight break-words ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
@@ -380,6 +392,34 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             <X size={20} />
           </button>
         </div>
+
+        {/* Dish hero: full-bleed photo directly under the sticky header —
+            deliberately NOT above it, so the live price and close stay
+            visible while configuring (the food-app sheet pattern). It
+            scrolls away under the bar; the mode-aware scrim melts its
+            bottom edge into the sheet, so no text ever sits on the photo
+            and both modes stay readable by construction. */}
+        {showPhoto && (
+          <div className="anim-hero-in relative -mx-6 sm:-mx-8 overflow-hidden">
+            <div className="relative aspect-[16/10]">
+              <img
+                src={item.imageUrl}
+                alt={itemName}
+                loading="lazy"
+                decoding="async"
+                sizes="(max-width: 560px) 100vw, 520px"
+                onError={() => setFailedSrc(item.imageUrl ?? '')}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div
+                aria-hidden="true"
+                className={`pointer-events-none absolute inset-0 bg-gradient-to-t ${
+                  darkMode ? 'from-[#141414] via-[#141414]/25 to-transparent' : 'from-white via-white/25 to-transparent'
+                }`}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Description (hidden when the admin leaves it empty) */}
         {pickLangText(item.description, lang).trim() ? (

@@ -330,20 +330,20 @@ export const MenuList: React.FC<MenuListProps> = ({
         const kind = isCompactSection ? 'compact' : isListSection ? 'list' : layout === 'photos' ? 'photos' : layout === 'round' ? 'round' : 'cards';
         const gridClass =
           kind === 'compact'
-            ? 'grid grid-cols-1 md:grid-cols-2 gap-x-10'
+            ? 'grid grid-cols-1 md:grid-cols-2 gap-x-10 menu-section-grid'
             : kind === 'list'
-              ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-4'
+              ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-4 menu-section-grid'
               : kind === 'photos'
                 // Photo cards pair up from the smallest phones, exactly like
                 // the text cards: narrow screens get the compact card (no
                 // description, smaller title/ticket — see MenuListPhotoCard).
                 // Large screens step up to 4 columns so cards stay petite.
-                ? 'grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-6'
+                ? 'grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-6 menu-section-grid'
                 // Round dish cards share the text-cards grid (compact cards
                 // pair up the same way at every breakpoint).
                 // Single column under 360px: two 133px cards squeeze Arabic
                 // names + price + action at 320px — one readable column wins.
-                : 'grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5';
+                : 'grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5 menu-section-grid';
         const total = catItems.length;
         // Snap the window to FULL rows of this section's live grid: on a
         // 5-column desktop grid initial 12 → 15, batch 8 → 10, so no orphan

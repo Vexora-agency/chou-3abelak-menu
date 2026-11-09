@@ -267,6 +267,24 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
     // With variants the variant price rules; a base price is dropped to
     // avoid two competing sources of truth.
     if (!variants && basePrice !== undefined) pricing.price = basePrice;
+    // Optional photo for the "photos" display layout. Remote http(s) or
+    // root-relative paths only — never inline data: URLs, because the whole
+    // menu document is capped at 256 KB.
+    let imageUrl;
+    if (item.imageUrl !== undefined && item.imageUrl !== null && item.imageUrl !== '') {
+      if (typeof item.imageUrl !== 'string') {
+        errors.push(`Item "${id}" imageUrl must be a string URL`);
+      } else {
+        const rawImageUrl = stripControls(item.imageUrl).trim();
+        if (rawImageUrl.length > 500) {
+          errors.push(`Item "${id}" imageUrl must be at most 500 characters`);
+        } else if (!/^(https?:\/\/|\/)/i.test(rawImageUrl)) {
+          errors.push(`Item "${id}" imageUrl must start with https://, http:// or /`);
+        } else {
+          imageUrl = rawImageUrl;
+        }
+      }
+    }
     const cleanItem = {
       id,
       categoryId,
@@ -277,6 +295,7 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
       featured: Boolean(item.featured),
       available: item.available !== false,
     };
+    if (imageUrl) cleanItem.imageUrl = imageUrl;
     if (item.noHeat === true) cleanItem.noHeat = true;
     if (variants) cleanItem.variants = variants;
     // Explicit default (★ marks in place, order untouched): must point at a size.

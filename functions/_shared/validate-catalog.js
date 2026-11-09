@@ -26,11 +26,11 @@ function validateCategories(categories, errors) {
       continue;
     }
     categoryIds.add(id);
-    // Display layout: cards grid, text-first list, compact rows or
-    // photo-first cards.
+    // Display layout: cards grid, text-first list, compact rows,
+    // photo-first cards or round cards.
     // Historical menus rendered the 'manakish' section as a list, so it
     // keeps that default.
-    const layout = cat.layout === 'list' || cat.layout === 'compact' || cat.layout === 'cards' || cat.layout === 'photos'
+    const layout = cat.layout === 'list' || cat.layout === 'compact' || cat.layout === 'cards' || cat.layout === 'photos' || cat.layout === 'round'
       ? cat.layout
       : (id === 'manakish' ? 'list' : 'cards');
     // Card watermark (opt-in): 'brand' pan mark, an explicit glyph key

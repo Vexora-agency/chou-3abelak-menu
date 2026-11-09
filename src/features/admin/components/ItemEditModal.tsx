@@ -43,13 +43,14 @@ export const ItemEditModal: React.FC<ItemEditModalProps> = ({
   const isAr = lang === 'ar';
   const { nonEmptySections, sizesSection } = useItemEditorSections(menu);
   // The photo field only matters where a photo is actually shown: the photos
-  // layout, cards backgrounds, and the featured carousel. List/compact rows
-  // never render one — except when the item already HAS a photo (kept
-  // visible so it can be replaced or removed, never stranded).
+  // and round layouts, cards backgrounds, and the featured carousel. List /
+  // compact rows never render one — except when the item already HAS a photo
+  // (kept visible so it can be replaced or removed, never stranded).
   const cat = menu.categories.find((c) => c.id === item.categoryId);
   const catLayout = cat?.layout || (cat?.id === 'manakish' ? 'list' : 'cards');
   const photoRelevant =
     catLayout === 'photos' ||
+    catLayout === 'round' ||
     catLayout === 'cards' ||
     item.featured ||
     Boolean(item.imageUrl?.trim());

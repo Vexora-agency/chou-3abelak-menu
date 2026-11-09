@@ -82,8 +82,8 @@ export interface MenuItem {
   addedAt?: string;
   featured: boolean;
   available: boolean;
-  /** Photo for the "photos" layout, the "cards" background and featured
-      carousel cards. A public URL (https:// or
+  /** Photo for the "photos" and "round" layouts, the "cards" background
+      and featured carousel cards. A public URL (https:// or
       root-relative `/...`) — never a data URL: the menu save payload is
       capped at 256 KB, so inline images would blow the budget fast.
       Absent/broken images fall back to the branded category placeholder. */
@@ -101,8 +101,9 @@ export interface Category {
   name: { en: string; ar: string };
   visible: boolean;
   /** How its items render in the menu: cards grid, text-first list, compact
-      rows, or photo-first cards (image + title + description + price). */
-  layout?: 'cards' | 'list' | 'compact' | 'photos';
+      rows, photo-first cards, or round cards (circular photo + title +
+      description + price). */
+  layout?: 'cards' | 'list' | 'compact' | 'photos' | 'round';
   /** Watermark for cards: 'brand' (pan mark), a glyph key
       (pizza/cup/coffee/cake/croissant/salad/sandwich/utensils),
       'custom' (uses iconUrl), or 'none'. Undefined = none (clean default,

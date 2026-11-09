@@ -133,12 +133,12 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
             </button>
           </div>
 
-          {/* Display layout: cards grid, text-first list, compact rows or
-              photo-first cards */}
+          {/* Display layout: cards grid, text-first list, compact rows,
+              photo-first cards or round dish cards */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] text-neutral-500 font-bold">{isAr ? 'الشكل:' : 'Style:'}</span>
-            <div className="flex gap-1 p-0.5 bg-black rounded-full border border-neutral-800" role="group" aria-label={isAr ? 'شكل القسم' : 'Section style'}>
-              {(['cards', 'list', 'compact', 'photos'] as const).map((l) => {
+            <div className="flex flex-wrap gap-1 p-0.5 bg-black rounded-full border border-neutral-800" role="group" aria-label={isAr ? 'شكل القسم' : 'Section style'}>
+              {(['cards', 'list', 'compact', 'photos', 'round'] as const).map((l) => {
                 const active = activeLayout === l;
                 return (
                   <button
@@ -152,7 +152,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
                     }
                     className={`px-3 h-7 rounded-full text-[11px] font-bold transition-colors ${active ? 'bg-[var(--primary)] text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
                   >
-                    {l === 'cards' ? (isAr ? 'بطاقات' : 'Cards') : l === 'list' ? (isAr ? 'قائمة' : 'List') : l === 'compact' ? (isAr ? 'مدمج' : 'Compact') : (isAr ? 'معرض' : 'Gallery')}
+                    {l === 'cards' ? (isAr ? 'بطاقات' : 'Cards') : l === 'list' ? (isAr ? 'قائمة' : 'List') : l === 'compact' ? (isAr ? 'مدمج' : 'Compact') : l === 'photos' ? (isAr ? 'معرض' : 'Gallery') : (isAr ? 'دائري' : 'Round')}
                   </button>
                 );
               })}
@@ -175,6 +175,16 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
                 {isAr
                   ? 'الصنف اللي له صورة بتظهر خلفية للكارت مع تعتيم مريح للقراءة. الأصناف بدون صورة بتفضل كروت نصية.'
                   : 'Items with a photo show it as the card background behind a readable scrim. Items without one stay text cards.'}
+              </span>
+            </p>
+          )}
+          {activeLayout === 'round' && (
+            <p className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-neutral-500">
+              <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
+              <span>
+                {isAr
+                  ? 'صورة دائرية بإطار دوّار — أضف صورة لكل صنف من تبويب الأصناف. الأصناف بدون صورة بتظهر بشعار القسم.'
+                  : 'Round photo in a spinning ring — add a photo to each item from the Items tab. Items without one show the category mark.'}
               </span>
             </p>
           )}

@@ -12,6 +12,7 @@ import { MenuListCompactRow } from './menu-list/MenuListCompactRow';
 import { MenuListListRow } from './menu-list/MenuListListRow';
 import { MenuListGridCard } from './menu-list/MenuListGridCard';
 import { MenuListPhotoCard } from './menu-list/MenuListPhotoCard';
+import { MenuListRoundCard } from './menu-list/MenuListRoundCard';
 
 interface MenuListProps {
   categories: Category[];
@@ -49,11 +50,11 @@ const MIN_REST = 4;
  * `gridClass` below (sm:640 md:768 lg:1024 xl:1280). Re-evaluates on resize
  * so rotating/resizing re-snaps the visible window to full rows.
  */
-function useGridCols(kind: 'list' | 'compact' | 'cards' | 'photos'): number {
+function useGridCols(kind: 'list' | 'compact' | 'cards' | 'photos' | 'round'): number {
   const get = () => {
-    if (typeof window === 'undefined' || !window.matchMedia) return kind === 'cards' || kind === 'photos' ? 2 : 1;
+    if (typeof window === 'undefined' || !window.matchMedia) return kind === 'cards' || kind === 'photos' || kind === 'round' ? 2 : 1;
     const mq = (min: number) => window.matchMedia(`(min-width: ${min}px)`).matches;
-    if (kind === 'cards') return mq(1280) ? 5 : mq(1024) ? 4 : mq(640) ? 3 : 2;
+    if (kind === 'cards' || kind === 'round') return mq(1280) ? 5 : mq(1024) ? 4 : mq(640) ? 3 : 2;
     if (kind === 'photos') return mq(1280) ? 4 : mq(1024) ? 3 : 2;
     if (kind === 'list') return mq(1280) ? 3 : mq(768) ? 2 : 1;
     return mq(768) ? 2 : 1; // compact
@@ -99,7 +100,7 @@ const ShowMoreButton: React.FC<ShowMoreButtonProps> = ({ expanded, count, isAr, 
 );
 
 interface MenuListRowItemProps {
-  kind: 'list' | 'compact' | 'cards' | 'photos';
+  kind: 'list' | 'compact' | 'cards' | 'photos' | 'round';
   item: MenuItem;
   index: number;
   /** Phased-collapse fade delay (null = not leaving). See .row-leaving. */
@@ -207,6 +208,26 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
       />
     );
   }
+  if (kind === 'round') {
+    return (
+      <MenuListRoundCard
+        item={item}
+        index={index}
+        leaveDelayMs={leaveDelayMs}
+        orderingEnabled={orderingEnabled}
+        menu={menu}
+        lang={lang}
+        currency={currency}
+        darkMode={darkMode}
+        isAr={isAr}
+        qty={qty}
+        sectionMark={sectionMark}
+        onAddItem={onAddItem}
+        onUpdateLine={onUpdateLine}
+        onOpenItem={onOpenItem}
+      />
+    );
+  }
   return (
     <MenuListGridCard
       item={item}
@@ -279,6 +300,7 @@ export const MenuList: React.FC<MenuListProps> = ({
   const listCols = useGridCols('list');
   const compactCols = useGridCols('compact');
   const photoCols = useGridCols('photos');
+  const roundCols = useGridCols('round');
 
   if (filteredItems.length === 0) {
     return <MenuListEmptyState darkMode={darkMode} isAr={isAr} />;
@@ -305,7 +327,7 @@ export const MenuList: React.FC<MenuListProps> = ({
         const markPos = markPosition(cat.iconX, cat.iconY, markStyle);
         const markScale = markScale01(cat.iconScale);
         const markRot = markRotate(cat.iconRotate);
-        const kind = isCompactSection ? 'compact' : isListSection ? 'list' : layout === 'photos' ? 'photos' : 'cards';
+        const kind = isCompactSection ? 'compact' : isListSection ? 'list' : layout === 'photos' ? 'photos' : layout === 'round' ? 'round' : 'cards';
         const gridClass =
           kind === 'compact'
             ? 'grid grid-cols-1 md:grid-cols-2 gap-x-10'
@@ -317,6 +339,8 @@ export const MenuList: React.FC<MenuListProps> = ({
                 // description, smaller title/ticket — see MenuListPhotoCard).
                 // Large screens step up to 4 columns so cards stay petite.
                 ? 'grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-6'
+                // Round dish cards share the text-cards grid (compact cards
+                // pair up the same way at every breakpoint).
                 // Single column under 360px: two 133px cards squeeze Arabic
                 // names + price + action at 320px — one readable column wins.
                 : 'grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5';
@@ -325,7 +349,7 @@ export const MenuList: React.FC<MenuListProps> = ({
         // 5-column desktop grid initial 12 → 15, batch 8 → 10, so no orphan
         // row and no empty slots beside the pager. Mobile grids (2 cols)
         // keep 12/8 exactly (already multiples). At least one full row.
-        const cols = kind === 'compact' ? compactCols : isListSection ? listCols : kind === 'photos' ? photoCols : cardsCols;
+        const cols = kind === 'compact' ? compactCols : isListSection ? listCols : kind === 'photos' ? photoCols : kind === 'round' ? roundCols : cardsCols;
         const snapRows = (n: number) => Math.max(cols, Math.ceil(n / cols) * cols);
         const effInitial = snapRows(initial);
         const effBatch = snapRows(batch);

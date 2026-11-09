@@ -204,12 +204,18 @@
    interactive; the intrinsic-size estimate is replaced by the real size
    after first layout, so scrollbars never jump. NOT applied to the featured
    carousel track (it measures card widths in JS — estimates would break
-   stepping) nor to any scroll container itself. Entrance animations
-   (whileInView) and the phased-collapse pager measuring all operate on
-   onscreen content, unaffected. Harmlessly ignored where unsupported. */
+   stepping) nor to any scroll container itself. Harmlessly ignored where
+   unsupported.
+   Paint containment clips anything outside the grid box, so the grid keeps
+   14px of breathing room at its bottom (mirrors the .menu-section rule):
+   last-row card shadows and entrance offsets would otherwise read cut
+   flush at the boundary. whileInView entrances are additionally gated by
+   skipEntrance for post-expansion mounts (see MenuList), so no card can
+   rest invisible if the observer misfires on mobile. */
 .menu-section-grid {
   content-visibility: auto;
   contain-intrinsic-size: auto 640px;
+  padding-block-end: 14px;
 }
 
 /* ---------- Round full-bleed showcase band ----------

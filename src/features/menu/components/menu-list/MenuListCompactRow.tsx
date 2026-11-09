@@ -45,6 +45,8 @@ interface MenuListRowProps {
   index: number;
   /** Phased-collapse fade delay (null = not leaving). See .row-leaving. */
   leaveDelayMs?: number | null;
+  /** Post-expansion mounts skip the scroll entrance (never rest invisible). */
+  skipEntrance?: boolean | null;
   menu: MenuData;
   lang: 'en' | 'ar';
   currency: string;
@@ -62,6 +64,7 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
   item,
   index,
   leaveDelayMs,
+  skipEntrance,
   menu,
   lang,
   currency,
@@ -83,9 +86,9 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
       // corrections (e.g. the one-frame rect shift when the details modal
       // locks the body) — the list visibly jolts up and back on tap.
       // Entrance stays on initial/whileInView below; nothing else needs FLIP.
-      initial={{ opacity: 0, y: 14 }}
+      initial={skipEntrance ? false : { opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
+      viewport={{ once: true, margin: '0px' }}
       transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.05, ease: [0.22, 1, 0.36, 1] }}
       style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
       onClick={() => interactive && onOpenItem(item)}

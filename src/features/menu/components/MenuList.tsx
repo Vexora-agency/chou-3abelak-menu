@@ -108,6 +108,11 @@ interface MenuListRowItemProps {
   index: number;
   /** Phased-collapse fade delay (null = not leaving). See .row-leaving. */
   leaveDelayMs: number | null;
+  /** Post-expansion mounts skip the scroll entrance: items mounted by "Show
+      more" must never rest invisible if the reveal observer misfires (short
+      mobile viewports + momentum scroll). First-paint items keep the
+      animated entrance untouched. */
+  skipEntrance: boolean;
   /** Menu-only mode (starter): hides ordering UI, rows are not clickable. */
   orderingEnabled: boolean;
   menu: MenuData;
@@ -134,6 +139,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
   item,
   index,
   leaveDelayMs,
+  skipEntrance,
   orderingEnabled,
   menu,
   lang,
@@ -159,6 +165,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         item={item}
         index={index}
         leaveDelayMs={leaveDelayMs}
+        skipEntrance={skipEntrance}
         orderingEnabled={orderingEnabled}
                 menu={menu}
         lang={lang}
@@ -178,6 +185,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         item={item}
         index={index}
         leaveDelayMs={leaveDelayMs}
+        skipEntrance={skipEntrance}
         orderingEnabled={orderingEnabled}
                 menu={menu}
         lang={lang}
@@ -197,6 +205,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         item={item}
         index={index}
         leaveDelayMs={leaveDelayMs}
+        skipEntrance={skipEntrance}
         orderingEnabled={orderingEnabled}
         menu={menu}
         lang={lang}
@@ -217,6 +226,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         item={item}
         index={index}
         leaveDelayMs={leaveDelayMs}
+        skipEntrance={skipEntrance}
         orderingEnabled={orderingEnabled}
         menu={menu}
         lang={lang}
@@ -236,6 +246,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
       item={item}
       index={index}
       leaveDelayMs={leaveDelayMs}
+      skipEntrance={skipEntrance}
       orderingEnabled={orderingEnabled}
       menu={menu}
       lang={lang}
@@ -358,7 +369,7 @@ export const MenuList: React.FC<MenuListProps> = ({
         const snapRows = (n: number) => Math.max(cols, Math.ceil(n / cols) * cols);
         const effInitial = snapRows(initial);
         const effBatch = snapRows(batch);
-        const rowCtx: Omit<MenuListRowItemProps, 'item' | 'index' | 'leaveDelayMs'> = {
+        const rowCtx: Omit<MenuListRowItemProps, 'item' | 'index' | 'leaveDelayMs' | 'skipEntrance'> = {
           kind,
           menu,
           lang,
@@ -483,6 +494,10 @@ export const MenuList: React.FC<MenuListProps> = ({
                     ? Math.min((visible - 1 - idx) * 5, 200)
                     : null
                 }
+                // Only items mounted by an explicit expansion skip the
+                // entrance: first-paint items (visibleCounts untouched) keep
+                // the animated reveal exactly as today.
+                skipEntrance={idx >= effInitial && (visibleCounts[cat.id] ?? 0) > effInitial}
                 {...rowCtx}
               />
             ))}

@@ -13,6 +13,7 @@
     "lint:circular": "depcruise src functions scheduler scripts",
     "lint:isolation": "depcruise src/features",
     "test:client": "tsx scripts/test-safe-json.ts",
+    "test:crop": "tsx scripts/test-crop-math.ts",
     "test:telegram": "node scripts/test-telegram.mjs",
     "test:digits": "tsx scripts/test-digits.ts",
     "test:distance": "tsx scripts/test-distance.mjs",

@@ -154,7 +154,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                     </span>
                   )}
                   {item.imageUrl && (
-                    <span title={isAr ? 'صورة مضافة — تظهر في عرض «صور»' : 'Photo added — shows in the "Photos" layout'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]">
+                    <span title={isAr ? 'صورة مضافة — تظهر في عرض «صور» وخلفية «بطاقات»' : 'Photo added — shows in the "Photos" layout and as "Cards" background'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]">
                       <ImageIcon size={10} />
                     </span>
                   )}

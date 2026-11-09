@@ -51,10 +51,10 @@ const MIN_REST = 4;
  */
 function useGridCols(kind: 'list' | 'compact' | 'cards' | 'photos'): number {
   const get = () => {
-    if (typeof window === 'undefined' || !window.matchMedia) return kind === 'cards' ? 2 : 1;
+    if (typeof window === 'undefined' || !window.matchMedia) return kind === 'cards' || kind === 'photos' ? 2 : 1;
     const mq = (min: number) => window.matchMedia(`(min-width: ${min}px)`).matches;
     if (kind === 'cards') return mq(1280) ? 5 : mq(1024) ? 4 : mq(640) ? 3 : 2;
-    if (kind === 'photos') return mq(1024) ? 3 : mq(640) ? 2 : 1;
+    if (kind === 'photos') return mq(1024) ? 3 : 2;
     if (kind === 'list') return mq(1280) ? 3 : mq(768) ? 2 : 1;
     return mq(768) ? 2 : 1; // compact
   };
@@ -312,9 +312,10 @@ export const MenuList: React.FC<MenuListProps> = ({
             : kind === 'list'
               ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-4'
               : kind === 'photos'
-                // Wide photo cards: one column on phones (a 2-up grid at
-                // 360px leaves ~150px per photo — too small to appetize).
-                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6'
+                // Photo cards pair up from the smallest phones, exactly like
+                // the text cards: narrow screens get the compact card (no
+                // description, smaller title/ticket — see MenuListPhotoCard).
+                ? 'grid grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-6'
                 // Single column under 360px: two 133px cards squeeze Arabic
                 // names + price + action at 320px — one readable column wins.
                 : 'grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5';

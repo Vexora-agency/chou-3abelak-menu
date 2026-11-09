@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import type { CardMarkStyleId, ResolvedMark } from '@/src/utils/cardMark';
@@ -60,6 +60,13 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
   const descText = pickLangText(item.description, lang).trim();
   const badges = effectiveBadges(menu, item);
 
+  // Item photo as the card background. A broken/removed image falls back to
+  // the plain text card exactly (same pattern as MenuListPhotoCard).
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const showPhoto = Boolean(item.imageUrl) && failedSrc !== (item.imageUrl ?? '');
+  // The faint category watermark would fight the photo — photo wins.
+  const mark = sectionMark && !showPhoto ? sectionMark : null;
+
   return (
     <motion.div
       key={item.id}
@@ -81,18 +88,43 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
           onOpenItem(item);
         }
       }}
-      className={`grid-card relative flex flex-col justify-between p-3.5 rounded-2xl border-2 ${sectionMark ? 'overflow-hidden' : ''} ${
+      className={`grid-card relative flex flex-col justify-between p-3.5 rounded-2xl border-2 ${mark ? 'overflow-hidden' : ''} ${
         darkMode
           ? 'bg-[#141414] border-[var(--primary)] offset-shadow-dark'
           : 'bg-white border-[#0A0A0A] offset-shadow-yellow'
       } ${interactive ? 'cursor-pointer card-lift' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${leaveDelayMs != null ? ' row-leaving' : ''}`}
     >
+      {/* Photo background: the dish behind the card content, sealed to the
+          rounded corners by its own clipped wrapper (the card itself clips
+          only when the watermark is on). The gradient scrim stays darkest
+          behind the price row and badge, lighter mid-card so the photo
+          shows through while the name keeps full contrast. */}
+      {showPhoto && (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+          <img
+            src={item.imageUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            sizes="(max-width: 359px) 100vw, (max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
+            onError={() => setFailedSrc(item.imageUrl ?? '')}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div
+            className={`absolute inset-0 ${
+              darkMode
+                ? 'bg-gradient-to-t from-black/85 via-black/40 to-black/65'
+                : 'bg-gradient-to-t from-white/95 via-white/70 to-white/85'
+            }`}
+          />
+        </div>
+      )}
       {/* Watermark on every card of the section (shared
           renderer — same as the admin live preview).
           Text always paints above the faint mark. */}
-      {sectionMark && (
+      {mark && (
         <CardMarkView
-          mark={sectionMark}
+          mark={mark}
           style={markStyle}
           opacity01={markOpacity}
           x={markX}
@@ -107,9 +139,9 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
       <div className="relative flex-1 flex flex-col">
         {/* Badges: top corner, mirrored per direction (left in EN, right in AR)
             so it always balances diagonally against the + button. Tilted. */}
-        <div className={`relative flex items-center gap-2 mb-2 h-[18px] ${sectionMark ? 'justify-between' : 'justify-end'}`}>
+        <div className={`relative flex items-center gap-2 mb-2 h-[18px] ${mark ? 'justify-between' : 'justify-end'}`}>
           {badges.length > 0 && (
-            <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border-[1.5px] border-[var(--primary)] shadow-lg -rotate-3 ${isAr ? '' : 'tracking-wide'} ${sectionMark ? '' : 'absolute -top-[7px] -start-1 z-10'}`}>
+            <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border-[1.5px] border-[var(--primary)] shadow-lg -rotate-3 ${isAr ? '' : 'tracking-wide'} ${mark ? '' : 'absolute -top-[7px] -start-1 z-10'}`}>
               {badgeLabel(badges[0], lang)}
             </span>
           )}

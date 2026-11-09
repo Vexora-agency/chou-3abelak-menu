@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, Minus, Plus, RotateCcw, X } from 'lucide-react';
+import { Check, Maximize, Minus, Plus, RotateCcw, RotateCw, X } from 'lucide-react';
 import {
   CROP_MAX_ZOOM,
   CROP_MIN_ZOOM,
@@ -10,12 +10,14 @@ import {
 } from '@/src/lib/crop-math';
 
 interface ImageCropEditorProps {
-  source: ImageBitmap | HTMLImageElement;
+  source: ImageBitmap | HTMLImageElement | HTMLCanvasElement;
   srcWidth: number;
   srcHeight: number;
   lang: 'en' | 'ar';
   onConfirm: (rect: CropRect) => void;
   onCancel: () => void;
+  /** Rotate the photo ±90° (framing resets — width/height swap). */
+  onRotate: (dir: 1 | -1) => void;
 }
 
 const ZOOM_STEP = 0.25;
@@ -32,6 +34,7 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
   lang,
   onConfirm,
   onCancel,
+  onRotate,
 }) => {
   const isAr = lang === 'ar';
   const [zoom, setZoom] = useState(CROP_MIN_ZOOM);
@@ -176,23 +179,50 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
         <span className="w-11 shrink-0 text-center text-[11px] font-bold tabular-nums text-neutral-300">
           {Math.round(zoom * 100)}%
         </span>
+      </div>
+
+      {/* Rotate / reset row: 90° steps (framing resets), then back to the
+          full-frame fit. */}
+      <div className="flex items-center gap-1.5" dir="ltr">
+        <button
+          type="button"
+          onClick={() => onRotate(-1)}
+          aria-label={isAr ? 'تدوير 90 درجة عكس عقارب الساعة' : 'Rotate 90° counter-clockwise'}
+          title={isAr ? 'تدوير شمال' : 'Rotate left'}
+          className="inline-flex h-8 items-center gap-1 rounded-full bg-neutral-800 px-3 text-[11px] font-bold text-neutral-200 hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+        >
+          <RotateCcw size={14} aria-hidden="true" />
+          90°
+        </button>
+        <button
+          type="button"
+          onClick={() => onRotate(1)}
+          aria-label={isAr ? 'تدوير 90 درجة مع عقارب الساعة' : 'Rotate 90° clockwise'}
+          title={isAr ? 'تدوير يمين' : 'Rotate right'}
+          className="inline-flex h-8 items-center gap-1 rounded-full bg-neutral-800 px-3 text-[11px] font-bold text-neutral-200 hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+        >
+          <RotateCw size={14} aria-hidden="true" />
+          90°
+        </button>
         <button
           type="button"
           onClick={() => {
             setZoom(CROP_MIN_ZOOM);
             setCenter({ cx: srcWidth / 2, cy: srcHeight / 2 });
           }}
-          aria-label={isAr ? 'إعادة الضبط' : 'Reset crop'}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-neutral-200 hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+          aria-label={isAr ? 'إعادة الضبط للإطار الكامل' : 'Reset to full frame'}
+          title={isAr ? 'إعادة الضبط' : 'Reset'}
+          className="inline-flex h-8 items-center gap-1 rounded-full bg-neutral-800 px-3 text-[11px] font-bold text-neutral-200 hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
         >
-          <RotateCcw size={14} />
+          <Maximize size={14} aria-hidden="true" />
+          {isAr ? 'كامل الصورة' : 'Full photo'}
         </button>
       </div>
 
       <p className="text-[10px] leading-relaxed text-neutral-500">
         {isAr
-          ? 'اسحب الصورة لتحريكها وكبّر لاختيار الجزء الظاهر — اللي شايفه هنا هو اللي هيظهر للزباين.'
-          : 'Drag to move, zoom to choose what shows — exactly what you see here is what customers get.'}
+          ? 'اسحب الصورة لتحريكها وكبّر لاختيار الجزء الظاهر، ودوّرها لو طالعة بالمقلوب — اللي شايفه هنا هو اللي هيظهر للزباين.'
+          : 'Drag to move, zoom to choose what shows, rotate if it came out sideways — exactly what you see here is what customers get.'}
       </p>
 
       <div className="flex items-center gap-1.5">

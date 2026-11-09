@@ -6,6 +6,7 @@ import {
   UploadError,
   decodeSourceImage,
   exportCrop,
+  rotateSource90,
   uploadItemImage,
   type DecodedSource,
 } from '@/src/lib/image-upload';
@@ -260,6 +261,22 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
     setErrorCode(null);
   };
 
+  /** Rotate the decoded photo ±90° (fixes sideways phone shots). The editor
+   *  resets its framing because width/height swap; the file stays pending so
+   *  confirming still uploads the rotated crop. */
+  const handleRotate = async (dir: 1 | -1) => {
+    const current = cropSrc;
+    if (!current) return;
+    setErrorCode(null);
+    try {
+      const next = await rotateSource90(current, dir);
+      pickedRef.current = pickedRef.current ?? pendingRef.current;
+      setCropSrc(next);
+    } catch (error) {
+      fail(error);
+    }
+  };
+
   /** Reopen the editor on the last confirmed file to adjust the framing. */
   const openRecrop = async () => {
     const file = pendingRef.current;
@@ -325,6 +342,7 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
           lang={lang}
           onConfirm={(rect) => void handleCropConfirm(rect)}
           onCancel={handleCropCancel}
+          onRotate={(dir) => void handleRotate(dir)}
         />
       ) : (
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg border border-neutral-800 bg-black">

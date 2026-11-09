@@ -64,6 +64,9 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   const perCard = Math.min(10, Math.max(2, autoplayInterval || 4));
   const [index, setIndex] = useState(0);
   const [instant, setInstant] = useState(false);
+  // Broken remote photos fall back to the plain branded card (same pattern
+  // as the menu photo cards) — one record for all cards, no per-card hooks.
+  const [failedPhoto, setFailedPhoto] = useState<Record<string, boolean>>({});
   const indexRef = useRef(0);
   const pausedRef = useRef(false);
   const resumeTimer = useRef<number | null>(null);
@@ -209,6 +212,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
       : (isAr ? 'جديد' : 'NEW');
 
     const cardLabel = `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency)}`;
+    const showPhoto = Boolean(item.imageUrl) && !failedPhoto[item.id];
     return (
       <motion.div
         key={item.id}
@@ -238,7 +242,35 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             : 'bg-[#0A0A0A] text-white border-[#0A0A0A]'
         }`}
       >
+        {/* Item photo background: the dish behind the card content. The scrim
+            follows the card scheme (light on gold for black text, dark on
+            dark for white text) so every scheme stays readable. */}
+        {showPhoto && (
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+            <img
+              src={item.imageUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              draggable={false}
+              sizes="(max-width: 767px) 90vw, 33vw"
+              onError={() =>
+                setFailedPhoto((prev) => (prev[item.id] ? prev : { ...prev, [item.id]: true }))
+              }
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div
+              className={`absolute inset-0 ${
+                isYellowCard
+                  ? 'bg-gradient-to-t from-white/90 via-white/60 to-white/75'
+                  : 'bg-gradient-to-t from-black/80 via-black/45 to-black/60'
+              }`}
+            />
+          </div>
+        )}
+
         {/* Brand mark from the logo (pan + handle) as a quiet watermark */}
+        {!showPhoto && (
         <img
           src="/assets/pan-icon-yellow-192.webp"
           alt=""
@@ -249,6 +281,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           }`}
           style={isYellowCard ? { filter: 'brightness(0)' } : undefined}
         />
+        )}
 
         {/* Top Tag Badge */}
         <div className="relative flex justify-between items-start">

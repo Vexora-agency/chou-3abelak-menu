@@ -171,10 +171,15 @@ function groupSelection(menu: MenuData, groupId: string | null): 'single' | 'mul
 /**
  * Validate split-quantity add-on picks. Throws 'invalid_addon' on ANY
  * violation (unknown/disabled id, dupes, non-int or out-of-range counts,
- * multi partial-count, single sum overflow). Legacy calls without addonQty
- * validate ids exactly as today. `qty` bounds counts (0..qty); when qty is
- * not an integer only id/shape checks run so the caller's qty validation
- * still reports 'invalid_qty'.
+ * multi partial-count, single sum overflow, or an uncovered REQUIRED
+ * group). Legacy calls without addonQty validate ids exactly as today.
+ * `qty` bounds counts (0..qty); when qty is not an integer only id/shape
+ * checks run so the caller's qty validation still reports 'invalid_qty'.
+ *
+ * Required groups (item.requiredGroups): at least one enabled option of
+ * the group must be picked (count > 0). Runs for legacy and split shapes
+ * alike, before the early return below. Unknown ids and groups with no
+ * enabled option are skipped — never impossible to satisfy.
  */
 export function validatePicks(
   menu: MenuData,
@@ -196,6 +201,29 @@ export function validatePicks(
     seen.add(id);
     const found = enabled.find((a) => a && a.featureId === id);
     if (!found || !isMoney(found.price) || found.price < 0) throw new Error('invalid_addon');
+  }
+  // Required groups first: legacy callers return right below, and the rule
+  // applies to both shapes.
+  const required = Array.isArray(item.requiredGroups) ? item.requiredGroups : [];
+  if (required.length > 0) {
+    const enabledCount = new Map<string, number>();
+    for (const a of enabled) {
+      if (!a || typeof a.featureId !== 'string') continue;
+      const gid = featureGroupId(menu, a.featureId);
+      if (gid === null) continue;
+      enabledCount.set(gid, (enabledCount.get(gid) ?? 0) + 1);
+    }
+    const pickedCount = new Map<string, number>();
+    for (const id of list) {
+      const gid = featureGroupId(menu, id);
+      if (gid === null) continue;
+      pickedCount.set(gid, (pickedCount.get(gid) ?? 0) + 1);
+    }
+    for (const gid of required) {
+      if (typeof gid !== 'string' || gid === '') continue;
+      if ((enabledCount.get(gid) ?? 0) === 0) continue;
+      if ((pickedCount.get(gid) ?? 0) === 0) throw new Error('invalid_addon');
+    }
   }
   if (addonQty === undefined || addonQty === null) return;
   if (!isPlainObject(addonQty)) throw new Error('invalid_addon');

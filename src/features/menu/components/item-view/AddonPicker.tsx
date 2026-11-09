@@ -95,6 +95,7 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
           );
         }
         const prompt = b.prompt ? (isAr ? b.prompt.ar : b.prompt.en) : '';
+        const required = (item.requiredGroups || []).includes(b.groupId ?? '');
         const title =
           prompt && prompt.trim()
             ? prompt
@@ -116,7 +117,17 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
           <div key={b.key || 'orphan'}>
             <p className={`text-xs font-extrabold mb-2 ${darkMode ? 'text-neutral-300' : 'text-neutral-700'}`}>
               <span dir="auto">{title}</span>
+              {required && (
+                <span className="ms-1.5 inline-flex items-center rounded-full bg-[var(--primary)] px-2 py-0.5 text-[10px] font-black text-[#0A0A0A]">
+                  {isAr ? 'إجباري *' : 'Required *'}
+                </span>
+              )}
             </p>
+            {required && (
+              <p className={`-mt-1 mb-2 text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                {isAr ? 'لازم تختار واحدة على الأقل عشان زر الإضافة يتفعل' : 'Pick at least one to enable the Add button'}
+              </p>
+            )}
             {split ? (
               // key remounts on radio↔split flips so the rise-in replays.
               <div key="split">

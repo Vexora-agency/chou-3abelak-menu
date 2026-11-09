@@ -1,7 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertCircle, CheckCircle2, Image as ImageIcon, ImagePlus, Link2, Loader2, Upload, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Crop, Image as ImageIcon, ImagePlus, Link2, Loader2, Upload, X } from 'lucide-react';
 import type { MenuItem } from '@/src/types/menu';
-import { ImagePrepareError, UploadError, prepareImage, uploadItemImage } from '@/src/lib/image-upload';
+import {
+  ImagePrepareError,
+  UploadError,
+  decodeSourceImage,
+  exportCrop,
+  uploadItemImage,
+  type DecodedSource,
+} from '@/src/lib/image-upload';
+import type { CropRect } from '@/src/lib/crop-math';
+import { ImageCropEditor } from './ImageCropEditor';
 
 interface ItemImageFieldProps {
   item: MenuItem;
@@ -88,8 +97,9 @@ function codeOf(error: unknown): string {
   return 'upload_failed';
 }
 
-/** Item photo: upload from the phone (primary) or paste a URL (advanced),
- *  with a live 16:10 preview matching the photo card frame. */
+/** Item photo: upload from the phone (primary) or paste a URL (advanced).
+ *  Uploads go through the 16:10 crop editor first, so the admin frames
+ *  exactly what customers see in the Photos layout / card backgrounds. */
 export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onChange }) => {
   const isAr = lang === 'ar';
   const value = item.imageUrl ?? '';
@@ -102,15 +112,32 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   // `failedUrl` records WHICH url broke — editing the url retries the preview.
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  // Open crop editor for this decoded source (full-resolution pixels).
+  const [cropSrc, setCropSrc] = useState<DecodedSource | null>(null);
+  // A confirmed file exists that the crop editor can reopen (adjust flow).
+  const [canRecrop, setCanRecrop] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const previewRef = useRef<string | null>(null);
+  // Newly picked file (not yet cropped) vs last confirmed file (re-crop).
+  const pickedRef = useRef<File | null>(null);
+  const pendingRef = useRef<File | null>(null);
 
   const replacePreview = (url: string | null) => {
     if (previewRef.current) URL.revokeObjectURL(previewRef.current);
     previewRef.current = url;
     setLocalPreview(url);
+  };
+
+  const closeCropSrc = () => {
+    if (!cropSrc) return;
+    try {
+      cropSrc.close();
+    } catch {
+      // Bitmap already closed — harmless.
+    }
+    setCropSrc(null);
   };
 
   useEffect(
@@ -119,6 +146,21 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
       if (previewRef.current) URL.revokeObjectURL(previewRef.current);
     },
     [],
+  );
+
+  // The decoded source holds full-resolution pixels: release them when the
+  // editor closes for any reason, or if the field unmounts mid-edit.
+  useEffect(
+    () => () => {
+      if (cropSrc) {
+        try {
+          cropSrc.close();
+        } catch {
+          // Already closed.
+        }
+      }
+    },
+    [cropSrc],
   );
 
   const setUrl = (next: string) => {
@@ -131,6 +173,10 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
   const clear = () => {
     abortRef.current?.abort();
     abortRef.current = null;
+    closeCropSrc();
+    pickedRef.current = null;
+    pendingRef.current = null;
+    setCanRecrop(false);
     replacePreview(null);
     setStatus('idle');
     setProgress(0);
@@ -138,18 +184,27 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
     setUrl('');
   };
 
-  const handleFile = async (file: File) => {
-    setErrorCode(null);
-    setProgress(0);
-    setStatus('preparing');
-    try {
-      const prepared = await prepareImage(file);
-      replacePreview(URL.createObjectURL(prepared.blob));
-      setStatus('uploading');
+  const fail = (error: unknown) => {
+    abortRef.current = null;
+    const code = codeOf(error);
+    if (code === 'aborted') {
+      replacePreview(null);
+      setStatus('idle');
+      setProgress(0);
+      return;
+    }
+    setStatus('error');
+    setErrorCode(code);
+  };
 
-      const controller = new AbortController();
-      abortRef.current = controller;
-      const uploaded = await uploadItemImage(prepared.blob, {
+  const uploadBlob = async (blob: Blob) => {
+    replacePreview(URL.createObjectURL(blob));
+    setStatus('uploading');
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    try {
+      const uploaded = await uploadItemImage(blob, {
         signal: controller.signal,
         onProgress: setProgress,
       });
@@ -159,16 +214,65 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
       setProgress(100);
       setStatus('idle');
     } catch (error) {
-      abortRef.current = null;
-      const code = codeOf(error);
-      if (code === 'aborted') {
-        replacePreview(null);
-        setStatus('idle');
-        setProgress(0);
-        return;
-      }
-      setStatus('error');
-      setErrorCode(code);
+      fail(error);
+    }
+  };
+
+  /** Pick → decode → crop editor (upload happens after confirming a crop). */
+  const handleFile = async (file: File) => {
+    setErrorCode(null);
+    setProgress(0);
+    setStatus('preparing');
+    try {
+      const decoded = await decodeSourceImage(file);
+      pickedRef.current = file;
+      setCropSrc(decoded);
+      setStatus('idle');
+    } catch (error) {
+      pickedRef.current = null;
+      fail(error);
+    }
+  };
+
+  const handleCropConfirm = async (rect: CropRect) => {
+    const current = cropSrc;
+    if (!current) return;
+    setErrorCode(null);
+    setProgress(0);
+    setStatus('preparing');
+    try {
+      const cropped = await exportCrop(current.source, rect);
+      pendingRef.current = pickedRef.current;
+      pickedRef.current = null;
+      setCanRecrop(pendingRef.current !== null);
+      closeCropSrc();
+      await uploadBlob(cropped.blob);
+    } catch (error) {
+      closeCropSrc();
+      fail(error);
+    }
+  };
+
+  const handleCropCancel = () => {
+    pickedRef.current = null;
+    closeCropSrc();
+    setStatus('idle');
+    setErrorCode(null);
+  };
+
+  /** Reopen the editor on the last confirmed file to adjust the framing. */
+  const openRecrop = async () => {
+    const file = pendingRef.current;
+    if (!file || cropSrc) return;
+    setErrorCode(null);
+    setStatus('preparing');
+    try {
+      const decoded = await decodeSourceImage(file);
+      pickedRef.current = file;
+      setCropSrc(decoded);
+      setStatus('idle');
+    } catch (error) {
+      fail(error);
     }
   };
 
@@ -183,6 +287,7 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
   const remoteOk = !showLocal && trimmed !== '' && valid && failedUrl !== trimmed;
   const previewSrc = showLocal ? localPreview : remoteOk ? trimmed : null;
   const busy = status === 'preparing' || status === 'uploading';
+  const editing = cropSrc !== null;
 
   return (
     <div className="space-y-1.5">
@@ -212,84 +317,105 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
         }}
       />
 
-      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg border border-neutral-800 bg-black">
-        {previewSrc ? (
-          <img
-            src={previewSrc}
-            alt={isAr ? 'معاينة صورة الصنف' : 'Item photo preview'}
-            onError={() => {
-              if (!showLocal) setFailedUrl(trimmed);
-            }}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={openPicker}
-            disabled={busy}
-            className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-4 text-center hover:bg-neutral-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--primary)]"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--primary)]/15 text-[var(--primary)]">
-              <ImagePlus size={18} aria-hidden="true" />
-            </span>
-            <span className="text-xs font-bold text-white">
-              {isAr ? 'ارفع صورة من الجهاز' : 'Upload a photo'}
-            </span>
-            <span className="text-[10px] text-neutral-500">
-              {isAr ? 'من الكاميرا أو المعرض — JPG / PNG / WebP' : 'Camera or gallery — JPG / PNG / WebP'}
-            </span>
-          </button>
-        )}
-
-        {previewSrc && !busy && (
-          <div className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-gradient-to-t from-black/90 to-transparent p-2">
+      {editing && cropSrc ? (
+        <ImageCropEditor
+          source={cropSrc.source}
+          srcWidth={cropSrc.width}
+          srcHeight={cropSrc.height}
+          lang={lang}
+          onConfirm={(rect) => void handleCropConfirm(rect)}
+          onCancel={handleCropCancel}
+        />
+      ) : (
+        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg border border-neutral-800 bg-black">
+          {previewSrc ? (
+            <img
+              src={previewSrc}
+              alt={isAr ? 'معاينة صورة الصنف' : 'Item photo preview'}
+              onError={() => {
+                if (!showLocal) setFailedUrl(trimmed);
+              }}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
             <button
               type="button"
               onClick={openPicker}
-              className="inline-flex h-8 items-center gap-1 rounded-full bg-[var(--primary)] px-3 text-[11px] font-bold text-[#0A0A0A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              disabled={busy}
+              className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-4 text-center hover:bg-neutral-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--primary)]"
             >
-              <Upload size={12} aria-hidden="true" />
-              {isAr ? 'تغيير الصورة' : 'Change photo'}
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--primary)]/15 text-[var(--primary)]">
+                <ImagePlus size={18} aria-hidden="true" />
+              </span>
+              <span className="text-xs font-bold text-white">
+                {isAr ? 'ارفع صورة من الجهاز' : 'Upload a photo'}
+              </span>
+              <span className="text-[10px] text-neutral-500">
+                {isAr ? 'من الكاميرا أو المعرض — JPG / PNG / WebP' : 'Camera or gallery — JPG / PNG / WebP'}
+              </span>
             </button>
-            <button
-              type="button"
-              onClick={clear}
-              className="inline-flex h-8 items-center gap-1 rounded-full bg-black/70 px-3 text-[11px] font-bold text-neutral-200 ring-1 ring-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
-            >
-              <X size={12} aria-hidden="true" />
-              {isAr ? 'إزالة' : 'Remove'}
-            </button>
-          </div>
-        )}
+          )}
 
-        {busy && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6">
-            <Loader2 size={20} className="animate-spin text-[var(--primary)]" aria-hidden="true" />
-            <span className="text-[11px] font-bold text-white" aria-live="polite">
-              {status === 'preparing'
-                ? isAr
-                  ? 'جاري تجهيز الصورة…'
-                  : 'Preparing photo…'
-                : isAr
-                  ? `جاري الرفع ${progress}%`
-                  : `Uploading ${progress}%`}
-            </span>
-            <div
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={status === 'preparing' ? 0 : progress}
-              aria-label={isAr ? 'تقدم رفع الصورة' : 'Photo upload progress'}
-              className="h-1.5 w-2/3 overflow-hidden rounded-full bg-neutral-800"
-            >
-              <div
-                className="h-full rounded-full bg-[var(--primary)] transition-[width] duration-200"
-                style={{ width: `${status === 'preparing' ? 8 : Math.max(progress, 4)}%` }}
-              />
+          {previewSrc && !busy && (
+            <div className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-gradient-to-t from-black/90 to-transparent p-2">
+              <button
+                type="button"
+                onClick={openPicker}
+                className="inline-flex h-8 items-center gap-1 rounded-full bg-[var(--primary)] px-3 text-[11px] font-bold text-[#0A0A0A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                <Upload size={12} aria-hidden="true" />
+                {isAr ? 'تغيير الصورة' : 'Change photo'}
+              </button>
+              {canRecrop && (
+                <button
+                  type="button"
+                  onClick={() => void openRecrop()}
+                  className="inline-flex h-8 items-center gap-1 rounded-full bg-black/70 px-3 text-[11px] font-bold text-neutral-200 ring-1 ring-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                >
+                  <Crop size={12} aria-hidden="true" />
+                  {isAr ? 'ضبط القص' : 'Adjust crop'}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={clear}
+                className="inline-flex h-8 items-center gap-1 rounded-full bg-black/70 px-3 text-[11px] font-bold text-neutral-200 ring-1 ring-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+              >
+                <X size={12} aria-hidden="true" />
+                {isAr ? 'إزالة' : 'Remove'}
+              </button>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+
+          {busy && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6">
+              <Loader2 size={20} className="animate-spin text-[var(--primary)]" aria-hidden="true" />
+              <span className="text-[11px] font-bold text-white" aria-live="polite">
+                {status === 'preparing'
+                  ? isAr
+                    ? 'جاري تجهيز الصورة…'
+                    : 'Preparing photo…'
+                  : isAr
+                    ? `جاري الرفع ${progress}%`
+                    : `Uploading ${progress}%`}
+              </span>
+              <div
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={status === 'preparing' ? 0 : progress}
+                aria-label={isAr ? 'تقدم رفع الصورة' : 'Photo upload progress'}
+                className="h-1.5 w-2/3 overflow-hidden rounded-full bg-neutral-800"
+              >
+                <div
+                  className="h-full rounded-full bg-[var(--primary)] transition-[width] duration-200"
+                  style={{ width: `${status === 'preparing' ? 8 : Math.max(progress, 4)}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {status === 'error' && errorCode && (
         <p role="alert" className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-red-400">
@@ -300,8 +426,8 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
 
       <p className="text-[10px] leading-relaxed text-neutral-500">
         {isAr
-          ? 'بنضغط الصورة ونشيل بيانات الموقع (GPS) قبل الرفع. لو رفعت صورة غلط، غيّرها — الصور القديمة بتتنضف تلقائيًا.'
-          : 'Photos are resized and stripped of location metadata before upload. Replaced photos are cleaned up automatically.'}
+          ? 'بتختار إطار الصورة قبل الرفع، وبنضغطها ونشيل بيانات الموقع (GPS). لو رفعت صورة غلط، غيّرها — الصور القديمة بتتنضف تلقائيًا.'
+          : 'You frame the photo before upload; it is resized and stripped of location metadata. Replaced photos are cleaned up automatically.'}
       </p>
 
       <details className="rounded-lg border border-neutral-800 bg-neutral-950/40 px-2.5 py-2">
@@ -349,8 +475,8 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
           </div>
           <p id="item-image-hint" className="text-[10px] leading-relaxed text-neutral-500">
             {isAr
-              ? 'الرابط لازم يبدأ بـ https:// أو /. بيظهر في عرض «صور» فقط.'
-              : 'The URL must start with https:// or /. Shown in the "Photos" layout only.'}
+              ? 'الرابط لازم يبدأ بـ https:// أو /. بيظهر في عرض «صور» وخلفية «بطاقات».'
+              : 'The URL must start with https:// or /. Shown in the "Photos" layout and as "Cards" backgrounds.'}
           </p>
         </div>
       </details>

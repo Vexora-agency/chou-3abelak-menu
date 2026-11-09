@@ -111,7 +111,7 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
               alt={name}
               loading="lazy"
               decoding="async"
-              sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
+              sizes="(max-width: 1023px) 50vw, 33vw"
               onError={() => setFailedSrc(item.imageUrl ?? '')}
               className="photo-card-img absolute inset-0 h-full w-full object-cover"
             />
@@ -166,25 +166,28 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
 
         {/* Price tag: half on the photo, half on the body — the card's
             signature element and the fastest price read in the section. */}
-        <span className="photo-card-ticket absolute bottom-[-14px] start-4 z-20 inline-flex items-center rounded-lg border-2 border-[#0A0A0A] bg-[var(--primary)] px-2.5 py-1 text-[12px] font-black text-[#0A0A0A] shadow-[3px_3px_0_#0A0A0A] rtl:shadow-[-3px_3px_0_#0A0A0A]">
+        <span className="photo-card-ticket absolute bottom-[-12px] start-3 z-20 inline-flex items-center rounded-lg border-2 border-[#0A0A0A] bg-[var(--primary)] px-2 py-0.5 text-[10.5px] font-black text-[#0A0A0A] shadow-[3px_3px_0_#0A0A0A] rtl:shadow-[-3px_3px_0_#0A0A0A] sm:bottom-[-14px] sm:start-4 sm:px-2.5 sm:py-1 sm:text-[12px]">
           <bdi>{price}</bdi>
         </span>
       </div>
 
-      <div className="relative flex flex-1 flex-col p-4 pt-6">
+      <div className="relative flex flex-1 flex-col p-3 pt-5 sm:p-4 sm:pt-6">
         <h3
           dir="auto"
-          className={`photo-card-title w-fit max-w-full text-[17px] font-black leading-snug line-clamp-2 ${
+          className={`photo-card-title w-fit max-w-full text-[14px] font-black leading-snug line-clamp-2 sm:text-[17px] ${
             darkMode ? 'text-white' : 'text-[#0A0A0A]'
           }`}
         >
           {name}
         </h3>
 
+        {/* Compact 2-up phones skip the description (a ~150px column fits
+            ~3 words a line); sm+ keeps the reserved 2-line slot. `hidden`
+            loses to `sm:line-clamp-2` (display) above the breakpoint. */}
         {descText && (
           <p
             dir="auto"
-            className={`mb-3 mt-1.5 line-clamp-2 min-h-[2.6em] text-[11.5px] ${isAr ? 'leading-relaxed' : 'leading-[1.55]'} ${
+            className={`mb-2 mt-1 hidden text-[11px] sm:mb-3 sm:mt-1.5 sm:line-clamp-2 sm:min-h-[2.6em] sm:text-[11.5px] ${isAr ? 'leading-relaxed' : 'leading-[1.55]'} ${
               darkMode ? 'text-neutral-400' : 'text-neutral-600'
             }`}
           >
@@ -192,7 +195,7 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
           </p>
         )}
 
-        <div className={`mt-auto flex items-center justify-between gap-2 border-t border-dashed pt-3 ${
+        <div className={`mt-auto flex items-center justify-between gap-2 border-t border-dashed pt-2 sm:pt-3 ${
           darkMode ? 'border-neutral-800' : 'border-neutral-200'
         }`}>
           {showOptionsHint ? (

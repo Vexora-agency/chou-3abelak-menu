@@ -163,8 +163,18 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
               <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
               <span>
                 {isAr
-                  ? 'أضف صورة لكل صنف من تبويب الأصناف (حقل رابط الصورة). الأصناف بدون صورة بتظهر بشعار القسم.'
-                  : 'Add a photo to each item from the Items tab (image URL field). Items without one show the category mark.'}
+                  ? 'أضف صورة لكل صنف من تبويب الأصناف (حقل الصورة: رفع ثم قص الإطار). الأصناف بدون صورة بتظهر بشعار القسم.'
+                  : 'Add a photo to each item from the Items tab (photo field: upload, then frame the crop). Items without one show the category mark.'}
+              </span>
+            </p>
+          )}
+          {activeLayout === 'cards' && (
+            <p className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-neutral-500">
+              <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
+              <span>
+                {isAr
+                  ? 'الصنف اللي له صورة بتظهر خلفية للكارت مع تعتيم مريح للقراءة. الأصناف بدون صورة بتفضل كروت نصية.'
+                  : 'Items with a photo show it as the card background behind a readable scrim. Items without one stay text cards.'}
               </span>
             </p>
           )}

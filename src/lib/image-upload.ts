@@ -12,6 +12,11 @@
  * purely about UX, bandwidth and privacy.
  */
 
+import {
+  CROP_ASPECT,
+  type CropRect,
+} from './crop-math';
+
 export interface PreparedImage {
   blob: Blob;
   width: number;
@@ -98,16 +103,86 @@ function renderToBlob(source: ImageBitmap | HTMLImageElement, width: number, hei
   });
 }
 
-/** Downscale, re-encode and drop metadata. Throws ImagePrepareError. */
-export async function prepareImage(file: File): Promise<PreparedImage> {
+/** A decoded photo, ready to draw. Call `close()` when done (frees the
+ *  decoded pixels on browsers with ImageBitmap; no-op for <img>). */
+export interface DecodedSource {
+  source: ImageBitmap | HTMLImageElement;
+  width: number;
+  height: number;
+  close: () => void;
+}
+
+function closeSource(source: ImageBitmap | HTMLImageElement): void {
+  if (typeof ImageBitmap !== 'undefined' && source instanceof ImageBitmap) source.close();
+}
+
+/**
+ * Validate + decode a picked file without resizing. Throws
+ * ImagePrepareError with the same codes as prepareImage. Used by the crop
+ * editor, which needs the full-resolution pixels.
+ */
+export async function decodeSourceImage(file: File): Promise<DecodedSource> {
   if (file.size > MAX_SOURCE_BYTES) throw new ImagePrepareError('source_too_large');
   if (file.type && !ACCEPTED_TYPES.has(file.type)) throw new ImagePrepareError('unsupported_type');
 
   const source = await decode(file);
-  const sourceWidth = 'width' in source ? source.width : 0;
-  const sourceHeight = 'height' in source ? source.height : 0;
-  if (!sourceWidth || !sourceHeight) throw new ImagePrepareError('decode_failed');
-  if (sourceWidth * sourceHeight > MAX_SOURCE_PIXELS) throw new ImagePrepareError('too_large');
+  const width = 'width' in source ? source.width : 0;
+  const height = 'height' in source ? source.height : 0;
+  if (!width || !height) {
+    closeSource(source);
+    throw new ImagePrepareError('decode_failed');
+  }
+  if (width * height > MAX_SOURCE_PIXELS) {
+    closeSource(source);
+    throw new ImagePrepareError('too_large');
+  }
+  return { source, width, height, close: () => closeSource(source) };
+}
+
+/**
+ * Export a 16:10 crop rect (source pixels, from the crop editor) to an
+ * upload-ready blob. Output width follows the rect (320..1280px) so a deep
+ * zoom never upscales into blur; the server re-validates everything anyway.
+ */
+export async function exportCrop(
+  source: ImageBitmap | HTMLImageElement,
+  rect: CropRect,
+): Promise<PreparedImage> {
+  const outW = Math.min(1280, Math.max(320, Math.round(rect.w)));
+  const outH = Math.max(1, Math.round(outW / CROP_ASPECT));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new ImagePrepareError('encode_failed');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, outW, outH);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(source, rect.x, rect.y, rect.w, rect.h, 0, 0, outW, outH);
+
+  const encode = (type: string, quality: number): Promise<Blob | null> =>
+    new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), type, quality);
+    });
+
+  let blob = await encode('image/webp', QUALITY);
+  if (!blob || blob.type !== 'image/webp') blob = await encode('image/jpeg', QUALITY);
+  if (!blob) throw new ImagePrepareError('encode_failed');
+  if (blob.size > SERVER_MAX_BYTES) {
+    blob = await encode('image/webp', 0.75);
+    if (!blob || blob.type !== 'image/webp') blob = await encode('image/jpeg', 0.75);
+  }
+  if (!blob) throw new ImagePrepareError('encode_failed');
+  if (blob.size > SERVER_MAX_BYTES) throw new ImagePrepareError('too_large');
+  return { blob, width: outW, height: outH };
+}
+
+/** Downscale, re-encode and drop metadata. Throws ImagePrepareError. */
+export async function prepareImage(file: File): Promise<PreparedImage> {
+  const decoded = await decodeSourceImage(file);
+  const { source, width: sourceWidth, height: sourceHeight } = decoded;
 
   const scale = Math.min(1, MAX_EDGE / Math.max(sourceWidth, sourceHeight));
   const width = Math.max(1, Math.round(sourceWidth * scale));
@@ -133,7 +208,7 @@ export async function prepareImage(file: File): Promise<PreparedImage> {
   if (!blob) throw new ImagePrepareError('encode_failed');
   if (blob.size > SERVER_MAX_BYTES) throw new ImagePrepareError('too_large');
 
-  if (typeof ImageBitmap !== 'undefined' && source instanceof ImageBitmap) source.close();
+  decoded.close();
 
   return { blob, width: finalWidth, height: finalHeight };
 }

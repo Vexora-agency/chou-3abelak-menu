@@ -273,7 +273,8 @@ For local dev add the same keys to untracked `.dev.vars` (see `.env.example`).
   or WebP; ≤ 8 MB; ≤ 40 MP / 8000 px per side). The server sniffs magic
   bytes, rejects SVG/GIF/AVIF and animated files, strips EXIF/GPS/comments
   and any bytes appended after the logical end of the image.
-- Uploads are rate-limited per IP (20 / 10 min) and audited. Replacing a
+- Uploads are rate-limited per IP (60 / 10 min — the framing editor
+  auto-saves every tweak as its own upload) and audited. Replacing a
   photo is safe: the first menu save after an upload deletes R2 objects no
   item references anymore, with a 15-minute age floor so an in-flight save
   can never delete a just-uploaded photo.

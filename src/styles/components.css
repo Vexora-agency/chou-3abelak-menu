@@ -323,7 +323,22 @@
   /* Round dish tilts a touch while its zoom runs (scale comes from the
      shared .photo-card-img rule above — the two compose). */
   .round-card:hover .photo-card-img {
+    scale: 1.07;
     rotate: 5deg;
+  }
+  .round-card:hover .photo-card-shine {
+    animation: photo-shine 0.95s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .round-card:hover {
+    translate: 0 -6px;
+    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+  .round-card-light:hover {
+    box-shadow: 0 22px 40px rgba(10, 10, 10, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  .round-card:active {
+    translate: 0 -3px;
+    scale: 0.99;
   }
 }
 
@@ -354,10 +369,13 @@
 }
 
 /* ---------- Round layout (5th display): circular dish photo ---------- */
-/* Branded conic rim, slow-spinning (transform-only on a small layer).
-   The wrapper spins the whole dish assembly — photo included — like a
-   rotating display; the ::after pulse ring is circular so the spin is
-   invisible on it. */
+/* Frosted-glass card WITHOUT backdrop-filter: layered translucency +
+   hairline border + inner top highlight. Deliberate — backdrop blur over
+   a dozen scrolling cards is a documented battery/scroll killer on
+   phones, and behind these cards sits flat page background anyway (there
+   is nothing to blur). Same stance as .glass-pill above. */
+/* Branded conic rim (static — the rotation was dropped: an infinite spin
+   on every visible card weighed on phones). The pulse ring breathes on. */
 .round-ring {
   background: conic-gradient(
     from 20deg,
@@ -366,7 +384,6 @@
     var(--primary)
   );
   box-shadow: 0 7px 22px rgba(0, 0, 0, 0.45), 0 0 0 5px rgba(255, 255, 255, 0.05);
-  animation: ring-turn 18s linear infinite;
 }
 .round-ring::after {
   content: "";
@@ -376,11 +393,6 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   animation: ring-pulse 2.8s ease-in-out infinite;
   pointer-events: none;
-}
-@keyframes ring-turn {
-  to {
-    transform: rotate(360deg);
-  }
 }
 @keyframes ring-pulse {
   0%, 100% {
@@ -406,4 +418,20 @@
     opacity: 1;
     transform: scale(1) rotate(0);
   }
+}
+/* Glass shells (dark / light): translucent gradient + hairline border +
+   soft shadow with an inner top highlight. The offset-shadow language of
+   the other cards is intentionally absent — solid shadows kill glass. */
+.round-card {
+  border-color: rgba(255, 255, 255, 0.14);
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 42%, rgba(0, 0, 0, 0.14) 100%);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: translate 0.28s ease, scale 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+}
+.round-card-light {
+  border-color: rgba(10, 10, 10, 0.1);
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.45) 100%);
+  box-shadow: 0 14px 28px rgba(10, 10, 10, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }

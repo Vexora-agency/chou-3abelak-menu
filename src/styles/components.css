@@ -197,6 +197,21 @@
   transition: background-color 9999s ease-out 0s;
 }
 
+/* ---------- Menu section grids: skip offscreen work ----------
+   content-visibility lets the browser skip layout/style/paint for sections
+   far from the viewport — the single biggest scroll-smoothness win on weak
+   phones with long menus. `auto` (not hidden) keeps everything findable and
+   interactive; the intrinsic-size estimate is replaced by the real size
+   after first layout, so scrollbars never jump. NOT applied to the featured
+   carousel track (it measures card widths in JS — estimates would break
+   stepping) nor to any scroll container itself. Entrance animations
+   (whileInView) and the phased-collapse pager measuring all operate on
+   onscreen content, unaffected. Harmlessly ignored where unsupported. */
+.menu-section-grid {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 640px;
+}
+
 /* ---------- Photo layout (4th display): photo-first cards ---------- */
 /* Same offset-shadow language as .grid-card, a touch heavier so the photo
    frame reads as a physical card. Truly hover-only motion (fine pointers):
@@ -370,7 +385,9 @@
 
 /* ---------- Round layout (5th display): circular dish photo ---------- */
 /* Branded conic rim (static, no spin — cheap on phones) plus a breathing
-   pulse halo. */
+   pulse halo that plays 3 times on mount, then rests: perpetual motion on
+   every visible card is what drags weak phones, a finite greeting costs
+   nothing at rest. End state (no fill) = the plain 1px ring, intentional. */
 .round-ring {
   background: conic-gradient(
     from 20deg,
@@ -386,7 +403,7 @@
   inset: -6px;
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  animation: ring-pulse 2.8s ease-in-out infinite;
+  animation: ring-pulse 2.8s ease-in-out 3;
   pointer-events: none;
 }
 @keyframes ring-pulse {

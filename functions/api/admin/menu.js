@@ -10,6 +10,7 @@ import { applyPlanToSettings } from '../../_shared/plan.js';
 import { getActor, migrateLegacyBackup, purgeMenuCaches, snapshotMenu, writeMenuVersioned } from '../../_shared/versions.js';
 import { diffMenus, summarizeChanges } from '../../_shared/diff.js';
 import { logActivity } from '../../_shared/activity.js';
+import { maybeGcOrphanImages } from '../../_shared/image-gc.js';
 
 const DEFAULT_EMPTY_MENU = {
   version: 1,
@@ -54,8 +55,7 @@ const DEFAULT_EMPTY_MENU = {
 };
 
 export async function onRequest(context) {
-  const { request, env } = context;
-
+  const { request, env, waitUntil } = context;
   // GET Handler
   if (request.method === 'GET') {
     let current = null;
@@ -197,6 +197,13 @@ export async function onRequest(context) {
         label: { en: `Saved menu${tail}`, ar: `حفظ القائمة${tail ? ` (${bits.join('، ')})` : ''}` },
       });
     } catch {}
+
+    // 9. Photo GC: uploads set a KV flag; the first successful save after an
+    // upload deletes R2 objects that no item references anymore. Best-effort
+    // and detached — a GC failure must never fail the menu save.
+    if (typeof waitUntil === 'function') {
+      waitUntil(maybeGcOrphanImages(env, savedDoc || validatedDoc));
+    }
 
     return jsonNoStore(savedDoc || validatedDoc);
   }

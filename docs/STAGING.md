@@ -14,8 +14,8 @@ Sources (fetched 2026-11-01):
 
 | Environment | URL | D1 | KV | R2 | Secrets |
 |---|---|---|---|---|---|
-| Production | custom domain + `<site>.pages.dev` | prod ORDERS_DB | prod MENU_KV | prod REPORTS | real keys |
-| Preview (staging) | `<branch>.<site>.pages.dev` | `chou-3abelak-orders-preview` (`9011d17f-…`, migrated through 0017) | `MENU_KV_PREVIEW` (`d4ef20c5…`, seeded with `menu.seed.json`) | `chou-3abelak-reports-preview` | fake keys, `SITE_PLAN` as needed |
+| Production | custom domain + `<site>.pages.dev` | prod ORDERS_DB | prod MENU_KV | prod REPORTS + MENU_IMAGES (`chou-3abelak-images`) | real keys |
+| Preview (staging) | `<branch>.<site>.pages.dev` | `chou-3abelak-orders-preview` (`9011d17f-…`, migrated through 0017) | `MENU_KV_PREVIEW` (`d4ef20c5…`, seeded with `menu.seed.json`) | `chou-3abelak-reports-preview` + `chou-3abelak-images-preview` | fake keys, `SITE_PLAN` as needed |
 | Local | `localhost:3000` | `--local` emulator | local KV | throwaway | `.dev.vars` (git-ignored) |
 
 Preview bindings are configured in the Cloudflare dashboard (Settings >
@@ -30,7 +30,8 @@ still served no D1 binding (`/api/health?deep=1` → 503 while `/api/health`
 1. Workers & Pages → project → Settings → Bindings → **Preview** tab (NOT Production):
    - D1: create `chou-3abelak-orders-preview` (`wrangler d1 create …`), bind as `ORDERS_DB`, then `npx wrangler d1 migrations apply ORDERS_DB --remote` while the preview database is selected.
    - KV: create `MENU_KV_PREVIEW`, bind as `MENU_KV`.
-   - R2: create `chou-3abelak-reports-preview`, bind as `REPORTS`.
+   - R2: create `chou-3abelak-reports-preview`, bind as `REPORTS`; create
+     `chou-3abelak-images-preview`, bind as `MENU_IMAGES`.
 2. Settings → Environment variables → **Preview**: `SITE_PLAN` (match what you test), fake `ADMIN_USERNAME` / `ADMIN_PASSWORD_HASH` / `SESSION_SECRET` (generate fresh — never copy production), leave Resend/Telegram/WhatsApp keys **unset**.
 3. Settings → Builds & deployments → Preview deployments: keep "All non-production branches" ON (this is the staging flow: every PR gets a URL).
 4. Optional hardening: Access → protect preview deployments so only the team can open staging URLs (see preview-deployments doc, "Customize preview deployments access").

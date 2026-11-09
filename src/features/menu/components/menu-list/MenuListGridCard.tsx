@@ -108,7 +108,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
             decoding="async"
             sizes="(max-width: 359px) 100vw, (max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
             onError={() => setFailedSrc(item.imageUrl ?? '')}
-            className="absolute inset-0 h-full w-full object-cover"
+            className="grid-card-photo absolute inset-0 h-full w-full object-cover"
           />
           <div
             className={`absolute inset-0 ${

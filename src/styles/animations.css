@@ -195,6 +195,18 @@
 .stagger > *:nth-child(8) { animation-delay: 0.35s; }
 .stagger > *:nth-child(n+9) { animation-delay: 0.4s; }
 
+/* --- Item sheet dish hero: drops in from the top on open (transform +
+   opacity only, compositor-friendly). `backwards` fill like the other
+   sheet entrances: a retained transform would break sticky headers and
+   scroll-up on iOS WebKit. */
+@keyframes heroIn {
+  from { opacity: 0; transform: translateY(-16px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.anim-hero-in {
+  animation: heroIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
 /* --- Smart-split rows: when a single-choice group flips from radio chips
    to per-option steppers (qty 1 → 2+), rows rise in with a stagger so the
    customer notices they can now distribute each unit. Same expo feel as

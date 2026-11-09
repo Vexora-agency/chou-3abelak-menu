@@ -236,6 +236,12 @@
   );
 }
 
+/* Grid-card photo backgrounds share the photo cards' slow zoom language,
+   hover-only on fine pointers (touch gets the static card, no sticky hover). */
+.grid-card-photo {
+  transition: scale 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Price tag: the card's signature element. It rests tilted, then gives a
    small swing when the card is hovered — like a real ticket on a string. */
 .photo-card-ticket {
@@ -310,6 +316,9 @@
   .photo-card-interactive:active {
     translate: 0 -3px;
     scale: 0.99;
+  }
+  .grid-card:hover .grid-card-photo {
+    scale: 1.06;
   }
 }
 

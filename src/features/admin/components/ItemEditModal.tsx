@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import { useItemEditorSections } from '../hooks/useItemEditorSections';
 import { ItemBasicFields } from './item-editor/ItemBasicFields';
+import { ItemImageField } from './item-editor/ItemImageField';
 import { ItemPricingFields } from './item-editor/ItemPricingFields';
 import { ItemVariantsEditor } from './item-editor/ItemVariantsEditor';
 import { ItemAddonsEditor } from './item-editor/ItemAddonsEditor';
@@ -75,6 +76,8 @@ export const ItemEditModal: React.FC<ItemEditModalProps> = ({
     </div>
 
     <ItemBasicFields item={item} menu={menu} lang={lang} onChange={onChange} />
+
+    <ItemImageField item={item} lang={lang} onChange={onChange} />
 
     <ItemPricingFields item={item} lang={lang} onChange={onChange} />
 

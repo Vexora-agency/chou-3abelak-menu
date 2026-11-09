@@ -82,6 +82,11 @@ export interface MenuItem {
   addedAt?: string;
   featured: boolean;
   available: boolean;
+  /** Photo shown by the "photos" display layout. A public URL (https:// or
+      root-relative `/...`) — never a data URL: the menu save payload is
+      capped at 256 KB, so inline images would blow the budget fast.
+      Absent/broken images fall back to the branded category placeholder. */
+  imageUrl?: string;
   /** Opt out of heat entirely: no heat section is offered for this item
       (normalize strips any heat rows and never injects them), even though it
       has other add-ons. For drinks, desserts and other never-spicy items.
@@ -94,8 +99,9 @@ export interface Category {
   id: string;
   name: { en: string; ar: string };
   visible: boolean;
-  /** How its items render in the menu: cards grid, text-first list or compact rows. */
-  layout?: 'cards' | 'list' | 'compact';
+  /** How its items render in the menu: cards grid, text-first list, compact
+      rows, or photo-first cards (image + title + description + price). */
+  layout?: 'cards' | 'list' | 'compact' | 'photos';
   /** Watermark for cards: 'brand' (pan mark), a glyph key
       (pizza/cup/coffee/cake/croissant/salad/sandwich/utensils),
       'custom' (uses iconUrl), or 'none'. Undefined = none (clean default,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, ChevronDown, ChevronUp, Copy, Flame, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { Award, ChevronDown, ChevronUp, Copy, Flame, Image as ImageIcon, Plus, Sparkles, Trash2 } from 'lucide-react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import { normalizePricing, priceLabel } from '@/src/utils/pricing';
 import { effectiveBadges } from '@/src/utils/pricing-badges';
@@ -151,6 +151,11 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                   {item.featured && (
                     <span title={isAr ? 'مميز — يظهر في الكاروسيل' : 'Featured — shows in the carousel'} className="text-[10px] bg-[var(--primary)] text-black font-extrabold px-1.5 py-0.5 rounded">
                       ★
+                    </span>
+                  )}
+                  {item.imageUrl && (
+                    <span title={isAr ? 'صورة مضافة — تظهر في عرض «صور»' : 'Photo added — shows in the "Photos" layout'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]">
+                      <ImageIcon size={10} />
                     </span>
                   )}
                   {!item.available && (

@@ -11,6 +11,7 @@ import { MenuListSectionHeader } from './menu-list/MenuListCompactRow';
 import { MenuListCompactRow } from './menu-list/MenuListCompactRow';
 import { MenuListListRow } from './menu-list/MenuListListRow';
 import { MenuListGridCard } from './menu-list/MenuListGridCard';
+import { MenuListPhotoCard } from './menu-list/MenuListPhotoCard';
 
 interface MenuListProps {
   categories: Category[];
@@ -48,11 +49,12 @@ const MIN_REST = 4;
  * `gridClass` below (sm:640 md:768 lg:1024 xl:1280). Re-evaluates on resize
  * so rotating/resizing re-snaps the visible window to full rows.
  */
-function useGridCols(kind: 'list' | 'compact' | 'cards'): number {
+function useGridCols(kind: 'list' | 'compact' | 'cards' | 'photos'): number {
   const get = () => {
     if (typeof window === 'undefined' || !window.matchMedia) return kind === 'cards' ? 2 : 1;
     const mq = (min: number) => window.matchMedia(`(min-width: ${min}px)`).matches;
     if (kind === 'cards') return mq(1280) ? 5 : mq(1024) ? 4 : mq(640) ? 3 : 2;
+    if (kind === 'photos') return mq(1024) ? 3 : mq(640) ? 2 : 1;
     if (kind === 'list') return mq(1280) ? 3 : mq(768) ? 2 : 1;
     return mq(768) ? 2 : 1; // compact
   };
@@ -97,7 +99,7 @@ const ShowMoreButton: React.FC<ShowMoreButtonProps> = ({ expanded, count, isAr, 
 );
 
 interface MenuListRowItemProps {
-  kind: 'list' | 'compact' | 'cards';
+  kind: 'list' | 'compact' | 'cards' | 'photos';
   item: MenuItem;
   index: number;
   /** Phased-collapse fade delay (null = not leaving). See .row-leaving. */
@@ -185,6 +187,26 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
       />
     );
   }
+  if (kind === 'photos') {
+    return (
+      <MenuListPhotoCard
+        item={item}
+        index={index}
+        leaveDelayMs={leaveDelayMs}
+        orderingEnabled={orderingEnabled}
+        menu={menu}
+        lang={lang}
+        currency={currency}
+        darkMode={darkMode}
+        isAr={isAr}
+        qty={qty}
+        sectionMark={sectionMark}
+        onAddItem={onAddItem}
+        onUpdateLine={onUpdateLine}
+        onOpenItem={onOpenItem}
+      />
+    );
+  }
   return (
     <MenuListGridCard
       item={item}
@@ -256,6 +278,7 @@ export const MenuList: React.FC<MenuListProps> = ({
   const cardsCols = useGridCols('cards');
   const listCols = useGridCols('list');
   const compactCols = useGridCols('compact');
+  const photoCols = useGridCols('photos');
 
   if (filteredItems.length === 0) {
     return <MenuListEmptyState darkMode={darkMode} isAr={isAr} />;
@@ -282,21 +305,25 @@ export const MenuList: React.FC<MenuListProps> = ({
         const markPos = markPosition(cat.iconX, cat.iconY, markStyle);
         const markScale = markScale01(cat.iconScale);
         const markRot = markRotate(cat.iconRotate);
-        const kind = isCompactSection ? 'compact' : isListSection ? 'list' : 'cards';
+        const kind = isCompactSection ? 'compact' : isListSection ? 'list' : layout === 'photos' ? 'photos' : 'cards';
         const gridClass =
           kind === 'compact'
             ? 'grid grid-cols-1 md:grid-cols-2 gap-x-10'
             : kind === 'list'
               ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-4'
-              // Single column under 360px: two 133px cards squeeze Arabic
-              // names + price + action at 320px — one readable column wins.
-              : 'grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5';
+              : kind === 'photos'
+                // Wide photo cards: one column on phones (a 2-up grid at
+                // 360px leaves ~150px per photo — too small to appetize).
+                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6'
+                // Single column under 360px: two 133px cards squeeze Arabic
+                // names + price + action at 320px — one readable column wins.
+                : 'grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5';
         const total = catItems.length;
         // Snap the window to FULL rows of this section's live grid: on a
         // 5-column desktop grid initial 12 → 15, batch 8 → 10, so no orphan
         // row and no empty slots beside the pager. Mobile grids (2 cols)
         // keep 12/8 exactly (already multiples). At least one full row.
-        const cols = kind === 'compact' ? compactCols : isListSection ? listCols : cardsCols;
+        const cols = kind === 'compact' ? compactCols : isListSection ? listCols : kind === 'photos' ? photoCols : cardsCols;
         const snapRows = (n: number) => Math.max(cols, Math.ceil(n / cols) * cols);
         const effInitial = snapRows(initial);
         const effBatch = snapRows(batch);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, ChevronUp, Eye, EyeOff, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, EyeOff, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
 import type { MenuData } from '@/src/types/menu';
 import { Pager } from './Pager';
 
@@ -53,6 +53,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
             <>
               {shown.map((cat) => {
                 const idx = categories.findIndex((c) => c.id === cat.id);
+                const activeLayout = cat.layout || (cat.id === 'manakish' ? 'list' : 'cards');
                 return (
           <div
             key={cat.id}
@@ -132,12 +133,13 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
             </button>
           </div>
 
-          {/* Display layout: cards grid or text-first list rows */}
-          <div className="flex items-center gap-2">
+          {/* Display layout: cards grid, text-first list, compact rows or
+              photo-first cards */}
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] text-neutral-500 font-bold">{isAr ? 'طريقة العرض:' : 'Display:'}</span>
             <div className="flex gap-1 p-0.5 bg-black rounded-full border border-neutral-800" role="group" aria-label={isAr ? 'طريقة عرض القسم' : 'Section display'}>
-              {(['cards', 'list', 'compact'] as const).map((l) => {
-                const active = (cat.layout || (cat.id === 'manakish' ? 'list' : 'cards')) === l;
+              {(['cards', 'list', 'compact', 'photos'] as const).map((l) => {
+                const active = activeLayout === l;
                 return (
                   <button
                     key={l}
@@ -150,12 +152,22 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
                     }
                     className={`px-3 h-7 rounded-full text-[11px] font-bold transition-colors ${active ? 'bg-[var(--primary)] text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
                   >
-                    {l === 'cards' ? (isAr ? 'بطاقات' : 'Cards') : l === 'list' ? (isAr ? 'قائمة' : 'List') : (isAr ? 'مدمج' : 'Compact')}
+                    {l === 'cards' ? (isAr ? 'بطاقات' : 'Cards') : l === 'list' ? (isAr ? 'قائمة' : 'List') : l === 'compact' ? (isAr ? 'مدمج' : 'Compact') : (isAr ? 'صور' : 'Photos')}
                   </button>
                 );
               })}
             </div>
           </div>
+          {activeLayout === 'photos' && (
+            <p className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-neutral-500">
+              <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
+              <span>
+                {isAr
+                  ? 'أضف صورة لكل صنف من تبويب الأصناف (حقل رابط الصورة). الأصناف بدون صورة بتظهر بشعار القسم.'
+                  : 'Add a photo to each item from the Items tab (image URL field). Items without one show the category mark.'}
+              </span>
+            </p>
+          )}
           </div>
                 );
               })}

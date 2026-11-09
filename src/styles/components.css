@@ -363,7 +363,7 @@
   }
   .round-card-light:hover {
     /* Glass lift: deeper soft shadow only, the film stays sheer. */
-    box-shadow: 0 20px 38px rgba(10, 10, 10, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    box-shadow: 0 20px 38px rgba(10, 10, 10, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.6);
   }
   .round-card:active {
     translate: 0 -3px;
@@ -434,13 +434,14 @@
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transition: translate 0.28s ease, scale 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
 }
-/* Light glass, third pass: no drawn edge at all — border transparent, so
-   the panel reads via soft shadow falloff + sheen, never as a box. */
+/* Light glass, symmetric build: the sheen is mirrored top AND bottom so
+   the lower edges read exactly like the upper ones instead of fading
+   out. Still no drawn perimeter — presence via sheen + soft shadow only. */
 .round-card-light {
   border-color: transparent;
   background:
-    linear-gradient(165deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.22) 55%, rgba(255, 255, 255, 0.38) 100%);
-  box-shadow: 0 16px 34px rgba(10, 10, 10, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0.5) 100%);
+  box-shadow: 0 16px 34px rgba(10, 10, 10, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.55);
 }
 /* Keyboard focus must stay visible now that neither shell paints a box. */
 .round-card:focus-visible {

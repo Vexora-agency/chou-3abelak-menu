@@ -400,8 +400,12 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             bottom edge into the sheet, so no text ever sits on the photo
             and both modes stay readable by construction. */}
         {showPhoto && (
-          <div className="anim-hero-in relative -mx-6 sm:-mx-8 overflow-hidden">
+          <div className={`anim-hero-in relative -mx-6 sm:-mx-8 overflow-hidden ${darkMode ? 'bg-[#141414]' : 'bg-white'}`}>
             <div className="relative aspect-[16/10]">
+              {/* -inset-px bleed: on DPR-3 iPhones (Chrome's compositor especially)
+                  aspect-ratio rounding can leave a 1-device-pixel seam at the
+                  frame edge showing the body behind it as a crisp line. The
+                  image paint 1px past every edge so no rounding can open it. */}
               <img
                 src={item.imageUrl}
                 alt={itemName}
@@ -409,12 +413,18 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                 decoding="async"
                 sizes="(max-width: 560px) 100vw, 520px"
                 onError={() => setFailedSrc(item.imageUrl ?? '')}
-                className="absolute inset-0 h-full w-full object-cover"
+                className="absolute -inset-px h-[calc(100%+2px)] w-[calc(100%+2px)] max-w-none object-cover"
               />
+              {/* True in-hue transparent endpoints (rgb with 0 alpha — the
+                  `transparent` keyword AND Tailwind's /0 shorthand both
+                  collapse to transparent-BLACK and print a darker band
+                  mid-gradient, loudest on phone OLEDs). */}
               <div
                 aria-hidden="true"
                 className={`pointer-events-none absolute inset-0 bg-gradient-to-t ${
-                  darkMode ? 'from-[#141414] via-[#141414]/25 to-transparent' : 'from-white via-white/25 to-transparent'
+                  darkMode
+                    ? 'from-[#141414] via-[#141414]/25 to-[rgb(20_20_20/0)]'
+                    : 'from-white via-white/25 to-[rgb(255_255_255/0)]'
                 }`}
               />
             </div>

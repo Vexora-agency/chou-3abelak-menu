@@ -384,10 +384,8 @@
 }
 
 /* ---------- Round layout (5th display): circular dish photo ---------- */
-/* Branded conic rim (static, no spin — cheap on phones) plus a breathing
-   pulse halo that plays 3 times on mount, then rests: perpetual motion on
-   every visible card is what drags weak phones, a finite greeting costs
-   nothing at rest. End state (no fill) = the plain 1px ring, intentional. */
+/* Branded conic rim (fully static — no spin, no pulse: zero perpetual
+   motion on the cards). */
 .round-ring {
   background: conic-gradient(
     from 20deg,
@@ -396,25 +394,6 @@
     var(--primary)
   );
   box-shadow: 0 7px 22px rgba(0, 0, 0, 0.45), 0 0 0 5px rgba(255, 255, 255, 0.05);
-}
-.round-ring::after {
-  content: "";
-  position: absolute;
-  inset: -6px;
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  animation: ring-pulse 2.8s ease-in-out 3;
-  pointer-events: none;
-}
-@keyframes ring-pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.45;
-  }
-  50% {
-    transform: scale(1.06);
-    opacity: 0.9;
-  }
 }
 /* Dish entrance pop (mount-only, transform-based so it composes with the
    hover `scale` property instead of fighting it). */

@@ -369,41 +369,6 @@
 }
 
 /* ---------- Round layout (5th display): circular dish photo ---------- */
-/* Frosted-glass card WITHOUT backdrop-filter: layered translucency +
-   hairline border + inner top highlight. Deliberate — backdrop blur over
-   a dozen scrolling cards is a documented battery/scroll killer on
-   phones, and behind these cards sits flat page background anyway (there
-   is nothing to blur). Same stance as .glass-pill above. */
-/* Branded conic rim (static — the rotation was dropped: an infinite spin
-   on every visible card weighed on phones). The pulse ring breathes on. */
-.round-ring {
-  background: conic-gradient(
-    from 20deg,
-    var(--primary),
-    color-mix(in srgb, var(--primary) 15%, transparent) 45%,
-    var(--primary)
-  );
-  box-shadow: 0 7px 22px rgba(0, 0, 0, 0.45), 0 0 0 5px rgba(255, 255, 255, 0.05);
-}
-.round-ring::after {
-  content: "";
-  position: absolute;
-  inset: -6px;
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  animation: ring-pulse 2.8s ease-in-out infinite;
-  pointer-events: none;
-}
-@keyframes ring-pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.45;
-  }
-  50% {
-    transform: scale(1.06);
-    opacity: 0.9;
-  }
-}
 /* Dish entrance pop (mount-only, transform-based so it composes with the
    hover `scale` property instead of fighting it). */
 .dish-pop {

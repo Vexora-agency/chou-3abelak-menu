@@ -104,7 +104,7 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
         </span>
       )}
 
-      <div className="relative mb-3 h-28 w-28 shrink-0 sm:h-32 sm:w-32">
+      <div className="round-ring relative mb-3 h-28 w-28 shrink-0 rounded-full p-1 sm:h-32 sm:w-32">
         <span className="relative block h-full w-full overflow-hidden rounded-full">
           {showImage ? (
             <img
@@ -114,7 +114,9 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
               decoding="async"
               sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 20vw"
               onError={() => setFailedSrc(item.imageUrl ?? '')}
-              className="photo-card-img dish-pop block h-full w-full rounded-full object-cover"
+              className={`photo-card-img dish-pop block h-full w-full rounded-full border-2 object-cover ${
+                darkMode ? 'border-[#141414]' : 'border-white'
+              }`}
             />
           ) : (
             <span

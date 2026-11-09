@@ -213,20 +213,15 @@
 }
 
 /* ---------- Round full-bleed showcase band ----------
-   A branded backdrop behind round sections, revealed above and below the
-   grid by the section's own vertical padding: gold-tinted glows falling
-   from the top AND rising from the bottom, plus a whisper band. Subtle
-   in both modes — presence, not a panel. */
+   A neutral backdrop behind round sections, revealed above and below the
+   grid by the section's own vertical padding: a whisper band only, no
+   gold tint (removed per owner call). Subtle in both modes. */
 .round-band {
   background:
-    radial-gradient(70% 90% at 50% 0%, color-mix(in srgb, var(--primary) 9%, transparent), transparent 70%),
-    radial-gradient(70% 90% at 50% 100%, color-mix(in srgb, var(--primary) 9%, transparent), transparent 70%),
     linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.025) 30%, rgba(255, 255, 255, 0.025) 70%, transparent 100%);
 }
 .round-band-light {
   background:
-    radial-gradient(70% 90% at 50% 0%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 70%),
-    radial-gradient(70% 90% at 50% 100%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 70%),
     linear-gradient(180deg, transparent 0%, rgba(10, 10, 10, 0.03) 30%, rgba(10, 10, 10, 0.03) 70%, transparent 100%);
 }
 

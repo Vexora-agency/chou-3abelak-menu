@@ -31,6 +31,14 @@ binding = "REPORTS"
 # `wrangler r2 bucket create chou-3abelak-reports`) in the dashboard.
 bucket_name = "chou-3abelak-reports"
 
+[[r2_buckets]]
+binding = "MENU_IMAGES"
+# Admin-uploaded menu photos (menu/<YYYY>/<MM>/<uuid>.<ext>). Created once
+# with `wrangler r2 bucket create chou-3abelak-images`; the Pages dashboard
+# binds the same bucket name for production. Images are only ever served
+# through /api/images/... — the bucket itself stays private.
+bucket_name = "chou-3abelak-images"
+
 # Preview (staging) overrides: separate resources so preview deployments
 # can NEVER touch production data. See docs/STAGING.md. The dashboard
 # Preview-tab bindings are the operational source of truth; this block
@@ -49,3 +57,7 @@ id = "d4ef20c571854ba69e118e79c903fe6e"
 [[env.preview.r2_buckets]]
 binding = "REPORTS"
 bucket_name = "chou-3abelak-reports-preview"
+
+[[env.preview.r2_buckets]]
+binding = "MENU_IMAGES"
+bucket_name = "chou-3abelak-images-preview"

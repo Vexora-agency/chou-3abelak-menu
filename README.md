@@ -260,6 +260,24 @@ For local dev add the same keys to untracked `.dev.vars` (see `.env.example`).
 - Recommended backstop lifecycle rule on the bucket: delete objects under
   `reports/` older than ~37 months (the app deletes at 36).
 
+### 4b. R2 (menu photos at `menu/<YYYY>/<MM>/<uuid>.<ext>`)
+
+- Create once: `wrangler r2 bucket create chou-3abelak-images`, then bind it
+  as `MENU_IMAGES` in the Pages dashboard. Preview uses its own bucket:
+  `chou-3abelak-images-preview`.
+- The bucket stays **private** — never enable public access or an `r2.dev`
+  URL. Photos are served through the same-origin route `/api/images/...`,
+  which sets `nosniff`, `CSP: default-src 'none'; sandbox`, `CORP:
+  same-origin`, immutable caching and ETag/304.
+- Admin uploads: `POST /api/admin/images` with the raw file body (JPEG, PNG
+  or WebP; ≤ 8 MB; ≤ 40 MP / 8000 px per side). The server sniffs magic
+  bytes, rejects SVG/GIF/AVIF and animated files, strips EXIF/GPS/comments
+  and any bytes appended after the logical end of the image.
+- Uploads are rate-limited per IP (20 / 10 min) and audited. Replacing a
+  photo is safe: the first menu save after an upload deletes R2 objects no
+  item references anymore, with a 15-minute age floor so an in-flight save
+  can never delete a just-uploaded photo.
+
 ### 5. Retention (env-overridable, enforced by the daily job)
 
 | Setting | Default | Meaning |

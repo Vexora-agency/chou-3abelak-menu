@@ -152,7 +152,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
                     }
                     className={`px-3 h-7 rounded-full text-[11px] font-bold transition-colors ${active ? 'bg-[var(--primary)] text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
                   >
-                    {l === 'cards' ? (isAr ? 'بطاقات' : 'Cards') : l === 'list' ? (isAr ? 'قائمة' : 'List') : l === 'compact' ? (isAr ? 'مدمج' : 'Compact') : (isAr ? 'صور' : 'Photos')}
+                    {l === 'cards' ? (isAr ? 'بطاقات' : 'Cards') : l === 'list' ? (isAr ? 'قائمة' : 'List') : l === 'compact' ? (isAr ? 'مدمج' : 'Compact') : (isAr ? 'معرض' : 'Gallery')}
                   </button>
                 );
               })}

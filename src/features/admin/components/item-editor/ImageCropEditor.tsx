@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, FlipHorizontal2, FlipVertical2, Maximize, Minus, Plus, RotateCcw, RotateCw, X } from 'lucide-react';
+import { Check, FlipHorizontal2, FlipVertical2, Loader2, Maximize, Minus, Plus, RotateCcw, RotateCw, X } from 'lucide-react';
 import {
   CROP_MAX_ZOOM,
   CROP_MIN_ZOOM,
@@ -14,12 +14,17 @@ interface ImageCropEditorProps {
   srcWidth: number;
   srcHeight: number;
   lang: 'en' | 'ar';
-  onConfirm: (rect: CropRect) => void;
-  onCancel: () => void;
+  /** Every framing change (pan, zoom, reset, rotate, flip) — the parent
+   *  auto-saves, so there is deliberately no confirm button. */
+  onCropChange: (rect: CropRect) => void;
   /** Rotate the photo ±90° (framing resets — width/height swap). */
   onRotate: (dir: 1 | -1) => void;
   /** Mirror the photo (dimensions unchanged — framing is kept). */
   onFlip: (axis: 'horizontal' | 'vertical') => void;
+  /** Collapse the editor (the last auto-save is kept). */
+  onClose: () => void;
+  /** Auto-save indicator state from the parent. */
+  saveState: 'idle' | 'saving' | 'saved';
 }
 
 const ZOOM_STEP = 0.25;
@@ -34,10 +39,11 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
   srcWidth,
   srcHeight,
   lang,
-  onConfirm,
-  onCancel,
+  onCropChange,
   onRotate,
   onFlip,
+  onClose,
+  saveState,
 }) => {
   const isAr = lang === 'ar';
   const [zoom, setZoom] = useState(CROP_MIN_ZOOM);
@@ -50,6 +56,12 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
   useEffect(() => {
     viewRef.current = { zoom, cx: center.cx, cy: center.cy };
   });
+  // The parent auto-saves through this ref (stable identity — the
+  // source-change effect below must not refire on parent re-renders).
+  const cbRef = useRef(onCropChange);
+  useEffect(() => {
+    cbRef.current = onCropChange;
+  });
 
   // A new photo (or a rotation) resets the framing. Keyed on dimensions —
   // flips keep the identity change but not the size, so zoom/pan survive a
@@ -61,6 +73,19 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
     setZoom(CROP_MIN_ZOOM);
     setCenter({ cx: srcWidth / 2, cy: srcHeight / 2 });
   }
+
+  // A swapped source means new pixels (rotated/mirrored photo): report the
+  // current framing so it auto-saves. Skipped on first mount — the parent
+  // saves the default framing itself when opening the editor.
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return;
+    }
+    const v = viewRef.current;
+    cbRef.current(zoomedCropRect(srcWidth, srcHeight, v.cx, v.cy, v.zoom));
+  }, [source, srcWidth, srcHeight]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -85,11 +110,25 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
     }
   }, [source, srcWidth, srcHeight, zoom, center]);
 
-  const applyZoom = (next: number) => setZoom(clampZoom(next));
+  const applyZoom = (next: number) => {
+    const z = clampZoom(next);
+    const v = viewRef.current;
+    setZoom(z);
+    cbRef.current(zoomedCropRect(srcWidth, srcHeight, v.cx, v.cy, z));
+  };
 
   const panBy = (dxPx: number, dyPx: number, viewportW: number) => {
     const v = viewRef.current;
-    setCenter(panCropCenter(srcWidth, srcHeight, v.cx, v.cy, v.zoom, dxPx, dyPx, viewportW));
+    const nc = panCropCenter(srcWidth, srcHeight, v.cx, v.cy, v.zoom, dxPx, dyPx, viewportW);
+    setCenter(nc);
+    cbRef.current(zoomedCropRect(srcWidth, srcHeight, nc.cx, nc.cy, v.zoom));
+  };
+
+  const resetView = () => {
+    const c = { cx: srcWidth / 2, cy: srcHeight / 2 };
+    setZoom(CROP_MIN_ZOOM);
+    setCenter(c);
+    cbRef.current(zoomedCropRect(srcWidth, srcHeight, c.cx, c.cy, CROP_MIN_ZOOM));
   };
 
   return (
@@ -150,6 +189,15 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
           <div className="absolute inset-x-0 top-1/3 h-px bg-white/25" />
           <div className="absolute inset-x-0 top-2/3 h-px bg-white/25" />
         </div>
+        {/* Collapse the editor — the last auto-save is kept. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={isAr ? 'إغلاق محرر الصورة (الصورة محفوظة)' : 'Close photo editor (photo is saved)'}
+          className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-neutral-200 hover:bg-black/90 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+        >
+          <X size={14} aria-hidden="true" />
+        </button>
       </div>
 
       <div className="flex items-center gap-2" dir="ltr">
@@ -228,10 +276,7 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => {
-            setZoom(CROP_MIN_ZOOM);
-            setCenter({ cx: srcWidth / 2, cy: srcHeight / 2 });
-          }}
+          onClick={resetView}
           aria-label={isAr ? 'إعادة الضبط للإطار الكامل' : 'Reset to full frame'}
           title={isAr ? 'إعادة الضبط' : 'Reset'}
           className="inline-flex h-8 items-center gap-1 rounded-full bg-neutral-800 px-3 text-[11px] font-bold text-neutral-200 hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
@@ -243,27 +288,24 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
 
       <p className="text-[10px] leading-relaxed text-neutral-500">
         {isAr
-          ? 'اسحب الصورة لتحريكها وكبّر لاختيار الجزء الظاهر، ودوّرها لو طالعة بالمقلوب — اللي شايفه هنا هو اللي هيظهر للزباين.'
-          : 'Drag to move, zoom to choose what shows, rotate if it came out sideways — exactly what you see here is what customers get.'}
+          ? 'اسحب الصورة لتحريكها وكبّر لاختيار الجزء الظاهر، ودوّرها لو طالعة بالمقلوب — أي تعديل بيتحفظ تلقائيًا.'
+          : 'Drag to move, zoom to choose what shows, rotate if sideways — every change saves automatically.'}
       </p>
 
-      <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => onConfirm(zoomedCropRect(srcWidth, srcHeight, viewRef.current.cx, viewRef.current.cy, viewRef.current.zoom))}
-          className="inline-flex h-9 flex-1 items-center justify-center gap-1 rounded-full bg-[var(--primary)] px-3 text-[12px] font-bold text-[#0A0A0A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-        >
-          <Check size={14} aria-hidden="true" />
-          {isAr ? 'استخدم القص ده' : 'Use this crop'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="inline-flex h-9 items-center gap-1 rounded-full bg-black/70 px-3 text-[12px] font-bold text-neutral-200 ring-1 ring-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
-        >
-          <X size={14} aria-hidden="true" />
-          {isAr ? 'إلغاء' : 'Cancel'}
-        </button>
+      <div aria-live="polite" className="flex min-h-[18px] items-center gap-1.5 text-[10.5px] font-bold">
+        {saveState === 'saving' ? (
+          <>
+            <Loader2 size={12} className="animate-spin text-[var(--primary)]" aria-hidden="true" />
+            <span className="text-neutral-300">{isAr ? 'جاري الحفظ تلقائيًا…' : 'Auto-saving…'}</span>
+          </>
+        ) : saveState === 'saved' ? (
+          <>
+            <Check size={12} className="text-emerald-400" aria-hidden="true" />
+            <span className="text-emerald-400">{isAr ? 'تم الحفظ تلقائيًا' : 'Saved automatically'}</span>
+          </>
+        ) : (
+          <span className="text-neutral-500">{isAr ? 'أي تعديل بيتحفظ لوحده' : 'Every change saves by itself'}</span>
+        )}
       </div>
     </div>
   );

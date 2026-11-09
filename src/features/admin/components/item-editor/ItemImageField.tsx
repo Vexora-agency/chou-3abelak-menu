@@ -12,6 +12,7 @@ import {
   type DecodedSource,
 } from '@/src/lib/image-upload';
 import type { CropRect } from '@/src/lib/crop-math';
+import { CROP_MIN_ZOOM, zoomedCropRect } from '@/src/lib/crop-math';
 import { ImageCropEditor } from './ImageCropEditor';
 
 interface ItemImageFieldProps {
@@ -118,6 +119,8 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
   const [cropSrc, setCropSrc] = useState<DecodedSource | null>(null);
   // A confirmed file exists that the crop editor can reopen (adjust flow).
   const [canRecrop, setCanRecrop] = useState(false);
+  // Auto-save indicator for the editor ("saving" covers debounce + upload).
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   const fileRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -125,6 +128,15 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
   // Newly picked file (not yet cropped) vs last confirmed file (re-crop).
   const pickedRef = useRef<File | null>(null);
   const pendingRef = useRef<File | null>(null);
+  // Live mirrors for the debounced auto-save timeout (synced in effects —
+  // never assigned during render).
+  const cropRef = useRef<DecodedSource | null>(null);
+  const latestRectRef = useRef<CropRect | null>(null);
+  const saveTimer = useRef<number | null>(null);
+  const savedTimer = useRef<number | null>(null);
+  useEffect(() => {
+    cropRef.current = cropSrc;
+  });
 
   const replacePreview = (url: string | null) => {
     if (previewRef.current) URL.revokeObjectURL(previewRef.current);
@@ -146,6 +158,8 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
     () => () => {
       abortRef.current?.abort();
       if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+      if (saveTimer.current) window.clearTimeout(saveTimer.current);
+      if (savedTimer.current) window.clearTimeout(savedTimer.current);
     },
     [],
   );
@@ -179,6 +193,12 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
     pickedRef.current = null;
     pendingRef.current = null;
     setCanRecrop(false);
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    if (savedTimer.current) window.clearTimeout(savedTimer.current);
+    saveTimer.current = null;
+    savedTimer.current = null;
+    latestRectRef.current = null;
+    setSaveState('idle');
     replacePreview(null);
     setStatus('idle');
     setProgress(0);
@@ -188,6 +208,7 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
 
   const fail = (error: unknown) => {
     abortRef.current = null;
+    setSaveState('idle');
     const code = codeOf(error);
     if (code === 'aborted') {
       replacePreview(null);
@@ -220,7 +241,8 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
     }
   };
 
-  /** Pick → decode → crop editor (upload happens after confirming a crop). */
+  /** Pick → decode → editor opens AND the default framing uploads right
+   *  away. Every later tweak auto-saves — there is no confirm step. */
   const handleFile = async (file: File) => {
     setErrorCode(null);
     setProgress(0);
@@ -228,38 +250,94 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
     try {
       const decoded = await decodeSourceImage(file);
       pickedRef.current = file;
+      pendingRef.current = file;
+      setCanRecrop(true);
+      const rect = zoomedCropRect(decoded.width, decoded.height, decoded.width / 2, decoded.height / 2, CROP_MIN_ZOOM);
+      latestRectRef.current = rect;
       setCropSrc(decoded);
       setStatus('idle');
+      setSaveState('saving');
+      await saveNow(decoded, rect);
+      markSaved();
     } catch (error) {
       pickedRef.current = null;
       fail(error);
     }
   };
 
-  const handleCropConfirm = async (rect: CropRect) => {
-    const current = cropSrc;
-    if (!current) return;
-    setErrorCode(null);
-    setProgress(0);
-    setStatus('preparing');
-    try {
-      const cropped = await exportCrop(current.source, rect);
-      pendingRef.current = pickedRef.current;
-      pickedRef.current = null;
-      setCanRecrop(pendingRef.current !== null);
-      closeCropSrc();
-      await uploadBlob(cropped.blob);
-    } catch (error) {
-      closeCropSrc();
-      fail(error);
-    }
+  /** Export one framing and upload it (shared by the initial and debounced
+   *  auto-saves). */
+  const saveNow = async (src: DecodedSource, rect: CropRect) => {
+    const cropped = await exportCrop(src.source, rect);
+    await uploadBlob(cropped.blob);
   };
 
-  const handleCropCancel = () => {
-    pickedRef.current = null;
-    closeCropSrc();
-    setStatus('idle');
-    setErrorCode(null);
+  const markSaved = () => {
+    setSaveState('saved');
+    if (savedTimer.current) window.clearTimeout(savedTimer.current);
+    savedTimer.current = window.setTimeout(() => {
+      savedTimer.current = null;
+      setSaveState((cur) => (cur === 'saved' ? 'idle' : cur));
+    }, 2500);
+  };
+
+  /** Editor reports every framing tweak: supersede any in-flight upload and
+   *  save ~1.2 s after the last change (slider drags save once, not per
+   *  tick; replaced photos are GC'd by the existing orphan pass). */
+  const scheduleAutoSave = (rect: CropRect) => {
+    latestRectRef.current = rect;
+    setSaveState('saving');
+    abortRef.current?.abort();
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => {
+      saveTimer.current = null;
+      const src = cropRef.current;
+      const latest = latestRectRef.current;
+      if (!src || !latest) return;
+      void (async () => {
+        try {
+          await saveNow(src, latest);
+          markSaved();
+        } catch (error) {
+          fail(error);
+        }
+      })();
+    }, 1200);
+  };
+
+  /** Collapse the editor, keeping the last auto-save. A tweak younger than
+   *  the debounce uploads first so nothing is silently lost. */
+  const closeEditor = () => {
+    const src = cropRef.current;
+    const rect = latestRectRef.current;
+    if (saveTimer.current) {
+      window.clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    } else {
+      closeCropSrc();
+      return;
+    }
+    if (!src || !rect) {
+      closeCropSrc();
+      return;
+    }
+    setSaveState('saving');
+    void (async () => {
+      try {
+        const cropped = await exportCrop(src.source, rect);
+        try {
+          src.close();
+        } catch {
+          // Already closed.
+        }
+        setCropSrc(null);
+        await uploadBlob(cropped.blob);
+        markSaved();
+      } catch (error) {
+        setCropSrc(null);
+        fail(error);
+      }
+    })();
   };
 
   /** Rotate the decoded photo ±90° (fixes sideways phone shots). The editor
@@ -356,10 +434,11 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
           srcWidth={cropSrc.width}
           srcHeight={cropSrc.height}
           lang={lang}
-          onConfirm={(rect) => void handleCropConfirm(rect)}
-          onCancel={handleCropCancel}
+          onCropChange={scheduleAutoSave}
           onRotate={(dir) => void handleRotate(dir)}
           onFlip={(axis) => void handleFlip(axis)}
+          onClose={closeEditor}
+          saveState={saveState}
         />
       ) : (
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg border border-neutral-800 bg-black">
@@ -461,8 +540,8 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
 
       <p className="text-[10px] leading-relaxed text-neutral-500">
         {isAr
-          ? 'بتختار إطار الصورة قبل الرفع، وبنضغطها ونشيل بيانات الموقع (GPS). لو رفعت صورة غلط، غيّرها — الصور القديمة بتتنضف تلقائيًا.'
-          : 'You frame the photo before upload; it is resized and stripped of location metadata. Replaced photos are cleaned up automatically.'}
+          ? 'الصورة بتترفع لوحدها أول ما تختارها، وأي تعديل في الإطار بيتحفظ تلقائيًا. بنشيل بيانات الموقع (GPS) قبل الرفع، والصور القديمة بتتنضف تلقائيًا.'
+          : 'The photo uploads by itself once picked, and every framing tweak auto-saves. Location metadata is stripped before upload; replaced photos are cleaned up automatically.'}
       </p>
 
       <details className="rounded-lg border border-neutral-800 bg-neutral-950/40 px-2.5 py-2">

@@ -233,6 +233,32 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                           ? (isAr ? 'اختيار واحد' : 'One choice')
                           : (isAr ? 'اختيارات متعددة' : 'Multiple')}
                       </span>
+                      {(() => {
+                        const isRequired = (item.requiredGroups || []).includes(g.id);
+                        return (
+                          <button
+                            type="button"
+                            aria-pressed={isRequired}
+                            title={isAr ? 'إجباري: الزبون لازم يختار واحدة على الأقل من هذا القسم' : 'Required: the customer must pick at least one from this section'}
+                            aria-label={isAr ? 'اختيار إجباري لهذا القسم' : 'Require a pick from this section'}
+                            onClick={() => {
+                              const cur = item.requiredGroups || [];
+                              const next: MenuItem = cur.includes(g.id)
+                                ? { ...item, requiredGroups: cur.filter((x) => x !== g.id) }
+                                : { ...item, requiredGroups: [...cur, g.id] };
+                              if (next.requiredGroups && next.requiredGroups.length === 0) delete next.requiredGroups;
+                              onChange(next);
+                            }}
+                            className={`shrink-0 px-2 py-0.5 rounded-full border text-[10px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                              isRequired
+                                ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
+                                : 'border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500'
+                            }`}
+                          >
+                            {isAr ? 'إجباري *' : 'Required *'}
+                          </button>
+                        );
+                      })()}
                     </span>
                     <button
                       type="button"
@@ -242,6 +268,11 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                           ...item,
                           addons: (item.addons || []).filter((a) => validGroupOf(a.featureId) !== g.id),
                         };
+                        // A deleted section can't stay required.
+                        if (next.requiredGroups) {
+                          next.requiredGroups = next.requiredGroups.filter((x) => x !== g.id);
+                          if (next.requiredGroups.length === 0) delete next.requiredGroups;
+                        }
                         // Removing the spicy section opts the item out of heat
                         // entirely (noHeat): the customer sheet hides the heat
                         // section and tampered heat is rejected server-side.

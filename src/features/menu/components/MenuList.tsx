@@ -54,7 +54,10 @@ function useGridCols(kind: 'list' | 'compact' | 'cards' | 'photos' | 'round'): n
   const get = () => {
     if (typeof window === 'undefined' || !window.matchMedia) return kind === 'cards' || kind === 'photos' || kind === 'round' ? 2 : 1;
     const mq = (min: number) => window.matchMedia(`(min-width: ${min}px)`).matches;
-    if (kind === 'cards' || kind === 'round') return mq(1280) ? 5 : mq(1024) ? 4 : mq(640) ? 3 : 2;
+    if (kind === 'cards') return mq(1280) ? 5 : mq(1024) ? 4 : mq(640) ? 3 : 2;
+    // Round sections go full-bleed and dense: more compact columns fill
+    // the viewport width professionally.
+    if (kind === 'round') return mq(1280) ? 8 : mq(1024) ? 6 : mq(640) ? 4 : 2;
     if (kind === 'photos') return mq(1280) ? 4 : mq(1024) ? 3 : 2;
     if (kind === 'list') return mq(1280) ? 3 : mq(768) ? 2 : 1;
     return mq(768) ? 2 : 1; // compact
@@ -312,7 +315,7 @@ export const MenuList: React.FC<MenuListProps> = ({
   const visibleCats = categories.filter((c) => c.visible && activeCategoryIds.includes(c.id));
 
   return (
-    <div className="px-5 sm:px-8 pb-12 space-y-7 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
+    <div className="pb-12 space-y-7 w-full">
       {visibleCats.map((cat) => {
         const catItems = filteredItems.filter((i) => i.categoryId === cat.id);
         const layout = cat.layout || (cat.id === 'manakish' ? 'list' : 'cards');
@@ -339,8 +342,10 @@ export const MenuList: React.FC<MenuListProps> = ({
                 // description, smaller title/ticket — see MenuListPhotoCard).
                 // Large screens step up to 4 columns so cards stay petite.
                 ? 'grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-6 menu-section-grid'
-                // Round dish cards share the text-cards grid (compact cards
-                // pair up the same way at every breakpoint).
+                // Round sections are full-bleed (see sectionWrapClass below):
+                // dense compact columns use the whole viewport width.
+                : kind === 'round'
+                  ? 'grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 menu-section-grid'
                 // Single column under 360px: two 133px cards squeeze Arabic
                 // names + price + action at 320px — one readable column wins.
                 : 'grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5 menu-section-grid';
@@ -485,14 +490,21 @@ export const MenuList: React.FC<MenuListProps> = ({
         );
         // scroll-mt clears the sticky stack (banner + two chip rows ≈150px)
         // so the anchored header never hides underneath after chip taps.
+        // Round sections break out full-bleed (edge to edge) with a dense
+        // grid; every other layout keeps the centered readable column.
+        const sectionWrapClass = kind === 'round'
+          ? 'w-full px-3 sm:px-6'
+          : 'px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full';
         return (
           <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-[160px] menu-section">
+            <div className={sectionWrapClass}>
             {/* Category Header */}
             <MenuListSectionHeader title={isAr ? cat.name.ar : cat.name.en} darkMode={darkMode} count={catItems.length} />
             {/* One grid per section: compact/list/cards differ only by the
                 grid classes and the row component, both resolved above. */}
             {itemsGrid}
             {pagerButton}
+            </div>
           </section>
         );
       })}

@@ -248,6 +248,35 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
       }
       if (!aOk) continue;
     }
+    // Required add-on groups ("must pick at least one", set per group in
+    // the item editor). Shape-checked only here: group ids, deduped. The
+    // order-time validatePicks enforces them and skips groups with no
+    // enabled option, so a stale id can never brick ordering.
+    let requiredGroups;
+    if (item.requiredGroups !== undefined) {
+      if (!Array.isArray(item.requiredGroups)) {
+        errors.push(`Item "${id}" requiredGroups must be an array`);
+        continue;
+      }
+      if (item.requiredGroups.length > 10) {
+        errors.push(`Item "${id}" allows at most 10 required groups`);
+        continue;
+      }
+      const seenR = new Set();
+      requiredGroups = [];
+      let rOk = true;
+      for (const gid of item.requiredGroups) {
+        const clean = typeof gid === 'string' ? gid.trim() : '';
+        if (!clean || clean.length > 64 || seenR.has(clean)) {
+          errors.push(`Item "${id}" has an invalid required group: "${gid}"`);
+          rOk = false;
+          break;
+        }
+        seenR.add(clean);
+        requiredGroups.push(clean);
+      }
+      if (!rOk) continue;
+    }
     // Every item needs a price path: variants or a base price.
     if (!variants && basePrice === undefined) {
       errors.push(`Item "${id}" needs pricing.price or at least one variant`);
@@ -312,6 +341,7 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
       cleanItem.defaultVariant = dvd;
     }
     if (addons && addons.length) cleanItem.addons = addons;
+    if (requiredGroups && requiredGroups.length) cleanItem.requiredGroups = requiredGroups;
     // Legacy groups expand: every item of a listed category offers the
     // add-on at the group price (explicit per-item entries win).
     for (const g of legacyGroups) {

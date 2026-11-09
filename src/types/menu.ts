@@ -77,6 +77,12 @@ export interface MenuItem {
   defaultVariant?: string;
   /** Add-ons enabled on this item (prices here, 0 = free). */
   addons?: ItemAddon[];
+  /** Add-on groups (feature-group ids) the customer MUST pick at least one
+      option from — the sheet marks them required and the Add button stays
+      disabled until each is covered; order-time validatePicks rejects
+      uncovered lines. Groups with no enabled option are skipped (never
+      impossible). Set per group from the item editor. */
+  requiredGroups?: string[];
   badges: BadgeId[];
   /** ISO date the item was added. Drives the automatic NEW badge. Missing = not new. */
   addedAt?: string;

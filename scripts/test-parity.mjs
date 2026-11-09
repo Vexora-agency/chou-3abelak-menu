@@ -271,6 +271,31 @@ for (const [name, call] of splitCalls) {
   ok(call(FE) === call(BE), name, `FE=${call(FE)} BE=${call(BE)}`);
 }
 throwsSame(() => FE.validatePicks(splitMenu, splitItem, ['x-cheese'], { 'x-cheese': 2 }, 4), () => BE.validatePicks(splitMenu, splitItem, ['x-cheese'], { 'x-cheese': 2 }, 4), 'validatePicks multi partial throws both');
+ok(
+  String(FE.validatePicks(splitMenu, { ...splitItem, requiredGroups: ['addons'] }, ['x-cheese'], undefined, 1))
+    === String(BE.validatePicks(splitMenu, { ...splitItem, requiredGroups: ['addons'] }, ['x-cheese'], undefined, 1)),
+  'validatePicks required group covered passes both',
+);
+throwsSame(
+  () => FE.validatePicks(splitMenu, { ...splitItem, requiredGroups: ['choice'] }, ['x-cheese'], undefined, 1),
+  () => BE.validatePicks(splitMenu, { ...splitItem, requiredGroups: ['choice'] }, ['x-cheese'], undefined, 1),
+  'validatePicks required group uncovered throws both',
+);
+throwsSame(
+  () => FE.validatePicks(splitMenu, { ...splitItem, requiredGroups: ['addons'] }, [], undefined, 1),
+  () => BE.validatePicks(splitMenu, { ...splitItem, requiredGroups: ['addons'] }, [], undefined, 1),
+  'validatePicks required group empty picks throws both',
+);
+ok(
+  String(FE.validatePicks(splitMenu, { ...splitItem, requiredGroups: ['ghost-group'] }, [], undefined, 1))
+    === String(BE.validatePicks(splitMenu, { ...splitItem, requiredGroups: ['ghost-group'] }, [], undefined, 1)),
+  'validatePicks unknown required group skipped both',
+);
+ok(
+  String(FE.validatePicks(splitMenu, { ...plain, requiredGroups: ['addons'] }, [], undefined, 1))
+    === String(BE.validatePicks(splitMenu, { ...plain, requiredGroups: ['addons'] }, [], undefined, 1)),
+  'validatePicks required group with no enabled options skipped both',
+);
 throwsSame(() => FE.lineTotal(splitItem, { addonIds: ['ghost'], addonQty: { ghost: 1 }, qty: 2 }), () => BE.lineTotal(splitItem, { addonIds: ['ghost'], addonQty: { ghost: 1 }, qty: 2 }), 'lineTotal split unknown addon throws both');
 throwsSame(() => FE.perUnitPrice(splitItem, { addonIds: ['x-cheese'], addonQty: { 'x-cheese': 2 } }), () => BE.perUnitPrice(splitItem, { addonIds: ['x-cheese'], addonQty: { 'x-cheese': 2 } }), 'perUnitPrice split missing qty throws both');
 {

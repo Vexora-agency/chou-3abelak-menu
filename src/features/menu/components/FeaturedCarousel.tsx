@@ -262,7 +262,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             <div
               className={`absolute inset-0 ${
                 isYellowCard
-                  ? 'bg-gradient-to-t from-white/95 via-white/80 to-white/90'
+                  ? 'bg-gradient-to-t from-white/85 via-white/45 to-white/70'
                   : 'bg-gradient-to-t from-black/80 via-black/45 to-black/60'
               }`}
             />
@@ -404,8 +404,8 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         )}
       </div>
       {/* Dots: one per start position (mobile: every card, desktop: every full window).
-          Uniform 8px dots; the active one stretches into a glowing pill — calm,
-          premium, readable at a glance in both modes. */}
+          Uniform 8px dots; the active one stretches into a solid pill — calm,
+          premium, readable at a glance in both modes (no glow by owner call). */}
       {marqueeOn && maxIndex >= 1 && (
         <div className="flex justify-center items-center gap-2 mt-1.5" role="tablist" aria-label={isAr ? 'شرائح المميز' : 'Featured slides'}>
           {Array.from({ length: maxIndex + 1 }).map((_, idx) => (
@@ -426,8 +426,8 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
               <span className={`block h-2 rounded-full transition-all duration-300 ${
                 idx === index
                   ? darkMode
-                    ? 'w-8 bg-[var(--primary)] shadow-[0_0_12px_color-mix(in_srgb,var(--primary)_70%,transparent)]'
-                    : 'w-8 bg-[#0A0A0A] shadow-[0_0_12px_color-mix(in_srgb,var(--primary)_70%,transparent)]'
+                    ? 'w-8 bg-[var(--primary)]'
+                    : 'w-8 bg-[#0A0A0A]'
                   : 'w-2 bg-current'
               }`} />
             </button>

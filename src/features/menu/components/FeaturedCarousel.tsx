@@ -262,7 +262,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             <div
               className={`absolute inset-0 ${
                 isYellowCard
-                  ? 'bg-gradient-to-t from-white/90 via-white/60 to-white/75'
+                  ? 'bg-gradient-to-t from-white/95 via-white/80 to-white/90'
                   : 'bg-gradient-to-t from-black/80 via-black/45 to-black/60'
               }`}
             />
@@ -403,9 +403,11 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           </>
         )}
       </div>
-      {/* Dots: one per start position (mobile: every card, desktop: every full window) */}
+      {/* Dots: one per start position (mobile: every card, desktop: every full window).
+          Uniform 8px dots; the active one stretches into a glowing pill — calm,
+          premium, readable at a glance in both modes. */}
       {marqueeOn && maxIndex >= 1 && (
-        <div className="flex justify-center items-center gap-1.5 mt-1" role="tablist" aria-label={isAr ? 'شرائح المميز' : 'Featured slides'}>
+        <div className="flex justify-center items-center gap-2 mt-1.5" role="tablist" aria-label={isAr ? 'شرائح المميز' : 'Featured slides'}>
           {Array.from({ length: maxIndex + 1 }).map((_, idx) => (
             <button
               key={idx}
@@ -414,17 +416,19 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
               aria-selected={idx === index}
               aria-label={`${isAr ? 'شريحة' : 'Slide'} ${idx + 1}`}
               onClick={() => goTo(idx)}
-              className={`h-11 min-h-[44px] px-2.5 inline-flex items-center rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+              className={`h-11 min-h-[44px] px-2 inline-flex items-center rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                 idx === index
                   // Active: gold on dark, solid black on light (owner call).
                   ? darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'
                   : darkMode ? 'text-white/25 hover:text-white/40' : 'text-black/20 hover:text-black/40'
               }`}
             >
-              <span className={`block h-1.5 rounded-full transition-all duration-300 ${
+              <span className={`block h-2 rounded-full transition-all duration-300 ${
                 idx === index
-                  ? darkMode ? 'w-6 bg-[var(--primary)]' : 'w-6 bg-[#0A0A0A]'
-                  : darkMode ? 'w-1.5 bg-current' : 'w-1.5 bg-current'
+                  ? darkMode
+                    ? 'w-8 bg-[var(--primary)] shadow-[0_0_12px_color-mix(in_srgb,var(--primary)_70%,transparent)]'
+                    : 'w-8 bg-[#0A0A0A] shadow-[0_0_12px_color-mix(in_srgb,var(--primary)_70%,transparent)]'
+                  : 'w-2 bg-current'
               }`} />
             </button>
           ))}

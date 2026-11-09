@@ -349,7 +349,8 @@
     box-shadow: 0 22px 44px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
   }
   .round-card-light:hover {
-    box-shadow: 0 22px 40px rgba(10, 10, 10, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    /* Chromeless shell: lift only, no shadow painted. */
+    box-shadow: none;
   }
   .round-card:active {
     translate: 0 -3px;
@@ -421,8 +422,12 @@
   transition: translate 0.28s ease, scale 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
 }
 .round-card-light {
-  border-color: rgba(10, 10, 10, 0.1);
-  background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.45) 100%);
-  box-shadow: 0 14px 28px rgba(10, 10, 10, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+/* Keyboard focus must stay visible now that neither shell paints a box. */
+.round-card:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
 }

@@ -111,7 +111,7 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
               alt={name}
               loading="lazy"
               decoding="async"
-              sizes="(max-width: 1023px) 50vw, 33vw"
+              sizes="(max-width: 1023px) 50vw, (max-width: 1279px) 33vw, 25vw"
               onError={() => setFailedSrc(item.imageUrl ?? '')}
               className="photo-card-img absolute inset-0 h-full w-full object-cover"
             />

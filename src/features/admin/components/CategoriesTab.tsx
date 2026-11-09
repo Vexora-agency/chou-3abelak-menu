@@ -136,8 +136,8 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
           {/* Display layout: cards grid, text-first list, compact rows or
               photo-first cards */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] text-neutral-500 font-bold">{isAr ? 'طريقة العرض:' : 'Display:'}</span>
-            <div className="flex gap-1 p-0.5 bg-black rounded-full border border-neutral-800" role="group" aria-label={isAr ? 'طريقة عرض القسم' : 'Section display'}>
+            <span className="text-[11px] text-neutral-500 font-bold">{isAr ? 'الشكل:' : 'Style:'}</span>
+            <div className="flex gap-1 p-0.5 bg-black rounded-full border border-neutral-800" role="group" aria-label={isAr ? 'شكل القسم' : 'Section style'}>
               {(['cards', 'list', 'compact', 'photos'] as const).map((l) => {
                 const active = activeLayout === l;
                 return (

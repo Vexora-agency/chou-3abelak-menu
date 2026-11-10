@@ -120,20 +120,23 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
 
   return (
     <>
-      {/* Pause control — same design and motion as the launch spec */}
-      <div className="mb-4">
-        <OrderingToggle
-          lang={lang}
-          state={toggleState}
-          resumesAt={resumesAt}
-          reopensAt={reopensAt}
-          timezone={menu.settings.timezone || 'Asia/Beirut'}
-          clockOffsetMs={clockOffsetMs}
-          pausedAtMs={Number.isFinite(pausedAtRaw) ? pausedAtRaw : null}
-          onPause={handlePause}
-          onResume={handleResume}
-        />
-      </div>
+      {/* Pause control — owner only. The kitchen sees orders alone: no
+          accepting/pausing switch (the server 403s those endpoints anyway). */}
+      {!kitchen && (
+        <div className="mb-4">
+          <OrderingToggle
+            lang={lang}
+            state={toggleState}
+            resumesAt={resumesAt}
+            reopensAt={reopensAt}
+            timezone={menu.settings.timezone || 'Asia/Beirut'}
+            clockOffsetMs={clockOffsetMs}
+            pausedAtMs={Number.isFinite(pausedAtRaw) ? pausedAtRaw : null}
+            onPause={handlePause}
+            onResume={handleResume}
+          />
+        </div>
+      )}
       {ordersError && showOrders && (
         <div className="mb-3 flex items-center justify-between gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-bold">
           <span>{isAr ? 'تعذر تحميل الطلبات.' : 'Could not load orders.'}</span>

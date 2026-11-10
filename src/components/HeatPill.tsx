@@ -1,6 +1,6 @@
 import React from 'react';
 import { Flame } from 'lucide-react';
-import { spicyFlames, spicyLabel } from '@/src/utils/menuHelpers';
+import { spicyFlames, spicyDegreeLabel } from '@/src/utils/menuHelpers';
 
 interface HeatPillProps {
   /** Spicy feature id ('spicy-mild' | 'spicy-medium' | 'spicy-hot' | legacy 'spicy').
@@ -13,7 +13,9 @@ interface HeatPillProps {
 
 /**
  * Unified heat indicator: N flame icons (1 mild · 2 medium · 3 extra-hot)
- * + the degree label (خفيف / متوسط / حار جداً).
+ * + the EXPLICIT degree label (حار خفيف / حار متوسط / حار جداً) — the heat
+ * word is mandatory so a degree never reads as a size ("(Regular) (Medium)"
+ * was genuinely ambiguous).
  *
  * Display-only: all logic (counts, labels) comes from menuHelpers.
  * Red pro styling in both modes (mirrors the `dark:`-variant pattern used
@@ -26,7 +28,7 @@ export const HeatPill: React.FC<HeatPillProps> = ({
   className = '',
 }) => {
   const flames = spicyFlames(featureId);
-  const label = spicyLabel(lang, featureId);
+  const label = spicyDegreeLabel(lang, featureId);
   const sizing =
     size === 'md'
       ? 'px-3 py-1 text-xs gap-1.5'

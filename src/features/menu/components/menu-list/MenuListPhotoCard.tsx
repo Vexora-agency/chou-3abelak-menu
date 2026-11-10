@@ -105,7 +105,7 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
         }
       }}
       className={`photo-card group relative flex flex-col overflow-hidden rounded-2xl border-2 ${
-        darkMode ? 'bg-[#141414] border-[var(--primary)]' : 'bg-white border-[#0A0A0A]'
+        darkMode ? 'bg-[#141414] border-[var(--primary)]' : 'bg-white border-[#0A0A0A] photo-card-soft'
       } ${interactive ? 'cursor-pointer photo-card-interactive' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${
         leaveDelayMs != null ? ' row-leaving' : ''
       }`}

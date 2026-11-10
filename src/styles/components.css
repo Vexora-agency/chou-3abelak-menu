@@ -356,6 +356,55 @@
     linear-gradient(180deg, #f7f2e7 0%, #efe7d6 100%);
 }
 
+/* ---------- Light-mode cards: no hard gold slab ----------
+   Light cards carry a 2px ink border that already defines the edge — the
+   solid gold offset reads as a harsh yellow line next to the soft photo
+   gradients. So in light mode the slab is replaced by a whisper-soft warm
+   shadow (same family as .round-card-light). Dark mode keeps the slab:
+   gold on dark reads premium. The -soft classes are added by the components
+   when !darkMode; symmetric shadows need no RTL mirror. */
+.grid-card-soft {
+  box-shadow:
+    0 1px 2px rgba(30, 24, 12, 0.06),
+    0 14px 30px -20px rgba(30, 24, 12, 0.30);
+}
+[dir="rtl"] .grid-card-soft {
+  box-shadow:
+    0 1px 2px rgba(30, 24, 12, 0.06),
+    0 14px 30px -20px rgba(30, 24, 12, 0.30);
+}
+.photo-card-soft {
+  box-shadow:
+    0 1px 2px rgba(30, 24, 12, 0.06),
+    0 14px 30px -20px rgba(30, 24, 12, 0.30);
+}
+[dir="rtl"] .photo-card-soft {
+  box-shadow:
+    0 1px 2px rgba(30, 24, 12, 0.06),
+    0 14px 30px -20px rgba(30, 24, 12, 0.30);
+}
+@media (hover: hover) and (pointer: fine) {
+  .grid-card-soft:hover {
+    box-shadow:
+      0 2px 4px rgba(30, 24, 12, 0.07),
+      0 22px 44px -22px rgba(30, 24, 12, 0.36);
+  }
+  [dir="rtl"] .grid-card-soft:hover {
+    box-shadow:
+      0 2px 4px rgba(30, 24, 12, 0.07),
+      0 22px 44px -22px rgba(30, 24, 12, 0.36);
+  }
+  .photo-card-interactive.photo-card-soft:hover {
+    box-shadow:
+      0 2px 4px rgba(30, 24, 12, 0.07),
+      0 22px 44px -22px rgba(30, 24, 12, 0.36);
+  }
+  [dir="rtl"] .photo-card-interactive.photo-card-soft:hover {
+    box-shadow:
+      0 2px 4px rgba(30, 24, 12, 0.07),
+      0 22px 44px -22px rgba(30, 24, 12, 0.36);
+  }
+}
 /* ---------- Touch press feedback (no hover on phones) ----------
    The hover choreography above lives inside (hover:hover) on purpose, but a
    tap must still feel alive. :active fires on touch, so these tactile rules

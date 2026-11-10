@@ -370,9 +370,13 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
       <SettingsGroupHeader
         title={isAr ? 'دخول العملاء والمطبخ' : 'Client & Kitchen Access'}
-        subtitle={isAr
-          ? 'أنشئ رابط دعوة لمرة واحدة — الضيف يضع كلمة سره بنفسه. اختر الدور قبل الإنشاء. دخولك الرئيسي يعمل دائمًا على كل المواقع.'
-          : 'Mint a one-time invite link — the guest sets their own password. Pick the role before creating. Your master login always works everywhere.'}
+        subtitle={inviteRole === 'kitchen'
+          ? (isAr
+            ? 'دعوة المطبخ: امسح الرابط أو اضغطه للدخول فورًا — بلا كلمة سر، والرابط يموت بعد أول استخدام. اختر الدور قبل الإنشاء. دخولك الرئيسي يعمل دائمًا على كل المواقع.'
+            : 'Kitchen invite: scan or tap the link to enter instantly — no password, and the link dies after first use. Pick the role before creating. Your master login always works everywhere.')
+          : (isAr
+            ? 'أنشئ رابط دعوة لمرة واحدة — الضيف يضع كلمة سره بنفسه. اختر الدور قبل الإنشاء. دخولك الرئيسي يعمل دائمًا على كل المواقع.'
+            : 'Mint a one-time invite link — the guest sets their own password. Pick the role before creating. Your master login always works everywhere.')}
         lang={lang}
         collapsed={collapsed}
         onToggle={() => onToggleCollapse?.()}
@@ -465,9 +469,13 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
             </a>
           </div>
           <p className="text-[10px] text-neutral-500">
-            {isAr
-              ? <>صالح 72 ساعة (حتى <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>) — يُستخدم مرة واحدة ثم يموت.</>
-              : <>Valid 72 hours (until <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>) — single-use, then dead.</>}
+            {fresh.role === 'kitchen'
+              ? (isAr
+                ? <>دعوة مطبخ: امسح الرابط أو اضغطه للدخول فورًا — بلا كلمة سر، والرابط يموت بعد أول استخدام. صالح 72 ساعة (حتى <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>).</>
+                : <>Kitchen invite: scan or tap the link to enter instantly — no password, and the link dies after first use. Valid 72 hours (until <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>).</>)
+              : (isAr
+                ? <>صالح 72 ساعة (حتى <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>) — يُستخدم مرة واحدة ثم يموت.</>
+                : <>Valid 72 hours (until <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>) — single-use, then dead.</>)}
           </p>
         </div>
       ) : null}

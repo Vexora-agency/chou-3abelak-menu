@@ -33,6 +33,7 @@ import { onRequest as listInvites } from '../functions/api/admin/invites/list.js
 import { onRequest as revokeInvite } from '../functions/api/admin/invites/revoke.js';
 import { onRequest as updateClient } from '../functions/api/admin/clients/update.js';
 import { onRequest as redeem } from '../functions/api/invite/redeem.js';
+import { onRequest as validateInvite } from '../functions/api/invite/validate.js';
 import { onRequest as login } from '../functions/api/auth/login.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -313,10 +314,11 @@ check('isMissingColumnError', isMissingColumnError(new Error('D1_ERROR: no such 
   check('legacy DB refuses kitchen invite (503)', lkit.status === 503);
 }
 
-/* ---------- 6. redeem: kitchen invite -> kitchen account + kitchen session ---------- */
+/* ---------- 6. redeem: kitchen pairs passwordless w/ long session; client unchanged ---------- */
 {
   const db = migratedDb();
   const env = baseEnv(db, makeKv());
+  const { verifyPassword } = await import('../functions/_shared/session.js');
   const mkInvite = async (username, role) => {
     const token = newInviteToken();
     const now = new Date();
@@ -329,28 +331,80 @@ check('isMissingColumnError', isMissingColumnError(new Error('D1_ERROR: no such 
     return token;
   };
 
+  // Kitchen: { token } only — no password sent at all.
   const kToken = await mkInvite('chef-redeem', 'kitchen');
   const r = await call(redeem, 'POST', '/api/invite/redeem', {
-    body: { token: kToken, password: 'abcdefgh1234' }, env,
+    body: { token: kToken }, env,
   });
-  check('kitchen redeem ok', r.status === 200 && (await r.json()).ok === true);
+  check('kitchen redeem token-only ok', r.status === 200 && (await r.json()).ok === true);
+  const kRow = await db.prepare('SELECT role, pass_hash FROM client_users WHERE username = ?').bind('chef-redeem').first();
   check(
     'redeem persists kitchen role',
-    (await db.prepare('SELECT role FROM client_users WHERE username = ?').bind('chef-redeem').first())?.role === 'kitchen'
+    kRow?.role === 'kitchen'
   );
+  check(
+    'kitchen pass_hash unusable (128 hex, never pbkdf2)',
+    typeof kRow?.pass_hash === 'string' && /^[0-9a-f]{128}$/.test(kRow.pass_hash)
+  );
+  check('unusable hash never verifies', (await verifyPassword('abcdefgh1234', kRow.pass_hash)) === false);
   const sessionTok = tokenFrom(r);
   const payload = await verifySessionToken(secret, sessionTok);
-  check('redeem session carries kitchen', payload?.sub === 'client:chef-redeem' && payload?.role === 'kitchen');  const gateReq = new Request('https://x/', { headers: { Cookie: cookieFor(sessionTok) } });
+  check('redeem session carries kitchen', payload?.sub === 'client:chef-redeem' && payload?.role === 'kitchen');
+  check('kitchen session lasts 90 days', payload?.exp - payload?.iat === 90 * 24 * 3600);
+  check(
+    'kitchen cookie Max-Age 90 days',
+    (r.headers.get('Set-Cookie') || '').includes(`Max-Age=${90 * 24 * 3600}`)
+  );
+  const gateReq = new Request('https://x/', { headers: { Cookie: cookieFor(sessionTok) } });
   check('redeemed kitchen passes gate', !!(await requireKitchenOrOwner(gateReq, env)));
 
+  // Single-use preserved on the passwordless path.
+  const replay = await call(redeem, 'POST', '/api/invite/redeem', { body: { token: kToken }, env });
+  check('kitchen link single-use (replay 401)', replay.status === 401);
+
+  // Re-pair: a second invite for the same device name updates the account.
+  const kToken2 = await mkInvite('chef-redeem', 'kitchen');
+  const rRe = await call(redeem, 'POST', '/api/invite/redeem', { body: { token: kToken2 }, env });
+  check('kitchen re-pair ok (update path)', rRe.status === 200 && (await rRe.json()).ok === true);
+  const kRow2 = await db.prepare('SELECT role, pass_hash FROM client_users WHERE username = ?').bind('chef-redeem').first();
+  check(
+    're-pair rotates hash, keeps kitchen',
+    kRow2?.role === 'kitchen' && typeof kRow2?.pass_hash === 'string' && kRow2.pass_hash !== kRow.pass_hash
+  );
+
+  // Client path unchanged: password required, short session.
   const cToken = await mkInvite('reg-redeem', 'client');
   const r2 = await call(redeem, 'POST', '/api/invite/redeem', {
     body: { token: cToken, password: 'abcdefgh1234' }, env,
   });
+  check('client redeem with password ok', r2.status === 200 && (await r2.json()).ok === true);
   const payload2 = await verifySessionToken(secret, tokenFrom(r2));
   check('client redeem session carries client', payload2?.role === 'client');
+  check('client session stays 12h', payload2?.exp - payload2?.iat === 12 * 3600);
   const gateReq2 = new Request('https://x/', { headers: { Cookie: cookieFor(tokenFrom(r2)) } });
   check('redeemed client denied by gate', !(await requireKitchenOrOwner(gateReq2, env)));
+
+  // Client without a password: same weak rejection as before.
+  const cToken2 = await mkInvite('reg-nopass', 'client');
+  const r3 = await call(redeem, 'POST', '/api/invite/redeem', { body: { token: cToken2 }, env });
+  const r3Body = await r3.json();
+  check('client redeem without password still 400 weak', r3.status === 400 && r3Body.error === 'weak');
+
+  // validate exposes the role to the token holder; failures stay bare.
+  const vToken = await mkInvite('chef-validate', 'kitchen');
+  const v = await call(validateInvite, 'GET', `/api/invite/validate?token=${vToken}`, { env });
+  const vBody = await v.json();
+  check(
+    'validate kitchen returns role',
+    v.status === 200 && vBody.ok === true && vBody.username === 'chef-validate' && vBody.role === 'kitchen'
+  );
+  const vcToken = await mkInvite('reg-validate', 'client');
+  const vcBody = await (await call(validateInvite, 'GET', `/api/invite/validate?token=${vcToken}`, { env })).json();
+  check('validate client returns role', vcBody.ok === true && vcBody.role === 'client');
+  const vbBody = await (
+    await call(validateInvite, 'GET', `/api/invite/validate?token=${'z'.repeat(43)}`, { env })
+  ).json();
+  check('validate garbage stays bare', vbBody.ok === false && !('role' in vbBody));
 
   // findInviteByHash exposes the role; consumed rows stay single-use.
   const t3 = newInviteToken();
@@ -368,34 +422,49 @@ check('isMissingColumnError', isMissingColumnError(new Error('D1_ERROR: no such 
   check('consume is single-use', !!c1 && c1.role === 'kitchen' && c2 === null);
 }
 
-/* ---------- 7. login embeds the DB role ---------- */
+/* ---------- 7. login: kitchen passwords rejected, client unchanged ---------- */
 {
   const db = migratedDb();
   const kv = makeKv();
   const env = baseEnv(db, kv);
   const { hashClientPassword } = await import('../functions/_shared/access.js');
-  const passHash = await hashClientPassword('kitchen-pass-1234');
+  const kHash = await hashClientPassword('kitchen-pass-1234');
   await db.prepare('INSERT INTO client_users (username, pass_hash, created_at, role) VALUES (?,?,?,?)')
-    .bind('chef-login', passHash, new Date().toISOString(), 'kitchen').run();
+    .bind('chef-login', kHash, new Date().toISOString(), 'kitchen').run();
+  const cHash = await hashClientPassword('client-pass-1234');
+  await db.prepare('INSERT INTO client_users (username, pass_hash, created_at, role) VALUES (?,?,?,?)')
+    .bind('reg-login', cHash, new Date().toISOString(), 'client').run();
 
-  const ok = await call(login, 'POST', '/api/auth/login', {
+  // Even the CORRECT password never signs a kitchen account in.
+  const kOk = await call(login, 'POST', '/api/auth/login', {
     body: { username: 'chef-login', password: 'kitchen-pass-1234' }, env,
   });
-  check('kitchen login ok', ok.status === 200);
-  const lp = await verifySessionToken(secret, tokenFrom(ok));
-  check('login session carries kitchen', lp?.sub === 'client:chef-login' && lp?.role === 'kitchen');
+  const kOkBody = await kOk.json();
+  check('kitchen password login rejected (403 kitchen_link_only)', kOk.status === 403 && kOkBody.error === 'kitchen_link_only');
 
-  const wrong = await call(login, 'POST', '/api/auth/login', {
+  const kWrong = await call(login, 'POST', '/api/auth/login', {
     body: { username: 'chef-login', password: 'wrong-password-xyz' }, env,
   });
-  check('wrong password still 401', wrong.status === 401);
+  check('kitchen wrong password also 403 (no oracle)', kWrong.status === 403 && (await kWrong.json()).error === 'kitchen_link_only');
+
+  const cOk = await call(login, 'POST', '/api/auth/login', {
+    body: { username: 'reg-login', password: 'client-pass-1234' }, env,
+  });
+  check('client login ok', cOk.status === 200);
+  const lp = await verifySessionToken(secret, tokenFrom(cOk));
+  check('client login session carries client', lp?.sub === 'client:reg-login' && lp?.role === 'client');
+
+  const wrong = await call(login, 'POST', '/api/auth/login', {
+    body: { username: 'reg-login', password: 'wrong-password-xyz' }, env,
+  });
+  check('client wrong password still 401', wrong.status === 401);
 
   await db.prepare('UPDATE client_users SET disabled_at = ? WHERE username = ?')
-    .bind(new Date().toISOString(), 'chef-login').run();
+    .bind(new Date().toISOString(), 'reg-login').run();
   const dis = await call(login, 'POST', '/api/auth/login', {
-    body: { username: 'chef-login', password: 'kitchen-pass-1234' }, env,
+    body: { username: 'reg-login', password: 'client-pass-1234' }, env,
   });
-  check('disabled kitchen login 401', dis.status === 401);
+  check('disabled client login 401', dis.status === 401);
 }
 
 /* ---------- 8. list returns roles; update/revoke work for both roles ---------- */

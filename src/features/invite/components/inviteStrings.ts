@@ -11,6 +11,11 @@ export type InviteStrings = LoginStrings & {
   forAccount: string;
   policy12: string;
   policyMatch: string;
+  kitchenTitle: string;
+  kitchenSubtitle: string;
+  enterAs: string;
+  enterKitchen: string;
+  enteringKitchen: string;
 };
 
 export const ISTR: Record<LoginLang, InviteStrings> = {
@@ -41,6 +46,11 @@ export const ISTR: Record<LoginLang, InviteStrings> = {
     switchTo: 'Switch to English',
     policy12: 'At least 12 characters',
     policyMatch: 'Passwords match',
+    kitchenTitle: 'Kitchen access',
+    kitchenSubtitle: 'Tap once to enter — no password. This link dies after first use.',
+    enterAs: 'Enter as',
+    enterKitchen: 'Enter the kitchen',
+    enteringKitchen: 'Entering…',
   },
   ar: {
     back: 'عودة للمنيو',
@@ -53,6 +63,11 @@ export const ISTR: Record<LoginLang, InviteStrings> = {
     forAccount: 'لهذا الحساب',
     policy12: '12 حرفًا على الأقل',
     policyMatch: 'التطابق',
+    kitchenTitle: 'دخول المطبخ',
+    kitchenSubtitle: 'اضغط مرة واحدة للدخول — بلا كلمة سر. الرابط يموت بعد أول استخدام.',
+    enterAs: 'الدخول كـ',
+    enterKitchen: 'ادخل إلى المطبخ',
+    enteringKitchen: 'جارٍ الدخول…',
     remember: 'تذكرني',
     forgot: 'نسيت كلمة السر؟',
     signIn: 'إنشاء الدخول',

@@ -1,8 +1,9 @@
 import React from 'react';
 import { MenuData, ResolvedCartLine } from '@/src/types/menu';
-import { pickLangText, isSpicyFeatureId, spicyLabel } from '@/src/utils/menuHelpers';
+import { pickLangText, isSpicyFeatureId } from '@/src/utils/menuHelpers';
 import { getVariant, featureName, unitPrice, formatPrice, normalizePricing, unitLabel } from '@/src/utils/pricing';
-import { Plus, Minus, Trash2, X, Flame } from 'lucide-react';
+import { Plus, Minus, Trash2, X } from 'lucide-react';
+import { HeatPill } from '@/src/components/HeatPill';
 
 interface CartLinesListProps {
   menu: MenuData;
@@ -107,10 +108,10 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
               <div className="flex flex-wrap gap-1.5 mt-2">
                   {l.addonIds.map((id) => {
                    const addonPrice = (l.item.addons || []).find((a) => a && a.featureId === id)?.price ?? 0;
-                  // Spicy is a red pro pill (Flame + level label, e.g. "حار وسط"),
-                  // never "+ name".
+                  // Spicy renders the unified HeatPill (N flames + level
+                  // label) instead of its own one-off red chip — same
+                  // remove-button and split-count rules, display-only.
                   const spicy = isSpicyFeatureId(id);
-                  const spicyText = spicy ? spicyLabel(lang, id) : '';
                   // Required heat (badged-spicy line) has no remove button:
                   // dropping the degree would strand a heatless line the
                   // server now rejects — the whole line removes instead.
@@ -120,38 +121,59 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                   // today (non-spicy add-ons keep the `+ name` receipt shape).
                   const count = l.addonQty?.[id] ?? l.quantity;
                   const partial = count > 0 && count < l.quantity;
+                  if (spicy) {
+                    return (
+                      <span
+                        key={id}
+                        className="inline-flex items-center gap-1.5 max-w-full"
+                      >
+                        <HeatPill featureId={id} lang={lang} size="sm" />
+                        {partial && (
+                          <bdi className={`text-xs font-bold tabular-nums ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>×{count}</bdi>
+                        )}
+                        {badgedSpicyLine ? null : (
+                          <button
+                            type="button"
+                            onClick={() => onRemoveAddon(l.key, id)}
+                            className={`flex items-center justify-center w-8 h-8 min-w-[32px] min-h-[32px] rounded-full shrink-0 border border-red-600/30 text-red-600 dark:border-red-400/30 dark:text-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
+                              darkMode ? 'hover:bg-red-500/20 hover:text-red-400' : 'hover:bg-red-500/10 hover:text-red-600'
+                            }`}
+                            title={isAr ? 'إزالة الحار' : 'Remove Spicy'}
+                            aria-label={`${isAr ? 'إزالة الحار' : 'Remove Spicy'}${partial ? ` ×${count}` : ''}`}
+                          >
+                            <X size={14} strokeWidth={3} />
+                          </button>
+                        )}
+                      </span>
+                    );
+                  }
                   return (
                     <span
                       key={id}
                       className={`inline-flex items-center gap-1.5 ps-3 pe-1.5 py-1.5 rounded-full text-xs font-bold border max-w-full ${
-                        spicy
-                          ? 'border-red-600/30 bg-red-600/5 text-red-600 dark:border-red-400/30 dark:bg-red-400/5 dark:text-red-400'
-                          : darkMode
+                        darkMode
                           ? 'border-[var(--primary)]/30 bg-[var(--primary)]/5 text-[var(--primary)]'
                           : 'border-[#8a6d00]/30 bg-[#8a6d00]/5 text-[#8a6d00]'
                       }`}
                     >
-                      {spicy && <Flame size={12} className="shrink-0" aria-hidden="true" />}
-                      <bdi className="min-w-0 break-words">{spicy ? spicyText : `+ ${featureName(menu, id, lang)}`}{partial ? ` ×${count}` : ''}</bdi>
+                      <bdi className="min-w-0 break-words">{`+ ${featureName(menu, id, lang)}`}{partial ? ` ×${count}` : ''}</bdi>
                       {/* Zero-price add-ons show no price text (mirrors the item modal). */}
                       {addonPrice !== 0 && (
                         <span className="tabular-nums opacity-80 shrink-0" dir="ltr">
                           {formatPrice(addonPrice)}
                         </span>
                       )}
-                      {badgedSpicyLine ? null : (
                       <button
                         type="button"
                         onClick={() => onRemoveAddon(l.key, id)}
                         className={`flex items-center justify-center w-8 h-8 min-w-[32px] min-h-[32px] rounded-full shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
                           darkMode ? 'hover:bg-red-500/20 hover:text-red-400' : 'hover:bg-red-500/10 hover:text-red-600'
                         }`}
-                        title={spicy ? (isAr ? 'إزالة الحار' : 'Remove Spicy') : (isAr ? 'إزالة الإضافة من السطر' : 'Remove add-on from this line')}
-                        aria-label={`${spicy ? (isAr ? 'إزالة الحار' : 'Remove Spicy') : `${isAr ? 'إزالة الإضافة' : 'Remove add-on'} ${featureName(menu, id, lang)}`}${partial ? ` ×${count}` : ''}`}
+                        title={isAr ? 'إزالة الإضافة من السطر' : 'Remove add-on from this line'}
+                        aria-label={`${isAr ? 'إزالة الإضافة' : 'Remove add-on'} ${featureName(menu, id, lang)}${partial ? ` ×${count}` : ''}`}
                       >
                         <X size={14} strokeWidth={3} />
                       </button>
-                      )}
                     </span>
                   );
                 })}

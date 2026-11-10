@@ -1,6 +1,6 @@
 import { Store, Truck, UtensilsCrossed } from 'lucide-react';
 import { STR } from './ordersDashTypes';
-import { isSpicyAddon } from '@/src/utils/menuHelpers';
+import { isSpicyAddon, isSpicyFeatureId } from '@/src/utils/menuHelpers';
 import type { OrderItem, OrderStatus } from './ordersDashTypes';
 
 /** True when the order line carries the spicy add-on (any id, ar/en name).
@@ -15,6 +15,24 @@ export function lineIsSpicy(it: OrderItem): boolean {
     if (isSpicyAddon(fid, n.ar) || isSpicyAddon(fid, n.en)) return true;
   }
   return false;
+}
+
+/** Feature id of the line's heat level ('spicy-mild' | 'spicy-medium' |
+ *  'spicy-hot' | legacy 'spicy'), or null when the degree is unknown
+ *  (legacy names without stored ids). Display-only: feeds HeatPill, which
+ *  falls back to a single flame + the generic label on null. */
+export function lineSpicyId(it: OrderItem): string | null {
+  const names = it.addonNames;
+  if (!Array.isArray(names) || names.length === 0) return null;
+  for (let i = 0; i < names.length; i++) {
+    const fid = Array.isArray(it.addonIds) ? it.addonIds[i] : null;
+    const n = names[i];
+    if (!n) continue;
+    if (isSpicyAddon(fid, n.ar) || isSpicyAddon(fid, n.en)) {
+      return typeof fid === 'string' && isSpicyFeatureId(fid) ? fid : null;
+    }
+  }
+  return null;
 }
 
 /* ---------- Helpers ---------- */

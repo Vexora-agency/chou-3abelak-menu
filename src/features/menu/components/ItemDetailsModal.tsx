@@ -3,7 +3,7 @@ import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { useGuardedText } from '@/src/hooks/useGuardedText';
 import { MenuData, MenuItem } from '@/src/types/menu';
 import { X, Plus, Minus, Flame, Sparkles, Award } from 'lucide-react';
-import { pickLangText, badgeLabel, isSpicyFeatureId, spicyLabel, SPICY_GROUP_ID, SPICY_LEGACY_ID } from '@/src/utils/menuHelpers';
+import { pickLangText, badgeLabel, isSpicyFeatureId, SPICY_GROUP_ID, SPICY_LEGACY_ID } from '@/src/utils/menuHelpers';
 import {
   hasOptions, hasVariants, getVariant,
   lineTotal, perUnitPrice, featureName, normalizePricing, priceLabel, formatPrice,
@@ -13,6 +13,7 @@ import { addonBlocks, clampSplitPicks, effectiveAddonQty } from '@/src/utils/spl
 import { VariantPicker } from './item-view/VariantPicker';
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { AddonPicker } from './item-view/AddonPicker';
+import { HeatPill } from '@/src/components/HeatPill';
 
 interface ItemDetailsModalProps {
   item: MenuItem | null;
@@ -359,12 +360,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
               {(() => {
                 const pick = addonIds.find((id) => isSpicyFeatureId(id));
                 if (!pick) return null;
-                return (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-600/10 text-red-600 border border-red-600/25 dark:bg-red-500/10 dark:text-red-400 dark:border-red-400/30">
-                    <Flame size={12} />
-                    {spicyLabel(lang, pick)}
-                  </span>
-                );
+                return <HeatPill featureId={pick} lang={lang} size="sm" />;
               })()}
               {!item.available && (
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-neutral-600 text-white">

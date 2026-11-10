@@ -155,8 +155,12 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
           <span aria-hidden="true" className="photo-card-shine" />
 
           {badge && BadgeIcon && (
-            <span className="absolute start-3 top-3 z-10 inline-flex -rotate-2 items-center gap-1 rounded-full border-2 border-[#0A0A0A] bg-[var(--primary)] px-2.5 py-1 text-[10px] font-black text-[#0A0A0A] shadow-[2px_2px_0_#0A0A0A] rtl:rotate-2">
-              <BadgeIcon size={11} strokeWidth={3} aria-hidden="true" />
+            <span className={`absolute start-3 top-3 z-10 inline-flex -rotate-2 items-center gap-1 rounded-full border-2 px-2.5 py-1 text-[10px] font-black shadow-[2px_2px_0_#0A0A0A] rtl:rotate-2 ${
+              badge === 'spicy'
+                ? 'border-red-600/25 bg-red-600/10 text-red-600 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-400'
+                : 'border-[#0A0A0A] bg-[var(--primary)] text-[#0A0A0A]'
+            }`}>
+              <BadgeIcon size={11} strokeWidth={3} aria-hidden="true" className={badge === 'spicy' ? 'fill-red-500/25' : undefined} />
               {badgeLabel(badge, lang)}
             </span>
           )}

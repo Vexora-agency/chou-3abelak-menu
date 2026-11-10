@@ -33,20 +33,40 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
   // stay attached — the customer sheet forces one pick and the server
   // rejects heatless badged lines.
   const badgedSpicy = (item.badges || []).includes('spicy');
-  const spicyOverlap = badgedSpicy
-    && (item.addons || []).some((a) => isSpicyFeatureId(a.featureId));
+  const hasHeat = (item.addons || []).some((a) => isSpicyFeatureId(a.featureId));
+  const spicyOverlap = badgedSpicy && hasHeat;
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
         <label className="block text-xs text-neutral-400">{isAr ? 'مكتبة الميزات' : 'Features Library'}</label>
       </div>
+      {badgedSpicy && item.noHeat === true && (
+        <div className="mb-2 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 flex items-center gap-2">
+          <p className="text-[11px] leading-relaxed text-red-200">
+            <Flame size={12} className="inline me-1 -mt-0.5" />
+            {isAr
+              ? 'تناقض: شارة «حار» مع إطفاء الحار — الحفظ سيرفض: أزل الشارة أو أعد إرفاق درجات الحار.'
+              : 'Conflict: Spicy badge with heat off — saving will fail: remove the badge or re-attach the heat degrees.'}
+          </p>
+        </div>
+      )}
+      {badgedSpicy && item.noHeat !== true && !hasHeat && (
+        <div className="mb-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 flex items-center gap-2">
+          <p className="text-[11px] leading-relaxed text-amber-200">
+            <Flame size={12} className="inline me-1 -mt-0.5" />
+            {isAr
+              ? 'شارة «حار» مفعّلة لكن لا توجد درجات حرارة مرفقة — أرفق قسم «خليه حار» (خفيف / متوسط / حار جداً) وإلا سيُرفض الطلب.'
+              : 'The Spicy badge is on but no heat degrees are attached — attach the “Make it Spicy” section (Mild / Medium / Extra Hot) or orders will be rejected.'}
+          </p>
+        </div>
+      )}
       {spicyOverlap && (
         <div className="mb-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 flex items-center gap-2">
           <p className="text-[11px] leading-relaxed text-amber-200">
             <Flame size={12} className="inline me-1 -mt-0.5" />
             {isAr
-              ? 'هذا الصنف عليه شارة «حار» — درجة الحرارة إجبارية: أبقِ درجات الحار مرفقة، والزبون لازم يختار واحدة.'
-              : 'This item is badged Spicy — a heat degree is required: keep the levels attached, the customer must pick one.'}
+              ? 'هذا الصنف عليه شارة «حار» — درجة الحرارة إجبارية (خفيف / متوسط / حار جداً): أبقِ الدرجات مرفقة، والزبون لازم يختار واحدة.'
+              : 'This item is badged Spicy — a heat degree is required (Mild / Medium / Extra Hot): keep the levels attached, the customer must pick one.'}
           </p>
         </div>
       )}
@@ -57,8 +77,8 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
       {item.noHeat === true && !badgedSpicy && (
         <p className="text-[11px] text-neutral-500 mb-2">
           {isAr
-            ? 'الحار مطفي لهذا الصنف — أعد إرفاق قسم Make it Spicy لإرجاعه.'
-            : 'Heat is off for this item — re-attach the Make it Spicy section to bring it back.'}
+            ? 'الحار مطفي لهذا الصنف — شاشة الزبون تخفي قسم الحرارة تماماً. أعد إرفاق قسم «خليه حار» لإرجاعه.'
+            : 'Heat is off for this item — the customer sheet hides the heat section entirely. Re-attach the “Make it Spicy” section to bring it back.'}
         </p>
       )}
       {((item.addons || []).length === 0) && (
@@ -225,6 +245,9 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                 <div key={g.id} className="rounded-xl border border-neutral-800 bg-black/30 px-2.5 sm:px-3 pt-2 pb-1 mb-2">
                   <div className="flex items-center justify-between mb-1 gap-2">
                     <span className="flex items-center gap-1.5 min-w-0">
+                      {g.id === SPICY_GROUP_ID && (
+                        <Flame size={12} className="shrink-0 text-red-400" aria-hidden="true" />
+                      )}
                       <p className="text-[11px] font-extrabold text-[var(--primary)] truncate">
                         {isAr ? g.name.ar : g.name.en}
                       </p>
@@ -291,6 +314,13 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                   {promptText ? (
                     <p className="text-[11px] text-neutral-400 leading-relaxed mb-1">{promptText}</p>
                   ) : null}
+                  {g.id === SPICY_GROUP_ID && (
+                    <p className="text-[11px] leading-relaxed text-neutral-400 mb-1">
+                      {isAr
+                        ? 'درجات الحار الثلاث: خفيف 🌶️ · متوسط 🌶️🌶️ · حار جداً 🌶️🌶️🌶️ — مع شارة «حار» لازم الزبون يختار واحدة، وحذف القسم كله يطفي الحار لهذا الصنف.'
+                        : 'Three heat degrees: Mild 🌶️ · Medium 🌶️🌶️ · Extra Hot 🌶️🌶️🌶️ — with the Spicy badge the customer must pick one; removing the whole section turns heat off for this item.'}
+                    </p>
+                  )}
                   {mode === 'single' && defaultCount >= 2 && (
                     <p className="text-[11px] leading-relaxed text-amber-300/90 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1.5 mb-1.5">
                       {isAr
@@ -408,13 +438,23 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                 className="btn-tactile w-full text-start rounded-xl border border-neutral-700 bg-black/40 px-3 py-2 hover:border-[var(--primary)] transition-colors"
               >
                 <span className="flex items-center justify-between gap-2">
-                  <b className="text-xs text-white">{isAr ? g.name.ar : g.name.en}</b>
+                  <b className="text-xs text-white flex items-center gap-1.5">
+                    {g.id === SPICY_GROUP_ID && (
+                      <Flame size={12} className="text-red-400" aria-hidden="true" />
+                    )}
+                    {isAr ? g.name.ar : g.name.en}
+                  </b>
                   <span className="text-[10px] text-neutral-500 tabular-nums">
                     {isAr ? `${remaining} جديدة` : `${remaining} new`}
                   </span>
                 </span>
                 <span className="block text-[11px] text-neutral-400 mt-0.5 leading-relaxed">
-                  {feats.map((d) => (isAr ? d.name.ar : d.name.en)).join(' · ')}
+                  {g.id === SPICY_GROUP_ID
+                    ? feats.map((d) => {
+                        const flames = d.id === 'spicy-hot' ? ' 🌶️🌶️🌶️' : d.id === 'spicy-medium' ? ' 🌶️🌶️' : d.id === 'spicy-mild' ? ' 🌶️' : '';
+                        return `${isAr ? d.name.ar : d.name.en}${flames}`;
+                      }).join(' · ')
+                    : feats.map((d) => (isAr ? d.name.ar : d.name.en)).join(' · ')}
                 </span>
               </button>
             );

@@ -620,7 +620,7 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
         // Split quantities: `name ×n` ONLY when 0 < count < line qty;
         // full counts (or legacy lines without addonQty) render plain.
         // Zero-count options apply to zero units, so they are hidden.
-        // Spicy renders as `حار 🌶️` (no `+`): `• سجق (حار 🌶️) × 2 = …`.
+        // Spicy renders as full degree + flames (no `+`): `• سجق (خفيف 🌶️) × 2 = …`.
         const hasQty = !!(it.addonQty && typeof it.addonQty === 'object' && !Array.isArray(it.addonQty));
         const lineQty = Number.isFinite(it.qty) ? it.qty : 0;
         const isSpicyExtra = (fid, label) => {
@@ -636,11 +636,27 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
         };
         // Flame count follows the level so the kitchen reads the heat at a
         // glance: mild 1, medium 2, extra-hot 3, legacy/unknown 1.
+        // Canonical Arabic degree: the fid decides the full label so the
+        // kitchen always reads خفيف/متوسط/حار جداً + matching flames,
+        // never a generic abbreviation; unknown ids fall back to the
+        // stored name.
         const spicyFlames = (fid) => {
           const id = typeof fid === 'string' ? fid.trim().toLowerCase() : '';
           if (id === 'spicy-hot') return '🌶️🌶️🌶️';
           if (id === 'spicy-medium') return '🌶️🌶️';
           return '🌶️';
+        };
+        const spicyDegreeAr = (fid, fallback) => {
+          const id = typeof fid === 'string' ? fid.trim().toLowerCase() : '';
+          if (id === 'spicy-mild') return 'خفيف';
+          if (id === 'spicy-medium') return 'متوسط';
+          if (id === 'spicy-hot') return 'حار جداً';
+          if (id === 'spicy') return 'حار';
+          const t = typeof fallback === 'string' ? fallback.trim().toLowerCase() : '';
+          if (t === 'mild' || t === 'خفيف') return 'خفيف';
+          if (t === 'medium' || t === 'متوسط') return 'متوسط';
+          if (t === 'extra hot' || t === 'حار جداً') return 'حار جداً';
+          return typeof fallback === 'string' && fallback.trim() ? fallback.trim() : 'حار';
         };
         for (let ai = 0; ai < it.addonNames.length; ai++) {
           const a = it.addonNames[ai];
@@ -648,7 +664,7 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
           if (!n) continue;
           const fid = Array.isArray(it.addonIds) ? it.addonIds[ai] : null;
           const spicy = isSpicyExtra(fid, n);
-          const base = spicy ? escapeHtml(String(n).trim()) + ' ' + spicyFlames(fid) : '+' + escapeHtml(n);
+          const base = spicy ? escapeHtml(spicyDegreeAr(fid, n)) + ' ' + spicyFlames(fid) : '+' + escapeHtml(n);
           if (!hasQty) {
             extras.push(base);
             continue;

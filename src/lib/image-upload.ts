@@ -308,6 +308,84 @@ export async function exportCropVariant(
   return { blob, width: outW, height: outH };
 }
 
+/**
+ * Encode one full-frame variant at `targetW` (direct downscale of an already
+ * cropped photo — no rect involved). WebP first, JPEG fallback, same policy
+ * as exportCropVariant, at VARIANT_QUALITY.
+ */
+async function encodeDirectVariant(
+  source: ImageBitmap | HTMLImageElement | HTMLCanvasElement,
+  srcW: number,
+  srcH: number,
+  targetW: number,
+): Promise<PreparedImage> {
+  const outW = Math.max(1, Math.round(Math.min(targetW, srcW)));
+  const outH = Math.max(1, Math.round(outW / CROP_ASPECT));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new ImagePrepareError('encode_failed');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, outW, outH);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  try {
+    ctx.drawImage(source, 0, 0, srcW, srcH, 0, 0, outW, outH);
+  } catch {
+    throw new ImagePrepareError('encode_failed');
+  }
+
+  const encode = (type: string, quality: number): Promise<Blob | null> =>
+    new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), type, quality);
+    });
+
+  let blob = await encode('image/webp', VARIANT_QUALITY);
+  if (!blob || blob.type !== 'image/webp') blob = await encode('image/jpeg', VARIANT_QUALITY);
+  if (!blob) throw new ImagePrepareError('encode_failed');
+  if (blob.size > SERVER_MAX_BYTES) {
+    blob = await encode('image/webp', 0.68);
+    if (!blob || blob.type !== 'image/webp') blob = await encode('image/jpeg', 0.68);
+  }
+  if (!blob) throw new ImagePrepareError('encode_failed');
+  if (blob.size > SERVER_MAX_BYTES) throw new ImagePrepareError('too_large');
+  return { blob, width: outW, height: outH };
+}
+
+/**
+ * Build responsive variants from an already-cropped photo (e.g. an old
+ * internal item image re-downloaded from /api/images/…). The source keeps
+ * its own framing — it is only downscaled, never upscaled: a variant is
+ * produced only when the source is wider than the target by
+ * VARIANT_MIN_MARGIN (same near-duplicate guard as exportResponsiveSet).
+ * A variant that fails to encode is skipped. Returns possibly-empty.
+ */
+export async function variantsFromBitmap(
+  source: ImageBitmap | HTMLImageElement | HTMLCanvasElement,
+  srcW: number,
+  srcH: number,
+): Promise<{ s?: PreparedImage; m?: PreparedImage }> {
+  if (!Number.isFinite(srcW) || !Number.isFinite(srcH) || srcW <= 0 || srcH <= 0) {
+    throw new ImagePrepareError('decode_failed');
+  }
+  const out: { s?: PreparedImage; m?: PreparedImage } = {};
+  const targets = [
+    { key: 's', w: VARIANT_WIDTHS.s },
+    { key: 'm', w: VARIANT_WIDTHS.m },
+  ] as const;
+  for (const { key, w } of targets) {
+    if (srcW < w * VARIANT_MIN_MARGIN) continue;
+    try {
+      out[key] = await encodeDirectVariant(source, srcW, srcH, w);
+    } catch (error) {
+      console.warn('[image-upload] direct variant skipped.', error);
+    }
+  }
+  return out;
+}
+
 /** One full export plus the optional smaller variants of the same crop. */
 export interface ResponsiveImageSet {
   full: PreparedImage;

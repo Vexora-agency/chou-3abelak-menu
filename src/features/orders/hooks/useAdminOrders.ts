@@ -87,6 +87,10 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
   // setStates happen async inside fetchOrders, no cascading render).
   // 5s: this is a kitchen screen — a new order must surface and sound in
   // seconds. Payload is capped (limit=2000) and tiny; visible-tab only.
+  // Deliberately NOT 1s: every poll is a full range query + Worker request,
+  // and 1s polling from one open dashboard burns ~86k requests/day — the
+  // whole free-plan budget — for at most 4s of gain. The real latency is
+  // the grace window (minutes, owner-tunable), never this poll.
   // Skipped entirely when the plan hides orders (starter).
   useEffect(() => {
     if (!enabled) {
@@ -98,7 +102,18 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
     const id = window.setInterval(() => {
       if (document.visibilityState === 'visible') void fetchOrders(true);
     }, 5000);
-    return () => window.clearInterval(id);
+    // Instant catch-up the moment the owner looks back: focus/visible fires
+    // a silent refetch, so the board is fresh without waiting for the tick.
+    const catchUp = () => {
+      if (document.visibilityState === 'visible') void fetchOrders(true);
+    };
+    document.addEventListener('visibilitychange', catchUp);
+    window.addEventListener('focus', catchUp);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', catchUp);
+      window.removeEventListener('focus', catchUp);
+    };
   }, [fetchOrders, enabled]);
 
   // Restore the page title when the dashboard tab is viewed

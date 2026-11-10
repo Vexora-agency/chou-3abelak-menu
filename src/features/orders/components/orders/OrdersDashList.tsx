@@ -1,10 +1,11 @@
 import type { FC } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { BellRing, Check, ChevronDown, Flame, Inbox, MapPin, MessageCircle, Phone, Store, X } from 'lucide-react';
+import { BellRing, Check, ChevronDown, Inbox, MapPin, MessageCircle, Phone, Store, X } from 'lucide-react';
 import { STR } from './ordersDashTypes';
 import type { Order, OrderStatus } from './ordersDashTypes';
-import { STATUS_STYLE, TYPE_ICON, digits, fmt, itemTitle, lineIsSpicy, loc, relTime } from './ordersDashUtils';
+import { STATUS_STYLE, TYPE_ICON, digits, fmt, itemTitle, lineIsSpicy, lineSpicyId, loc, relTime } from './ordersDashUtils';
 import { unitLabel } from '@/src/utils/pricing';
+import { HeatPill } from '@/src/components/HeatPill';
 import { card } from './OrdersDashBits';
 
 interface OrdersDashListProps {
@@ -128,7 +129,7 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                           <p className={`text-[11px] font-bold text-neutral-500 ${isAr ? '' : 'uppercase tracking-wide'}`}>{t.itemsLabel}</p>
                           {o.items.map((it, idx) => (
                             <div key={`${it.id}-${idx}`} className="flex justify-between gap-3">
-                              <span className="min-w-0 flex-1 break-words"><bdi dir="ltr" className="tabular-nums">{it.qty}</bdi><span dir="ltr">×</span> {typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, lang)} ` : ''}{lineIsSpicy(it) && <Flame size={13} className="inline-block text-red-400 ms-1 me-0.5 -mt-0.5" aria-hidden="true" />}<span dir="auto">{itemTitle(it, lang)}</span></span>
+                              <span className="min-w-0 flex-1 break-words"><bdi dir="ltr" className="tabular-nums">{it.qty}</bdi><span dir="ltr">×</span> {typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, lang)} ` : ''}{lineIsSpicy(it) && <HeatPill featureId={lineSpicyId(it) ?? undefined} lang={lang} size="sm" className="ms-1 me-0.5 align-middle" />}<span dir="auto">{itemTitle(it, lang)}</span></span>
                               <span className="text-neutral-400 tabular-nums whitespace-nowrap shrink-0"><bdi dir="ltr" className="tabular-nums">{fmt(it.qty)}</bdi><span dir="ltr"> × </span><bdi dir="ltr" className="tabular-nums">{fmt(it.unitPrice)}</bdi><span dir="ltr"> = </span><bdi dir="ltr" className="tabular-nums">{fmt(it.qty * it.unitPrice)}</bdi></span>
                             </div>
                           ))}

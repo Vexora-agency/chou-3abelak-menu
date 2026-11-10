@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
+import { Flame } from 'lucide-react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import type { CardMarkStyleId, ResolvedMark } from '@/src/utils/cardMark';
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
@@ -143,7 +144,12 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
             so it always balances diagonally against the + button. Tilted. */}
         <div className={`relative flex items-center gap-2 mb-2 h-[18px] ${mark ? 'justify-between' : 'justify-end'}`}>
           {badges.length > 0 && (
-            <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border-[1.5px] border-[var(--primary)] shadow-lg -rotate-3 ${isAr ? '' : 'tracking-wide'} ${mark ? '' : 'absolute -top-[7px] -start-1 z-10'}`}>
+            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold border-[1.5px] shadow-lg -rotate-3 ${isAr ? '' : 'tracking-wide'} ${mark ? '' : 'absolute -top-[7px] -start-1 z-10'} ${
+              badges[0] === 'spicy'
+                ? 'bg-red-600/10 text-red-600 border-red-600/25 dark:bg-red-500/10 dark:text-red-400 dark:border-red-400/30'
+                : 'bg-[#0A0A0A] text-[var(--primary)] border-[var(--primary)]'
+            }`}>
+              {badges[0] === 'spicy' && <Flame size={11} className="fill-red-500/25" aria-hidden="true" />}
               {badgeLabel(badges[0], lang)}
             </span>
           )}

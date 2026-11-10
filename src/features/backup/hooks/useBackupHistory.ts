@@ -40,8 +40,9 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
   const [trash, setTrash] = useState<TrashEntry[]>([]);
   // Owner signal from the server (versions response). Clients see their own
   // rows only and must never learn of the master layer: no actor pills, no
-  // auto-backup switch. Defaults to locked (fail-closed until proven owner).
-  const [isOwner, setIsOwner] = useState(false);
+  // auto-backup switch. Starts UNKNOWN (null) so UI gates can fail-open
+  // while the check is in flight — a definitive false hides owner UI.
+  const [isOwner, setIsOwner] = useState<boolean | null>(null);
   const [backupStatus, setBackupStatus] = useState<{ lastBackupAt?: string; autoWeekly: boolean; destination?: string }>({ autoWeekly: false });
   const [undoToast, setUndoToast] = useState<{ label: string; undo: () => void } | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);

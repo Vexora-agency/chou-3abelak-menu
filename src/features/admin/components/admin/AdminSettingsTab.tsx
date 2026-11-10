@@ -39,9 +39,11 @@ interface AdminSettingsTabProps {
   }) => void;
   /** Owner signal (master login). When false (client login) the whole
       Access & Diagnostics group is skipped — its children would self-hide
-      on 403 anyway, but that would leave an empty shell. Undefined (still
-      loading) renders everything: fail-open, sections self-hide on 403. */
-  isOwner?: boolean;
+      on 403 anyway, but that would leave an empty shell. Null/undefined
+      (still checking) renders everything: fail-open, sections self-hide
+      on 403. This fixes the group vanishing on every refresh while the
+      versions check is in flight. */
+  isOwner?: boolean | null;
 }
 
 /**

@@ -5,7 +5,7 @@ import { normalizePricing } from '@/src/utils/pricing';
 import { CategoriesTab } from './CategoriesTab';
 import { ItemsTab } from './ItemsTab';
 import { AdminTopBar, type AdminTab } from './admin/AdminTopBar';
-import { InstallAppPrompt } from './admin/InstallAppPrompt';
+import { KitchenInstallGate } from './admin/KitchenInstallGate';
 import { KitchenBar } from './admin/KitchenBar';
 import { KitchenSystemAlerts } from './admin/KitchenSystemAlerts';
 import { AdminSettingsTab } from './admin/AdminSettingsTab';
@@ -273,8 +273,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {/* TAB 0: ORDERS DASHBOARD (the kitchen's only view) */}
       {activeTab === 'dashboard' && (
         <>
+          {/* Strict install gate (kitchen only): full-screen blocker until
+              the screen runs as an installed app — no skip, per explicit
+              owner decision (surfaced in KitchenInstallGate). */}
+          {isKitchen && <KitchenInstallGate lang={lang} />}
           {isKitchen && <KitchenBar lang={lang} ordersError={ordersError} />}
-          {isKitchen && <InstallAppPrompt lang={lang} />}
           {isKitchen && <KitchenSystemAlerts lang={lang} />}
           <AdminDashboardTab
             lang={lang}
@@ -286,6 +289,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             graceHidden={graceHidden}
             onOrderStatusChange={(id, s) => void handleOrderStatusChange(id, s)}
             onRefreshOrders={() => void fetchOrders(false)}
+            kitchen={isKitchen}
             reportsOn={isKitchen ? false : report.reportsOn}
             customersOn={isKitchen ? false : report.customersOn}
             dashView={isKitchen ? 'overview' : report.dashView}

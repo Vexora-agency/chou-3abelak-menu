@@ -9,7 +9,7 @@ import { OrdersDashList } from './orders/OrdersDashList';
 export type { Order, OrderItem, OrderStatus, OrderType, Period, CronHealth };
 
 /* ---------- Main component ---------- */
-const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loading, onStatusChange, onRefresh, kitchenSound, onConfirm }) => {  const isAr = lang === 'ar';
+const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loading, onStatusChange, onRefresh, kitchenSound, onConfirm, kitchen }) => {  const isAr = lang === 'ar';
   // Owner decision: dashboard animations always play for every visitor.
   const reduce = false;
   const { now } = useOrdersDashClock();
@@ -108,22 +108,26 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
         soundOn={soundOn}
         onToggleSound={toggleSound}
       />
-      <OrdersDashKpis
-        lang={lang}
-        currency={currency}
-        stats={stats}
-        pendingCount={pendingCount}
-        onShowNew={() => { setFilter('new'); document.getElementById('orders-list')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }}
-      />
-      <OrdersDashChart
-        lang={lang}
-        currency={currency}
-        period={period}
-        stats={stats}
-        sel={sel}
-        onSelChange={(i) => setSel(i)}
-      />
-      <OrdersDashTopItems lang={lang} period={period} stats={stats} />
+      {!kitchen && (
+        <>
+          <OrdersDashKpis
+            lang={lang}
+            currency={currency}
+            stats={stats}
+            pendingCount={pendingCount}
+            onShowNew={() => { setFilter('new'); document.getElementById('orders-list')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }}
+          />
+          <OrdersDashChart
+            lang={lang}
+            currency={currency}
+            period={period}
+            stats={stats}
+            sel={sel}
+            onSelChange={(i) => setSel(i)}
+          />
+          <OrdersDashTopItems lang={lang} period={period} stats={stats} />
+        </>
+      )}
       <OrdersDashList
         lang={lang}
         currency={currency}
@@ -141,6 +145,7 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
         now={now}
         onStatusChange={onStatusChange}
         onConfirm={onConfirm}
+        kitchen={kitchen}
       />
     </div>
   );

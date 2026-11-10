@@ -138,7 +138,9 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
           >
             {activeTab === tab && <motion.span layoutId="admin-tab" className="absolute inset-0 rounded-xl bg-[var(--primary)] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
             <span className="relative z-10 truncate">
-            {tab === 'dashboard' && (isAr ? 'الطلبات' : 'Dashboard')}
+            {/* Kitchen session: single tab reads "Orders" (EN) — the owner
+                keeps "Dashboard". Arabic is "الطلبات" for both. */}
+            {tab === 'dashboard' && (kitchenOnly ? (isAr ? 'الطلبات' : 'Orders') : (isAr ? 'الطلبات' : 'Dashboard'))}
             {tab === 'settings' && (isAr ? 'الإعدادات' : 'Settings')}
             {tab === 'categories' && (isAr ? 'الأقسام' : 'Categories')}
             {tab === 'libraries' && (isAr ? 'المكتبات' : 'Libraries')}

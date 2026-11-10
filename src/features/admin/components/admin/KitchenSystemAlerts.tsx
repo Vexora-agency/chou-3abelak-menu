@@ -18,11 +18,13 @@ interface KitchenSystemAlertsProps {
 type State = 'idle' | 'working' | 'on' | 'denied' | 'unsupported' | 'ios' | 'error';
 
 /**
- * Kitchen system-alerts opt-in. The in-page bell needs an open tab and a
- * first tap (browser autoplay policy); the OS notification fired here
- * reaches the device with the phone locked. Transport reuses
- * subscribeDevice from webpush.ts; the subscription is saved against the
- * admin session (server-enforced), exactly like the customer flow but on
+ * Kitchen system-alerts opt-in — MANDATORY banner: pinned above the orders
+ * list until this device subscribes, then disappears entirely (no
+ * "already on" card). The in-page bell needs an open tab and a first tap
+ * (browser autoplay policy); the OS notification fired here reaches the
+ * device with the phone locked. Transport reuses subscribeDevice from
+ * webpush.ts; the subscription is saved against the admin session
+ * (server-enforced), exactly like the customer flow but on
  * /api/admin/push-subscriptions.
  */
 export const KitchenSystemAlerts: React.FC<KitchenSystemAlertsProps> = ({ lang }) => {
@@ -125,38 +127,37 @@ export const KitchenSystemAlerts: React.FC<KitchenSystemAlertsProps> = ({ lang }
             : isAr ? `تعذر الحفظ (${errDetail}) — أرسل هذا السطر كاملًا.` : `Could not save (${errDetail}) — send this full line.`
           : null;
 
+  // Subscribed on this device: mandatory banner has done its job — gone.
+  if (state === 'on') return null;
+
   return (
     <div
-      className="mb-4 rounded-2xl border border-neutral-800 bg-neutral-900 p-4 flex flex-col gap-3"
+      className="mb-4 rounded-2xl border border-[var(--primary)]/40 bg-neutral-900 p-4 flex flex-col gap-3"
       dir={isAr ? 'rtl' : 'ltr'}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center ${state === 'on' ? 'bg-[var(--primary)] text-[#0A0A0A]' : 'bg-[var(--primary)]/10 text-[var(--primary)]'}`}>
+          <span className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center bg-[var(--primary)]/10 text-[var(--primary)]">
             <BellRing size={17} />
           </span>
           <div className="min-w-0">
             <p className="text-sm font-black text-white">
-              {isAr ? 'تفعيل تنبيهات النظام' : 'Enable system alerts'}
+              {isAr ? 'فعّل تنبيهات النظام — مطلوب' : 'Enable system alerts — required'}
             </p>
             <p className="text-[11px] text-neutral-500">
-              {state === 'on'
-                ? (isAr ? 'مفعّلة على هذا الجهاز' : 'Active on this device')
-                : (isAr ? 'تنبيه لكل طلب جديد — حتى والهاتف مقفل' : 'An alert per new order — even with the phone locked')}
+              {isAr ? 'تنبيه لكل طلب جديد — حتى والهاتف مقفل' : 'An alert per new order — even with the phone locked'}
             </p>
           </div>
         </div>
-        {state !== 'on' && (
-          <button
-            type="button"
-            onClick={() => void onEnable()}
-            disabled={state === 'working'}
-            className="btn-tactile shrink-0 h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-          >
-            {state === 'working' ? <Loader2 size={14} className="animate-spin" /> : <BellRing size={14} />}
-            {isAr ? 'تفعيل' : 'Enable'}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => void onEnable()}
+          disabled={state === 'working'}
+          className="btn-tactile shrink-0 h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+        >
+          {state === 'working' ? <Loader2 size={14} className="animate-spin" /> : <BellRing size={14} />}
+          {isAr ? 'تفعيل' : 'Enable'}
+        </button>
       </div>
       {/* Bell-vs-push contrast: why both exist. */}
       <p className="text-[11px] leading-relaxed text-neutral-500 rounded-xl border border-neutral-800 bg-black/40 p-2.5">

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BellRing, Wifi, WifiOff } from 'lucide-react';
-import { playNewOrderBeep, unlockOrderSound } from '@/src/features/orders';
+import { Wifi, WifiOff } from 'lucide-react';
 
 interface KitchenBarProps {
   lang: 'en' | 'ar';
@@ -9,9 +8,10 @@ interface KitchenBarProps {
 }
 
 /**
- * Full-screen kitchen header: a prominent bell (proof-of-life tap that
- * unlocks browser audio and plays the picked chime) + a connection
- * indicator (browser online state combined with the orders poll health).
+ * Kitchen status strip: a connection indicator (browser online state
+ * combined with the orders poll health). Sound control lives in the orders
+ * header (OrdersDashPeriodBar bell toggle — the one that unlocks browser
+ * audio); this strip carries no bell button by owner decision.
  * The orders list itself is untouched — AdminDashboardTab renders below.
  */
 export const KitchenBar: React.FC<KitchenBarProps> = ({ lang, ordersError }) => {
@@ -30,14 +30,6 @@ export const KitchenBar: React.FC<KitchenBarProps> = ({ lang, ordersError }) => 
       window.removeEventListener('offline', goOff);
     };
   }, []);
-
-  const [rang, setRang] = useState(false);
-  const testBell = () => {
-    unlockOrderSound();
-    playNewOrderBeep();
-    setRang(true);
-    window.setTimeout(() => setRang(false), 2500);
-  };
 
   const connected = online && !ordersError;
 
@@ -77,17 +69,6 @@ export const KitchenBar: React.FC<KitchenBarProps> = ({ lang, ordersError }) => 
           </p>
         </div>
       </div>
-      <button
-        type="button"
-        onClick={testBell}
-        aria-label={isAr ? 'اختبار جرس المطبخ' : 'Test the kitchen bell'}
-        className="btn-tactile shrink-0 h-12 min-h-[48px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center gap-2 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-      >
-        <BellRing size={17} />
-        {rang
-          ? (isAr ? 'شغّال!' : 'Ringing!')
-          : (isAr ? 'جرّب الجرس' : 'Test bell')}
-      </button>
     </div>
   );
 };

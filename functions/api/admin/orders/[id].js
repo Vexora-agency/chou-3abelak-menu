@@ -3,8 +3,9 @@
  * Body {status} must be one of the five order statuses. Unknown id -> 404.
  */
 
-import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
+import { checkApiHeaders, getSessionCookie, getSessionSecret, jsonNoStore, readJsonBody, verifySessionToken } from '../../../_shared/session.js';
 import { featureOffResponse, hasFeature } from '../../../_shared/plan.js';
+import { getRole } from '../../../_shared/access.js';
 import {
   countActiveKitchenOrders,
   findOrderById,
@@ -83,8 +84,38 @@ export async function onRequest(context) {
     }
   }
 
+  // Last-status actor (migration 0029): a kitchen/client change stamps
+  // its login name, an owner change clears to NULL (Recent orders shows
+  // nothing extra). Role source is the canonical getRole(); the username
+  // is the session sub suffix `client:<username>`. Unknown sessions
+  // (Cloudflare Access assertion, local dev) are the owner path -> clear.
+  // Never blocks the write: on any failure the key is omitted and the
+  // repository preserves the existing value.
+  let updatedBy = null;
+  let hasActor = true;
   try {
-    const order = await updateOrderStatus(db, id, status, confirmOpts);
+    const role = await getRole(request, env);
+    if (role === 'kitchen' || role === 'client') {
+      let username = '';
+      try {
+        const secret = getSessionSecret(env);
+        const token = getSessionCookie(request);
+        const payload = secret && token ? await verifySessionToken(secret, token) : null;
+        const sub = payload && typeof payload.sub === 'string' ? payload.sub : '';
+        if (sub.startsWith('client:')) username = sub.slice('client:'.length).trim();
+      } catch {}
+      updatedBy = username ? username.slice(0, 64) : role;
+    } else {
+      updatedBy = null;
+    }
+  } catch {
+    hasActor = false;
+  }
+  const statusOpts = { ...(confirmOpts || {}) };
+  if (hasActor) statusOpts.updatedBy = updatedBy;
+
+  try {
+    const order = await updateOrderStatus(db, id, status, statusOpts);
     if (!order) {
       return jsonNoStore({ error: 'not_found' }, 404);
     }

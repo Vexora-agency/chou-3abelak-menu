@@ -1318,6 +1318,7 @@ export async function syncOrderStatusToTelegram(db, token, { orderId, status, ad
     }
     const keepDelivered = status === 'confirmed' || status === 'ready';
     let ownerDone = false;
+    let ownerChatId = null;
     let ownerSkipReason = 'no_message';
     try {
       let row = null;
@@ -1332,6 +1333,7 @@ export async function syncOrderStatusToTelegram(db, token, { orderId, status, ad
       }
       if (row && Number.isInteger(row.chat_id) && Number.isInteger(row.message_id)) {
         const chatId = row.chat_id;
+        ownerChatId = chatId;
         const messageId = row.message_id;
         if (status === 'new') {
           try {
@@ -1423,6 +1425,27 @@ export async function syncOrderStatusToTelegram(db, token, { orderId, status, ad
         }
       }
     } catch {}
+    // Audible ping for the kitchen hand-off: Telegram never pushes for
+    // message edits, so a dashboard بدء التحضير stamped the old message
+    // silently — the owner only saw it upon opening the app. A short NEW
+    // message in the same chat rings immediately. Best-effort: never
+    // throws, never blocks the dashboard action.
+    if (status === 'confirmed' && ownerChatId !== null) {
+      try {
+        let num = null;
+        try {
+          const ord = await findOrderById(db, orderId);
+          if (ord && Number.isInteger(ord.number)) num = ord.number;
+        } catch {}
+        if (num !== null) {
+          await callTelegramApi(token, 'sendMessage', {
+            chat_id: ownerChatId,
+            text: `🔥 بدء تحضير الطلب ${bidi(`#${num}`)}`,
+            parse_mode: 'HTML',
+          });
+        }
+      } catch {}
+    }
     if (ownerDone || deliveryDone) return { sent: 1 };
     return skip(ownerSkipReason);
   } catch {

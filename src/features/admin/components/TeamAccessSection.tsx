@@ -241,11 +241,19 @@ export const TeamAccessSection: React.FC<TeamAccessSectionProps> = ({ lang, admi
         ? 'bg-green-500/10 border-green-500/30 text-green-400'
         : 'bg-neutral-800 border-neutral-700 text-neutral-500';
 
-  /** Expiry chip text: dated when the response carries `expiresAt`, open otherwise. */
+  /** Account access expiry: dated when the response carries `expiresAt`, open otherwise. */
   const expiryText = (iso?: string | null): string => {
     const d = (iso || '').slice(0, 10);
     if (!d) return isAr ? 'مفتوح' : 'Open';
     return isAr ? `ينتهي في ${d}` : `Expires ${d}`;
+  };
+
+  /** Invite LINK expiry (always dated — links die in 72h single-use): labeled
+   *  distinctly from account access so "open" accounts are never confusing. */
+  const linkExpiryText = (iso?: string | null): string => {
+    const d = (iso || '').slice(0, 10);
+    if (!d) return isAr ? 'رابط لمرة واحدة' : 'Single-use link';
+    return isAr ? `الرابط ينتهي في ${d}` : `Link expires ${d}`;
   };
 
   /** Plain-https share targets (no new dependencies, per project policy). */
@@ -454,8 +462,8 @@ export const TeamAccessSection: React.FC<TeamAccessSectionProps> = ({ lang, admi
           </div>
           <p className="text-[10px] text-neutral-500">
             {isAr
-              ? <>دعوة مطبخ: امسح الرابط أو اضغطه للدخول فورًا — بلا كلمة سر، والرابط يموت بعد أول استخدام. {fresh.expiresAt ? <>ينتهي في <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>.</> : <>مفتوح — بلا انتهاء.</>}</>
-              : <>Kitchen invite: scan or tap the link to enter instantly — no password, and the link dies after first use. {fresh.expiresAt ? <>Expires <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>.</> : <>Open — no expiry.</>}</>}
+              ? <>دعوة مطبخ: امسح الرابط أو اضغطه للدخول فورًا — بلا كلمة سر، والرابط يموت بعد أول استخدام. {fresh.expiresAt ? <>الرابط ينتهي في <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> (الدخول نفسه مفتوح).</> : <>رابط لمرة واحدة — الدخول نفسه مفتوح بلا انتهاء.</>}</>
+              : <>Kitchen invite: scan or tap the link to enter instantly — no password, and the link dies after first use. {fresh.expiresAt ? <>Link expires <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> (the login itself stays open).</> : <>Single-use link — the login itself stays open.</>}</>}
           </p>
         </div>
       ) : null}
@@ -545,7 +553,7 @@ export const TeamAccessSection: React.FC<TeamAccessSectionProps> = ({ lang, admi
                   {isAr ? 'مطبخ' : 'Kitchen'}
                 </span>
                 <span className="text-[10px] text-neutral-500 tabular-nums ms-auto" dir="ltr">
-                  {expiryText(r.expiresAt)}
+                  {linkExpiryText(r.expiresAt)}
                 </span>
                 {r.status === 'pending' ? (
                   <button

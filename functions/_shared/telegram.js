@@ -1051,6 +1051,7 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     }
     const isOwner = !!(link && clickerId === link.chatId && chatId === link.chatId);
     let isDelivery = false;
+    let crewLabel = null;
     if (!isOwner) {
       try {
         // Delivery auth: clicker must be messaging from its own linked chat.
@@ -1060,6 +1061,7 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
             for (const c of crew) {
               if (c && c.chatId === chatId) {
                 isDelivery = true;
+                crewLabel = typeof c.label === 'string' && c.label.trim() ? c.label.trim().slice(0, 64) : null;
                 break;
               }
             }
@@ -1165,6 +1167,12 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
         } catch {
           confirmOpts = {};
         }
+      }
+      // Actor attribution: a crew tap stamps the crew label so the dashboard
+      // shows who acted ("بواسطة ..."); the owner's own tap stamps nothing
+      // (updated_by stays NULL → no extra line), same rule as the dashboard.
+      if (isDelivery && crewLabel) {
+        confirmOpts = { ...(confirmOpts || {}), updatedBy: crewLabel };
       }
       updated = await updateOrderStatus(db, parsed.orderId, parsed.status, confirmOpts);
     } catch {

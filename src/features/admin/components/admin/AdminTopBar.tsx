@@ -100,10 +100,12 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
           draggable={false}
           className="w-8 h-8 object-contain -rotate-12"
         />
-        <span>{isAr ? 'إدارة القائمة' : 'Menu Management'}</span>
+        {/* Kitchen session: its own title, never "Menu Management". */}
+        <span>{kitchenOnly ? (isAr ? 'المطبخ' : 'Kitchen') : (isAr ? 'إدارة القائمة' : 'Menu Management')}</span>
         {/* Client's sold plan (from features.config `plan`, set by the setup
             script — keep SITE_PLAN in sync on rebuild). Gold for pro, gray
-            for starter. */}
+            for starter. Kitchen never sees plan info. */}
+        {!kitchenOnly && (
         <span
           title={isAr ? 'باقة العميل' : 'Client plan'}
           className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${isAr ? '' : 'uppercase tracking-wider'} ${
@@ -116,16 +118,17 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
             ? (isAr ? 'برو' : 'Pro')
             : (isAr ? 'ستارتر' : 'Starter')}
         </span>
+        )}
       </h1>
 
       {/* Tabs (Backup hidden on starter — backend 404s it too).
           Mobile shows a 3×2 grid so every tab is visible with no hidden
-          horizontal scroll; sm+ keeps the single scrollable row. */}
+          horizontal scroll; sm+ keeps the single scrollable row.
+          Kitchen has a single screen, so the whole switcher is hidden —
+          no stray single "Orders" tab under the title. */}
+      {!kitchenOnly && (
       <div className="grid grid-cols-3 sm:flex gap-1.5 p-1 bg-neutral-900 rounded-2xl border border-neutral-800 mt-4 mb-6 sm:overflow-x-auto no-scrollbar">
-        {(kitchenOnly
-          ? (['dashboard'] as const)
-          : (['dashboard', 'settings', ...(featuresConfig.enableBackup ? ['backup'] as const : []), 'categories', 'libraries', 'items'] as const)
-        ).map((tab) => (
+        {(['dashboard', 'settings', ...(featuresConfig.enableBackup ? ['backup'] as const : []), 'categories', 'libraries', 'items'] as const).map((tab) => (
           <button
             key={tab}
             type="button"
@@ -138,9 +141,8 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
           >
             {activeTab === tab && <motion.span layoutId="admin-tab" className="absolute inset-0 rounded-xl bg-[var(--primary)] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
             <span className="relative z-10 truncate">
-            {/* Kitchen session: single tab reads "Orders" (EN) — the owner
-                keeps "Dashboard". Arabic is "الطلبات" for both. */}
-            {tab === 'dashboard' && (kitchenOnly ? (isAr ? 'الطلبات' : 'Orders') : (isAr ? 'الطلبات' : 'Dashboard'))}
+            {/* Owner tabs (the switcher above renders owner-only). */}
+            {tab === 'dashboard' && (isAr ? 'الطلبات' : 'Dashboard')}
             {tab === 'settings' && (isAr ? 'الإعدادات' : 'Settings')}
             {tab === 'categories' && (isAr ? 'الأقسام' : 'Categories')}
             {tab === 'libraries' && (isAr ? 'المكتبات' : 'Libraries')}
@@ -150,6 +152,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
           </button>
         ))}
       </div>
+      )}
     </>
   );
 };

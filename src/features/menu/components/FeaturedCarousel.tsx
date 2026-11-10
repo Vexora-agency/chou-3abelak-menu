@@ -256,7 +256,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           isYellowCard
             ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
             : darkMode
-            ? 'bg-[#181818] text-white border-white/10'
+            ? 'bg-[#181818] text-[#F2EDE0] border-white/10'
             : 'bg-[#0A0A0A] text-white border-[#0A0A0A]'
         }`}
       >

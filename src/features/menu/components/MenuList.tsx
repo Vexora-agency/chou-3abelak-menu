@@ -507,23 +507,40 @@ export const MenuList: React.FC<MenuListProps> = ({
         );
         // scroll-mt clears the sticky stack (banner + two chip rows ≈150px)
         // so the anchored header never hides underneath after chip taps.
-        // Round sections break out full-bleed (edge to edge) with a dense
-        // grid; every other layout keeps the centered readable column.
-        // The round wrapper is a showcase band: vertical padding reveals
-        // its branded backdrop above and below the grid.
+        // Round sections keep the full-bleed branded BACKDROP, but their
+        // content (header + grid + pager) sits in the same centered column
+        // as every other layout — otherwise round headers/cards stick to
+        // the viewport edges on desktop while the rest is centered.
+        // The band's vertical padding reveals its backdrop above/below.
         const sectionWrapClass = kind === 'round'
-          ? `w-full px-3 sm:px-6 py-8 sm:py-10 ${darkMode ? 'round-band' : 'round-band-light'}`
+          ? `w-full py-8 sm:py-10 ${darkMode ? 'round-band' : 'round-band-light'}`
           : 'px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full';
-        return (
-          <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-[160px] menu-section">
-            <div className={sectionWrapClass}>
+        const sectionInnerClass = kind === 'round'
+          ? 'px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full'
+          : undefined;
+        const sectionBody = (
+          <>
             {/* Category Header */}
             <MenuListSectionHeader title={isAr ? cat.name.ar : cat.name.en} darkMode={darkMode} count={catItems.length} />
             {/* One grid per section: compact/list/cards differ only by the
                 grid classes and the row component, both resolved above. */}
             {itemsGrid}
             {pagerButton}
-            </div>
+          </>
+        );
+        return (
+          <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-[160px] menu-section">
+            {sectionInnerClass ? (
+              <div className={sectionWrapClass}>
+                <div className={sectionInnerClass}>
+                  {sectionBody}
+                </div>
+              </div>
+            ) : (
+              <div className={sectionWrapClass}>
+                {sectionBody}
+              </div>
+            )}
           </section>
         );
       })}

@@ -12,7 +12,7 @@ import { SocialSection } from '../SocialSection';
 import { VisitorDefaultsSection } from '../VisitorDefaultsSection';
 import { SmartBadgesSection } from '../SmartBadgesSection';
 import { ShowMoreSection } from '../ShowMoreSection';
-import { AccessSection } from '../AccessSection';
+import { ImageOptimizeSection } from '../ImageOptimizeSection';import { AccessSection } from '../AccessSection';
 import { SentrySection } from '../SentrySection';
 import { TelegramSection } from '../TelegramSection';
 import { SoundsSection } from '../SoundsSection';
@@ -277,6 +277,14 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
             return { ...m, settings: { ...m.settings, ...next } };
           })
         }
+      />
+
+      <ImageOptimizeSection
+        collapsed={!!collapsedGroups['img-opt']}
+        onToggleCollapse={() => onToggleCollapse('img-opt')}
+        menu={menu}
+        lang={lang}
+        onUpdateMenu={onUpdateMenu}
       />
 
       {/* Smart-badge windows are a pro tuning surface (claimed Pro-only in

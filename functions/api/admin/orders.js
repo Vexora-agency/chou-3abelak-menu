@@ -11,7 +11,7 @@
 
 import { jsonNoStore } from '../../_shared/session.js';
 import { featureOffResponse, hasFeature } from '../../_shared/plan.js';
-import { cronHealthFromRow, countGraceHiddenOrders, getCronHeartbeat, isOrderInGrace, listOrdersByWindow, ORDER_GRACE_MS, ORDER_NAG_SERVICE } from '../../_shared/repositories/orders.repo.js';
+import { cronHealthFromRow, countGraceHiddenOrders, getCronHeartbeat, isOrderInGrace, listOrdersByWindow, ORDER_GRACE_MS, cancelWindowMsFromMenu, ORDER_NAG_SERVICE } from '../../_shared/repositories/orders.repo.js';
 
 function parseISO(v) {
   if (typeof v !== 'string' || !v) return null;
@@ -63,13 +63,23 @@ export async function onRequest(context) {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
 
-  // Kitchen grace period: a `new` order younger than 5 minutes stays
-  // hidden (the customer may still self-cancel). Cancelled orders are
-  // never hidden — the owner sees the cancellation at once.
+  // Kitchen grace period: a `new` order younger than the owner-tuned
+  // cancel window (default 5 minutes) stays hidden (the customer may still
+  // self-cancel). Cancelled orders are never hidden — the owner sees the
+  // cancellation at once. The window is read from the saved menu (KV) like
+  // the other routes, with the constant as fallback.
   const nowMs = Date.now();
+  let graceMs = ORDER_GRACE_MS;
+  try {
+    const kv = env.MENU_KV || null;
+    const menu = kv ? await kv.get('menu', { type: 'json', cacheTtl: 60 }) : null;
+    graceMs = cancelWindowMsFromMenu(menu);
+  } catch {
+    graceMs = ORDER_GRACE_MS;
+  }
   try {
     if (Array.isArray(orders)) {
-      orders = orders.filter((o) => !isOrderInGrace(o && o.status, o && o.createdAt, nowMs));
+      orders = orders.filter((o) => !isOrderInGrace(o && o.status, o && o.createdAt, nowMs, graceMs));
     }
   } catch {}
 
@@ -78,7 +88,7 @@ export async function onRequest(context) {
   // not "cron dead" (the heartbeat banner covers the dead case).
   let graceHidden = 0;
   try {
-    graceHidden = await countGraceHiddenOrders(db, new Date(nowMs - ORDER_GRACE_MS).toISOString());
+    graceHidden = await countGraceHiddenOrders(db, new Date(nowMs - graceMs).toISOString());
   } catch {
     graceHidden = 0;
   }

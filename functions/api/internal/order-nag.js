@@ -32,6 +32,7 @@ import {
   ORDER_NAG_SERVICE,
   RECEIPT_CHECK_BATCH,
   RECEIPT_CHECK_MAX_AGE_MS,
+  cancelWindowMsFromMenu,
   claimOrderRelease,
   claimReceiptCheck,
   completeOrderByIdIfActive,
@@ -143,6 +144,17 @@ export async function onRequest(context) {
   let released = 0;
   let receiptChecked = 0;
   let autoCompleted = 0;
+  // Owner-tunable grace/cancel window (settings.ordering.cancelWindowMin,
+  // 1..30 min, default 5): one best-effort menu KV read up front so the
+  // nag + release cutoffs below honor it; any failure falls back to the
+  // 5-minute constant (legacy behavior). The cached doc is reused by
+  // needMenuText, so notification passes still cost at most one KV read.
+  let graceMs = ORDER_GRACE_MS;
+  try {
+    graceMs = cancelWindowMsFromMenu(await loadMenu());
+  } catch {
+    graceMs = ORDER_GRACE_MS;
+  }
   // Outer guard: anything escaping the per-sweep swallowing try/catches
   // (auth already passed) records the error heartbeat, then returns the
   // normal shape — heartbeat bookkeeping must never 500 the cron.
@@ -156,7 +168,7 @@ export async function onRequest(context) {
     // nagged + released in the same pass again.
     const nowMs = Date.now();
     const nagFrom = new Date(nowMs - 30 * 60 * 1000).toISOString();
-    const nagTo = new Date(nowMs - ORDER_GRACE_MS).toISOString();
+    const nagTo = new Date(nowMs - graceMs).toISOString();
     if (await hasUnackedOrders(db, nagTo, nagFrom)) {
       await needMenuText();
       const out = await nagUnackedOrders(db, {
@@ -164,6 +176,7 @@ export async function onRequest(context) {
         currency: cur,
         adminUrl: origin ? `${origin}/admin` : '',
         subject: origin || undefined,
+        graceMs,
       });
       nagged = out.nagged;
     }
@@ -175,7 +188,7 @@ export async function onRequest(context) {
   // notifies.
   try {
     const nowMs = Date.now();
-    const releaseCutoff = new Date(nowMs - ORDER_GRACE_MS).toISOString();
+    const releaseCutoff = new Date(nowMs - graceMs).toISOString();
     const recentCutoff = new Date(nowMs - RELEASE_MAX_AGE_MS).toISOString();
     const due = await findDueForRelease(db, releaseCutoff, recentCutoff, RELEASE_BATCH);
     if (due.length > 0) await needMenuText();

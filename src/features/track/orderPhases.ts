@@ -15,15 +15,67 @@
  *     the server-computed `receivableAt` (not here).
  */
 
-/** Customer self-cancel window: a `new` order may still be cancelled. */
+/** Customer self-cancel window: a `new` order may still be cancelled.
+ *  Kept as the default for backwards compatibility (old callers + old
+ *  menus without the tunable); the admin setting
+ *  `settings.ordering.cancelWindowMin` (1..30 min) overrides it wherever
+ *  the menu is available. */
 export const CUSTOMER_CANCEL_WINDOW_MS = 5 * 60 * 1000;
+
+/** Default cancel window in whole minutes (mirrors the setting default). */
+export const CANCEL_WINDOW_MIN_DEFAULT = 5;
+
+/**
+ * Coerce a raw `cancelWindowMin` (minutes) to the allowed 1..30 range.
+ * Zero/blank/non-finite/out-of-range in old docs falls back to 5 so
+ * legacy menus behave exactly as today.
+ */
+export function cancelWindowMinOrDefault(v: unknown, fallback = CANCEL_WINDOW_MIN_DEFAULT): number {
+  const fb = Number.isFinite(fallback) ? (fallback as number) : CANCEL_WINDOW_MIN_DEFAULT;
+  return typeof v === 'number' && Number.isFinite(v) && v >= 1 && v <= 30 ? Math.round(v) : fb;
+}
+
+/**
+ * Resolve the cancel window (ms) from a menu ordering block.
+ * Never throws — garbage input yields the 5-minute default.
+ */
+export function cancelWindowMsFromOrdering(ordering: unknown): number {
+  try {
+    const o = (ordering && typeof ordering === 'object' ? ordering : {}) as { cancelWindowMin?: unknown };
+    return cancelWindowMinOrDefault(o.cancelWindowMin) * 60000;
+  } catch {
+    return CUSTOMER_CANCEL_WINDOW_MS;
+  }
+}
+
+/** Resolve the cancel window (ms) from the raw `/api/menu` doc shape. */
+export function cancelWindowMsFromMenu(menu: unknown): number {
+  try {
+    const m = (menu && typeof menu === 'object' ? menu : {}) as {
+      settings?: { ordering?: unknown };
+    };
+    return cancelWindowMsFromOrdering(m.settings?.ordering);
+  } catch {
+    return CUSTOMER_CANCEL_WINDOW_MS;
+  }
+}
+
+/** Resolve a finite window (ms), falling back to the 5-minute default. */
+function windowOrDefault(windowMs: unknown): number {
+  return typeof windowMs === 'number' && Number.isFinite(windowMs) && windowMs > 0
+    ? windowMs
+    : CUSTOMER_CANCEL_WINDOW_MS;
+}
 
 /** Absolute instant (epoch ms) the cancel window ends, or null when the
  *  creation time is missing/unparseable (caller falls back to phase 2). */
-export function cancelWindowEndsAt(createdAt: string | null | undefined): number | null {
+export function cancelWindowEndsAt(
+  createdAt: string | null | undefined,
+  windowMs: number = CUSTOMER_CANCEL_WINDOW_MS,
+): number | null {
   if (!createdAt) return null;
   const t = Date.parse(createdAt);
-  return Number.isNaN(t) ? null : t + CUSTOMER_CANCEL_WINDOW_MS;
+  return Number.isNaN(t) ? null : t + windowOrDefault(windowMs);
 }
 
 /**
@@ -35,8 +87,9 @@ export function cancelWindowEndsAt(createdAt: string | null | undefined): number
 export function cancelWindowRemainingMs(
   createdAt: string | null | undefined,
   nowMs: number,
+  windowMs: number = CUSTOMER_CANCEL_WINDOW_MS,
 ): number | null {
-  const end = cancelWindowEndsAt(createdAt);
+  const end = cancelWindowEndsAt(createdAt, windowMs);
   if (end === null) return null;
   const now = Number.isFinite(nowMs) ? nowMs : Date.now();
   return end - now;
@@ -48,8 +101,9 @@ export function isInCancelWindow(
   status: string,
   createdAt: string | null | undefined,
   nowMs: number,
+  windowMs: number = CUSTOMER_CANCEL_WINDOW_MS,
 ): boolean {
   if (status !== 'new') return false;
-  const remaining = cancelWindowRemainingMs(createdAt, nowMs);
+  const remaining = cancelWindowRemainingMs(createdAt, nowMs, windowMs);
   return remaining !== null && remaining > 0;
 }

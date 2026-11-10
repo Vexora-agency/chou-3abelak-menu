@@ -130,5 +130,19 @@ const baseMenu = (settings: unknown): MenuData => ({
   ok(st.label.ar.includes('9:00 ص') && st.label.ar.includes('10:00 م'), 'open pill ar follows edited hours');
 }
 
+// 8. Cancel window default, keeps and clamps (1..30 min, zero/blank = 5).
+{
+  const out = ensureSettingsBlocks(baseMenu({ ordering: {} }));
+  ok((out.settings.ordering as { cancelWindowMin?: unknown }).cancelWindowMin === 5, 'cancelWindowMin defaults to 5');
+  const kept = ensureSettingsBlocks(baseMenu({ ordering: { cancelWindowMin: 10 } }));
+  ok((kept.settings.ordering as { cancelWindowMin?: unknown }).cancelWindowMin === 10, 'cancelWindowMin keeps tuned value');
+  for (const bad of [0, -3, 31, 99, NaN, 'ten', null, undefined]) {
+    const c = ensureSettingsBlocks(baseMenu({ ordering: { cancelWindowMin: bad } }));
+    ok((c.settings.ordering as { cancelWindowMin?: unknown }).cancelWindowMin === 5, `cancelWindowMin ${String(bad)} falls back to 5`);
+  }
+  const frac = ensureSettingsBlocks(baseMenu({ ordering: { cancelWindowMin: 7.6 } }));
+  ok((frac.settings.ordering as { cancelWindowMin?: unknown }).cancelWindowMin === 8, 'cancelWindowMin rounds to whole minutes');
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

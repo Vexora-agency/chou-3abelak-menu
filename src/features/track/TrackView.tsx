@@ -7,7 +7,7 @@ import { etaRange, formatEtaRangeWithDay } from '@/src/utils/etaFormat';
 import { ReceivedButton } from './components/ReceivedButton';
 import { CancelOrderButton } from './components/CancelOrderButton';
 import { InstallAppCard } from './components/InstallAppCard';
-import { cancelWindowRemainingMs } from './orderPhases';
+import { cancelWindowMsFromMenu, cancelWindowRemainingMs } from './orderPhases';
 
 interface TrackViewProps {
   number: number;
@@ -83,6 +83,10 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   // the date and the time can never disagree with the confirmation email
   // (which formats in the same zone). Falls back to the device zone.
   const [storeTz, setStoreTz] = useState<string | undefined>(undefined);
+  // Owner-tuned customer-cancel window (ms): read from the menu doc
+  // (settings.ordering.cancelWindowMin, 1..30 min), default 5 min so old
+  // menus behave exactly as today.
+  const [cancelWindowMs, setCancelWindowMs] = useState<number>(() => cancelWindowMsFromMenu(null));
   // Render clock: poll stamp refreshed on every 10 s fetch (network stays
   // exactly at 10 s). While a delivery lock is armed the DISPLAY clock
   // below takes over at 1 s so the countdown ticks every second with zero
@@ -131,7 +135,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
         const res = await fetch('/api/menu');
         if (!res.ok) return;
         const m = (await res.json()) as {
-          settings?: { name?: { en: string; ar: string }; currency?: { en: string; ar: string }; timezone?: string };
+          settings?: { name?: { en: string; ar: string }; currency?: { en: string; ar: string }; timezone?: string; ordering?: unknown };
         };
         if (stop) return;
         const nm = m?.settings?.name;
@@ -140,6 +144,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
         if (cur) setCurrency(lang === 'ar' ? cur.ar || cur.en : cur.en || cur.ar);
         const tz = m?.settings?.timezone;
         if (typeof tz === 'string' && tz.trim()) setStoreTz(tz.trim());
+        setCancelWindowMs(cancelWindowMsFromMenu(m));
       } catch {}
     };
     void loadMenu();
@@ -199,7 +204,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   // wait with a live countdown; afterwards it shows the static "waiting"
   // line until the kitchen confirms.
   const cancelRemainingPollMs =
-    data?.status === 'new' ? cancelWindowRemainingMs(data.createdAt ?? null, nowMs) : null;
+    data?.status === 'new' ? cancelWindowRemainingMs(data.createdAt ?? null, nowMs, cancelWindowMs) : null;
   const cancelArmed = cancelRemainingPollMs !== null && cancelRemainingPollMs > 0;
   // Delivery lock (smart-ETA contract): while confirmed/ready AND the
   // server's `receivableAt` is still in the future, the button stays
@@ -230,7 +235,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   const lockedRemainingMs = deliveryLocked ? Math.max(0, receivableMs - displayNowMs) : 0;
   // Recompute the cancel countdown on the display clock so it ticks live.
   const cancelRemainingMs =
-    data?.status === 'new' ? cancelWindowRemainingMs(data.createdAt ?? null, displayNowMs) : null;
+    data?.status === 'new' ? cancelWindowRemainingMs(data.createdAt ?? null, displayNowMs, cancelWindowMs) : null;
   const inCancelWindow = cancelRemainingMs !== null && cancelRemainingMs > 0;
   // ETA banner range: etaAt ±20% (min ±5 min each side), computed at render
   // so the poll keeps it fresh (live while locked). Day-aware ("اليوم /
@@ -387,6 +392,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                   status={data.status}
                   lang={lang}
                   darkMode
+                  cancelWindowMs={cancelWindowMs}
                   onCancelled={() => setData((d) => (d ? { ...d, status: 'cancelled' } : d))}
                 />
               </div>

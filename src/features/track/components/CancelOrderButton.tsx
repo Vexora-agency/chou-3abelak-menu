@@ -10,14 +10,17 @@ interface CancelOrderButtonProps {
   status: string;
   lang: 'en' | 'ar';
   darkMode?: boolean;
+  /** Owner-tuned cancel window (ms); absent = 5-minute default. */
+  cancelWindowMs?: number;
   onCancelled?: () => void;
 }
 
-function remainingMs(createdAt: string | null, nowMs: number): number {
-  if (!createdAt) return CUSTOMER_CANCEL_WINDOW_MS;
+function remainingMs(createdAt: string | null, nowMs: number, windowMs: number = CUSTOMER_CANCEL_WINDOW_MS): number {
+  const w = Number.isFinite(windowMs) && windowMs > 0 ? windowMs : CUSTOMER_CANCEL_WINDOW_MS;
+  if (!createdAt) return w;
   const t = Date.parse(createdAt);
-  if (Number.isNaN(t)) return CUSTOMER_CANCEL_WINDOW_MS;
-  return t + CUSTOMER_CANCEL_WINDOW_MS - nowMs;
+  if (Number.isNaN(t)) return w;
+  return t + w - nowMs;
 }
 
 function fmtCountdown(ms: number): string {
@@ -39,7 +42,7 @@ function fmtCountdown(ms: number): string {
  * Escape), so a stray tap can never leave a live "confirm" lying around.
  */
 export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
-  number, token, createdAt, status, lang, darkMode = true, onCancelled,
+  number, token, createdAt, status, lang, darkMode = true, cancelWindowMs = CUSTOMER_CANCEL_WINDOW_MS, onCancelled,
 }) => {
   const isAr = lang === 'ar';
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -75,9 +78,9 @@ export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
   }, [armed]);
 
   if (done || status !== 'new') return null;
-  const left = remainingMs(createdAt, nowMs);
+  const left = remainingMs(createdAt, nowMs, cancelWindowMs);
   if (left <= 0) return null;
-  const progress = Math.max(0, Math.min(1, left / CUSTOMER_CANCEL_WINDOW_MS));
+  const progress = Math.max(0, Math.min(1, left / (Number.isFinite(cancelWindowMs) && cancelWindowMs > 0 ? cancelWindowMs : CUSTOMER_CANCEL_WINDOW_MS)));
   const urgent = left <= 30 * 1000;
 
   const arm = () => {

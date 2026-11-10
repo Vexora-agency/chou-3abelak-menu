@@ -133,6 +133,48 @@ export async function findStaleActiveForAutoComplete(db, cutoffIso, limit) {
 export const ORDER_GRACE_MS = 5 * 60 * 1000;
 export const CUSTOMER_CANCEL_WINDOW_MS = ORDER_GRACE_MS;
 
+/** Default customer self-cancel / kitchen grace window (whole minutes). */
+export const CANCEL_WINDOW_MIN_DEFAULT = 5;
+/** Allowed range for the owner-tunable window (minutes). */
+export const CANCEL_WINDOW_MIN = 1;
+export const CANCEL_WINDOW_MAX = 30;
+
+/**
+ * Coerce a raw `cancelWindowMin` (minutes) to the allowed 1..30 range.
+ * Zero/blank/non-finite/out-of-range in old docs falls back to 5 so
+ * legacy menus behave exactly as today.
+ */
+export function cancelWindowMinOrDefault(v, fallback = CANCEL_WINDOW_MIN_DEFAULT) {
+  const fb = Number.isFinite(fallback) ? fallback : CANCEL_WINDOW_MIN_DEFAULT;
+  return typeof v === 'number' && Number.isFinite(v) && v >= CANCEL_WINDOW_MIN && v <= CANCEL_WINDOW_MAX
+    ? Math.round(v)
+    : fb;
+}
+
+/**
+ * Resolve the cancel/grace window (ms) from a menu doc or an ordering
+ * block. Reads the owner-tuned `cancelWindowMin` (1..30 min) and falls
+ * back to ORDER_GRACE_MS when absent — never throws (fail open).
+ */
+export function cancelWindowMsFromOrdering(ordering) {
+  try {
+    const o = ordering && typeof ordering === 'object' ? ordering : {};
+    return cancelWindowMinOrDefault(o.cancelWindowMin, CANCEL_WINDOW_MIN_DEFAULT) * 60000;
+  } catch {
+    return ORDER_GRACE_MS;
+  }
+}
+
+export function cancelWindowMsFromMenu(menu) {
+  try {
+    const settings = menu && typeof menu === 'object' ? menu.settings : null;
+    const ordering = settings && typeof settings === 'object' ? settings.ordering : null;
+    return cancelWindowMsFromOrdering(ordering);
+  } catch {
+    return ORDER_GRACE_MS;
+  }
+}
+
 /**
  * Batch track lookup: one D1 round-trip for up to N numbers.
  * Includes the confirm/unlock columns the batch route needs (`type` for
@@ -268,9 +310,10 @@ export async function claimReceiptCheck(db, id, nowIso) {
  * (or the window lapses) the row is untouched and the caller gets `false`
  * (answer: "too late, call us"). Returns true only on a real flip.
  */
-export async function cancelOrderByTrackToken(db, number, token, nowMs) {
+export async function cancelOrderByTrackToken(db, number, token, nowMs, windowMs) {
   const now = Number.isFinite(nowMs) ? nowMs : Date.now();
-  const cutoffIso = new Date(now - CUSTOMER_CANCEL_WINDOW_MS).toISOString();
+  const w = Number.isFinite(windowMs) && windowMs > 0 ? windowMs : CUSTOMER_CANCEL_WINDOW_MS;
+  const cutoffIso = new Date(now - w).toISOString();
   const nowIso = new Date(now).toISOString();
   const res = await db
     .prepare(

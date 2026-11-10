@@ -262,12 +262,13 @@ export async function notifyNewOrder(db, { storeName, orderNumber, total, curren
  * Ack/cancel/completion flips the status and the nagging stops by itself;
  * past-30-min orders age out (the kitchen missed them — no infinite nagging).
  */
-export async function nagUnackedOrders(db, { storeName, currency, adminUrl, subject }) {
+export async function nagUnackedOrders(db, { storeName, currency, adminUrl, subject, graceMs } = {}) {
   let rows = [];
   try {
     const now = Date.now();
+    const g = Number.isFinite(graceMs) && graceMs > 0 ? graceMs : ORDER_GRACE_MS;
     const from = new Date(now - 30 * 60 * 1000).toISOString();
-    const to = new Date(now - ORDER_GRACE_MS).toISOString();
+    const to = new Date(now - g).toISOString();
     const res = await db
       .prepare(
         `SELECT number, total FROM orders WHERE ${RELEASED_UNACKED_PREDICATE} AND created_at >= ?1 AND created_at <= ?2 ORDER BY created_at ASC LIMIT 20`

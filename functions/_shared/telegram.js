@@ -1132,6 +1132,10 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
       await answer('This order can no longer be updated.');
       return noop('bad_transition');
     }
+    // Instant tap feedback: dismiss the spinner NOW, before the D1/KV
+    // reads + write + message edits. The result toast (banner / error
+    // below) answers the same tap again — Telegram shows the last one.
+    await answer();
     let updated = null;
     try {
       // Confirm stamping inputs (migration 0022): piggyback the ALREADY-
@@ -1142,16 +1146,22 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
       if (parsed.status === 'confirmed') {
         confirmOpts = {};
         try {
-          let menu = null;
-          try {
-            const kv = env && env.MENU_KV ? env.MENU_KV : null;
-            menu = kv ? await kv.get('menu', { type: 'json', cacheTtl: 300 }) : null;
-          } catch {
-            menu = null;
-          }
+          // Independent reads — run together, not one after the other.
+          // Any failure degrades to {} exactly as before (never blocks).
+          const [menu, queueLen] = await Promise.all([
+            (async () => {
+              try {
+                const kv = env && env.MENU_KV ? env.MENU_KV : null;
+                return kv ? await kv.get('menu', { type: 'json', cacheTtl: 300 }) : null;
+              } catch {
+                return null;
+              }
+            })(),
+            countActiveKitchenOrders(db),
+          ]);
           confirmOpts.settings = orderingEtaOrDefaults(menu && menu.settings ? menu.settings.ordering : null);
           confirmOpts.distanceKm = orderDistanceKm(order, menu);
-          confirmOpts.queueLen = await countActiveKitchenOrders(db);
+          confirmOpts.queueLen = queueLen;
         } catch {
           confirmOpts = {};
         }
@@ -1226,26 +1236,36 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
       parsed.status === 'confirmed'
         ? buildOrderKeyboard('', parsed.orderId, 'confirmed')
         : { inline_keyboard: [] };
+    // The text edit already carries the next keyboard, so in the happy path
+    // the buttons swap in the SAME round-trip — no second call. The markup
+    // edit runs ONLY when the text edit failed, as lost-update insurance
+    // (repeat taps self-heal via the path above).
+    let markupFallback = null;
     try {
       const base = typeof rebuilt === 'string' && rebuilt
         ? rebuilt
         : (typeof messageText === 'string' && messageText ? messageText : `طلب #${order.number ?? ''}`);
       const stamped = `${base}\n\n${banner}`.slice(0, 4000);
-      await checkedTelegramEdit(token, env, 'editMessageText', {
+      const textOk = await checkedTelegramEdit(token, env, 'editMessageText', {
         chat_id: chatId,
         message_id: messageId,
         text: stamped,
         parse_mode: 'HTML',
         reply_markup: nextKeyboard,
       }, 'telegram_edit_text');
+      if (!textOk) {
+        markupFallback = checkedTelegramEdit(token, env, 'editMessageReplyMarkup', {
+          chat_id: chatId,
+          message_id: messageId,
+          reply_markup: nextKeyboard,
+        }, 'telegram_edit_markup');
+      }
     } catch {}
-    try {
-      await checkedTelegramEdit(token, env, 'editMessageReplyMarkup', {
-        chat_id: chatId,
-        message_id: messageId,
-        reply_markup: nextKeyboard,
-      }, 'telegram_edit_markup');
-    } catch {}
+    if (markupFallback) {
+      try {
+        await markupFallback;
+      } catch {}
+    }
     // Owner -> customer loop (same as the dashboard PATCH path): best-effort.
     try {
       await notifyOrderStatus(db, {

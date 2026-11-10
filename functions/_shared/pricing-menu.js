@@ -340,6 +340,9 @@ export function normalizeMenu(menu) {
   const defaultDeliveryMinutes = etaMinutesOr(ord.defaultDeliveryMinutes, 20);
   const receiveDelayDeliveryMin = receiveDelayOr(ord.receiveDelayDeliveryMin, 30);
   const receiveDelayPickupMin = receiveDelayOr(ord.receiveDelayPickupMin, 15);
+  const cancelWindowMin = (typeof ord.cancelWindowMin === 'number' && Number.isFinite(ord.cancelWindowMin) && ord.cancelWindowMin >= 1 && ord.cancelWindowMin <= 30)
+    ? Math.round(ord.cancelWindowMin)
+    : 5;
   const bRaw = settings.badges && typeof settings.badges === 'object' ? settings.badges : {};
   const intOr = (v, fb, min, max) => (Number.isInteger(v) && v >= min && v <= max ? v : fb);
   // Customer email notifications mirror (validate-settings.js): never throws,
@@ -367,6 +370,7 @@ export function normalizeMenu(menu) {
       defaultDeliveryMinutes,
       receiveDelayDeliveryMin,
       receiveDelayPickupMin,
+      cancelWindowMin,
       deliveryZones: normalizeDeliveryZones(ord.deliveryZones),
     },
     badges: {

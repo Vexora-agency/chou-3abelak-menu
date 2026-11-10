@@ -285,6 +285,12 @@ function validateSettings(s, errors) {
   const defaultDeliveryMinutes = etaMinutesOr(ord.defaultDeliveryMinutes, 20);
   const receiveDelayDeliveryMin = receiveDelayOr(ord.receiveDelayDeliveryMin, 30);
   const receiveDelayPickupMin = receiveDelayOr(ord.receiveDelayPickupMin, 15);
+  // Customer self-cancel / kitchen grace window (1..30 min, default 5).
+  // Zero/blank/out-of-range in old docs falls back to 5 (legacy behavior);
+  // the value is validated, never rejected with an error.
+  const cancelWindowMin = (typeof ord.cancelWindowMin === 'number' && Number.isFinite(ord.cancelWindowMin) && ord.cancelWindowMin >= 1 && ord.cancelWindowMin <= 30)
+    ? Math.round(ord.cancelWindowMin)
+    : 5;
 
   // Announcement banner (plain text only, optional scheduling).
   const ann = s.announcement && typeof s.announcement === 'object' ? s.announcement : {};
@@ -460,6 +466,7 @@ function validateSettings(s, errors) {
       defaultDeliveryMinutes,
       receiveDelayDeliveryMin,
       receiveDelayPickupMin,
+      cancelWindowMin,
     },
     announcement: {
       enabled: announcementEnabled,

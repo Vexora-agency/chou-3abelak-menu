@@ -15,6 +15,7 @@
 import { jsonNoStore, readJsonBody } from '../../_shared/session.js';
 import {
   cancelOrderByTrackToken,
+  cancelWindowMsFromMenu,
   findOrderByNumber,
 } from '../../_shared/repositories/orders.repo.js';
 import { notifyOwnerCustomerCancelled, syncOrderStatusToTelegram } from '../../_shared/telegram.js';
@@ -54,7 +55,19 @@ export async function onRequest(context) {
 
   let flipped = false;
   try {
-    flipped = await cancelOrderByTrackToken(db, number, token, Date.now());
+    // Owner-tunable cancel window (settings.ordering.cancelWindowMin,
+    // 1..30 min): read the saved menu via KV like the other track routes,
+    // falling back to the 5-minute constant on any failure (fail open =
+    // legacy behavior, never trap a cancel behind a KV blip).
+    let windowMs;
+    try {
+      const kv = env.MENU_KV || null;
+      const menu = kv ? await kv.get('menu', { type: 'json', cacheTtl: 300 }) : null;
+      windowMs = cancelWindowMsFromMenu(menu);
+    } catch {
+      windowMs = undefined;
+    }
+    flipped = await cancelOrderByTrackToken(db, number, token, Date.now(), windowMs);
   } catch {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }

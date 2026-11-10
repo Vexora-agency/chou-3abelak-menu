@@ -2,6 +2,7 @@ import { MenuData } from '@/src/types/menu';
 import {
   autoplayIntervalOrDefault,
   bilingualBlock,
+  cancelWindowOrDefault,
   clockTimeOrDefault,
   courierSpeedOrDefault,
   DEFAULT_ABOUT,
@@ -113,6 +114,7 @@ export function ensureSettingsBlocks(menu: MenuData): MenuData {
         defaultDeliveryMinutes: etaMinutesOrDefault((o as { defaultDeliveryMinutes?: unknown }).defaultDeliveryMinutes, 20),
         receiveDelayDeliveryMin: receiveDelayOrDefault((o as { receiveDelayDeliveryMin?: unknown }).receiveDelayDeliveryMin, 30),
         receiveDelayPickupMin: receiveDelayOrDefault((o as { receiveDelayPickupMin?: unknown }).receiveDelayPickupMin, 15),
+        cancelWindowMin: cancelWindowOrDefault((o as { cancelWindowMin?: unknown }).cancelWindowMin, 5),
         deliveryZones: normalizeDeliveryZones((o as { deliveryZones?: unknown }).deliveryZones),
       },
       notifications: {

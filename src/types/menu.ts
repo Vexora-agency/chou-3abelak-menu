@@ -211,6 +211,10 @@ export interface MenuSettings {  name: { en: string; ar: string };
     receiveDelayDeliveryMin: number;
     /** Receive-delay window for pickup orders (smart ETA). */
     receiveDelayPickupMin: number;
+    /** Customer self-cancel / kitchen grace window, whole minutes 1..30
+     *  (default 5). Missing/out-of-range/zero in old docs falls back to 5
+     *  so legacy menus behave exactly as today. */
+    cancelWindowMin?: number;
     /** Delivery area: 'all' serves everywhere (legacy behavior); 'selected'
      *  restricts delivery pins to the listed countries, each either fully
      *  open ('ALL' subdivisions) or narrowed to explicit subdivision codes.

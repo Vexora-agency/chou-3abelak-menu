@@ -3,6 +3,9 @@
 import {
   CUSTOMER_CANCEL_WINDOW_MS,
   cancelWindowEndsAt,
+  cancelWindowMinOrDefault,
+  cancelWindowMsFromMenu,
+  cancelWindowMsFromOrdering,
   cancelWindowRemainingMs,
   isInCancelWindow,
 } from '../src/features/track/orderPhases.ts';
@@ -55,6 +58,39 @@ ok('cancel window is 5 min', CUSTOMER_CANCEL_WINDOW_MS === 5 * 60 * 1000);
 {
   const edge = iso(T0 - 5 * 60 * 1000);
   ok(isInCancelWindow('new', edge, T0) === false, 'exact deadline counts as elapsed');
+}
+
+// Owner-tunable window: helpers accept the window as a parameter, with the
+// 5-minute constant as the default for backwards compatibility.
+{
+  const tenMin = 10 * 60 * 1000;
+  const fresh = iso(T0 - 7 * 60 * 1000); // 7 min old: outside 5, inside 10
+  ok(isInCancelWindow('new', fresh, T0) === false, 'default window still 5 min');
+  ok(isInCancelWindow('new', fresh, T0, tenMin) === true, 'custom 10 min window keeps it in phase 1');
+  ok(cancelWindowEndsAt(fresh, tenMin) === T0 - 7 * 60 * 1000 + tenMin, 'endsAt honors the custom window');
+  ok(cancelWindowRemainingMs(fresh, T0, tenMin) === 3 * 60 * 1000, 'remaining honors the custom window');
+  const stale = iso(T0 - 11 * 60 * 1000);
+  ok(isInCancelWindow('new', stale, T0, tenMin) === false, 'custom window still expires');
+}
+
+// Clamp + fallback: 1..30 min whole minutes, zero/blank/garbage = 5.
+{
+  ok(cancelWindowMinOrDefault(undefined) === 5, 'missing window falls back to 5');
+  ok(cancelWindowMinOrDefault(0) === 5, 'zero window falls back to 5');
+  ok(cancelWindowMinOrDefault(null) === 5, 'null window falls back to 5');
+  ok(cancelWindowMinOrDefault('ten') === 5, 'non-number window falls back to 5');
+  ok(cancelWindowMinOrDefault(-3) === 5, 'negative window falls back to 5');
+  ok(cancelWindowMinOrDefault(31) === 5, 'window above 30 falls back to 5');
+  ok(cancelWindowMinOrDefault(1) === 1, 'window keeps lower bound 1');
+  ok(cancelWindowMinOrDefault(30) === 30, 'window keeps upper bound 30');
+  ok(cancelWindowMinOrDefault(10) === 10, 'window keeps tuned value');
+  ok(cancelWindowMinOrDefault(7.6) === 8, 'window rounds to whole minutes');
+  ok(cancelWindowMsFromOrdering({ cancelWindowMin: 10 }) === 10 * 60 * 1000, 'ordering block resolves to ms');
+  ok(cancelWindowMsFromOrdering(null) === 5 * 60 * 1000, 'garbage ordering falls back to 5 min');
+  ok(cancelWindowMsFromOrdering({}) === 5 * 60 * 1000, 'missing key falls back to 5 min');
+  ok(cancelWindowMsFromMenu({ settings: { ordering: { cancelWindowMin: 10 } } }) === 10 * 60 * 1000, 'menu doc resolves to ms');
+  ok(cancelWindowMsFromMenu(null) === 5 * 60 * 1000, 'missing menu falls back to 5 min');
+  ok(cancelWindowMsFromMenu({ settings: {} }) === 5 * 60 * 1000, 'menu without ordering falls back to 5 min');
 }
 
 console.log(`track-phases: ${pass} passed, ${fail} failed`);

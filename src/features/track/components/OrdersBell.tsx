@@ -19,7 +19,7 @@ import { CancelOrderButton } from './CancelOrderButton';
 import { useNow } from '@/src/hooks/useNow';
 import { formatMMSS } from '@/src/utils/countdown';
 import { etaRange, formatEtaRangeWithDay } from '@/src/utils/etaFormat';
-import { cancelWindowRemainingMs } from '../orderPhases';
+import { cancelWindowMsFromMenu, cancelWindowRemainingMs } from '../orderPhases';
 import { publicPostRaw } from '@/src/lib/api-client';
 
 /** Event-gate channel shared by this bell's interval + ambient refreshes. */
@@ -79,9 +79,9 @@ function isReceivableLocked(o: BellOrder, nowMs: number): boolean {
  *  window gets a live 1 s countdown in the bell (shared orderPhases rule
  *  with the track page). Prefers the server clock, falls back to the
  *  shelf timestamp when the row hasn't been fetched yet. */
-function isInCancelCountdown(o: BellOrder, nowMs: number): boolean {
+function isInCancelCountdown(o: BellOrder, nowMs: number, windowMs?: number): boolean {
   if (o.status !== 'new') return false;
-  const remaining = cancelWindowRemainingMs(o.createdAt ?? o.at, nowMs);
+  const remaining = cancelWindowRemainingMs(o.createdAt ?? o.at, nowMs, windowMs);
   return remaining !== null && remaining > 0;
 }
 
@@ -198,6 +198,9 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // Menu currency for the compact totals (same /api/menu read as the chime).
   const [menuCurrency, setMenuCurrency] = useState<{ en: string; ar: string } | null>(null);
   const bellCurrency = menuCurrency ? (isAr ? menuCurrency.ar || menuCurrency.en : menuCurrency.en || menuCurrency.ar) : '';
+  // Owner-tuned customer-cancel window (ms): same /api/menu read,
+  // default 5 min so old menus behave exactly as today.
+  const [cancelWindowMs, setCancelWindowMs] = useState<number>(() => cancelWindowMsFromMenu(null));
   // Store zone: ETA day + clock share ONE zone with the confirmation email.
   const [storeTz, setStoreTz] = useState<string | undefined>(undefined);
 
@@ -209,7 +212,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
       try {
         const res = await fetch('/api/menu');
         if (!res.ok || stop) return;
-        const m = (await res.json()) as { settings?: { sounds?: { customer?: unknown }; currency?: { en?: unknown; ar?: unknown }; timezone?: unknown } };
+        const m = (await res.json()) as { settings?: { sounds?: { customer?: unknown }; currency?: { en?: unknown; ar?: unknown }; timezone?: unknown; ordering?: unknown } };
         const s = m?.settings?.sounds?.customer;
         if (!stop && typeof s === 'string' && s) setCustomerSound(s);
         const cc = m?.settings?.currency;
@@ -218,6 +221,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
         }
         const tz = m?.settings?.timezone;
         if (!stop && typeof tz === 'string' && tz.trim()) setStoreTz(tz.trim());
+        if (!stop) setCancelWindowMs(cancelWindowMsFromMenu(m));
       } catch {}
     };
     void load();
@@ -495,7 +499,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // fetching stays exactly at 60 s — only the display speeds up. Read
   // displayNowMs in render (never Date.now() inline — hooks purity rule).
   const anyLocked = orders.some((o) => isReceivableLocked(o, nowMs));
-  const anyCancelling = orders.some((o) => isInCancelCountdown(o, nowMs));
+  const anyCancelling = orders.some((o) => isInCancelCountdown(o, nowMs, cancelWindowMs));
   const anyLive = anyLocked || anyCancelling;
   const tickNowMs = useNow(anyLive, 1000);
   const displayNowMs = anyLive ? tickNowMs : nowMs;
@@ -647,7 +651,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                   // Per-order live values (display clock, never Date.now()):
                   // cancel-window countdown while the order is still `new`
                   // and inside its window; ETA range once confirmed.
-                  const cancelMs = o.status === 'new' ? cancelWindowRemainingMs(o.createdAt ?? o.at, displayNowMs) : null;
+                  const cancelMs = o.status === 'new' ? cancelWindowRemainingMs(o.createdAt ?? o.at, displayNowMs, cancelWindowMs) : null;
                   const inCancelWindow = cancelMs !== null && cancelMs > 0;
                   const locked = isReceivableLocked(o, displayNowMs);
                   const etaWin = (o.status === 'confirmed' || o.status === 'ready') && typeof o.etaAt === 'string' && o.etaAt
@@ -708,6 +712,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                           status={o.status}
                           lang={lang}
                           darkMode={darkMode}
+                          cancelWindowMs={cancelWindowMs}
                           onCancelled={() =>
                             setStates((prev) => (prev[o.n] ? { ...prev, [o.n]: { ...prev[o.n], status: 'cancelled' } } : prev))
                           }

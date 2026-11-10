@@ -13,6 +13,7 @@ import { normalizeDeliveryZones } from '@/src/utils/deliveryZones';
 import {
   autoplayIntervalOrDefault,
   bilingualBlock,
+  cancelWindowOrDefault,
   clockTimeOrDefault,
   courierSpeedOrDefault,
   etaMinutesOrDefault,
@@ -446,6 +447,7 @@ export function normalizeMenu<T>(menu: T): T {
       defaultDeliveryMinutes: etaMinutesOrDefault(ordRaw.defaultDeliveryMinutes, 20),
       receiveDelayDeliveryMin: receiveDelayOrDefault(ordRaw.receiveDelayDeliveryMin, 30),
       receiveDelayPickupMin: receiveDelayOrDefault(ordRaw.receiveDelayPickupMin, 15),
+      cancelWindowMin: cancelWindowOrDefault(ordRaw.cancelWindowMin, 5),
       deliveryZones: normalizeDeliveryZones((ordRaw as Record<string, unknown>).deliveryZones),
     },
     notifications: {

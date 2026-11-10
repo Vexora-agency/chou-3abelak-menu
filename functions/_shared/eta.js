@@ -6,7 +6,7 @@
  * ./pricing-menu.js). Field names are a cross-agent contract with the admin
  * UI — do NOT rename: prepMinutes, kitchenMinutesPerOrder, courierSpeedKmh,
  * roadFactor, defaultDeliveryMinutes, receiveDelayDeliveryMin,
- * receiveDelayPickupMin.
+ * receiveDelayPickupMin, cancelWindowMin.
  *
  * Works in Cloudflare Workers and Node (no imports). The coordinate parser
  * below is a plain-JS twin of parseMapUrlCoords() in
@@ -22,6 +22,7 @@ export const ETA_DEFAULTS = Object.freeze({
   defaultDeliveryMinutes: 20,
   receiveDelayDeliveryMin: 30,
   receiveDelayPickupMin: 15,
+  cancelWindowMin: 5,
 });
 
 /**
@@ -47,7 +48,8 @@ function clampNum(v, fb, min, max) {
 
 /**
  * Coerce an ordering block's ETA tunables with server-side range clamps
- * (minutes 0..180, speed 5..120, factor 1.0..2.0, delays 0..720).
+ * (minutes 0..180, speed 5..120, factor 1.0..2.0, delays 0..720,
+ * cancel window 1..30).
  * Missing/non-finite values fall back to ETA_DEFAULTS. Never throws —
  * null/garbage input yields pure defaults so unlock paths fail open.
  */
@@ -61,6 +63,7 @@ export function orderingEtaOrDefaults(ordering) {
     defaultDeliveryMinutes: clampNum(o.defaultDeliveryMinutes, ETA_DEFAULTS.defaultDeliveryMinutes, 0, 180),
     receiveDelayDeliveryMin: clampNum(o.receiveDelayDeliveryMin, ETA_DEFAULTS.receiveDelayDeliveryMin, 0, 720),
     receiveDelayPickupMin: clampNum(o.receiveDelayPickupMin, ETA_DEFAULTS.receiveDelayPickupMin, 0, 720),
+    cancelWindowMin: Math.round(clampNum(o.cancelWindowMin, ETA_DEFAULTS.cancelWindowMin, 1, 30)),
   };
 }
 

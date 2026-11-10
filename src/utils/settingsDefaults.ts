@@ -133,6 +133,13 @@ export function receiveDelayOrDefault(v: unknown, fallback: number): number {
   return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 720 ? Math.round(v) : fallback;
 }
 
+/** Customer self-cancel / kitchen grace window, whole minutes 1..30.
+ *  Zero/blank/out-of-range in old docs falls back to `fallback` (5), so
+ *  legacy menus behave exactly as today. */
+export function cancelWindowOrDefault(v: unknown, fallback = 5): number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 1 && v <= 30 ? Math.round(v) : fallback;
+}
+
 /** Featured-carousel interval seconds, 2..10, default 4. */
 export function autoplayIntervalOrDefault(v: unknown): number {
   return typeof v === 'number' && v >= 2 && v <= 10 ? Math.round(v) : 4;

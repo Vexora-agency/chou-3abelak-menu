@@ -217,6 +217,16 @@
   contain-intrinsic-size: auto 640px;
   padding-block-end: 14px;
 }
+/* Round cards deliberately overhang their cell: the badge sits 7px above
+   the card edge and the desktop hover lifts the card another 6px + 2.5%
+   scale. `content-visibility: auto` implies paint containment, which
+   clipped that overhang at the grid's top edge — the first row lost the
+   top of its badge and its rounded corners, and hovering cut deeper.
+   Opt this one grid out; the round showcase sits at the top of the menu,
+   so the skip-render win was negligible here anyway. */
+.menu-section-grid.menu-grid-round {
+  content-visibility: visible;
+}
 
 /* ---------- Round full-bleed showcase band ----------
    The 3-step surface stack the round cards sit on: page -> band -> card.

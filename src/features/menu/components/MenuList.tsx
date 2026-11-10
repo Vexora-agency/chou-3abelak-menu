@@ -356,7 +356,7 @@ export const MenuList: React.FC<MenuListProps> = ({
                 // Round sections are full-bleed (see sectionWrapClass below):
                 // dense compact columns use the whole viewport width.
                 : kind === 'round'
-                  ? 'grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 menu-section-grid'
+                  ? 'grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 menu-section-grid menu-grid-round'
                 // Single column under 360px: two 133px cards squeeze Arabic
                 // names + price + action at 320px — one readable column wins.
                 : 'grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5 menu-section-grid';

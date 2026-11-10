@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Copy, Check, Ban, Plus, Power, Trash2, LogOut, Loader2, Send } from 'lucide-react';
+import { Copy, Check, Ban, Plus, Power, Trash2, LogOut, Send } from 'lucide-react';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { readJson } from '@/src/utils/safeJson';
 import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
@@ -10,11 +10,23 @@ type InviteRole = 'client' | 'kitchen';
 
 const normRole = (r?: string | null): InviteRole => (r === 'kitchen' ? 'kitchen' : 'client');
 
+/** Invite lifetime picked at creation. `null` = open (no expiry); the
+ *  `durationDays` field is ignored by pre-duration servers (extra field)
+ *  and honored once server-side duration support lands — safe both ways. */
+type InviteDuration = 1 | 7 | 30 | null;
+
+const DURATION_OPTS: Array<{ key: string; value: InviteDuration; ar: string; en: string }> = [
+  { key: '1', value: 1, ar: '24 ساعة', en: '24 hours' },
+  { key: '7', value: 7, ar: '7 أيام', en: '7 days' },
+  { key: '30', value: 30, ar: '30 يوم', en: '30 days' },
+  { key: 'open', value: null, ar: 'مفتوحة', en: 'Open' },
+];
+
 interface InviteRow {
   id: string;
   username: string;
   createdAt: string;
-  expiresAt: string;
+  expiresAt?: string | null;
   status: 'pending' | 'used' | 'expired';
   role?: string;
 }
@@ -24,12 +36,7 @@ interface ClientRow {
   createdAt: string;
   disabled: boolean;
   role?: string;
-}
-
-interface DeliveryChatRow {
-  chatId: number;
-  label?: string | null;
-  linkedAt?: string | null;
+  expiresAt?: string | null;
 }
 
 interface AccessSectionProps {
@@ -47,10 +54,11 @@ interface AccessSectionProps {
 }
 
 /**
- * Owner access control: logins (disable/enable/delete) plus single-use
- * invite links (create/revoke). Owner-only by construction — the endpoints
- * 403 non-master sessions, and then this whole section hides itself (a
- * client login never sees it).
+ * Owner access control (client slice only — kitchen lives in
+ * TeamAccessSection): logins (disable/enable/delete) plus single-use
+ * invite links (create/revoke), plus the master kill switch. Owner-only
+ * by construction — the endpoints 403 non-master sessions, and then
+ * this whole section hides itself (a client login never sees it).
  *
  * Disable vs delete: disable keeps the account but locks it out NOW
  * (live sessions die at once); delete removes the row entirely and frees
@@ -62,30 +70,13 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
   const [rows, setRows] = useState<InviteRow[]>([]);
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [name, setName] = useState('');
-  const [inviteRole, setInviteRole] = useState<InviteRole>('client');
+  const [durationDays, setDurationDays] = useState<InviteDuration>(null);
   const [busy, setBusy] = useState(false);
   const [acting, setActing] = useState<string | null>(null);
   const [formErr, setFormErr] = useState('');
   const [fresh, setFresh] = useState<{ link: string; username: string; expiresAt: string; role: InviteRole } | null>(null);
   const [copied, setCopied] = useState(false);
   const [confirmKey, setConfirmKey] = useState<string | null>(null);
-  // Delivery-crew sharing (moved here from TelegramSection): invite link
-  // state lives apart from the web-invite flow so the two never clobber
-  // each other. Same bot, order copies + same Telegram buttons as the owner.
-  const [crewLink, setCrewLink] = useState<string | null>(null);
-  const [crewBusy, setCrewBusy] = useState<string | null>(null);
-  const [crewCopied, setCrewCopied] = useState(false);
-  const [crewChats, setCrewChats] = useState<DeliveryChatRow[]>([]);
-  const [crewMsg, setCrewMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
-
-  const refreshCrew = useCallback(async () => {
-    try {
-      const res = await adminFetch('/api/admin/telegram');
-      if (!res.ok) return;
-      const data = (await readJson(res)) as { deliveryChats?: DeliveryChatRow[] | null };
-      setCrewChats(Array.isArray(data?.deliveryChats) ? data.deliveryChats : []);
-    } catch {}
-  }, [adminFetch]);
 
   const refresh = useCallback(async () => {
     try {
@@ -109,8 +100,7 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
 
   useEffect(() => {
     void refresh();
-    void refreshCrew();
-  }, [refresh, refreshCrew]);
+  }, [refresh]);
 
   // Not the owner (or unreachable): this section does not exist here.
   if (allowed === null) return null;
@@ -130,13 +120,15 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
       const res = await adminFetch('/api/admin/invites/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // `role` is ignored by pre-role servers (extra field) and honored
-        // once server-side role support lands — safe both ways.
-        body: JSON.stringify({ username, role: inviteRole }),
+        // `role` is fixed to client here (kitchen lives in
+        // TeamAccessSection); `durationDays` is ignored by pre-duration
+        // servers (extra field) and honored once server-side duration
+        // support lands — safe both ways.
+        body: JSON.stringify({ username, role: 'client', durationDays }),
       });
       const data = (await readJson(res)) as { ok?: boolean; link?: string; username?: string; expiresAt?: string; role?: string; error?: string };
       if (res.ok && data && data.ok && data.link) {
-        setFresh({ link: data.link, username: data.username || username, expiresAt: data.expiresAt || '', role: normRole(data.role ?? inviteRole) });
+        setFresh({ link: data.link, username: data.username || username, expiresAt: data.expiresAt || '', role: 'client' });
         setName('');
         void refresh();
       } else if (data && data.error === 'exists') {
@@ -252,131 +244,25 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
         ? 'bg-green-500/10 border-green-500/30 text-green-400'
         : 'bg-neutral-800 border-neutral-700 text-neutral-500';
 
-  const roleLabel = (r?: string | null) =>
-    normRole(r) === 'kitchen' ? (isAr ? 'مطبخ' : 'Kitchen') : (isAr ? 'عميل' : 'Client');
-
-  const rolePill = (r?: string | null) =>
-    normRole(r) === 'kitchen'
-      ? 'bg-sky-500/10 border-sky-500/30 text-sky-400'
-      : 'bg-violet-500/10 border-violet-500/30 text-violet-300';
-
   /** Plain-https share targets (no new dependencies, per project policy). */
   const waShare = (link: string) => `https://wa.me/?text=${encodeURIComponent(link)}`;
   const tgShare = (link: string, text: string) =>
     `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
 
-  const copyText = async (text: string): Promise<boolean> => {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      try {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        ta.remove();
-        return true;
-      } catch {
-        return false;
-      }
-    }
-  };
-
-  const inviteCrew = async () => {
-    setCrewBusy('code');
-    setCrewCopied(false);
-    setCrewMsg(null);
-    try {
-      const res = await adminFetch('/api/admin/telegram', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delivery-code' }),
-      });
-      const data = (await readJson(res)) as { deepLink?: string | null };
-      if (!res.ok || !data?.deepLink) {
-        setCrewMsg({ kind: 'err', text: isAr ? 'تعذر إنشاء رابط الدليفري.' : 'Could not create the delivery link.' });
-      } else {
-        setCrewLink(data.deepLink);
-        setCrewMsg({ kind: 'ok', text: isAr
-          ? 'ابعت الرابط للدليفري — يفتحه ويضغط Start. الرابط صالح لعشر دقائق ولاستخدام واحد.'
-          : 'Send the link to the courier — they open it and press Start. Single-use, ten minutes.' });
-      }
-    } catch {
-      setCrewMsg({ kind: 'err', text: isAr ? 'تعذر إنشاء رابط الدليفري.' : 'Could not create the delivery link.' });
-    } finally {
-      setCrewBusy(null);
-    }
-  };
-
-  const copyCrewLink = async () => {
-    if (!crewLink) return;
-    if (await copyText(crewLink)) {
-      setCrewCopied(true);
-      window.setTimeout(() => setCrewCopied(false), 2000);
-    } else {
-      setCrewMsg({ kind: 'err', text: isAr ? 'تعذر النسخ — انسخ الرابط يدويًا.' : 'Copy failed — copy the link manually.' });
-    }
-  };
-
-  const doRemoveCrew = async (chatId: number) => {
-    setCrewBusy(`drop:${chatId}`);
-    try {
-      const res = await adminFetch('/api/admin/telegram', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delivery-remove', chatId }),
-      });
-      if (!res.ok) {
-        setCrewMsg({ kind: 'err', text: isAr ? 'تعذر إزالة الدليفري.' : 'Could not remove the courier.' });
-      } else {
-        setCrewMsg({ kind: 'ok', text: isAr ? 'تمت إزالة الدليفري — لن تصله طلبات جديدة.' : 'Courier removed — no more orders will reach them.' });
-        await refreshCrew();
-      }
-    } catch {
-      setCrewMsg({ kind: 'err', text: isAr ? 'تعذر إزالة الدليفري.' : 'Could not remove the courier.' });
-    } finally {
-      setCrewBusy(null);
-    }
-  };
-
-  const askRemoveCrew = (chatId: number) => {
-    const box = {
-      title: isAr ? 'إزالة الدليفري؟' : 'Remove courier?',
-      body: isAr
-        ? 'لن تصل نسخ الطلبات الجديدة لهذا الحساب بعد الآن.'
-        : 'New order copies will stop reaching this chat.',
-      confirmText: isAr ? 'إزالة' : 'Remove',
-      mode: 'confirm' as const,
-      action: () => void doRemoveCrew(chatId),
-    };
-    if (onConfirm) onConfirm(box);
-    else if (window.confirm(box.body)) void doRemoveCrew(chatId);
-  };
-
-  const formatLinkedAt = (iso: string | null | undefined): string | null => {
-    if (!iso) return null;
-    try {
-      const d = new Date(iso);
-      if (Number.isNaN(d.getTime())) return null;
-      return d.toLocaleString(isAr ? 'ar-u-nu-latn' : 'en-US', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
-    } catch {
-      return null;
-    }
+  /** Expiry chip text: dated when the response carries `expiresAt`, open otherwise. */
+  const expiryText = (iso?: string | null): string => {
+    const d = (iso || '').slice(0, 10);
+    if (!d) return isAr ? 'مفتوح' : 'Open';
+    return isAr ? `ينتهي في ${d}` : `Expires ${d}`;
   };
 
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
       <SettingsGroupHeader
-        title={isAr ? 'دخول العملاء والمطبخ' : 'Client & Kitchen Access'}
-        subtitle={inviteRole === 'kitchen'
-          ? (isAr
-            ? 'دعوة المطبخ: امسح الرابط أو اضغطه للدخول فورًا — بلا كلمة سر، والرابط يموت بعد أول استخدام. اختر الدور قبل الإنشاء. دخولك الرئيسي يعمل دائمًا على كل المواقع.'
-            : 'Kitchen invite: scan or tap the link to enter instantly — no password, and the link dies after first use. Pick the role before creating. Your master login always works everywhere.')
-          : (isAr
-            ? 'أنشئ رابط دعوة لمرة واحدة — الضيف يضع كلمة سره بنفسه. اختر الدور قبل الإنشاء. دخولك الرئيسي يعمل دائمًا على كل المواقع.'
-            : 'Mint a one-time invite link — the guest sets their own password. Pick the role before creating. Your master login always works everywhere.')}
+        title={isAr ? 'دخول العملاء' : 'Client Access'}
+        subtitle={isAr
+          ? 'أنشئ رابط دعوة لمرة واحدة — الضيف يضع كلمة سره بنفسه. اختر المدة قبل الإنشاء. دخولك الرئيسي يعمل دائمًا على كل المواقع.'
+          : 'Mint a one-time invite link — the guest sets their own password. Pick the duration before creating. Your master login always works everywhere.'}
         lang={lang}
         collapsed={collapsed}
         onToggle={() => onToggleCollapse?.()}
@@ -401,19 +287,19 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
           {busy ? '…' : isAr ? 'إنشاء رابط' : 'Create link'}
         </button>
       </form>
-      <fieldset className="flex items-center gap-4">
-        <legend className="sr-only">{isAr ? 'دور الدعوة' : 'Invite role'}</legend>
-        {(['client', 'kitchen'] as const).map((r) => (
-          <label key={r} className="flex items-center gap-1.5 text-xs font-bold text-neutral-300 cursor-pointer min-h-[44px]">
+      <fieldset className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <legend className="sr-only">{isAr ? 'مدة الدعوة' : 'Invite duration'}</legend>
+        {DURATION_OPTS.map((o) => (
+          <label key={o.key} className="flex items-center gap-1.5 text-xs font-bold text-neutral-300 cursor-pointer min-h-[44px]">
             <input
               type="radio"
-              name="invite-role"
-              value={r}
-              checked={inviteRole === r}
-              onChange={() => setInviteRole(r)}
+              name="invite-duration-client"
+              value={o.key}
+              checked={durationDays === o.value}
+              onChange={() => setDurationDays(o.value)}
               className="h-4 w-4 accent-[var(--primary)]"
             />
-            {r === 'client' ? (isAr ? 'عميل' : 'Client') : (isAr ? 'مطبخ' : 'Kitchen')}
+            {isAr ? o.ar : o.en}
           </label>
         ))}
       </fieldset>
@@ -426,8 +312,8 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
           <p className="text-[11px] font-bold text-[var(--primary)]">
             {isAr ? `رابط ${fresh.username} — يُعرض مرة واحدة، انسخه الآن` : `${fresh.username}'s link — shown once, copy it now`}
             {' '}
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${rolePill(fresh.role)}`}>
-              {roleLabel(fresh.role)}
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-violet-500/10 border-violet-500/30 text-violet-300">
+              {isAr ? 'عميل' : 'Client'}
             </span>
           </p>
           <div className="flex gap-2">
@@ -469,25 +355,21 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
             </a>
           </div>
           <p className="text-[10px] text-neutral-500">
-            {fresh.role === 'kitchen'
-              ? (isAr
-                ? <>دعوة مطبخ: امسح الرابط أو اضغطه للدخول فورًا — بلا كلمة سر، والرابط يموت بعد أول استخدام. صالح 72 ساعة (حتى <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>).</>
-                : <>Kitchen invite: scan or tap the link to enter instantly — no password, and the link dies after first use. Valid 72 hours (until <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>).</>)
-              : (isAr
-                ? <>صالح 72 ساعة (حتى <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>) — يُستخدم مرة واحدة ثم يموت.</>
-                : <>Valid 72 hours (until <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span>) — single-use, then dead.</>)}
+            {isAr
+              ? <>{fresh.expiresAt ? <>ينتهي في <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> — يُستخدم مرة واحدة ثم يموت.</> : <>مفتوح — بلا انتهاء، يُستخدم مرة واحدة ثم يموت.</>}</>
+              : <>{fresh.expiresAt ? <>Expires <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> — single-use, then dead.</> : <>Open — no expiry, single-use, then dead.</>}</>}
           </p>
         </div>
       ) : null}
 
-      {/* Live logins: disable locks out now (sessions die too), delete removes all. */}
+      {/* Live client logins: disable locks out now (sessions die too), delete removes all. */}
       <div>
         <h3 className={`text-[11px] font-extrabold text-neutral-400 mb-2 ${isAr ? '' : 'uppercase tracking-wider'}`}>
-          {isAr ? 'حسابات الدخول' : 'Logins'}
+          {isAr ? 'حسابات العملاء' : 'Client logins'}
         </h3>
-        {clients.length ? (
+        {clients.filter((c) => normRole(c.role) !== 'kitchen').length ? (
           <ul className="space-y-2">
-            {clients.map((c) => (
+            {clients.filter((c) => normRole(c.role) !== 'kitchen').map((c) => (
               <li
                 key={c.username}
                 className="flex items-center gap-2 rounded-xl bg-black border border-neutral-800 px-3 py-2"
@@ -502,8 +384,11 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
                 >
                   {c.disabled ? (isAr ? 'موقوف' : 'disabled') : (isAr ? 'نشط' : 'active')}
                 </span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${rolePill(c.role)}`}>
-                  {roleLabel(c.role)}
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-violet-500/10 border-violet-500/30 text-violet-300">
+                  {isAr ? 'عميل' : 'Client'}
+                </span>
+                <span className="text-[10px] text-neutral-500 tabular-nums" dir="ltr">
+                  {expiryText(c.expiresAt)}
                 </span>
                 <span className="ms-auto flex items-center gap-1.5">
                   <button
@@ -547,9 +432,9 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
         <h3 className={`text-[11px] font-extrabold text-neutral-400 mb-2 ${isAr ? '' : 'uppercase tracking-wider'}`}>
           {isAr ? 'روابط الدعوة' : 'Invite links'}
         </h3>
-        {rows.length ? (
+        {rows.filter((r) => normRole(r.role) !== 'kitchen').length ? (
           <ul className="space-y-2">
-            {rows.map((r) => (
+            {rows.filter((r) => normRole(r.role) !== 'kitchen').map((r) => (
               <li
                 key={r.id}
                 className="flex items-center gap-2.5 rounded-xl bg-black border border-neutral-800 px-3 py-2"
@@ -558,11 +443,11 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${invitePill(r.status)}`}>
                   {r.status === 'pending' ? (isAr ? 'بانتظار' : 'pending') : r.status === 'used' ? (isAr ? 'مُستخدم' : 'used') : (isAr ? 'منتهي' : 'expired')}
                 </span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${rolePill(r.role)}`}>
-                  {roleLabel(r.role)}
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-violet-500/10 border-violet-500/30 text-violet-300">
+                  {isAr ? 'عميل' : 'Client'}
                 </span>
                 <span className="text-[10px] text-neutral-500 tabular-nums ms-auto" dir="ltr">
-                  {r.expiresAt.slice(0, 10)}
+                  {expiryText(r.expiresAt)}
                 </span>
                 {r.status === 'pending' ? (
                   <button
@@ -584,102 +469,6 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
         ) : (
           <p className="text-[11px] text-neutral-600">
             {isAr ? 'لا توجد روابط دعوة بعد.' : 'No invite links yet.'}
-          </p>
-        )}
-      </div>
-      {/* Delivery-crew sharing (moved here from the notifications section):
-          same bot, order copies + same Telegram buttons as the owner. */}
-      <div className="rounded-2xl border border-neutral-800 bg-black/40 p-3 space-y-2.5" role="group" aria-label={isAr ? 'مشاركة البوت مع الدليفري' : 'Share the bot with delivery'}>
-        <p className="text-xs font-black text-neutral-200">
-          {isAr ? 'مشاركة مع الدليفري' : 'Share with delivery'}
-        </p>
-        <p className="text-[11px] leading-relaxed text-neutral-400">
-          {isAr
-            ? 'الدليفري يشوف الطلبات ويقدر يأكد ويسلّم ويلغي من التيليجرام — نفس أزرارك.'
-            : 'Delivery sees orders and can confirm, deliver and cancel from Telegram — same buttons as yours.'}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => void inviteCrew()} disabled={crewBusy === 'code'}
-            className="btn-tactile h-11 px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-2 disabled:opacity-40">
-            {crewBusy === 'code' ? <Loader2 size={15} className="animate-spin" /> : <Send size={14} />}
-            {isAr ? 'رابط دعوة للدليفري' : 'Invite delivery'}
-          </button>
-          {crewLink && (
-            <a href={crewLink} target="_blank" rel="noreferrer"
-              className="btn-tactile h-11 px-5 rounded-full border border-[var(--primary)] text-[var(--primary)] text-xs font-extrabold inline-flex items-center gap-2">
-              {isAr ? 'فتح التيليجرام' : 'Open Telegram'}
-            </a>
-          )}
-        </div>
-        {crewLink && (
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              readOnly
-              dir="ltr"
-              value={crewLink}
-              onFocus={(e) => e.target.select()}
-              aria-label={isAr ? 'رابط الدعوة' : 'Invite link'}
-              className="min-w-0 flex-1 h-11 px-3 rounded-lg bg-black border border-neutral-700 text-xs text-neutral-300 truncate focus:outline-none focus:border-[var(--primary)]"
-            />
-            <button type="button" onClick={() => void copyCrewLink()}
-              aria-label={isAr ? 'نسخ الرابط' : 'Copy link'}
-              className="btn-tactile shrink-0 h-11 min-h-[44px] min-w-[44px] px-3 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold inline-flex items-center gap-1.5 hover:border-[var(--primary)] hover:text-[var(--primary)]">
-              {crewCopied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
-              {crewCopied ? (isAr ? 'اتنسخ' : 'Copied') : (isAr ? 'نسخ' : 'Copy')}
-            </button>
-          </div>
-        )}
-        {crewLink && (
-          <div className="flex flex-wrap gap-2">
-            <a
-              href={waShare(crewLink)}
-              target="_blank"
-              rel="noreferrer"
-              className="h-9 px-4 rounded-full border border-neutral-700 text-neutral-300 text-[11px] font-bold inline-flex items-center gap-1.5 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-            >
-              <Send size={13} />
-              {isAr ? 'مشاركة واتساب' : 'Share via WhatsApp'}
-            </a>
-            <a
-              href={tgShare(crewLink, isAr ? 'رابط الدليفري' : 'Delivery invite')}
-              target="_blank"
-              rel="noreferrer"
-              className="h-9 px-4 rounded-full border border-neutral-700 text-neutral-300 text-[11px] font-bold inline-flex items-center gap-1.5 hover:border-[var(--primary)] hover:text-[var(--primary)]"
-            >
-              <Send size={13} />
-              {isAr ? 'مشاركة تليجرام' : 'Share via Telegram'}
-            </a>
-          </div>
-        )}
-        {crewChats.length > 0 && (
-          <div className="space-y-1.5">
-            {crewChats.map((c) => {
-              const when = formatLinkedAt(c?.linkedAt);
-              const dropping = crewBusy === `drop:${c.chatId}`;
-              return (
-                <div key={c.chatId} className="flex items-center justify-between gap-2 rounded-xl border border-neutral-800 bg-black/60 px-3 py-2">
-                  <span className="min-w-0 text-xs font-bold text-neutral-200 truncate" dir="auto">
-                    {isAr ? `دليفري #${c.chatId}` : `Delivery #${c.chatId}`}
-                    {when && <span className="block text-[10px] font-normal text-neutral-500">{when}</span>}
-                  </span>
-                  <button type="button" onClick={() => askRemoveCrew(c.chatId)} disabled={dropping}
-                    className="btn-tactile shrink-0 h-9 min-h-[36px] px-3 rounded-full border border-neutral-700 text-neutral-400 text-[11px] font-bold inline-flex items-center gap-1 disabled:opacity-40 hover:border-red-500 hover:text-red-400">
-                    {dropping ? <Loader2 size={13} className="animate-spin" /> : null}
-                    {isAr ? 'إزالة' : 'Remove'}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-        {crewMsg && (
-          <p role="status" className={`text-xs font-bold rounded-xl px-3 py-2 border inline-flex items-center gap-1.5 ${
-            crewMsg.kind === 'ok'
-              ? 'text-[var(--primary)] border-[var(--primary)]/40 bg-[var(--primary)]/10'
-              : 'text-red-400 border-red-800 bg-red-950/40'
-          }`}>
-            {crewMsg.kind === 'ok' ? <Check size={13} strokeWidth={3} /> : null}<span>{crewMsg.text}</span>
           </p>
         )}
       </div>

@@ -175,6 +175,51 @@ export function normalizeRole(r) {
   return isRole(v) ? v : ROLE_CLIENT;
 }
 
+/* ---------- optional account lifetime (migration 0030) ---------- */
+
+/** Allowed limited lifetimes in days; NULL/omitted means open-ended. */
+export const ACCOUNT_DURATIONS = [1, 7, 30];
+export const DAY_SEC = 24 * 3600;
+
+/** Strict: null/undefined (open) or exactly 1, 7, 30. Anything else is a 400. */
+export function isDurationDays(v) {
+  if (v === null || v === undefined) return true;
+  return v === 1 || v === 7 || v === 30;
+}
+
+/** Fail-closed read: a stored duration outside 1/7/30 reads as open (null). */
+export function normalizeDurationDays(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = typeof v === 'string' ? Number(v.trim()) : v;
+  return n === 1 || n === 7 || n === 30 ? n : null;
+}
+
+/** Account expiry stamp for redeem time: now + duration, or null when open. */
+export function accountExpiresAt(nowDate, durationDays) {
+  const d = normalizeDurationDays(durationDays);
+  if (d === null) return null;
+  return new Date(nowDate.getTime() + d * DAY_SEC * 1000).toISOString();
+}
+
+/** True when this account row is past its optional expiry (open rows never are). */
+export function isAccountExpired(row, nowIso) {
+  const exp = row && (row.expiresAt !== undefined ? row.expiresAt : row.expires_at);
+  return !!exp && exp <= nowIso;
+}
+
+/**
+ * Cap a session so it never outlives the account: min(default, remaining).
+ * Open accounts (no expiry) keep the default. Remaining <= 0 yields 0 —
+ * callers only mint after passing isAccountExpired, so this is a guard.
+ */
+export function clampSessionSec(defaultSec, expiresAtIso, nowMs) {
+  if (!expiresAtIso) return defaultSec;
+  const now = Number.isFinite(nowMs) ? nowMs : Date.now();
+  const remaining = Math.floor((Date.parse(expiresAtIso) - now) / 1000);
+  if (!Number.isFinite(remaining) || remaining <= 0) return 0;
+  return Math.min(defaultSec, remaining);
+}
+
 /**
  * Fail-closed role from an ALREADY-VERIFIED session payload (HMAC-checked):
  * a valid 'kitchen'/'client' claim is trusted, anything missing or unknown
@@ -281,25 +326,39 @@ export function inviteLinkFor(env, token) {
 
 export async function findInviteByHash(db, tokenHash) {
   try {
-    return await db
-      .prepare(
-        'SELECT id, username, role, token_hash AS tokenHash, created_at AS createdAt, expires_at AS expiresAt, used_at AS usedAt, attempts FROM invites WHERE token_hash = ?'
-      )
-      .bind(tokenHash)
-      .first();
-  } catch (e) {
-    // Pre-0028 database without the role column: legacy shape, role backfills
-    // to 'client' exactly like the migration default. Any other DB failure
-    // rethrows so redeem still fails closed (generic invalid, below).
-    if (!isMissingColumnError(e)) throw e;
     const row = await db
       .prepare(
-        'SELECT id, username, token_hash AS tokenHash, created_at AS createdAt, expires_at AS expiresAt, used_at AS usedAt, attempts FROM invites WHERE token_hash = ?'
+        'SELECT id, username, role, duration_days AS durationDays, token_hash AS tokenHash, created_at AS createdAt, expires_at AS expiresAt, used_at AS usedAt, attempts FROM invites WHERE token_hash = ?'
       )
       .bind(tokenHash)
       .first();
-    if (row) row.role = ROLE_CLIENT;
+    if (row) row.durationDays = normalizeDurationDays(row.durationDays);
     return row;
+  } catch (e) {
+    // Pre-0030 database without duration_days: fall back to the 0028 shape
+    // (open-ended invite), then to the legacy pre-0028 shape. Any other DB
+    // failure rethrows so redeem still fails closed (generic invalid, below).
+    if (!isMissingColumnError(e)) throw e;
+    try {
+      return await db
+        .prepare(
+          'SELECT id, username, role, token_hash AS tokenHash, created_at AS createdAt, expires_at AS expiresAt, used_at AS usedAt, attempts FROM invites WHERE token_hash = ?'
+        )
+        .bind(tokenHash)
+        .first();
+    } catch (e2) {
+      // Pre-0028 database without the role column: legacy shape, role backfills
+      // to 'client' exactly like the migration default.
+      if (!isMissingColumnError(e2)) throw e2;
+      const row = await db
+        .prepare(
+          'SELECT id, username, token_hash AS tokenHash, created_at AS createdAt, expires_at AS expiresAt, used_at AS usedAt, attempts FROM invites WHERE token_hash = ?'
+        )
+        .bind(tokenHash)
+        .first();
+      if (row) row.role = ROLE_CLIENT;
+      return row;
+    }
   }
 }
 

@@ -14,7 +14,7 @@ import {
   verifyLogin,
   verifyPassword,
 } from '../../_shared/session.js';
-import { ROLE_CLIENT, ROLE_KITCHEN, isMissingColumnError, isRole } from '../../_shared/access.js';
+import { ROLE_CLIENT, ROLE_KITCHEN, clampSessionSec, isAccountExpired, isMissingColumnError, isRole } from '../../_shared/access.js';
 
 const FAIL_PREFIX = 'login:fail:';
 const FAIL_TTL_SEC = 15 * 60;
@@ -120,35 +120,50 @@ export async function onRequest(context) {
         let row;
         try {
           row = await db
-            .prepare('SELECT username, pass_hash, disabled_at, role FROM client_users WHERE username = ?')
+            .prepare('SELECT username, pass_hash, disabled_at, expires_at AS expiresAt, role FROM client_users WHERE username = ?')
             .bind(username)
             .first();
         } catch (e) {
-          // Pre-0028 database without the role column: legacy shape reads
-          // as 'client' (the migration default).
+          // Pre-0030 database without expires_at: older shape reads as
+          // open-ended (the migration default — NULL expiry).
           if (!isMissingColumnError(e)) throw e;
-          row = await db
-            .prepare('SELECT username, pass_hash, disabled_at FROM client_users WHERE username = ?')
-            .bind(username)
-            .first();
+          try {
+            row = await db
+              .prepare('SELECT username, pass_hash, disabled_at, role FROM client_users WHERE username = ?')
+              .bind(username)
+              .first();
+          } catch (e2) {
+            // Pre-0028 database without the role column: legacy shape reads
+            // as 'client' (the migration default).
+            if (!isMissingColumnError(e2)) throw e2;
+            row = await db
+              .prepare('SELECT username, pass_hash, disabled_at FROM client_users WHERE username = ?')
+              .bind(username)
+              .first();
+          }
         }
         const passOk = row
           ? await verifyPassword(password, row.pass_hash)
           : await verifyPassword(password, storedHash);
-        // Disabled accounts fail exactly like wrong passwords (generic 401,
-        // no enumeration). Work is burned either way, as above.
+        // Disabled AND time-expired accounts fail exactly like wrong
+        // passwords (generic 401, no enumeration): the expired shape is the
+        // same shape the account already had, so expiry reveals nothing.
+        // Work is burned either way, as above.
         const rowRole = row && isRole(row.role) ? row.role : ROLE_CLIENT;
+        const rowExpired = row ? isAccountExpired(row, new Date().toISOString()) : false;
         if (row && rowRole === ROLE_KITCHEN) {
-          // Pairing-link-only account: no password — right, wrong, or
-          // disabled — ever mints a session here. Falls through to the
-          // failure recording below (same brute-force budget as any other
-          // failure), then answers with the explicit link message.
+          // Pairing-link-only account: no password — right, wrong,
+          // disabled, or expired — ever mints a session here. Falls through
+          // to the failure recording below (same brute-force budget as any
+          // other failure), then answers with the explicit link message.
           kitchenDenied = true;
-        } else if (row && passOk && !row.disabled_at) {
+        } else if (row && passOk && !row.disabled_at && !rowExpired) {
           try {
             await kv.delete(FAIL_PREFIX + ip);
           } catch {}
-          const maxAge = remember ? SESSION_LONG_SEC : SESSION_SHORT_SEC;
+          const wanted = remember ? SESSION_LONG_SEC : SESSION_SHORT_SEC;
+          // Capped so the session never outlives the account's own expiry.
+          const maxAge = clampSessionSec(wanted, row.expiresAt || null, Date.now());
           // Role claim minted from the DB row (fail-closed to 'client'):
           // the JWT is the fast path, the DB stays the source of truth.
           const role = row && isRole(row.role) ? row.role : ROLE_CLIENT;

@@ -24,8 +24,10 @@ import {
 import {
   ROLE_CLIENT,
   ROLE_KITCHEN,
+  accountExpiresAt,
   bumpInviteAttempts,
   checkRateLimit,
+  clampSessionSec,
   consumeInvite,
   findInviteByHash,
   hashClientPassword,
@@ -34,6 +36,7 @@ import {
   isPasswordOk,
   isRole,
   isTokenFormat,
+  normalizeDurationDays,
   rateKey,
   sha256Hex,
   MIN_CLIENT_PASSWORD,
@@ -119,8 +122,14 @@ export async function onRequest(context) {
       return jsonNoStore({ error: 'invalid', message: 'This link is invalid or expired' }, 401);
     }
     // The invite carries the account role (client default, kitchen for staff
-    // invites). Fail-closed read: anything unexpected becomes 'client'.
+    // invites) plus its optional lifetime. Fail-closed reads: anything
+    // unexpected becomes 'client' / open-ended (null duration).
     const inviteRole = isRole(row.role) ? row.role : ROLE_CLIENT;
+    const inviteDuration = normalizeDurationDays(row.durationDays);
+    // Account expiry stamp: now + duration, or NULL for open-ended. Sessions
+    // minted below are capped so they never outlive this stamp.
+    const redeemNow = new Date();
+    const accountExpires = accountExpiresAt(redeemNow, inviteDuration);
 
     // Kitchen path: passwordless pairing. The token alone authorizes; any
     // password field sent along is ignored (kitchen accounts can never use
@@ -134,29 +143,46 @@ export async function onRequest(context) {
       const unusableHash = newUnusablePassHash();
       // Create-or-update: a fresh device name inserts; re-pairing an already
       // paired name (a second invite minted for it) rotates the unusable
-      // hash and keeps the kitchen role. ON CONFLICT keeps this atomic.
+      // hash, keeps the kitchen role, and restamps the lifetime from the
+      // newest invite. ON CONFLICT keeps this atomic.
       // Pre-0028 database (no role column): the statement fails and the
       // outer catch returns the generic invalid — kitchen fails closed,
       // exactly like the client legacy fallback below refuses it.
-      await db
-        .prepare(
-          'INSERT INTO client_users (username, pass_hash, created_at, role) VALUES (?, ?, ?, ?) ' +
-            'ON CONFLICT(username) DO UPDATE SET pass_hash = excluded.pass_hash, role = excluded.role'
-        )
-        .bind(consumed.username, unusableHash, nowIso, ROLE_KITCHEN)
-        .run();
+      try {
+        await db
+          .prepare(
+            'INSERT INTO client_users (username, pass_hash, created_at, expires_at, role) VALUES (?, ?, ?, ?, ?) ' +
+              'ON CONFLICT(username) DO UPDATE SET pass_hash = excluded.pass_hash, expires_at = excluded.expires_at, role = excluded.role'
+          )
+          .bind(consumed.username, unusableHash, nowIso, accountExpires, ROLE_KITCHEN)
+          .run();
+      } catch (e) {
+        // Pre-0030 database (no expires_at column): only an open-ended
+        // pairing fits the older shape; a limited one fails closed with the
+        // generic invalid rather than minting an open-ended account.
+        if (!isMissingColumnError(e) || accountExpires !== null) throw e;
+        await db
+          .prepare(
+            'INSERT INTO client_users (username, pass_hash, created_at, role) VALUES (?, ?, ?, ?) ' +
+              'ON CONFLICT(username) DO UPDATE SET pass_hash = excluded.pass_hash, role = excluded.role'
+          )
+          .bind(consumed.username, unusableHash, nowIso, ROLE_KITCHEN)
+          .run();
+      }
       // One account, one live invite: any other pending invite for this name dies.
       await db
         .prepare('DELETE FROM invites WHERE username = ? AND used_at IS NULL')
         .bind(consumed.username)
         .run();
 
-      // Long-lived session carrying the role claim (90 days).
-      const session = await createSessionToken(secret, `client:${consumed.username}`, KITCHEN_SESSION_SEC, {
+      // Long-lived session carrying the role claim (90 days), capped so it
+      // never outlives the account's own expiry.
+      const kitchenSec = clampSessionSec(KITCHEN_SESSION_SEC, accountExpires, redeemNow.getTime());
+      const session = await createSessionToken(secret, `client:${consumed.username}`, kitchenSec, {
         role: ROLE_KITCHEN,
       });
       return jsonNoStore({ ok: true }, 200, {
-        'Set-Cookie': sessionCookieHeader(session, KITCHEN_SESSION_SEC),
+        'Set-Cookie': sessionCookieHeader(session, kitchenSec),
       });
     }
 
@@ -178,23 +204,36 @@ export async function onRequest(context) {
     }
 
     const passHash = await hashClientPassword(password);
-    // Kitchen invites never reach here (paired above); fail-closed read kept
-    // so anything unexpected still becomes 'client', never escalated.
+    // Kitchen invites never reach here (paired above); fail-closed reads kept
+    // so anything unexpected still becomes 'client'/open, never escalated.
     const clientRole = isRole(consumed.role) ? consumed.role : ROLE_CLIENT;
+    const clientExpires = accountExpiresAt(redeemNow, normalizeDurationDays(consumed.durationDays));
     try {
       await db
-        .prepare('INSERT INTO client_users (username, pass_hash, created_at, role) VALUES (?, ?, ?, ?)')
-        .bind(consumed.username, passHash, nowIso, clientRole)
+        .prepare('INSERT INTO client_users (username, pass_hash, created_at, expires_at, role) VALUES (?, ?, ?, ?, ?)')
+        .bind(consumed.username, passHash, nowIso, clientExpires, clientRole)
         .run();
     } catch (e) {
-      // Pre-0028 database: no role column. Only a default-role account is
-      // storable in the legacy shape; a kitchen redeem fails closed (the
-      // generic invalid below) rather than creating the wrong role.
-      if (!isMissingColumnError(e) || clientRole !== ROLE_CLIENT) throw e;
-      await db
-        .prepare('INSERT INTO client_users (username, pass_hash, created_at) VALUES (?, ?, ?)')
-        .bind(consumed.username, passHash, nowIso)
-        .run();
+      // Pre-0030 database: no expires_at column. Only an open-ended account
+      // fits the older shape; a limited one fails closed (the generic
+      // invalid below) rather than minting an open-ended account.
+      if (!isMissingColumnError(e) || clientExpires !== null) throw e;
+      try {
+        await db
+          .prepare('INSERT INTO client_users (username, pass_hash, created_at, role) VALUES (?, ?, ?, ?)')
+          .bind(consumed.username, passHash, nowIso, clientRole)
+          .run();
+      } catch (e2) {
+        // Pre-0028 database: no role column either. Only a default-role
+        // account is storable in the legacy shape; a kitchen redeem fails
+        // closed (the generic invalid below) rather than creating the
+        // wrong role.
+        if (!isMissingColumnError(e2) || clientRole !== ROLE_CLIENT) throw e2;
+        await db
+          .prepare('INSERT INTO client_users (username, pass_hash, created_at) VALUES (?, ?, ?)')
+          .bind(consumed.username, passHash, nowIso)
+          .run();
+      }
     }
     // One account, one live invite: any other pending invite for this name dies.
     await db
@@ -203,10 +242,12 @@ export async function onRequest(context) {
       .run();
 
     // Fresh session minted with the role claim (legacy sessions simply lack
-    // it and read as 'client' via roleFromPayload until re-login).
-    const session = await createSessionToken(secret, `client:${consumed.username}`, SESSION_SEC, { role: clientRole });
+    // it and read as 'client' via roleFromPayload until re-login). Capped so
+    // it never outlives the account's own expiry.
+    const clientSec = clampSessionSec(SESSION_SEC, clientExpires, redeemNow.getTime());
+    const session = await createSessionToken(secret, `client:${consumed.username}`, clientSec, { role: clientRole });
     return jsonNoStore({ ok: true }, 200, {
-      'Set-Cookie': sessionCookieHeader(session, SESSION_SEC),
+      'Set-Cookie': sessionCookieHeader(session, clientSec),
     });
   } catch {
     return jsonNoStore({ error: 'invalid', message: 'This link is invalid or expired' }, 401);

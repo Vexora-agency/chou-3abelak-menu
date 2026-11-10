@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useAnimationControls } from 'motion/react';
-import { Loader2, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { AlertCircle, ArrowRight, ChefHat, Loader2, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { adminFetch } from '@/src/lib/api-client';
 import { readJson } from '@/src/utils/safeJson';
 import { LoginAtmosphere } from '@/src/features/admin/components/admin-login/loginAtmosphere';
@@ -36,6 +36,7 @@ export const InvitePage: React.FC<InvitePageProps> = ({ token }) => {
 
   const [phase, setPhase] = useState<Phase>('checking');
   const [username, setUsername] = useState('');
+  const [role, setRole] = useState<'client' | 'kitchen'>('client');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -63,9 +64,12 @@ export const InvitePage: React.FC<InvitePageProps> = ({ token }) => {
     setError(null);
     try {
       const res = await adminFetch(`/api/invite/validate?token=${encodeURIComponent(token)}`);
-      const data = (await readJson(res)) as { ok?: boolean; username?: string };
+      const data = (await readJson(res)) as { ok?: boolean; username?: string; role?: string };
       if (res.ok && data && data.ok && typeof data.username === 'string' && data.username) {
         setUsername(data.username);
+        // Fail-closed role read: anything but 'kitchen' stays on the
+        // password-setup (client) path — unchanged until the server echoes role.
+        setRole(data.role === 'kitchen' ? 'kitchen' : 'client');
         setPhase('ready');
       } else {
         setPhase('invalid');
@@ -105,6 +109,44 @@ export const InvitePage: React.FC<InvitePageProps> = ({ token }) => {
         setPhase('success');
         // The token must leave the address bar: a full navigation both
         // drops it from history-forward reach and boots a fresh session.
+        timer.current = window.setTimeout(() => window.location.assign('/admin/dashboard'), 1500);
+        return;
+      }
+      setPhase('ready');
+      if (res.status === 429) {
+        setRetryMin(typeof data?.retryMin === 'number' ? data.retryMin : 10);
+        setError('locked');
+      } else {
+        // invalid / used / expired mid-way — one generic landing.
+        setPhase('invalid');
+        return;
+      }
+      fail();
+    } catch {
+      setPhase('ready');
+      setError('network');
+      fail();
+    }
+  };
+
+  /**
+   * Kitchen one-tap redeem: no name field (shown only), no password — the
+   * token IS the credential. Client path above is untouched.
+   */
+  const submitKitchen = async () => {
+    if (phase !== 'ready' || role !== 'kitchen') return;
+    setError(null);
+    setPhase('redeeming');
+    try {
+      const res = await adminFetch('/api/invite/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const data = (await readJson(res)) as { ok?: boolean; retryMin?: number };
+      if (res.ok && data && data.ok) {
+        setPhase('success');
+        // Same token hygiene as the client path: leave the address bar.
         timer.current = window.setTimeout(() => window.location.assign('/admin/dashboard'), 1500);
         return;
       }
@@ -225,6 +267,68 @@ export const InvitePage: React.FC<InvitePageProps> = ({ token }) => {
                     {t.back}
                   </button>
                 </motion.div>
+              ) : role === 'kitchen' ? (
+                <motion.form
+                  key="kitchen-form"
+                  noValidate
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void submitKitchen();
+                  }}
+                  exit={{ opacity: 0, y: -10, transition: { duration: 0.25 } }}
+                  className="min-h-[480px] flex flex-col justify-center gap-4"
+                >
+                  <motion.div {...rise(0.6)} className="flex items-start gap-3.5">
+                    <span className="shrink-0 w-12 h-12 rounded-2xl bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center shadow-[0_10px_26px_-8px_color-mix(in_srgb,var(--primary)_60%,transparent)]">
+                      <ChefHat size={22} strokeWidth={2.4} aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <h1 className="text-[22px] sm:text-2xl font-extrabold leading-tight">{t.kitchenTitle}</h1>
+                      <p className="mt-1 text-[13px] leading-relaxed text-white/60">{t.kitchenSubtitle}</p>
+                      <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[var(--primary)]/40 px-2.5 py-1 text-[11px] font-bold text-[var(--primary)]">
+                        {t.enterAs}: <b className="tabular-nums" dir="ltr">{username}</b>
+                      </p>
+                    </div>
+                  </motion.div>
+
+                  <AnimatePresence initial={false}>
+                    {error && (
+                      <motion.div
+                        key={error}
+                        role="alert"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="flex items-start gap-2.5 rounded-xl border border-red-400/30 bg-red-500/10 px-3.5 py-3 text-[13px] leading-relaxed text-red-200">
+                          <AlertCircle size={17} className="mt-px shrink-0 text-red-300" aria-hidden="true" />
+                          <span>{errorText}</span>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <motion.div {...rise(0.94)}>
+                    <button
+                      type="submit"
+                      disabled={phase !== 'ready'}
+                      className="btn-tactile btn-primary-shine group w-full h-14 rounded-2xl text-[15px] font-extrabold flex items-center justify-center gap-2 disabled:cursor-wait"
+                    >
+                      {phase === 'redeeming' ? (
+                        <>
+                          <Loader2 size={19} strokeWidth={2.6} className="animate-spin" aria-hidden="true" />
+                          <span>{t.enteringKitchen}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>{t.enterKitchen}</span>
+                          <ArrowRight size={18} strokeWidth={2.6} className="rtl:rotate-180 transition-transform duration-200 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" aria-hidden="true" />
+                        </>
+                      )}
+                    </button>
+                  </motion.div>
+                </motion.form>
               ) : (
                 <InviteForm
                   t={t}

@@ -2,7 +2,9 @@
  * Invite validity probe: GET /api/invite/validate?token=...
  * Public (the token IS the credential) + IP rate-limited. Read-only, so no
  * state changes: validity is single-use-enforced at redeem time.
- * Same response shape either way — only `ok` differs, never the reason.
+ * Same response shape either way on failure — only `ok` differs, never the
+ * reason. Success also carries the invite `role` (client|kitchen) so the
+ * UI can pick the password vs passwordless-pairing flow.
  */
 
 import { checkApiHeaders, jsonNoStore } from '../../_shared/session.js';
@@ -11,6 +13,7 @@ import {
   findInviteByHash,
   inviteUsable,
   isTokenFormat,
+  normalizeRole,
   rateKey,
   sha256Hex,
 } from '../../_shared/access.js';
@@ -36,7 +39,10 @@ export async function onRequest(context) {
   try {
     const row = await findInviteByHash(db, await sha256Hex(token));
     if (inviteUsable(row, new Date().toISOString())) {
-      return jsonNoStore({ ok: true, username: row.username });
+      // Role is safe to expose here: only the token holder can reach this
+      // branch, and the redeem UI needs it to pick the password vs pairing
+      // flow. Failed probes stay bare ({ ok:false }) as before.
+      return jsonNoStore({ ok: true, username: row.username, role: normalizeRole(row.role) });
     }
     return jsonNoStore({ ok: false });
   } catch {

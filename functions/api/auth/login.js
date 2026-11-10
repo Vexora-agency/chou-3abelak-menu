@@ -14,7 +14,7 @@ import {
   verifyLogin,
   verifyPassword,
 } from '../../_shared/session.js';
-import { ROLE_CLIENT, isMissingColumnError, isRole } from '../../_shared/access.js';
+import { ROLE_CLIENT, ROLE_KITCHEN, isMissingColumnError, isRole } from '../../_shared/access.js';
 
 const FAIL_PREFIX = 'login:fail:';
 const FAIL_TTL_SEC = 15 * 60;
@@ -109,6 +109,10 @@ export async function onRequest(context) {
   // client-unknown are indistinguishable from the outside. The master name
   // itself never reaches this lookup (usernames cannot collide with it —
   // invite creation rejects it), saving the second derive on typos.
+  // Kitchen accounts are pairing-link-only: they are rejected below with an
+  // explicit message (never a session), whether the password is right or
+  // wrong — there is no password that signs a kitchen account in.
+  let kitchenDenied = false;
   if (!safeCompareStrings(username, expectedUser)) {
     const db = env.ORDERS_DB || null;
     if (db) {
@@ -133,7 +137,14 @@ export async function onRequest(context) {
           : await verifyPassword(password, storedHash);
         // Disabled accounts fail exactly like wrong passwords (generic 401,
         // no enumeration). Work is burned either way, as above.
-        if (row && passOk && !row.disabled_at) {
+        const rowRole = row && isRole(row.role) ? row.role : ROLE_CLIENT;
+        if (row && rowRole === ROLE_KITCHEN) {
+          // Pairing-link-only account: no password — right, wrong, or
+          // disabled — ever mints a session here. Falls through to the
+          // failure recording below (same brute-force budget as any other
+          // failure), then answers with the explicit link message.
+          kitchenDenied = true;
+        } else if (row && passOk && !row.disabled_at) {
           try {
             await kv.delete(FAIL_PREFIX + ip);
           } catch {}
@@ -162,6 +173,12 @@ export async function onRequest(context) {
   if (next >= MAX_FAILURES) {
     const retryAfter = Math.max(1, Math.ceil((resetAt - nowSec) / 60));
     return jsonNoStore({ error: 'locked', retryAfter, message: 'Too many attempts' }, 429);
+  }
+  if (kitchenDenied) {
+    return jsonNoStore(
+      { error: 'kitchen_link_only', message: 'Kitchen accounts cannot sign in with a password — use the pairing link' },
+      403
+    );
   }
   return jsonNoStore({ error: 'invalid', message: 'Invalid credentials' }, 401);
 }

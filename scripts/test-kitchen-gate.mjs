@@ -90,6 +90,7 @@ check('kitchen GET /api/admin/versions denied', isKitchenAllowed('/api/admin/ver
 check('kitchen POST /api/admin/push-subscriptions allowed (own device)', isKitchenAllowed('/api/admin/push-subscriptions', 'POST') === true);
 check('kitchen DELETE /api/admin/push-subscriptions allowed (own device)', isKitchenAllowed('/api/admin/push-subscriptions', 'DELETE') === true);
 check('kitchen GET /api/admin/push-subscriptions denied (device list)', isKitchenAllowed('/api/admin/push-subscriptions', 'GET') === false);
+check('kitchen GET /api/admin/whoami allowed (role probe)', isKitchenAllowed('/api/admin/whoami', 'GET') === true);
 
 // ---- 2) role resolution (session-payload fallback) ----
 const reqWith = (tok) => new Request('https://x/api/admin/orders', { headers: { Cookie: cookieFor(tok) } });

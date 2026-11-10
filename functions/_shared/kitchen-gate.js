@@ -100,6 +100,10 @@ export function isKitchenAllowed(pathname, method) {
   path = path.replace(/\/+$/, '') || '/';
   if (path === '/api/admin/orders') return m === 'GET';
   if (path.startsWith('/api/admin/orders/')) return m === 'GET' || m === 'PATCH';
+  // Role probe for the admin shell (whoami returns {role} only — the UX
+  // router depends on it; without it a kitchen session renders the full
+  // shell and every forbidden button just 403s).
+  if (path === '/api/admin/whoami') return m === 'GET';
   // Own-device push subscription only (background alerts for the kitchen
   // phone). Endpoint-keyed: a device can never touch another's row, and
   // the device LIST (GET) stays owner-only.

@@ -94,6 +94,12 @@ export interface MenuItem {
       capped at 256 KB, so inline images would blow the budget fast.
       Absent/broken images fall back to the branded category placeholder. */
   imageUrl?: string;
+  /** Optional responsive variants of imageUrl (≈400w for `s`, ≈800w for
+      `m`; imageUrl itself stays the largest ≈1280w for backwards compat).
+      Same URL rules as imageUrl (https://, http:// or /; ≤500 chars; never
+      data:). Frontend builds srcset as `s 400w, m 800w, imageUrl <w>w`;
+      missing variants fall back to imageUrl alone. */
+  imageVariants?: { s?: string; m?: string };
   /** Opt out of heat entirely: no heat section is offered for this item
       (normalize strips any heat rows and never injects them), even though it
       has other add-ons. For drinks, desserts and other never-spicy items.

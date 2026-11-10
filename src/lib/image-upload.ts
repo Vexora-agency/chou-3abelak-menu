@@ -39,6 +39,15 @@ const MAX_EDGE = 1600;
 const QUALITY = 0.82;
 const SERVER_MAX_BYTES = 8 * 1024 * 1024;
 
+/** Responsive variant widths (px) derived from the same crop rect. The full
+ *  image keeps the current behaviour (QUALITY 0.82); variants use a slightly
+ *  lower quality since downscaling already removes detail. */
+export const VARIANT_WIDTHS = { s: 400, m: 800 };
+export const VARIANT_QUALITY = 0.76;
+/** A variant is only generated when the crop rect is clearly wider than the
+ *  variant (avoids uploading near-duplicate files of the same pixels). */
+const VARIANT_MIN_MARGIN = 1.15;
+
 const ACCEPTED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 export class ImagePrepareError extends Error {
@@ -257,6 +266,85 @@ export async function exportCrop(
   return { blob, width: outW, height: outH };
 }
 
+/**
+ * Export the same crop rect at a smaller width (responsive variant). Never
+ * upscales: when the rect is narrower than the target, the rect width itself
+ * is used. WebP first, JPEG fallback — same policy as exportCrop, at
+ * VARIANT_QUALITY.
+ */
+export async function exportCropVariant(
+  source: ImageBitmap | HTMLImageElement | HTMLCanvasElement,
+  rect: CropRect,
+  targetW: number,
+): Promise<PreparedImage> {
+  const outW = Math.max(1, Math.round(Math.min(targetW, rect.w)));
+  const outH = Math.max(1, Math.round(outW / CROP_ASPECT));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new ImagePrepareError('encode_failed');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, outW, outH);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(source, rect.x, rect.y, rect.w, rect.h, 0, 0, outW, outH);
+
+  const encode = (type: string, quality: number): Promise<Blob | null> =>
+    new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), type, quality);
+    });
+
+  let blob = await encode('image/webp', VARIANT_QUALITY);
+  if (!blob || blob.type !== 'image/webp') blob = await encode('image/jpeg', VARIANT_QUALITY);
+  if (!blob) throw new ImagePrepareError('encode_failed');
+  if (blob.size > SERVER_MAX_BYTES) {
+    blob = await encode('image/webp', 0.68);
+    if (!blob || blob.type !== 'image/webp') blob = await encode('image/jpeg', 0.68);
+  }
+  if (!blob) throw new ImagePrepareError('encode_failed');
+  if (blob.size > SERVER_MAX_BYTES) throw new ImagePrepareError('too_large');
+  return { blob, width: outW, height: outH };
+}
+
+/** One full export plus the optional smaller variants of the same crop. */
+export interface ResponsiveImageSet {
+  full: PreparedImage;
+  s?: PreparedImage;
+  m?: PreparedImage;
+}
+
+/**
+ * Build the upload set for a crop rect: `full` is exactly what exportCrop
+ * produces today (unchanged behaviour); `s`/`m` are only included when the
+ * rect is wider than the variant by VARIANT_MIN_MARGIN, so small crops don't
+ * produce near-duplicate files. A variant that fails to encode is skipped —
+ * `full` is always returned.
+ */
+export async function exportResponsiveSet(
+  source: ImageBitmap | HTMLImageElement | HTMLCanvasElement,
+  rect: CropRect,
+): Promise<ResponsiveImageSet> {
+  const full = await exportCrop(source, rect);
+  const set: ResponsiveImageSet = { full };
+  if (rect.w >= VARIANT_WIDTHS.s * VARIANT_MIN_MARGIN) {
+    try {
+      set.s = await exportCropVariant(source, rect, VARIANT_WIDTHS.s);
+    } catch (error) {
+      console.warn('[image-upload] small variant skipped.', error);
+    }
+  }
+  if (rect.w >= VARIANT_WIDTHS.m * VARIANT_MIN_MARGIN) {
+    try {
+      set.m = await exportCropVariant(source, rect, VARIANT_WIDTHS.m);
+    } catch (error) {
+      console.warn('[image-upload] medium variant skipped.', error);
+    }
+  }
+  return set;
+}
+
 /** Downscale, re-encode and drop metadata. Throws ImagePrepareError. */
 export async function prepareImage(file: File): Promise<PreparedImage> {
   const decoded = await decodeSourceImage(file);
@@ -368,4 +456,68 @@ export function uploadItemImage(blob: Blob, options: UploadOptions = {}): Promis
 
     xhr.send(blob);
   });
+}
+
+/** Upload result for a responsive set: `full` always present, variants only
+ *  when they were generated and their upload succeeded. */
+export interface VariantUploadResult {
+  full: UploadedImage;
+  s?: UploadedImage;
+  m?: UploadedImage;
+}
+
+/**
+ * Upload a responsive set: full first, then s, then m (sequentially, over
+ * the same AbortSignal). Progress is aggregated by bytes across all parts.
+ * Variant uploads are best-effort — a variant failure is logged and skipped
+ * while `full` still resolves. An abort always rejects, even mid-variant, so
+ * a superseded auto-save never commits a stale photo.
+ */
+export async function uploadVariantSet(
+  set: ResponsiveImageSet,
+  options: UploadOptions = {},
+): Promise<VariantUploadResult> {
+  const throwIfAborted = (): void => {
+    if (options.signal?.aborted) throw new UploadError('aborted', 0);
+  };
+  throwIfAborted();
+
+  const variants: Array<{ key: 's' | 'm'; prepared: PreparedImage }> = [];
+  if (set.s) variants.push({ key: 's', prepared: set.s });
+  if (set.m) variants.push({ key: 'm', prepared: set.m });
+
+  const fullSize = set.full.blob.size || 1;
+  const total = variants.reduce((sum, v) => sum + (v.prepared.blob.size || 1), fullSize) || 1;
+  let completed = 0;
+  const scopedProgress = (size: number) => (percent: number) => {
+    if (!options.onProgress) return;
+    const overall = ((completed + (size * percent) / 100) / total) * 100;
+    options.onProgress(Math.max(0, Math.min(100, Math.round(overall))));
+  };
+
+  const full = await uploadItemImage(set.full.blob, {
+    signal: options.signal,
+    onProgress: scopedProgress(fullSize),
+  });
+  completed += fullSize;
+
+  const result: VariantUploadResult = { full };
+  for (const { key, prepared } of variants) {
+    throwIfAborted();
+    const size = prepared.blob.size || 1;
+    try {
+      result[key] = await uploadItemImage(prepared.blob, {
+        signal: options.signal,
+        onProgress: scopedProgress(size),
+      });
+    } catch (error) {
+      if (options.signal?.aborted || (error instanceof UploadError && error.code === 'aborted')) {
+        throw error;
+      }
+      console.warn('[image-upload] variant upload skipped (full kept).', error);
+    }
+    completed += size;
+  }
+  options.onProgress?.(100);
+  return result;
 }

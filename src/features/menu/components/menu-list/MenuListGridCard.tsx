@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import type { CardMarkStyleId, ResolvedMark } from '@/src/utils/cardMark';
+import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { CardMarkView } from '../CardMark';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
@@ -75,7 +76,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
       key={item.id}
       initial={skipEntrance ? false : { opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '0px' }}
+      viewport={{ once: true, margin: '100px' }}
       transition={{ duration: 0.5, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
       style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
       onClick={() => interactive && onOpenItem(item)}
@@ -104,11 +105,9 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
           shows through while the name keeps full contrast. */}
       {showPhoto && (
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
-          <img
-            src={item.imageUrl}
-            alt=""
-            loading="lazy"
-            decoding="async"
+          <SmartMenuImage
+            item={item}
+            name=""
             sizes="(max-width: 359px) 100vw, (max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
             onError={() => setFailedSrc(item.imageUrl ?? '')}
             className="grid-card-photo absolute inset-0 h-full w-full object-cover"

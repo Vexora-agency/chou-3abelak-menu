@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { MenuData, MenuItem } from '@/src/types/menu';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { pickLangText } from '@/src/utils/menuHelpers';
+import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
 
 interface FeaturedCarouselProps {
@@ -64,6 +65,23 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   const perCard = Math.min(10, Math.max(2, autoplayInterval || 4));
   const [index, setIndex] = useState(0);
   const [instant, setInstant] = useState(false);
+  // Short-lived compositor hint: the track gets .slider-sliding (which opts
+  // into will-change: transform) only while a slide transition actually runs.
+  // Instant jumps (end-wrap, breakpoint stranding) run with transition: none
+  // and need no layer. The 750ms window covers the 0.7s CSS slide + margin.
+  const [sliding, setSliding] = useState(false);
+  const slidingFrom = useRef(0);
+  useEffect(() => {
+    if (instant) {
+      slidingFrom.current = index;
+      return;
+    }
+    if (slidingFrom.current === index) return;
+    slidingFrom.current = index;
+    setSliding(true);
+    const t = window.setTimeout(() => setSliding(false), 750);
+    return () => window.clearTimeout(t);
+  }, [index, instant]);
   // Broken remote photos fall back to the plain branded card (same pattern
   // as the menu photo cards) — one record for all cards, no per-card hooks.
   const [failedPhoto, setFailedPhoto] = useState<Record<string, boolean>>({});
@@ -232,7 +250,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         }}
         initial={{ opacity: 0, y: 22 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-40px' }}
+        viewport={{ once: true, margin: '100px' }}
         transition={{ duration: 0.55, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
         className={`group relative flex-shrink-0 w-full ${forceSlider ? '' : 'md:w-auto md:min-w-0 md:grow-0 md:shrink-0 md:basis-[calc((100%_-_2rem)/3)]'} h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden ${interactive ? 'cursor-pointer' : ''} card-lift shadow-md border ${
           isYellowCard
@@ -247,13 +265,13 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             dark for white text) so every scheme stays readable. */}
         {showPhoto && (
           <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-            <img
-              src={item.imageUrl}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              draggable={false}
+            <SmartMenuImage
+              item={item}
+              name=""
               sizes="(max-width: 767px) 90vw, 33vw"
+              eager={idx === 0}
+              fetchPriorityHigh={idx === 0}
+              draggable={false}
               onError={() =>
                 setFailedPhoto((prev) => (prev[item.id] ? prev : { ...prev, [item.id]: true }))
               }
@@ -376,7 +394,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           onPointerDown={pause}
           className={`slider-track flex gap-0 ${forceSlider ? '' : 'md:gap-4'} ${
             instant ? 'slider-track-instant' : ''
-          }`}
+          } ${sliding && !instant ? 'slider-sliding' : ''}`}
           style={{ '--sx': `${isAr ? index * stepPx : -index * stepPx}px` } as React.CSSProperties}
         >
           {items.map((item, idx) => renderCard(item, idx))}

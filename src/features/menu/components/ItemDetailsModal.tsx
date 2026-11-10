@@ -11,6 +11,7 @@ import {
 } from '@/src/utils/pricing';
 import { addonBlocks, clampSplitPicks, effectiveAddonQty } from '@/src/utils/splitPicks';
 import { VariantPicker } from './item-view/VariantPicker';
+import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { AddonPicker } from './item-view/AddonPicker';
 
 interface ItemDetailsModalProps {
@@ -406,12 +407,12 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   aspect-ratio rounding can leave a 1-device-pixel seam at the
                   frame edge showing the body behind it as a crisp line. The
                   image paint 1px past every edge so no rounding can open it. */}
-              <img
-                src={item.imageUrl}
-                alt={itemName}
-                loading="lazy"
-                decoding="async"
+              <SmartMenuImage
+                item={item}
+                name={itemName}
                 sizes="(max-width: 560px) 100vw, 520px"
+                eager
+                fetchPriorityHigh
                 onError={() => setFailedSrc(item.imageUrl ?? '')}
                 className="absolute -inset-px h-[calc(100%+2px)] w-[calc(100%+2px)] max-w-none object-cover"
               />

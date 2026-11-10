@@ -88,7 +88,7 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
       // Entrance stays on initial/whileInView below; nothing else needs FLIP.
       initial={skipEntrance ? false : { opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '0px' }}
+      viewport={{ once: true, margin: '100px' }}
       transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.05, ease: [0.22, 1, 0.36, 1] }}
       style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
       onClick={() => interactive && onOpenItem(item)}

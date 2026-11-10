@@ -1,7 +1,7 @@
 import React from 'react';
 import type { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { formatPrice, unitPrice, featureName } from '@/src/utils/pricing';
-import { pickLangText, isSpicyFeatureId, spicyLabel } from '@/src/utils/menuHelpers';
+import { pickLangText, isSpicyFeatureId, spicyDegreeLabel } from '@/src/utils/menuHelpers';
 import { useGuardedText } from '@/src/hooks/useGuardedText';
 import { AlertCircle } from 'lucide-react';
 
@@ -65,11 +65,12 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
                 // Split lines: partial picks (0 < count < qty) render as
                 // `name ×n`; full-count and legacy picks render exactly as
                 // today. Zero-price add-ons show no price text (mirrors
-                // the item modal). Spicy renders as a (حار) parenthetical.
+                // the item modal). Spicy renders as an explicit-degree
+                // parenthetical, e.g. (حار متوسط).
                 const count = l.addonQty?.[id] ?? l.quantity;
                 const partial = count > 0 && count < l.quantity;
                 const spicy = isSpicyFeatureId(id);
-                return { key: id, name: spicy ? spicyLabel(lang, id) : featureName(menu, id, lang), count: partial ? count : null, price, spicy };
+                return { key: id, name: spicy ? spicyDegreeLabel(lang, id) : featureName(menu, id, lang), count: partial ? count : null, price, spicy };
               });
               return (
                 <div key={l.key}>

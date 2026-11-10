@@ -1,6 +1,6 @@
 import { Store, Truck, UtensilsCrossed } from 'lucide-react';
 import { STR } from './ordersDashTypes';
-import { isSpicyAddon, isSpicyFeatureId } from '@/src/utils/menuHelpers';
+import { isSpicyAddon, isSpicyFeatureId, spicyDegreeLabel } from '@/src/utils/menuHelpers';
 import type { OrderItem, OrderStatus } from './ordersDashTypes';
 
 /** True when the order line carries the spicy add-on (any id, ar/en name).
@@ -98,44 +98,62 @@ export function relTime(iso: string, lang: 'en' | 'ar', now: Date) {  const t = 
 
 /* ---------- Small pieces ---------- */
 
-/** "Zaatar & Labneh (Mashrouha) (حار) + Extra vegetables" — spicy always
- *  rides in parentheses right after the name, other add-ons keep ` + `. */
+/** "Zaatar & Labneh (Mashrouha) (حار متوسط) + Extra vegetables" — the heat
+ *  degree ALWAYS carries the heat word so it never reads as a size
+ *  ("(Regular) (Medium)" was genuinely ambiguous). Spicy rides in
+ *  parentheses right after the name, other add-ons keep ` + `. */
 export function itemTitle(it: OrderItem, lang: 'en' | 'ar'): string {
+  const { spicyText, addonsText } = splitLineText(it, lang);
+  return `${itemBaseTitle(it, lang)}${spicyText}${addonsText}`;
+}
+
+/** Name + variant only, no add-ons — the kitchen pairs it with HeatPill
+ *  (icon + explicit degree adjacent) instead of a duplicated parenthetical. */
+export function itemBaseTitle(it: OrderItem, lang: 'en' | 'ar'): string {
   const base = lang === 'ar' ? it.name.ar : it.name.en;
   const v = it.variantName ? ` (${lang === 'ar' ? it.variantName.ar : it.variantName.en})` : '';
+  return `${base}${v}`;
+}
+
+/** Non-spicy add-ons suffix (` + …`, split-qty aware). Heat is excluded —
+ *  it renders via HeatPill instead. Empty string when there are none. */
+export function itemAddonsSuffix(it: OrderItem, lang: 'en' | 'ar'): string {
+  return splitLineText(it, lang).addonsText;
+}
+
+/** Shared splitter: explicit heat parentheticals + the ` + ` add-ons tail.
+ *  Split quantities mirror Telegram exactly: `name ×n` ONLY when
+ *  0 < count < line qty; full counts render plain, zero-count is hidden. */
+function splitLineText(it: OrderItem, lang: 'en' | 'ar'): { spicyText: string; addonsText: string } {
+  const empty = { spicyText: '', addonsText: '' };
   const names = it.addonNames;
+  if (!Array.isArray(names) || names.length === 0) return empty;
+  const lineQty = Number.isFinite(it.qty) ? (it.qty as number) : 0;
   const hasQty = !!(it.addonQty && typeof it.addonQty === 'object' && !Array.isArray(it.addonQty));
   const fidOf = (i: number) => (Array.isArray(it.addonIds) ? it.addonIds[i] : null);
-  if (!names?.length || !hasQty) {
-    const spicy: string[] = [];
-    const rest: string[] = [];
-    names?.forEach((n, i) => {
-      const label = lang === 'ar' ? n.ar : n.en;
-      if (!label) return;
-      (isSpicyAddon(fidOf(i), label) ? spicy : rest).push(label);
-    });
-    const s = spicy.map((x) => ` (${x})`).join('');
-    const a = rest.length ? ` + ${rest.join(' + ')}` : '';
-    return `${base}${v}${s}${a}`;
-  }
-  // Split quantities (same rule as Telegram): `name ×n` ONLY when
-  // 0 < count < line qty; full counts render plain, zero-count is hidden.
-  const lineQty = Number.isFinite(it.qty) ? it.qty : 0;
   const spicy: string[] = [];
   const parts: string[] = [];
   for (let i = 0; i < names.length; i++) {
-    const label = lang === 'ar' ? names[i].ar : names[i].en;
-    if (!label) continue;
+    const raw = lang === 'ar' ? names[i].ar : names[i].en;
+    if (!raw) continue;
     const fid = fidOf(i);
-    const raw = fid && Object.prototype.hasOwnProperty.call(it.addonQty, fid)
-      ? (it.addonQty as Record<string, unknown>)[fid]
-      : lineQty;
-    const c = typeof raw === 'number' && Number.isInteger(raw) ? raw : lineQty;
-    if (c === 0) continue;
-    const text = c === lineQty || !(c > 0 && c < lineQty) ? label : `${label} ×${c}`;
-    (isSpicyAddon(fid, label) ? spicy : parts).push(text);
+    let count = lineQty;
+    if (hasQty) {
+      const v = fid && Object.prototype.hasOwnProperty.call(it.addonQty, fid)
+        ? (it.addonQty as Record<string, unknown>)[fid]
+        : lineQty;
+      count = typeof v === 'number' && Number.isInteger(v) ? v : lineQty;
+      if (count === 0) continue;
+    }
+    const partial = count > 0 && count < lineQty ? ` ×${count}` : '';
+    if (isSpicyAddon(fid, raw)) {
+      spicy.push(` (${spicyDegreeLabel(lang, fid, raw)}${partial})`);
+    } else {
+      parts.push(`${raw}${partial}`);
+    }
   }
-  const s = spicy.map((x) => ` (${x})`).join('');
-  const a = parts.length ? ` + ${parts.join(' + ')}` : '';
-  return `${base}${v}${s}${a}`;
+  return {
+    spicyText: spicy.join(''),
+    addonsText: parts.length ? ` + ${parts.join(' + ')}` : '',
+  };
 }

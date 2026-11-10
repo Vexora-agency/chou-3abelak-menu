@@ -98,6 +98,29 @@ export function spicyLabel(lang: 'en' | 'ar', featureId?: unknown): string {
   return 'Spicy';
 }
 
+/** Explicit heat-degree label — always carries the heat word so a degree
+ *  can never be mistaken for a size/variant ("(Regular) (Medium)" was
+ *  genuinely ambiguous). Canonical degrees get fixed wording (حار خفيف /
+ *  حار متوسط / حار جداً); an admin-renamed level keeps its name with the
+ *  heat word prefixed. `fallbackLabel` is the stored level name. */
+export function spicyDegreeLabel(lang: 'en' | 'ar', featureId?: unknown, fallbackLabel?: unknown): string {
+  const i = spicyLevelIndex(featureId);
+  if (lang === 'ar') {
+    if (i === 0) return 'حار خفيف';
+    if (i === 1) return 'حار متوسط';
+    if (i === 2) return 'حار جداً';
+    const t = typeof fallbackLabel === 'string' ? fallbackLabel.trim() : '';
+    if (!t) return 'حار';
+    return t.includes('حار') ? t : `حار ${t}`;
+  }
+  if (i === 0) return 'Mild Heat';
+  if (i === 1) return 'Medium Heat';
+  if (i === 2) return 'Extra Hot';
+  const t = typeof fallbackLabel === 'string' ? fallbackLabel.trim() : '';
+  if (!t) return 'Spicy';
+  return /hot|spicy/i.test(t) ? t : `${t} Heat`;
+}
+
 /** Locked library section + level defaults (single source of truth for the
  *  normalizers below and the admin UI). Names survive admin edits: the
  *  normalizer only fills these in when the row is missing. */

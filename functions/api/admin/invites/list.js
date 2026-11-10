@@ -4,7 +4,7 @@
  */
 
 import { checkApiHeaders, jsonNoStore } from '../../../_shared/session.js';
-import { ROLE_CLIENT, isMissingColumnError, isRole, requireOwner } from '../../../_shared/access.js';
+import { ROLE_CLIENT, isMissingColumnError, isRole, normalizeDurationDays, requireOwner } from '../../../_shared/access.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -27,25 +27,38 @@ export async function onRequest(context) {
     try {
       const res = await db
         .prepare(
-          'SELECT id, username, role, created_at AS createdAt, expires_at AS expiresAt, used_at AS usedAt FROM invites ORDER BY created_at DESC LIMIT 100'
+          'SELECT id, username, role, duration_days AS durationDays, created_at AS createdAt, expires_at AS expiresAt, used_at AS usedAt FROM invites ORDER BY created_at DESC LIMIT 100'
         )
         .all();
       inviteRows = res.results || [];
     } catch (e) {
-      // Pre-0028 database without the role column: legacy shape, every
-      // invite reads as 'client' (the migration default).
+      // Pre-0030 database without duration_days: invites read as
+      // open-ended (the migration default — NULL duration).
       if (!isMissingColumnError(e)) throw e;
-      const res = await db
-        .prepare(
-          'SELECT id, username, created_at AS createdAt, expires_at AS expiresAt, used_at AS usedAt FROM invites ORDER BY created_at DESC LIMIT 100'
-        )
-        .all();
-      inviteRows = res.results || [];
+      try {
+        const res = await db
+          .prepare(
+            'SELECT id, username, role, created_at AS createdAt, expires_at AS expiresAt, used_at AS usedAt FROM invites ORDER BY created_at DESC LIMIT 100'
+          )
+          .all();
+        inviteRows = res.results || [];
+      } catch (e2) {
+        // Pre-0028 database without the role column: legacy shape, every
+        // invite reads as 'client' (the migration default).
+        if (!isMissingColumnError(e2)) throw e2;
+        const res = await db
+          .prepare(
+            'SELECT id, username, created_at AS createdAt, expires_at AS expiresAt, used_at AS usedAt FROM invites ORDER BY created_at DESC LIMIT 100'
+          )
+          .all();
+        inviteRows = res.results || [];
+      }
     }
     const invites = inviteRows.map((r) => ({
       id: r.id,
       username: r.username,
       role: isRole(r.role) ? r.role : ROLE_CLIENT,
+      durationDays: normalizeDurationDays(r.durationDays),
       createdAt: r.createdAt,
       expiresAt: r.expiresAt,
       status: r.usedAt ? 'used' : r.expiresAt <= nowIso ? 'expired' : 'pending',
@@ -53,24 +66,26 @@ export async function onRequest(context) {
     let clients = [];
     try {
       const cres = await db
-        .prepare('SELECT username, role, created_at AS createdAt, disabled_at AS disabledAt FROM client_users ORDER BY created_at DESC LIMIT 100')
+        .prepare('SELECT username, role, created_at AS createdAt, expires_at AS expiresAt, disabled_at AS disabledAt FROM client_users ORDER BY created_at DESC LIMIT 100')
         .all();
       clients = (cres.results || []).map((r) => ({
         username: r.username,
         role: isRole(r.role) ? r.role : ROLE_CLIENT,
         createdAt: r.createdAt,
+        expiresAt: r.expiresAt || null,
         disabled: !!r.disabledAt,
       }));
     } catch (e) {
       if (!isMissingColumnError(e)) throw e;
       try {
         const cres = await db
-          .prepare('SELECT username, created_at AS createdAt, disabled_at AS disabledAt FROM client_users ORDER BY created_at DESC LIMIT 100')
+          .prepare('SELECT username, role, created_at AS createdAt, disabled_at AS disabledAt FROM client_users ORDER BY created_at DESC LIMIT 100')
           .all();
         clients = (cres.results || []).map((r) => ({
           username: r.username,
-          role: ROLE_CLIENT,
+          role: isRole(r.role) ? r.role : ROLE_CLIENT,
           createdAt: r.createdAt,
+          expiresAt: null,
           disabled: !!r.disabledAt,
         }));
       } catch {
@@ -79,7 +94,7 @@ export async function onRequest(context) {
           const fallback = await db
             .prepare('SELECT username, created_at AS createdAt FROM client_users ORDER BY created_at DESC LIMIT 100')
             .all();
-          clients = (fallback.results || []).map((r) => ({ username: r.username, role: ROLE_CLIENT, createdAt: r.createdAt, disabled: false }));
+          clients = (fallback.results || []).map((r) => ({ username: r.username, role: ROLE_CLIENT, createdAt: r.createdAt, expiresAt: null, disabled: false }));
         } catch {}
       }
     }

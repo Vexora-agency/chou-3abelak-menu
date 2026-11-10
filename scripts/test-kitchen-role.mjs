@@ -8,15 +8,21 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import {
+  ACCOUNT_DURATIONS,
   ROLE_CLIENT,
   ROLE_KITCHEN,
+  accountExpiresAt,
+  clampSessionSec,
   consumeInvite,
   findInviteByHash,
   getRole,
   inviteUsable,
+  isAccountExpired,
+  isDurationDays,
   isMissingColumnError,
   isRole,
   newInviteToken,
+  normalizeDurationDays,
   normalizeRole,
   requireKitchenOrOwner,
   requireOwner,
@@ -79,6 +85,16 @@ function makeDb() {
 }
 
 function migratedDb() {
+  const db = makeDb();
+  db.exec(mig('0007_client_access.sql'));
+  db.exec(mig('0008_client_user_status.sql'));
+  db.exec(mig('0028_kitchen_role.sql'));
+  db.exec(mig('0030_account_expiry.sql'));
+  return db;
+}
+
+// Post-0028 but pre-0030: has role, no duration_days / expires_at.
+function midDb() {
   const db = makeDb();
   db.exec(mig('0007_client_access.sql'));
   db.exec(mig('0008_client_user_status.sql'));
@@ -529,6 +545,168 @@ check('isMissingColumnError', isMissingColumnError(new Error('D1_ERROR: no such 
   const l = await call(listInvites, 'GET', '/api/admin/invites/list', { cookie: oc, env });
   const lb = await l.json();
   check('legacy list ok, roles backfilled', l.status === 200 && (lb.invites || []).every((i) => i.role === 'client'));
+}
+
+/* ---------- 10. optional account lifetime (migration 0030) ---------- */
+{
+  // Migration shape on real SQLite.
+  const db0 = migratedDb();
+  const colsOf = async (t) =>
+    (await db0.prepare('SELECT name FROM pragma_table_info(?)').bind(t).all()).results.map((c) => c.name);
+  check('0030 invites.duration_days exists', (await colsOf('invites')).includes('duration_days'));
+  check('0030 client_users.expires_at exists', (await colsOf('client_users')).includes('expires_at'));
+  // Pre-0030 rows read as open-ended (NULL expiry).
+  await db0.prepare(`INSERT INTO client_users (username, pass_hash, created_at, role) VALUES ('old-open','h','2020-01-01T00:00:00.000Z','client')`).run();
+  check(
+    '0030 backfills expires_at NULL (open)',
+    (await db0.prepare('SELECT expires_at AS e FROM client_users WHERE username = ?').bind('old-open').first())?.e === null
+  );
+
+  // Validators.
+  check('ACCOUNT_DURATIONS is 1/7/30', JSON.stringify(ACCOUNT_DURATIONS) === '[1,7,30]');
+  check('isDurationDays accepts 1/7/30/null/undefined', isDurationDays(1) && isDurationDays(7) && isDurationDays(30) && isDurationDays(null) && isDurationDays(undefined));
+  check('isDurationDays rejects garbage', !isDurationDays(0) && !isDurationDays(5) && !isDurationDays(90) && !isDurationDays('7') && !isDurationDays(true) && !isDurationDays(NaN));
+  check('normalizeDurationDays fail-closed', normalizeDurationDays(7) === 7 && normalizeDurationDays(null) === null && normalizeDurationDays(undefined) === null && normalizeDurationDays(99) === null && normalizeDurationDays('x') === null);
+  const t0 = new Date('2026-01-01T00:00:00.000Z');
+  check('accountExpiresAt 1d', accountExpiresAt(t0, 1) === '2026-01-02T00:00:00.000Z');
+  check('accountExpiresAt open is null', accountExpiresAt(t0, null) === null && accountExpiresAt(t0, undefined) === null);
+  check('isAccountExpired', isAccountExpired({ expiresAt: '2020-01-01T00:00:00.000Z' }, '2026-01-01T00:00:00.000Z') === true);
+  check('isAccountExpired open never', isAccountExpired({ expiresAt: null }, '2026-01-01T00:00:00.000Z') === false);
+  check('isAccountExpired future no', isAccountExpired({ expires_at: '2099-01-01T00:00:00.000Z' }, '2026-01-01T00:00:00.000Z') === false);
+  check('clampSessionSec open keeps default', clampSessionSec(3600, null, 0) === 3600);
+  check('clampSessionSec caps at remaining', clampSessionSec(90 * 86400, new Date(7 * 86400 * 1000).toISOString(), 0) === 7 * 86400);
+  check('clampSessionSec keeps shorter default', clampSessionSec(12 * 3600, new Date(86400 * 1000).toISOString(), 0) === 12 * 3600);
+
+  const db = migratedDb();
+  const env = baseEnv(db, makeKv());
+  const oc = await ownerCookie();
+  const tokenOf = (link) => String(link || '').split('/invite/').pop();
+
+  // create: duration validated, stored, echoed.
+  const badDur = await call(createInvite, 'POST', '/api/admin/invites/create', {
+    cookie: oc, body: { username: 'tmp-bad', durationDays: 5 }, env,
+  });
+  check('create rejects durationDays=5 (400 bad_duration)', badDur.status === 400 && (await badDur.json()).error === 'bad_duration');
+  const badDur2 = await call(createInvite, 'POST', '/api/admin/invites/create', {
+    cookie: oc, body: { username: 'tmp-bad2', durationDays: 'forever' }, env,
+  });
+  check('create rejects durationDays=forever', badDur2.status === 400 && (await badDur2.json()).error === 'bad_duration');
+
+  const k7 = await call(createInvite, 'POST', '/api/admin/invites/create', {
+    cookie: oc, body: { username: 'temp-chef', role: 'kitchen', durationDays: 7 }, env,
+  });
+  const k7Body = await k7.json();
+  check('create kitchen 7d ok + echoes duration', k7.status === 200 && k7Body.durationDays === 7);
+  check(
+    '7d invite stored',
+    (await db.prepare('SELECT duration_days AS d FROM invites WHERE username = ?').bind('temp-chef').first())?.d === 7
+  );
+
+  const s30 = await call(createInvite, 'POST', '/api/admin/invites/create', {
+    cookie: oc, body: { username: 'temp-str', durationDays: '30' }, env,
+  });
+  check("create accepts numeric string '30'", s30.status === 200 && (await s30.json()).durationDays === 30);
+
+  const op = await call(createInvite, 'POST', '/api/admin/invites/create', {
+    cookie: oc, body: { username: 'temp-open' }, env,
+  });
+  const opBody = await op.json();
+  check('create defaults open (null)', op.status === 200 && opBody.durationDays === null);
+  check(
+    'open invite stored NULL',
+    (await db.prepare('SELECT duration_days AS d FROM invites WHERE username = ?').bind('temp-open').first())?.d === null
+  );
+
+  // Kitchen redeem with 7d: account carries expires_at, session capped at 7d (< 90d).
+  const rk = await call(redeem, 'POST', '/api/invite/redeem', { body: { token: tokenOf(k7Body.link) }, env });
+  check('kitchen 7d redeem ok', rk.status === 200 && (await rk.json()).ok === true);
+  const kRow = await db.prepare('SELECT expires_at AS e FROM client_users WHERE username = ?').bind('temp-chef').first();
+  const kExpMs = Date.parse(kRow?.e || '');
+  check('kitchen account carries expires_at ~+7d', Number.isFinite(kExpMs) && Math.abs(kExpMs - (Date.now() + 7 * 86400e3)) < 120e3);
+  const kPay = await verifySessionToken(secret, tokenFrom(rk));
+  check('kitchen session capped at 7d (shorter than 90d)', kPay && kPay.exp - kPay.iat <= 7 * 86400 && kPay.exp - kPay.iat > 7 * 86400 - 120);
+  check('kitchen cookie Max-Age matches capped session', (rk.headers.get('Set-Cookie') || '').includes(`Max-Age=${kPay.exp - kPay.iat}`));
+
+  // Client redeem with 1d: account expires_at ~+1d, session stays 12h (min(12h, 1d)).
+  const c1 = await call(createInvite, 'POST', '/api/admin/invites/create', {
+    cookie: oc, body: { username: 'temp-reg', durationDays: 1 }, env,
+  });
+  const c1Body = await c1.json();
+  const rc = await call(redeem, 'POST', '/api/invite/redeem', {
+    body: { token: tokenOf(c1Body.link), password: 'abcdefgh1234' }, env,
+  });
+  check('client 1d redeem ok', rc.status === 200 && (await rc.json()).ok === true);
+  const cRow = await db.prepare('SELECT expires_at AS e FROM client_users WHERE username = ?').bind('temp-reg').first();
+  const cExpMs = Date.parse(cRow?.e || '');
+  check('client account carries expires_at ~+1d', Number.isFinite(cExpMs) && Math.abs(cExpMs - (Date.now() + 86400e3)) < 120e3);
+  const cPay = await verifySessionToken(secret, tokenFrom(rc));
+  check('client 1d session stays 12h (min default)', cPay && cPay.exp - cPay.iat === 12 * 3600);
+
+  // Open accounts: no expires_at, default sessions.
+  const ro = await call(redeem, 'POST', '/api/invite/redeem', {
+    body: { token: tokenOf(opBody.link), password: 'abcdefgh1234' }, env,
+  });
+  check('open client redeem ok', ro.status === 200);
+  check(
+    'open account expires_at NULL',
+    (await db.prepare('SELECT expires_at AS e FROM client_users WHERE username = ?').bind('temp-open').first())?.e === null
+  );
+  const oPay = await verifySessionToken(secret, tokenFrom(ro));
+  check('open client session default 12h', oPay && oPay.exp - oPay.iat === 12 * 3600);
+
+  // Login: remember=true capped by the 1d account expiry (<= 1d, not 30d).
+  const li = await call(login, 'POST', '/api/auth/login', {
+    body: { username: 'temp-reg', password: 'abcdefgh1234', remember: true }, env,
+  });
+  const liPay = await verifySessionToken(secret, tokenFrom(li));
+  check('login remember capped by account expiry', li.status === 200 && liPay && liPay.exp - liPay.iat <= 86400 && liPay.exp - liPay.iat > 86400 - 180);
+
+  // Login after expiry: rejected with the CURRENT shape (no oracle).
+  const past = new Date(Date.now() - 3600e3).toISOString();
+  await db.prepare('UPDATE client_users SET expires_at = ? WHERE username = ?').bind(past, 'temp-reg').run();
+  const le = await call(login, 'POST', '/api/auth/login', {
+    body: { username: 'temp-reg', password: 'abcdefgh1234' }, env,
+  });
+  const leBody = await le.json();
+  check('expired client login 401 invalid (same as wrong password)', le.status === 401 && leBody.error === 'invalid');
+  await db.prepare('UPDATE client_users SET expires_at = ? WHERE username = ?').bind(past, 'temp-chef').run();
+  const ke = await call(login, 'POST', '/api/auth/login', {
+    body: { username: 'temp-chef', password: 'whatever-password-xyz' }, env,
+  });
+  check('expired kitchen login still 403 link-only (no oracle)', ke.status === 403 && (await ke.json()).error === 'kitchen_link_only');
+
+  // List: invites carry durationDays, accounts carry expiresAt.
+  const l = await call(listInvites, 'GET', '/api/admin/invites/list', { cookie: oc, env });
+  const lb = await l.json();
+  check('list invite carries durationDays=7', (lb.invites || []).find((i) => i.username === 'temp-chef')?.durationDays === 7);
+  check('list open invite durationDays null', (lb.invites || []).find((i) => i.username === 'temp-open')?.durationDays === null);
+  const listedReg = (lb.clients || []).find((c) => c.username === 'temp-reg');
+  check('list account carries expiresAt (expired)', listedReg && listedReg.expiresAt === past);
+  check('list open account expiresAt null', (lb.clients || []).find((c) => c.username === 'temp-open')?.expiresAt === null);
+  check('list never leaks hashes', JSON.stringify(lb).includes('token_hash') === false && JSON.stringify(lb).includes('pass_hash') === false);
+
+  // Mid-level DB (0028, pre-0030): open flows work, limited fails closed, list nulls.
+  const mdb = midDb();
+  const menv = baseEnv(mdb, makeKv());
+  const moc = await ownerCookie();
+  const mOpen = await call(createInvite, 'POST', '/api/admin/invites/create', {
+    cookie: moc, body: { username: 'mid-open', role: 'kitchen' }, env: menv,
+  });
+  check('pre-0030 DB still mints open invite', mOpen.status === 200);
+  const mLim = await call(createInvite, 'POST', '/api/admin/invites/create', {
+    cookie: moc, body: { username: 'mid-lim', durationDays: 7 }, env: menv,
+  });
+  check('pre-0030 DB refuses limited invite (503, no silent open)', mLim.status === 503);
+  const mRedeem = await call(redeem, 'POST', '/api/invite/redeem', {
+    body: { token: tokenOf((await mOpen.json()).link) }, env: menv,
+  });
+  check('pre-0030 DB redeems open pairing', mRedeem.status === 200);
+  const ml = await (await call(listInvites, 'GET', '/api/admin/invites/list', { cookie: moc, env: menv })).json();
+  check('pre-0030 list nulls (no crash)', (ml.invites || []).every((i) => i.durationDays === null) && (ml.clients || []).every((c) => c.expiresAt === null));
+  const mLogin = await call(login, 'POST', '/api/auth/login', {
+    body: { username: 'mid-open', password: 'whatever-password-xyz' }, env: menv,
+  });
+  check('pre-0030 kitchen login still link-only', mLogin.status === 403);
 }
 
 if (fails) {

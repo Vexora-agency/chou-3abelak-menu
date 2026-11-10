@@ -3,7 +3,7 @@ import type { MenuData } from '@/src/types/menu';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { featuresConfig } from '@/src/config/features.config';
 import { socialOrderOrDefault } from '@/src/utils/settingsDefaults';
-import { Store, ShoppingBag, BellRing, LayoutGrid, ShieldCheck } from 'lucide-react';
+import { Store, ShoppingBag, BellRing, LayoutGrid, ShieldCheck, Users } from 'lucide-react';
 import { SettingsGroupBody, SettingsGroupHeader } from '../SettingsCollapsible';
 import { AnnouncementSection } from '../AnnouncementSection';
 import { DeliveryZonesSection } from '../DeliveryZonesSection';
@@ -16,6 +16,7 @@ import { SmartBadgesSection } from '../SmartBadgesSection';
 import { ShowMoreSection } from '../ShowMoreSection';
 import { ImageOptimizeSection } from '../ImageOptimizeSection';
 import { AccessSection } from '../AccessSection';
+import { TeamAccessSection } from '../TeamAccessSection';
 import { SentrySection } from '../SentrySection';
 import { TelegramSection } from '../TelegramSection';
 import { SoundsSection } from '../SoundsSection';
@@ -387,13 +388,30 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         />
       </SettingsParentGroup>
 
-      {/* 5. Access & Diagnostics — الوصول والتشخيص (owner only: client
+      {/* 5. Team & Crew — الفريق والطاقم (owner only: kitchen invites +
+          delivery-crew sharing live here, apart from client access). */}
+      {isOwner !== false && (
+      <SettingsParentGroup
+        groupKey="grp-team"
+        title={isAr ? 'الفريق والطاقم' : 'Team & Crew'}
+        subtitle={isAr ? 'دعوات المطبخ ومشاركة طاقم التليجرام' : 'Kitchen invites and Telegram crew sharing'}
+        icon={<Users size={18} />}
+        lang={lang}
+        collapsedGroups={collapsedGroups}
+        onToggleCollapse={onToggleCollapse}
+      >
+        {/* Kitchen invites + kitchen logins + delivery-crew sharing. */}
+        <TeamAccessSection lang={lang} adminFetch={adminFetch} onConfirm={onConfirm} collapsed={!!collapsedGroups['team-access']} onToggleCollapse={() => onToggleCollapse('team-access')} />
+      </SettingsParentGroup>
+      )}
+
+      {/* 6. Access & Diagnostics — الوصول والتشخيص (owner only: client
           logins never see the group — not even an empty shell). */}
       {isOwner !== false && (
       <SettingsParentGroup
         groupKey="grp-access"
         title={isAr ? 'الوصول والتشخيص' : 'Access & Diagnostics'}
-        subtitle={isAr ? 'دعوات الدخول (عميل/مطبخ) ومشاركة الطاقم ومراقبة الأخطاء' : 'Access invites (client/kitchen), crew sharing and error monitoring'}
+        subtitle={isAr ? 'دعوات العملاء وجلسات المالك ومراقبة الأخطاء' : 'Client invites, master sessions and error monitoring'}
         icon={<ShieldCheck size={18} />}
         lang={lang}
         collapsedGroups={collapsedGroups}

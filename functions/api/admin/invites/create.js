@@ -1,9 +1,12 @@
 /**
- * Mint an invite link: POST /api/admin/invites/create  { username, role? }
+ * Mint an invite link: POST /api/admin/invites/create  { username, role?, durationDays? }
  * Owner-only (master session). The raw token is returned ONCE — only its
  * SHA-256 hash is stored. Fails closed without SITE_URL (no Host-derived
  * links, ever) or without D1. role is 'client' (default) or 'kitchen';
- * anything else is a 400 — never silently coerced.
+ * anything else is a 400 — never silently coerced. durationDays is
+ * 1, 7, 30 or null/omitted (open-ended, the default); anything else is a
+ * 400. The duration is stamped onto the account as expires_at at redeem
+ * time; open invites mint accounts with expires_at NULL.
  */
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
@@ -11,10 +14,12 @@ import {
   INVITE_TTL_SEC,
   ROLE_CLIENT,
   inviteLinkFor,
+  isDurationDays,
   isInviteUsername,
   isMissingColumnError,
   isRole,
   newInviteToken,
+  normalizeDurationDays,
   normalizeUsername,
   requireOwner,
   sha256Hex,
@@ -53,6 +58,17 @@ export async function onRequest(context) {
   }
   const role = roleInput || ROLE_CLIENT;
 
+  // Optional account lifetime: 1/7/30 days, or null/omitted for open-ended.
+  // Numeric strings ('7') are accepted leniently; anything else is a 400 —
+  // never silently coerced to open.
+  const rawDuration = body.durationDays === undefined ? null : body.durationDays;
+  const durationInput =
+    typeof rawDuration === 'string' && rawDuration.trim() !== '' ? Number(rawDuration.trim()) : rawDuration;
+  if (!isDurationDays(durationInput)) {
+    return jsonNoStore({ error: 'bad_duration', message: 'Duration must be 1, 7, 30 or omitted (open-ended)' }, 400);
+  }
+  const durationDays = normalizeDurationDays(durationInput);
+
   const db = env.ORDERS_DB || null;
   if (!db) return jsonNoStore({ error: 'unavailable', message: 'Login is not configured' }, 503);
 
@@ -90,23 +106,37 @@ export async function onRequest(context) {
     try {
       await db
         .prepare(
-          'INSERT INTO invites (id, username, role, token_hash, created_at, expires_at, used_at, attempts) VALUES (?, ?, ?, ?, ?, ?, NULL, 0)'
+          'INSERT INTO invites (id, username, role, duration_days, token_hash, created_at, expires_at, used_at, attempts) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 0)'
         )
-        .bind(id, username, role, await sha256Hex(token), now.toISOString(), expiresAt)
+        .bind(id, username, role, durationDays, await sha256Hex(token), now.toISOString(), expiresAt)
         .run();
     } catch (e) {
-      // Pre-0028 database: no role column yet. A default-role invite is
-      // storable in the legacy shape; a kitchen invite fails closed (503)
-      // rather than silently minting the wrong role.
-      if (!isMissingColumnError(e) || role !== ROLE_CLIENT) throw e;
-      await db
-        .prepare(
-          'INSERT INTO invites (id, username, token_hash, created_at, expires_at, used_at, attempts) VALUES (?, ?, ?, ?, ?, NULL, 0)'
-        )
-        .bind(id, username, await sha256Hex(token), now.toISOString(), expiresAt)
-        .run();
+      // Pre-0030 database: no duration_days column. An open-ended invite is
+      // storable in the older shape; a limited one fails closed (503) rather
+      // than silently minting an open-ended account.
+      if (!isMissingColumnError(e)) throw e;
+      if (durationDays !== null) throw e;
+      try {
+        await db
+          .prepare(
+            'INSERT INTO invites (id, username, role, token_hash, created_at, expires_at, used_at, attempts) VALUES (?, ?, ?, ?, ?, ?, NULL, 0)'
+          )
+          .bind(id, username, role, await sha256Hex(token), now.toISOString(), expiresAt)
+          .run();
+      } catch (e2) {
+        // Pre-0028 database: no role column either. A default-role invite is
+        // storable in the legacy shape; a kitchen invite fails closed (503)
+        // rather than silently minting the wrong role.
+        if (!isMissingColumnError(e2) || role !== ROLE_CLIENT) throw e2;
+        await db
+          .prepare(
+            'INSERT INTO invites (id, username, token_hash, created_at, expires_at, used_at, attempts) VALUES (?, ?, ?, ?, ?, NULL, 0)'
+          )
+          .bind(id, username, await sha256Hex(token), now.toISOString(), expiresAt)
+          .run();
+      }
     }
-    return jsonNoStore({ ok: true, link, username, role, expiresAt });
+    return jsonNoStore({ ok: true, link, username, role, durationDays, expiresAt });
   } catch {
     return jsonNoStore({ error: 'unavailable', message: 'Could not create the invite' }, 503);
   }

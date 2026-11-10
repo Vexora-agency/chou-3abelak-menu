@@ -62,7 +62,9 @@ interface BackupPanelProps {
   activity: ActivityEntry[];
   /** Owner signal: pills + auto-backup switch render only for the owner.
    *  Clients see plain rows (all theirs) and never learn of the master. */
-  isOwner: boolean;
+  /** Owner signal: true = master login, false = client login, null = still
+      checking (consumers fail-open for shells, fail-closed for actions). */
+  isOwner: boolean | null;
   /** History/trash failed to load (vs genuinely empty) + retry. */
   loadError: boolean;
   onRetryLoad: () => void;

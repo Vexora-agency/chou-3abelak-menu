@@ -220,6 +220,12 @@
   content-visibility: auto;
   contain-intrinsic-size: auto 640px;
   padding-block-end: 14px;
+  /* Hover lifts cards 4-6px above their row (card-lift/photo-card) and grows
+     the offset shadow — paint containment would slice that overhang off the
+     first row. This top breathing room (pulled back by the negative margin,
+     so layout does not move) mirrors the bottom padding for the same reason. */
+  padding-block-start: 12px;
+  margin-block-start: -12px;
 }
 /* Round cards deliberately overhang their cell: the badge sits 7px above
    the card edge and the desktop hover lifts the card another 6px + 2.5%
@@ -348,6 +354,29 @@
   background:
     radial-gradient(80% 78% at 50% 30%, rgba(255, 196, 0, 0.1) 0%, transparent 60%),
     linear-gradient(180deg, #f7f2e7 0%, #efe7d6 100%);
+}
+
+/* ---------- Touch press feedback (no hover on phones) ----------
+   The hover choreography above lives inside (hover:hover) on purpose, but a
+   tap must still feel alive. :active fires on touch, so these tactile rules
+   live outside the fine-pointer block. All compositor-only (scale/translate)
+   plus the title-marker draw — no paint, no layout, 60fps on weak phones. */
+.photo-card-interactive:active {
+  scale: 0.98;
+}
+.photo-card-interactive:active .photo-card-img {
+  scale: 1.05;
+}
+.photo-card-interactive:active .photo-card-title::after {
+  transform: scaleX(1);
+}
+.round-card:active {
+  scale: 0.98;
+}
+/* Grid text-cards already press via .card-lift:active; give their photo
+   background the same tap-zoom language as the photo cards. */
+.grid-card:active .grid-card-photo {
+  scale: 1.05;
 }
 
 @media (hover: hover) and (pointer: fine) {

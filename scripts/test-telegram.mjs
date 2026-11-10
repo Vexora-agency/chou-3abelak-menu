@@ -304,7 +304,7 @@ const dbNew = orderDb(true, 'new');
 const okConfirm = await handleOrderCallback(dbNew, 'tok', { ...cbBase, data: `tg:cfm:ord-1` });
 ok('confirm new order', okConfirm.handled === true && okConfirm.status === 'confirmed' && dbNew.orders.get('ord-1').status === 'confirmed');
 const confirmKb = cbCalls.filter((c) => c.method === 'editMessageReplyMarkup');
-ok('confirm re-arms delivered keyboard (no freeze)', confirmKb.length === 1 && JSON.stringify(confirmKb[0].body.reply_markup).includes('tg:rcv:ord-1'));
+ok('confirm arms delivered keyboard in the text edit (single round-trip)', confirmKb.length === 0 && cbCalls.some((c) => c.method === 'editMessageText' && JSON.stringify(c.body.reply_markup || {}).includes('tg:rcv:ord-1')));
 const stamped = cbCalls.find((c) => c.method === 'editMessageText');
 ok('stamped message keeps html (links survive)', !!stamped && stamped.body.text.includes('<b>') && stamped.body.parse_mode === 'HTML');
 // Rebuild from the DB row keeps the exact-pin maps link after confirm.
@@ -333,7 +333,7 @@ ok('confirm stamps preparing banner', !!stamped && stamped.body.text.includes('ð
 const repeat = await handleOrderCallback(dbNew, 'tok', { ...cbBase, callbackId: 'cb2', data: `tg:cfm:ord-1` });
 ok('repeat confirm is noop', repeat.handled === true && repeat.noop === true && cbCalls.filter((c) => c.method === 'editMessageText').length === 1);
 const healKb = cbCalls.filter((c) => c.method === 'editMessageReplyMarkup' && JSON.stringify(c.body.reply_markup || {}).includes('tg:rcv:ord-1'));
-ok('repeat confirm re-asserts delivered keyboard (self-heal)', healKb.length >= 2);
+ok('repeat confirm re-asserts delivered keyboard (self-heal)', healKb.length >= 1);
 // Lost-edit recovery: if the swap edits fail (deleted message), the DB still
 // flips and the answer still clears the spinner; the NEXT tap on the stale
 // buttons heals them instead of stranding them forever.

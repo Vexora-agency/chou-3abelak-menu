@@ -322,19 +322,18 @@
   transform-origin: right center;
 }
 
-/* Branded stand-in when an item has no photo (or the URL broke): warm
-   spotlight + fine diagonal hatching, deliberately not a flat gray box. */
+/* Branded stand-in when an item has no photo (or the URL broke): one soft
+   gold wash over a neutral well — no hatching, no busy pattern competing
+   with the real dish photos around it. */
 .photo-placeholder {
   background:
-    radial-gradient(80% 78% at 50% 34%, rgba(255, 196, 0, 0.18) 0%, transparent 62%),
-    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0 10px, transparent 10px 20px),
-    linear-gradient(180deg, #1d1d1d 0%, #0f0f0f 100%);
+    radial-gradient(80% 78% at 50% 30%, rgba(255, 196, 0, 0.1) 0%, transparent 60%),
+    linear-gradient(180deg, #202020 0%, #141414 100%);
 }
 .photo-placeholder-light {
   background:
-    radial-gradient(80% 78% at 50% 34%, rgba(255, 196, 0, 0.30) 0%, transparent 62%),
-    repeating-linear-gradient(135deg, rgba(10, 10, 10, 0.04) 0 10px, transparent 10px 20px),
-    linear-gradient(180deg, #fdf7e2 0%, #f1eee4 100%);
+    radial-gradient(80% 78% at 50% 30%, rgba(255, 196, 0, 0.1) 0%, transparent 60%),
+    linear-gradient(180deg, #f7f2e7 0%, #efe7d6 100%);
 }
 
 @media (hover: hover) and (pointer: fine) {

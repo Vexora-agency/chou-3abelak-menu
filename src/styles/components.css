@@ -30,6 +30,13 @@
 .slider-track {
   transform: translateX(var(--sx, 0));
   transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Default OFF: a permanent compositor layer for the whole track costs
+     memory on every visit. FeaturedCarousel adds .slider-sliding only while
+     a slide transition is actually running (cleared ~750ms after each step),
+     so the promotion exists solely during the animation. */
+  will-change: auto;
+}
+.slider-track.slider-sliding {
   will-change: transform;
 }
 .slider-track-instant {
@@ -45,13 +52,13 @@
   --sh: #2A2A2A;
 }
 
-/* Interactive touch scaling: smooth springy zoom on hover + press */
+/* Interactive touch scaling: smooth springy zoom on hover + press.
+   NOTE (perf): the :hover grow lives inside the fine-pointer media block
+   below — on touch :hover sticks after the first tap (sticky zoom + a
+   filter repaint on every tapped button). :active press feedback stays
+   global so touch keeps its tap response. */
 .btn-tactile {
   transition: scale 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.3s ease;
-}
-.btn-tactile:hover {
-  scale: 1.045;
-  filter: brightness(1.07);
 }
 .btn-tactile:active {
   scale: 0.94;
@@ -70,19 +77,16 @@
   scale: 0.97;
 }
 
-/* Grid cards (Sides, Drinks): offset shadow that grows on hover and mirrors in RTL */
+/* Grid cards (Sides, Drinks): offset shadow.
+   NOTE (perf): the hover shadow growth lives inside the fine-pointer media
+   block below — a box-shadow change repaints the whole card, and on touch
+   :hover sticks after the first tap (permanently enlarged shadow). */
 .grid-card {
   box-shadow: 4px 4px 0 var(--sh, var(--primary));
   transition: translate 0.25s ease, scale 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
-.grid-card:hover {
-  box-shadow: 7px 7px 0 var(--sh, var(--primary));
-}
 [dir="rtl"] .grid-card {
   box-shadow: -4px 4px 0 var(--sh, var(--primary));
-}
-[dir="rtl"] .grid-card:hover {
-  box-shadow: -7px 7px 0 var(--sh, var(--primary));
 }
 
 /* ---------- Premium header / footer surface ---------- */
@@ -347,6 +351,16 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .btn-tactile:hover {
+    scale: 1.045;
+    filter: brightness(1.07);
+  }
+  .grid-card:hover {
+    box-shadow: 7px 7px 0 var(--sh, var(--primary));
+  }
+  [dir="rtl"] .grid-card:hover {
+    box-shadow: -7px 7px 0 var(--sh, var(--primary));
+  }
   .photo-card-interactive:hover {
     translate: 0 -6px;
     box-shadow: 8px 8px 0 var(--sh, var(--primary));
@@ -531,4 +545,35 @@
 .round-card:focus-visible {
   outline: 3px solid var(--primary);
   outline-offset: 3px;
+}
+
+/* ---------- SmartMenuImage: static skeleton + fade on decode ----------
+   Single-<img> pattern: while the photo decodes the element paints a flat
+   neutral wash (visible because the img box is CSS-sized); once decoded the
+   photo covers it and a short opacity-only fade plays.
+   NOTE (perf): this used to be an infinite background-position shimmer on
+   EVERY not-yet-loaded image — N perpetual paint animations across a long
+   menu, dragging scroll/idle FPS down. The static wash reads identically
+   at a glance and costs zero frames. Fade is opacity-only so it composes
+   with the existing scale/translate hover zooms (photo-card-img,
+   grid-card-photo). Neutral gray works on dark + light cards. */
+.smart-img-loading {
+  background: rgba(128, 128, 128, 0.18);
+}
+.smart-img-loaded {
+  background: transparent;
+  animation: smart-img-fade-in 0.35s ease both;
+}
+@keyframes smart-img-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .smart-img-loaded {
+    animation: none;
+  }
 }

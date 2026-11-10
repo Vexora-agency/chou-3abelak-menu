@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Award, Flame, SlidersHorizontal, Sparkles, UtensilsCrossed } from 'lucide-react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import type { ResolvedMark } from '@/src/utils/cardMark';
+import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges, hasOptions } from '@/src/utils/pricing';
 import { MenuListItemAction } from './MenuListItemAction';
@@ -27,6 +28,8 @@ interface MenuListPhotoCardProps {
   onOpenItem: (item: MenuItem) => void;
   /** Menu-only mode (starter): hides ordering UI, cards are not clickable. */
   orderingEnabled?: boolean;
+  /** First-row images load eager (passed from MenuList for index < 2). */
+  eager?: boolean;
 }
 /**
  * Fourth display layout: photo-first cards.
@@ -53,6 +56,7 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
   onUpdateLine,
   onOpenItem,
   orderingEnabled = true,
+  eager = false,
 }) => {
   const idx = index;
   const isSoldOut = !item.available;
@@ -84,8 +88,8 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
       key={item.id}
       initial={skipEntrance ? false : { opacity: 0, y: 22 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '0px' }}
-      transition={{ duration: 0.55, delay: Math.min(idx, 5) * 0.07, ease: [0.22, 1, 0.36, 1] }}
+      viewport={{ once: true, margin: '100px' }}
+      transition={{ duration: 0.55, delay: Math.min(idx, 3) * 0.05, ease: [0.22, 1, 0.36, 1] }}
       style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
       onClick={() => interactive && onOpenItem(item)}
       role={interactive ? 'button' : undefined}
@@ -109,12 +113,11 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
       <div className="relative">
         <div className="relative aspect-[16/10] overflow-hidden">
           {showImage ? (
-            <img
-              src={item.imageUrl}
-              alt={name}
-              loading="lazy"
-              decoding="async"
+            <SmartMenuImage
+              item={item}
+              name={name}
               sizes="(max-width: 1023px) 50vw, (max-width: 1279px) 33vw, 25vw"
+              eager={eager}
               onError={() => setFailedSrc(item.imageUrl ?? '')}
               className="photo-card-img absolute inset-0 h-full w-full object-cover"
             />

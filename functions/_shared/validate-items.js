@@ -314,6 +314,27 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
         }
       }
     }
+    // Optional responsive variants { s, m } (s≈400w, m≈800w; imageUrl stays
+    // the largest ≈1280w). Same URL rules as imageUrl. Invalid/empty values
+    // are dropped silently (never fail the item): clean then continue.
+    let imageVariants;
+    if (item.imageVariants !== undefined && item.imageVariants !== null) {
+      if (item.imageVariants && typeof item.imageVariants === 'object' && !Array.isArray(item.imageVariants)) {
+        const cleanedVariants = {};
+        for (const vk of ['s', 'm']) {
+          const vv = item.imageVariants[vk];
+          if (vv === undefined || vv === null || vv === '') continue;
+          if (typeof vv !== 'string') continue;
+          const rawVariant = stripControls(vv).trim();
+          if (!rawVariant) continue;
+          if (rawVariant.length > 500) continue;
+          if (!/^(https?:\/\/|\/)/i.test(rawVariant)) continue;
+          cleanedVariants[vk] = rawVariant;
+        }
+        if (Object.keys(cleanedVariants).length) imageVariants = cleanedVariants;
+      }
+      // Non-object imageVariants is dropped silently (no item rejection).
+    }
     const cleanItem = {
       id,
       categoryId,
@@ -325,6 +346,7 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
       available: item.available !== false,
     };
     if (imageUrl) cleanItem.imageUrl = imageUrl;
+    if (imageVariants) cleanItem.imageVariants = imageVariants;
     if (item.noHeat === true) cleanItem.noHeat = true;
     if (variants) cleanItem.variants = variants;
     // Explicit default (★ marks in place, order untouched): must point at a size.

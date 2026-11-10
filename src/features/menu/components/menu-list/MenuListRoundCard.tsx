@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { UtensilsCrossed } from 'lucide-react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import type { ResolvedMark } from '@/src/utils/cardMark';
+import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
 import { MenuListItemAction } from './MenuListItemAction';
@@ -27,6 +28,8 @@ interface MenuListRoundCardProps {
   onOpenItem: (item: MenuItem) => void;
   /** Menu-only mode (starter): hides ordering UI, cards are not clickable. */
   orderingEnabled?: boolean;
+  /** First-row images load eager (passed from MenuList for index < 2). */
+  eager?: boolean;
 }
 
 /**
@@ -54,6 +57,7 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
   onUpdateLine,
   onOpenItem,
   orderingEnabled = true,
+  eager = false,
 }) => {
   const idx = index;
   const isSoldOut = !item.available;
@@ -80,7 +84,7 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
       key={item.id}
       initial={skipEntrance ? false : { opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '0px' }}
+      viewport={{ once: true, margin: '100px' }}
       transition={{ duration: 0.5, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
       style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
       onClick={() => interactive && onOpenItem(item)}
@@ -115,12 +119,14 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
       <div className="round-ring relative mb-3 mt-px h-[116px] w-[116px] shrink-0 rounded-full p-1">
         <span className="round-photo relative block h-full w-full overflow-hidden rounded-full">
           {showImage ? (
-            <img
-              src={item.imageUrl}
-              alt={name}
-              loading="lazy"
-              decoding="async"
+            <SmartMenuImage
+              item={item}
+              name={name}
               sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 20vw"
+              eager={eager}
+              // No shimmer/fade here: dish-pop owns this element's `animation`
+              // and the .round-photo well already covers the loading state.
+              plain
               onError={() => setFailedSrc(item.imageUrl ?? '')}
               className={`photo-card-img dish-pop block h-full w-full rounded-full border-2 object-cover ${
                 darkMode ? 'border-[#141414]' : 'border-white'

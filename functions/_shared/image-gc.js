@@ -20,19 +20,28 @@ export async function markImageGcPending(env) {
   } catch {}
 }
 
-/** Keys under menu/ referenced by the menu document's item photos. */
+/** Keys under menu/ referenced by the menu document's item photos (imageUrl + imageVariants.s/m). */
 export function menuImageKeys(menu) {
   const keys = new Set();
   const items = menu && Array.isArray(menu.items) ? menu.items : [];
   const marker = '/api/images/';
-  for (const item of items) {
-    const raw = item && typeof item.imageUrl === 'string' ? item.imageUrl : '';
+  const addUrl = (raw) => {
+    if (typeof raw !== 'string' || !raw) return;
     const idx = raw.indexOf(marker);
-    if (idx === -1) continue;
+    if (idx === -1) return;
     let key = raw.slice(idx + marker.length);
     const cut = key.search(/[?#]/);
     if (cut !== -1) key = key.slice(0, cut);
     if (IMAGE_KEY_RE.test(key)) keys.add(key);
+  };
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue;
+    addUrl(item.imageUrl);
+    const variants = item.imageVariants;
+    if (variants && typeof variants === 'object' && !Array.isArray(variants)) {
+      addUrl(variants.s);
+      addUrl(variants.m);
+    }
   }
   return keys;
 }

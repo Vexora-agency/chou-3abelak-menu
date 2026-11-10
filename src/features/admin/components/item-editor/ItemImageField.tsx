@@ -5,11 +5,12 @@ import {
   ImagePrepareError,
   UploadError,
   decodeSourceImage,
-  exportCrop,
+  exportResponsiveSet,
   flipSource,
   rotateSource90,
-  uploadItemImage,
+  uploadVariantSet,
   type DecodedSource,
+  type ResponsiveImageSet,
 } from '@/src/lib/image-upload';
 import type { CropRect } from '@/src/lib/crop-math';
 import { CROP_MIN_ZOOM, zoomedCropRect } from '@/src/lib/crop-math';
@@ -27,6 +28,10 @@ interface ItemImageFieldProps {
 const isValidImageUrl = (value: string): boolean => /^(https?:\/\/|\/)/i.test(value.trim());
 
 type Status = 'idle' | 'preparing' | 'uploading' | 'error';
+
+/** Agent 1 adds `imageVariants?: { s?: string; m?: string }` to MenuItem; this
+ *  intersection keeps the field working before and after that lands. */
+type ItemWithVariants = MenuItem & { imageVariants?: { s?: string; m?: string } };
 
 function errorText(code: string, isAr: boolean): string {
   const messages: Record<string, { ar: string; en: string }> = {
@@ -180,10 +185,31 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
   );
 
   const setUrl = (next: string) => {
-    const { imageUrl: _old, ...rest } = item;
+    const { imageUrl: _old, ...rest } = item as ItemWithVariants;
     void _old;
+    const { imageVariants: _variants, ...restNoVariants } = rest;
+    void _variants;
     setFailedUrl(null);
-    onChange(next.trim() ? { ...rest, imageUrl: next } : rest);
+    // External URLs carry no variants — drop any previously uploaded ones.
+    onChange((next.trim() ? { ...restNoVariants, imageUrl: next } : restNoVariants) as MenuItem);
+  };
+
+  /** Persist an uploaded set: full URL plus variant URLs (key dropped when
+   *  no variants were generated, e.g. a tiny crop). */
+  const setUploaded = (fullUrl: string, s?: string, m?: string) => {
+    const { imageUrl: _old, ...rest } = item as ItemWithVariants;
+    void _old;
+    const { imageVariants: _variants, ...restNoVariants } = rest;
+    void _variants;
+    setFailedUrl(null);
+    const imageVariants: { s?: string; m?: string } = {};
+    if (s) imageVariants.s = s;
+    if (m) imageVariants.m = m;
+    onChange(
+      (Object.keys(imageVariants).length > 0
+        ? { ...restNoVariants, imageUrl: fullUrl, imageVariants }
+        : { ...restNoVariants, imageUrl: fullUrl }) as MenuItem,
+    );
   };
 
   const clear = () => {
@@ -220,19 +246,19 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
     setErrorCode(code);
   };
 
-  const uploadBlob = async (blob: Blob) => {
-    replacePreview(URL.createObjectURL(blob));
+  const uploadSet = async (set: ResponsiveImageSet) => {
+    replacePreview(URL.createObjectURL(set.full.blob));
     setStatus('uploading');
 
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const uploaded = await uploadItemImage(blob, {
+      const uploaded = await uploadVariantSet(set, {
         signal: controller.signal,
         onProgress: setProgress,
       });
       abortRef.current = null;
-      setUrl(uploaded.url);
+      setUploaded(uploaded.full.url, uploaded.s?.url, uploaded.m?.url);
       replacePreview(null);
       setProgress(100);
       setStatus('idle');
@@ -265,11 +291,11 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
     }
   };
 
-  /** Export one framing and upload it (shared by the initial and debounced
-   *  auto-saves). */
+  /** Export one framing (full + responsive variants) and upload it (shared
+   *  by the initial and debounced auto-saves). */
   const saveNow = async (src: DecodedSource, rect: CropRect) => {
-    const cropped = await exportCrop(src.source, rect);
-    await uploadBlob(cropped.blob);
+    const set = await exportResponsiveSet(src.source, rect);
+    await uploadSet(set);
   };
 
   const markSaved = () => {
@@ -324,14 +350,14 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
     setSaveState('saving');
     void (async () => {
       try {
-        const cropped = await exportCrop(src.source, rect);
+        const set = await exportResponsiveSet(src.source, rect);
         try {
           src.close();
         } catch {
           // Already closed.
         }
         setCropSrc(null);
-        await uploadBlob(cropped.blob);
+        await uploadSet(set);
         markSaved();
       } catch (error) {
         setCropSrc(null);

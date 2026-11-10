@@ -280,7 +280,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             <div
               className={`absolute inset-0 ${
                 isYellowCard
-                  ? 'bg-gradient-to-t from-white/85 via-white/45 to-white/70'
+                  ? 'bg-gradient-to-t from-white/70 via-white/25 to-white/50'
                   : 'bg-gradient-to-t from-black/80 via-black/45 to-black/60'
               }`}
             />

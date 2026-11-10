@@ -10,6 +10,7 @@
 
 import { getSessionCookie, getSessionSecret, jsonNoStore, verifySessionToken } from '../../_shared/session.js';
 import { isSessionRevoked } from '../../_shared/access.js';
+import { getRequestRole, isKitchenAllowed } from '../../_shared/kitchen-gate.js';
 
 let cachedJwks = null;
 let jwksCachedAt = 0;
@@ -48,6 +49,19 @@ export async function onRequest(context) {
           // (owner sessions are never revoked — see isSessionRevoked).
           if (await isSessionRevoked(env.MENU_KV || null, payload.sub, payload.iat)) {
             return jsonNoStore({ error: 'forbidden', message: 'Forbidden' }, 403);
+          }
+          // Kitchen gate (central policy, see _shared/kitchen-gate.js): the
+          // kitchen role may only read the order feed and update order
+          // status. Owner/admin and client traffic passes through exactly
+          // as before — this branch never changes their behavior.
+          try {
+            const role = await getRequestRole(request, env, payload);
+            if (role === 'kitchen' && !isKitchenAllowed(url.pathname, request.method)) {
+              return jsonNoStore({ error: 'forbidden', message: 'Forbidden' }, 403);
+            }
+          } catch {
+            // Role resolution never fails closed here: an unresolvable role
+            // falls back to the pre-existing session behavior below.
           }
           const res = await next();
           res.headers.set('Cache-Control', 'no-store');
@@ -122,6 +136,16 @@ export async function onRequest(context) {
     if (payload.nbf && curTime < payload.nbf) throw new Error('Token not yet valid');
 
     // Authentication passed
+    // Kitchen gate for Access-asserted identities too (today these carry no
+    // kitchen marker, so this resolves to null and passes through unchanged;
+    // it only activates if the shared role system ever maps an Access
+    // identity to the kitchen role).
+    try {
+      const role = await getRequestRole(request, env, null);
+      if (role === 'kitchen' && !isKitchenAllowed(url.pathname, request.method)) {
+        return jsonNoStore({ error: 'forbidden', message: 'Forbidden' }, 403);
+      }
+    } catch {}
     const res = await next();
     res.headers.set('Cache-Control', 'no-store');
     return res;

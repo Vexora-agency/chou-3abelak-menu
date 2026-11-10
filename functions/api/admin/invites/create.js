@@ -1,15 +1,19 @@
 /**
- * Mint an invite link: POST /api/admin/invites/create  { username }
+ * Mint an invite link: POST /api/admin/invites/create  { username, role? }
  * Owner-only (master session). The raw token is returned ONCE — only its
  * SHA-256 hash is stored. Fails closed without SITE_URL (no Host-derived
- * links, ever) or without D1.
+ * links, ever) or without D1. role is 'client' (default) or 'kitchen';
+ * anything else is a 400 — never silently coerced.
  */
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
 import {
   INVITE_TTL_SEC,
+  ROLE_CLIENT,
   inviteLinkFor,
   isInviteUsername,
+  isMissingColumnError,
+  isRole,
   newInviteToken,
   normalizeUsername,
   requireOwner,
@@ -42,6 +46,12 @@ export async function onRequest(context) {
       400
     );
   }
+
+  const roleInput = typeof body.role === 'string' ? body.role.trim().toLowerCase() : '';
+  if (roleInput && !isRole(roleInput)) {
+    return jsonNoStore({ error: 'bad_role', message: "Role must be 'client' or 'kitchen'" }, 400);
+  }
+  const role = roleInput || ROLE_CLIENT;
 
   const db = env.ORDERS_DB || null;
   if (!db) return jsonNoStore({ error: 'unavailable', message: 'Login is not configured' }, 503);
@@ -77,13 +87,26 @@ export async function onRequest(context) {
     const id = crypto.randomUUID();
     const now = new Date();
     const expiresAt = new Date(now.getTime() + INVITE_TTL_SEC * 1000).toISOString();
-    await db
-      .prepare(
-        'INSERT INTO invites (id, username, token_hash, created_at, expires_at, used_at, attempts) VALUES (?, ?, ?, ?, ?, NULL, 0)'
-      )
-      .bind(id, username, await sha256Hex(token), now.toISOString(), expiresAt)
-      .run();
-    return jsonNoStore({ ok: true, link, username, expiresAt });
+    try {
+      await db
+        .prepare(
+          'INSERT INTO invites (id, username, role, token_hash, created_at, expires_at, used_at, attempts) VALUES (?, ?, ?, ?, ?, ?, NULL, 0)'
+        )
+        .bind(id, username, role, await sha256Hex(token), now.toISOString(), expiresAt)
+        .run();
+    } catch (e) {
+      // Pre-0028 database: no role column yet. A default-role invite is
+      // storable in the legacy shape; a kitchen invite fails closed (503)
+      // rather than silently minting the wrong role.
+      if (!isMissingColumnError(e) || role !== ROLE_CLIENT) throw e;
+      await db
+        .prepare(
+          'INSERT INTO invites (id, username, token_hash, created_at, expires_at, used_at, attempts) VALUES (?, ?, ?, ?, ?, NULL, 0)'
+        )
+        .bind(id, username, await sha256Hex(token), now.toISOString(), expiresAt)
+        .run();
+    }
+    return jsonNoStore({ ok: true, link, username, role, expiresAt });
   } catch {
     return jsonNoStore({ error: 'unavailable', message: 'Could not create the invite' }, 503);
   }

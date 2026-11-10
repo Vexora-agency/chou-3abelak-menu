@@ -148,9 +148,12 @@ export function getSessionSecret(env) {
   return bytes;
 }
 
-export async function createSessionToken(secretBytes, sub, maxAgeSec) {
+export async function createSessionToken(secretBytes, sub, maxAgeSec, extraClaims) {
   const now = Math.floor(Date.now() / 1000);
-  const body = b64urlEncodeText(JSON.stringify({ sub, iat: now, exp: now + maxAgeSec }));
+  // Optional extra claims (e.g. { role: 'kitchen' }). Core fields always
+  // win: extras are spread FIRST so a caller can never override sub/iat/exp.
+  const extra = extraClaims && typeof extraClaims === 'object' ? extraClaims : {};
+  const body = b64urlEncodeText(JSON.stringify({ ...extra, sub, iat: now, exp: now + maxAgeSec }));
   const sigBytes = await hmacSha256(secretBytes, body);
   let sig;
   {

@@ -15,12 +15,14 @@ interface AdminTopBarProps {
   onSignOut?: () => void;
   activeTab: AdminTab;
   onTabChange: (tab: AdminTab) => void;
+  /** Kitchen session: show the orders tab alone (UX only). */
+  kitchenOnly?: boolean;
 }
 
 /** Sticky top bar + tab switcher of the admin panel. */
 export const AdminTopBar: React.FC<AdminTopBarProps> = ({
   lang, onClose, saveSuccess, onToggleLang, autoSave, onToggleAutoSave,
-  onSignOut, activeTab, onTabChange,
+  onSignOut, activeTab, onTabChange, kitchenOnly,
 }) => {
   const isAr = lang === 'ar';
   return (
@@ -56,6 +58,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
               <span>{isAr ? 'EN' : 'عربي'}</span>
             </button>
           )}
+          {!kitchenOnly && (
           <button
             type="button"
             role="switch"
@@ -75,6 +78,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
             </span>
             <span>{isAr ? 'حفظ تلقائي' : 'Auto-save'}</span>
           </button>
+          )}
           {onSignOut && (
           <button
             type="button"
@@ -118,7 +122,10 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
           Mobile shows a 3×2 grid so every tab is visible with no hidden
           horizontal scroll; sm+ keeps the single scrollable row. */}
       <div className="grid grid-cols-3 sm:flex gap-1.5 p-1 bg-neutral-900 rounded-2xl border border-neutral-800 mt-4 mb-6 sm:overflow-x-auto no-scrollbar">
-        {(['dashboard', 'settings', ...(featuresConfig.enableBackup ? ['backup'] as const : []), 'categories', 'libraries', 'items'] as const).map((tab) => (
+        {(kitchenOnly
+          ? (['dashboard'] as const)
+          : (['dashboard', 'settings', ...(featuresConfig.enableBackup ? ['backup'] as const : []), 'categories', 'libraries', 'items'] as const)
+        ).map((tab) => (
           <button
             key={tab}
             type="button"

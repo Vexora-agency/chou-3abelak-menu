@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, Copy, Loader2, Send, Unlink } from 'lucide-react';
+import { Check, Loader2, Send, Unlink } from 'lucide-react';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
@@ -33,7 +33,6 @@ interface TgStatus {
     updatedAt?: string | null;
     sentAt?: string | null;
   } | null;
-  deliveryChats?: Array<{ chatId: number; label?: string | null; linkedAt?: string | null }> | null;
 }
 
 /**
@@ -49,11 +48,6 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
   const [deepLink, setDeepLink] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
-  // Delivery-crew sharing: invite link state lives apart from the owner
-  // pairing above so the two flows never clobber each other.
-  const [crewLink, setCrewLink] = useState<string | null>(null);
-  const [crewBusy, setCrewBusy] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   // Edge-trigger for the one-time "linked" confirmation: the 15s poll would
   // otherwise re-set the same message on every tick.
   const wasLinkedRef = useRef<boolean | null>(null);
@@ -166,96 +160,6 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
     else if (window.confirm(box.body)) void doDisconnect();
   };
 
-  const inviteCrew = async () => {
-    setCrewBusy('code');
-    setCopied(false);
-    try {
-      const res = await adminFetch('/api/admin/telegram', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delivery-code' }),
-      });
-      const data = (await res.json().catch(() => null)) as { deepLink?: string | null } | null;
-      if (!res.ok || !data?.deepLink) {
-        say('err', isAr ? 'تعذر إنشاء رابط الدليفري.' : 'Could not create the delivery link.');
-      } else {
-        setCrewLink(data.deepLink);
-        say('ok', isAr
-          ? 'ابعت الرابط للدليفري — يفتحه ويضغط Start. الرابط صالح لعشر دقائق ولاستخدام واحد.'
-          : 'Send the link to the courier — they open it and press Start. Single-use, ten minutes.');
-      }
-    } catch {
-      say('err', isAr ? 'تعذر إنشاء رابط الدليفري.' : 'Could not create the delivery link.');
-    } finally {
-      setCrewBusy(null);
-    }
-  };
-
-  const copyCrewLink = async () => {
-    if (!crewLink) return;
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(crewLink);
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = crewLink;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-      }
-      setCopied(true);
-    } catch {
-      say('err', isAr ? 'تعذر النسخ — انسخ الرابط يدويًا.' : 'Copy failed — copy the link manually.');
-    }
-  };
-
-  const doRemoveCrew = async (chatId: number) => {
-    setCrewBusy(`drop:${chatId}`);
-    try {
-      const res = await adminFetch('/api/admin/telegram', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delivery-remove', chatId }),
-      });
-      if (!res.ok) {
-        say('err', isAr ? 'تعذر إزالة الدليفري.' : 'Could not remove the courier.');
-      } else {
-        say('ok', isAr ? 'تمت إزالة الدليفري — لن تصله طلبات جديدة.' : 'Courier removed — no more orders will reach them.');
-        await refresh();
-      }
-    } catch {
-      say('err', isAr ? 'تعذر إزالة الدليفري.' : 'Could not remove the courier.');
-    } finally {
-      setCrewBusy(null);
-    }
-  };
-
-  const askRemoveCrew = (chatId: number) => {
-    const box = {
-      title: isAr ? 'إزالة الدليفري؟' : 'Remove courier?',
-      body: isAr
-        ? 'لن تصل نسخ الطلبات الجديدة لهذا الحساب بعد الآن.'
-        : 'New order copies will stop reaching this chat.',
-      confirmText: isAr ? 'إزالة' : 'Remove',
-      mode: 'confirm' as const,
-      action: () => void doRemoveCrew(chatId),
-    };
-    if (onConfirm) onConfirm(box);
-    else if (window.confirm(box.body)) void doRemoveCrew(chatId);
-  };
-
-  const formatLinkedAt = (iso: string | null | undefined): string | null => {
-    if (!iso) return null;
-    try {
-      const d = new Date(iso);
-      if (Number.isNaN(d.getTime())) return null;
-      return d.toLocaleString(isAr ? 'ar-u-nu-latn' : 'en-US', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
-    } catch {
-      return null;
-    }
-  };
-
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
       <SettingsGroupHeader
@@ -306,71 +210,13 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
         </button>
       )}
 
-      {/* Delivery-crew sharing: same bot, order copies + same buttons.
-          Independent of the owner link above — crew never touches it. */}
-      <div className="rounded-2xl border border-neutral-800 bg-black/40 p-3 space-y-2.5" role="group" aria-label={isAr ? 'مشاركة البوت مع الدليفري' : 'Share the bot with delivery'}>
-        <p className="text-xs font-black text-neutral-200">
-          {isAr ? 'مشاركة مع الدليفري' : 'Share with delivery'}
-        </p>
-        <p className="text-[11px] leading-relaxed text-neutral-400">
-          {isAr
-            ? 'الدليفري يشوف الطلبات ويقدر يأكد ويسلّم ويلغي من التيليجرام — نفس أزرارك.'
-            : 'Delivery sees orders and can confirm, deliver and cancel from Telegram — same buttons as yours.'}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => void inviteCrew()} disabled={crewBusy === 'code'}
-            className="btn-tactile h-11 px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-2 disabled:opacity-40">
-            {crewBusy === 'code' ? <Loader2 size={15} className="animate-spin" /> : <Send size={14} />}
-            {isAr ? 'رابط دعوة للدليفري' : 'Invite delivery'}
-          </button>
-          {crewLink && (
-            <a href={crewLink} target="_blank" rel="noreferrer"
-              className="btn-tactile h-11 px-5 rounded-full border border-[var(--primary)] text-[var(--primary)] text-xs font-extrabold inline-flex items-center gap-2">
-              {isAr ? 'فتح التيليجرام' : 'Open Telegram'}
-            </a>
-          )}
-        </div>
-        {crewLink && (
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              readOnly
-              dir="ltr"
-              value={crewLink}
-              onFocus={(e) => e.target.select()}
-              aria-label={isAr ? 'رابط الدعوة' : 'Invite link'}
-              className="min-w-0 flex-1 h-11 px-3 rounded-lg bg-black border border-neutral-700 text-xs text-neutral-300 truncate focus:outline-none focus:border-[var(--primary)]"
-            />
-            <button type="button" onClick={() => void copyCrewLink()}
-              aria-label={isAr ? 'نسخ الرابط' : 'Copy link'}
-              className="btn-tactile shrink-0 h-11 min-h-[44px] min-w-[44px] px-3 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold inline-flex items-center gap-1.5 hover:border-[var(--primary)] hover:text-[var(--primary)]">
-              {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
-              {copied ? (isAr ? 'اتنسخ' : 'Copied') : (isAr ? 'نسخ' : 'Copy')}
-            </button>
-          </div>
-        )}
-        {Array.isArray(status?.deliveryChats) && status.deliveryChats.length > 0 && (
-          <div className="space-y-1.5">
-            {status.deliveryChats.map((c) => {
-              const when = formatLinkedAt(c?.linkedAt);
-              const dropping = crewBusy === `drop:${c.chatId}`;
-              return (
-                <div key={c.chatId} className="flex items-center justify-between gap-2 rounded-xl border border-neutral-800 bg-black/60 px-3 py-2">
-                  <span className="min-w-0 text-xs font-bold text-neutral-200 truncate" dir="auto">
-                    {isAr ? `دليفري #${c.chatId}` : `Delivery #${c.chatId}`}
-                    {when && <span className="block text-[10px] font-normal text-neutral-500">{when}</span>}
-                  </span>
-                  <button type="button" onClick={() => askRemoveCrew(c.chatId)} disabled={dropping}
-                    className="btn-tactile shrink-0 h-9 min-h-[36px] px-3 rounded-full border border-neutral-700 text-neutral-400 text-[11px] font-bold inline-flex items-center gap-1 disabled:opacity-40 hover:border-red-500 hover:text-red-400">
-                    {dropping ? <Loader2 size={13} className="animate-spin" /> : null}
-                    {isAr ? 'إزالة' : 'Remove'}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      {/* Delivery-crew sharing moved to the Access section (Access & Diagnostics
+          group) so every invite lives in one place. This note is the pointer. */}
+      <p className="text-[11px] text-neutral-500 rounded-xl px-3 py-2 border border-neutral-800 bg-black/40">
+        {isAr
+          ? 'مشاركة الطاقم (روابط الدليفري) انتقلت إلى قسم الدخول — ستجدها في مجموعة «الوصول والتشخيص».'
+          : 'Crew sharing (delivery links) moved to the Access section — find it in the “Access & Diagnostics” group.'}
+      </p>
 
       {status?.lastNotification && (
         <p className={`text-[11px] rounded-xl px-3 py-2 border ${status.lastNotification.status === 'sent'

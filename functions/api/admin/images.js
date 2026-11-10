@@ -17,6 +17,7 @@
  */
 
 import { checkApiHeaders, jsonNoStore } from '../../_shared/session.js';
+import { getRequestRole } from '../../_shared/kitchen-gate.js';
 import { rateKey } from '../../_shared/access.js';
 import { hitRateLimit } from '../../_shared/ratelimit.js';
 import { analyzeImage, IMAGE_KEY_RE, MAX_UPLOAD_BYTES } from '../../_shared/image-meta.js';
@@ -198,6 +199,15 @@ async function handleDelete(request, env, url) {
 
 export async function onRequest(context) {
   const { request, env } = context;
+  // Kitchen defense-in-depth (the central gate lives in
+  // /api/admin/_middleware.js via kitchen-gate.js): the kitchen role may
+  // never upload or delete photos, even on direct invocation bypassing
+  // middleware. Runs before the header checks so the answer is always 403.
+  try {
+    if ((await getRequestRole(request, env)) === 'kitchen') {
+      return jsonNoStore({ ok: false, error: 'forbidden' }, 403);
+    }
+  } catch {}
   const gate = checkApiHeaders(request);
   if (!gate.ok) return jsonNoStore({ ok: false, error: gate.error }, gate.status);
 

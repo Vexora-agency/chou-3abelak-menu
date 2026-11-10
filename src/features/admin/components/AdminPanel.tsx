@@ -5,11 +5,15 @@ import { normalizePricing } from '@/src/utils/pricing';
 import { CategoriesTab } from './CategoriesTab';
 import { ItemsTab } from './ItemsTab';
 import { AdminTopBar, type AdminTab } from './admin/AdminTopBar';
+import { InstallAppPrompt } from './admin/InstallAppPrompt';
+import { KitchenBar } from './admin/KitchenBar';
+import { KitchenSystemAlerts } from './admin/KitchenSystemAlerts';
 import { AdminSettingsTab } from './admin/AdminSettingsTab';
 import { AdminLibrariesTab } from './admin/AdminLibrariesTab';
 import { AdminDashboardTab } from './admin/AdminDashboardTab';
 import { AdminOverlays, type ConfirmBox } from './admin/AdminOverlays';
 import { useAdminApi } from '../hooks/useAdminApi';
+import { useAdminRole } from '../hooks/useAdminRole';
 import { useMenuSaver } from '../hooks/useMenuSaver';
 import { useAdminOrders } from '@/src/features/orders';
 import { useReportCenter } from '@/src/features/reports';
@@ -106,6 +110,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [itemPage, setItemPage] = useState(0);
 
   const { adminFetch, savePaused } = useAdminApi();
+  // Kitchen sessions (invite-redeemed staff logins) see the orders board
+  // alone — every other tab is hidden below and navigation is pinned to
+  // the dashboard. UX only: per-route server gates stay the enforcement.
+  const { isKitchen } = useAdminRole();
   const {
     menu, updateMenu, dirty, handleSave, flushDirty, replaceMenu, autoSave, setAutoSave,
     isSaving, saveConflict, dismissConflict,
@@ -133,6 +141,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     if (saveSuccess && featuresConfig.enableBackup) void fetchActivityOnSave();
   }, [saveSuccess, fetchActivityOnSave]);
 
+  // Kitchen pin: the role probe resolves async, so a kitchen session can
+  // briefly start on another tab — pull it back the moment we know.
+  useEffect(() => {
+    if (isKitchen) setActiveTab('dashboard');
+  }, [isKitchen]);
+
   // Deep-link shield (declared before the sync effect that reads it): while
   // an incoming /admin/reports or /admin/customers link is still unhandled,
   // the URL-sync below must not replaceState it away.
@@ -143,6 +157,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // state is forced from the URL only once below, so manual navigation is
   // never yanked back. Placed after the hooks it reads (TS block scope).
   useEffect(() => {
+    // Kitchen sessions never leave the orders board: any address lands
+    // on /admin/dashboard instead of a reports/customers view.
+    if (isKitchen) {
+      deepLinkHandled.current = true;
+      if (window.location.pathname !== '/admin/dashboard') {
+        window.history.replaceState(null, '', '/admin/dashboard' + window.location.search);
+      }
+      return;
+    }
     // Never wipe an incoming deep link before its view is showing: the flags
     // load async, and the first renders would otherwise replaceState it away
     // on mount (this race also broke /admin/reports).
@@ -158,13 +181,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     if (window.location.pathname !== want) {
       window.history.replaceState(null, '', want + window.location.search);
     }
-  }, [activeTab, report.dashView, report.reportsOn, report.customersOn]);
+  }, [activeTab, report.dashView, report.reportsOn, report.customersOn, isKitchen]);
 
   // One-shot: an incoming /admin/reports or /admin/customers link opens its
   // view once the feature flags are known (they load async). A 4 s fallback
   // stops shielding the link (slow probe or feature off) so the address bar
   // follows manual navigation again; the tab stays clickable manually.
+  // Skipped for kitchen sessions (pinned to the overview above).
   useEffect(() => {
+    if (isKitchen) return;
     const m = /^\/admin\/(reports|customers)\/?$/.exec(window.location.pathname);
     if (!m) {
       deepLinkHandled.current = true;
@@ -185,9 +210,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       }
     }, 4000);
     return () => window.clearTimeout(timer);
-  }, [report.reportsOn, report.customersOn]);
+  }, [report.reportsOn, report.customersOn, isKitchen]);
 
   const handleTabChange = (tab: AdminTab) => {
+    // Kitchen sessions have a single tab — anything else is a no-op.
+    if (isKitchen && tab !== 'dashboard') return;
     setActiveTab(tab);
     setCatPage(0);
     setItemPage(0);
@@ -199,6 +226,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // entry — so Back normally exits the admin instead.)
   useEffect(() => {
     const onPop = () => {
+      // Kitchen sessions stay on the board no matter the address.
+      if (isKitchen) {
+        deepLinkHandled.current = true;
+        setActiveTab('dashboard');
+        return;
+      }
       const m = /^\/admin\/([a-z]+)\/?$/.exec(window.location.pathname);
       const raw = m ? m[1] : null;
       if (raw === 'reports' || raw === 'customers') {
@@ -220,7 +253,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
-  }, [report]);
+  }, [report, isKitchen]);
 
   return (
       <div className="min-h-screen min-h-dvh bg-[#0A0A0A] text-white p-4 sm:p-6 md:p-8 pb-[calc(6rem+env(safe-area-inset-bottom))] font-sans max-w-4xl mx-auto overflow-x-hidden overflow-x-clip">
@@ -234,37 +267,43 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         onSignOut={onSignOut}
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        kitchenOnly={isKitchen}
       />
 
-      {/* TAB 0: ORDERS DASHBOARD */}
+      {/* TAB 0: ORDERS DASHBOARD (the kitchen's only view) */}
       {activeTab === 'dashboard' && (
-        <AdminDashboardTab
-          lang={lang}
-          menu={menu}
-          orders={orders}
-          ordersLoading={ordersLoading}
-          ordersError={ordersError}
-          cronHealth={cronHealth}
-          graceHidden={graceHidden}
-          onOrderStatusChange={(id, s) => void handleOrderStatusChange(id, s)}
-          onRefreshOrders={() => void fetchOrders(false)}
-          reportsOn={report.reportsOn}
-          customersOn={report.customersOn}
-          dashView={report.dashView}
-          onDashViewChange={report.setDashView}
-          reportSettings={report.reportSettings}
-          reportRows={report.reportRows}
-          retentionCfg={report.retentionCfg}
-          reportSched={report.reportSched}
-          onSaveReportSettings={report.handleSaveReportSettings}
-          onResendVerification={report.handleResendVerification}
-          onDownloadReport={(m) => void report.handleDownloadReport(m)}
-          onSearchCustomers={report.searchCustomers}
-          onCustomerAction={report.handleCustomerAction}
-          adminFetch={adminFetch}
-          onMenuRefreshed={backup.refreshMenuFromServer}
-          onConfirm={(box) => setConfirmBox(box)}
-        />
+        <>
+          {isKitchen && <KitchenBar lang={lang} ordersError={ordersError} />}
+          {isKitchen && <InstallAppPrompt lang={lang} />}
+          {isKitchen && <KitchenSystemAlerts lang={lang} />}
+          <AdminDashboardTab
+            lang={lang}
+            menu={menu}
+            orders={orders}
+            ordersLoading={ordersLoading}
+            ordersError={ordersError}
+            cronHealth={cronHealth}
+            graceHidden={graceHidden}
+            onOrderStatusChange={(id, s) => void handleOrderStatusChange(id, s)}
+            onRefreshOrders={() => void fetchOrders(false)}
+            reportsOn={isKitchen ? false : report.reportsOn}
+            customersOn={isKitchen ? false : report.customersOn}
+            dashView={isKitchen ? 'overview' : report.dashView}
+            onDashViewChange={isKitchen ? () => {} : report.setDashView}
+            reportSettings={report.reportSettings}
+            reportRows={report.reportRows}
+            retentionCfg={report.retentionCfg}
+            reportSched={report.reportSched}
+            onSaveReportSettings={report.handleSaveReportSettings}
+            onResendVerification={report.handleResendVerification}
+            onDownloadReport={(m) => void report.handleDownloadReport(m)}
+            onSearchCustomers={report.searchCustomers}
+            onCustomerAction={report.handleCustomerAction}
+            adminFetch={adminFetch}
+            onMenuRefreshed={backup.refreshMenuFromServer}
+            onConfirm={(box) => setConfirmBox(box)}
+          />
+        </>
       )}
 
       {/* TAB 1: SETTINGS */}

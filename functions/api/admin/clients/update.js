@@ -12,8 +12,11 @@
 
 import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../../_shared/session.js';
 import {
+  ROLE_CLIENT,
   clearRevocation,
   isInviteUsername,
+  isMissingColumnError,
+  isRole,
   normalizeUsername,
   requireOwner,
   revokeSessions,
@@ -52,8 +55,19 @@ export async function onRequest(context) {
   const kv = env.MENU_KV || null;
 
   try {
-    const row = await db.prepare('SELECT username FROM client_users WHERE username = ?').bind(username).first();
-    if (!row) return jsonNoStore({ error: 'not_found', message: 'No login under that name' }, 404);
+    // Role-agnostic by design: disable/enable/delete key on username only,
+    // so client and kitchen accounts are managed identically (owner-only).
+    let role = ROLE_CLIENT;
+    try {
+      const row = await db.prepare('SELECT username, role FROM client_users WHERE username = ?').bind(username).first();
+      if (!row) return jsonNoStore({ error: 'not_found', message: 'No login under that name' }, 404);
+      role = isRole(row.role) ? row.role : ROLE_CLIENT;
+    } catch (e) {
+      // Pre-0028 database without the role column.
+      if (!isMissingColumnError(e)) throw e;
+      const row = await db.prepare('SELECT username FROM client_users WHERE username = ?').bind(username).first();
+      if (!row) return jsonNoStore({ error: 'not_found', message: 'No login under that name' }, 404);
+    }
 
     if (action === 'disable') {
       await db
@@ -61,17 +75,17 @@ export async function onRequest(context) {
         .bind(new Date().toISOString(), username)
         .run();
       await revokeSessions(kv, username);
-      return jsonNoStore({ ok: true, username, disabled: true });
+      return jsonNoStore({ ok: true, username, role, disabled: true });
     }
     if (action === 'enable') {
       await db.prepare('UPDATE client_users SET disabled_at = NULL WHERE username = ?').bind(username).run();
       await clearRevocation(kv, username);
-      return jsonNoStore({ ok: true, username, disabled: false });
+      return jsonNoStore({ ok: true, username, role, disabled: false });
     }
     await db.prepare('DELETE FROM invites WHERE username = ?').bind(username).run();
     await db.prepare('DELETE FROM client_users WHERE username = ?').bind(username).run();
     await revokeSessions(kv, username);
-    return jsonNoStore({ ok: true, username, deleted: true });
+    return jsonNoStore({ ok: true, username, role, deleted: true });
   } catch {
     return jsonNoStore({ error: 'unavailable', message: 'Could not update the login' }, 503);
   }

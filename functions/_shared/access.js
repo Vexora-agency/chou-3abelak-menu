@@ -158,6 +158,105 @@ export async function requireOwner(request, env) {
   }
 }
 
+/* ---------- account roles (migration 0028: client vs kitchen) ---------- */
+
+export const ROLE_CLIENT = 'client';
+export const ROLE_KITCHEN = 'kitchen';
+
+/** Strict role set: anything else is rejected at write time (400) and
+ *  normalized to 'client' at read time (fail closed — never escalate). */
+export function isRole(r) {
+  return r === ROLE_CLIENT || r === ROLE_KITCHEN;
+}
+
+/** Missing/blank role defaults to 'client'. */
+export function normalizeRole(r) {
+  const v = typeof r === 'string' ? r.trim().toLowerCase() : '';
+  return isRole(v) ? v : ROLE_CLIENT;
+}
+
+/**
+ * Fail-closed role from an ALREADY-VERIFIED session payload (HMAC-checked):
+ * a valid 'kitchen'/'client' claim is trusted, anything missing or unknown
+ * (legacy pre-0028 sessions minted without a claim, tampered values are
+ * impossible — the signature would fail first) reads as 'client'.
+ * Owner sessions (sub 'admin') report 'owner' — they are not client roles.
+ */
+export function roleFromPayload(payload) {
+  if (!payload || typeof payload !== 'object') return ROLE_CLIENT;
+  if (payload.sub === 'admin') return 'owner';
+  return isRole(payload.role) ? payload.role : ROLE_CLIENT;
+}
+
+async function verifiedPayload(request, env) {
+  const secret = getSessionSecret(env);
+  if (!secret) return null;
+  const token = getSessionCookie(request);
+  if (!token) return null;
+  return verifySessionToken(secret, token);
+}
+
+/** D1 "no such column" probe: lets role-aware queries degrade gracefully on
+ *  pre-0028 databases (code deployed before the migration is applied).
+ *  Matches both D1 ("no such column: role") and SQLite ("has no column
+ *  named role") wordings. */
+export function isMissingColumnError(e) {
+  return !!e && /no such column|has no column named/i.test(String((e && e.message) || e));
+}
+
+async function clientRoleFromDb(db, username) {
+  try {
+    if (!db || !username) return null;
+    const row = await db.prepare('SELECT role FROM client_users WHERE username = ?').bind(username).first();
+    return row && isRole(row.role) ? row.role : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Effective role for this request: 'owner' | 'kitchen' | 'client' | null
+ * (null = no usable session). JWT claim first (stateless fast path);
+ * legacy claim-less sessions fall back to the DB row, then to 'client'.
+ * `client_users.username` stays the key — the DB is the source of truth.
+ */
+export async function getRole(request, env) {
+  try {
+    const payload = await verifiedPayload(request, env);
+    if (!payload) return null;
+    if (payload.sub === 'admin') return 'owner';
+    if (typeof payload.sub !== 'string' || !payload.sub.startsWith('client:')) return null;
+    if (isRole(payload.role)) return payload.role;
+    const dbRole = await clientRoleFromDb(env && env.ORDERS_DB, payload.sub.slice('client:'.length));
+    return dbRole || ROLE_CLIENT;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Kitchen-or-owner gate: passes the master session AND client sessions
+ * whose effective role is 'kitchen'. Plain 'client' sessions (and legacy
+ * claim-less sessions whose DB row is not kitchen) fail closed with null.
+ * Legacy kitchen sessions keep working via the DB fallback — no forced
+ * re-login after the 0028 rollout.
+ */
+export async function requireKitchenOrOwner(request, env) {
+  try {
+    const payload = await verifiedPayload(request, env);
+    if (!payload) return null;
+    if (payload.sub === 'admin') return payload;
+    if (typeof payload.sub !== 'string' || !payload.sub.startsWith('client:')) return null;
+    if (payload.role === ROLE_KITCHEN) return payload;
+    if (isRole(payload.role)) return null;
+    const dbRole = await clientRoleFromDb(env && env.ORDERS_DB, payload.sub.slice('client:'.length));
+    if (dbRole === ROLE_KITCHEN) return { ...payload, role: ROLE_KITCHEN };
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /** Canonical site origin for invite links — configured, never Host-derived
  *  (Host-header poisoning, OWASP). https only, except loopback for local dev. */
 export function siteBaseUrl(env) {
@@ -181,12 +280,27 @@ export function inviteLinkFor(env, token) {
 /* ---------- invite rows ---------- */
 
 export async function findInviteByHash(db, tokenHash) {
-  return db
-    .prepare(
-      'SELECT id, username, token_hash AS tokenHash, created_at AS createdAt, expires_at AS expiresAt, used_at AS usedAt, attempts FROM invites WHERE token_hash = ?'
-    )
-    .bind(tokenHash)
-    .first();
+  try {
+    return await db
+      .prepare(
+        'SELECT id, username, role, token_hash AS tokenHash, created_at AS createdAt, expires_at AS expiresAt, used_at AS usedAt, attempts FROM invites WHERE token_hash = ?'
+      )
+      .bind(tokenHash)
+      .first();
+  } catch (e) {
+    // Pre-0028 database without the role column: legacy shape, role backfills
+    // to 'client' exactly like the migration default. Any other DB failure
+    // rethrows so redeem still fails closed (generic invalid, below).
+    if (!isMissingColumnError(e)) throw e;
+    const row = await db
+      .prepare(
+        'SELECT id, username, token_hash AS tokenHash, created_at AS createdAt, expires_at AS expiresAt, used_at AS usedAt, attempts FROM invites WHERE token_hash = ?'
+      )
+      .bind(tokenHash)
+      .first();
+    if (row) row.role = ROLE_CLIENT;
+    return row;
+  }
 }
 
 export function inviteUsable(row, nowIso) {

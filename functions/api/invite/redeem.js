@@ -18,13 +18,16 @@ import {
   sessionCookieHeader,
 } from '../../_shared/session.js';
 import {
+  ROLE_CLIENT,
   bumpInviteAttempts,
   checkRateLimit,
   consumeInvite,
   findInviteByHash,
   hashClientPassword,
   inviteUsable,
+  isMissingColumnError,
   isPasswordOk,
+  isRole,
   isTokenFormat,
   rateKey,
   sha256Hex,
@@ -94,17 +97,33 @@ export async function onRequest(context) {
     }
 
     const passHash = await hashClientPassword(password);
-    await db
-      .prepare('INSERT INTO client_users (username, pass_hash, created_at) VALUES (?, ?, ?)')
-      .bind(consumed.username, passHash, nowIso)
-      .run();
+    // The invite carries the account role (client default, kitchen for staff
+    // invites). Fail-closed read: anything unexpected becomes 'client'.
+    const inviteRole = isRole(consumed.role) ? consumed.role : ROLE_CLIENT;
+    try {
+      await db
+        .prepare('INSERT INTO client_users (username, pass_hash, created_at, role) VALUES (?, ?, ?, ?)')
+        .bind(consumed.username, passHash, nowIso, inviteRole)
+        .run();
+    } catch (e) {
+      // Pre-0028 database: no role column. Only a default-role account is
+      // storable in the legacy shape; a kitchen redeem fails closed (the
+      // generic invalid below) rather than creating the wrong role.
+      if (!isMissingColumnError(e) || inviteRole !== ROLE_CLIENT) throw e;
+      await db
+        .prepare('INSERT INTO client_users (username, pass_hash, created_at) VALUES (?, ?, ?)')
+        .bind(consumed.username, passHash, nowIso)
+        .run();
+    }
     // One account, one live invite: any other pending invite for this name dies.
     await db
       .prepare('DELETE FROM invites WHERE username = ? AND used_at IS NULL')
       .bind(consumed.username)
       .run();
 
-    const session = await createSessionToken(secret, `client:${consumed.username}`, SESSION_SEC);
+    // Fresh session minted with the role claim (legacy sessions simply lack
+    // it and read as 'client' via roleFromPayload until re-login).
+    const session = await createSessionToken(secret, `client:${consumed.username}`, SESSION_SEC, { role: inviteRole });
     return jsonNoStore({ ok: true }, 200, {
       'Set-Cookie': sessionCookieHeader(session, SESSION_SEC),
     });

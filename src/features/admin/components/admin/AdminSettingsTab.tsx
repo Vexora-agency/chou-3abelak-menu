@@ -393,7 +393,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
       <SettingsParentGroup
         groupKey="grp-access"
         title={isAr ? 'الوصول والتشخيص' : 'Access & Diagnostics'}
-        subtitle={isAr ? 'دعوات العملاء ومراقبة الأخطاء' : 'Client invites and error monitoring'}
+        subtitle={isAr ? 'دعوات الدخول (عميل/مطبخ) ومشاركة الطاقم ومراقبة الأخطاء' : 'Access invites (client/kitchen), crew sharing and error monitoring'}
         icon={<ShieldCheck size={18} />}
         lang={lang}
         collapsedGroups={collapsedGroups}
@@ -401,7 +401,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
       >
         {/* Client access: owner-minted invite links (hidden from client logins —
             the section hides itself on 403). Last: it is account-level, not menu. */}
-        <AccessSection lang={lang} adminFetch={adminFetch} collapsed={!!collapsedGroups['access']} onToggleCollapse={() => onToggleCollapse('access')} />
+        <AccessSection lang={lang} adminFetch={adminFetch} onConfirm={onConfirm} collapsed={!!collapsedGroups['access']} onToggleCollapse={() => onToggleCollapse('access')} />
 
         {/* Error monitoring (Sentry) diagnostics: owner-only, same 403-hide
             rule as AccessSection — client logins never see this. */}

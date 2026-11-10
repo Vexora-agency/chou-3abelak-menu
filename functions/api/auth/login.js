@@ -14,6 +14,7 @@ import {
   verifyLogin,
   verifyPassword,
 } from '../../_shared/session.js';
+import { ROLE_CLIENT, isMissingColumnError, isRole } from '../../_shared/access.js';
 
 const FAIL_PREFIX = 'login:fail:';
 const FAIL_TTL_SEC = 15 * 60;
@@ -112,10 +113,21 @@ export async function onRequest(context) {
     const db = env.ORDERS_DB || null;
     if (db) {
       try {
-        const row = await db
-          .prepare('SELECT username, pass_hash, disabled_at FROM client_users WHERE username = ?')
-          .bind(username)
-          .first();
+        let row;
+        try {
+          row = await db
+            .prepare('SELECT username, pass_hash, disabled_at, role FROM client_users WHERE username = ?')
+            .bind(username)
+            .first();
+        } catch (e) {
+          // Pre-0028 database without the role column: legacy shape reads
+          // as 'client' (the migration default).
+          if (!isMissingColumnError(e)) throw e;
+          row = await db
+            .prepare('SELECT username, pass_hash, disabled_at FROM client_users WHERE username = ?')
+            .bind(username)
+            .first();
+        }
         const passOk = row
           ? await verifyPassword(password, row.pass_hash)
           : await verifyPassword(password, storedHash);
@@ -126,7 +138,10 @@ export async function onRequest(context) {
             await kv.delete(FAIL_PREFIX + ip);
           } catch {}
           const maxAge = remember ? SESSION_LONG_SEC : SESSION_SHORT_SEC;
-          const token = await createSessionToken(secret, `client:${row.username}`, maxAge);
+          // Role claim minted from the DB row (fail-closed to 'client'):
+          // the JWT is the fast path, the DB stays the source of truth.
+          const role = row && isRole(row.role) ? row.role : ROLE_CLIENT;
+          const token = await createSessionToken(secret, `client:${row.username}`, maxAge, { role });
           return jsonNoStore({ ok: true }, 200, {
             'Set-Cookie': sessionCookieHeader(token, maxAge),
           });

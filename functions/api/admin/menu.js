@@ -6,6 +6,7 @@
 
 import { validateMenu } from '../../_shared/validate.js';
 import { jsonNoStore } from '../../_shared/session.js';
+import { getRequestRole } from '../../_shared/kitchen-gate.js';
 import { applyPlanToSettings } from '../../_shared/plan.js';
 import { getActor, migrateLegacyBackup, purgeMenuCaches, snapshotMenu, writeMenuVersioned } from '../../_shared/versions.js';
 import { diffMenus, summarizeChanges } from '../../_shared/diff.js';
@@ -69,6 +70,15 @@ export async function onRequest(context) {
 
   // PUT Handler
   if (request.method === 'PUT') {
+    // Kitchen defense-in-depth (the central gate lives in
+    // /api/admin/_middleware.js via kitchen-gate.js): the kitchen role may
+    // never save the menu, even on direct invocation bypassing middleware.
+    // GET above stays open to every authenticated caller as before.
+    try {
+      if ((await getRequestRole(request, env)) === 'kitchen') {
+        return jsonNoStore({ error: 'forbidden', message: 'Forbidden' }, 403);
+      }
+    } catch {}
     // 1. Require header "X-Requested-With: menu-admin"
     if (request.headers.get('X-Requested-With') !== 'menu-admin') {
       return jsonNoStore({ error: 'bad_request', message: 'Missing custom request header' }, 400);

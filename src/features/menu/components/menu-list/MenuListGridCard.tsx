@@ -95,7 +95,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
       className={`grid-card relative flex flex-col justify-between p-3.5 rounded-2xl border-2 ${mark ? 'overflow-hidden' : ''} ${
         darkMode
           ? 'bg-[#141414] border-[var(--primary)] offset-shadow-dark'
-          : 'bg-white border-[#0A0A0A] offset-shadow-yellow'
+          : 'bg-white border-[#0A0A0A] offset-shadow-yellow grid-card-soft'
       } ${interactive ? 'cursor-pointer card-lift' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${leaveDelayMs != null ? ' row-leaving' : ''}`}
     >
       {/* Photo background: the dish behind the card content, sealed to the

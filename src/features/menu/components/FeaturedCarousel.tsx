@@ -383,8 +383,12 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         </h2>
       </div>
 
-      {/* One-card slider on mobile, 3-card sliding row on desktop (both autoplay) */}
-      <div className="relative overflow-hidden">
+      {/* One-card slider on mobile, 3-card sliding row on desktop (both autoplay).
+          The viewport clips horizontally by design — but it must NOT slice the
+          cards vertically: hover lifts each card ~4px (card-lift) and the
+          entrance rises from y:22. py-3 gives that breathing room; -my-3 pulls
+          it back so title/dots spacing does not move. */}
+      <div className="relative overflow-hidden py-3 -my-3">
         <div
           ref={trackRef}
           onMouseEnter={pause}

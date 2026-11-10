@@ -23,5 +23,7 @@ Apply remote: `npx wrangler d1 migrations apply ORDERS_DB --remote` (needs the r
 | `0025_receipt_check.sql` | Receipt-check marker (`orders.receipt_asked_at` TEXT nullable, no backfill — NULL = not asked yet, stamped once by the order-nag sweep before the `receipt_check` email). |
 | `0026_telegram_delivery.sql` | Telegram delivery-crew sharing (`telegram_chats` + `telegram_order_chats` tables, `telegram_pairing_codes.role` default `owner` — owner link stays in `service_config`). |
 | `0027_rate_counters.sql` | Atomic order spam cap (`rate_counters` keyed counters; single-statement check-and-reserve UPSERT in `checkAndReserveOrderBudget`, fixes the KV read-modify-write race — no backfill, starts empty). |
+| `0028_kitchen_role.sql` | Kitchen role for invites + client accounts (`invites.role`, `client_users.role` — `client` default, CHECK pins `client`/`kitchen`; pre-0028 rows backfill to `client`). |
+| `0029_updated_by.sql` | Last status actor (`orders.updated_by` TEXT nullable, no backfill — kitchen/client PATCH stamps the login name, owner PATCH clears to NULL; reads as `updatedBy`). |
 
 Rules: additive only, never edit an applied migration — add a new `00NN_*.sql` with the next free number (see `docs/ADD_NEW_FEATURE.md` step 1).

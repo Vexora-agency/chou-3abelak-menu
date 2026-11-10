@@ -30,6 +30,7 @@
     "test:access": "node scripts/test-access.mjs",
     "test:kitchen-role": "node scripts/test-kitchen-role.mjs",
     "test:kitchen-gate": "node scripts/test-kitchen-gate.mjs",
+    "test:updated-by": "node scripts/test-updated-by.mjs",
     "test:versions": "node scripts/test-versions.mjs",
     "test:import-matrix": "node scripts/test-import-matrix.mjs",
     "test:import-features": "node scripts/test-import-features.mjs",

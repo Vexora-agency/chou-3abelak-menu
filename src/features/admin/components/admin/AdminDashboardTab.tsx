@@ -40,6 +40,8 @@ interface AdminDashboardTabProps {
   adminFetch: AdminFetch;
   onMenuRefreshed: () => Promise<boolean>;
   onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
+  /** Kitchen board: "Orders" title (no "Recent"); owner untouched. */
+  kitchen?: boolean;
 }
 
 /** TAB 0: ORDERS DASHBOARD — pause control, view switcher, orders/reports/customers. */
@@ -50,7 +52,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   reportSettings, reportRows, retentionCfg, reportSched,
   onSaveReportSettings, onResendVerification, onDownloadReport,
   onSearchCustomers, onCustomerAction,
-  adminFetch, onMenuRefreshed, onConfirm,
+  adminFetch, onMenuRefreshed, onConfirm, kitchen,
 }) => {
   const isAr = lang === 'ar';
   // White-label package gates: starter hides Reports UI, the customers view
@@ -215,6 +217,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
         onConfirm={onConfirm}
         onRefresh={() => onRefreshOrders()}
         kitchenSound={menu.settings.sounds?.kitchen}
+        kitchen={kitchen}
       />
       )}
       {dashView === 'reports' && showReports && reportSettings && (

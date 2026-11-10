@@ -59,13 +59,14 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
         }
         // Skip no-op polls: a new array identity with identical content
         // re-runs layout/count-up/chart animations under the owner's finger.
-        // (Orders are immutable except status/total, so those + id suffice.)
+        // (Orders are immutable except status/total/updatedBy, so those +
+        // id suffice.)
         if (prev.length === list.length && freshIds.length === 0) {
           let same = true;
           for (let i = 0; i < list.length; i++) {
             const a = prev[i];
             const b = list[i];
-            if (!a || !b || a.id !== b.id || a.status !== b.status || a.total !== b.total) {
+            if (!a || !b || a.id !== b.id || a.status !== b.status || a.total !== b.total || a.updatedBy !== b.updatedBy) {
               same = false;
               break;
             }

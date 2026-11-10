@@ -28,11 +28,14 @@ interface OrdersDashListProps {
    *  "هل تود إلغاء الطلب؟" first (protects against accidental taps —
    *  cancelling notifies no one and is hard to undo mid-rush). */
   onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
+  /** Kitchen board: the section reads "Orders" (no "Recent"); the owner
+   *  keeps "Recent orders". Display-only — one prop, no logic fork. */
+  kitchen?: boolean;
 }
 
 export const OrdersDashList: FC<OrdersDashListProps> = ({
   lang, currency, loading, totalCount, list, counts, filter, onFilterChange,
-  limit, onShowMore, openId, onToggleOpen, flashId, now, onStatusChange, onConfirm,
+  limit, onShowMore, openId, onToggleOpen, flashId, now, onStatusChange, onConfirm, kitchen,
 }) => {
   const t = STR[lang];
   const isAr = lang === 'ar';
@@ -47,7 +50,7 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
 
   return (
     <motion.div {...rise(0.48)} id="orders-list" className="scroll-mt-4 pt-2">
-      <h2 className={h2}>{t.recent}</h2>
+      <h2 className={h2}>{kitchen ? t.orders : t.recent}</h2>
       <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
         {(['all', 'new', 'confirmed', 'ready', 'completed', 'cancelled'] as const).map((s) => {
           const active = filter === s;
@@ -111,6 +114,14 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                       {o.status === 'new' && <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0A] animate-pulse" />}
                       {t[o.status]}
                     </span>
+                    {/* Last actor: shown only when the backend names one
+                        (kitchen/member change). Owner changes carry no
+                        updatedBy, so nothing renders for them — by design. */}
+                    {typeof o.updatedBy === 'string' && o.updatedBy.trim() !== '' && (
+                      <span className="mt-0.5 block text-[10px] font-bold text-neutral-500 truncate max-w-[110px]" dir="auto">
+                        {t.by(o.updatedBy.trim())}
+                      </span>
+                    )}
                   </span>
                   <ChevronDown size={16} className={`shrink-0 text-neutral-500 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
                 </button>

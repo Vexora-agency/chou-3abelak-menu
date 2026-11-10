@@ -438,6 +438,11 @@ export function mapOrderRow(row) {
     // read as standalone; always present as number-or-null so the dashboard
     // shape never shifts keys).
     parentNumber: Number.isInteger(row.parent_number) ? row.parent_number : null,
+    // Last status actor (migration 0029, nullable — legacy rows and
+    // owner-touched rows keep NULL and read as null; kitchen/client
+    // touches read as the login name. Always present as string-or-null
+    // so the dashboard shape never shifts keys; the UI hides null).
+    updatedBy: typeof row.updated_by === 'string' && row.updated_by ? row.updated_by : null,
     customer: {
       name: row.customer_name || '',
       phone: row.customer_phone || '',

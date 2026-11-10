@@ -5,6 +5,12 @@ import { isIosDevice, isStandaloneApp } from '@/src/utils/webpush';
 
 interface InstallAppPromptProps {
   lang: 'en' | 'ar';
+  /**
+   * Mandatory mode (kitchen install gate): hides every skip path (the X
+   * button and the "continue in the browser" link) — the prompt becomes
+   * instructions-only. Optional mode keeps both skips (owner browsing).
+   */
+  mandatory?: boolean;
 }
 
 const DISMISS_KEY = 'kitchen_install_dismissed_v1';
@@ -15,9 +21,12 @@ const DISMISS_KEY = 'kitchen_install_dismissed_v1';
  * optional — the panel works fully from the browser, and iOS forbids
  * programmatic install, so iPhone gets illustrated manual steps.
  */
-export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ lang }) => {
+export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ lang, mandatory }) => {
   const isAr = lang === 'ar';
+  // Mandatory mode never dismisses (kitchen gate): skip the persisted
+  // dismissal entirely so the instructions always render.
   const [dismissed, setDismissed] = useState<boolean>(() => {
+    if (mandatory) return false;
     try {
       return window.localStorage.getItem(DISMISS_KEY) === '1';
     } catch {
@@ -55,14 +64,16 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ lang }) => {
         <p className="text-sm font-black text-white">
           {isAr ? 'ثبّت شاشة المطبخ على الجهاز' : 'Install the kitchen screen'}
         </p>
-        <button
-          type="button"
-          onClick={dismiss}
-          aria-label={isAr ? 'تخطي' : 'Dismiss'}
-          className="shrink-0 w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-neutral-800 border border-neutral-700 text-neutral-400 hover:text-white inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
-        >
-          <X size={15} />
-        </button>
+        {!mandatory && (
+          <button
+            type="button"
+            onClick={dismiss}
+            aria-label={isAr ? 'تخطي' : 'Dismiss'}
+            className="shrink-0 w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-neutral-800 border border-neutral-700 text-neutral-400 hover:text-white inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+          >
+            <X size={15} />
+          </button>
+        )}
       </div>
 
       {ios ? (
@@ -119,13 +130,15 @@ export const InstallAppPrompt: React.FC<InstallAppPromptProps> = ({ lang }) => {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={dismiss}
-        className="mt-2.5 text-[11px] font-bold text-neutral-500 hover:text-neutral-300 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded"
-      >
-        {isAr ? 'المتابعة من المتصفح بدون تثبيت' : 'Continue in the browser without installing'}
-      </button>
+      {!mandatory && (
+        <button
+          type="button"
+          onClick={dismiss}
+          className="mt-2.5 text-[11px] font-bold text-neutral-500 hover:text-neutral-300 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded"
+        >
+          {isAr ? 'المتابعة من المتصفح بدون تثبيت' : 'Continue in the browser without installing'}
+        </button>
+      )}
     </div>
   );
 };

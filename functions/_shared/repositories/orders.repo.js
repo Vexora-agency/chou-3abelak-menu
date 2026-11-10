@@ -693,11 +693,41 @@ export async function listOrdersByWindow(db, { from, to, days }, limit) {
   return listOrders(db, WINDOW_WHERE.days, [new Date(Date.now() - n * 86400000).toISOString()], limit);
 }
 
-export async function updateOrderStatus(db, id, status, opts) {  const nowIso = new Date().toISOString();
-  const res = await db
-    .prepare('UPDATE orders SET status = ?1, updated_at = ?2 WHERE id = ?3')
-    .bind(status, nowIso, id)
-    .run();
+export async function updateOrderStatus(db, id, status, opts) {
+  const nowIso = new Date().toISOString();
+  const o = opts && typeof opts === 'object' ? opts : {};
+  // Last-status actor (migration 0029): the PATCH route passes
+  // `updatedBy` explicitly — a kitchen/client username to stamp, or null
+  // to clear (owner changes show nothing extra). Absent = legacy caller
+  // (Telegram callbacks, tests, sweeps): leave the column untouched so the
+  // primary UPDATE keeps its exact historical shape.
+  const hasActor = Object.prototype.hasOwnProperty.call(o, 'updatedBy');
+  const actorVal =
+    hasActor && typeof o.updatedBy === 'string' && o.updatedBy.trim()
+      ? o.updatedBy.trim().slice(0, 64)
+      : null;
+  let res;
+  if (hasActor) {
+    try {
+      res = await db
+        .prepare('UPDATE orders SET status = ?1, updated_at = ?2, updated_by = ?3 WHERE id = ?4')
+        .bind(status, nowIso, actorVal, id)
+        .run();
+    } catch (e) {
+      // Pre-0029 database (missing column): degrade to the legacy write —
+      // the status flip must never fail because of a new column.
+      if (!/no such column|has no column named/i.test(String((e && e.message) || e))) throw e;
+      res = await db
+        .prepare('UPDATE orders SET status = ?1, updated_at = ?2 WHERE id = ?3')
+        .bind(status, nowIso, id)
+        .run();
+    }
+  } else {
+    res = await db
+      .prepare('UPDATE orders SET status = ?1, updated_at = ?2 WHERE id = ?3')
+      .bind(status, nowIso, id)
+      .run();
+  }
   const changed = res && res.meta ? res.meta.changes : 0;
   if (!changed) return null;
   // Confirm stamping (migration 0022): the choke point for BOTH confirm

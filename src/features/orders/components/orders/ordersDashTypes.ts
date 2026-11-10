@@ -36,6 +36,10 @@ export interface Order {
   etaAt?: string | null;
   /** Follow-up link (server-computed): earlier order number or null. */
   parentNumber?: number | null;
+  /** Actor who last changed the order (kitchen/member display name).
+   *  Set server-side on status changes; absent on older rows or when the
+   *  owner changes the status (nothing renders then — by design). */
+  updatedBy?: string | null;
 }
 
 /** Kitchen health signal: the 1-minute order-nag sweep heartbeat.
@@ -67,6 +71,8 @@ export interface OrdersDashboardProps {
   /** Optional confirm gate (admin modal): when provided, destructive
    *  actions ask first instead of firing immediately. */
   onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
+  /** Kitchen board: section title drops "Recent" (plain "Orders"). */
+  kitchen?: boolean;
 }
 
 export type Period = 'today' | '7d' | 'month' | 'lastMonth';
@@ -88,6 +94,7 @@ export const STR = {
     min: (n: number) => `${n} min ago`, hr: (n: number) => `${n}h ago`,
     arrives: (t: string) => `Arrives ~${t}`, late: (n: number) => `${n}m late`,
     linkedShort: (n: number) => `Linked to #${n}`, linkedLong: (n: number) => `Follow-up to order #${n} — same customer, prepare together`,
+    by: (n: string) => `by ${n}`,
   },
   ar: {
     today: 'اليوم', d7: '7 أيام', thisMonth: 'هذا الشهر', lastMonth: 'الشهر الماضي', refresh: 'تحديث', live: 'مباشر', liveTip: 'التحديث التلقائي يعمل: الطلبات الجديدة تظهر هنا وحدها', soundOn: 'صوت الطلبات الجديدة يعمل', soundOff: 'صوت الطلبات الجديدة متوقف',
@@ -105,5 +112,6 @@ export const STR = {
     min: (n: number) => `قبل ${n} د`, hr: (n: number) => `قبل ${n} س`,
     arrives: (t: string) => `يوصل ~${t}`, late: (n: number) => `متأخر ${n} د`,
     linkedShort: (n: number) => `مرتبط بـ #${n}`, linkedLong: (n: number) => `تابع للطلب #${n} — نفس الزبون، يُجهَّز معه`,
+    by: (n: string) => `بواسطة ${n}`,
   },
 } as const;

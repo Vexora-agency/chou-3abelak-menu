@@ -249,11 +249,19 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
   const tgShare = (link: string, text: string) =>
     `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
 
-  /** Expiry chip text: dated when the response carries `expiresAt`, open otherwise. */
+  /** Account access expiry: dated when the response carries `expiresAt`, open otherwise. */
   const expiryText = (iso?: string | null): string => {
     const d = (iso || '').slice(0, 10);
     if (!d) return isAr ? 'مفتوح' : 'Open';
     return isAr ? `ينتهي في ${d}` : `Expires ${d}`;
+  };
+
+  /** Invite LINK expiry (always dated — links die in 72h single-use): labeled
+   *  distinctly from account access so "open" accounts are never confusing. */
+  const linkExpiryText = (iso?: string | null): string => {
+    const d = (iso || '').slice(0, 10);
+    if (!d) return isAr ? 'رابط لمرة واحدة' : 'Single-use link';
+    return isAr ? `الرابط ينتهي في ${d}` : `Link expires ${d}`;
   };
 
   return (
@@ -356,8 +364,8 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
           </div>
           <p className="text-[10px] text-neutral-500">
             {isAr
-              ? <>{fresh.expiresAt ? <>ينتهي في <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> — يُستخدم مرة واحدة ثم يموت.</> : <>مفتوح — بلا انتهاء، يُستخدم مرة واحدة ثم يموت.</>}</>
-              : <>{fresh.expiresAt ? <>Expires <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> — single-use, then dead.</> : <>Open — no expiry, single-use, then dead.</>}</>}
+              ? <>{fresh.expiresAt ? <>الرابط ينتهي في <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> — يُستخدم مرة واحدة ثم يموت (الدخول نفسه مفتوح).</> : <>رابط لمرة واحدة — الدخول نفسه مفتوح بلا انتهاء.</>}</>
+              : <>{fresh.expiresAt ? <>Link expires <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> — single-use, then dead (the login itself stays open).</> : <>Single-use link — the login itself stays open.</>}</>}
           </p>
         </div>
       ) : null}
@@ -447,7 +455,7 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
                   {isAr ? 'عميل' : 'Client'}
                 </span>
                 <span className="text-[10px] text-neutral-500 tabular-nums ms-auto" dir="ltr">
-                  {expiryText(r.expiresAt)}
+                  {linkExpiryText(r.expiresAt)}
                 </span>
                 {r.status === 'pending' ? (
                   <button

@@ -117,7 +117,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
             className={`absolute inset-0 ${
               darkMode
                 ? 'bg-gradient-to-t from-black/85 via-black/40 to-black/65'
-                : 'bg-gradient-to-t from-white/95 via-white/70 to-white/85'
+                : 'bg-gradient-to-t from-white/70 via-white/25 to-white/50'
             }`}
           />
         </div>

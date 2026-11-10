@@ -219,16 +219,27 @@
 }
 
 /* ---------- Round full-bleed showcase band ----------
-   A neutral backdrop behind round sections, revealed above and below the
-   grid by the section's own vertical padding: a whisper band only, no
-   gold tint (removed per owner call). Subtle in both modes. */
+   The 3-step surface stack the round cards sit on: page -> band -> card.
+   Each step is a real tone, not a translucent veil, so cards separate from
+   the page without needing heavy shadows. The band fades back into the page
+   at both edges so the full-bleed strip never ends on a hard line. */
 .round-band {
-  background:
-    linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.025) 30%, rgba(255, 255, 255, 0.025) 70%, transparent 100%);
+  background: linear-gradient(
+    180deg,
+    #0a0a0a 0%,
+    #111111 9%,
+    #111111 91%,
+    #0a0a0a 100%
+  );
 }
 .round-band-light {
-  background:
-    linear-gradient(180deg, transparent 0%, rgba(10, 10, 10, 0.03) 30%, rgba(10, 10, 10, 0.03) 70%, transparent 100%);
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #faf7f0 9%,
+    #faf7f0 91%,
+    #ffffff 100%
+  );
 }
 
 /* ---------- Photo layout (4th display): photo-first cards ---------- */
@@ -363,19 +374,19 @@
   .round-card:hover {
     translate: 0 -6px;
     scale: 1.025;
-    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.7),
+      0 10px 20px -8px rgba(0, 0, 0, 0.65),
+      0 34px 64px -22px rgba(0, 0, 0, 0.95),
+      inset 0 1px 0 rgba(255, 255, 255, 0.09);
   }
   .round-card-light:hover {
-    /* Glass lift, spec-exact shadow stack. */
     box-shadow:
-      0 0 0 0.5px rgba(0, 0, 0, 0.08),
-      0 26px 48px -8px rgba(0, 0, 0, 0.26),
-      0 4px 10px rgba(0, 0, 0, 0.09),
-      inset 0 1px 0 rgba(255, 255, 255, 1),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.4);
-  }
-  .round-card-light:hover::before {
-    transform: translateX(55%) rotate(12deg);
+      0 1px 2px rgba(30, 24, 12, 0.05),
+      0 6px 12px -4px rgba(30, 24, 12, 0.08),
+      0 20px 36px -14px rgba(30, 24, 12, 0.2),
+      0 40px 72px -30px rgba(30, 24, 12, 0.24),
+      inset 0 1px 0 #ffffff;
   }
   .round-card:active {
     translate: 0 -3px;
@@ -411,8 +422,9 @@
 
 /* ---------- Round layout (5th display): circular dish photo ---------- */
 /* Metallic conic rim, spec-exact structure (fully static — no spin, no
-   pulse: zero perpetual motion on the cards). A 5px translucent halo plus
-   an outer hairline ring give the photo its framed, inset-glass read. */
+   pulse: zero perpetual motion on the cards). The halo stays, but each
+   ring now carries its own warm (light) or deep (dark) contact shadow so
+   the photo lifts off the card instead of reading as a flat sticker. */
 .round-ring {
   background: conic-gradient(
     from 10deg,
@@ -422,14 +434,17 @@
     #b8860b,
     #f7e7a1
   );
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18), 0 0 0 5px rgba(255, 255, 255, 0.45);
+  box-shadow:
+    0 10px 18px -7px rgba(93, 66, 12, 0.34),
+    0 3px 7px rgba(93, 66, 12, 0.14),
+    0 0 0 5px rgba(255, 255, 255, 0.92);
 }
 .round-ring::after {
   content: "";
   position: absolute;
   inset: -5px;
   border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(10, 10, 10, 0.12);
   pointer-events: none;
 }
 .round-card:not(.round-card-light) .round-ring {
@@ -441,25 +456,22 @@
     #6f5200,
     #ffe88f
   );
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 0 5px rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 12px 22px -8px rgba(0, 0, 0, 0.85),
+    0 3px 8px rgba(0, 0, 0, 0.5),
+    0 0 0 5px rgba(255, 255, 255, 0.05);
 }
 .round-card:not(.round-card-light) .round-ring::after {
   border-color: rgba(255, 255, 255, 0.1);
 }
-/* Glass badge tag (spec: small frosted pill, top-left, not rotated). */
-.round-tag {
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  -webkit-backdrop-filter: blur(10px) saturate(150%);
-  backdrop-filter: blur(10px) saturate(150%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  color: #6e6e73;
+/* The photo well is painted before the image decodes, so a slow or failed
+   load shows a neutral dish-well instead of the gold rim bleeding through
+   the transparent <img>. */
+.round-photo {
+  background: linear-gradient(145deg, #242424 0%, #151515 100%);
 }
-.round-card:not(.round-card-light) .round-tag {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.72);
+.round-card-light .round-photo {
+  background: linear-gradient(145deg, #f6f1e5 0%, #ece3d0 100%);
 }
 /* Dish entrance pop (mount-only, transform-based so it composes with the
    hover `scale` property instead of fighting it). */
@@ -476,67 +488,35 @@
     transform: scale(1) rotate(0);
   }
 }
-/* Glass shells (dark / light): translucent gradient + hairline border +
-   soft shadow with an inner top highlight. The offset-shadow language of
-   the other cards is intentionally absent — solid shadows kill glass. */
+/* ---------- Round-card elevation system ----------
+   Three surface steps (page -> band -> card) plus a layered shadow:
+   1. a 1px contact line that grounds the card,
+   2. a tight key shadow for the near edge,
+   3. a wide, soft ambient shadow for height.
+   Light mode tints every shadow warm (brown, never neutral gray) so it
+   reads as depth on the cream band, not as dirt. Dark mode clears the
+   backdrop blur entirely: on an opaque card it bought nothing and cost a
+   blur pass per card on weak phones. */
 .round-card {
   border-radius: 24px;
-  border-color: rgba(255, 255, 255, 0.14);
-  background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 42%, rgba(0, 0, 0, 0.14) 100%);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(170deg, #1c1c1c 0%, #171717 52%, #121212 100%);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.9),
+    0 6px 12px -6px rgba(0, 0, 0, 0.7),
+    0 24px 44px -18px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
   transition: translate 0.28s ease, scale 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
 }
-/* Light glass: exact port of the owner-approved Apple-style liquid-glass
-   spec (gradient fill + 22px backdrop blur/saturate + hairline edge +
-   specular sweep + @supports fallback). Consciously NOT a library.
-   Backdrop cost accepted by owner decision here (unlike the auto-shipped
-   defaults): regions are small (~200px cards) and GPUs handle a dozen
-   small blurs; over flat page white the blur itself is invisible — the
-   read comes from fill + edge + shadow, which degrade gracefully. */
 .round-card-light {
-  border-color: transparent;
-  background:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.26) 55%, rgba(255, 255, 255, 0.4) 100%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  backdrop-filter: blur(22px) saturate(160%);
+  border-color: rgba(24, 19, 10, 0.07);
+  background: linear-gradient(180deg, #ffffff 0%, #ffffff 52%, #fdfbf6 100%);
   box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.08),
-    0 18px 40px -8px rgba(0, 0, 0, 0.2),
-    0 3px 8px rgba(0, 0, 0, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.35);
-}
-/* Gradient hairline edge (masked ring, spec-exact). */
-.round-card-light::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  pointer-events: none;
-  background:
-    linear-gradient(155deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0.55));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-}
-/* Specular sweep layer, parked off-canvas until hover (spec-exact). */
-.round-card-light::before {
-  content: "";
-  position: absolute;
-  inset: -60% -80%;
-  pointer-events: none;
-  background:
-    linear-gradient(110deg, transparent 44%, rgba(255, 255, 255, 0.55) 50%, transparent 56%);
-  transform: translateX(-55%) rotate(12deg);
-  transition: transform 0.9s ease;
-}
-/* Fallback where backdrop-filter isn't supported (spec-exact). */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .round-card-light {
-    background: rgba(255, 255, 255, 0.9);
-  }
+    0 1px 1px rgba(30, 24, 12, 0.04),
+    0 2px 4px -1px rgba(30, 24, 12, 0.05),
+    0 12px 22px -10px rgba(30, 24, 12, 0.15),
+    0 26px 48px -24px rgba(30, 24, 12, 0.2),
+    inset 0 1px 0 #ffffff;
 }
 /* Keyboard focus must stay visible now that neither shell paints a box. */
 .round-card:focus-visible {

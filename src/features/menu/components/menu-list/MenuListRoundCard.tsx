@@ -30,13 +30,13 @@ interface MenuListRoundCardProps {
 }
 
 /**
- * Fifth display layout: round dish photo in a branded spinning ring.
+ * Fifth display layout: round dish photo in a branded gold ring.
  *
- * Compact centered card (glass badge tag, framed conic ring photo, name,
- * description, price + real cart action — no wishlist heart by owner call).
- * The ring frame, entrance pop and hover lift/zoom all live in components.css
- * next to the photo-card language this card reuses (offset shadow, hover lift,
- * image zoom, shine).
+ * Compact centered card (black/gold rotated badge, framed conic ring photo,
+ * name, description, price + real cart action — no wishlist heart by owner
+ * call). The layered elevation, ring frame, entrance pop and hover lift/zoom
+ * all live in components.css next to the photo-card language this card reuses
+ * (hover lift, image zoom, shine).
  */
 export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
   item,
@@ -96,20 +96,24 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
           onOpenItem(item);
         }
       }}
-      className={`round-card group relative flex min-h-[224px] flex-col items-center overflow-hidden rounded-[24px] border px-3 pt-[13px] pb-3.5 text-center ${
+      className={`round-card group relative flex min-h-[224px] flex-col items-center rounded-[24px] border px-3 pt-[13px] pb-3.5 text-center ${
         darkMode ? '' : 'round-card-light'
       } ${interactive ? 'cursor-pointer card-lift' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${
         leaveDelayMs != null ? ' row-leaving' : ''
       }`}
     >
       {badges.length > 0 && (
-        <span className={`round-tag absolute start-2.5 top-2.5 z-10 inline-block rounded-full px-1.5 py-1 text-[9px] font-bold leading-none ${isAr ? '' : 'tracking-[0.08em]'}`}>
+        <span
+          className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border-[1.5px] border-[var(--primary)] shadow-lg -rotate-3 absolute -top-[7px] -start-1 z-10 ${
+            isAr ? '' : 'tracking-wide'
+          }`}
+        >
           {badgeLabel(badges[0], lang)}
         </span>
       )}
 
       <div className="round-ring relative mb-3 mt-px h-[116px] w-[116px] shrink-0 rounded-full p-1">
-        <span className="relative block h-full w-full overflow-hidden rounded-full">
+        <span className="round-photo relative block h-full w-full overflow-hidden rounded-full">
           {showImage ? (
             <img
               src={item.imageUrl}

@@ -278,6 +278,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           collapsedGroups={collapsedGroups}
           onToggleCollapse={(gid) => setCollapsedGroups((prev) => ({ ...prev, [gid]: !prev[gid] }))}
           onConfirm={(box) => setConfirmBox(box)}
+          isOwner={backup.isOwner}
         />
       )}
 

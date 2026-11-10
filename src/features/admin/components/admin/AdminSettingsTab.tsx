@@ -37,6 +37,11 @@ interface AdminSettingsTabProps {
     mode?: 'confirm' | 'info';
     action?: () => void;
   }) => void;
+  /** Owner signal (master login). When false (client login) the whole
+      Access & Diagnostics group is skipped — its children would self-hide
+      on 403 anyway, but that would leave an empty shell. Undefined (still
+      loading) renders everything: fail-open, sections self-hide on 403. */
+  isOwner?: boolean;
 }
 
 /**
@@ -77,7 +82,7 @@ const SettingsParentGroup: React.FC<{
 
 /** TAB 1: SETTINGS — all storefront section editors, nested in 5 parent groups. */
 export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
-  menu, lang, adminFetch, onMenuRefreshed, onUpdateMenu, collapsedGroups, onToggleCollapse, onConfirm,
+  menu, lang, adminFetch, onMenuRefreshed, onUpdateMenu, collapsedGroups, onToggleCollapse, onConfirm, isOwner,
 }) => {
   const isAr = lang === 'ar';
   return (
@@ -380,7 +385,9 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         />
       </SettingsParentGroup>
 
-      {/* 5. Access & Diagnostics — الوصول والتشخيص */}
+      {/* 5. Access & Diagnostics — الوصول والتشخيص (owner only: client
+          logins never see the group — not even an empty shell). */}
+      {isOwner !== false && (
       <SettingsParentGroup
         groupKey="grp-access"
         title={isAr ? 'الوصول والتشخيص' : 'Access & Diagnostics'}
@@ -398,6 +405,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
             rule as AccessSection — client logins never see this. */}
         <SentrySection lang={lang} adminFetch={adminFetch} collapsed={!!collapsedGroups['sentry']} onToggleCollapse={() => onToggleCollapse('sentry')} />
       </SettingsParentGroup>
+      )}
     </div>
   );
 };

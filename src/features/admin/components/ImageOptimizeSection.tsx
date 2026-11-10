@@ -205,8 +205,8 @@ export const ImageOptimizeSection: React.FC<ImageOptimizeSectionProps> = ({
       <SettingsGroupHeader
         title={isAr ? 'تحسين الصور القديمة' : 'Optimize old photos'}
         subtitle={isAr
-          ? 'يحوّل صور الأصناف الداخلية القديمة إلى نسخ متجاوبة (400 و800) دون حذف أي شيء ودون إعادة اختيار الملفات.'
-          : 'Turns old internal item photos into responsive (400/800) copies without deleting anything or re-picking files.'}
+          ? 'عزّز سرعة موقعك: نحوّل صور الأصناف إلى نسخ خفيفة سريعة التحميل (400 و800) دون حذف أي شيء ودون إعادة اختيار الملفات.'
+          : 'Boost your site speed: we turn item photos into lightweight, fast-loading (400/800) copies without deleting anything or re-picking files.'}
         lang={lang}
         collapsed={collapsed}
         onToggle={() => onToggleCollapse?.()}
@@ -214,8 +214,8 @@ export const ImageOptimizeSection: React.FC<ImageOptimizeSectionProps> = ({
       <SettingsGroupBody open={!collapsed}>
         <p className="text-[11px] leading-relaxed text-neutral-500">
           {isAr
-            ? 'تُستهدف فقط الصور الداخلية (/api/images/…) التي لا تملك نسخًا بعد. الروابط الخارجية والأصناف المحسّنة تُتخطى تلقائيًا، وكل صنف يُحدَّث فور انتهائه.'
-            : 'Only internal photos (/api/images/…) without variants yet are targeted. External links and optimized items are skipped automatically; each item updates as soon as it finishes.'}
+            ? 'صور أخف تعني موقعًا أسرع وتجربة تصفح أنعم لزبائنك. تُحسَّن الصور الداخلية فقط، والروابط الخارجية والأصناف المحسّنة تُتخطى تلقائيًا، وكل صنف يُحدَّث فور انتهائه.'
+            : 'Lighter photos mean a faster site and a smoother experience for your customers. Only internal photos are optimized — external links and optimized items are skipped automatically, and each item updates as soon as it finishes.'}
         </p>
 
         <div className="flex flex-wrap items-center gap-2">

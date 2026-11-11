@@ -46,10 +46,18 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
   const rawIncomplete = rawTiers.some((t) => t.upToKm < DELIVERY_FEE_UPTO_MIN_KM);
   const restCoords = parseMapUrlCoords(mapUrl);
   const [simKm, setSimKm] = useState(3);
+  // Simulator range follows the admin's own tiers: 50% beyond the last band
+  // (min 5 km) so "beyond last tier" stays testable no matter how far the
+  // zones go — a fixed 20 km cap would lie once tiers pass it.
+  const simMax = useMemo(() => {
+    const lastUp = tiers.length ? tiers[tiers.length - 1].upToKm : 0;
+    return Math.max(5, Math.ceil(lastUp * 1.5 * 2) / 2);
+  }, [tiers]);
+  const simKmEff = Math.min(simKm, simMax);
 
   const simQuote = useMemo(
-    () => resolveDeliveryFee({ ...ordering, deliveryFeeMode: 'distance', deliveryFeeTiers: tiers }, simKm, 0),
-    [ordering, tiers, simKm],
+    () => resolveDeliveryFee({ ...ordering, deliveryFeeMode: 'distance', deliveryFeeTiers: tiers }, simKmEff, 0),
+    [ordering, tiers, simKmEff],
   );
 
   const setTier = (idx: number, patch: { upToKm?: number; fee?: number }) => {
@@ -90,20 +98,6 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
       const next = cur.filter((_, i) => i !== idx);
       return { ...prev, deliveryFeeTiers: next, deliveryFeeMode: next.length ? 'distance' : 'flat' };
     });
-  };
-
-  const fillExample = () => {
-    const base = Number(ordering.deliveryFee) || 0;
-    const step = (mult: number) => Math.round(base * mult * 100) / 100;
-    onUpdate((prev) => ({
-      ...prev,
-      deliveryFeeMode: 'distance',
-      deliveryFeeTiers: [
-        { upToKm: 2, fee: base },
-        { upToKm: 5, fee: step(1.5) },
-        { upToKm: 10, fee: step(2) },
-      ],
-    }));
   };
 
   const switchMode = (m: 'flat' | 'distance') => {
@@ -231,17 +225,8 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
               </div>
 
               {/* Tiers editor (raw rows: clearing a field never deletes its row) */}
-              {rawTiers.length === 0 ? (
-                <button
-                  type="button"
-                  onClick={fillExample}
-                  className="w-full min-h-[48px] rounded-xl border border-dashed border-[var(--primary)]/50 text-[var(--primary)] text-xs font-extrabold hover:bg-[var(--primary)]/10 transition-colors px-3 py-2"
-                >
-                  {isAr ? '＋ ابدأ بمثال جاهز (2 / 5 / 10 كم)' : '+ Start from an example (2 / 5 / 10 km)'}
-                </button>
-              ) : (
-                <div className="space-y-2">
-                  {rawTiers.map((t, i) => (
+              <div className="space-y-2">
+                {rawTiers.map((t, i) => (
                     <div key={`tier-${i}`} className="rounded-xl border border-neutral-800 bg-black px-2.5 py-2 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2">
                       <div className="flex items-center gap-2 sm:contents">
                         <span className="shrink-0 w-6 h-6 rounded-full bg-[var(--primary)]/15 text-[var(--primary)] text-[11px] font-black flex items-center justify-center tabular-nums">
@@ -284,17 +269,10 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
                       type="button"
                       onClick={addTier}
                       disabled={rawTiers.length >= DELIVERY_FEE_TIERS_MAX}
-                      className="flex-1 min-h-[44px] rounded-xl border border-neutral-700 text-neutral-300 text-xs font-bold hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors inline-flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed px-3"
+                      className="w-full min-h-[44px] rounded-xl border border-neutral-700 text-neutral-300 text-xs font-bold hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors inline-flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed px-3"
                     >
                       <Plus size={14} />
                       {isAr ? `إضافة شريحة (${rawTiers.length}/${DELIVERY_FEE_TIERS_MAX})` : `Add tier (${rawTiers.length}/${DELIVERY_FEE_TIERS_MAX})`}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={fillExample}
-                      className="h-[44px] px-3 rounded-xl text-[11px] font-bold text-neutral-500 hover:text-[var(--primary)] transition-colors"
-                    >
-                      {isAr ? '↻ مثال' : '↻ Example'}
                     </button>
                   </div>
                   {rawIncomplete && (
@@ -305,7 +283,6 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
                     </p>
                   )}
                 </div>
-              )}
 
               {/* Live preview table */}
               {tiers.length > 0 && (
@@ -334,15 +311,15 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
                     <input
                       type="range"
                       min={0.5}
-                      max={20}
+                      max={simMax}
                       step={0.5}
-                      value={simKm}
+                      value={simKmEff}
                       onChange={(e) => setSimKm(Number(e.target.value))}
                       className="flex-1 accent-[#FFC400]"
                       aria-label={isAr ? 'مسافة التجربة بالكيلومتر' : 'Simulated distance in km'}
                     />
                     <span className="shrink-0 text-sm font-black tabular-nums text-white" dir="ltr">
-                      {simKm.toFixed(1)} {isAr ? 'كم' : 'km'}
+                      {simKmEff.toFixed(1)} {isAr ? 'كم' : 'km'}
                     </span>
                   </div>
                   <p className="text-[11px] text-neutral-300">

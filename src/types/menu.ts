@@ -151,6 +151,10 @@ export type SeasonalTheme = 'off' | 'christmas';
 
 export interface SeasonalSettings {
   theme: SeasonalTheme;
+  /** Go-live switch: the Settings section only *arms* a season
+   *  (theme='christmas', live=false); the dashboard card flips `live`.
+   *  The customer site renders effects only when both are set. */
+  live: boolean;
 }
 
 export interface MenuSettings {  name: { en: string; ar: string };
@@ -254,7 +258,9 @@ export interface MenuSettings {  name: { en: string; ar: string };
     speed?: number;
   };
   /** Seasonal storefront theme (snow, greetings, …). Missing in old docs
-   *  → `{ theme: 'off' }` (see seasonalOrDefault). */
+   *  → `{ theme: 'off', live: false }` (see seasonalOrDefault). `live` is
+   *  flipped only from the dashboard card; the Settings section merely
+   *  arms a season. */
   seasonal: SeasonalSettings;
   privacy: {
     /** Owner-written extra notes shown on the privacy page. */

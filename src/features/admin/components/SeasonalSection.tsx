@@ -15,8 +15,10 @@ interface SeasonalSectionProps extends SeasonalValues {
 }
 
 /** Seasonal storefront theme (first season: Christmas snow + greeting).
- *  Flips `settings.seasonal.theme`; autosave persists it and the customer
- *  site picks it up on its next menu fetch. */
+ *  Two-stage switch: this section only ARMS a season (theme on, live off) —
+ *  nothing shows to customers yet. The dashboard card flips `live` to go
+ *  live. Autosave persists both; the customer site picks them up on its
+ *  next menu fetch. */
 export const SeasonalSection: React.FC<SeasonalSectionProps> = ({
   seasonal,
   lang,
@@ -34,7 +36,10 @@ export const SeasonalSection: React.FC<SeasonalSectionProps> = ({
     ? 'ثلج متساقط ورسالة ترحيب على موقع الزبائن — تُخفى تلقائيًا عن الزبائن عندما تكون متوقفة'
     : 'Falling snow + a greeting on the customer site — hidden from customers while off';
 
-  const setTheme = (t: SeasonalTheme) => onUpdate(() => ({ seasonal: { theme: t } }));
+  const setTheme = (t: SeasonalTheme) =>
+    // Arming only: turning a season on here never goes live by itself —
+    // the dashboard card flips `live`. Turning off disarms completely.
+    onUpdate(() => ({ seasonal: { theme: t, live: false } }));
 
   // Celebratory ON press: the toggle fires immediately (autosave persists it),
   // while the button plays a short snowy loading state (~800 ms, long enough
@@ -90,7 +95,7 @@ export const SeasonalSection: React.FC<SeasonalSectionProps> = ({
             </b>
             <span className="block text-xs text-neutral-400 mt-0.5">
               {active
-                ? (isAr ? 'مفعّل الآن على موقع الزبائن' : 'Live on the customer site now')
+                ? (isAr ? 'مُجهّز — شغّله من زر الداشبورد ليظهر للزبائن' : 'Armed — turn it on from the dashboard card to go live')
                 : (isAr ? 'متوقف — لن يرى الزبائن شيئًا' : 'Off — customers see nothing')}
             </span>
           </span>

@@ -9,31 +9,36 @@ import { serverNow } from '@/src/utils/serverTime';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { featuresConfig } from '@/src/config/features.config';
 
-/** Seasonal quick toggle — always rendered (owner + client logins only, never
- *  the kitchen). Owners flip the season from here without opening Settings;
- *  the Settings tab owns the full section (preview + details). Flips the same
- *  `settings.seasonal.theme`; the menu-saver autosave persists it. */
+/** Seasonal go-live card — rendered ONLY while a season is armed in Settings
+ *  (theme !== 'off'). Arming alone never shows anything to customers; THIS
+ *  button flips `live` to go live. Owner + client logins only, never the
+ *  kitchen. Same field family as the Settings section; autosave persists. */
 const SeasonalQuickCard: React.FC<{
   lang: 'en' | 'ar';
   menu: MenuData;
   onUpdateMenu: (updater: (prev: MenuData) => MenuData) => void;
 }> = ({ lang, menu, onUpdateMenu }) => {
   const isAr = lang === 'ar';
-  const active = menu.settings.seasonal?.theme === 'christmas';
-  const setTheme = (on: boolean) =>
+  const armed = menu.settings.seasonal?.theme === 'christmas';
+  // Not armed → render nothing at all: the customer site is clean, the
+  // dashboard stays quiet, and no one can go live from here. The Settings
+  // section (always mounted) is where a season gets armed.
+  if (!armed) return null;
+  const live = menu.settings.seasonal?.live === true;
+  const setLive = (on: boolean) =>
     onUpdateMenu((m) => ({
       ...m,
-      settings: { ...m.settings, seasonal: { theme: on ? 'christmas' : 'off' } },
+      settings: { ...m.settings, seasonal: { theme: 'christmas' as const, live: on } },
     }));
   return (
     <div
       dir={isAr ? 'rtl' : 'ltr'}
       className={`rounded-2xl border p-4 transition-colors ${
-        active ? 'bg-sky-500/[0.07] border-sky-400/40' : 'bg-neutral-900 border-neutral-800'
+        live ? 'bg-sky-500/[0.07] border-sky-400/40' : 'bg-neutral-900 border-neutral-800'
       }`}
     >
       <div className="flex items-center gap-3.5 flex-wrap">
-        {active ? (
+        {live ? (
           <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-60" />
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-sky-400" />
@@ -48,19 +53,19 @@ const SeasonalQuickCard: React.FC<{
             {isAr ? 'ثيم الكريسماس' : 'Christmas theme'}
           </b>
           <span className="block text-xs text-neutral-400 mt-0.5">
-            {active
+            {live
               ? (isAr ? 'ثلج ورسالة ترحيب على موقع الزبائن' : 'Snow + greeting live on the customer site')
-              : (isAr ? 'مطفأ — شغّله ليظهر الثلج للزبائن' : 'Off — turn it on to show customers the snow')}
+              : (isAr ? 'مُجهّز — اضغط تشغيل ليظهر للزبائن' : 'Armed — press turn on to go live')}
           </span>
         </span>
         <button
           type="button"
-          aria-pressed={active}
-          onClick={() => setTheme(!active)}
+          aria-pressed={live}
+          onClick={() => setLive(!live)}
           className="relative px-5 h-11 min-h-[44px] inline-flex items-center rounded-full text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] text-[#0A0A0A]"
         >
           <span className="absolute inset-0 rounded-full bg-[var(--primary)]" aria-hidden="true" />
-          <span className="relative z-10">{active ? (isAr ? 'إطفاء' : 'Turn off') : (isAr ? 'تشغيل' : 'Turn on')}</span>
+          <span className="relative z-10">{live ? (isAr ? 'إطفاء' : 'Turn off') : (isAr ? 'تشغيل' : 'Turn on')}</span>
         </button>
       </div>
     </div>

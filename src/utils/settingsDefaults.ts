@@ -170,10 +170,12 @@ export function seasonalThemeOrDefault(v: unknown): SeasonalThemeId {
   return v === 'christmas' ? 'christmas' : 'off';
 }
 
-/** Seasonal block; missing in old docs → `{ theme: 'off' }`. Pure, never mutates. */
+/** Seasonal block; missing in old docs → `{ theme: 'off', live: false }`.
+ *  `live` is strictly boolean (anything else → false): only an explicit
+ *  dashboard flip ever turns effects on. Pure, never mutates. */
 export function seasonalOrDefault(v: unknown): SeasonalSettings {
   const r = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
-  return { theme: seasonalThemeOrDefault(r.theme) };
+  return { theme: seasonalThemeOrDefault(r.theme), live: r.live === true };
 }
 
 /**

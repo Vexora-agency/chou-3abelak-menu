@@ -6,6 +6,7 @@ import type { AdminFetch } from '@/src/lib/api-client';
 import { OnlineOrderingSwitch } from './admin/OnlineOrderingSwitch';
 import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 import { DeliveryFeeSection } from './DeliveryFeeSection';
+import { NumField } from './NumField';
 import { RestaurantPinPicker } from './RestaurantPinPicker';
 
 type Ordering = MenuSettings['ordering'];
@@ -95,12 +96,11 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
         {ordering.minOrderEnabled && (
           <div className="anim-fade-in">
             <label className="block text-xs text-neutral-400 mb-1">{isAr ? `الحد الأدنى للطلب (${currency})` : `Min Order (${currency})`}</label>
-            <input
-              type="number"
-              step="any"
+            <NumField
               value={ordering.minOrder}
-              onChange={(e) => onUpdate((prev) => ({ ...prev, minOrder: Number(e.target.value) }))}
-              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
+              onChange={(n) => onUpdate((prev) => ({ ...prev, minOrder: n }))}
+              placeholder="0"
+              ariaLabel={isAr ? `الحد الأدنى للطلب (${currency})` : `Min Order (${currency})`}
             />
           </div>
         )}

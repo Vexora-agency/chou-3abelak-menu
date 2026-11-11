@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import type { MenuSettings } from '@/src/types/menu';
 import { parseMapUrlCoords } from '@/src/utils/menuHelpers';
-import { normalizeDeliveryFeeTiers, resolveDeliveryFee, tierRangeLabel, DELIVERY_FEE_TIERS_MAX } from '@/src/utils/deliveryFees';
+import { normalizeDeliveryFeeTiers, resolveDeliveryFee, tierRangeLabel, DELIVERY_FEE_TIERS_MAX, DELIVERY_FEE_UPTO_MIN_KM } from '@/src/utils/deliveryFees';
+import { NumField } from './NumField';
 import { MapPin, Plus, Trash2, Navigation, Sparkles } from 'lucide-react';
 
 type Ordering = MenuSettings['ordering'];
@@ -25,8 +26,24 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
   onPickRestaurant,
 }) => {
   const isAr = lang === 'ar';
-  const tiers = useMemo(() => normalizeDeliveryFeeTiers(ordering.deliveryFeeTiers), [ordering.deliveryFeeTiers]);
-  const mode = ordering.deliveryFeeMode === 'distance' && tiers.length > 0 ? 'distance' : 'flat';
+  // Raw rows for the editor: every row the admin added, in insertion order.
+  // Normalized tiers (sorted, valid only) feed the preview/simulator/resolver.
+  // Editing works on raw rows so clearing a field never deletes its row —
+  // blanks read as 0 and are flagged below until completed.
+  const rawTiers = useMemo(() => {
+    const v = ordering.deliveryFeeTiers;
+    if (!Array.isArray(v)) return [];
+    return v
+      .filter((t) => t && typeof t === 'object')
+      .slice(0, DELIVERY_FEE_TIERS_MAX)
+      .map((t) => ({
+        upToKm: typeof t.upToKm === 'number' && Number.isFinite(t.upToKm) ? Math.max(0, t.upToKm) : 0,
+        fee: typeof t.fee === 'number' && Number.isFinite(t.fee) ? Math.max(0, t.fee) : 0,
+      }));
+  }, [ordering.deliveryFeeTiers]);
+  const tiers = useMemo(() => normalizeDeliveryFeeTiers(rawTiers), [rawTiers]);
+  const mode = ordering.deliveryFeeMode === 'distance' && rawTiers.length > 0 ? 'distance' : 'flat';
+  const rawIncomplete = rawTiers.some((t) => t.upToKm < DELIVERY_FEE_UPTO_MIN_KM);
   const restCoords = parseMapUrlCoords(mapUrl);
   const [simKm, setSimKm] = useState(3);
 
@@ -37,19 +54,28 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
 
   const setTier = (idx: number, patch: { upToKm?: number; fee?: number }) => {
     onUpdate((prev) => {
-      const cur = normalizeDeliveryFeeTiers(prev.deliveryFeeTiers);
-      const next = cur.map((t, i) => (i === idx ? { ...t, ...patch } : t));
-      next.sort((a, b) => a.upToKm - b.upToKm);
+      const cur = Array.isArray(prev.deliveryFeeTiers) ? prev.deliveryFeeTiers : [];
+      const rows = cur
+        .filter((t) => t && typeof t === 'object')
+        .slice(0, DELIVERY_FEE_TIERS_MAX)
+        .map((t) => ({
+          upToKm: typeof t.upToKm === 'number' && Number.isFinite(t.upToKm) ? Math.max(0, t.upToKm) : 0,
+          fee: typeof t.fee === 'number' && Number.isFinite(t.fee) ? Math.max(0, t.fee) : 0,
+        }));
+      // No sorting while editing: rows stay where the admin put them so
+      // focus never jumps; the resolver/preview normalize (sort) on read.
+      const next = rows.map((t, i) => (i === idx ? { ...t, ...patch } : t));
       return { ...prev, deliveryFeeTiers: next };
     });
   };
 
   const addTier = () => {
     onUpdate((prev) => {
-      const cur = normalizeDeliveryFeeTiers(prev.deliveryFeeTiers);
+      const cur = Array.isArray(prev.deliveryFeeTiers) ? prev.deliveryFeeTiers.filter((t) => t && typeof t === 'object') : [];
       if (cur.length >= DELIVERY_FEE_TIERS_MAX) return prev;
-      const lastUp = cur.length ? cur[cur.length - 1].upToKm : 0;
-      const lastFee = cur.length ? cur[cur.length - 1].fee : Number(prev.deliveryFee) || 0;
+      const last = cur.length ? cur[cur.length - 1] : null;
+      const lastUp = last && typeof last.upToKm === 'number' && Number.isFinite(last.upToKm) ? last.upToKm : 0;
+      const lastFee = last && typeof last.fee === 'number' && Number.isFinite(last.fee) ? Math.max(0, last.fee) : Number(prev.deliveryFee) || 0;
       return {
         ...prev,
         deliveryFeeMode: 'distance',
@@ -60,7 +86,7 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
 
   const removeTier = (idx: number) => {
     onUpdate((prev) => {
-      const cur = normalizeDeliveryFeeTiers(prev.deliveryFeeTiers);
+      const cur = Array.isArray(prev.deliveryFeeTiers) ? prev.deliveryFeeTiers.filter((t) => t && typeof t === 'object') : [];
       const next = cur.filter((_, i) => i !== idx);
       return { ...prev, deliveryFeeTiers: next, deliveryFeeMode: next.length ? 'distance' : 'flat' };
     });
@@ -83,8 +109,8 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
   const switchMode = (m: 'flat' | 'distance') => {
     onUpdate((prev) => {
       if (m === 'flat') return { ...prev, deliveryFeeMode: 'flat' };
-      const cur = normalizeDeliveryFeeTiers(prev.deliveryFeeTiers);
-      if (!cur.length) {
+      const hasRows = Array.isArray(prev.deliveryFeeTiers) && prev.deliveryFeeTiers.some((t) => t && typeof t === 'object');
+      if (!hasRows) {
         const base = Number(prev.deliveryFee) || 0;
         return {
           ...prev,
@@ -159,13 +185,11 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
           {mode === 'flat' ? (
             <div>
               <label className="block text-xs text-neutral-400 mb-1">{isAr ? `رسوم التوصيل (${currency})` : `Delivery Fee (${currency})`}</label>
-              <input
-                type="number"
-                step="any"
-                min={0}
+              <NumField
                 value={ordering.deliveryFee}
-                onChange={(e) => onUpdate((prev) => ({ ...prev, deliveryFee: Number(e.target.value) }))}
-                className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
+                onChange={(n) => onUpdate((prev) => ({ ...prev, deliveryFee: n }))}
+                placeholder="0"
+                ariaLabel={isAr ? `رسوم التوصيل (${currency})` : `Delivery Fee (${currency})`}
               />
             </div>
           ) : (
@@ -206,8 +230,8 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
                 </button>
               </div>
 
-              {/* Tiers editor */}
-              {tiers.length === 0 ? (
+              {/* Tiers editor (raw rows: clearing a field never deletes its row) */}
+              {rawTiers.length === 0 ? (
                 <button
                   type="button"
                   onClick={fillExample}
@@ -217,35 +241,30 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
                 </button>
               ) : (
                 <div className="space-y-2">
-                  {tiers.map((t, i) => (
-                    <div key={`${t.upToKm}-${i}`} className="rounded-xl border border-neutral-800 bg-black px-2.5 py-2 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2">
+                  {rawTiers.map((t, i) => (
+                    <div key={`tier-${i}`} className="rounded-xl border border-neutral-800 bg-black px-2.5 py-2 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2">
                       <div className="flex items-center gap-2 sm:contents">
                         <span className="shrink-0 w-6 h-6 rounded-full bg-[var(--primary)]/15 text-[var(--primary)] text-[11px] font-black flex items-center justify-center tabular-nums">
                           {i + 1}
                         </span>
                         <span className="text-[11px] text-neutral-400 shrink-0">{isAr ? 'حتى' : 'Up to'}</span>
-                        <input
-                          type="number"
-                          step="0.1"
-                          min={0.1}
-                          max={2000}
+                        <NumField
                           value={t.upToKm}
-                          onChange={(e) => setTier(i, { upToKm: Number(e.target.value) })}
-                          aria-label={isAr ? `الشريحة ${i + 1}: حتى كم` : `Tier ${i + 1}: up to km`}
+                          onChange={(n) => setTier(i, { upToKm: Math.round(n * 10) / 10 })}
+                          placeholder={isAr ? 'كم؟' : 'km'}
+                          ariaLabel={isAr ? `الشريحة ${i + 1}: حتى كم` : `Tier ${i + 1}: up to km`}
+                          max={2000}
                           className="h-10 px-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm tabular-nums focus:border-[var(--primary)] flex-1 min-w-0 sm:flex-none sm:w-20"
                         />
                         <span className="text-[11px] text-neutral-400 shrink-0">{isAr ? 'كم' : 'km'}</span>
                       </div>
                       <div className="flex items-center gap-2 sm:contents">
                         <span className="text-[11px] text-neutral-400 shrink-0 sm:hidden">{isAr ? 'الرسوم:' : 'Fee:'}</span>
-                        <input
-                          type="number"
-                          step="any"
-                          min={0}
+                        <NumField
                           value={t.fee}
-                          onChange={(e) => setTier(i, { fee: Number(e.target.value) })}
-                          aria-label={isAr ? `الشريحة ${i + 1}: الرسوم` : `Tier ${i + 1}: fee`}
-                          inputMode="decimal"
+                          onChange={(n) => setTier(i, { fee: n })}
+                          placeholder="0"
+                          ariaLabel={isAr ? `الشريحة ${i + 1}: الرسوم` : `Tier ${i + 1}: fee`}
                           className="h-10 px-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm tabular-nums focus:border-[var(--primary)] flex-1 min-w-0"
                         />
                         <span className="text-[10px] text-neutral-500 shrink-0 hidden sm:inline">{currency}</span>
@@ -264,11 +283,11 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
                     <button
                       type="button"
                       onClick={addTier}
-                      disabled={tiers.length >= DELIVERY_FEE_TIERS_MAX}
+                      disabled={rawTiers.length >= DELIVERY_FEE_TIERS_MAX}
                       className="flex-1 min-h-[44px] rounded-xl border border-neutral-700 text-neutral-300 text-xs font-bold hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors inline-flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed px-3"
                     >
                       <Plus size={14} />
-                      {isAr ? `إضافة شريحة (${tiers.length}/${DELIVERY_FEE_TIERS_MAX})` : `Add tier (${tiers.length}/${DELIVERY_FEE_TIERS_MAX})`}
+                      {isAr ? `إضافة شريحة (${rawTiers.length}/${DELIVERY_FEE_TIERS_MAX})` : `Add tier (${rawTiers.length}/${DELIVERY_FEE_TIERS_MAX})`}
                     </button>
                     <button
                       type="button"
@@ -278,6 +297,13 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
                       {isAr ? '↻ مثال' : '↻ Example'}
                     </button>
                   </div>
+                  {rawIncomplete && (
+                    <p className="text-[11px] text-amber-400" dir={isAr ? 'rtl' : 'ltr'}>
+                      {isAr
+                        ? 'شريحة ناقصة: المسافة 0.1 كم على الأقل — أكملها قبل الحفظ.'
+                        : 'An unfinished tier needs at least 0.1 km — complete it before saving.'}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -355,12 +381,11 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
             {ordering.freeDeliveryEnabled && (
               <div className="anim-fade-in mt-2">
                 <label className="block text-xs text-neutral-400 mb-1">{isAr ? `الطلبات فوق (${currency}) توصيلها مجاني` : `Orders over (${currency}) deliver free`}</label>
-                <input
-                  type="number"
-                  step="any"
-                  min={0}
+                <NumField
                   value={ordering.freeDeliveryMin ?? 0}
-                  onChange={(e) => onUpdate((prev) => ({ ...prev, freeDeliveryMin: Number(e.target.value) }))}
+                  onChange={(n) => onUpdate((prev) => ({ ...prev, freeDeliveryMin: n }))}
+                  placeholder="0"
+                  ariaLabel={isAr ? `الطلبات فوق (${currency}) توصيلها مجاني` : `Orders over (${currency}) deliver free`}
                   className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-neutral-900 border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
                 />
               </div>

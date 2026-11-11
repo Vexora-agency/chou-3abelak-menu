@@ -269,7 +269,7 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
       <SettingsGroupHeader
         title={isAr ? 'دخول العملاء' : 'Client Access'}
         subtitle={isAr
-          ? 'أنشئ رابط دعوة لمرة واحدة — الضيف يضع كلمة سره بنفسه. اختر المدة قبل الإنشاء. دخولك الرئيسي يعمل دائمًا على كل المواقع.'
+          ? 'أنشئ رابط دعوة لمرة واحدة — الضيف يضع كلمة المرور بنفسه. اختر المدة قبل الإنشاء. دخولك الرئيسي يعمل دائمًا على كل المواقع.'
           : 'Mint a one-time invite link — the guest sets their own password. Pick the duration before creating. Your master login always works everywhere.'}
         lang={lang}
         collapsed={collapsed}
@@ -282,8 +282,8 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
           dir="ltr"
           value={name}
           onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 31))}
-          placeholder={isAr ? 'اسم الدخول، مثال: layali' : 'Login name, e.g. layali'}
-          aria-label={isAr ? 'اسم دخول العميل' : 'Client login name'}
+          placeholder={isAr ? 'اسم المستخدم، مثال: layali' : 'Login name, e.g. layali'}
+          aria-label={isAr ? 'اسم المستخدم' : 'Client login name'}
           className="flex-1 min-w-0 h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)] placeholder:text-neutral-600 outline-none"
         />
         <button
@@ -359,12 +359,12 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
               className="h-9 px-4 rounded-full border border-neutral-700 text-neutral-300 text-[11px] font-bold inline-flex items-center gap-1.5 hover:border-[var(--primary)] hover:text-[var(--primary)]"
             >
               <Send size={13} />
-              {isAr ? 'مشاركة تليجرام' : 'Share via Telegram'}
+              {isAr ? 'مشاركة تيليجرام' : 'Share via Telegram'}
             </a>
           </div>
           <p className="text-[10px] text-neutral-500">
             {isAr
-              ? <>{fresh.expiresAt ? <>الرابط ينتهي في <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> — يُستخدم مرة واحدة ثم يموت (الدخول نفسه مفتوح).</> : <>رابط لمرة واحدة — الدخول نفسه مفتوح بلا انتهاء.</>}</>
+              ? <>{fresh.expiresAt ? <>الرابط ينتهي في <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> — يُستخدم مرة واحدة ثم تنتهي صلاحيته (ويبقى الدخول نفسه مفتوحًا).</> : <>رابط لمرة واحدة — الدخول نفسه مفتوح بلا انتهاء.</>}</>
               : <>{fresh.expiresAt ? <>Link expires <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> — single-use, then dead (the login itself stays open).</> : <>Single-use link — the login itself stays open.</>}</>}
           </p>
         </div>
@@ -487,7 +487,7 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
         </p>
         <p className="text-[11px] text-neutral-500">
           {isAr
-            ? 'لو شككت أن كلمة السر اتسربت: هذا يطرد كل الأجهزة فورًا (وأنت منهم — ستدخل من جديد).'
+            ? 'إذا شككت في تسرّب كلمة المرور: سيفصل هذا جميع الأجهزة فورًا (بما فيها جهازك — وستحتاج إلى تسجيل الدخول مجددًا).'
             : 'If the password may have leaked: this signs out every device at once (including you — you will sign in again).'}
         </p>
         <button
@@ -501,7 +501,7 @@ export const AccessSection: React.FC<AccessSectionProps> = ({ lang, adminFetch, 
           }`}
         >
           <LogOut size={14} />
-          {confirmKey === 'revoke-all-sessions' ? (isAr ? 'تأكيد الطرد؟' : 'Confirm sign-out?') : (isAr ? 'طرد كل الأجهزة' : 'Sign out all devices')}
+          {confirmKey === 'revoke-all-sessions' ? (isAr ? 'تأكيد الفصل؟' : 'Confirm sign-out?') : (isAr ? 'فصل كل الأجهزة' : 'Sign out all devices')}
         </button>
       </div>
       </SettingsGroupBody>

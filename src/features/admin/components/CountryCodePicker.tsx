@@ -136,7 +136,7 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({ value, onC
             </button>
             {rows.length === 0 && (
               <p className="px-3 py-4 text-xs text-neutral-500 text-center">
-                {isAr ? 'لا نتائج — جرّب اسماً أو رمزاً آخر.' : 'No matches — try another name or code.'}
+                {isAr ? 'لا نتائج — جرّب اسمًا أو رمزًا آخر.' : 'No matches — try another name or code.'}
               </p>
             )}
           </div>

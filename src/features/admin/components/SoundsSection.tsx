@@ -51,8 +51,8 @@ export const SoundsSection: React.FC<SoundsSectionProps> = ({ sounds, lang, onUp
     },
     {
       key: 'customer',
-      title: isAr ? 'جرس العميل (صفحة المنيو)' : 'Customer bell (menu page)',
-      desc: isAr ? 'يسمعه الزبون عند طلبه لمدة 30 دقيقة' : 'The customer hears it for their order for 30 minutes',
+      title: isAr ? 'جرس العميل (صفحة القائمة)' : 'Customer bell (menu page)',
+      desc: isAr ? 'يسمعه العميل عند طلبه لمدة 30 دقيقة' : 'The customer hears it for their order for 30 minutes',
       icon: Store,
     },
   ];

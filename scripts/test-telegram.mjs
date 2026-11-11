@@ -197,7 +197,7 @@ ok('message has pretty maps anchor', locMsg.includes('الموقع الدقيق 
 const searchMsg = formatNewOrderMessage(sampleCleaned, 1001, 'ل.ل');
 ok('fallback link labeled approximate', searchMsg.includes('بحث تقريبي عن العنوان'));
 ok('bidi isolates wrap numbers', [...locMsg].some((c) => c.charCodeAt(0) === 0x2066) && [...locMsg].some((c) => c.charCodeAt(0) === 0x2069));
-ok('bold labels on important fields', locMsg.includes('<b>الزبون:</b>') && locMsg.includes('<b>الهاتف:</b>') && locMsg.includes('<b>العنوان:</b>') && locMsg.includes('<b>الإجمالي:'));  
+ok('bold labels on important fields', locMsg.includes('<b>العميل:</b>') && locMsg.includes('<b>الهاتف:</b>') && locMsg.includes('<b>العنوان:</b>') && locMsg.includes('<b>الإجمالي:'));  
 
 // 7b. Bot username resolution: env (developer) wins, D1 fallback, else null.
 const dbWithD1Name = {
@@ -382,7 +382,7 @@ const ready = await handleOrderCallback(dbReady, 'tok', { ...cbBase, callbackId:
 const readyCalls = cbCalls.slice(nCallsBeforeReady);
 const readyAnswer = readyCalls.find((c) => c.method === 'answerCallbackQuery');
 ok('stale rdy is frozen (deprecated)', ready.handled === false && ready.reason === 'deprecated' && dbReady.orders.get('ord-1').status === 'confirmed');
-ok('freeze answers with modal alert', !!readyAnswer && readyAnswer.body.show_alert === true && readyAnswer.body.cache_time === 0 && String(readyAnswer.body.text || '').includes('الداشبورد'));
+ok('freeze answers with modal alert', !!readyAnswer && readyAnswer.body.show_alert === true && readyAnswer.body.cache_time === 0 && String(readyAnswer.body.text || '').includes('لوحة التحكم'));
 const readyStrip = readyCalls.find((c) => c.method === 'editMessageReplyMarkup');
 ok('freeze strips the dead buttons', !!readyStrip && Array.isArray(readyStrip.body.reply_markup.inline_keyboard) && readyStrip.body.reply_markup.inline_keyboard.length === 0);
 ok('freeze stamps no banner', !readyCalls.some((c) => c.method === 'editMessageText'));

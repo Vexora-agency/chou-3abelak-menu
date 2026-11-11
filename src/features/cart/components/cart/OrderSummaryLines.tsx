@@ -165,7 +165,7 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
         >
           <span className={`min-w-0 ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
             {feeActive
-              ? (isAr ? 'الإجمالي الكلي:' : 'Total:')
+              ? (isAr ? 'الإجمالي:' : 'Total:')
               : (isAr ? 'المجموع الفرعي:' : 'Subtotal:')}
           </span>
           <span ref={grandTotalRef} className="text-base px-3.5 py-1 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-black shadow-xs tabular-nums shrink-0 whitespace-nowrap">

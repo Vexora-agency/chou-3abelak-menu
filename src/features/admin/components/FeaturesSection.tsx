@@ -159,7 +159,7 @@ const GroupChoiceMode: React.FC<GroupChoiceModeProps> = ({
           </div>
           <p className="text-[11px] text-neutral-500">
             {isAr
-              ? 'يظهر فوق خيارات هذا القسم عند الزبون. اتركه فارغاً بدون عنوان.'
+              ? 'يظهر فوق خيارات هذا القسم عند العميل. اتركه فارغًا بدون عنوان.'
               : 'Shown above this section’s choices in the customer sheet. Leave empty for no title.'}
           </p>
         </div>
@@ -247,7 +247,7 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                     onConfirm({
                       title: isAr ? `حذف قسم "${sectionName}"؟` : `Delete the "${sectionName}" section?`,
                       body: isAr
-                        ? `ميزاته مستخدمة في ${inItems === 1 ? 'صنف واحد' : `${inItems} أصناف`} — ستُحذف منها أيضاً.${
+                        ? `ميزاته مستخدمة في ${inItems === 1 ? 'صنف واحد' : `${inItems} أصناف`} — ستُحذف منها أيضًا.${
                             doomed > 0
                               ? ` ${doomed === 1 ? 'صنف واحد' : `${doomed} أصناف`} سيفقد مقاسه الوحيد ويتحول لسعر ثابت بنفس السعر.`
                               : ''

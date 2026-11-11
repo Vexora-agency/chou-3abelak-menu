@@ -32,12 +32,12 @@ export const ItemPricingFields: React.FC<ItemPricingFieldsProps> = ({
                 pricing: { ...normalizePricing(item), price: e.target.value === '' ? undefined : Number(e.target.value) },
               })
             }
-            placeholder={isAr ? 'فارغ = مجاناً (أو أضف مقاسات تحت)' : 'Empty = free (or add sizes below)'}
+            placeholder={isAr ? 'فارغ = مجانًا (أو أضف مقاسات تحت)' : 'Empty = free (or add sizes below)'}
             className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums"
           />
           {(item.pricing.price === undefined || item.pricing.price === 0) && (
             <p className="text-[11px] font-bold text-emerald-400 mt-1">
-              ✓ {isAr ? 'سيظهر للزبون مجاناً' : 'Will show as FREE to customers'}
+              ✓ {isAr ? 'سيظهر للعميل مجانًا' : 'Will show as FREE to customers'}
             </p>
           )}
         </div>

@@ -274,9 +274,12 @@ export function normalizeMenu<T>(menu: T): T {
     // A spice level is exactly one choice — never multi, even if an old
     // document stored something else.
     spicyGroup.selection = 'single';
-    // The customer title is a short question ("هل تريد شطة؟"). A blank
+    // The customer title is a short question ("هل تريد إضافة الحار؟"). A blank
     // prompt — or the first-shipped wording, superseded by the question
     // style — resets to the current default; an admin-edited prompt stays.
+    // NOTE: SUPERSEDED_PROMPT must keep matching the FIRST-SHIPPED (legacy)
+    // wording so old documents are still recognized and migrated — it is a
+    // matcher, not display text. Do not "correct" it to the new wording.
     const SUPERSEDED_PROMPT = {
       en: 'Add heat to your order — pick your spice level',
       ar: 'إضافة حار للطلب — اختر درجة الحار المناسبة',

@@ -485,7 +485,7 @@ export function escapeHtml(s) {
 
 /* ---------- Phase 4: new-order notification (View button only) ---------- */
 
-const TYPE_LABEL = { delivery: 'توصيل 🛵', pickup: 'استلام 🏃', dinein: 'صالة 🍽️' };
+const TYPE_LABEL = { delivery: 'توصيل 🛵', pickup: 'استلام من المطعم 🏃', dinein: 'تناول في المطعم 🍽️' };
 
 function fmtMoney(n) {
   const v = typeof n === 'number' && Number.isFinite(n) ? n : 0;
@@ -578,11 +578,11 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
   // them to prepare/deliver together. Renders in the first message AND every
   // rebuild (status taps) because it lives in formatNewOrderMessage itself.
   if (cleaned && Number.isInteger(cleaned.parentNumber)) {
-    lines.push(`🔁 <b>تابع للطلب ${bidi(`#${cleaned.parentNumber}`)}</b> — نفس الزبون، يُجهَّز معه`);
+    lines.push(`🔁 <b>طلب إضافي مرتبط بالطلب ${bidi(`#${cleaned.parentNumber}`)}</b> — من العميل نفسه، يُجهَّز معه`);
   }
   const typeLabel = TYPE_LABEL[cleaned.type] || escapeHtml(String(cleaned.type || ''));
   lines.push(`<b>النوع:</b> ${typeLabel}`);
-  lines.push(`<b>الزبون:</b> ${escapeHtml(cleaned.name || '-')}`);
+  lines.push(`<b>العميل:</b> ${escapeHtml(cleaned.name || '-')}`);
   lines.push(`<b>الهاتف:</b> <code>${bidi(escapeHtml(cleaned.phone || '-'))}</code>`);
   if (cleaned.type === 'delivery' && cleaned.address) {
     lines.push(`<b>العنوان:</b> ${escapeHtml(cleaned.address)}`);
@@ -591,7 +591,7 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
       const hasAddress = typeof cleaned.address === 'string' && cleaned.address.trim() !== '';
       const anchor = maps.precise
         ? '📍 الموقع الدقيق على الخريطة'
-        : hasAddress ? '🔍 بحث تقريبي عن العنوان' : '📍 موقع تقريبي — تحقق مع الزبون';
+        : hasAddress ? '🔍 بحث تقريبي عن العنوان' : '📍 موقع تقريبي — تحقق مع العميل';
       lines.push(`<a href="${escapeHtml(maps.url)}">${anchor}</a>`);
     }
   }
@@ -1085,7 +1085,7 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
     // Legacy `ready` ROWS keep working: sync/stamp/complete paths below
     // still accept the status, only new presses are frozen.
     if (parsed.action === 'rdy') {
-      await answer('خطوة "جاهز" اتلغت — كمّل من الداشبورد', true);
+      await answer('تم إلغاء خطوة "جاهز" — تابع من لوحة التحكم', true);
       try {
         await callTelegramApi(token, 'editMessageReplyMarkup', {
           chat_id: chatId,
@@ -1494,7 +1494,7 @@ export async function notifyOwnerReceived(db, token, { orderNumber, customerName
     if (!link) return skip('unlinked');
     const name = typeof customerName === 'string' && customerName.trim()
       ? escapeHtml(customerName.trim().slice(0, 60))
-      : 'الزبون';
+      : 'العميل';
     const text = `📦 ${name} أكّد استلام الطلب ${bidi(`#${orderNumber}`)} بنجاح ✅`;
     const res = await callTelegramApi(token, 'sendMessage', {
       chat_id: link.chatId,
@@ -1526,8 +1526,8 @@ export async function notifyOwnerAutoCompleted(db, token, { orderNumber, custome
     if (!link) return skip('unlinked');
     const name = typeof customerName === 'string' && customerName.trim()
       ? escapeHtml(customerName.trim().slice(0, 60))
-      : 'الزبون';
-    const text = `⏰ النظام علّم الطلب ${bidi(`#${orderNumber}`)} (${name}) مكتمل تلقائيًا — مرت 12 ساعة بدون تأكيد استلام ✅`;
+      : 'العميل';
+    const text = `⏰ أكمل النظام الطلب ${bidi(`#${orderNumber}`)} (${name}) تلقائيًا — مرت 12 ساعة دون تأكيد الاستلام ✅`;
     const res = await callTelegramApi(token, 'sendMessage', {
       chat_id: link.chatId,
       text,
@@ -1557,7 +1557,7 @@ export async function notifyOwnerCustomerCancelled(db, token, { orderNumber, cus
     if (!link) return skip('unlinked');
     const name = typeof customerName === 'string' && customerName.trim()
       ? escapeHtml(customerName.trim().slice(0, 60))
-      : 'الزبون';
+      : 'العميل';
     const text = `❌ ${name} ألغى الطلب ${bidi(`#${orderNumber}`)}`;
     const res = await callTelegramApi(token, 'sendMessage', {
       chat_id: link.chatId,
@@ -1589,7 +1589,7 @@ export async function notifyOwnerOrderLocked(db, token, { orderNumber, customerN
     if (!link) return skip('unlinked');
     const name = typeof customerName === 'string' && customerName.trim()
       ? escapeHtml(customerName.trim().slice(0, 60))
-      : 'الزبون';
+      : 'العميل';
     const text = `🔒 الطلب ${bidi(`#${orderNumber}`)} (${name}) أصبح نهائيًا — انتهت مهلة الإلغاء، جاهز للتنفيذ ✅`;
     const res = await callTelegramApi(token, 'sendMessage', {
       chat_id: link.chatId,

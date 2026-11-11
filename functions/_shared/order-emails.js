@@ -140,12 +140,12 @@ const STR = {
       label: 'تحديث الطلب',
       title: 'طلبك قيد التحضير',
       subject: (number, store) => `طلبك رقم ${number} قيد التحضير في ${store}`,
-      withEta: (number, eta) => `طلبك رقم ${number} قيد التحضير الآن. الوقت المتوقع للتوصيل: ${eta}.`,
+      withEta: (number, eta) => `طلبك رقم ${number} قيد التحضير الآن. الوقت المتوقع: ${eta}.`,
       withoutEta: (number) => `طلبك رقم ${number} قيد التحضير الآن وسنعلمك عند جاهزيته.`,
     },
     completed: {
       label: 'تحديث الطلب',
-      title: 'تم التوصيل، بالعافية',
+      title: 'تم التوصيل بنجاح',
       subject: (number, store) => `تم توصيل طلبك رقم ${number} من ${store}`,
       body: (number, store) => `تم توصيل طلبك رقم ${number} بنجاح. شكرًا لاختيارك ${store}.`,
     },
@@ -157,9 +157,9 @@ const STR = {
     },
     receipt_check: {
       label: 'تحديث الطلب',
-      title: 'هل وصلك طلبك؟',
-      subject: (number, store) => `هل وصلك طلبك رقم ${number} من ${store}؟`,
-      body: (number, store) => `انتهى الوقت المتوقع لتوصيل طلبك رقم ${number}. لو وصلك، أكّد الاستلام من صفحة التتبع.`,
+      title: 'هل استلمت طلبك؟',
+      subject: (number, store) => `هل استلمت طلبك رقم ${number} من ${store}؟`,
+      body: (number, store) => `انتهت مدة التوصيل المتوقعة لطلبك رقم ${number}. إذا استلمته، يرجى تأكيد الاستلام من صفحة التتبع.`,
     },
   },
   en: {

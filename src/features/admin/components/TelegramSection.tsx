@@ -214,7 +214,7 @@ export const TelegramSection: React.FC<TelegramSectionProps> = ({ lang, adminFet
           so every team invite lives in one place. This note is the pointer. */}
       <p className="text-[11px] text-neutral-500 rounded-xl px-3 py-2 border border-neutral-800 bg-black/40">
         {isAr
-          ? 'مشاركة الطاقم (روابط الدليفري) انتقلت إلى قسم الفريق والطاقم — ستجدها في مجموعة «الفريق والطاقم».'
+          ? 'مشاركة الطاقم (روابط مندوبي التوصيل) انتقلت إلى قسم الفريق والطاقم — ستجدها في مجموعة «الفريق والطاقم».'
           : 'Crew sharing (delivery links) moved to the Team section — find it in the “Team & Crew” group.'}
       </p>
 

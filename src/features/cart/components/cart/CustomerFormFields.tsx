@@ -99,7 +99,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               if (location) onClearLocation();
               setCustomer({ ...customer, address: e.target.value });
             }}
-            placeholder={isAr ? 'المنطقة والشارع ورقم العمارة… ثم حدد موقعك بالدبوس (إجباري)' : 'Area, street, building… then pin your location (required)'}
+            placeholder={isAr ? 'المنطقة والشارع ورقم المبنى… ثم حدّد موقعك على الخريطة (خطوة مطلوبة)' : 'Area, street, building… then pin your location (required)'}
             maxLength={200}
             autoComplete="street-address"
             enterKeyHint="next"
@@ -113,8 +113,8 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             <button
               type="button"
               onClick={onOpenLocSheet}
-              title={isAr ? 'افتح الخريطة لتحديد موقعك (إجباري)' : 'Open the map to pin your location (required)'}
-              aria-label={isAr ? 'افتح الخريطة لتحديد موقعك (إجباري)' : 'Open the map to pin your location (required)'}
+              title={isAr ? 'افتح الخريطة لتحديد موقعك (خطوة مطلوبة)' : 'Open the map to pin your location (required)'}
+              aria-label={isAr ? 'افتح الخريطة لتحديد موقعك (خطوة مطلوبة)' : 'Open the map to pin your location (required)'}
               className={`absolute end-0.5 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                 darkMode
                   ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
@@ -133,7 +133,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             <MapPin size={13} className="shrink-0" />
             <span className="flex-1 min-w-0 basis-0 truncate" dir="auto">
                 {isAr
-                  ? `تم تحديد الموقع${distanceText ? ` · على بعد ${distanceText} من موقعنا` : ''}${feeHint && !feeFreeApplied ? ` · ${feeHint}` : ''}`
+                  ? `تم تحديد الموقع${distanceText ? ` · على بعد ${distanceText} من المطعم` : ''}${feeHint && !feeFreeApplied ? ` · ${feeHint}` : ''}`
                   : `Location pinned${distanceText ? ` · ${distanceText} from our location` : ''}${feeHint && !feeFreeApplied ? ` · ${feeHint}` : ''}`}
             </span>
             {feeFreeApplied && feeHint && (
@@ -149,7 +149,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             </a>
             {location.accuracy > 500 && (
               <span className="shrink-0 text-amber-500">
-                {isAr ? 'تقريبي — اكتب العنوان أيضاً' : 'Rough — also write the address'}
+                {isAr ? 'تقريبي — اكتب العنوان أيضًا' : 'Rough — also write the address'}
               </span>
             )}
             {distanceWarning && (

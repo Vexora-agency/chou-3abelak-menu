@@ -82,7 +82,7 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
               onPick={(id) => onSelectRadio(b.groupId ?? '', id)}
               prompt={
                 required
-                  ? { en: 'Choose your heat level (required)', ar: 'اختار درجة الحار (إجباري)' }
+                  ? { en: 'Choose your heat level (required)', ar: 'اختر درجة الحار (مطلوب)' }
                   : b.prompt
               }
               required={required}
@@ -125,7 +125,7 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
             </p>
             {required && (
               <p className={`-mt-1 mb-2 text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                {isAr ? 'لازم تختار واحدة على الأقل عشان زر الإضافة يتفعل' : 'Pick at least one to enable the Add button'}
+                {isAr ? 'اختر صنفًا واحدًا على الأقل لتفعيل زر الإضافة' : 'Pick at least one to enable the Add button'}
               </p>
             )}
             {split ? (

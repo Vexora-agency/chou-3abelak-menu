@@ -60,12 +60,12 @@
         "id": "spicy",
         "name": {
           "en": "Make it Spicy",
-          "ar": "خليه حار"
+          "ar": "اجعله حارًّا"
         },
         "selection": "single",
         "prompt": {
           "en": "Want to add some heat?",
-          "ar": "هل تريد شطة؟"
+          "ar": "هل تريد إضافة الحار؟"
         }
       }
     ],
@@ -114,7 +114,7 @@
         "id": "extra-veg",
         "name": {
           "en": "Extra vegetables",
-          "ar": "إضافة خضرة"
+          "ar": "إضافة خضروات"
         },
         "groupId": "addons"
       },
@@ -122,7 +122,7 @@
         "id": "spicy-mild",
         "name": {
           "en": "Mild",
-          "ar": "خفيف"
+          "ar": "حار خفيف"
         },
         "groupId": "spicy"
       },
@@ -130,7 +130,7 @@
         "id": "spicy-medium",
         "name": {
           "en": "Medium",
-          "ar": "متوسط"
+          "ar": "حار متوسط"
         },
         "groupId": "spicy"
       },
@@ -154,7 +154,7 @@
       "deliveryFeeEnabled": true,
       "note": {
         "en": "Prices are in LBP and include all taxes. Delivery in Beirut within 30-45 mins.",
-        "ar": "الأسعار بالليرة اللبنانية وتشمل الضريبة. التوصيل في بيروت خلال 30-45 دقيقة."
+        "ar": "الأسعار بالليرة اللبنانية (ل.ل) وتشمل الضريبة. التوصيل في بيروت خلال 30–45 دقيقة."
       },
       "paused": false,
       "pausedUntil": null,
@@ -237,7 +237,7 @@
       "id": "fatayer",
       "name": {
         "en": "Pies",
-        "ar": "فطيرة"
+        "ar": "فطائر"
       },
       "visible": true,
       "layout": "compact"
@@ -246,7 +246,7 @@
       "id": "drinks",
       "name": {
         "en": "Drinks",
-        "ar": "مرطبات"
+        "ar": "مشروبات"
       },
       "visible": true,
       "layout": "compact"
@@ -1065,7 +1065,7 @@
       "categoryId": "manakish",
       "name": {
         "en": "Fresh Vegetables",
-        "ar": "خضرة حرة"
+        "ar": "خضروات حارّة"
       },
       "description": {
         "en": "",
@@ -1115,7 +1115,7 @@
       "categoryId": "manakish",
       "name": {
         "en": "Fresh Vegetables & Akkawi",
-        "ar": "خضرة حرة وعكاوي"
+        "ar": "خضروات حارّة وعكاوي"
       },
       "description": {
         "en": "",
@@ -1165,7 +1165,7 @@
       "categoryId": "manakish",
       "name": {
         "en": "Fresh Vegetables & Mozzarella",
-        "ar": "خضرة حرة وموزاريلا"
+        "ar": "خضروات حارّة وموزاريلا"
       },
       "description": {
         "en": "",
@@ -1215,7 +1215,7 @@
       "categoryId": "manakish",
       "name": {
         "en": "Fresh Vegetables & Sujuk",
-        "ar": "خضرة حرة وسجق"
+        "ar": "خضروات حارّة وسجق"
       },
       "description": {
         "en": "",
@@ -1265,7 +1265,7 @@
       "categoryId": "manakish",
       "name": {
         "en": "Fresh Vegetables, Sujuk & Mozzarella",
-        "ar": "خضرة حرة وسجق وموزاريلا"
+        "ar": "خضروات حارّة وسجق وموزاريلا"
       },
       "description": {
         "en": "",
@@ -1888,7 +1888,7 @@
       "categoryId": "pizza",
       "name": {
         "en": "Veggie Pizza",
-        "ar": "بيتزا خضرة"
+        "ar": "بيتزا خضروات"
       },
       "description": {
         "en": "",
@@ -1934,7 +1934,7 @@
       "categoryId": "pizza",
       "name": {
         "en": "Veggie & Sujuk Pizza",
-        "ar": "بيتزا خضرة وسجق"
+        "ar": "بيتزا خضروات وسجق"
       },
       "description": {
         "en": "",
@@ -1980,7 +1980,7 @@
       "categoryId": "pizza",
       "name": {
         "en": "Veggie & Mortadella Pizza",
-        "ar": "بيتزا خضرة ومرتديلا"
+        "ar": "بيتزا خضروات ومرتديلا"
       },
       "description": {
         "en": "",
@@ -2026,7 +2026,7 @@
       "categoryId": "pizza",
       "name": {
         "en": "Veggie & Pepperoni Pizza",
-        "ar": "بيتزا خضرة وبيبيروني"
+        "ar": "بيتزا خضروات وبيبيروني"
       },
       "description": {
         "en": "",
@@ -2072,7 +2072,7 @@
       "categoryId": "pizza",
       "name": {
         "en": "Veggie & Turkey Pizza",
-        "ar": "بيتزا خضرة وحبش"
+        "ar": "بيتزا خضروات وحبش"
       },
       "description": {
         "en": "",

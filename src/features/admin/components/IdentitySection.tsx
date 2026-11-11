@@ -381,7 +381,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
             const loc = normalizeMapLocation(mapUrl);
             if (loc.kind === 'empty') {
               return isAr
-                ? 'الصق رابط خرائط جوجل بأي شكل، أو إحداثيات، أو اسم المكان.'
+                ? 'الصق رابط خرائط جوجل بأي صيغة، أو إحداثيات، أو اسم المكان.'
                 : 'Paste any Google Maps link, coordinates, or a place name.';
             }
             if (loc.kind === 'coords') {

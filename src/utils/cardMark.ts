@@ -86,11 +86,11 @@ export const CARD_MARK_GROUPS: CardMarkGroup[] = [
 
 export const CARD_MARKS: CardMarkDef[] = [
   { key: 'pizza', labelEn: 'Pizza', labelAr: 'بيتزا', Icon: Pizza, group: 'mains' },
-  { key: 'sandwich', labelEn: 'Sandwich', labelAr: 'ساندويش', Icon: Sandwich, group: 'mains' },
+  { key: 'sandwich', labelEn: 'Sandwich', labelAr: 'ساندويتش', Icon: Sandwich, group: 'mains' },
   { key: 'drumstick', labelEn: 'Chicken', labelAr: 'دجاج', Icon: Drumstick, group: 'mains' },
   { key: 'beef', labelEn: 'Meat', labelAr: 'لحم', Icon: Beef, group: 'mains' },
   { key: 'fish', labelEn: 'Fish', labelAr: 'سمك', Icon: Fish, group: 'mains' },
-  { key: 'soup', labelEn: 'Soup', labelAr: 'شوربة', Icon: Soup, group: 'mains' },
+  { key: 'soup', labelEn: 'Soup', labelAr: 'حساء', Icon: Soup, group: 'mains' },
   { key: 'salad', labelEn: 'Salad', labelAr: 'سلطة', Icon: Salad, group: 'mains' },
   { key: 'cup', labelEn: 'Cup', labelAr: 'كوب', Icon: CupSoda, group: 'drinks' },
   { key: 'coffee', labelEn: 'Coffee', labelAr: 'قهوة', Icon: Coffee, group: 'drinks' },

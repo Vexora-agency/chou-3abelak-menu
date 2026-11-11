@@ -109,7 +109,7 @@ export function tierRangeLabel(tiers: DeliveryFeeTier[], i: number, lang: 'en' |
   if (i === tiers.length - 1) {
     if (i === 0) return lang === 'ar' ? `حتى ${fmt(t.upToKm)} ${unit}` : `Up to ${fmt(t.upToKm)} ${unit}`;
     return lang === 'ar'
-      ? `من ${fmt(tiers[i - 1].upToKm)} إلى ${fmt(t.upToKm)} ${unit} وما بعد`
+      ? `من ${fmt(tiers[i - 1].upToKm)} إلى ${fmt(t.upToKm)} ${unit} فأكثر`
       : `${fmt(tiers[i - 1].upToKm)}–${fmt(t.upToKm)} ${unit} and beyond`;
   }
   if (i === 0) return lang === 'ar' ? `حتى ${fmt(t.upToKm)} ${unit}` : `Up to ${fmt(t.upToKm)} ${unit}`;

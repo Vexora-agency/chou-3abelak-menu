@@ -25,7 +25,7 @@ export const VisitorDefaultsSection: React.FC<VisitorDefaultsSectionProps> = ({
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
       <SettingsGroupHeader
         title={isAr ? 'الوضع الافتراضي للزوار الجدد' : 'New Visitor Defaults'}
-        subtitle={isAr ? 'يطبق فقط على أول زيارة — اختيار العميل محفوظ دائماً' : 'First visit only — a returning visitor keeps their own choice'}
+        subtitle={isAr ? 'يطبق فقط على أول زيارة — اختيار العميل محفوظ دائمًا' : 'First visit only — a returning visitor keeps their own choice'}
         lang={lang}
         collapsed={collapsed}
         onToggle={() => onToggleCollapse?.()}

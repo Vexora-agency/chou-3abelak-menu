@@ -111,7 +111,7 @@ export async function onRequest(context) {
       return jsonNoStore(out, 400);
     }
     if (code === 'out_of_zone') {
-      return jsonNoStore({ error: code, message: { en: 'Your location isn’t in our delivery area right now — contact us.', ar: 'مكانك غير مدعوم للتوصيل حالياً، تواصل معنا' } }, 400);
+      return jsonNoStore({ error: code, message: { en: 'Your location isn’t in our delivery area right now — contact us.', ar: 'موقعك خارج منطقة التوصيل حاليًا. يرجى التواصل معنا.' } }, 400);
     }
     return jsonNoStore({ error: code }, 400);
   }

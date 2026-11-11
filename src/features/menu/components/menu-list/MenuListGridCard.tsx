@@ -160,7 +160,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
 
           {isSoldOut && (
             <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-neutral-600 text-white">
-              {isAr ? 'نفذت' : 'Sold out'}
+              {isAr ? 'نفدت' : 'Sold out'}
             </span>
           )}
         </div>

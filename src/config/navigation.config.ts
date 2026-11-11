@@ -12,14 +12,14 @@ export interface NavLink {
  * To hide Reports for a starter client: set enableReports=false AND backend 404s it via SITE_PLAN.
  */
 export const navigationConfig: NavLink[] = [
-  { id: 'dashboard', labelEn: 'Dashboard', labelAr: 'اللوحة', path: '/admin/dashboard' },
+  { id: 'dashboard', labelEn: 'Dashboard', labelAr: 'لوحة التحكم', path: '/admin/dashboard' },
   { id: 'orders', labelEn: 'Orders', labelAr: 'الطلبات', path: '/admin/orders' },
-  { id: 'menu', labelEn: 'Menu', labelAr: 'المنيو', path: '/admin/menu' },
+  { id: 'menu', labelEn: 'Menu', labelAr: 'القائمة', path: '/admin/menu' },
   ...(featuresConfig.enableReports
     ? [{ id: 'reports', labelEn: 'Reports', labelAr: 'التقارير', path: '/admin/reports' } as NavLink]
     : []),
   ...(featuresConfig.enableBackup
-    ? [{ id: 'backup', labelEn: 'Backup', labelAr: 'النسخ', path: '/admin/backup' } as NavLink]
+    ? [{ id: 'backup', labelEn: 'Backup', labelAr: 'النسخ الاحتياطي', path: '/admin/backup' } as NavLink]
     : []),
   ...(featuresConfig.enableCustomerData
     ? [{ id: 'customers', labelEn: 'Customers', labelAr: 'العملاء', path: '/admin/customers' } as NavLink]

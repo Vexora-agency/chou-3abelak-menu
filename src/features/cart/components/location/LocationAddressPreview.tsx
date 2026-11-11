@@ -22,7 +22,7 @@ export const LocationAddressPreview: React.FC<LocationAddressPreviewProps> = ({
       <div role="status" aria-live="polite" className={`rounded-xl border p-3 min-h-[58px] break-words overflow-wrap:anywhere ${darkMode ? 'border-neutral-700 bg-black/40' : 'border-neutral-300 bg-neutral-100'}`}>
         {!point ? (
           <p className={`text-xs ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
-            {isAr ? 'حرّك الدبوس أو اضغط على الخريطة…' : 'Move the pin or tap the map…'}
+            {isAr ? 'حرّك المؤشر أو اضغط على الخريطة…' : 'Move the pin or tap the map…'}
           </p>
         ) : addrLoading ? (
           <p className={`text-xs font-bold animate-pulse ${darkMode ? 'text-neutral-300' : 'text-neutral-700'}`}>
@@ -39,7 +39,7 @@ export const LocationAddressPreview: React.FC<LocationAddressPreviewProps> = ({
           <>
             <p className="text-[13px] font-black tabular-nums" dir="ltr">{point.lat}, {point.lng}</p>
             <p className="text-[11px] font-bold text-amber-500 mt-0.5">
-              {isAr ? 'لا يوجد عنوان مسجل هنا — حرّك الدبوس لأقرب شارع أو أكّد بالإحداثيات.' : 'No registered address here — move the pin to the nearest street or confirm with coordinates.'}
+              {isAr ? 'لا يوجد عنوان مسجل هنا — حرّك المؤشر لأقرب شارع أو أكّد بالإحداثيات.' : 'No registered address here — move the pin to the nearest street or confirm with coordinates.'}
             </p>
           </>
         )}

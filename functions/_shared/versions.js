@@ -154,7 +154,7 @@ export function weeklyBackupEmail(dateStr, siteName) {
     subject: `Weekly backup ${dateStr} / نسخة أسبوعية ${dateStr}`,
     html: `<div style="font-family:Arial,Tahoma,sans-serif;max-width:560px;margin:0 auto;padding:24px;">`
       + `<p>The signed weekly backup of ${safe} (${dateStr}) is attached to this email.</p>`
-      + `<p dir="rtl">ملف النسخة الأسبوعية الموقّع لـ ${safe} (${dateStr}) مرفق بهذه الرسالة.</p></div>`,
+      + `<p dir="rtl">مرفق بهذه الرسالة ملف النسخة الأسبوعية الموقَّعة لـ ${safe} (${dateStr}).</p></div>`,
     text: `Weekly backup of ${nm} (${dateStr}) is attached.\nملف النسخة الأسبوعية لـ ${nm} (${dateStr}) مرفق.`,
   };
 }

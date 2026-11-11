@@ -136,7 +136,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
         <div>
           <p className="block text-xs font-bold">{isAr ? 'تقدير التوصيل الذكي' : 'Smart delivery estimate'}</p>
           <p className="block text-[11px] text-neutral-500 mt-0.5">
-            {isAr ? 'مضبوطة وجاهزة — القيم الافتراضية تناسب معظم المطاعم. زر "استلمت" يفتح تلقائيًا بعد 5 دقائق من الوقت المتوقع.' : 'Pre-tuned and ready — defaults fit most restaurants. The Received button unlocks automatically 5 minutes after the ETA.'}
+            {isAr ? 'معدّة وجاهزة — القيم الافتراضية تناسب معظم المطاعم. زر "استلمت" يفتح تلقائيًا بعد 5 دقائق من الوقت المتوقع.' : 'Pre-tuned and ready — defaults fit most restaurants. The Received button unlocks automatically 5 minutes after the ETA.'}
           </p>
         </div>
         <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
@@ -177,7 +177,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
               onChange={(e) => onUpdate((prev) => ({ ...prev, defaultDeliveryMinutes: Number(e.target.value) }))}
               className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
             />
-            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'يُستخدم عند غياب موقع دقيق للزبون.' : 'Used when the customer has no precise location.'}</p>
+            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'يُستخدم عند غياب موقع دقيق للعميل.' : 'Used when the customer has no precise location.'}</p>
           </div>
           <div className="min-[380px]:col-span-2">
             <label className="block text-xs text-neutral-400 mb-1">{isAr ? 'نافذة الإلغاء (د)' : 'Cancel window (min)'}</label>
@@ -190,7 +190,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
               onChange={(e) => onUpdate((prev) => ({ ...prev, cancelWindowMin: Number(e.target.value) }))}
               className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
             />
-            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'مهلة إلغاء الزبون وفترة سماح المطبخ (1–30 دقيقة). الصفر أو الفراغ = 5.' : 'Customer cancel + kitchen grace window (1–30 min). Zero or blank = 5.'}</p>
+            <p className="text-[10px] text-neutral-500 mt-1">{isAr ? 'مهلة إلغاء العميل وفترة سماح المطبخ (1–30 دقيقة). الصفر أو الفراغ = 5.' : 'Customer cancel + kitchen grace window (1–30 min). Zero or blank = 5.'}</p>
           </div>
         </div>
       </div>
@@ -253,7 +253,7 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
                   value={ordering.pausedMessage.ar}
                   maxLength={160}
                   onChange={(e) => onUpdate((prev) => ({ ...prev, pausedMessage: { ...prev.pausedMessage, ar: e.target.value } }))}
-                  placeholder="لا نستقبل الطلبات حالياً…"
+                  placeholder="لا نستقبل الطلبات حاليًا…"
                   className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base focus:border-[var(--primary)]"
                 />
               </div>

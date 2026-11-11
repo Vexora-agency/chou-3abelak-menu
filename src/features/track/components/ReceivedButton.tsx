@@ -94,7 +94,7 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
         type="button"
         onClick={() => void confirm()}
         disabled={busy || disabled}
-        title={disabled ? (isAr ? 'بانتظار استلام الطلب' : 'Waiting for your order') : undefined}
+        title={disabled ? (isAr ? 'بانتظار قبول الطلب' : 'Waiting for your order') : undefined}
         className={`btn-tactile inline-flex items-center gap-1.5 rounded-full font-extrabold disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 ${
           compact ? 'h-11 min-h-[44px] px-5 text-xs' : 'h-12 min-h-[48px] px-6 text-sm'
         } ${disabled ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed' : 'bg-[var(--primary)] text-[#0A0A0A]'}`}
@@ -111,7 +111,7 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
           // Fallback only (callers normally pass the phased copy above):
           // neutral "waiting" line with no countdown inside.
           <p className={`mt-1.5 text-[11px] font-bold ${darkMode ? 'text-amber-400/90' : 'text-amber-700'}`}>
-            {isAr ? 'بانتظار استلام طلبك' : 'Waiting to accept your order'}
+            {isAr ? 'بانتظار قبول طلبك' : 'Waiting to accept your order'}
           </p>
         )
       )}

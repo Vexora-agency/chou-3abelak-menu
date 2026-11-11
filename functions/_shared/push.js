@@ -114,7 +114,7 @@ const STATUS_COPY = {
     en: (n) => `Order #${n} delivered — thank you!`,
   },
   cancelled: {
-    ar: (n) => `طلب #${n} أُلغي — اتصل بنا إذا كان لديك سؤال`,
+    ar: (n) => `تم إلغاء الطلب #${n} — يرجى الاتصال بنا إذا كانت لديك أي أسئلة`,
     en: (n) => `Order #${n} was cancelled — call us`,
   },
 };

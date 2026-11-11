@@ -313,7 +313,7 @@ export const DIAL_AR_NAMES: Record<string, string> = {
   BH: 'البحرين',
   YE: 'اليمن',
   TR: 'تركيا',
-  US: 'أمريكا',
+  US: 'الولايات المتحدة',
   GB: 'بريطانيا',
   FR: 'فرنسا',
   DE: 'ألمانيا',

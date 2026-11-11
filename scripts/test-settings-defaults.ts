@@ -120,7 +120,7 @@ const baseMenu = (settings: unknown): MenuData => ({
   const sched = (o: unknown) => o as unknown as MenuData['settings'];
   const all = sched({ openTime: '09:00', closeTime: '22:00', workingDays: ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'] });
   ok(formatHoursRange(all, 'en') === 'Daily · 9:00 AM – 10:00 PM', 'range en all-days');
-  ok(formatHoursRange(all, 'ar') === 'يومياً · من 9:00 ص إلى 10:00 م', 'range ar all-days');
+  ok(formatHoursRange(all, 'ar') === 'يوميًا · من 9:00 ص إلى 10:00 م', 'range ar all-days');
   const some = sched({ openTime: '12:00', closeTime: '00:00', workingDays: ['sat', 'sun'] });
   ok(formatHoursRange(some, 'en').includes('Sat') && formatHoursRange(some, 'en').includes('12:00 PM'), 'range en subset days');
   // The storefront pill mirrors the edited schedule (the reported bug:

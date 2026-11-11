@@ -122,7 +122,7 @@ export function useReportCenter({ isAr, activeTab, adminFetch }: ReportCenterOpt
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      alert(isAr ? 'تعذر تنزيل الملف. حاول مجدداً.' : 'Could not download the file. Please try again.');
+      alert(isAr ? 'تعذر تنزيل الملف. حاول مجددًا.' : 'Could not download the file. Please try again.');
     }
   };
 

@@ -137,7 +137,7 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
       void fetchOrders(true);
     } catch {
       setOrders(prev);
-      alert(isAr ? 'تعذر تحديث حالة الطلب. حاول مجدداً.' : 'Could not update the order status. Please try again.');
+      alert(isAr ? 'تعذر تحديث حالة الطلب. حاول مجددًا.' : 'Could not update the order status. Please try again.');
     }
   };
 

@@ -200,11 +200,15 @@ export async function onRequest(context) {
       if (s.removed) bits.push(`${s.removed} removed`);
       if (s.changed) bits.push(`${s.changed} changed`);
       const tail = bits.length ? ` (${bits.join(', ')})` : '';
+      const bitsAr = [];
+      if (s.added) bitsAr.push(`${s.added} إضافة`);
+      if (s.removed) bitsAr.push(`${s.removed} حذف`);
+      if (s.changed) bitsAr.push(`${s.changed} تعديل`);
       const actor = await getActor(request, env);
       await logActivity(env, {
         actor,
         action: 'save',
-        label: { en: `Saved menu${tail}`, ar: `حفظ القائمة${tail ? ` (${bits.join('، ')})` : ''}` },
+        label: { en: `Saved menu${tail}`, ar: `حفظ القائمة${bitsAr.length ? ` (${bitsAr.join('، ')})` : ''}` },
       });
     } catch {}
 

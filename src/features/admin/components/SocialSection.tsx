@@ -119,7 +119,7 @@ export const SocialSection: React.FC<SocialSectionProps> = ({
               />
               {on && !!(social?.[network] || '').trim() && !/^\s*https:\/\//i.test(social?.[network] || '') && (
                 <p className="text-[11px] text-amber-400/90 font-bold mt-1.5" role="alert">
-                  {isAr ? 'الرابط يجب أن يبدأ بـ https:// وإلا رفض الحفظ' : 'Link must start with https:// or saving rejects it'}
+                  {isAr ? 'الرابط يجب أن يبدأ بـ https:// وإلا تعذّر الحفظ' : 'Link must start with https:// or saving rejects it'}
                 </p>
               )}
               {linkHint && (

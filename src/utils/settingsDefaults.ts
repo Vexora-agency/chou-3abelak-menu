@@ -184,7 +184,7 @@ export function seasonalOrDefault(v: unknown): SeasonalSettings {
  */
 export const DEFAULT_ABOUT: Bilingual = {
   en: 'Quality you can trust, fair prices — every day.',
-  ar: 'جودة تستاهل، أسعار مناسبة — كل يوم.',
+  ar: 'جودة تستحقها، أسعار مناسبة — كل يوم.',
 };
 
 /**

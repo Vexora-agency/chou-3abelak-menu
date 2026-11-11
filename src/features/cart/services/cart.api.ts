@@ -64,7 +64,7 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
           orderNumber: null,
           trackToken: null,
           blockedMessage: msg || (lang === 'ar'
-            ? 'مكانك غير مدعوم للتوصيل حالياً، تواصل معنا'
+            ? 'موقعك خارج نطاق التوصيل حاليًا، تواصل معنا'
             : 'Your location isn’t in our delivery area right now — contact us.'),
           failure: 'blocked',
         };
@@ -77,7 +77,7 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
           orderNumber: null,
           trackToken: null,
           blockedMessage: lang === 'ar'
-            ? 'صنف حار ناقص درجة الحرارة — احذف السطر من السلة وأعده مع اختيار الدرجة'
+            ? 'صنف حار دون تحديد درجة الحرارة — احذف السطر من السلة وأعده مع اختيار الدرجة'
             : 'A spicy item is missing its heat level — remove the line and re-add it with a level',
           failure: 'blocked',
         };
@@ -100,7 +100,7 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
         orderNumber: null,
         trackToken: null,
         blockedMessage: lang === 'ar'
-          ? 'طلبات كثيرة بسرعة — انتظر دقيقة وحاول مجددًا'
+          ? 'طلبات كثيرة في وقت قصير — انتظر دقيقة ثم حاول مجددًا'
           : 'Too many orders at once — wait a minute and try again',
         failure: 'rate',
       };

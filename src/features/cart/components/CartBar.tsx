@@ -59,9 +59,9 @@ export const CartBar: React.FC<CartBarProps> = ({
     ? ''
     : (orderingState.message && (orderingState.message[lang] || orderingState.message.en)) ||
       (orderingState.state === 'paused'
-        ? (isAr ? 'الطلبات متوقفة مؤقتاً' : 'Orders paused')
+        ? (isAr ? 'الطلبات متوقفة مؤقتًا' : 'Orders paused')
         : orderingState.state === 'closed'
-          ? (isAr ? 'مغلق حالياً' : 'Currently closed')
+          ? (isAr ? 'مغلق حاليًا' : 'Currently closed')
           : (isAr ? 'الطلب غير متاح حالياً' : 'Ordering unavailable'));
 
   return (
@@ -120,7 +120,7 @@ export const CartBar: React.FC<CartBarProps> = ({
               setConfirmOpen(true);
             }}
             aria-label={isAr ? 'إفراغ السلة' : 'Clear cart'}
-            title={isAr ? 'حذف السلة' : 'Clear cart'}
+            title={isAr ? 'إفراغ السلة' : 'Clear cart'}
             className="relative w-9 h-9 min-w-[36px] min-h-[36px] min-[380px]:w-11 min-[380px]:h-11 min-[380px]:min-w-[44px] min-[380px]:min-h-[44px] after:absolute after:-inset-2 after:content-[''] flex-shrink-0 rounded-full text-red-500/70 hover:text-red-500 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 flex items-center justify-center transition-all active:scale-90"
           >
             <Trash2 size={16} className="min-[380px]:w-[18px] min-[380px]:h-[18px]" />
@@ -153,7 +153,7 @@ export const CartBar: React.FC<CartBarProps> = ({
               {isAr ? 'هل تود حذف السلة؟' : 'Clear your cart?'}
             </h3>
             <p className="text-xs text-neutral-400 mt-1.5 leading-relaxed">
-              {isAr ? 'سيتم حذف كل الأصناف من السلة نهائياً.' : 'All items will be permanently removed from your cart.'}
+              {isAr ? 'سيتم حذف كل الأصناف من السلة نهائيًا.' : 'All items will be permanently removed from your cart.'}
             </p>
             <div className="flex gap-2 mt-5">
               <button
@@ -161,7 +161,7 @@ export const CartBar: React.FC<CartBarProps> = ({
                 onClick={() => setConfirmOpen(false)}
                 className="flex-1 h-11 rounded-full border border-white/20 text-white/80 text-sm font-bold hover:bg-white/5 transition-colors"
               >
-                {isAr ? 'تراجع' : 'Keep cart'}
+                {isAr ? 'إبقاء السلة' : 'Keep cart'}
               </button>
               <button
                 type="button"

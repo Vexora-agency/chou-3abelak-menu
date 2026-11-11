@@ -133,7 +133,7 @@ const AR_INDIC = /[\u0660-\u0669]/;
   const farDay = '2026-11-10T08:00:00+02:00';
   check('today (ar)', formatEtaDay(sameDay, 'ar', BEIRUT, now) === 'اليوم', formatEtaDay(sameDay, 'ar', BEIRUT, now));
   check('today (en)', formatEtaDay(sameDay, 'en', BEIRUT, now) === 'Today', formatEtaDay(sameDay, 'en', BEIRUT, now));
-  check('tomorrow (ar)', formatEtaDay(nextDay, 'ar', BEIRUT, now) === 'غداً', formatEtaDay(nextDay, 'ar', BEIRUT, now));
+  check('tomorrow (ar)', formatEtaDay(nextDay, 'ar', BEIRUT, now) === 'غدًا', formatEtaDay(nextDay, 'ar', BEIRUT, now));
   check('tomorrow (en)', formatEtaDay(nextDay, 'en', BEIRUT, now) === 'Tomorrow', formatEtaDay(nextDay, 'en', BEIRUT, now));
   const farAr = formatEtaDay(farDay, 'ar', BEIRUT, now);
   check('far date (ar) has month + latin digits', farAr.includes('نوفمبر') && !AR_INDIC.test(farAr), JSON.stringify(farAr));

@@ -42,12 +42,12 @@ export const ZoneBlockedPanel: React.FC<ZoneBlockedPanelProps> = ({
         </span>
         <div className="min-w-0">
           <p dir="auto" className={`text-sm font-extrabold leading-relaxed ${darkMode ? 'text-red-200' : 'text-red-800'}`}>
-            {isAr ? 'مكانك غير مدعوم للتوصيل حالياً، تواصل معنا' : 'Your location isn’t in our delivery area right now — contact us.'}
+            {isAr ? 'موقعك خارج نطاق التوصيل حاليًا، تواصل معنا' : 'Your location isn’t in our delivery area right now — contact us.'}
           </p>
           <p dir="auto" className={`mt-1 text-xs leading-relaxed ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>
             {placeName
               ? (isAr ? `الموقع المحدد: ${placeName} — خارج مناطق التوصيل.` : `Pinned area: ${placeName} — outside our delivery zones.`)
-              : (isAr ? 'الدبوس المحدد خارج مناطق التوصيل.' : 'The pinned point is outside our delivery zones.')}
+              : (isAr ? 'الموقع المحدد خارج مناطق التوصيل.' : 'The pinned point is outside our delivery zones.')}
           </p>
         </div>
       </div>
@@ -60,7 +60,7 @@ export const ZoneBlockedPanel: React.FC<ZoneBlockedPanelProps> = ({
             className="btn-tactile inline-flex items-center gap-1.5 h-11 px-4 rounded-full bg-[#25D366] text-white text-sm font-extrabold shadow-md hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]"
           >
             <MessageCircle size={17} aria-hidden="true" />
-            <span>{isAr ? 'تواصل واتساب' : 'Chat on WhatsApp'}</span>
+            <span>{isAr ? 'تواصل عبر واتساب' : 'Chat on WhatsApp'}</span>
           </a>
         )}
         <button

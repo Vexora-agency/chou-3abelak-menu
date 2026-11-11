@@ -103,7 +103,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
                   ))
                 }
                 className="h-11 min-h-[44px] px-2.5 rounded bg-black border border-neutral-700 text-sm text-white"
-                placeholder="القسم (عربي)"
+                placeholder="القسم (بالعربية)"
               />
             </div>
 
@@ -163,7 +163,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
               <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
               <span>
                 {isAr
-                  ? 'أضف صورة لكل صنف من تبويب الأصناف (حقل الصورة: رفع ثم قص الإطار). الأصناف بدون صورة بتظهر بشعار القسم.'
+                  ? 'أضف صورة لكل صنف من تبويب الأصناف (حقل الصورة: رفع ثم قص الإطار). الأصناف بدون صورة تظهر بشعار القسم.'
                   : 'Add a photo to each item from the Items tab (photo field: upload, then frame the crop). Items without one show the category mark.'}
               </span>
             </p>
@@ -173,7 +173,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
               <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
               <span>
                 {isAr
-                  ? 'الصنف اللي له صورة بتظهر خلفية للكارت مع تعتيم مريح للقراءة. الأصناف بدون صورة بتفضل كروت نصية.'
+                  ? 'الصنف الذي له صورة تظهر خلفية للبطاقة مع تعتيم مريح للقراءة. الأصناف بدون صورة تبقى بطاقات نصية.'
                   : 'Items with a photo show it as the card background behind a readable scrim. Items without one stay text cards.'}
               </span>
             </p>
@@ -183,7 +183,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
               <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
               <span>
                 {isAr
-                  ? 'صورة دائرية بإطار دوّار — أضف صورة لكل صنف من تبويب الأصناف. الأصناف بدون صورة بتظهر بشعار القسم.'
+                  ? 'صورة دائرية بإطار دوّار — أضف صورة لكل صنف من تبويب الأصناف. الأصناف بدون صورة تظهر بشعار القسم.'
                   : 'Round photo in a spinning ring — add a photo to each item from the Items tab. Items without one show the category mark.'}
               </span>
             </p>

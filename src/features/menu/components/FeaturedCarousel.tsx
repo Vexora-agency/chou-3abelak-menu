@@ -224,9 +224,9 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     const isYellowCard = idx % 2 === 1; // Alternating cards
     const eff = effectiveBadges(menu, item);
     const badgeText = eff.includes('top')
-      ? (isAr ? 'الأكثر طلباً' : 'BEST SELLER')
+      ? (isAr ? 'الأكثر طلبًا' : 'BEST SELLER')
       : eff.includes('spicy')
-      ? (isAr ? 'حار و مقرمش' : 'HOT & SPICY')
+      ? (isAr ? 'حار ومقرمش' : 'HOT & SPICY')
       : (isAr ? 'جديد' : 'NEW');
 
     const cardLabel = `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency)}`;
@@ -330,7 +330,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                 : 'bg-[var(--primary)] text-[#0A0A0A] hover:brightness-110'
             }`}
             aria-label={isAr ? `أضف ${item.name.ar} إلى السلة` : `Add ${item.name.en} to cart`}
-            title={isAr ? 'أضف للطلب' : 'Add to cart'}
+            title={isAr ? 'أضف إلى الطلب' : 'Add to cart'}
           >
             <Plus size={16} className="stroke-[3]" />
           </button>
@@ -383,7 +383,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           aria-hidden="true"
         />
         <h2 className={`text-xl sm:text-2xl font-extrabold ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-          {isAr ? 'المميز والأكثر طلباً' : 'Featured Items'}
+          {isAr ? 'المميز والأكثر طلبًا' : 'Featured Items'}
         </h2>
       </div>
 

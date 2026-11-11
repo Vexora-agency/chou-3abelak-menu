@@ -44,8 +44,8 @@ export const WorkingHoursSection: React.FC<WorkingHoursSectionProps> = ({
             className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
           >
             <option value="auto">{isAr ? 'تلقائي (حسب المواعيد)' : 'Auto (from hours)'}</option>
-            <option value="open">{isAr ? 'مفتوح دائماً' : 'Always Open'}</option>
-            <option value="closed">{isAr ? 'مغلق دائماً' : 'Always Closed'}</option>
+            <option value="open">{isAr ? 'مفتوح دائمًا' : 'Always Open'}</option>
+            <option value="closed">{isAr ? 'مغلق دائمًا' : 'Always Closed'}</option>
           </select>
         </div>
 

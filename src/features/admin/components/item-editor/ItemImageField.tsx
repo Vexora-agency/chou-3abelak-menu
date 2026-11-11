@@ -36,7 +36,7 @@ type ItemWithVariants = MenuItem & { imageVariants?: { s?: string; m?: string } 
 function errorText(code: string, isAr: boolean): string {
   const messages: Record<string, { ar: string; en: string }> = {
     source_too_large: {
-      ar: 'الصورة أكبر من 25 ميجا — اختار صورة أصغر.',
+      ar: 'الصورة أكبر من 25 ميغابايت — اختر صورة أصغر.',
       en: 'That photo is over 25 MB — pick a smaller one.',
     },
     unsupported_type: {
@@ -48,11 +48,11 @@ function errorText(code: string, isAr: boolean): string {
       en: 'Only JPG, PNG or WebP photos are supported.',
     },
     decode_failed: {
-      ar: 'مش قادرين نقرأ الصورة دي. جرّب صورة JPG من معرض الصور.',
+      ar: 'تعذّر قراءة الصورة. جرّب صورة JPG من معرض الصور.',
       en: "We couldn't read that photo. Try a JPG from your gallery.",
     },
     encode_failed: {
-      ar: 'حصلت مشكلة في تجهيز الصورة — جرّب صورة تانية.',
+      ar: 'حدثت مشكلة أثناء تجهيز الصورة — جرّب صورة أخرى.',
       en: 'Preparing the photo failed — try another one.',
     },
     too_large: {
@@ -64,27 +64,27 @@ function errorText(code: string, isAr: boolean): string {
       en: 'The photo dimensions are too large.',
     },
     animated_unsupported: {
-      ar: 'الصور المتحركة مش مدعومة.',
+      ar: 'الصور المتحركة غير مدعومة.',
       en: 'Animated images are not supported.',
     },
     malformed: {
-      ar: 'الملف مش صورة سليمة.',
+      ar: 'الملف ليس صورة سليمة.',
       en: 'That file is not a valid image.',
     },
     empty: {
-      ar: 'الملف فاضي — جرّب صورة تانية.',
+      ar: 'الملف فارغ — جرّب صورة أخرى.',
       en: 'The file is empty — try another photo.',
     },
     rate_limited: {
-      ar: 'رفعت صور كتير في وقت قصير — استنى حوالي 10 دقايق من غير ما ترفع حاجة وجرب تاني.',
+      ar: 'رفعت صورًا كثيرة في وقت قصير — انتظر نحو 10 دقائق دون رفع أي ملف ثم حاول مجددًا.',
       en: 'Too many uploads in a short time — wait about 10 minutes without uploading, then try again.',
     },
     unavailable: {
-      ar: 'الرفع مش متاح دلوقتي — جرّب تاني أو استخدم رابط صورة.',
+      ar: 'الرفع غير متاح حاليًا — حاول مجددًا أو استخدم رابط صورة.',
       en: 'Upload is unavailable right now — retry or use an image URL.',
     },
     network: {
-      ar: 'الاتصال اتقطع أثناء الرفع — جرّب تاني.',
+      ar: 'انقطع الاتصال أثناء الرفع — حاول مجددًا.',
       en: 'The connection dropped during upload — try again.',
     },
     aborted: {
@@ -92,7 +92,7 @@ function errorText(code: string, isAr: boolean): string {
       en: 'Upload cancelled.',
     },
     upload_failed: {
-      ar: 'الرفع فشل — جرّب تاني.',
+      ar: 'فشل الرفع — حاول مجددًا.',
       en: 'Upload failed — try again.',
     },
   };
@@ -566,7 +566,7 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
 
       <p className="text-[10px] leading-relaxed text-neutral-500">
         {isAr
-          ? 'الصورة بتترفع لوحدها أول ما تختارها، وأي تعديل في الإطار بيتحفظ تلقائيًا. بنشيل بيانات الموقع (GPS) قبل الرفع، والصور القديمة بتتنضف تلقائيًا.'
+          ? 'تُرفع الصورة تلقائيًا فور اختيارها، ويُحفظ أي تعديل على الإطار تلقائيًا. تُزال بيانات الموقع (GPS) قبل الرفع، وتُحذف الصور القديمة المستبدَلة تلقائيًا.'
           : 'The photo uploads by itself once picked, and every framing tweak auto-saves. Location metadata is stripped before upload; replaced photos are cleaned up automatically.'}
       </p>
 
@@ -615,7 +615,7 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
           </div>
           <p id="item-image-hint" className="text-[10px] leading-relaxed text-neutral-500">
             {isAr
-              ? 'الرابط لازم يبدأ بـ https:// أو /. بيظهر في «معرض» وخلفية «بطاقات» والكروت الدائرية والكاروسيل.'
+              ? 'يجب أن يبدأ الرابط بـ https:// أو /. يظهر في «معرض» وخلفية «بطاقات» والبطاقات الدائرية والكاروسيل.'
               : 'The URL must start with https:// or /. Shown in Gallery, Cards backgrounds, round cards and featured carousel cards.'}
           </p>
         </div>

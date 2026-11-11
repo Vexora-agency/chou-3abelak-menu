@@ -58,7 +58,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
           type="text"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder={isAr ? 'بحث في الوجبات...' : 'Search items...'}
+          placeholder={isAr ? 'بحث في الأصناف...' : 'Search items...'}
           className="h-11 min-h-[44px] px-3 rounded-lg bg-neutral-900 border border-neutral-700 text-sm w-full min-w-0 basis-full min-[560px]:w-auto min-[560px]:flex-1"
         />
         <select
@@ -82,7 +82,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
           <option value="all">{isAr ? 'كل الشارات' : 'All Badges'}</option>
           <option value="new">{isAr ? 'جديد' : 'New'}</option>
           <option value="spicy">{isAr ? 'حار' : 'Spicy'}</option>
-          <option value="top">{isAr ? 'الأكثر طلباً' : 'Top'}</option>
+          <option value="top">{isAr ? 'الأكثر طلبًا' : 'Top'}</option>
         </select>
 
         <button
@@ -144,7 +144,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                     </span>
                   )}
                   {effectiveBadges(menu, item).includes('top') && (
-                    <span title={isAr ? 'الأكثر طلباً' : 'Top'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]">
+                    <span title={isAr ? 'الأكثر طلبًا' : 'Top'} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]">
                       <Award size={10} />
                     </span>
                   )}
@@ -160,7 +160,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                   )}
                   {!item.available && (
                     <span className="text-[10px] bg-red-500/20 text-red-400 font-bold px-1.5 py-0.5 rounded">
-                      {isAr ? 'نفذت الكمية' : 'Sold out'}
+                      {isAr ? 'نفدت الكمية' : 'Sold out'}
                     </span>
                   )}
                 </div>

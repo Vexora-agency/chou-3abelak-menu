@@ -448,7 +448,7 @@ const BackupPanel: React.FC<BackupPanelProps> = ({ lang, versions, trash, status
             <p className="mt-4 mb-2 text-xs font-semibold text-neutral-300">{modal.comparedTo === 'version' ? t.stepSub : t.restoreSub}</p>
             {modal.changes === null ? (modal.loadFailed ? (
               <div className="py-6 text-center">
-                <p className="text-xs font-bold text-red-400" role="alert">{isAr ? 'تعذر تحميل الفروق — لا تسترجع عميانيًا.' : 'Could not load differences — do not restore blind.'}</p>
+                <p className="text-xs font-bold text-red-400" role="alert">{isAr ? 'تعذر تحميل الفروق — لا تسترجع دون مراجعة الفروق.' : 'Could not load differences — do not restore blind.'}</p>
                 <button type="button" onClick={() => void openRestore(modal.v)} className="btn-tactile mt-3 h-11 px-6 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold hover:border-[var(--primary)] hover:text-[var(--primary)]">{isAr ? 'إعادة المحاولة' : 'Retry'}</button>
               </div>
             ) : <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-[var(--primary)]" /></div>)

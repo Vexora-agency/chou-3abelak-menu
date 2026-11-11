@@ -466,7 +466,7 @@ export function unitLabel(unit: string, qty: number, lang: 'en' | 'ar'): string 
 
 /** Card price label: lowest variant price ("80,000 LBP"), "FREE"/"مجاناً" when 0. */
 export function priceLabel(item: MenuItem, lang: 'en' | 'ar', currency: string): string {
-  const free = lang === 'ar' ? 'مجاناً' : 'FREE';
+  const free = lang === 'ar' ? 'مجانًا' : 'FREE';
   const p = normalizePricing(item);
   if (hasVariants(item)) {
     if (minVariantPrice(item) === 0) return free;

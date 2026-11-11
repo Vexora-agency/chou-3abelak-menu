@@ -76,8 +76,8 @@ function errorText(code: string, isAr: boolean): string {
       en: 'The file is empty — try another photo.',
     },
     rate_limited: {
-      ar: 'رفعت صور كتير في وقت قصير — استنى شوية وجرب تاني.',
-      en: 'Too many uploads in a short time — wait a bit and try again.',
+      ar: 'رفعت صور كتير في وقت قصير — استنى حوالي 10 دقايق من غير ما ترفع حاجة وجرب تاني.',
+      en: 'Too many uploads in a short time — wait about 10 minutes without uploading, then try again.',
     },
     unavailable: {
       ar: 'الرفع مش متاح دلوقتي — جرّب تاني أو استخدم رابط صورة.',

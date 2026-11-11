@@ -18,7 +18,7 @@ interface ImageOptimizeSectionProps {
   onToggleCollapse?: () => void;
 }
 
-/** Pause between two uploads so the server rate limit (60 / 10 min) is not hit in bursts. */
+/** Pause between two uploads so the server rate limit (120 / 10 min) is not hit in bursts. */
 const UPLOAD_GAP_MS = 800;
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -285,8 +285,8 @@ export const ImageOptimizeSection: React.FC<ImageOptimizeSectionProps> = ({
                 <OctagonX size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
                 <span>
                   {isAr
-                    ? 'توقفنا بسبب حد الرفع (60 رفع / 10 دقائق) — التقدم محفوظ، أكمل لاحقًا من نفس الزر.'
-                    : 'Stopped on the upload rate limit (60 uploads / 10 min) — progress is kept, continue later from the same button.'}
+                    ? 'توقفنا بسبب حد الرفع (120 رفع / 10 دقائق) — التقدم محفوظ، استنى حوالي 10 دقايق من غير رفع وأكمل من نفس الزر.'
+                    : 'Stopped on the upload rate limit (120 uploads / 10 min) — progress is kept, wait about 10 minutes without uploading, then continue from the same button.'}
                 </span>
               </p>
             )}

@@ -9,10 +9,10 @@ import { serverNow } from '@/src/utils/serverTime';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { featuresConfig } from '@/src/config/features.config';
 
-/** Seasonal quick toggle — rendered ONLY while the theme is live (never when
- *  `off`: the Settings tab owns the ON switch). Owner + client logins only —
- *  never the kitchen. Flips the same `settings.seasonal.theme` the Settings-
- *  tab section owns; the menu-saver autosave persists it, no explicit save. */
+/** Seasonal quick toggle — always rendered (owner + client logins only, never
+ *  the kitchen). Owners flip the season from here without opening Settings;
+ *  the Settings tab owns the full section (preview + details). Flips the same
+ *  `settings.seasonal.theme`; the menu-saver autosave persists it. */
 const SeasonalQuickCard: React.FC<{
   lang: 'en' | 'ar';
   menu: MenuData;
@@ -20,41 +20,47 @@ const SeasonalQuickCard: React.FC<{
 }> = ({ lang, menu, onUpdateMenu }) => {
   const isAr = lang === 'ar';
   const active = menu.settings.seasonal?.theme === 'christmas';
-  // Off → render nothing at all: the customer site is clean and the dashboard
-  // stays quiet; the Settings section (always mounted) is where it turns on.
-  if (!active) return null;
+  const setTheme = (on: boolean) =>
+    onUpdateMenu((m) => ({
+      ...m,
+      settings: { ...m.settings, seasonal: { theme: on ? 'christmas' : 'off' } },
+    }));
   return (
     <div
       dir={isAr ? 'rtl' : 'ltr'}
-      className="rounded-2xl border p-4 transition-colors bg-sky-500/[0.07] border-sky-400/40"
+      className={`rounded-2xl border p-4 transition-colors ${
+        active ? 'bg-sky-500/[0.07] border-sky-400/40' : 'bg-neutral-900 border-neutral-800'
+      }`}
     >
       <div className="flex items-center gap-3.5 flex-wrap">
-        <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-60" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-sky-400" />
-        </span>
-        <span aria-hidden="true" className="text-2xl leading-none">🎄</span>
+        {active ? (
+          <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-60" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-sky-400" />
+          </span>
+        ) : (
+          <span aria-hidden="true" className="text-2xl leading-none">
+            🎄
+          </span>
+        )}
         <span className="min-w-0 flex-1 basis-48">
           <b className="block text-sm font-extrabold">
             {isAr ? 'ثيم الكريسماس' : 'Christmas theme'}
           </b>
           <span className="block text-xs text-neutral-400 mt-0.5">
-            {isAr ? 'ثلج ورسالة ترحيب على موقع الزبائن' : 'Snow + greeting live on the customer site'}
+            {active
+              ? (isAr ? 'ثلج ورسالة ترحيب على موقع الزبائن' : 'Snow + greeting live on the customer site')
+              : (isAr ? 'مطفأ — شغّله ليظهر الثلج للزبائن' : 'Off — turn it on to show customers the snow')}
           </span>
         </span>
         <button
           type="button"
           aria-pressed={active}
-          onClick={() =>
-            onUpdateMenu((m) => ({
-              ...m,
-              settings: { ...m.settings, seasonal: { theme: 'off' } },
-            }))
-          }
+          onClick={() => setTheme(!active)}
           className="relative px-5 h-11 min-h-[44px] inline-flex items-center rounded-full text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] text-[#0A0A0A]"
         >
           <span className="absolute inset-0 rounded-full bg-[var(--primary)]" aria-hidden="true" />
-          <span className="relative z-10">{isAr ? 'إطفاء' : 'Turn off'}</span>
+          <span className="relative z-10">{active ? (isAr ? 'إطفاء' : 'Turn off') : (isAr ? 'تشغيل' : 'Turn on')}</span>
         </button>
       </div>
     </div>

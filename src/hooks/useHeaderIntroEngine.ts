@@ -80,6 +80,42 @@ export function useHeaderIntroEngine(
       setEngineDone(true);
     };
 
+    // Slow-network / data-saver fast path: skip sheets 1-3 entirely (they are
+    // never even requested) and end the intro as soon as the final logo
+    // decodes, so LCP lands early. The logo <img> is already visible from the
+    // first frame, so finishing only unmounts the (never-started) canvases.
+    // Good networks skip this branch and get the full 6 s cinematic path
+    // below, byte-for-byte identical to before.
+    const netConn = (
+      navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }
+    ).connection;
+    const slowNet =
+      netConn !== undefined &&
+      (netConn.saveData === true || netConn.effectiveType === 'slow-2g' || netConn.effectiveType === '2g');
+    if (slowNet) {
+      let settledFast = false;
+      const finishFast = () => {
+        if (settledFast) return;
+        settledFast = true;
+        window.clearTimeout(fastTimer);
+        finishNow();
+      };
+      const probe = new Image();
+      probe.decoding = 'async';
+      probe.onload = finishFast;
+      probe.onerror = finishFast;
+      probe.src = '/assets/logo-final-480.webp';
+      if (typeof probe.decode === 'function') {
+        probe.decode().then(finishFast).catch(() => {});
+      }
+      // Safety net: never hold the header hostage — end even if the probe hangs.
+      const fastTimer = window.setTimeout(finishFast, 1500);
+      return () => {
+        settledFast = true;
+        window.clearTimeout(fastTimer);
+      };
+    }
+
     const renderLoop = () => {
       if (!isRunning) {
         animId = 0;

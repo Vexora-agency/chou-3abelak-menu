@@ -1,27 +1,18 @@
 /* Self-hosted fonts (Fontsource, same weights the Google Fonts link served:
-   Poppins for English, Cairo for Arabic). Served from our own edge over the
-   already-warm HTTP/2 connection — no DNS+TLS to googleapis/gstatic, no
-   render-blocking css2 request, display:swap. Subset-scoped imports ONLY:
-   Poppins ships latin (English UI), Cairo ships latin + arabic — devanagari
-   and latin-ext subsets are never referenced by an en/ar storefront, so they
-   stay out of the CSS and their woff2 files are never emitted.
-   Weights 400/500/600/700/800 all stay: font-medium (500) and font-semibold
-   (600) are used across the UI, like the rest. */
-@import "@fontsource/poppins/latin-400.css";
-@import "@fontsource/poppins/latin-500.css";
-@import "@fontsource/poppins/latin-600.css";
-@import "@fontsource/poppins/latin-700.css";
-@import "@fontsource/poppins/latin-800.css";
-@import "@fontsource/cairo/latin-400.css";
-@import "@fontsource/cairo/arabic-400.css";
-@import "@fontsource/cairo/latin-500.css";
-@import "@fontsource/cairo/arabic-500.css";
-@import "@fontsource/cairo/latin-600.css";
-@import "@fontsource/cairo/arabic-600.css";
-@import "@fontsource/cairo/latin-700.css";
-@import "@fontsource/cairo/arabic-700.css";
-@import "@fontsource/cairo/latin-800.css";
-@import "@fontsource/cairo/arabic-800.css";
+   Poppins for English, Cairo for Arabic). Identical woff2 files, but served
+   from our own edge over the already-warm HTTP/2 connection — no DNS+TLS to
+   googleapis/gstatic, no render-blocking css2 request, display:swap, and each
+   unicode-range subset downloads only when its script actually renders. */
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/poppins/700.css";
+@import "@fontsource/poppins/800.css";
+@import "@fontsource/cairo/400.css";
+@import "@fontsource/cairo/500.css";
+@import "@fontsource/cairo/600.css";
+@import "@fontsource/cairo/700.css";
+@import "@fontsource/cairo/800.css";
 
 @import "tailwindcss";
 

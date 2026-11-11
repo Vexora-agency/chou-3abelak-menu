@@ -46,13 +46,7 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
         className="relative w-full max-w-[320px] sm:max-w-[380px] md:max-w-[440px] aspect-[1440/532] mx-auto overflow-hidden rounded-xl"
         style={{ isolation: 'isolate', backgroundColor: 'transparent' }}
       >
-        {/* Final 100% Transparent PNG shown from the very first frame (1440x532 HD).
-            It is intentionally NOT gated on hasEnded: this img is the LCP
-            element, so it must paint early (preload + eager + high priority).
-            The sprite canvas below paints over it as a decorative cinematic
-            layer (smoke / sparks / reveal strokes); DOM order keeps the
-            canvases on top, all layers are pointer-events-none so hit-testing
-            is unaffected. Canvases still fade out on hasEnded as before. */}
+        {/* Final 100% Transparent PNG shown once animation completes (1440x532 HD) */}
         {/* WebP srcset (same artwork, ~80% smaller): 480w covers DPR 1,
             880w DPR 2, 1440w DPR 3. src is the smallest WebP (not PNG) so
             legacy / no-srcset clients download ~42 KiB less.
@@ -67,7 +61,9 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
           fetchPriority="high"
           loading="eager"
           alt={pickLangText(menu.settings.name, lang)}
-          className="absolute inset-0 w-full h-full object-contain transition-opacity duration-700 pointer-events-none opacity-100"
+          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-700 pointer-events-none ${
+            hasEnded ? 'opacity-100' : 'opacity-0'
+          }`}
           style={{ backgroundColor: 'transparent' }}
           width={1440}
           height={532}

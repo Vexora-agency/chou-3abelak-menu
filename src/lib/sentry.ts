@@ -103,6 +103,32 @@ export function frontendSentryStatus(): { enabled: boolean; environment: string 
 
 let initialized = false;
 
+/** Run after the browser is idle (never on the LCP path). requestIdleCallback
+ *  with a 3 s cap so slow devices still initialize Sentry shortly after load.
+ *  Errors thrown before this runs are intentionally not captured — keeping
+ *  ~1 s of SDK parse/eval off the critical path is worth more than them. */
+function scheduleIdle(fn: () => void): void {
+  try {
+    const ric = (window as unknown as {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+    }).requestIdleCallback;
+    if (typeof ric === 'function') {
+      ric.call(window, fn, { timeout: 3000 });
+      return;
+    }
+  } catch {
+    // Fall through to the timer below.
+  }
+  try {
+    window.setTimeout(fn, 2500);
+  } catch {
+    // Last resort: run now rather than never reporting.
+    try {
+      fn();
+    } catch {}
+  }
+}
+
 export function initSentry(): void {
   if (initialized) return;
   initialized = true;
@@ -110,10 +136,12 @@ export function initSentry(): void {
   const envName = readEnvName();
   // Dev / preview-local builds never report — production only.
   if (!dsn || !import.meta.env.PROD) return;
-  // Async on purpose: the SDK chunk downloads in the background, first paint
-  // never waits for it. initSentry() itself stays synchronous (same call site
-  // in main.tsx), only the SDK load + init defer.
-  void loadSentry().then((m) => {
+  // Deferred past first paint AND past idle: the SDK chunk downloads and
+  // evaluates (~1 s on a mid phone) only once the browser is free, so LCP
+  // and interactivity never wait for monitoring. initSentry() itself stays
+  // synchronous (same call site in main.tsx); only the SDK load + init move.
+  scheduleIdle(() => {
+    void loadSentry().then((m) => {
     if (!m) return;
     try {
       m.init({
@@ -153,6 +181,7 @@ export function initSentry(): void {
     } catch {
       // Monitoring init failure is silent by design — the menu must work.
     }
+    });
   });
 }
 

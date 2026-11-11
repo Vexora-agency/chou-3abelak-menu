@@ -38,6 +38,30 @@
          this arrives; sheets 1-3 stream in during playback. Without this hint
          the sheet waits behind React render + menu fetch. -->
     <link rel="preload" as="image" href="/assets/intro-sheet-0.webp" fetchpriority="high" />
+    <!-- Warm-visit LCP head-start: the cached menu already names tonight's
+         first featured photo. Preloading it here (before the bundle even
+         parses) lets it download in parallel with the JS instead of waiting
+         for React render + menu state. No-op on first visits (no cache) and
+         byte-identical to what <SmartMenuImage> would pick (same srcset). -->
+    <script>
+      try {
+        var __m = JSON.parse(localStorage.getItem('menu_cache_v3') || 'null');
+        var __it = __m && __m.items ? __m.items.filter(function (x) { return x.featured && x.imageUrl; })[0] : null;
+        var __v = (__it && __it.imageVariants) || {};
+        if (__it && __it.imageUrl && (__v.s || __v.m)) {
+          var __ss = [];
+          if (__v.s) __ss.push(__v.s + ' 400w');
+          if (__v.m) __ss.push(__v.m + ' 800w');
+          __ss.push(__it.imageUrl + ' 1280w');
+          var __l = document.createElement('link');
+          __l.rel = 'preload'; __l.as = 'image';
+          __l.setAttribute('imagesrcset', __ss.join(', '));
+          __l.setAttribute('imagesizes', '(max-width: 767px) 90vw, (max-width: 1279px) 31vw, 395px');
+          try { __l.fetchPriority = 'high'; } catch (e) {}
+          document.head.appendChild(__l);
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body class="bg-[#0A0A0A] text-[#0A0A0A] antialiased m-0 p-0 selection:bg-[var(--primary)] selection:text-[#0A0A0A]">
     <div id="root"></div>

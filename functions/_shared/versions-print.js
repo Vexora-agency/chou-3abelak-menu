@@ -23,7 +23,7 @@ export function buildPrintHTML(menu, lang = 'ar') {
   const tagline = (s.tagline && (s.tagline[l] || s.tagline.en)) || '';
   const phone = s.phone || '';
   const cur = (s.currency && (s.currency[l] || s.currency.en)) || '';
-  const freeWord = l === 'ar' ? 'مجاناً' : 'FREE';
+  const freeWord = l === 'ar' ? 'مجانًا' : 'FREE';
   const money = (n) => (n === 0 ? freeWord : escHtml(fmtPrice(n)));
   const cats = (Array.isArray(m.categories) ? m.categories : []).filter((c) => c && c.visible !== false);
   const items = Array.isArray(m.items) ? m.items : [];

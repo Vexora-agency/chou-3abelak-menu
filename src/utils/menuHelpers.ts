@@ -24,7 +24,7 @@ export function pickLangText(
 export function badgeLabel(key: string, lang: 'en' | 'ar'): string {
   const k = (key || '').toLowerCase();
   if (lang === 'ar') {
-    if (k === 'top') return 'الأكثر طلباً';
+    if (k === 'top') return 'الأكثر طلبًا';
     if (k === 'spicy') return 'حار';
     if (k === 'new') return 'جديد';
     return key;
@@ -87,9 +87,9 @@ export function spicyFlames(featureId: unknown): number {
 export function spicyLabel(lang: 'en' | 'ar', featureId?: unknown): string {
   const i = spicyLevelIndex(featureId);
   if (lang === 'ar') {
-    if (i === 0) return 'خفيف';
-    if (i === 1) return 'متوسط';
-    if (i === 2) return 'حار جداً';
+    if (i === 0) return 'حار خفيف';
+    if (i === 1) return 'حار متوسط';
+    if (i === 2) return 'حار جدًا';
     return 'حار';
   }
   if (i === 0) return 'Mild';
@@ -108,7 +108,7 @@ export function spicyDegreeLabel(lang: 'en' | 'ar', featureId?: unknown, fallbac
   if (lang === 'ar') {
     if (i === 0) return 'حار خفيف';
     if (i === 1) return 'حار متوسط';
-    if (i === 2) return 'حار جداً';
+    if (i === 2) return 'حار جدًا';
     const t = typeof fallbackLabel === 'string' ? fallbackLabel.trim() : '';
     if (!t) return 'حار';
     return t.includes('حار') ? t : `حار ${t}`;
@@ -126,11 +126,11 @@ export function spicyDegreeLabel(lang: 'en' | 'ar', featureId?: unknown, fallbac
  *  normalizer only fills these in when the row is missing. */
 export const SPICY_SECTION_DEFAULT = {
   id: SPICY_GROUP_ID,
-  name: { en: 'Make it Spicy', ar: 'خليه حار' },
+  name: { en: 'Make it Spicy', ar: 'اجعله حارًّا' },
   selection: 'single' as const,
   prompt: {
     en: 'Want to add some heat?',
-    ar: 'هل تريد شطة؟',
+    ar: 'هل تريد إضافة الحار؟',
   },
 };
 
@@ -138,9 +138,9 @@ export const SPICY_LEVEL_DEFAULTS: ReadonlyArray<{
   id: SpicyLevelId;
   name: { en: string; ar: string };
 }> = [
-  { id: 'spicy-mild', name: { en: 'Mild', ar: 'خفيف' } },
-  { id: 'spicy-medium', name: { en: 'Medium', ar: 'متوسط' } },
-  { id: 'spicy-hot', name: { en: 'Extra Hot', ar: 'حار جداً' } },
+  { id: 'spicy-mild', name: { en: 'Mild', ar: 'حار خفيف' } },
+  { id: 'spicy-medium', name: { en: 'Medium', ar: 'حار متوسط' } },
+  { id: 'spicy-hot', name: { en: 'Extra Hot', ar: 'حار جدًا' } },
 ];
 
 /**
@@ -210,12 +210,12 @@ export function formatHoursRange(settings: MenuData['settings'], lang: 'en' | 'a
     : [...DAY_ORDER];
   const all = DAY_ORDER.every((d) => days.includes(d));
   const daysPart = all
-    ? (isAr ? 'يومياً' : 'Daily')
+    ? (isAr ? 'يوميًا' : 'Daily')
     : days
       .filter((d) => DAY_SHORT[d])
       .sort((a, b) => DAY_ORDER.indexOf(a as typeof DAY_ORDER[number]) - DAY_ORDER.indexOf(b as typeof DAY_ORDER[number]))
       .map((d) => (isAr ? DAY_SHORT[d].ar : DAY_SHORT[d].en))
-      .join(isAr ? '، ' : ', ') || (isAr ? 'يومياً' : 'Daily');
+      .join(isAr ? '، ' : ', ') || (isAr ? 'يوميًا' : 'Daily');
   const open = formatTime12h(settings.openTime || '12:00', lang);
   const close = formatTime12h(settings.closeTime || '00:00', lang);
   return isAr
@@ -238,7 +238,7 @@ export function isOpenNow(settings: MenuData['settings'], nowMs?: number, reopen
       isOpen: false,
       label: {
         en: 'Closed now',
-        ar: 'مغلق حالياً'
+        ar: 'مغلق حاليًا'
       }
     };
   }

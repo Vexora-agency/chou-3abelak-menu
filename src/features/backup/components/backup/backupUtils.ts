@@ -10,5 +10,5 @@ export function rel(iso: string | undefined, l: 'en' | 'ar') {
   if (m < 1) return STR[l].now;
   if (m < 60) return l === 'ar' ? `قبل ${m} د` : `${m} min ago`;
   if (m < 60 * 24) return l === 'ar' ? `قبل ${Math.floor(m / 60)} س` : `${Math.floor(m / 60)}h ago`;
-  return l === 'ar' ? `قبل ${Math.floor(m / 1440)} يوماً` : `${Math.floor(m / 1440)}d ago`;
+  return l === 'ar' ? `قبل ${Math.floor(m / 1440)} يومًا` : `${Math.floor(m / 1440)}d ago`;
 }

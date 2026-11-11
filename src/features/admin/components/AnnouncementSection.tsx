@@ -220,7 +220,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
       <SettingsGroupHeader
         title={isAr ? 'شريط الإعلان' : 'Announcement banner'}
-        subtitle={isAr ? 'شريط أصفر متحرك أعلى الموقع (140 حرفاً كحد أقصى) — توقف عند مرور المؤشر' : 'A scrolling yellow ticker above the site (140 chars max) — pauses on hover'}
+        subtitle={isAr ? 'شريط أصفر متحرك أعلى الموقع (140 حرفًا كحد أقصى) — توقف عند مرور المؤشر' : 'A scrolling yellow ticker above the site (140 chars max) — pauses on hover'}
         lang={lang}
         collapsed={collapsed}
         onToggle={() => onToggleCollapse?.()}
@@ -250,7 +250,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
           <span>
             <span className="block text-xs font-bold">{isAr ? 'شريط متحرك' : 'Scrolling ticker'}</span>
             <span className="block text-[11px] text-neutral-500 mt-0.5">
-              {isAr ? 'إيقافه يعرض النص ثابتاً في المنتصف' : 'Off shows the text static and centered'}
+              {isAr ? 'إيقافه يعرض النص ثابتًا في المنتصف' : 'Off shows the text static and centered'}
             </span>
           </span>
           <span className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${announcement.scroll !== false ? 'bg-[var(--primary)]' : 'bg-neutral-700'}`}>
@@ -340,13 +340,13 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
           const e = announcement.expiresAt ? Date.parse(announcement.expiresAt) : NaN;
           const hints: string[] = [];
           if (announcement.enabled && !announcement.text.en.trim() && !announcement.text.ar.trim()) {
-            hints.push(isAr ? 'الشريط مفعّل لكن بدون نص — لن يظهر حتى تكتب نصاً' : 'Banner is on but has no text — it will stay hidden until you write some');
+            hints.push(isAr ? 'الشريط مفعّل لكن بدون نص — لن يظهر حتى تكتب نصًا' : 'Banner is on but has no text — it will stay hidden until you write some');
           }
           if (Number.isFinite(s) && Number.isFinite(e) && (e) <= (s)) {
             hints.push(isAr ? 'تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء' : 'Ends must be after Starts');
           }
           if (Number.isFinite(e) && (e) > serverNow() + 365 * 86400000) {
-            hints.push(isAr ? 'تاريخ الانتهاء يجب أن يكون خلال 365 يوماً' : 'Ends must be within 365 days');
+            hints.push(isAr ? 'تاريخ الانتهاء يجب أن يكون خلال 365 يومًا' : 'Ends must be within 365 days');
           }
           if (!hints.length) return null;
           return (
@@ -358,7 +358,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
           );
         })()}
         <p className="text-[11px] text-neutral-500">
-          {isAr ? 'التواريخ الفارغة = ظاهر دائماً (بتوقيت جهازك)' : 'Empty dates = always shown (your device time)'}
+          {isAr ? 'التواريخ الفارغة = ظاهر دائمًا (بتوقيت جهازك)' : 'Empty dates = always shown (your device time)'}
           {announcement.expiresAt && (
             <>
               {' · '}
@@ -395,7 +395,7 @@ export const AnnouncementSection: React.FC<AnnouncementSectionProps> = ({
             off: isAr ? 'مخفي — الشريط مطفأ' : 'Hidden — banner is off',
             empty: isAr ? 'مخفي — لا يوجد نص' : 'Hidden — no text',
             scheduled: isAr ? 'مجدول — لم يبدأ بعد' : 'Scheduled — not started yet',
-            expired: isAr ? 'انتهى — لم يعد ظاهراً' : 'Ended — no longer shown',
+            expired: isAr ? 'انتهى — لم يعد ظاهرًا' : 'Ended — no longer shown',
           };
           return (
             <div>

@@ -172,7 +172,7 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
           {isSoldOut && (
             <div className="absolute inset-0 z-[15] flex items-center justify-center bg-black/55">
               <span className="rounded-full border-2 border-white/80 px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wide text-white">
-                {isAr ? 'نفذت' : 'Sold out'}
+                {isAr ? 'نفدت' : 'Sold out'}
               </span>
             </div>
           )}

@@ -54,8 +54,8 @@ const SeasonalQuickCard: React.FC<{
           </b>
           <span className="block text-xs text-neutral-400 mt-0.5">
             {live
-              ? (isAr ? 'ثلج ورسالة ترحيب على موقع الزبائن' : 'Snow + greeting live on the customer site')
-              : (isAr ? 'مُجهّز — اضغط تشغيل ليظهر للزبائن' : 'Armed — press turn on to go live')}
+              ? (isAr ? 'ثلج ورسالة ترحيب على موقع العملاء' : 'Snow + greeting live on the customer site')
+              : (isAr ? 'مُجهّز — اضغط تشغيل ليظهر للعملاء' : 'Armed — press turn on to go live')}
           </span>
         </span>
         <button
@@ -153,7 +153,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
       if (!r.ok) throw new Error();
       await onMenuRefreshed();
     } catch {
-      alert(isAr ? 'تعذر تحديث الحالة. حاول مجدداً.' : 'Could not update the status. Please try again.');
+      alert(isAr ? 'تعذر تحديث الحالة. حاول مجددًا.' : 'Could not update the status. Please try again.');
     }
   };
   const handlePause = (minutes: number | null) => sendPause(minutes === null ? { minutes: null } : { minutes });
@@ -233,7 +233,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
             {cronMins !== null && (
               <span className="opacity-80">{isAr ? ` — آخر تحديث منذ ${cronMins} د` : ` — last sweep ${cronMins}m ago`}</span>
             )}
-            {cronHealth.critical && <span className="opacity-80">{isAr ? ' — تحقق من خدمة الكرون' : ' — check the cron service'}</span>}
+            {cronHealth.critical && <span className="opacity-80">{isAr ? ' — تحقق من خدمة المهام المجدولة (cron)' : ' — check the cron service'}</span>}
           </span>
           <button
             type="button"
@@ -255,12 +255,12 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
         <p className="mb-3 flex items-center gap-1.5 text-[11px] font-bold text-neutral-500">
           <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
           {isAr
-            ? `${graceHidden} في مهلة الإلغاء (5 دقايق) — هيظهروا هنا تلقائيًا`
+            ? `${graceHidden} في مهلة الإلغاء (5 دقائق) — ستظهر هنا تلقائيًا`
             : `${graceHidden} in the 5-min grace window — appearing automatically`}
         </p>
       )}
       {(showReports || showCustomers) && (
-        <div className="mb-4 flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800 w-fit max-w-full overflow-x-auto no-scrollbar" role="tablist" aria-label={isAr ? 'الداشبورد' : 'Dashboard'}>
+        <div className="mb-4 flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800 w-fit max-w-full overflow-x-auto no-scrollbar" role="tablist" aria-label={isAr ? 'لوحة التحكم' : 'Dashboard'}>
           {(['overview', ...(showReports ? ['reports'] : []), ...(showCustomers ? ['customers'] : [])] as Array<'overview' | 'reports' | 'customers'>).map((v) => {
             const active = dashView === v;
             return (

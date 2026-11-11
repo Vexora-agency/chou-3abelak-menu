@@ -37,7 +37,7 @@ const A4 = 440;
 export const BELL_SOUNDS: BellPattern[] = [
   {
     id: 'classic',
-    name: { en: 'Classic ding-ding', ar: 'دين-دين كلاسيك' },
+    name: { en: 'Classic ding-ding', ar: 'دين-دين كلاسيكي' },
     hint: { en: 'Warm alternating fifth', ar: 'نغمة دافئة متعاقبة' },
     strikes: [
       { freq: E5, at: 0, vol: 0.16 },
@@ -72,7 +72,7 @@ export const BELL_SOUNDS: BellPattern[] = [
   {
     id: 'soft',
     name: { en: 'Soft whisper', ar: 'همس ناعم' },
-    hint: { en: 'Gentle high chime, low volume', ar: 'رنين عالٍ هادئ بصوت منخفض' },
+    hint: { en: 'Gentle high chime, low volume', ar: 'رنين عالٍ هادئ' },
     strikes: [
       { freq: C6, at: 0, vol: 0.09 },
       { freq: E6, at: 0.55, vol: 0.08 },

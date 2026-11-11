@@ -292,15 +292,15 @@ export const TeamAccessSection: React.FC<TeamAccessSectionProps> = ({ lang, admi
       });
       const data = (await readJson(res)) as { deepLink?: string | null };
       if (!res.ok || !data?.deepLink) {
-        setCrewMsg({ kind: 'err', text: isAr ? 'تعذر إنشاء رابط الدليفري.' : 'Could not create the delivery link.' });
+        setCrewMsg({ kind: 'err', text: isAr ? 'تعذر إنشاء رابط مندوب التوصيل.' : 'Could not create the delivery link.' });
       } else {
         setCrewLink(data.deepLink);
         setCrewMsg({ kind: 'ok', text: isAr
-          ? 'ابعت الرابط للدليفري — يفتحه ويضغط Start. الرابط صالح لعشر دقائق ولاستخدام واحد.'
+          ? 'أرسل الرابط إلى مندوب التوصيل — يفتحه ويضغط Start. الرابط صالح لعشر دقائق ولاستخدام واحد.'
           : 'Send the link to the courier — they open it and press Start. Single-use, ten minutes.' });
       }
     } catch {
-      setCrewMsg({ kind: 'err', text: isAr ? 'تعذر إنشاء رابط الدليفري.' : 'Could not create the delivery link.' });
+      setCrewMsg({ kind: 'err', text: isAr ? 'تعذر إنشاء رابط مندوب التوصيل.' : 'Could not create the delivery link.' });
     } finally {
       setCrewBusy(null);
     }
@@ -325,13 +325,13 @@ export const TeamAccessSection: React.FC<TeamAccessSectionProps> = ({ lang, admi
         body: JSON.stringify({ action: 'delivery-remove', chatId }),
       });
       if (!res.ok) {
-        setCrewMsg({ kind: 'err', text: isAr ? 'تعذر إزالة الدليفري.' : 'Could not remove the courier.' });
+        setCrewMsg({ kind: 'err', text: isAr ? 'تعذر إزالة مندوب التوصيل.' : 'Could not remove the courier.' });
       } else {
-        setCrewMsg({ kind: 'ok', text: isAr ? 'تمت إزالة الدليفري — لن تصله طلبات جديدة.' : 'Courier removed — no more orders will reach them.' });
+        setCrewMsg({ kind: 'ok', text: isAr ? 'تمت إزالة مندوب التوصيل — لن تصله طلبات جديدة.' : 'Courier removed — no more orders will reach them.' });
         await refreshCrew();
       }
     } catch {
-      setCrewMsg({ kind: 'err', text: isAr ? 'تعذر إزالة الدليفري.' : 'Could not remove the courier.' });
+      setCrewMsg({ kind: 'err', text: isAr ? 'تعذر إزالة مندوب التوصيل.' : 'Could not remove the courier.' });
     } finally {
       setCrewBusy(null);
     }
@@ -339,7 +339,7 @@ export const TeamAccessSection: React.FC<TeamAccessSectionProps> = ({ lang, admi
 
   const askRemoveCrew = (chatId: number) => {
     const box = {
-      title: isAr ? 'إزالة الدليفري؟' : 'Remove courier?',
+      title: isAr ? 'إزالة مندوب التوصيل؟' : 'Remove courier?',
       body: isAr
         ? 'لن تصل نسخ الطلبات الجديدة لهذا الحساب بعد الآن.'
         : 'New order copies will stop reaching this chat.',
@@ -367,7 +367,7 @@ export const TeamAccessSection: React.FC<TeamAccessSectionProps> = ({ lang, admi
       <SettingsGroupHeader
         title={isAr ? 'دخول المطبخ والطاقم' : 'Kitchen & Crew Access'}
         subtitle={isAr
-          ? 'دعوة المطبخ: امسح الرابط أو اضغطه للدخول فورًا — بلا كلمة سر، والرابط يموت بعد أول استخدام. اختر المدة قبل الإنشاء.'
+          ? 'دعوة المطبخ: امسح رمز QR أو انقر الرابط للدخول فورًا — دون كلمة مرور، وتنتهي صلاحية الرابط بعد أول استخدام. اختر المدة قبل الإنشاء.'
           : 'Kitchen invite: scan or tap the link to enter instantly — no password, and the link dies after first use. Pick the duration before creating.'}
         lang={lang}
         collapsed={collapsed}
@@ -380,8 +380,8 @@ export const TeamAccessSection: React.FC<TeamAccessSectionProps> = ({ lang, admi
           dir="ltr"
           value={name}
           onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 31))}
-          placeholder={isAr ? 'اسم دخول المطبخ، مثال: kitchen1' : 'Kitchen login name, e.g. kitchen1'}
-          aria-label={isAr ? 'اسم دخول المطبخ' : 'Kitchen login name'}
+          placeholder={isAr ? 'اسم المستخدم، مثال: kitchen1' : 'Kitchen login name, e.g. kitchen1'}
+          aria-label={isAr ? 'اسم المستخدم' : 'Kitchen login name'}
           className="flex-1 min-w-0 h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)] placeholder:text-neutral-600 outline-none"
         />
         <button
@@ -457,12 +457,12 @@ export const TeamAccessSection: React.FC<TeamAccessSectionProps> = ({ lang, admi
               className="h-9 px-4 rounded-full border border-neutral-700 text-neutral-300 text-[11px] font-bold inline-flex items-center gap-1.5 hover:border-[var(--primary)] hover:text-[var(--primary)]"
             >
               <Send size={13} />
-              {isAr ? 'مشاركة تليجرام' : 'Share via Telegram'}
+              {isAr ? 'مشاركة تيليجرام' : 'Share via Telegram'}
             </a>
           </div>
           <p className="text-[10px] text-neutral-500">
             {isAr
-              ? <>دعوة مطبخ: امسح الرابط أو اضغطه للدخول فورًا — بلا كلمة سر، والرابط يموت بعد أول استخدام. {fresh.expiresAt ? <>الرابط ينتهي في <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> (الدخول نفسه مفتوح).</> : <>رابط لمرة واحدة — الدخول نفسه مفتوح بلا انتهاء.</>}</>
+              ? <>دعوة مطبخ: امسح رمز QR أو انقر الرابط للدخول فورًا — دون كلمة مرور، وتنتهي صلاحية الرابط بعد أول استخدام. {fresh.expiresAt ? <>الرابط ينتهي في <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> (الدخول نفسه مفتوح).</> : <>رابط لمرة واحدة — الدخول نفسه مفتوح بلا انتهاء.</>}</>
               : <>Kitchen invite: scan or tap the link to enter instantly — no password, and the link dies after first use. {fresh.expiresAt ? <>Link expires <span dir="ltr" className="tabular-nums">{fresh.expiresAt.slice(0, 10)}</span> (the login itself stays open).</> : <>Single-use link — the login itself stays open.</>}</>}
           </p>
         </div>
@@ -580,20 +580,20 @@ export const TeamAccessSection: React.FC<TeamAccessSectionProps> = ({ lang, admi
       </div>
       {/* Delivery-crew sharing (moved here from the Access section):
           same bot, order copies + same Telegram buttons as the owner. */}
-      <div className="rounded-2xl border border-neutral-800 bg-black/40 p-3 space-y-2.5" role="group" aria-label={isAr ? 'مشاركة البوت مع الدليفري' : 'Share the bot with delivery'}>
+      <div className="rounded-2xl border border-neutral-800 bg-black/40 p-3 space-y-2.5" role="group" aria-label={isAr ? 'مشاركة البوت مع مندوب التوصيل' : 'Share the bot with delivery'}>
         <p className="text-xs font-black text-neutral-200">
-          {isAr ? 'مشاركة مع الدليفري' : 'Share with delivery'}
+          {isAr ? 'مشاركة مع مندوب التوصيل' : 'Share with delivery'}
         </p>
         <p className="text-[11px] leading-relaxed text-neutral-400">
           {isAr
-            ? 'الدليفري يشوف الطلبات ويقدر يأكد ويسلّم ويلغي من التيليجرام — نفس أزرارك.'
+            ? 'مندوب التوصيل يعرض الطلبات ويستطيع أن يؤكد ويسلّم ويلغي من تيليجرام — نفس أزرارك.'
             : 'Delivery sees orders and can confirm, deliver and cancel from Telegram — same buttons as yours.'}
         </p>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => void inviteCrew()} disabled={crewBusy === 'code'}
             className="btn-tactile h-11 px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-2 disabled:opacity-40">
             {crewBusy === 'code' ? <Loader2 size={15} className="animate-spin" /> : <Send size={14} />}
-            {isAr ? 'رابط دعوة للدليفري' : 'Invite delivery'}
+            {isAr ? 'رابط دعوة لمندوب التوصيل' : 'Invite delivery'}
           </button>
           {crewLink && (
             <a href={crewLink} target="_blank" rel="noreferrer"
@@ -617,7 +617,7 @@ export const TeamAccessSection: React.FC<TeamAccessSectionProps> = ({ lang, admi
               aria-label={isAr ? 'نسخ الرابط' : 'Copy link'}
               className="btn-tactile shrink-0 h-11 min-h-[44px] min-w-[44px] px-3 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold inline-flex items-center gap-1.5 hover:border-[var(--primary)] hover:text-[var(--primary)]">
               {crewCopied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
-              {crewCopied ? (isAr ? 'اتنسخ' : 'Copied') : (isAr ? 'نسخ' : 'Copy')}
+              {crewCopied ? (isAr ? 'تم النسخ' : 'Copied') : (isAr ? 'نسخ' : 'Copy')}
             </button>
           </div>
         )}
@@ -633,13 +633,13 @@ export const TeamAccessSection: React.FC<TeamAccessSectionProps> = ({ lang, admi
               {isAr ? 'مشاركة واتساب' : 'Share via WhatsApp'}
             </a>
             <a
-              href={tgShare(crewLink, isAr ? 'رابط الدليفري' : 'Delivery invite')}
+              href={tgShare(crewLink, isAr ? 'رابط مندوب التوصيل' : 'Delivery invite')}
               target="_blank"
               rel="noreferrer"
               className="h-9 px-4 rounded-full border border-neutral-700 text-neutral-300 text-[11px] font-bold inline-flex items-center gap-1.5 hover:border-[var(--primary)] hover:text-[var(--primary)]"
             >
               <Send size={13} />
-              {isAr ? 'مشاركة تليجرام' : 'Share via Telegram'}
+              {isAr ? 'مشاركة تيليجرام' : 'Share via Telegram'}
             </a>
           </div>
         )}
@@ -651,7 +651,7 @@ export const TeamAccessSection: React.FC<TeamAccessSectionProps> = ({ lang, admi
               return (
                 <div key={c.chatId} className="flex items-center justify-between gap-2 rounded-xl border border-neutral-800 bg-black/60 px-3 py-2">
                   <span className="min-w-0 text-xs font-bold text-neutral-200 truncate" dir="auto">
-                    {isAr ? `دليفري #${c.chatId}` : `Delivery #${c.chatId}`}
+                    {isAr ? `مندوب التوصيل #${c.chatId}` : `Delivery #${c.chatId}`}
                     {when && <span className="block text-[10px] font-normal text-neutral-500">{when}</span>}
                   </span>
                   <button type="button" onClick={() => askRemoveCrew(c.chatId)} disabled={dropping}

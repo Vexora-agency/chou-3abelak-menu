@@ -104,7 +104,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
 
         {isSoldOut && (
           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-600 text-white">
-            {isAr ? 'نفذت الكمية' : 'Sold out'}
+            {isAr ? 'نفدت الكمية' : 'Sold out'}
           </span>
         )}
 
@@ -162,7 +162,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
 
         {isSoldOut && (
           <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-600 text-white">
-            {isAr ? 'نفذت الكمية' : 'Sold out'}
+            {isAr ? 'نفدت الكمية' : 'Sold out'}
           </span>
         )}
 

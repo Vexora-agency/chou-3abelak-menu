@@ -33,7 +33,7 @@ export const SeasonalSection: React.FC<SeasonalSectionProps> = ({
   const def = SEASONAL_REGISTRY.christmas;
   const title = isAr ? 'الموسم (ثيم المناسبات)' : 'Season (festive theme)';
   const subtitle = isAr
-    ? 'ثلج متساقط ورسالة ترحيب على موقع الزبائن — تُخفى تلقائيًا عن الزبائن عندما تكون متوقفة'
+    ? 'ثلج متساقط ورسالة ترحيب على موقع العملاء — تُخفى تلقائيًا عن العملاء عندما تكون متوقفة'
     : 'Falling snow + a greeting on the customer site — hidden from customers while off';
 
   const setTheme = (t: SeasonalTheme) =>
@@ -95,14 +95,14 @@ export const SeasonalSection: React.FC<SeasonalSectionProps> = ({
             </b>
             <span className="block text-xs text-neutral-400 mt-0.5">
               {active
-                ? (isAr ? 'مُجهّز — شغّله من زر الداشبورد ليظهر للزبائن' : 'Armed — turn it on from the dashboard card to go live')
-                : (isAr ? 'متوقف — لن يرى الزبائن شيئًا' : 'Off — customers see nothing')}
+                ? (isAr ? 'مُجهّز — فعّله من زر لوحة التحكم ليظهر للعملاء' : 'Armed — turn it on from the dashboard card to go live')
+                : (isAr ? 'متوقف — لن يرى العملاء شيئًا' : 'Off — customers see nothing')}
             </span>
           </span>
           <div ref={groupRef} className="flex p-1 rounded-full bg-black border border-neutral-800" role="group" aria-label={title}>
             {([
               ['on', isAr ? 'تفعيل' : 'On'],
-              ['off', isAr ? 'إطفاء' : 'Off'],
+              ['off', isAr ? 'إيقاف' : 'Off'],
             ] as const).map(([k, label]) => {
               const pressed = (k === 'on') === active;
               const saving = k === 'on' && fete === 'saving';
@@ -138,7 +138,7 @@ export const SeasonalSection: React.FC<SeasonalSectionProps> = ({
         {/* Greeting preview — byte-identical copy to the customer card (from the registry). */}
         <div className="mt-3 rounded-xl border border-neutral-800 bg-black/60 px-4 py-3" aria-label={isAr ? 'معاينة الرسالة' : 'Message preview'}>
           <p className="text-[11px] font-bold text-neutral-500 mb-1">
-            {isAr ? 'معاينة رسالة الزبائن:' : 'Customer message preview:'}
+            {isAr ? 'معاينة رسالة العملاء:' : 'Customer message preview:'}
           </p>
           <p className="text-sm font-extrabold text-white">
             {isAr ? def.greeting.title.ar : def.greeting.title.en}

@@ -145,7 +145,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // ceiling gets an honest warning instead of a made-up delivery time.
   const distanceWarning = location && restaurantCoords && Number.isFinite(distanceMeters) && distanceMeters > MAX_DELIVERY_DISTANCE_KM * 1000
     ? (isAr
-      ? `عنوانك على بعد ${formatDistance(distanceMeters, lang)} من المطعم — خارج نطاق التوصيل المعتاد. اتصل بنا قبل إتمام الطلب.`
+      ? `عنوانك على بعد ${formatDistance(distanceMeters, lang)} من المطعم — خارج نطاق التوصيل المعتاد. تواصل معنا قبل إتمام الطلب.`
       : `Your address is ${formatDistance(distanceMeters, lang)} from the restaurant — outside the usual delivery zone. Call us before ordering.`)
     : null;
 
@@ -185,7 +185,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // duplicate it.
   if (pausedLive) {
     reopenText = isAr
-      ? `· يستأنف بعد ${formatMMSS(pausedDeadline - nowMs)}`
+      ? `· تُستأنف الطلبات بعد ${formatMMSS(pausedDeadline - nowMs)}`
       : `· resumes in ${formatMMSS(pausedDeadline - nowMs)}`;
   }
   const minActive = !!ordering.minOrderEnabled;
@@ -200,7 +200,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   const feeDetail = !feeActive
     ? null
     : feeQuote.freeApplied
-      ? (isAr ? `توصيل مجاني للطلبات فوق ${formatPrice(ordering.freeDeliveryMin ?? 0, currency)}` : `Free delivery over ${formatPrice(ordering.freeDeliveryMin ?? 0, currency)}`)
+      ? (isAr ? `توصيل مجاني للطلبات التي تتجاوز ${formatPrice(ordering.freeDeliveryMin ?? 0, currency)}` : `Free delivery over ${formatPrice(ordering.freeDeliveryMin ?? 0, currency)}`)
       : feeQuote.distanceKm !== null && ordering.deliveryFeeMode === 'distance'
         ? (isAr ? `على بعد ${formatDistance(distanceMeters, lang)}` : `${formatDistance(distanceMeters, lang)} away`)
         : null;
@@ -264,13 +264,13 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     // is not enough. Coarse fixes still pass here (fresh but imprecise);
     // sharpness is enforced downstream, never by blocking the order.
     if (!location || !Number.isFinite(location.lat) || !Number.isFinite(location.lng)) {
-      setErrorMsg(isAr ? 'يرجى تحديد موقعك على الخريطة بالدبوس (خطوة إجبارية)' : 'Please pin your location on the map (required step)');
+      setErrorMsg(isAr ? 'يرجى تحديد موقعك على الخريطة (خطوة مطلوبة)' : 'Please pin your location on the map (required step)');
       return;
     }
     // Delivery-zone hard block (selected zones only): the pin resolved
     // outside the served area. Same copy as the on-screen panel.
     if (zoneBlocked) {
-      setErrorMsg(isAr ? 'مكانك غير مدعوم للتوصيل حالياً، تواصل معنا' : 'Your location isn’t in our delivery area right now — contact us.');
+      setErrorMsg(isAr ? 'موقعك خارج نطاق التوصيل حاليًا، تواصل معنا' : 'Your location isn’t in our delivery area right now — contact us.');
       return;
     }
     if (isBelowMin) {
@@ -367,8 +367,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         // the same idempotency key, so it can never double-record.
         setErrorMsg(
           result.failure === 'timeout'
-          ? (isAr ? 'انقطع الاتصال أثناء الإرسال — قد يكون طلبك محفوظًا: تحقق من الداشبورد قبل إعادة المحاولة' : 'Connection dropped while sending — your order may be saved: check the dashboard before retrying')
-          : (isAr ? 'رفض السيرفر الطلب — حدّث الصفحة وحاول مجددًا' : 'Server rejected the order — refresh and try again')
+          ? (isAr ? 'انقطع الاتصال أثناء الإرسال — قد يكون طلبك محفوظًا: تحقق من صفحة التتبع قبل إعادة المحاولة' : 'Connection dropped while sending — your order may be saved: check the dashboard before retrying')
+          : (isAr ? 'تعذّر إرسال الطلب — حدّث الصفحة وحاول مجددًا' : 'Server rejected the order — refresh and try again')
         );
       }
       if (result.orderNumber) {

@@ -288,7 +288,7 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
 
       <p className="text-[10px] leading-relaxed text-neutral-500">
         {isAr
-          ? 'اسحب الصورة لتحريكها وكبّر لاختيار الجزء الظاهر، ودوّرها لو طالعة بالمقلوب — أي تعديل بيتحفظ تلقائيًا.'
+          ? 'اسحب الصورة لتحريكها وكبّر لاختيار الجزء الظاهر، ودوّرها إذا ظهرت مقلوبة — يُحفظ أي تعديل تلقائيًا.'
           : 'Drag to move, zoom to choose what shows, rotate if sideways — every change saves automatically.'}
       </p>
 
@@ -304,7 +304,7 @@ export const ImageCropEditor: React.FC<ImageCropEditorProps> = ({
             <span className="text-emerald-400">{isAr ? 'تم الحفظ تلقائيًا' : 'Saved automatically'}</span>
           </>
         ) : (
-          <span className="text-neutral-500">{isAr ? 'أي تعديل بيتحفظ لوحده' : 'Every change saves by itself'}</span>
+          <span className="text-neutral-500">{isAr ? 'يُحفظ أي تعديل تلقائيًا' : 'Every change saves by itself'}</span>
         )}
       </div>
     </div>

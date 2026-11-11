@@ -183,7 +183,7 @@ export const CancelOrderButton: React.FC<CancelOrderButtonProps> = ({
       )}
       {denied && (
         <p className={`mt-1.5 text-[11px] font-bold ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>
-            {isAr ? 'بدأ التجهيز أو انتهت المهلة — اتصل بنا للإلغاء.' : 'Preparation started or time ran out — call us to cancel.'}
+            {isAr ? 'بدأ التحضير أو انتهت المهلة — تواصل معنا للإلغاء.' : 'Preparation started or time ran out — call us to cancel.'}
         </p>
       )}
     </div>

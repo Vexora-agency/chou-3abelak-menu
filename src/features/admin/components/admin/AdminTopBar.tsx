@@ -85,7 +85,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
             onClick={onSignOut}
             className="text-xs px-4 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-neutral-800 border border-neutral-700 text-neutral-400 hover:text-red-400 hover:border-red-400/60 transition-colors font-bold whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
           >
-            {isAr ? 'خروج' : 'Sign out'}
+            {isAr ? 'تسجيل الخروج' : 'Sign out'}
           </button>
           )}
         </div>
@@ -146,7 +146,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
             {tab === 'settings' && (isAr ? 'الإعدادات' : 'Settings')}
             {tab === 'categories' && (isAr ? 'الأقسام' : 'Categories')}
             {tab === 'libraries' && (isAr ? 'المكتبات' : 'Libraries')}
-            {tab === 'items' && (isAr ? 'الوجبات' : 'Items')}
+            {tab === 'items' && (isAr ? 'الأصناف' : 'Items')}
             {tab === 'backup' && (isAr ? 'النسخ الاحتياطي' : 'Backup')}
             </span>
           </button>

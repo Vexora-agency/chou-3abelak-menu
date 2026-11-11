@@ -103,7 +103,7 @@ export const STR = {
     top: 'الأكثر مبيعاً', sold: 'مباع',
     recent: 'آخر الطلبات', all: 'الكل', showMore: 'عرض المزيد',
     new: 'جديد', confirmed: 'قيد التحضير', ready: 'جاهز', completed: 'مكتمل', cancelled: 'ملغي',
-    emptyTitle: 'لا توجد طلبات بعد', emptyDesc: 'الطلبات القادمة من المنيو ستظهر هنا فوراً.',
+    emptyTitle: 'لا توجد طلبات بعد', emptyDesc: 'الطلبات القادمة من القائمة ستظهر هنا فورًا.',
     emptyView: 'لا توجد طلبات في هذا العرض.', noData: 'لا توجد بيانات لهذه الفترة.',
     itemsLabel: 'الأصناف', phone: 'الهاتف', address: 'العنوان', table: 'الطاولة', notes: 'ملاحظات', openMaps: 'فتح في الخرائط',
     subtotal: 'المجموع الفرعي', fee: 'رسوم التوصيل', total: 'الإجمالي',

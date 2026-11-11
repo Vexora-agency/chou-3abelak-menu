@@ -192,11 +192,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <CheckCircle2 size={36} />
             </div>
             <h3 className={`text-xl font-black ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-              {isAr ? 'وصل طلبك!' : 'Your order is in!'}
+              {isAr ? 'تم استلام طلبك!' : 'Your order is in!'}
             </h3>
             <p className={`text-sm max-w-xs mx-auto leading-relaxed ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>
               {isAr
-                ? 'تتبع طلبك لحظة بلحظة من الأسفل — سنعلمك بكل تحديث.'
+                ? 'تتبع الطلب لحظة بلحظة من الأسفل — سنعلمك بكل تحديث.'
                 : 'Track your order live below — we’ll ping you on every update.'}
             </p>
             {/* Send-failure honesty (plan §7): a DB/transport failure must
@@ -218,7 +218,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   className="btn-tactile h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-bold text-sm inline-flex items-center justify-center gap-2 shadow-md hover:brightness-110"
                 >
                   <span className="tabular-nums" dir="ltr">#{lastOrder.number}</span>
-                  <span>{isAr ? 'تتبع طلبك لحظة بلحظة' : 'Track your order live'}</span>
+                  <span>{isAr ? 'تتبع الطلب لحظة بلحظة' : 'Track your order live'}</span>
                 </a>
               </div>
             )}
@@ -231,7 +231,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         ) : lines.length === 0 ? (
           <div className="py-12 text-center">
             <p className={`text-sm font-semibold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-              {isAr ? 'سلتك فارغة حالياً' : 'Your cart is empty'}
+              {isAr ? 'سلتك فارغة حاليًا' : 'Your cart is empty'}
             </p>
           </div>
         ) : (

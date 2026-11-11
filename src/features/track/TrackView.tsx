@@ -191,7 +191,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   // completed (customer tapped "نعم، استلمت"). Legacy `ready` orders map
   // to the preparing stage — no new order ever enters `ready` anymore.
   const steps = [
-    { id: 'new', label: isAr ? 'تم استلام الطلب' : 'Order received', icon: Clock },
+    { id: 'new', label: isAr ? 'استلمنا طلبك' : 'Order received', icon: Clock },
     { id: 'confirmed', label: isAr ? 'طلبك قيد التحضير' : 'Being prepared', icon: CookingPot },
     { id: 'completed', label: isAr ? 'تم التوصيل' : 'Delivered', icon: CheckCircle2 },
   ];
@@ -263,7 +263,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
               className="inline-flex items-center gap-1.5 h-11 px-3 -ms-3 rounded-xl text-xs font-bold text-neutral-300 hover:text-[var(--primary)] active:text-[var(--primary)]"
             >
               <ArrowLeft size={16} className={isAr ? 'rotate-180' : ''} />
-              {isAr ? 'المنيو' : 'Menu'}
+              {isAr ? 'القائمة' : 'Menu'}
             </button>
             <button
               type="button"
@@ -298,7 +298,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
             </h1>
             {typeof data.parentNumber === 'number' && (
               <p className="mt-2 text-center text-[11px] font-bold text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-xl px-3 py-1.5" dir="auto">
-                {isAr ? `🔗 هذا الطلب سيصل مع الطلب #${data.parentNumber} — نفس التوصيلة` : `🔗 Arriving with order #${data.parentNumber} — same delivery`}
+                {isAr ? `🔗 هذا الطلب سيصل مع الطلب #${data.parentNumber} — نفس عملية التوصيل` : `🔗 Arriving with order #${data.parentNumber} — same delivery`}
               </p>
             )}
 
@@ -408,14 +408,14 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                   waitingHint={awaitingConfirm ? (
                     inCancelWindow ? (
                       isAr ? (
-                        <>سيتم استلام طلبك بعد انتهاء موعد إلغاء الطلب (المتبقي <span dir="ltr" className="tabular-nums">{formatMMSS(cancelRemainingMs ?? 0)}</span>)</>
+                        <>سيُقبَل طلبك بعد انتهاء مهلة الإلغاء (المتبقي <span dir="ltr" className="tabular-nums">{formatMMSS(cancelRemainingMs ?? 0)}</span>)</>
                       ) : (
                         <>Your order will be accepted after the cancellation window ends (<span dir="ltr" className="tabular-nums">{formatMMSS(cancelRemainingMs ?? 0)}</span> left)</>
                       )
                     ) : undefined
                   ) : deliveryLocked ? (
                     isAr ? (
-                      <>تم استلام طلبك وجارٍ التجهيز الآن<br />سيتم تفعيل زر التأكيد بعد التوصيل (المتبقي <span dir="ltr" className="tabular-nums">{formatMMSS(lockedRemainingMs)}</span>)</>
+                      <>تم قبول طلبك وهو قيد التحضير الآن<br />سيتم تفعيل زر التأكيد بعد التوصيل (المتبقي <span dir="ltr" className="tabular-nums">{formatMMSS(lockedRemainingMs)}</span>)</>
                     ) : (
                       <>Your order is accepted and being prepared<br />Confirm unlocks after delivery (<span dir="ltr" className="tabular-nums">{formatMMSS(lockedRemainingMs)}</span> left)</>
                     )
@@ -430,7 +430,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
             )}
             <p className="mt-4 text-center text-xs text-neutral-400 flex flex-wrap items-center gap-1 justify-center w-full">
               <BellRing size={12} className="shrink-0" />
-              <span className="min-w-0 break-words">{isAr ? 'الصفحة تتحدث تلقائيًا — أبقِها مفتوحة.' : 'This page updates itself — keep it open.'}</span>
+              <span className="min-w-0 break-words">{isAr ? 'تُحدَّث الصفحة تلقائيًا — أبقِها مفتوحة.' : 'This page updates itself — keep it open.'}</span>
             </p>
           </>
         )}

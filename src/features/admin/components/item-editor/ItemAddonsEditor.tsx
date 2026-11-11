@@ -55,7 +55,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
           <p className="text-[11px] leading-relaxed text-amber-200">
             <Flame size={12} className="inline me-1 -mt-0.5" />
             {isAr
-              ? 'شارة «حار» مفعّلة لكن لا توجد درجات حرارة مرفقة — أرفق قسم «خليه حار» (خفيف / متوسط / حار جداً) وإلا سيُرفض الطلب.'
+              ? 'شارة «حار» مفعّلة لكن لا توجد درجات حرارة مرفقة — أرفق قسم «درجة الحرارة» (خفيف / متوسط / حار جدًا) وإلا سيُرفض الطلب.'
               : 'The Spicy badge is on but no heat degrees are attached — attach the “Make it Spicy” section (Mild / Medium / Extra Hot) or orders will be rejected.'}
           </p>
         </div>
@@ -65,7 +65,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
           <p className="text-[11px] leading-relaxed text-amber-200">
             <Flame size={12} className="inline me-1 -mt-0.5" />
             {isAr
-              ? 'هذا الصنف عليه شارة «حار» — درجة الحرارة إجبارية (خفيف / متوسط / حار جداً): أبقِ الدرجات مرفقة، والزبون لازم يختار واحدة.'
+              ? 'هذا الصنف عليه شارة «حار» — درجة الحرارة إجبارية (خفيف / متوسط / حار جدًا): أبقِ الدرجات مرفقة، ويجب على العميل اختيار واحدة.'
               : 'This item is badged Spicy — a heat degree is required (Mild / Medium / Extra Hot): keep the levels attached, the customer must pick one.'}
           </p>
         </div>
@@ -77,7 +77,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
       {item.noHeat === true && !badgedSpicy && (
         <p className="text-[11px] text-neutral-500 mb-2">
           {isAr
-            ? 'الحار مطفي لهذا الصنف — شاشة الزبون تخفي قسم الحرارة تماماً. أعد إرفاق قسم «خليه حار» لإرجاعه.'
+            ? 'نكهة الحار متوقفة لهذا الصنف — شاشة العميل تخفي قسم الحرارة تمامًا. أعد إرفاق قسم «درجة الحرارة» لإعادته.'
             : 'Heat is off for this item — the customer sheet hides the heat section entirely. Re-attach the “Make it Spicy” section to bring it back.'}
         </p>
       )}
@@ -174,7 +174,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                 min={0}
                 value={a.price}
                 aria-label={isAr ? 'سعر الإضافة' : 'Add-on price'}
-                title={isAr ? 'سعر هذه الإضافة لهذا الصنف (0 = مجاناً)' : 'This add-on’s price on this item (0 = free)'}
+                title={isAr ? 'سعر هذه الإضافة لهذا الصنف (0 = مجانًا)' : 'This add-on’s price on this item (0 = free)'}
                 onChange={(e) => {
                   const list = [...(item.addons || [])];
                   list[ai] = { ...list[ai], price: Number(e.target.value) };
@@ -194,7 +194,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                 onChange({ ...item, addons: list });
               }}
               className={`p-1 self-center transition-colors ${a.default ? 'text-[var(--primary)]' : 'text-neutral-600 hover:text-[var(--primary)]'}`}
-              title={isAr ? 'مضمّنة افتراضياً — تظهر مختارة للزبون ويقدر يشيلها' : 'Included by default — pre-selected for the customer, who can remove it'}
+              title={isAr ? 'مضمّنة افتراضيًا — تظهر مختارة للعميل (ويمكنه إزالتها)' : 'Included by default — pre-selected for the customer, who can remove it'}
               aria-pressed={!!a.default}
               aria-label={isAr ? 'تضمين افتراضي' : 'Include by default'}
             >
@@ -262,7 +262,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                           <button
                             type="button"
                             aria-pressed={isRequired}
-                            title={isAr ? 'إجباري: الزبون لازم يختار واحدة على الأقل من هذا القسم' : 'Required: the customer must pick at least one from this section'}
+                            title={isAr ? 'إجباري: يجب على العميل اختيار واحدة على الأقل من هذا القسم' : 'Required: the customer must pick at least one from this section'}
                             aria-label={isAr ? 'اختيار إجباري لهذا القسم' : 'Require a pick from this section'}
                             onClick={() => {
                               const cur = item.requiredGroups || [];
@@ -305,8 +305,8 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                         onChange(next);
                       }}
                       className="btn-tactile shrink-0 w-6 h-6 rounded-full border border-neutral-700 text-neutral-500 hover:border-red-500 hover:text-red-400 hover:bg-red-900/30 transition-colors flex items-center justify-center"
-                      title={isAr ? 'حذف القسم كاملاً' : 'Remove whole section'}
-                      aria-label={isAr ? 'حذف القسم كاملاً' : 'Remove whole section'}
+                      title={isAr ? 'حذف القسم كاملًا' : 'Remove whole section'}
+                      aria-label={isAr ? 'حذف القسم كاملًا' : 'Remove whole section'}
                     >
                       <X size={12} strokeWidth={2.5} />
                     </button>
@@ -317,14 +317,14 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
                   {g.id === SPICY_GROUP_ID && (
                     <p className="text-[11px] leading-relaxed text-neutral-400 mb-1">
                       {isAr
-                        ? 'درجات الحار الثلاث: خفيف 🌶️ · متوسط 🌶️🌶️ · حار جداً 🌶️🌶️🌶️ — مع شارة «حار» لازم الزبون يختار واحدة، وحذف القسم كله يطفي الحار لهذا الصنف.'
+                        ? 'درجات الحار الثلاث: خفيف 🌶️ · متوسط 🌶️🌶️ · حار جدًا 🌶️🌶️🌶️ — مع شارة «حار» يجب على العميل اختيار واحدة، وحذف القسم كله يوقف نكهة الحار لهذا الصنف.'
                         : 'Three heat degrees: Mild 🌶️ · Medium 🌶️🌶️ · Extra Hot 🌶️🌶️🌶️ — with the Spicy badge the customer must pick one; removing the whole section turns heat off for this item.'}
                     </p>
                   )}
                   {mode === 'single' && defaultCount >= 2 && (
                     <p className="text-[11px] leading-relaxed text-amber-300/90 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1.5 mb-1.5">
                       {isAr
-                        ? 'تنبيه: خياران أو أكثر مُعلَّمة كافتراضية في مكتبة «اختيار واحد» — شاشة الزبون تختار الأول مسبقاً.'
+                        ? 'تنبيه: خياران أو أكثر مُعلَّمة كافتراضية في مكتبة «اختيار واحد» — شاشة العميل تختار الأول مسبقًا.'
                         : 'Heads-up: two or more options are starred as default in a One-choice library — the customer sheet pre-selects the first.'}
                     </p>
                   )}
@@ -399,13 +399,13 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
           {badgedSpicy && (
             <p className="text-[11px] leading-relaxed text-amber-300/90 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1.5">
               {isAr
-                ? 'شارة «حار» مفعّلة — درجة الحرارة إجبارية على الزبون: أبقِ قسم الدرجات مرفقًا.'
+                ? 'شارة «حار» مفعّلة — درجة الحرارة إجبارية على العميل: أبقِ قسم الدرجات مرفقًا.'
                 : 'The Spicy badge is on — the heat degree is mandatory for customers: keep the levels section attached.'}
             </p>
           )}
           {candidateSecs.length === 0 && (
             <p className="text-[11px] text-neutral-500">
-              {isAr ? 'لا توجد أقسام — أنشئها من المكتبة أولاً' : 'No sections — create them in the library first'}
+              {isAr ? 'لا توجد أقسام — أنشئها من المكتبة أولًا' : 'No sections — create them in the library first'}
             </p>
           )}
           {candidateSecs.length > 0 && openSecs.length === 0 && (
@@ -464,7 +464,7 @@ export const ItemAddonsEditor: React.FC<ItemAddonsEditorProps> = ({
       })()}
       <p className="text-[11px] text-neutral-500 mt-1.5">
         {isAr
-          ? 'السعر يُكتب هنا لكل صنف — وهو الذي يظهر للزبون محسوباً مع الكمية. النجمة ★ تعني أن الإضافة مختارة مسبقاً للزبون (ويقدر يشيلها). لو الميزة ناقصة أنشئها من مكتبة الميزات.'
+          ? 'السعر يُكتب هنا لكل صنف — وهو الذي يظهر للعميل محسوبًا مع الكمية. النجمة ★ تعني أن الإضافة مختارة مسبقًا للعميل (ويمكنه إزالتها). لو الميزة ناقصة أنشئها من مكتبة الميزات.'
           : 'The price is written here per item — it is what the customer sees, multiplied by quantity. The star ★ means the add-on is pre-selected for the customer (who can still remove it). If a feature is missing, create it in the Features library.'}
       </p>
     </div>

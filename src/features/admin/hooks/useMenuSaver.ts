@@ -86,7 +86,7 @@ export function useMenuSaver({ initialMenu, onSaveMenu, isAr, savePaused: savePa
     // schedule is caught here with a clear message instead of a raw 400.
     const annSave = snapshot.settings.announcement;
     if (annSave?.enabled && !annSave.text.en.trim() && !annSave.text.ar.trim()) {
-      return deny('شريط الإعلان مفعّل لكن بدون نص — اكتب نصاً بإحدى اللغتين أو أطفئ الشريط', 'The banner is on but has no text — write text in at least one language or turn it off');
+      return deny('شريط الإعلان مفعّل لكن بدون نص — اكتب نصًا بإحدى اللغتين أو أطفئ الشريط', 'The banner is on but has no text — write text in at least one language or turn it off');
     }
     if (annSave?.startsAt && annSave?.expiresAt) {
       const s = Date.parse(annSave.startsAt);
@@ -98,7 +98,7 @@ export function useMenuSaver({ initialMenu, onSaveMenu, isAr, savePaused: savePa
     if (annSave?.expiresAt) {
       const e = Date.parse(annSave.expiresAt);
       if (Number.isFinite(e) && e > Date.now() + 365 * 86400000) {
-        return deny('تاريخ الانتهاء يجب أن يكون خلال 365 يوماً', 'Ends must be within 365 days');
+        return deny('تاريخ الانتهاء يجب أن يكون خلال 365 يومًا', 'Ends must be within 365 days');
       }
     }
     // Send the CURRENT version; the server assigns version+1 on success.

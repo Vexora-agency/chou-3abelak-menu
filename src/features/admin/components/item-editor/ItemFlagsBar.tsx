@@ -27,7 +27,7 @@ export const ItemFlagsBar: React.FC<ItemFlagsBarProps> = ({
           {([
             { id: 'new', en: 'New', ar: 'جديد' },
             { id: 'spicy', en: 'Spicy', ar: 'حار' },
-            { id: 'top', en: 'Top', ar: 'الأكثر طلباً' },
+            { id: 'top', en: 'Top', ar: 'الأكثر طلبًا' },
           ] as const).map((b) => (
             <label key={b.id} className="flex items-center gap-1.5 text-xs cursor-pointer">
               <input
@@ -84,13 +84,13 @@ export const ItemFlagsBar: React.FC<ItemFlagsBarProps> = ({
             <>
               <span className="font-extrabold text-[var(--primary)]">{isAr ? 'NEW مفعّلة' : 'NEW active'}</span>
               <span className="block text-[11px] text-neutral-500 mt-0.5">
-                {isAr ? 'تختفي تلقائياً بعد مدة الـ NEW' : 'Auto-removed after the NEW period'}
+                {isAr ? 'تختفي تلقائيًا بعد مدة الـ NEW' : 'Auto-removed after the NEW period'}
                 {item.addedAt ? ` (${new Date(item.addedAt).toLocaleDateString()})` : ''}
               </span>
             </>
           ) : (
             <span className="text-neutral-400">
-              {isAr ? 'ليست NEW حالياً' : 'Not NEW right now'}
+              {isAr ? 'ليست NEW حاليًا' : 'Not NEW right now'}
             </span>
           )}
         </div>
@@ -104,7 +104,7 @@ export const ItemFlagsBar: React.FC<ItemFlagsBarProps> = ({
             }}
             className="px-3 py-1.5 rounded-full border border-neutral-700 text-neutral-300 text-[11px] font-bold hover:border-red-400 hover:text-red-400"
           >
-            {isAr ? 'شيل الجديد' : 'Remove new'}
+            {isAr ? 'إزالة شارة الجديد' : 'Remove new'}
           </button>
         ) : (
           <button

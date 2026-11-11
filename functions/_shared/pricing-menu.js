@@ -218,16 +218,16 @@ export function normalizeMenu(menu) {
   // TWIN: src/utils/pricing-menu.ts — keep the rule identical.
   const spicyGroup = ensureGroup(
     'spicy',
-    { en: 'Make it Spicy', ar: 'خليه حار' },
+    { en: 'Make it Spicy', ar: 'اجعله حارًّا' },
     'single',
-    { en: 'Want to add some heat?', ar: 'هل تريد شطة؟' },
+    { en: 'Want to add some heat?', ar: 'هل تريد إضافة الحار؟' },
     true,
   );
   if (spicyGroup) {
     // A spice level is exactly one choice — never multi, even if an old
     // document stored something else.
     spicyGroup.selection = 'single';
-    // The customer title is a short question ("هل تريد شطة؟"). A blank
+    // The customer title is a short question ("هل تريد إضافة الحار؟"). A blank
     // prompt — or the first-shipped wording, superseded by the question
     // style — resets to the current default; an admin-edited prompt stays.
     // TWIN: src/utils/pricing-menu.ts — keep both wordings identical.
@@ -237,13 +237,13 @@ export function normalizeMenu(menu) {
       && (p.en || '').trim() === 'Add heat to your order — pick your spice level'
       && (p.ar || '').trim() === 'إضافة حار للطلب — اختر درجة الحار المناسبة';
     if (blank || superseded) {
-      spicyGroup.prompt = { en: 'Want to add some heat?', ar: 'هل تريد شطة؟' };
+      spicyGroup.prompt = { en: 'Want to add some heat?', ar: 'هل تريد إضافة الحار؟' };
     }
   }
   for (const lvl of [
-    { id: 'spicy-mild', name: { en: 'Mild', ar: 'خفيف' } },
-    { id: 'spicy-medium', name: { en: 'Medium', ar: 'متوسط' } },
-    { id: 'spicy-hot', name: { en: 'Extra Hot', ar: 'حار جداً' } },
+    { id: 'spicy-mild', name: { en: 'Mild', ar: 'حار خفيف' } },
+    { id: 'spicy-medium', name: { en: 'Medium', ar: 'حار متوسط' } },
+    { id: 'spicy-hot', name: { en: 'Extra Hot', ar: 'حار جدًا' } },
   ]) {
     ensureDef(lvl.id, lvl.name, 'spicy', 'addon');
   }

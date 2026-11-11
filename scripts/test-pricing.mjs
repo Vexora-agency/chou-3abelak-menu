@@ -149,7 +149,7 @@ ok(JSON.stringify(legacy.settings.featureGroups.map((g) => g.id)) === JSON.strin
 ok(['spicy-mild', 'spicy-medium', 'spicy-hot'].every((id) => legacy.settings.featureDefs.some((d) => d.id === id && d.groupId === 'spicy')), 'spicy levels live in the locked spicy section');
 const spicyGroup = legacy.settings.featureGroups.find((g) => g.id === 'spicy');
 ok(spicyGroup && spicyGroup.selection === 'single' && spicyGroup.name.en === 'Make it Spicy', 'locked spicy section is single-choice with default name');
-ok(spicyGroup && spicyGroup.prompt && spicyGroup.prompt.en === 'Want to add some heat?' && spicyGroup.prompt.ar === 'هل تريد شطة؟', 'locked spicy section asks the heat question');
+ok(spicyGroup && spicyGroup.prompt && spicyGroup.prompt.en === 'Want to add some heat?' && spicyGroup.prompt.ar === 'هل تريد إضافة الحار؟', 'locked spicy section asks the heat question');
 // First-shipped wording upgrades to the question style on normalize.
 {
   const migrated = normalizeMenu({
@@ -166,7 +166,7 @@ ok(spicyGroup && spicyGroup.prompt && spicyGroup.prompt.en === 'Want to add some
     },
   });
   const sg = migrated.settings.featureGroups.find((g) => g.id === 'spicy');
-  ok(sg && sg.selection === 'single' && sg.prompt.en === 'Want to add some heat?' && sg.prompt.ar === 'هل تريد شطة؟', 'old spicy wording upgrades to the question');
+  ok(sg && sg.selection === 'single' && sg.prompt.en === 'Want to add some heat?' && sg.prompt.ar === 'هل تريد إضافة الحار؟', 'old spicy wording upgrades to the question');
 }
 // Fixed global option: customizable items gain the 3 heat levels free,
 // fixed-price items stay untouched.

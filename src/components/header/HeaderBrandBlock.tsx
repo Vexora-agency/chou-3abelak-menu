@@ -141,7 +141,7 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
                 <span className="relative flex h-2 w-2" aria-hidden="true">
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-orange-400" />
                 </span>
-                <span>{isAr ? 'الطلبات متوقفة مؤقتاً' : 'Orders paused'}</span>
+                <span>{isAr ? 'الطلبات متوقفة مؤقتًا' : 'Orders paused'}</span>
               </>
             );
           }
@@ -151,7 +151,7 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
                 <span className="relative flex h-2 w-2" aria-hidden="true">
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
                 </span>
-                <span>{srvMsg || (isAr ? 'الطلب غير متاح حالياً' : 'Ordering unavailable')}</span>
+                <span>{srvMsg || (isAr ? 'الطلب غير متاح حاليًا' : 'Ordering unavailable')}</span>
               </>
             );
           }

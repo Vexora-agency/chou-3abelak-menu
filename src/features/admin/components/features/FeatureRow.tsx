@@ -116,7 +116,7 @@ export const FeatureRow: React.FC<FeatureRowProps> = ({
               onConfirm({
                 title: isAr ? `حذف "${featName}"؟` : `Delete "${featName}"?`,
                 body: isAr
-                  ? `مستخدمة في ${n === 1 ? 'صنف واحد' : `${n} أصناف`} — ستُحذف منها أيضاً.${
+                  ? `مستخدمة في ${n === 1 ? 'صنف واحد' : `${n} أصناف`} — ستُحذف منها أيضًا.${
                       doomed > 0
                         ? ` ${doomed === 1 ? 'صنف واحد' : `${doomed} أصناف`} سيفقد مقاسه الوحيد ويتحول لسعر ثابت بنفس السعر.`
                         : ''
@@ -135,7 +135,7 @@ export const FeatureRow: React.FC<FeatureRowProps> = ({
             onConfirm({
               title: isAr ? `حذف "${featName}"؟` : `Delete "${featName}"?`,
               body: isAr
-                ? 'غير مستخدمة حالياً. الحذف نهائي ولا يمكن التراجع عنه.'
+                ? 'غير مستخدمة حاليًا. الحذف نهائي ولا يمكن التراجع عنه.'
                 : 'Currently unused. Deletion is permanent and cannot be undone.',
               confirmText: isAr ? 'حذف' : 'Delete',
               action: () =>

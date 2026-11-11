@@ -50,8 +50,8 @@ export const ItemVariantsEditor: React.FC<ItemVariantsEditorProps> = ({
                 onChange({ ...item, variants: [], defaultVariant: undefined });
               }}
               className="btn-tactile shrink-0 w-6 h-6 rounded-full border border-neutral-700 text-neutral-500 hover:border-red-500 hover:text-red-400 hover:bg-red-900/30 transition-colors flex items-center justify-center"
-              title={isAr ? 'حذف القسم كاملاً' : 'Remove whole section'}
-              aria-label={isAr ? 'حذف القسم كاملاً' : 'Remove whole section'}
+              title={isAr ? 'حذف القسم كاملًا' : 'Remove whole section'}
+              aria-label={isAr ? 'حذف القسم كاملًا' : 'Remove whole section'}
             >
               <X size={12} strokeWidth={2.5} />
             </button>
@@ -134,7 +134,7 @@ export const ItemVariantsEditor: React.FC<ItemVariantsEditorProps> = ({
                 min={0}
                 value={v.price}
                 aria-label={isAr ? 'سعر الحجم' : 'Size price'}
-                title={isAr ? 'سعر هذا الحجم لهذا الصنف (فارغ أو 0 = مجاناً)' : 'This size’s price on this item (empty or 0 = free)'}
+                title={isAr ? 'سعر هذا الحجم لهذا الصنف (فارغ أو 0 = مجانًا)' : 'This size’s price on this item (empty or 0 = free)'}
                 onChange={(e) => {
                   const vs = [...(item.variants || [])];
                   vs[vi] = { ...vs[vi], price: Number(e.target.value) };
@@ -200,7 +200,7 @@ export const ItemVariantsEditor: React.FC<ItemVariantsEditorProps> = ({
           if (!sizesSection) {
             alert(
               isAr
-                ? 'لا يوجد قسم أحجام — أنشئ قسماً وسمّه أحجام (Sizes) في المكتبة أولاً'
+                ? 'لا يوجد قسم أحجام — أنشئ قسمًا وسمّه أحجام (Sizes) في المكتبة أولًا'
                 : 'No sizes section — create one and name it Sizes in the library first'
             );
             return;

@@ -38,7 +38,7 @@ export const FeatureSectionFooter: React.FC<FeatureSectionFooterProps> = ({
       </div>
       <p className="text-[11px] text-neutral-500">
         {isAr
-          ? 'السعر يتحدد لكل صنف على حدة (0 = مجاناً للإضافات).'
+          ? 'السعر يتحدد لكل صنف على حدة (0 = مجانًا للإضافات).'
           : 'Prices are set per item (0 = free for add-ons).'}
       </p>
     </>

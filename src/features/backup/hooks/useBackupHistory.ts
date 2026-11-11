@@ -18,19 +18,19 @@ interface BackupHistoryOptions {
 function analyzeErrorText(code: string, detail: string, isAr: boolean): string {
   switch (code) {
     case 'payload_too_large':
-      return isAr ? 'الملف أكبر من 2 ميغابايت. قسّمه أو قلّص حجمه وحاول مجدداً.' : 'The file is larger than 2 MB. Split it or shrink it and try again.';
+      return isAr ? 'الملف أكبر من 2 ميغابايت. قسّمه أو قلّص حجمه وحاول مجددًا.' : 'The file is larger than 2 MB. Split it or shrink it and try again.';
     case 'unsafe_json':
-      return isAr ? 'الملف مرفوض لأسباب أمنية (مفاتيح ممنوعة أو تداخل عميق جداً).' : 'File rejected for security reasons (forbidden keys or excessive nesting).';
+      return isAr ? 'الملف مرفوض لأسباب أمنية (مفاتيح ممنوعة أو تداخل عميق جدًا).' : 'File rejected for security reasons (forbidden keys or excessive nesting).';
     case 'bad_csv':
       return isAr ? 'ملف CSV غير صالح — تأكد أن أول سطر هو: category,item_id,name_en,name_ar,variant_id,variant_en,variant_ar,price,unit,available' : 'Invalid CSV file — the first row must be: category,item_id,name_en,name_ar,variant_id,variant_en,variant_ar,price,unit,available';
     case 'bad_json':
       return isAr ? 'ملف JSON غير صالح — تأكد من الصيغة (أقواس وفواصل سليمة).' : 'Invalid JSON file — check the syntax (balanced brackets and commas).';
     case 'validation_error':
-      return detail || (isAr ? 'تعذر فحص الملف. تحقق من الصيغة وحاول مجدداً.' : 'Could not analyze the file. Check the format and try again.');
+      return detail || (isAr ? 'تعذر فحص الملف. تحقق من الصيغة وحاول مجددًا.' : 'Could not analyze the file. Check the format and try again.');
     case 'rate_limited':
-      return isAr ? 'محاولات كثيرة — انتظر قليلاً وحاول مجدداً.' : 'Too many attempts — wait a while and try again.';
+      return isAr ? 'محاولات كثيرة — انتظر قليلًا وحاول مجددًا.' : 'Too many attempts — wait a while and try again.';
     default:
-      return isAr ? 'تعذر فحص الملف. تحقق من الصيغة وحاول مجدداً.' : 'Could not analyze the file. Check the format and try again.';
+      return isAr ? 'تعذر فحص الملف. تحقق من الصيغة وحاول مجددًا.' : 'Could not analyze the file. Check the format and try again.';
   }
 }
 
@@ -211,14 +211,14 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      alert(isAr ? 'تعذر التنزيل. حاول مجدداً.' : 'Could not download. Please try again.');
+      alert(isAr ? 'تعذر التنزيل. حاول مجددًا.' : 'Could not download. Please try again.');
     }
   }, [adminFetch, isAr, lang]);
 
   const onAnalyzeImport = useCallback(async (file: File) => {
     // Client-side guard with a specific message (the server enforces the same 2 MB limit).
     if (file.size > 2 * 1024 * 1024) {
-      alert(isAr ? 'الملف أكبر من 2 ميغابايت. قسّمه أو قلّص حجمه وحاول مجدداً.' : 'The file is larger than 2 MB. Split it or shrink it and try again.');
+      alert(isAr ? 'الملف أكبر من 2 ميغابايت. قسّمه أو قلّص حجمه وحاول مجددًا.' : 'The file is larger than 2 MB. Split it or shrink it and try again.');
       throw new Error('analyze_failed');
     }
     const ext = (file.name.split('.').pop() || '').toLowerCase();
@@ -238,7 +238,7 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
       return d as unknown as ImportAnalysis;
     } catch (e) {
       if (e instanceof Error && e.message === 'analyze_failed') throw e;
-      alert(isAr ? 'تعذر فحص الملف. تحقق من الصيغة وحاول مجدداً.' : 'Could not analyze the file. Check the format and try again.');
+      alert(isAr ? 'تعذر فحص الملف. تحقق من الصيغة وحاول مجددًا.' : 'Could not analyze the file. Check the format and try again.');
       throw new Error('analyze_failed', { cause: e });
     }
   }, [adminFetch, isAr, lang]);
@@ -277,7 +277,7 @@ export function useBackupHistory({ isAr, lang, activeTab, adminFetch, savePaused
       if (!r.ok) throw new Error();
       await fetchBackupData();
     } catch {
-      alert(isAr ? 'تعذر الحذف النهائي. حاول مجدداً.' : 'Could not delete. Please try again.');
+      alert(isAr ? 'تعذر الحذف النهائي. حاول مجددًا.' : 'Could not delete. Please try again.');
     }
   }, [adminFetch, fetchBackupData, isAr]);
 

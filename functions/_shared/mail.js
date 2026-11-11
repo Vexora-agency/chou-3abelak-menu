@@ -108,7 +108,7 @@ export function confirmEmailContent(confirmUrl, siteName) {
   <tr><td class="em-bgw" bgcolor="#FFFFFF" align="center" style="padding:20px 28px 8px;">${btn('Confirm email address')}</td></tr>
   <tr><td class="em-bgw" bgcolor="#FFFFFF" dir="rtl" style="padding:18px 28px 6px;text-align:right;">
     <div class="em-tink" style="font-size:22px;line-height:28px;font-weight:bold;color:#0A0A0A;">أكّد بريدك</div>
-    <div class="em-tgrey" style="font-size:15px;line-height:22px;color:#5A5A5A;margin-top:8px;">انقر الزر أدناه لتأكيد هذا العنوان لاستلام التقارير الشهرية من ${esc(name)}.</div>
+    <div class="em-tgrey" style="font-size:15px;line-height:22px;color:#5A5A5A;margin-top:8px;">انقر زر التأكيد أدناه لتأكيد هذا العنوان لاستلام التقارير الشهرية من ${esc(name)}.</div>
   </td></tr>
   <tr><td class="em-bgw" bgcolor="#FFFFFF" align="center" dir="rtl" style="padding:20px 28px 8px;">${btn('تأكيد البريد الإلكتروني')}</td></tr>
   <tr><td class="em-bgw em-tmut" bgcolor="#FFFFFF" align="center" style="padding:14px 28px 28px;font-size:12px;color:#8A8A8A;">This link expires in 48 hours. / تنتهي صلاحية الرابط خلال 48 ساعة.</td></tr>

@@ -31,7 +31,7 @@ export const OnlineOrderingSwitch: React.FC<OnlineOrderingSwitchProps> = ({
     if (busy) return;
     if (!enabled && !hasWhatsapp) {
       setErr(isAr
-        ? 'أضف رقم واتساب دولياً بدون صفر البداية (قسم الهوية، مثال: 96170123456) أولاً — لا يمكن التفعيل بدونه.'
+        ? 'أضف رقم واتساب دوليًا بدون صفر البداية (قسم الهوية، مثال: 96170123456) أولًا — لا يمكن التفعيل بدونه.'
         : 'Add an international WhatsApp number with no leading zero (Identity section, e.g. 96170123456) first — ordering cannot be enabled without it.');
       return;
     }
@@ -57,10 +57,10 @@ export const OnlineOrderingSwitch: React.FC<OnlineOrderingSwitchProps> = ({
     } catch {
       setErr(
         kind === 'session'
-          ? (isAr ? 'انتهت الجلسة. سجل الدخول مجدداً ثم حاول.' : 'Session expired. Log in again, then retry.')
+          ? (isAr ? 'انتهت الجلسة. سجل الدخول مجددًا ثم حاول.' : 'Session expired. Log in again, then retry.')
           : kind === 'whatsapp'
           ? (isAr ? 'تعذر التفعيل — تحقق من الرقمين في قسم الهوية: هاتف صالح (مثال: +96170123456) ورقم واتساب دولي بدون صفر البداية (مثال: 96170123456).' : 'Could not enable — check both numbers in Identity: a callable phone (e.g. +96170123456) and an international WhatsApp number with no leading zero (e.g. 96170123456).')
-          : (isAr ? 'تعذر الحفظ. حاول مجدداً.' : 'Could not save. Please try again.')
+          : (isAr ? 'تعذر الحفظ. حاول مجددًا.' : 'Could not save. Please try again.')
       );
     } finally {
       setBusy(false);
@@ -75,14 +75,14 @@ export const OnlineOrderingSwitch: React.FC<OnlineOrderingSwitchProps> = ({
         aria-checked={enabled}
         disabled={busy}
         onClick={() => void handleToggle()}
-        aria-label={isAr ? 'تشغيل أو إيقاف الطلب أونلاين' : 'Turn online ordering on or off'}
+        aria-label={isAr ? 'تشغيل أو إيقاف الطلب عبر الإنترنت' : 'Turn online ordering on or off'}
         className="w-full flex items-center gap-3 min-h-[44px] text-start rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60"
       >
         <span className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center ${enabled ? 'bg-green-500/15 text-green-400' : 'bg-neutral-800 text-neutral-400'}`}>
           <Power size={18} />
         </span>
         <span className="min-w-0 flex-1">
-          <b className="block text-xs font-extrabold">{isAr ? 'الطلب أونلاين' : 'Online ordering'}</b>
+          <b className="block text-xs font-extrabold">{isAr ? 'الطلب عبر الإنترنت' : 'Online ordering'}</b>
           <span className="block text-[11px] text-neutral-500 mt-0.5">
             {enabled
               ? (isAr ? 'يستطيع العملاء إتمام الطلب.' : 'Customers can check out.')
@@ -98,7 +98,7 @@ export const OnlineOrderingSwitch: React.FC<OnlineOrderingSwitchProps> = ({
       </button>
       {!enabled && !hasWhatsapp && (
         <p className="mt-2.5 text-xs font-bold text-amber-300">
-          {isAr ? 'أضف رقم واتساب دولياً بدون صفر البداية (الهوية، مثال: ' : 'Add an international WhatsApp number with no leading zero (Identity, e.g. '}<span dir="ltr" className="tabular-nums">96170123456</span>{isAr ? ') — بدونه لا يمكن التفعيل.' : ') — enabling requires it.'}
+          {isAr ? 'أضف رقم واتساب دوليًا بدون صفر البداية (الهوية، مثال: ' : 'Add an international WhatsApp number with no leading zero (Identity, e.g. '}<span dir="ltr" className="tabular-nums">96170123456</span>{isAr ? ') — بدونه لا يمكن التفعيل.' : ') — enabling requires it.'}
         </p>
       )}
       {err && (

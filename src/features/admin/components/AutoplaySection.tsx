@@ -40,10 +40,10 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
       <SettingsGroupHeader
-        title={isAr ? 'تحريك قسم المميز تلقائياً' : 'Featured Carousel Autoplay'}
+        title={isAr ? 'تحريك قسم المميز تلقائيًا' : 'Featured Carousel Autoplay'}
         subtitle={on
-          ? (isAr ? 'يتحرك تلقائياً — يتوقف عند اللمس' : 'Auto-slides — pauses on touch')
-          : (isAr ? 'متوقف — يتحرك يدوياً فقط' : 'Off — manual scroll only')}
+          ? (isAr ? 'يتحرك تلقائيًا — يتوقف عند اللمس' : 'Auto-slides — pauses on touch')
+          : (isAr ? 'متوقف — يتحرك يدويًا فقط' : 'Off — manual scroll only')}
         lang={lang}
         collapsed={collapsed}
         onToggle={() => onToggleCollapse?.()}
@@ -129,7 +129,7 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
             {demoClone && (
               <p className="px-4 pb-3 -mt-1 text-center text-[10px] text-neutral-500">
                 {isAr
-                  ? 'عرض تجريبي لكرتين (منها الكارت الأصفر) — علّم وجبة ثانية كمميزة لرؤية الحركة الحقيقية'
+                  ? 'عرض تجريبي لبطاقتين (منها البطاقة الصفراء) — علّم صنفًا ثانيًا كمميز لرؤية الحركة الحقيقية'
                   : 'Demoing two cards (incl. the yellow one) — star a second item as Featured for the real motion'}
               </p>
             )}
@@ -138,7 +138,7 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
           <div className="rounded-xl border border-dashed border-neutral-700 px-4 py-3 text-center">
             <p className="text-[11px] text-neutral-500">
               {isAr
-                ? 'لا توجد وجبات مميزة بعد — علّم أي وجبة بـ «مميزة» من تبويب الوجبات لتراها هنا'
+                ? 'لا توجد أصناف مميزة بعد — علّم أي صنف بـ «مميز» من تبويب الأصناف لتراه هنا'
                 : 'No featured items yet — star any item as Featured in the Items tab to preview it here'}
             </p>
           </div>

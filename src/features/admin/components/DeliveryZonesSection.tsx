@@ -130,7 +130,7 @@ export const DeliveryZonesSection: React.FC<DeliveryZonesSectionProps> = ({
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4">
       <SettingsGroupHeader
         title={isAr ? 'مناطق التوصيل' : 'Delivery zones'}
-        subtitle={isAr ? 'حدد الدول والمحافظات التي توصل إليها — أو اترك التوصيل مفتوحاً للجميع' : 'Choose which countries and governorates you deliver to — or keep delivery open to everyone'}
+        subtitle={isAr ? 'حدد الدول والمحافظات التي توصل إليها — أو اترك التوصيل مفتوحًا للجميع' : 'Choose which countries and governorates you deliver to — or keep delivery open to everyone'}
         lang={lang}
         collapsed={collapsed}
         onToggle={() => onToggleCollapse?.()}
@@ -247,7 +247,7 @@ export const DeliveryZonesSection: React.FC<DeliveryZonesSectionProps> = ({
                 {z.countries.length === 0 && (
                   <p className="text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1.5">
                     {isAr
-                      ? 'اختر دولة واحدة على الأقل، أو ارجع إلى «كل الدول» — بدون دول مختارةة لن يصل أي طلب توصيل.'
+                      ? 'اختر دولة واحدة على الأقل، أو ارجع إلى «كل الدول» — بدون دول مختارة لن يصل أي طلب توصيل.'
                       : 'Pick at least one country, or switch back to “Everywhere” — with no countries selected, no delivery order can go through.'}
                   </p>
                 )}
@@ -290,7 +290,7 @@ export const DeliveryZonesSection: React.FC<DeliveryZonesSectionProps> = ({
                           </button>
                           <span className="text-[11px] text-neutral-500">
                             {isAr
-                              ? 'الدولة مفتوحة كلها افتراضياً — شيل الصح عن المحافظات التي لا توصل إليها.'
+                              ? 'الدولة مفتوحة كلها افتراضيًا — أزل التحديد عن المحافظات التي لا توصّل إليها.'
                               : 'The whole country is open by default — untick the regions you don’t serve.'}
                           </span>
                         </div>
@@ -301,7 +301,7 @@ export const DeliveryZonesSection: React.FC<DeliveryZonesSectionProps> = ({
                           </p>
                         ) : !list ? (
                           <p className="text-[11px] text-neutral-500 py-1">
-                            {isAr ? 'لا توجد تقسيمات مسجلةة لهذه الدولة — تُعامل كاملة مفتوحة.' : 'No recorded subdivisions for this country — treated as fully open.'}
+                            {isAr ? 'لا توجد تقسيمات مسجلة لهذه الدولة — تُعامل كاملة مفتوحة.' : 'No recorded subdivisions for this country — treated as fully open.'}
                           </p>
                         ) : (
                           <div className="max-h-56 overflow-y-auto rounded-lg border border-neutral-800 divide-y divide-neutral-800/70">

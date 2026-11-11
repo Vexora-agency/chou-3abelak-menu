@@ -38,9 +38,9 @@ export interface SeasonalThemeDef {
 export const SEASONAL_REGISTRY: Record<Exclude<SeasonalTheme, 'off'>, SeasonalThemeDef> = {
   christmas: {
     id: 'christmas',
-    name: { en: 'Christmas', ar: 'الكريسماس' },
+    name: { en: 'Christmas', ar: 'عيد الميلاد' },
     greeting: {
-      title: { en: '🎄 Christmas is here!', ar: '🎄 الكريسماس حضر!' },
+      title: { en: '🎄 Christmas is here!', ar: '🎄 حلّ عيد الميلاد!' },
       note: {
         en: 'This shows in festive seasons only',
         ar: 'يظهر هذا في المواسم فقط',

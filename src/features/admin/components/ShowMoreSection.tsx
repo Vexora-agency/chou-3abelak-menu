@@ -86,7 +86,7 @@ export const ShowMoreSection: React.FC<ShowMoreSectionProps> = ({
       <SettingsGroupHeader
         title={isAr ? 'عرض المزيد في الأقسام' : 'Section Show-More'}
         subtitle={isAr
-          ? 'الأقسام الطويلة تُطوى، والزر يكشف دفعات. الزر يظهر فقط عندما يستحق الباقي ضغطة (أكثر من 4). على الشاشات الكبيرة تُقرَّب الأعداد لأقرب صف كامل تلقائيًا.'
+          ? 'الأقسام الطويلة تُطوى، والزر يعرض دفعات إضافية. يظهر الزر فقط عندما يتجاوز المتبقي 4 أصناف. على الشاشات الكبيرة تُقرَّب الأعداد لأقرب صف كامل تلقائيًا.'
           : 'Long sections collapse; the button reveals batches. It appears only when the rest is worth a tap (more than 4). On wide screens counts snap up to full grid rows automatically.'}
         lang={lang}
         collapsed={collapsed}

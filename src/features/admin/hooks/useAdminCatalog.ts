@@ -63,9 +63,9 @@ export function useAdminCatalog({
       if (!res.ok || !isRecord(data) || !data.ok) {
         if (res.status === 409) {
           await refreshMenuFromServer();
-          alert(isAr ? 'تغيّرت القائمة أثناء الحذف. أُعيد التحميل — حاول مجدداً.' : 'The menu changed during delete. Reloaded — please retry.');
+          alert(isAr ? 'تغيّرت القائمة أثناء الحذف. أُعيد التحميل — حاول مجددًا.' : 'The menu changed during delete. Reloaded — please retry.');
         } else {
-          alert(isAr ? 'تعذر الحذف. حاول مجدداً.' : 'Could not delete. Please try again.');
+          alert(isAr ? 'تعذر الحذف. حاول مجددًا.' : 'Could not delete. Please try again.');
         }
         return;
       }
@@ -76,7 +76,7 @@ export function useAdminCatalog({
         () => { void handleRestoreTrashByIdLocal(str((data as { trashId?: unknown }).trashId)); }
       );
     } catch {
-      alert(isAr ? 'تعذر الحذف. حاول مجدداً.' : 'Could not delete. Please try again.');
+      alert(isAr ? 'تعذر الحذف. حاول مجددًا.' : 'Could not delete. Please try again.');
     }
   };
 
@@ -84,28 +84,28 @@ export function useAdminCatalog({
   const handleSaveItemModal = () => {
     if (!editingItem) return;
     if (!editingItem.name.en.trim() && !editingItem.name.ar.trim()) {
-      alert(isAr ? 'يرجى إدخال اسم الوجبة' : 'Item name is required');
+      alert(isAr ? 'يرجى إدخال اسم الصنف' : 'Item name is required');
       return;
     }
     // The server rejects unknown/empty categoryId with a generic 400 — catch
     // it here with a field-level message instead of a cryptic save failure.
     if (!editingItem.categoryId || !(menu.categories || []).some((c) => c.id === editingItem.categoryId)) {
-      alert(isAr ? 'اختر قسماً موجوداً للوجبة قبل الحفظ' : 'Pick an existing category for this item before saving');
+      alert(isAr ? 'اختر قسمًا موجودًا للصنف قبل الحفظ' : 'Pick an existing category for this item before saving');
       return;
     }
     const rawPricing = editingItem.pricing && typeof editingItem.pricing === 'object'
       ? editingItem.pricing
       : { unit: 'pc' as const, minQty: 1, step: 1, maxQty: 50, showUnit: false };
     if (!Number.isInteger(rawPricing.minQty) || rawPricing.minQty < 1) {
-      alert(isAr ? 'أقل كمية يجب أن تكون عدداً صحيحاً ≥ 1' : 'Min quantity must be an integer ≥ 1');
+      alert(isAr ? 'أقل كمية يجب أن تكون عددًا صحيحًا ≥ 1' : 'Min quantity must be an integer ≥ 1');
       return;
     }
     if (!Number.isInteger(rawPricing.step) || rawPricing.step < 1) {
-      alert(isAr ? 'الخطوة يجب أن تكون عدداً صحيحاً ≥ 1' : 'Step must be an integer ≥ 1');
+      alert(isAr ? 'الخطوة يجب أن تكون عددًا صحيحًا ≥ 1' : 'Step must be an integer ≥ 1');
       return;
     }
     if (!Number.isInteger(rawPricing.maxQty) || rawPricing.maxQty < rawPricing.minQty) {
-      alert(isAr ? 'أقصى كمية يجب أن تكون عدداً صحيحاً ≥ أقل كمية' : 'Max quantity must be an integer ≥ min quantity');
+      alert(isAr ? 'أقصى كمية يجب أن تكون عددًا صحيحًا ≥ أقل كمية' : 'Max quantity must be an integer ≥ min quantity');
       return;
     }
     // Sizes and add-ons: feature must exist in the library and be unique
@@ -120,7 +120,7 @@ export function useAdminCatalog({
       seenV.add(v.featureId);
       // Empty (cleared) or 0 = free; negative is rejected.
       if (typeof v.price !== 'number' || !Number.isFinite(v.price) || v.price < 0) {
-        alert(isAr ? 'سعر الحجم يجب أن يكون رقماً ≥ 0 (فارغ أو 0 = مجاناً)' : 'Size price must be a number ≥ 0 (empty or 0 = free)');
+        alert(isAr ? 'سعر الحجم يجب أن يكون رقمًا ≥ 0 (فارغ أو 0 = مجانًا)' : 'Size price must be a number ≥ 0 (empty or 0 = free)');
         return;
       }
     }
@@ -133,7 +133,7 @@ export function useAdminCatalog({
       }
       seenA.add(a.featureId);
       if (typeof a.price !== 'number' || !Number.isFinite(a.price) || a.price < 0) {
-        alert(isAr ? 'سعر الإضافة يجب أن يكون رقماً ≥ 0 (0 = مجاناً)' : 'Add-on price must be a number ≥ 0 (0 = free)');
+        alert(isAr ? 'سعر الإضافة يجب أن يكون رقمًا ≥ 0 (0 = مجانًا)' : 'Add-on price must be a number ≥ 0 (0 = free)');
         return;
       }
     }
@@ -141,7 +141,7 @@ export function useAdminCatalog({
       // Empty = free (saved as 0 below); only negative/NaN is rejected.
       const rp = rawPricing.price;
       if (rp !== undefined && (typeof rp !== 'number' || !Number.isFinite(rp) || rp < 0)) {
-        alert(isAr ? 'السعر لا يمكن أن يكون سالباً (اتركه فارغاً للمجاني)' : 'Price can’t be negative (leave it empty for free)');
+        alert(isAr ? 'السعر لا يمكن أن يكون سالبًا (اتركه فارغًا للمجاني)' : 'Price can’t be negative (leave it empty for free)');
         return;
       }
     }
@@ -215,9 +215,9 @@ export function useAdminCatalog({
       if (!res.ok || !isRecord(data) || !data.ok) {
         if (res.status === 409) {
           await refreshMenuFromServer();
-          alert(isAr ? 'تغيّرت القائمة أثناء الحذف. أُعيد التحميل — حاول مجدداً.' : 'The menu changed during delete. Reloaded — please retry.');
+          alert(isAr ? 'تغيّرت القائمة أثناء الحذف. أُعيد التحميل — حاول مجددًا.' : 'The menu changed during delete. Reloaded — please retry.');
         } else {
-          alert(isAr ? 'تعذر الحذف. حاول مجدداً.' : 'Could not delete. Please try again.');
+          alert(isAr ? 'تعذر الحذف. حاول مجددًا.' : 'Could not delete. Please try again.');
         }
         return;
       }
@@ -228,7 +228,7 @@ export function useAdminCatalog({
         () => { void handleRestoreTrashByIdLocal(str((data as { trashId?: unknown }).trashId)); }
       );
     } catch {
-      alert(isAr ? 'تعذر الحذف. حاول مجدداً.' : 'Could not delete. Please try again.');
+      alert(isAr ? 'تعذر الحذف. حاول مجددًا.' : 'Could not delete. Please try again.');
     }
   };
 

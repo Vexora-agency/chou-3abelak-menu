@@ -243,7 +243,7 @@ export const ImageRecompressSection: React.FC<ImageRecompressSectionProps> = ({
             {status === 'rate_limited' && (
               <span className="text-[11px] font-bold text-amber-300" role="alert">
                 {isAr
-                  ? `توقف حد الرفع عند ${done} من ${total} — استنى ~10 دقايق من غير رفع ثم استكمل (ما تم محفوظ).`
+                  ? `توقف حد الرفع عند ${done} من ${total} — انتظر نحو 10 دقائق دون رفع ثم استكمل (وما تمّ حفظه محفوظ).`
                   : `Upload limit hit at ${done} of ${total} — wait ~10 min without uploading, then resume (progress kept).`}
               </span>
             )}

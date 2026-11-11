@@ -288,7 +288,7 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
               {tiers.length > 0 && (
                 <div className="rounded-xl border border-neutral-800 overflow-hidden">
                   <div className="px-3 py-2 bg-neutral-900 text-[10px] font-black text-neutral-400 uppercase tracking-wide">
-                    {isAr ? 'معاينة حية — ماذا سيدفع الزبون؟' : 'Live preview — what will customers pay?'}
+                    {isAr ? 'معاينة حية — ماذا سيدفع العميل؟' : 'Live preview — what will customers pay?'}
                   </div>
                   {tiers.map((t, i) => (
                     <div key={`pv-${i}`} className={`flex items-center justify-between px-3 py-1.5 text-[11px] ${i % 2 ? 'bg-black' : 'bg-neutral-900/50'}`}>
@@ -305,7 +305,7 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
               {tiers.length > 0 && (
                 <div className="rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/5 px-3 py-2.5 space-y-2">
                   <label className="block text-[11px] font-bold text-neutral-300">
-                    {isAr ? 'جرّب: لو الزبون على بعد…' : 'Try it: if the customer is…'}
+                    {isAr ? 'جرّب: إذا كان العميل على بعد…' : 'Try it: if the customer is…'}
                   </label>
                   <div className="flex items-center gap-3">
                     <input

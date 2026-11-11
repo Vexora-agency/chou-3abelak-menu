@@ -697,7 +697,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                     </p>
                     {typeof o.parentNumber === 'number' && (o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && (
                       <p className={`mt-1 text-[11px] font-bold ${darkMode ? 'text-amber-300' : 'text-amber-700'}`} dir="auto">
-                        {isAr ? `🔗 سيصل مع الطلب #${o.parentNumber} — نفس التوصيلة` : `🔗 Arriving with order #${o.parentNumber} — same delivery`}
+                        {isAr ? `🔗 سيصل مع الطلب #${o.parentNumber} — نفس عملية التوصيل` : `🔗 Arriving with order #${o.parentNumber} — same delivery`}
                       </p>
                     )}
                     {/* Top-aligned (not centered): the received button carries
@@ -725,7 +725,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                         }`}
                       >
                         <ExternalLink size={13} />
-                        {isAr ? 'تتبع مباشر' : 'Track live'}
+                        {isAr ? 'تتبع الطلب' : 'Track live'}
                       </a>
                       {(o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && (
                         <ReceivedButton
@@ -738,14 +738,14 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                           waitingHint={o.status === 'new' ? (
                             inCancelWindow ? (
                               isAr ? (
-                                <>سيتم استلام طلبك بعد انتهاء موعد إلغاء الطلب (المتبقي <span dir="ltr" className="tabular-nums">{formatMMSS(cancelMs ?? 0)}</span>)</>
+                                <>سيُقبَل طلبك بعد انتهاء مهلة الإلغاء (المتبقي <span dir="ltr" className="tabular-nums">{formatMMSS(cancelMs ?? 0)}</span>)</>
                               ) : (
                                 <>Your order will be accepted after the cancellation window ends (<span dir="ltr" className="tabular-nums">{formatMMSS(cancelMs ?? 0)}</span> left)</>
                               )
                             ) : undefined
                           ) : locked ? (
                             isAr ? (
-                              <>تم استلام طلبك وجارٍ التجهيز الآن — الوصول المتوقع {etaText ? <span dir="ltr" className="tabular-nums">{etaText}</span> : null}<br />سيتم تفعيل زر التأكيد بعد التوصيل (المتبقي <span dir="ltr" className="tabular-nums">{formatMMSS(Math.max(0, Date.parse(o.receivableAt as string) - displayNowMs))}</span>)</>
+                              <>تم قبول طلبك وهو قيد التحضير الآن — الوصول المتوقع {etaText ? <span dir="ltr" className="tabular-nums">{etaText}</span> : null}<br />سيتم تفعيل زر التأكيد بعد التوصيل (المتبقي <span dir="ltr" className="tabular-nums">{formatMMSS(Math.max(0, Date.parse(o.receivableAt as string) - displayNowMs))}</span>)</>
                             ) : (
                               <>Your order is accepted and being prepared — arriving around {etaText ? <span dir="ltr" className="tabular-nums">{etaText}</span> : null}<br />Confirm unlocks after delivery (<span dir="ltr" className="tabular-nums">{formatMMSS(Math.max(0, Date.parse(o.receivableAt as string) - displayNowMs))}</span> left)</>
                             )

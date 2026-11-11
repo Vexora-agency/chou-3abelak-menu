@@ -78,11 +78,11 @@ const DAY_MAP = { sat: 'sat', sun: 'sun', mon: 'mon', tue: 'tue', wed: 'wed', th
 const MSG = {
   paused: {
     en: 'We are not taking orders right now. Please try again soon.',
-    ar: 'لا نستقبل الطلبات حالياً. حاول مرة أخرى بعد قليل.',
+    ar: 'لا نستقبل الطلبات حاليًا. يرجى المحاولة مجددًا بعد قليل.',
   },
   disabled: {
     en: 'Online ordering is currently disabled.',
-    ar: 'الطلب أونلاين غير متاح حالياً.',
+    ar: 'الطلب عبر الإنترنت غير متاح حاليًا.',
   },
   closedWithTime: (hour, minute) => ({
     en: `We are closed now. We open at ${fmt12h(hour, minute, 'en')}.`,

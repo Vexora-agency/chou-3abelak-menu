@@ -86,7 +86,7 @@ export const SentrySection: React.FC<SentrySectionProps> = ({ lang, adminFetch, 
       } else {
         setResult(
           isAr
-            ? `تعذر إنشاء الحدث (SDK نشط: ${active ? 'نعم' : 'لا'}) — ابعتلي سكرين شوت لتبويب Console بعد الضغط (F12).`
+            ? `تعذر إنشاء الحدث (SDK نشط: ${active ? 'نعم' : 'لا'}) — أرسل لقطة شاشة لتبويب Console بعد الضغط (F12).`
             : `Could not create the event (SDK active: ${active ? 'yes' : 'no'}) — send me a Console tab screenshot after pressing (F12).`
         );
       }

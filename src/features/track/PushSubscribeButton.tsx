@@ -91,7 +91,7 @@ export const PushSubscribeButton: React.FC<PushSubscribeButtonProps> = ({
     return (
       <div className="flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-green-500/10 border border-green-500/40 text-green-500 text-xs font-extrabold">
         <BellRing size={15} />
-        {isAr ? 'سنُعلمك بكل جديد في طلبك' : 'We will ping you on every update'}
+        {isAr ? 'سنُعلمك بكل تحديث في طلبك' : 'We will ping you on every update'}
       </div>
     );
   }
@@ -110,7 +110,7 @@ export const PushSubscribeButton: React.FC<PushSubscribeButtonProps> = ({
     state === 'denied'
       ? isAr ? 'التنبيهات محظورة في المتصفح — فعّلها من الإعدادات.' : 'Notifications are blocked in the browser — enable them in settings.'
       : state === 'unsupported'
-        ? isAr ? 'متصفحك لا يدعم التنبيهات — صفحة التتبع تتحدث تلقائيًا.' : 'This browser cannot notify — the tracking page updates itself.'
+        ? isAr ? 'متصفحك لا يدعم التنبيهات — يتم تحديث صفحة التتبع تلقائيًا.' : 'This browser cannot notify — the tracking page updates itself.'
         : state === 'error'
           ? isAr ? 'تعذر التفعيل — حاول مجددًا.' : 'Could not enable — try again.'
           : null;

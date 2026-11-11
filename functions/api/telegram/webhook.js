@@ -148,7 +148,7 @@ export async function onRequest(context) {
           await reply(chatId, 'Linking failed on our side. Please generate a new link from the admin dashboard and try again.');
           return jsonNoStore({ ok: true });
         }
-        await reply(chatId, '✅ اتربط كدليفري — هتوصلك نسخة من كل طلب جديد هنا.\n✅ Linked as delivery — you will receive a copy of every new order here.');
+        await reply(chatId, '✅ تم ربط هذا الجهاز كمندوب توصيل — ستصلك نسخة من كل طلب جديد هنا.\n✅ Linked as delivery — you will receive a copy of every new order here.');
         return jsonNoStore({ ok: true });
       }
       try {
@@ -181,7 +181,7 @@ export async function onRequest(context) {
         }
       } catch {}
       if (isDeliveryChat) {
-        await reply(chatId, '✅ اتربط كدليفري — هتوصلك نسخة من كل طلب جديد هنا.\n✅ Linked as delivery — you will receive a copy of every new order here.');
+        await reply(chatId, '✅ تم ربط هذا الجهاز كمندوب توصيل — ستصلك نسخة من كل طلب جديد هنا.\n✅ Linked as delivery — you will receive a copy of every new order here.');
       } else {
         // Generic pointer for unknown chats: pairing links are issued from
         // the authenticated dashboard only (never guessable, never via chat).

@@ -364,7 +364,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
               })()}
               {!item.available && (
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-neutral-600 text-white">
-                  {isAr ? 'نفذت الكمية' : 'Sold out'}
+                  {isAr ? 'نفدت الكمية' : 'Sold out'}
                 </span>
               )}
             </div>
@@ -519,7 +519,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
               </>
           ) : (
             <div className={`text-center py-2 text-sm font-semibold ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
-              {isAr ? 'هذا العنصر غير متوفر حالياً' : 'This item is currently unavailable'}
+              {isAr ? 'هذا العنصر غير متوفر حاليًا' : 'This item is currently unavailable'}
             </div>
           )}
 

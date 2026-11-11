@@ -312,7 +312,7 @@ function restoreFetch() { globalThis.fetch = realFetch; }
   const trk = 'https://shop.example/?track=77&t=' + 'd'.repeat(32);
   const ar = buildOrderEmail({ event: 'receipt_check', order: { number: 77, total: 100000 }, storeName: 'متجر الاختبار', currency: 'ل.ل', lang: 'ar', trackUrl: trk });
   ok(ar.html.includes('dir="rtl"'), 'receipt_check ar: rtl root');
-  ok(ar.html.includes('هل وصلك طلبك؟'), 'receipt_check ar: Arabic title');
+  ok(ar.html.includes('هل استلمت طلبك؟'), 'receipt_check ar: Arabic title');
   ok(ar.text.includes('77'), 'receipt_check ar: plain-text fallback');
   ok(ar.html.includes('https://shop.example/?track=77&amp;t='), 'receipt_check ar: track button links the order');
   const en = buildOrderEmail({ event: 'receipt_check', order: { number: 77, total: 100000 }, storeName: 'Test Store', currency: 'LBP', lang: 'en', trackUrl: trk });

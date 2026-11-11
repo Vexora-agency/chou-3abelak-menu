@@ -229,7 +229,7 @@ export function formatEtaDay(iso, lang, timeZone, nowMs) {
     const tomorrowKey = dayKeyInZone(now + 24 * 60 * 60 * 1000, tz);
     // A 24h jump can skip a day across a DST fall-back; walk forward/back a
     // second day to be sure before falling through to the date form.
-    if (etaDay === tomorrowKey) return lang === 'ar' ? 'غداً' : 'Tomorrow';
+    if (etaDay === tomorrowKey) return lang === 'ar' ? 'غدًا' : 'Tomorrow';
     if (tomorrowKey !== today) {
       const dayAfter = dayKeyInZone(now + 2 * 24 * 60 * 60 * 1000, tz);
       if (etaDay === dayAfter && dayAfter !== tomorrowKey && dayAfter !== today) {

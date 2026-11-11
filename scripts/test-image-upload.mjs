@@ -303,13 +303,13 @@ async function runUpload(env, bytes, headers) {
   const env = makeEnv();
   let lastStatus = 0;
   let lastBody = null;
-  for (let i = 0; i < 61; i += 1) {
+  for (let i = 0; i < 121; i += 1) {
     const result = await runUpload(env, PNG_1X1, { 'Content-Type': 'image/png' });
     lastStatus = result.response.status;
     lastBody = result.body;
   }
-  ok(lastStatus === 429 && lastBody && lastBody.error === 'rate_limited', 'rate: 61st upload in 10 minutes is 429');
-  ok(env.MENU_IMAGES.__store.size === 60, 'rate: only the allowed uploads were stored');
+  ok(lastStatus === 429 && lastBody && lastBody.error === 'rate_limited', 'rate: 121st upload in 10 minutes is 429');
+  ok(env.MENU_IMAGES.__store.size === 120, 'rate: only the allowed uploads were stored');
 }
 
 // ---------------------------------------------------------------- serving

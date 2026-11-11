@@ -23,7 +23,7 @@ import { hitRateLimit } from '../../_shared/ratelimit.js';
 import { analyzeImage, IMAGE_KEY_RE, MAX_UPLOAD_BYTES } from '../../_shared/image-meta.js';
 import { markImageGcPending } from '../../_shared/image-gc.js';
 
-const UPLOAD_RATE_MAX = 60;
+const UPLOAD_RATE_MAX = 120;
 const UPLOAD_RATE_WINDOW = 10 * 60;
 const DELETE_RATE_MAX = 30;
 const DELETE_RATE_WINDOW = 10 * 60;

@@ -405,6 +405,59 @@
       0 22px 44px -22px rgba(30, 24, 12, 0.36);
   }
 }
+/* ---------- Seasonal Christmas snow (DOM flakes, transform-only) ----------
+   12 glyph flakes (not 150): outer span falls, inner span sways — both
+   `transform` animations, zero layout/paint per frame. Starts above the
+   viewport (negative delays distribute flakes mid-sky on first paint).
+   Respects the global animation policy: the parent never mounts this under
+   prefers-reduced-motion or save-data. */
+.xmas-snow {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  z-index: 30;
+}
+.xmas-flake {
+  position: absolute;
+  top: -8%;
+  color: #fff;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.35);
+  animation-name: xmas-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+.xmas-flake-sway {
+  display: inline-block;
+  animation-name: xmas-sway;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
+}
+@keyframes xmas-fall {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(var(--xmas-drift, 40px), 112vh, 0);
+  }
+}
+@keyframes xmas-sway {
+  from {
+    transform: translateX(-32px);
+  }
+  to {
+    transform: translateX(32px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .xmas-snow {
+    display: none;
+  }
+}
 /* ---------- Touch press feedback (no hover on phones) ----------
    The hover choreography above lives inside (hover:hover) on purpose, but a
    tap must still feel alive. :active fires on touch, so these tactile rules

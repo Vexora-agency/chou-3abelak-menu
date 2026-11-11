@@ -491,6 +491,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           onOpenAdmin={adminUnlocked ? () => openAdmin() : undefined}
           orderingState={liveOrderingState}
           orderingEnabled={orderingOn}
+          festive={seasonalTheme === 'christmas'}
         />
 
         {/* Main Content Area: skeleton reserves the slot until the real doc

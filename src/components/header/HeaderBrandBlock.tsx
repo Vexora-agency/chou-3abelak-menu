@@ -6,6 +6,7 @@ import { pickLangText } from '@/src/utils/menuHelpers';
 import { taglineOrDefault } from '@/src/utils/settingsDefaults';
 import type { OrderingStatus } from '@/src/utils/status';
 import type { useHeaderMotion } from '@/src/hooks/useHeaderMotion';
+import { XmasLogoHat } from '@/src/features/seasonal/XmasHeader';
 
 interface HeaderBrandBlockProps {
   menu: MenuData;
@@ -19,6 +20,8 @@ interface HeaderBrandBlockProps {
   smokeCanvasRef: RefObject<HTMLCanvasElement | null>;
   hasEnded: boolean;
   engineDone: boolean;
+  /** Christmas theme: perches a small Santa hat on the logo corner. */
+  festive?: boolean;
 }
 
 export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
@@ -33,6 +36,7 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
   smokeCanvasRef,
   hasEnded,
   engineDone,
+  festive = false,
 }) => {
   const isAr = lang === 'ar';
 
@@ -46,6 +50,9 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
         className="relative w-full max-w-[320px] sm:max-w-[380px] md:max-w-[440px] aspect-[1440/532] mx-auto overflow-hidden rounded-xl"
         style={{ isolation: 'isolate', backgroundColor: 'transparent' }}
       >
+        {/* Santa hat (christmas theme only — small, never covers the name) */}
+        {festive ? <XmasLogoHat /> : null}
+
         {/* Final 100% Transparent PNG shown once animation completes (1440x532 HD) */}
         {/* WebP srcset (same artwork, ~80% smaller): 480w covers DPR 1,
             880w DPR 2, 1440w DPR 3. src is the smallest WebP (not PNG) so

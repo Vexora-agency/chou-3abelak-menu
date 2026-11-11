@@ -7,6 +7,7 @@ import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
 import { MenuListItemAction } from './MenuListItemAction';
+import '@/src/features/seasonal/xmas-accents.css';
 
 interface MenuListRoundCardProps {
   item: MenuItem;
@@ -30,6 +31,8 @@ interface MenuListRoundCardProps {
   orderingEnabled?: boolean;
   /** First-row images load eager (passed from MenuList for index < 2). */
   eager?: boolean;
+  /** Christmas theme on: snow-capped badge + snowfall add-button. */
+  festive?: boolean;
 }
 
 /**
@@ -58,6 +61,7 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
   onOpenItem,
   orderingEnabled = true,
   eager = false,
+  festive = false,
 }) => {
   const idx = index;
   const isSoldOut = !item.available;
@@ -108,7 +112,7 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
     >
       {badges.length > 0 && (
         <span
-          className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border-[1.5px] border-[var(--primary)] shadow-lg -rotate-3 absolute -top-[7px] -start-1 z-10 ${
+          className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border-[1.5px] border-[var(--primary)] shadow-lg -rotate-3 absolute -top-[7px] -start-1 z-10${festive ? ' xmas-badge' : ''} ${
             isAr ? '' : 'tracking-wide'
           }`}
         >
@@ -193,7 +197,7 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
 
         {!isSoldOut && orderingEnabled ? (
           <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-            <MenuListItemAction item={item} small qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} />
+            <MenuListItemAction item={item} small qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} festive={festive} />
           </div>
         ) : (
           isSoldOut && (

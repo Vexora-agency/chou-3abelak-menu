@@ -7,6 +7,7 @@ import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges, hasOptions } from '@/src/utils/pricing';
 import { MenuListItemAction } from './MenuListItemAction';
+import '@/src/features/seasonal/xmas-accents.css';
 
 interface MenuListPhotoCardProps {
   item: MenuItem;
@@ -30,6 +31,8 @@ interface MenuListPhotoCardProps {
   orderingEnabled?: boolean;
   /** First-row images load eager (passed from MenuList for index < 2). */
   eager?: boolean;
+  /** Christmas theme on: snow-capped badge + snowfall add-button. */
+  festive?: boolean;
 }
 /**
  * Fourth display layout: photo-first cards.
@@ -57,6 +60,7 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
   onOpenItem,
   orderingEnabled = true,
   eager = false,
+  festive = false,
 }) => {
   const idx = index;
   const isSoldOut = !item.available;
@@ -155,7 +159,7 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
           <span aria-hidden="true" className="photo-card-shine" />
 
           {badge && BadgeIcon && (
-            <span className={`absolute start-3 top-3 z-10 inline-flex -rotate-2 items-center gap-1 rounded-full border-2 px-2.5 py-1 text-[10px] font-black shadow-[2px_2px_0_#0A0A0A] rtl:rotate-2 ${
+            <span className={`absolute start-3 top-3 z-10 inline-flex -rotate-2 items-center gap-1 rounded-full border-2 px-2.5 py-1 text-[10px] font-black shadow-[2px_2px_0_#0A0A0A] rtl:rotate-2${festive ? ' xmas-badge' : ''} ${
               badge === 'spicy'
                 ? 'border-red-600/25 bg-red-600/10 text-red-600 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-400'
                 : 'border-[#0A0A0A] bg-[var(--primary)] text-[#0A0A0A]'
@@ -227,6 +231,7 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
                 onAddItem={onAddItem}
                 onUpdateLine={onUpdateLine}
                 onOpenItem={onOpenItem}
+                festive={festive}
               />
             </div>
           )}

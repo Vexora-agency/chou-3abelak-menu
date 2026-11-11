@@ -8,6 +8,7 @@ import { CardMarkView } from '../CardMark';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
 import { MenuListItemAction } from './MenuListItemAction';
+import '@/src/features/seasonal/xmas-accents.css';
 
 interface MenuListGridCardProps {
   item: MenuItem;
@@ -34,6 +35,8 @@ interface MenuListGridCardProps {
   onOpenItem: (item: MenuItem) => void;
   /** Menu-only mode (starter): hides ordering UI, cards are not clickable. */
   orderingEnabled?: boolean;
+  /** Christmas theme on: snow-capped badge + snowfall add-button. */
+  festive?: boolean;
 }
 
 export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
@@ -58,6 +61,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
   onUpdateLine,
   onOpenItem,
   orderingEnabled = true,
+  festive = false,
 }) => {
   const idx = index;
   const isSoldOut = !item.available;
@@ -144,7 +148,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
             so it always balances diagonally against the + button. Tilted. */}
         <div className={`relative flex items-center gap-2 mb-2 h-[18px] ${mark ? 'justify-between' : 'justify-end'}`}>
           {badges.length > 0 && (
-            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold border-[1.5px] shadow-lg -rotate-3 ${isAr ? '' : 'tracking-wide'} ${mark ? '' : 'absolute -top-[7px] -start-1 z-10'} ${
+            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold border-[1.5px] shadow-lg -rotate-3 ${isAr ? '' : 'tracking-wide'} ${mark ? '' : 'absolute -top-[7px] -start-1 z-10'}${festive ? ' xmas-badge' : ''} ${
               badges[0] === 'spicy'
                 ? 'bg-red-600/10 text-red-600 border-red-600/25 dark:bg-red-500/10 dark:text-red-400 dark:border-red-400/30'
                 : 'bg-[#0A0A0A] text-[var(--primary)] border-[var(--primary)]'
@@ -208,7 +212,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
 
         {!isSoldOut && orderingEnabled && (
           <div onClick={(e) => e.stopPropagation()}>
-            <MenuListItemAction item={item} small qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} />
+            <MenuListItemAction item={item} small qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} festive={festive} />
           </div>
         )}
       </div>

@@ -29,6 +29,10 @@ interface MenuListProps {
   darkMode: boolean;
   /** Menu-only mode (starter): hides ordering UI, rows are not clickable. */
   orderingEnabled?: boolean;
+  /** Christmas accents on. Defaults to the seasonal theme in settings
+      (`settings.seasonal.theme === 'christmas'`); pass explicitly to
+      override (e.g. admin previews). */
+  festive?: boolean;
 }
 
 // (Category watermark rendering lives in ./CardMark — shared with admin.)
@@ -131,6 +135,8 @@ interface MenuListRowItemProps {
   markScale: number;
   markRotate: number;
   totalQtyOf: (item: MenuItem) => number;
+  /** Christmas theme on (optional, defaults to false). */
+  festive?: boolean;
 }
 
 /** Picks the row component for the section layout (single place, head + tail). */
@@ -157,6 +163,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
   markScale,
   markRotate,
   totalQtyOf,
+  festive = false,
 }) => {
   const qty = totalQtyOf(item);
   if (kind === 'compact') {
@@ -167,6 +174,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         leaveDelayMs={leaveDelayMs}
         skipEntrance={skipEntrance}
         orderingEnabled={orderingEnabled}
+        festive={festive}
                 menu={menu}
         lang={lang}
         currency={currency}
@@ -187,6 +195,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         leaveDelayMs={leaveDelayMs}
         skipEntrance={skipEntrance}
         orderingEnabled={orderingEnabled}
+        festive={festive}
                 menu={menu}
         lang={lang}
         currency={currency}
@@ -207,6 +216,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         leaveDelayMs={leaveDelayMs}
         skipEntrance={skipEntrance}
         orderingEnabled={orderingEnabled}
+        festive={festive}
         eager={index < 2}
         menu={menu}
         lang={lang}
@@ -229,6 +239,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         leaveDelayMs={leaveDelayMs}
         skipEntrance={skipEntrance}
         orderingEnabled={orderingEnabled}
+        festive={festive}
         eager={index < 2}
         menu={menu}
         lang={lang}
@@ -263,6 +274,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
       markY={markY}
       markScale={markScale}
       markRotate={markRotate}
+      festive={festive}
       onAddItem={onAddItem}
       onUpdateLine={onUpdateLine}
       onOpenItem={onOpenItem}
@@ -285,8 +297,12 @@ export const MenuList: React.FC<MenuListProps> = ({
   lang,
   darkMode,
   orderingEnabled = true,
+  festive,
 }) => {
   const isAr = lang === 'ar';
+  // Christmas accents: explicit prop wins, otherwise follow the seasonal
+  // theme in settings (old docs without the block count as `off`).
+  const isFestive = festive ?? menu.settings.seasonal?.theme === 'christmas';
 
   const filteredItems = useMenuListFiltering(items, menu, selectedCategory, searchQuery, selectedBadge);
 
@@ -379,6 +395,7 @@ export const MenuList: React.FC<MenuListProps> = ({
           darkMode,
           isAr,
           orderingEnabled,
+          festive: isFestive,
           onAddItem,
           onUpdateLine,
           onOpenItem,
@@ -521,7 +538,7 @@ export const MenuList: React.FC<MenuListProps> = ({
         const sectionBody = (
           <>
             {/* Category Header */}
-            <MenuListSectionHeader title={isAr ? cat.name.ar : cat.name.en} darkMode={darkMode} count={catItems.length} />
+            <MenuListSectionHeader title={isAr ? cat.name.ar : cat.name.en} darkMode={darkMode} count={catItems.length} festive={isFestive} />
             {/* One grid per section: compact/list/cards differ only by the
                 grid classes and the row component, both resolved above. */}
             {itemsGrid}

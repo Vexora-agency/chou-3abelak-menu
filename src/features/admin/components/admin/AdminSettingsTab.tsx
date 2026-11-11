@@ -14,7 +14,6 @@ import { SocialSection } from '../SocialSection';
 import { VisitorDefaultsSection } from '../VisitorDefaultsSection';
 import { SmartBadgesSection } from '../SmartBadgesSection';
 import { ShowMoreSection } from '../ShowMoreSection';
-import { ImageOptimizeSection } from '../ImageOptimizeSection';
 import { AccessSection } from '../AccessSection';
 import { TeamAccessSection } from '../TeamAccessSection';
 import { SentrySection } from '../SentrySection';
@@ -379,13 +378,6 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           }
         />
 
-        <ImageOptimizeSection
-          collapsed={!!collapsedGroups['img-opt']}
-          onToggleCollapse={() => onToggleCollapse('img-opt')}
-          menu={menu}
-          lang={lang}
-          onUpdateMenu={onUpdateMenu}
-        />
       </SettingsParentGroup>
 
       {/* 5. Team & Crew — الفريق والطاقم (owner only: kitchen invites +

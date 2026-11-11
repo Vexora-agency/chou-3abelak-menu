@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import type { SeasonalTheme } from '@/src/types/menu';
 import { SEASONAL_REGISTRY, seasonGreetingKey } from './themes';
+import { greetSeasonOnce } from './confetti';
 
 interface SeasonGreetingProps {
   theme: Exclude<SeasonalTheme, 'off'>;
@@ -18,6 +19,9 @@ interface SeasonGreetingProps {
 export const SeasonGreeting: React.FC<SeasonGreetingProps> = ({ theme, lang }) => {
   const def = SEASONAL_REGISTRY[theme];
   const [visible, setVisible] = useState(false);
+  // One gentle confetti pop per theme at first appearance (StrictMode-safe).
+  // Stays silent under reduced-motion / data-saver (guarded inside).
+  const greetedRef = useRef<Exclude<SeasonalTheme, 'off'> | null>(null);
 
   useEffect(() => {
     try {
@@ -26,6 +30,10 @@ export const SeasonGreeting: React.FC<SeasonGreetingProps> = ({ theme, lang }) =
       return;
     }
     setVisible(true);
+    if (greetedRef.current !== theme) {
+      greetedRef.current = theme;
+      greetSeasonOnce();
+    }
   }, [theme]);
 
   if (!def || !visible) return null;

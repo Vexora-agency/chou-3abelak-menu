@@ -56,18 +56,49 @@ export const XmasHeader: React.FC<XmasHeaderProps> = ({ festive = true }) => {
           ))}
         </div>
       </div>
-      {/* Soft frost on the header edges */}
+      {/* Soft frost on the header top edge only (the bottom scallop strip
+          read as a dull gray band on device screens, so it was removed) */}
       <div className="xmas-hdr-frost xmas-hdr-frost-top" />
-      <div className="xmas-hdr-frost xmas-hdr-frost-bottom" />
     </div>
   );
 };
 
-/**
- * Tiny tilted Santa hat perched on the logo corner (inline SVG, no assets).
- * Rendered by `HeaderBrandBlock` inside the logo container — small enough to
- * never cover the brand name, clipped safely by the container if needed.
- */
+/** Snow melting off the logo: a few flakes form mid-logo and drift down,
+ *  fading at the container edge (which crops them into a melt). Rendered
+ *  inside the logo container next to the hat. */
+export const XmasLogoMelt: React.FC = () => {
+  const flakes = [
+    { left: '22%', size: 13, dur: '5.2s', delay: '0s', drift: '14px' },
+    { left: '47%', size: 10, dur: '6.4s', delay: '-2.1s', drift: '-10px' },
+    { left: '63%', size: 15, dur: '5.8s', delay: '-4.3s', drift: '18px' },
+    { left: '78%', size: 11, dur: '7s', delay: '-1.2s', drift: '-14px' },
+  ];
+  return (
+    <span className="xmas-hdr-melt" aria-hidden="true">
+      {flakes.map((f, i) => (
+        <i
+          key={i}
+          style={
+            {
+              left: f.left,
+              fontSize: f.size,
+              animationDuration: f.dur,
+              animationDelay: f.delay,
+              '--xmas-drift': f.drift,
+            } as React.CSSProperties
+          }
+        >
+          ❄
+        </i>
+      ))}
+    </span>
+  );
+};
+
+ /**
+  * Tiny tilted Santa hat perched on the logo's first letter (inline SVG,
+  * no assets). Small enough to never cover the brand name.
+  */
 export const XmasLogoHat: React.FC = () => (
   <span className="xmas-hdr-hat" aria-hidden="true">
     <svg viewBox="0 0 64 60" fill="none" xmlns="http://www.w3.org/2000/svg">

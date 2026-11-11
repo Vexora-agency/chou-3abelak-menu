@@ -144,5 +144,19 @@ const baseMenu = (settings: unknown): MenuData => ({
   ok((frac.settings.ordering as { cancelWindowMin?: unknown }).cancelWindowMin === 8, 'cancelWindowMin rounds to whole minutes');
 }
 
+// 9. Seasonal theme default, keeps and normalizes (mirrors server validate).
+{
+  const out = ensureSettingsBlocks(baseMenu({}));
+  ok(out.settings.seasonal.theme === 'off', 'seasonal defaults to off');
+  const kept = ensureSettingsBlocks(baseMenu({ seasonal: { theme: 'christmas' } }));
+  ok(kept.settings.seasonal.theme === 'christmas', 'seasonal keeps christmas');
+  for (const bad of ['ramadan', 'XMAS', '', 7, null, undefined]) {
+    const c = ensureSettingsBlocks(baseMenu({ seasonal: { theme: bad } }));
+    ok(c.settings.seasonal.theme === 'off', `seasonal ${String(bad)} normalizes to off`);
+  }
+  const noBlock = ensureSettingsBlocks(baseMenu({ ordering: {} }));
+  ok(noBlock.settings.seasonal.theme === 'off', 'seasonal fills when block missing');
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

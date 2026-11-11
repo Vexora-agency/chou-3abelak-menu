@@ -9,7 +9,7 @@
  * All functions are pure and never mutate their input.
  */
 
-import type { SocialPlatform } from '@/src/types/menu';
+import type { SeasonalSettings, SocialPlatform } from '@/src/types/menu';
 import { isBellSoundId } from '@/src/utils/bellPatterns';
 
 export interface Bilingual {
@@ -158,6 +158,22 @@ export function soundsOrDefault(v: unknown): BellSounds {
   const r = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
   const pick = (x: unknown) => (isBellSoundId(typeof x === 'string' ? x.trim() : x) ? (x as string).trim() : 'classic');
   return { kitchen: pick(r.kitchen), customer: pick(r.customer) };
+}
+
+/** Seasonal storefront themes (extensible — add future seasons here). */
+export const SEASONAL_THEMES = ['off', 'christmas'] as const;
+
+export type SeasonalThemeId = (typeof SEASONAL_THEMES)[number];
+
+/** Seasonal theme id; unknown values fall back to `off` (never trusted blindly). */
+export function seasonalThemeOrDefault(v: unknown): SeasonalThemeId {
+  return v === 'christmas' ? 'christmas' : 'off';
+}
+
+/** Seasonal block; missing in old docs → `{ theme: 'off' }`. Pure, never mutates. */
+export function seasonalOrDefault(v: unknown): SeasonalSettings {
+  const r = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+  return { theme: seasonalThemeOrDefault(r.theme) };
 }
 
 /**

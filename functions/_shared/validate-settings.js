@@ -335,6 +335,15 @@ function validateSettings(s, errors) {
       ? Math.min(10, Math.max(1, Math.round(ann.speed)))
       : 5;
 
+  // Seasonal storefront theme (snow, greetings, …). Extensible: future
+  // seasons add an id to SEASONAL_THEMES. Unknown values normalize to
+  // 'off' (never rejected with an error) so an old client never breaks
+  // on a new id. Twin of seasonalOrDefault (src/utils/settingsDefaults.ts).
+  const SEASONAL_THEMES = ['off', 'christmas'];
+  const seasonalRaw = s.seasonal && typeof s.seasonal === 'object' ? s.seasonal : {};
+  const seasonal = {
+    theme: SEASONAL_THEMES.includes(seasonalRaw.theme) ? seasonalRaw.theme : 'off',
+  };
   // Privacy page extras (owner-editable plain text) + review flag.
   const priv = s.privacy && typeof s.privacy === 'object' ? s.privacy : {};
   const privacy = {
@@ -476,6 +485,7 @@ function validateSettings(s, errors) {
       scroll: announcementScroll,
       speed: announcementSpeed,
     },
+    seasonal,
     privacy,
     notifications,
   };

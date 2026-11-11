@@ -9,6 +9,52 @@ import { serverNow } from '@/src/utils/serverTime';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { featuresConfig } from '@/src/config/features.config';
 
+/** Seasonal quick toggle (owner + client logins only — never the kitchen).
+ *  Flips the same `settings.seasonal.theme` the Settings-tab section owns;
+ *  the menu-saver autosave persists it, no explicit save needed. */
+const SeasonalQuickCard: React.FC<{
+  lang: 'en' | 'ar';
+  menu: MenuData;
+  onUpdateMenu: (updater: (prev: MenuData) => MenuData) => void;
+}> = ({ lang, menu, onUpdateMenu }) => {
+  const isAr = lang === 'ar';
+  const active = menu.settings.seasonal?.theme === 'christmas';
+  return (
+    <div
+      dir={isAr ? 'rtl' : 'ltr'}
+      className={`rounded-2xl border p-4 transition-colors ${active ? 'bg-sky-500/[0.07] border-sky-400/40' : 'bg-neutral-900 border-neutral-800'}`}
+    >
+      <div className="flex items-center gap-3.5 flex-wrap">
+        <span aria-hidden="true" className="text-2xl leading-none">🎄</span>
+        <span className="min-w-0 flex-1 basis-48">
+          <b className="block text-sm font-extrabold">
+            {isAr ? 'ثيم الكريسماس' : 'Christmas theme'}
+          </b>
+          <span className="block text-xs text-neutral-400 mt-0.5">
+            {active
+              ? (isAr ? 'ثلج ورسالة ترحيب على موقع الزبائن' : 'Snow + greeting live on the customer site')
+              : (isAr ? 'متوقف — موقع الزبائن نظيف' : 'Off — customer site is clean')}
+          </span>
+        </span>
+        <button
+          type="button"
+          aria-pressed={active}
+          onClick={() =>
+            onUpdateMenu((m) => ({
+              ...m,
+              settings: { ...m.settings, seasonal: { theme: active ? 'off' : 'christmas' } },
+            }))
+          }
+          className={`relative px-5 h-11 min-h-[44px] inline-flex items-center rounded-full text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${active ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
+        >
+          {active && <span className="absolute inset-0 rounded-full bg-[var(--primary)]" aria-hidden="true" />}
+          <span className="relative z-10">{active ? (isAr ? 'إطفاء' : 'Turn off') : (isAr ? 'تفعيل' : 'Turn on')}</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export type DashView = 'overview' | 'reports' | 'customers';
 
 interface AdminDashboardTabProps {
@@ -42,6 +88,8 @@ interface AdminDashboardTabProps {
   onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
   /** Kitchen board: "Orders" title (no "Recent"); owner untouched. */
   kitchen?: boolean;
+  /** Live menu updater (autosave persists). Absent = no seasonal quick card. */
+  onUpdateMenu?: (updater: (prev: MenuData) => MenuData) => void;
 }
 
 /** TAB 0: ORDERS DASHBOARD — pause control, view switcher, orders/reports/customers. */
@@ -52,7 +100,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   reportSettings, reportRows, retentionCfg, reportSched,
   onSaveReportSettings, onResendVerification, onDownloadReport,
   onSearchCustomers, onCustomerAction,
-  adminFetch, onMenuRefreshed, onConfirm, kitchen,
+  adminFetch, onMenuRefreshed, onConfirm, kitchen, onUpdateMenu,
 }) => {
   const isAr = lang === 'ar';
   // White-label package gates: starter hides Reports UI, the customers view
@@ -123,7 +171,13 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
       {/* Pause control — owner only. The kitchen sees orders alone: no
           accepting/pausing switch (the server 403s those endpoints anyway). */}
       {!kitchen && (
-        <div className="mb-4">
+        <div className="mb-4 space-y-3">
+          {/* Seasonal quick card — same owner-only rule as the pause switch:
+              the kitchen never sees it. Flips the same `seasonal.theme`
+              setting as the Settings tab section; autosave persists it. */}
+          {onUpdateMenu && (
+            <SeasonalQuickCard lang={lang} menu={menu} onUpdateMenu={onUpdateMenu} />
+          )}
           <OrderingToggle
             lang={lang}
             state={toggleState}

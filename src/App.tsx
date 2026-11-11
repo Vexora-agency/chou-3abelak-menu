@@ -34,6 +34,12 @@ const InvitePage = lazy(() =>
 const TrackView = lazy(() =>
   import('@/src/features/track/TrackView').then((m) => ({ default: m.TrackView }))
 );
+// Seasonal storefront layer (snow + greeting): its own chunk, downloaded
+// ONLY while a seasonal theme is active — `off` costs zero bytes (the
+// component below renders nothing and the import never fires).
+const SeasonalEffects = lazy(() =>
+  import('@/src/features/seasonal/SeasonalEffects').then((m) => ({ default: m.SeasonalEffects }))
+);
 // Floating order bell (12h shelf): tiny, lives in the main chunk — it must
 // be present on the menu page itself. ReceivedButton stays out (only the
 // bell + tracking page pull it, via their own imports).
@@ -425,6 +431,12 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   // resolveLiveOrdering additionally discards a provably-stale paused value
   // so bar and drawer flip in the same second the deadline passes.
   const liveOrderingState: OrderingStatus | null = resolveLiveOrdering(orderingState, displayMenu, serverNow());
+  // Seasonal theme id (old docs lack the block → undefined → treated as off).
+  // Equality against the known id (not `!== 'off'`): a future id an old
+  // client doesn't know must NOT download the seasonal chunk — it renders
+  // as plain `off` until the client learns it.
+  const seasonalTheme: 'christmas' | null =
+    displayMenu.settings.seasonal?.theme === 'christmas' ? 'christmas' : null;
 
   return (
     <MotionConfig reducedMotion="never">
@@ -436,6 +448,13 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
       className="fixed top-0 inset-x-0 h-[3px] origin-left rtl:origin-right z-[60] pointer-events-none"
       aria-hidden="true"
     />
+    {/* Seasonal layer (customer site only — the admin path returned above):
+        lazy chunk, mounts only while a theme is active; `off` = zero bytes. */}
+    {seasonalTheme && (
+      <Suspense fallback={null}>
+        <SeasonalEffects theme={seasonalTheme} lang={lang} />
+      </Suspense>
+    )}
     <div
       className={`min-h-screen min-h-dvh transition-colors duration-300 font-sans ${
         darkMode ? 'bg-[#0A0A0A] text-white' : 'bg-[#0A0A0A]'

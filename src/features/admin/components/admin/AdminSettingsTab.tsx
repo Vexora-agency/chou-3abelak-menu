@@ -21,6 +21,7 @@ import { TelegramSection } from '../TelegramSection';
 import { SoundsSection } from '../SoundsSection';
 import { NotifyEmailSection } from '../NotifyEmailSection';
 import { AutoplaySection } from '../AutoplaySection';
+import { SeasonalSection } from '../SeasonalSection';
 
 interface AdminSettingsTabProps {
   menu: MenuData;
@@ -412,6 +413,21 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         {/* Client access: owner-minted invite links (hidden from client logins —
             the section hides itself on 403). Last: it is account-level, not menu. */}
         <AccessSection lang={lang} adminFetch={adminFetch} onConfirm={onConfirm} collapsed={!!collapsedGroups['access']} onToggleCollapse={() => onToggleCollapse('access')} />
+
+        {/* Seasonal storefront theme (first season: Christmas). Sits in the
+            same owner-only group — client logins never see it. */}
+        <SeasonalSection
+          seasonal={menu.settings.seasonal ?? { theme: 'off' }}
+          lang={lang}
+          collapsed={!!collapsedGroups['seasonal']}
+          onToggleCollapse={() => onToggleCollapse('seasonal')}
+          onUpdate={(updater) =>
+            onUpdateMenu((m) => {
+              const next = updater({ seasonal: m.settings.seasonal ?? { theme: 'off' } });
+              return { ...m, settings: { ...m.settings, ...next } };
+            })
+          }
+        />
 
         {/* Error monitoring (Sentry) diagnostics: owner-only, same 403-hide
             rule as AccessSection — client logins never see this. */}

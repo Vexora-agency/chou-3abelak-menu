@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, MapPin, Check } from 'lucide-react';
 
 interface RestaurantPinPickerProps {
@@ -90,10 +91,14 @@ export const RestaurantPinPicker: React.FC<RestaurantPinPickerProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-6" role="dialog" aria-modal="true" aria-label={isAr ? 'تحديد موقع المطعم' : 'Pin restaurant location'}>
+  // Portal to <body>: the settings cards carry a post-animation transform
+  // (identity matrix), which would turn ANY of them into the containing
+  // block for `fixed` — the sheet would open shifted/clipped "below" the
+  // screen instead of viewport-centered. The portal escapes all of that.
+  return createPortal(
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto" role="dialog" aria-modal="true" aria-label={isAr ? 'تحديد موقع المطعم' : 'Pin restaurant location'}>
       <div className="fixed inset-0 bg-black/70" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-[#141414] text-white border-2 border-[var(--primary)] overflow-hidden">
+      <div className="relative w-full max-w-lg my-auto max-h-[92dvh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-[#141414] text-white border-2 border-[var(--primary)]">
         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800">
           <h3 className="text-sm font-black flex items-center gap-2">
             <MapPin size={16} className="text-[var(--primary)]" />
@@ -111,23 +116,24 @@ export const RestaurantPinPicker: React.FC<RestaurantPinPickerProps> = ({
           </p>
         </div>
         <div className="px-4">
-          <div ref={mapRef} className="w-full h-[320px] rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800" />
+          <div ref={mapRef} className="w-full h-[220px] sm:h-[320px] rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800" />
           {!ready && <p className="text-[11px] text-neutral-500 py-2">{isAr ? 'جارٍ تحميل الخريطة…' : 'Loading the map…'}</p>}
         </div>
         <div className="p-4 flex items-center gap-2">
-          <span className="flex-1 text-xs tabular-nums text-neutral-300" dir="ltr">
+          <span className="flex-1 min-w-0 text-xs tabular-nums text-neutral-300 truncate" dir="ltr">
             {point.lat.toFixed(5)}, {point.lng.toFixed(5)}
           </span>
           <button
             type="button"
             onClick={() => onConfirm(point.lat, point.lng)}
-            className="btn-tactile h-11 px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-black inline-flex items-center gap-1.5"
+            className="btn-tactile h-11 px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-black inline-flex items-center gap-1.5 shrink-0"
           >
             <Check size={16} />
             {isAr ? 'اعتماد الموقع' : 'Use this spot'}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

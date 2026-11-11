@@ -218,40 +218,46 @@ export const DeliveryFeeSection: React.FC<DeliveryFeeSectionProps> = ({
               ) : (
                 <div className="space-y-2">
                   {tiers.map((t, i) => (
-                    <div key={`${t.upToKm}-${i}`} className="flex items-center gap-2 rounded-xl border border-neutral-800 bg-black px-2.5 py-2">
-                      <span className="shrink-0 w-6 h-6 rounded-full bg-[var(--primary)]/15 text-[var(--primary)] text-[11px] font-black flex items-center justify-center tabular-nums">
-                        {i + 1}
-                      </span>
-                      <span className="text-[11px] text-neutral-400 shrink-0">{isAr ? 'حتى' : 'Up to'}</span>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min={0.1}
-                        max={2000}
-                        value={t.upToKm}
-                        onChange={(e) => setTier(i, { upToKm: Number(e.target.value) })}
-                        aria-label={isAr ? `الشريحة ${i + 1}: حتى كم` : `Tier ${i + 1}: up to km`}
-                        className="w-20 h-10 px-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm tabular-nums focus:border-[var(--primary)]"
-                      />
-                      <span className="text-[11px] text-neutral-400 shrink-0">{isAr ? 'كم ←' : 'km →'}</span>
-                      <input
-                        type="number"
-                        step="any"
-                        min={0}
-                        value={t.fee}
-                        onChange={(e) => setTier(i, { fee: Number(e.target.value) })}
-                        aria-label={isAr ? `الشريحة ${i + 1}: الرسوم` : `Tier ${i + 1}: fee`}
-                        className="flex-1 min-w-0 h-10 px-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm tabular-nums focus:border-[var(--primary)]"
-                      />
-                      <span className="text-[10px] text-neutral-500 shrink-0 hidden sm:inline">{currency}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeTier(i)}
-                        aria-label={isAr ? `حذف الشريحة ${i + 1}` : `Delete tier ${i + 1}`}
-                        className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                    <div key={`${t.upToKm}-${i}`} className="rounded-xl border border-neutral-800 bg-black px-2.5 py-2 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2">
+                      <div className="flex items-center gap-2 sm:contents">
+                        <span className="shrink-0 w-6 h-6 rounded-full bg-[var(--primary)]/15 text-[var(--primary)] text-[11px] font-black flex items-center justify-center tabular-nums">
+                          {i + 1}
+                        </span>
+                        <span className="text-[11px] text-neutral-400 shrink-0">{isAr ? 'حتى' : 'Up to'}</span>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min={0.1}
+                          max={2000}
+                          value={t.upToKm}
+                          onChange={(e) => setTier(i, { upToKm: Number(e.target.value) })}
+                          aria-label={isAr ? `الشريحة ${i + 1}: حتى كم` : `Tier ${i + 1}: up to km`}
+                          className="h-10 px-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm tabular-nums focus:border-[var(--primary)] flex-1 min-w-0 sm:flex-none sm:w-20"
+                        />
+                        <span className="text-[11px] text-neutral-400 shrink-0">{isAr ? 'كم' : 'km'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 sm:contents">
+                        <span className="text-[11px] text-neutral-400 shrink-0 sm:hidden">{isAr ? 'الرسوم:' : 'Fee:'}</span>
+                        <input
+                          type="number"
+                          step="any"
+                          min={0}
+                          value={t.fee}
+                          onChange={(e) => setTier(i, { fee: Number(e.target.value) })}
+                          aria-label={isAr ? `الشريحة ${i + 1}: الرسوم` : `Tier ${i + 1}: fee`}
+                          inputMode="decimal"
+                          className="h-10 px-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm tabular-nums focus:border-[var(--primary)] flex-1 min-w-0"
+                        />
+                        <span className="text-[10px] text-neutral-500 shrink-0 hidden sm:inline">{currency}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeTier(i)}
+                          aria-label={isAr ? `حذف الشريحة ${i + 1}` : `Delete tier ${i + 1}`}
+                          className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                   <div className="flex gap-2">

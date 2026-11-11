@@ -137,6 +137,8 @@ interface MenuListRowItemProps {
   totalQtyOf: (item: MenuItem) => number;
   /** Christmas theme on (optional, defaults to false). */
   festive?: boolean;
+  /** True only for the first visible photos/round section (required). */
+  firstMedia: boolean;
 }
 
 /** Picks the row component for the section layout (single place, head + tail). */
@@ -164,7 +166,8 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
   markRotate,
   totalQtyOf,
   festive = false,
-}) => {
+  firstMedia,
+}: MenuListRowItemProps) => {
   const qty = totalQtyOf(item);
   if (kind === 'compact') {
     return (
@@ -217,7 +220,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         skipEntrance={skipEntrance}
         orderingEnabled={orderingEnabled}
         festive={festive}
-        eager={index < 2}
+        eager={index < 2 && firstMedia}
         menu={menu}
         lang={lang}
         currency={currency}
@@ -240,7 +243,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         skipEntrance={skipEntrance}
         orderingEnabled={orderingEnabled}
         festive={festive}
-        eager={index < 2}
+        eager={index < 2 && firstMedia}
         menu={menu}
         lang={lang}
         currency={currency}
@@ -343,6 +346,16 @@ export const MenuList: React.FC<MenuListProps> = ({
   const activeCategoryIds = Array.from(new Set(filteredItems.map((i) => i.categoryId)));
   const visibleCats = categories.filter((c) => c.visible && activeCategoryIds.includes(c.id));
 
+  // First visible photos/round section: only its first two cards may
+  // eager-load. Deeper media sections stay lazy — native lazy fires the
+  // moment they near the viewport, so nothing visible changes while the
+  // LCP race loses up to ~360 KB of high-priority below-fold bytes.
+  const layoutOf = (c: Category) => c.layout || (c.id === 'manakish' ? 'list' : 'cards');
+  const firstMediaCatId = visibleCats.find((c) => {
+    const l = layoutOf(c);
+    return l === 'photos' || l === 'round';
+  })?.id;
+
   return (
     <div className="pb-12 space-y-7 w-full">
       {visibleCats.map((cat) => {
@@ -396,6 +409,7 @@ export const MenuList: React.FC<MenuListProps> = ({
           isAr,
           orderingEnabled,
           festive: isFestive,
+          firstMedia: cat.id === firstMediaCatId,
           onAddItem,
           onUpdateLine,
           onOpenItem,

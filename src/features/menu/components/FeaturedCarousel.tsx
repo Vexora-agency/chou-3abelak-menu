@@ -268,7 +268,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             <SmartMenuImage
               item={item}
               name=""
-              sizes="(max-width: 767px) 90vw, 33vw"
+              sizes="(max-width: 767px) 90vw, (max-width: 1279px) 31vw, 395px"
               eager={idx === 0}
               fetchPriorityHigh={idx === 0}
               draggable={false}
@@ -287,12 +287,16 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           </div>
         )}
 
-        {/* Brand mark from the logo (pan + handle) as a quiet watermark */}
+        {/* Brand mark from the logo (pan + handle) as a quiet watermark.
+            Decorative: lazy everywhere except the first card so it never
+            competes at high priority. */}
         {!showPhoto && (
         <img
           src="/assets/pan-icon-yellow-192.webp"
           alt=""
           aria-hidden="true"
+          loading={idx === 0 ? 'eager' : 'lazy'}
+          decoding="async"
           draggable={false}
           className={`absolute -end-3 -top-2 w-24 pointer-events-none select-none -rotate-12 rtl:[transform:scaleX(-1)] transition-transform duration-500 group-hover:-rotate-3 group-hover:scale-110 ${
             isYellowCard ? 'opacity-[0.16]' : 'opacity-[0.20]'

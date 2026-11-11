@@ -45,7 +45,15 @@
          bundle even downloads, so a cold start from the Home Screen icon
          shows the brand instead of white. React removes it on first paint. -->
     <div id="boot-splash" style="position:fixed;inset:0;z-index:9999;background:#0A0A0A;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
-      <img src="/assets/logo-final-480.webp" alt="" width="220" height="81" style="width:200px;height:auto;animation:boot-pulse 1.4s ease-in-out infinite;" />
+      <img
+        src="/assets/logo-final-480.webp"
+        srcset="/assets/logo-final-480.webp 480w, /assets/logo-final-880.webp 880w, /assets/logo-final-1440.webp 1440w"
+        sizes="(max-width: 360px) calc(100vw - 40px), (max-width: 640px) 320px, (max-width: 768px) 380px, 440px"
+        alt=""
+        width="220"
+        height="81"
+        style="width:200px;height:auto;animation:boot-pulse 1.4s ease-in-out infinite;"
+      />
       <style>@keyframes boot-pulse{0%,100%{opacity:1}50%{opacity:.55}}</style>
     </div>
     <!-- Dead-bundle guard: if the JS never mounts (stale cached HTML pointing

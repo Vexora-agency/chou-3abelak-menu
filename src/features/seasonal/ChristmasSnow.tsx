@@ -10,9 +10,14 @@ import { useEffect, useRef } from 'react';
  *   (`requestIdleCallback`, 2 s ceiling) — never before first paint.
  * - Pauses when the tab is hidden (visibilitychange) and resumes on return.
  * - DPR capped at 1 (a snowy backdrop needs no retina sharpness).
- * - Flakes are stamped from 3 pre-rendered radial sprites with drawImage —
+ * - Flakes are stamped from 4 pre-rendered radial sprites with drawImage —
  *   NO shadowBlur/gradients inside the frame loop (the classic canvas perf killer).
  * - ~90 flakes on desktop, ~50 on small screens (< 640 px width).
+ * - Richness lives in the same canvas + same rAF loop, still allocation-free:
+ *   a sparse bokeh layer (few large soft low-alpha discs for depth) and a
+ *   gentle per-flake twinkle (alpha oscillates around its base via one sin —
+ *   no extra draws, no state objects created in the loop). The 2d context is
+ *   resolved once, not per frame.
  *
  * Stacking (z-index): `z-[30]` — above page content and the sticky category
  * chips (`z-20`), BELOW the offline banner / cart drawer / item modal
@@ -36,7 +41,11 @@ export const ChristmasSnow: React.FC = () => {
       speed: number;
       drift: number;
       phase: number;
-      opacity: number;
+      /** Resting alpha — the loop oscillates around it (twinkle), never above 1. */
+      base: number;
+      /** Twinkle angular speed (rad/s) + phase offset. Bokeh drifts slower. */
+      tw: number;
+      twPhase: number;
       sprite: number;
     }
     let flakes: Flake[] = [];
@@ -52,23 +61,45 @@ export const ChristmasSnow: React.FC = () => {
       canvas.width = w;
       canvas.height = h;
       const count = rectW < 640 ? 50 : 90;
-      flakes = Array.from({ length: count }, (_, i) => ({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        r: 0.8 + Math.random() * 2.0,
-        speed: 0.35 + Math.random() * 0.9,
-        drift: 0.3 + Math.random() * 0.9,
-        phase: Math.random() * Math.PI * 2,
-        opacity: 0.35 + Math.random() * 0.55,
-        sprite: i % 3,
-      }));
+      const bokehCount = rectW < 640 ? 6 : 10;
+      const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+      flakes = Array.from({ length: count + bokehCount }, (_, i) => {
+        if (i < count) {
+          return {
+            x: Math.random() * w,
+            y: Math.random() * h,
+            r: 0.8 + Math.random() * 2.0,
+            speed: 0.35 + Math.random() * 0.9,
+            drift: 0.3 + Math.random() * 0.9,
+            phase: Math.random() * Math.PI * 2,
+            base: 0.35 + Math.random() * 0.55,
+            tw: rnd(0.8, 2.4),
+            twPhase: Math.random() * Math.PI * 2,
+            sprite: i % 3,
+          };
+        }
+        // Bokeh: few, large, barely-there discs floating slowly behind it all.
+        return {
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: rnd(6, 13),
+          speed: rnd(0.12, 0.37),
+          drift: rnd(0.15, 0.45),
+          phase: Math.random() * Math.PI * 2,
+          base: rnd(0.05, 0.11),
+          tw: rnd(0.3, 1.0),
+          twPhase: Math.random() * Math.PI * 2,
+          sprite: 3,
+        };
+      });
     };
 
-    // Pre-rendered soft-dot sprites (3 sizes) — the loop only drawImages.
+    // Pre-rendered soft-dot sprites (3 flake sizes + 1 large bokeh disc) —
+    // the loop only drawImages.
     const sprites: HTMLCanvasElement[] = [];
     const buildSprites = () => {
-      for (let s = 0; s < 3; s++) {
-        const size = 8 + s * 8;
+      const sizes = [8, 16, 24, 48];
+      for (const size of sizes) {
         const c = document.createElement('canvas');
         c.width = size;
         c.height = size;
@@ -85,14 +116,16 @@ export const ChristmasSnow: React.FC = () => {
     };
 
     let last = 0;
+    // Resolved once — the old code paid a getContext lookup every frame.
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const frame = (t: number) => {
       if (!running) return;
       raf = requestAnimationFrame(frame);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
       const dt = Math.min(50, t - (last || t));
       last = t;
       const step = dt / 16.7;
+      const tSec = t / 1000;
       ctx.clearRect(0, 0, w, h);
       for (const f of flakes) {
         f.phase += 0.01 * step;
@@ -107,7 +140,8 @@ export const ChristmasSnow: React.FC = () => {
         const sprite = sprites[f.sprite];
         if (!sprite) continue;
         const d = f.r * 2.4;
-        ctx.globalAlpha = f.opacity;
+        // Twinkle: one sin around the resting alpha. No allocation, no shadows.
+        ctx.globalAlpha = f.base * (0.72 + 0.28 * Math.sin(tSec * f.tw + f.twPhase));
         ctx.drawImage(sprite, f.x - d / 2, f.y - d / 2, d, d);
       }
       ctx.globalAlpha = 1;

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Check } from 'lucide-react';
 import type { MenuSettings, SeasonalTheme } from '@/src/types/menu';
 import { SEASONAL_REGISTRY } from '@/src/features/seasonal/themes';
+import { celebrateSeasonOn, originOf } from '@/src/features/seasonal/confetti';
 import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 type SeasonalValues = Pick<MenuSettings, 'seasonal'>;
@@ -34,6 +36,42 @@ export const SeasonalSection: React.FC<SeasonalSectionProps> = ({
 
   const setTheme = (t: SeasonalTheme) => onUpdate(() => ({ seasonal: { theme: t } }));
 
+  // Celebratory ON press: the toggle fires immediately (autosave persists it),
+  // while the button plays a short snowy loading state (~800 ms, long enough
+  // for the autosave to settle), then a success tick + a small confetti burst
+  // anchored on the toggle itself. Purely cosmetic — saving never waits for it.
+  const [fete, setFete] = useState<'idle' | 'saving' | 'done'>('idle');
+  const groupRef = useRef<HTMLDivElement | null>(null);
+  const timers = useRef<number[]>([]);
+  useEffect(
+    () => () => {
+      timers.current.forEach((t) => window.clearTimeout(t));
+      timers.current = [];
+    },
+    [],
+  );
+  // If the theme flips back off mid-celebration, drop the success state.
+  useEffect(() => {
+    if (!active && fete === 'done') {
+      timers.current.forEach((t) => window.clearTimeout(t));
+      timers.current = [];
+      setFete('idle');
+    }
+  }, [active, fete]);
+
+  const turnOn = () => {
+    if (active || fete === 'saving') return;
+    setTheme('christmas');
+    setFete('saving');
+    timers.current.push(
+      window.setTimeout(() => {
+        setFete('done');
+        celebrateSeasonOn(groupRef.current ? originOf(groupRef.current) : undefined);
+        timers.current.push(window.setTimeout(() => setFete('idle'), 2400));
+      }, 800),
+    );
+  };
+
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
       <SettingsGroupHeader
@@ -56,22 +94,37 @@ export const SeasonalSection: React.FC<SeasonalSectionProps> = ({
                 : (isAr ? 'متوقف — لن يرى الزبائن شيئًا' : 'Off — customers see nothing')}
             </span>
           </span>
-          <div className="flex p-1 rounded-full bg-black border border-neutral-800" role="group" aria-label={title}>
+          <div ref={groupRef} className="flex p-1 rounded-full bg-black border border-neutral-800" role="group" aria-label={title}>
             {([
               ['on', isAr ? 'تفعيل' : 'On'],
               ['off', isAr ? 'إطفاء' : 'Off'],
             ] as const).map(([k, label]) => {
               const pressed = (k === 'on') === active;
+              const saving = k === 'on' && fete === 'saving';
+              const done = k === 'on' && fete === 'done' && active;
+              const busyLabel = isAr ? 'جاري التفعيل…' : 'Turning on…';
+              const doneLabel = isAr ? 'تم التفعيل!' : 'Live now!';
               return (
                 <button
                   key={k}
                   type="button"
                   aria-pressed={pressed}
-                  onClick={() => setTheme(k === 'on' ? 'christmas' : 'off')}
-                  className={`relative px-5 h-11 min-h-[44px] inline-flex items-center rounded-full text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${pressed ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
+                  aria-busy={saving || undefined}
+                  aria-label={saving ? busyLabel : done ? doneLabel : undefined}
+                  disabled={fete === 'saving'}
+                  onClick={() => (k === 'on' ? turnOn() : setTheme('off'))}
+                  className={`relative px-5 h-11 min-h-[44px] inline-flex items-center rounded-full text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:cursor-wait ${pressed ? 'text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'} ${fete === 'saving' && !pressed ? 'opacity-60' : ''}`}
                 >
                   {pressed && <span className="absolute inset-0 rounded-full bg-[var(--primary)]" aria-hidden="true" />}
-                  <span className="relative z-10">{label}</span>
+                  <span className="relative z-10 inline-flex items-center gap-1.5">
+                    {saving && (
+                      <span aria-hidden="true" className="inline-block animate-spin">
+                        ❄
+                      </span>
+                    )}
+                    {done && <Check size={14} aria-hidden="true" strokeWidth={3} />}
+                    {saving ? busyLabel : done ? doneLabel : label}
+                  </span>
                 </button>
               );
             })}

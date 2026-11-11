@@ -50,8 +50,8 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
         className="relative w-full max-w-[320px] sm:max-w-[380px] md:max-w-[440px] aspect-[1440/532] mx-auto overflow-hidden rounded-xl"
         style={{ isolation: 'isolate', backgroundColor: 'transparent' }}
       >
-        {/* Santa hat + melting snow (christmas theme only) */}
-        {festive ? <XmasLogoHat /> : null}
+        {/* Santa hat (finale reveal once the intro ends) + melting snow */}
+        {festive && hasEnded ? <XmasLogoHat /> : null}
         {festive ? <XmasLogoMelt /> : null}
 
         {/* Final 100% Transparent PNG shown once animation completes (1440x532 HD) */}

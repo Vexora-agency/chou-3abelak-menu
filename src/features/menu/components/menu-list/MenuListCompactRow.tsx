@@ -24,14 +24,43 @@ export const MenuListSectionHeader: React.FC<MenuListSectionHeaderProps> = ({
 }) => {
   return (
     <div className="flex items-center gap-2.5 mb-4">
+      {festive ? (
+        <motion.span
+          className="xmas-stocking"
+          initial={{ scaleY: 0 }}
+          whileInView={{ scaleY: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          aria-hidden="true"
+        >
+          <svg viewBox="0 0 26 36" fill="none" aria-hidden="true">
+            {/* cuff */}
+            <rect x="6" y="1.5" width="14" height="6.5" rx="3" fill="#F7F3EA" />
+            <rect x="6" y="5.5" width="14" height="2.5" rx="1.2" fill="#D9E4EC" />
+            {/* sock body */}
+            <path
+              d="M8 8h10v9.5l4.6 3.4c2.4 1.8 2.6 5.3.4 7.2-2 1.8-5.2 1.6-7.2-.2L8 22.4V8Z"
+              fill="#C93333"
+            />
+            <path
+              d="M8 8h10v9.5l4.6 3.4c2.4 1.8 2.6 5.3.4 7.2-.6.5-1.3.9-2 1.1C16.6 27 13 24.6 11.4 22L8 18.6V8Z"
+              fill="#E04848"
+            />
+            {/* heel + toe patches */}
+            <ellipse cx="9.5" cy="23.5" rx="3.4" ry="2.6" fill="#F7F3EA" transform="rotate(-18 9.5 23.5)" />
+            <ellipse cx="19" cy="27.5" rx="3.6" ry="2.6" fill="#F7F3EA" transform="rotate(8 19 27.5)" />
+          </svg>
+        </motion.span>
+      ) : (
       <motion.span
-        className={`w-1.5 h-6 rounded-sm origin-center ${festive ? 'xmas-section-bar' : 'bg-[var(--primary)]'}`}
+        className="w-1.5 h-6 bg-[var(--primary)] rounded-sm origin-center"
         initial={{ scaleY: 0 }}
         whileInView={{ scaleY: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         aria-hidden="true"
       />
+      )}
       <h2 className={`text-xl sm:text-2xl font-extrabold ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
         {title}
       </h2>

@@ -546,7 +546,7 @@ export const MenuList: React.FC<MenuListProps> = ({
           </>
         );
         return (
-          <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-[160px] menu-section">
+          <section key={cat.id} id={`category-${cat.id}`} className={`scroll-mt-[160px] menu-section${isFestive ? ' xmas-festive' : ''}`}>
             {sectionInnerClass ? (
               <div className={sectionWrapClass}>
                 <div className={sectionInnerClass}>

@@ -53,6 +53,7 @@
     "test:middleware-log": "node scripts/test-middleware-log.mjs",
     "test:hook-order": "node scripts/test-hook-order.mjs",
     "test:delivery-zones": "tsx scripts/test-delivery-zones.mjs",
+    "test:delivery-fees": "node scripts/test-delivery-fees.mjs",
     "build:geodata": "node scripts/build-geodata.mjs",
     "test:dial": "tsx scripts/test-dial-codes.ts",
     "test:refresh-gate": "tsx scripts/test-refresh-gate.mjs",

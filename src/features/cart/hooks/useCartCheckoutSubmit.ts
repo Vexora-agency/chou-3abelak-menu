@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { MenuData, CustomerDetails, ResolvedCartLine } from '@/src/types/menu';
 import { MAX_DELIVERY_DISTANCE_KM, haversineMeters, parseMapUrlCoords, formatDistance } from '@/src/utils/menuHelpers';
-import { formatPrice, round2 } from '@/src/utils/pricing';
+import { resolveDeliveryFee } from '@/src/utils/deliveryFees';
+import { formatPrice } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
 import { phoneDigitsOnly } from '@/src/utils/digits';
@@ -189,7 +190,20 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   }
   const minActive = !!ordering.minOrderEnabled;
   const feeActive = !!ordering.deliveryFeeEnabled;
-  const deliveryFee = feeActive ? round2(Number(ordering.deliveryFee) || 0) : 0;
+  // Smart fee: authoritative quote from the pin distance (server recomputes
+  // the same from the trusted pin — the client number is display-only).
+  const distanceKm = Number.isFinite(distanceMeters) && distanceMeters >= 0
+    ? distanceMeters / 1000
+    : null;
+  const feeQuote = resolveDeliveryFee(ordering, location ? distanceKm : null, subtotal);
+  const deliveryFee = feeActive ? feeQuote.fee : 0;
+  const feeDetail = !feeActive
+    ? null
+    : feeQuote.freeApplied
+      ? (isAr ? `توصيل مجاني للطلبات فوق ${formatPrice(ordering.freeDeliveryMin ?? 0, currency)}` : `Free delivery over ${formatPrice(ordering.freeDeliveryMin ?? 0, currency)}`)
+      : feeQuote.distanceKm !== null && ordering.deliveryFeeMode === 'distance'
+        ? (isAr ? `على بعد ${formatDistance(distanceMeters, lang)}` : `${formatDistance(distanceMeters, lang)} away`)
+        : null;
   const grandTotal = subtotal + deliveryFee;
   const isBelowMin = minActive && ordering.minOrder > 0 && subtotal < ordering.minOrder;
   const minOrder = ordering.minOrder;
@@ -406,6 +420,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     distanceWarning,
     subtotal,
     deliveryFee,
+    feeDetail,
+    feeFreeApplied: feeQuote.freeApplied,
     grandTotal,
     minActive,
     feeActive,

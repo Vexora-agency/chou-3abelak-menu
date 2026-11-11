@@ -54,6 +54,16 @@ export interface ItemAddon {
 
 export type BadgeId = 'new' | 'spicy' | 'top';
 
+/** One distance-based delivery fee band: pins up to `upToKm` km from the
+ *  restaurant pay `fee` (in settings currency). Tiers are kept sorted
+ *  ascending by `upToKm` everywhere (admin, client, server). */
+export interface DeliveryFeeTier {
+  /** Inclusive upper bound in km (0.1..2000, 1 decimal). */
+  upToKm: number;
+  /** Fee for this band (>= 0, 2 decimals). */
+  fee: number;
+}
+
 export interface BadgeSettings {
   /** Days a new item keeps the NEW badge. */
   newDays: number;
@@ -200,6 +210,19 @@ export interface MenuSettings {  name: { en: string; ar: string };
     minOrderEnabled: boolean;
     deliveryFee: number;
     deliveryFeeEnabled: boolean;
+    /** Pricing model: 'flat' = one fee for all (legacy); 'distance' =
+     *  tiered fees by pin distance from the restaurant (smart). Missing in
+     *  old docs → 'flat' so legacy menus behave exactly as today. */
+    deliveryFeeMode?: 'flat' | 'distance';
+    /** Distance tiers (distance mode only): ascending `upToKm` caps, each
+     *  with its fee. A pin at distance d pays the first tier with
+     *  d <= upToKm; beyond the last tier pays the last tier's fee.
+     *  Missing/empty → flat fallback. Max 8 tiers. */
+    deliveryFeeTiers?: DeliveryFeeTier[];
+    /** Free delivery threshold: when enabled and subtotal >= freeDeliveryMin
+     *  the fee drops to 0 (both modes). Missing → disabled. */
+    freeDeliveryMin?: number;
+    freeDeliveryEnabled?: boolean;
     note: { en: string; ar: string };
     /** Manual pause switch (pausedUntil null = until resumed). */
     paused: boolean;

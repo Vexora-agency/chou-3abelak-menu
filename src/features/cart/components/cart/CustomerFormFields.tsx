@@ -11,6 +11,8 @@ interface CustomerFormFieldsProps {
   location: { lat: number; lng: number; accuracy: number } | null;
   distanceText: string | null;
   distanceWarning: string | null;
+  feeHint?: string | null;
+  feeFreeApplied?: boolean;
   lang: 'en' | 'ar';
   darkMode: boolean;
   onOpenLocSheet: () => void;
@@ -25,6 +27,8 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   location,
   distanceText,
   distanceWarning,
+  feeHint,
+  feeFreeApplied,
   lang,
   darkMode,
   onOpenLocSheet,
@@ -129,9 +133,12 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             <MapPin size={13} className="shrink-0" />
             <span className="flex-1 min-w-0 basis-0 truncate" dir="auto">
                 {isAr
-                  ? `تم تحديد الموقع${distanceText ? ` · على بعد ${distanceText} من موقعنا` : ''}`
-                  : `Location pinned${distanceText ? ` · ${distanceText} from our location` : ''}`}
+                  ? `تم تحديد الموقع${distanceText ? ` · على بعد ${distanceText} من موقعنا` : ''}${feeHint && !feeFreeApplied ? ` · ${feeHint}` : ''}`
+                  : `Location pinned${distanceText ? ` · ${distanceText} from our location` : ''}${feeHint && !feeFreeApplied ? ` · ${feeHint}` : ''}`}
             </span>
+            {feeFreeApplied && feeHint && (
+              <span className="shrink-0 basis-full text-green-500 font-black" dir="auto">🎉 {feeHint}</span>
+            )}
             <a
               href={`https://www.google.com/maps?q=${location.lat},${location.lng}`}
               target="_blank"

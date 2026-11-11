@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { MenuSettings } from '@/src/types/menu';
 import { applyDraftPause } from '@/src/utils/ordering';
+import { parseMapUrlCoords } from '@/src/utils/menuHelpers';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { OnlineOrderingSwitch } from './admin/OnlineOrderingSwitch';
 import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
+import { DeliveryFeeSection } from './DeliveryFeeSection';
+import { RestaurantPinPicker } from './RestaurantPinPicker';
 
 type Ordering = MenuSettings['ordering'];
 
@@ -12,9 +15,11 @@ interface OrderingSectionProps {
   currency: string;
   lang: 'en' | 'ar';
   whatsapp: string;
+  mapUrl: string;
   adminFetch: AdminFetch;
   onMenuRefreshed: () => Promise<boolean>;
   onUpdate: (updater: (prev: Ordering) => Ordering) => void;
+  onMapUrlChange: (url: string) => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }
@@ -25,13 +30,16 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
   currency,
   lang,
   whatsapp,
+  mapUrl,
   adminFetch,
   onMenuRefreshed,
   onUpdate,
+  onMapUrlChange,
   collapsed = false,
   onToggleCollapse,
 }) => {
   const isAr = lang === 'ar';
+  const [pinOpen, setPinOpen] = useState(false);
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
       <SettingsGroupHeader
@@ -98,52 +106,27 @@ export const OrderingSection: React.FC<OrderingSectionProps> = ({
         )}
       </div>
 
-      {/* Delivery Fee toggle + value */}
-      <div className="rounded-xl border border-neutral-800 bg-black/40 p-3 space-y-3">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={!!ordering.deliveryFeeEnabled}
-          onClick={() => onUpdate((prev) => ({ ...prev, deliveryFeeEnabled: !prev.deliveryFeeEnabled }))}
-          className="w-full flex items-center justify-between gap-3 text-start min-h-[44px] rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
-        >
-          <span>
-            <span className="block text-xs font-bold">
-              {isAr ? 'تفعيل رسوم التوصيل' : 'Enable delivery fee'}
-            </span>
-            <span className="block text-[11px] text-neutral-500 mt-0.5">
-              {ordering.deliveryFeeEnabled
-                ? (isAr ? 'مفعّلة — تظهر في السلة' : 'On — shown in the cart')
-                : (isAr ? 'مطفأة (الافتراضي)' : 'Off (default)')}
-            </span>
-          </span>
-          <span
-            className={`relative w-11 h-6 flex-shrink-0 rounded-full transition-colors duration-200 ${
-              ordering.deliveryFeeEnabled ? 'bg-[var(--primary)]' : 'bg-neutral-700'
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${
-                ordering.deliveryFeeEnabled
-                  ? (isAr ? 'left-0.5' : 'left-5')
-                  : (isAr ? 'left-5' : 'left-0.5')
-              }`}
-            />
-          </span>
-        </button>
-        {ordering.deliveryFeeEnabled && (
-          <div className="anim-fade-in">
-            <label className="block text-xs text-neutral-400 mb-1">{isAr ? `رسوم التوصيل (${currency})` : `Delivery Fee (${currency})`}</label>
-            <input
-              type="number"
-              step="any"
-              value={ordering.deliveryFee}
-              onChange={(e) => onUpdate((prev) => ({ ...prev, deliveryFee: Number(e.target.value) }))}
-              className="w-full h-11 min-h-[44px] px-3 rounded-lg bg-black border border-neutral-700 text-base tabular-nums focus:border-[var(--primary)]"
-            />
-          </div>
-        )}
-      </div>
+      {/* Smart delivery fees: flat fallback + distance tiers + free threshold.
+          The restaurant anchor (mapUrl) is the single source of every distance. */}
+      <DeliveryFeeSection
+        ordering={ordering}
+        currency={currency}
+        lang={lang}
+        mapUrl={mapUrl}
+        onUpdate={onUpdate}
+        onPickRestaurant={() => setPinOpen(true)}
+      />
+      {pinOpen && (
+        <RestaurantPinPicker
+          lang={lang}
+          initial={parseMapUrlCoords(mapUrl)}
+          onConfirm={(lat, lng) => {
+            onMapUrlChange(`${lat}, ${lng}`);
+            setPinOpen(false);
+          }}
+          onClose={() => setPinOpen(false)}
+        />
+      )}
 
       {/* Smart ETA tuning: 3 numbers only — courier speed, road factor and
           the receive window are fixed researched constants (not owner

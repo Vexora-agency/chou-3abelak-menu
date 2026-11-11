@@ -200,12 +200,19 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
             currency={menu.settings.currency[lang] || menu.settings.currency.en}
             lang={lang}
             whatsapp={menu.settings.whatsapp || ''}
+            mapUrl={menu.settings.mapUrl || ''}
             adminFetch={adminFetch}
             onMenuRefreshed={onMenuRefreshed}
             onUpdate={(updater) =>
               onUpdateMenu((m) => ({
                 ...m,
                 settings: { ...m.settings, ordering: updater(m.settings.ordering) },
+              }))
+            }
+            onMapUrlChange={(url) =>
+              onUpdateMenu((m) => ({
+                ...m,
+                settings: { ...m.settings, mapUrl: url },
               }))
             }
           />

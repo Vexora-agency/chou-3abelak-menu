@@ -38,8 +38,15 @@ async function appMiddleware(context) {
   } catch (err) {
     // One console line for Workers Logs (existing behavior) + one Sentry
     // event. The response stays a generic 500 with the request id only.
+    // Edge-text filter: a message that IS Cloudflare's own edge 500 text
+    // ("internal error; reference = …") proves the failure happened
+    // outside our code (a deploy cutover, an edge-node blip) — we never
+    // construct that string. Log it locally but don't page Sentry for
+    // someone else's outage; real bugs keep reporting as before.
+    const msg = err instanceof Error ? err.message : String(err ?? '');
+    const isEdgeNoise = /^internal error;\s*reference\s*=/i.test(msg.trim());
     const id = logError(context.request, err, { code: 'unhandled', status: 500, reqId });
-    captureBackendException(context, err, { code: 'unhandled', reqId: id });
+    if (!isEdgeNoise) captureBackendException(context, err, { code: 'unhandled', reqId: id });
     return new Response(JSON.stringify({ error: 'unavailable', reqId: id }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'x-request-id': reqId },

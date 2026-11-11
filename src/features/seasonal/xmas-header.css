@@ -115,24 +115,17 @@
   height: 12px;
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.13), transparent);
 }
-.xmas-hdr-frost-bottom {
-  bottom: 0;
-  height: 16px;
-  background:
-    radial-gradient(circle at 14px -5px, rgba(255, 255, 255, 0.18) 13px, transparent 14px);
-  background-size: 30px 16px;
-  background-repeat: repeat-x;
-  background-position: bottom left;
-}
 
-/* --- Santa hat perched on the logo (inside the logo container) --- */
+/* --- Santa hat perched on the logo: classic spot is the first letter's
+   crown (top-left above the "C"), tilted outward. Sized against the
+   container so it never covers the name; the container clips it cleanly. --- */
 .xmas-hdr-hat {
   position: absolute;
-  top: 1%;
-  right: 7%;
-  width: clamp(40px, 13%, 62px);
+  top: -3%;
+  left: 5%;
+  width: clamp(48px, 16%, 74px);
   aspect-ratio: 64 / 60;
-  transform: rotate(14deg);
+  transform: rotate(-14deg);
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.45));
   pointer-events: none;
   z-index: 2;
@@ -141,4 +134,45 @@
   display: block;
   width: 100%;
   height: auto;
+}
+
+/* --- Snow melting off the logo: a few flakes form near the lower third
+   and drift down, fading out at the container edge (overflow-hidden crops
+   them into a melt). Transform-only, staggered loops. --- */
+.xmas-hdr-melt {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 46%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+.xmas-hdr-melt i {
+  position: absolute;
+  top: -12%;
+  color: #fff;
+  font-style: normal;
+  opacity: 0;
+  animation-name: xmas-hdr-meltfall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+@keyframes xmas-hdr-meltfall {
+  0% {
+    transform: translate3d(0, -10%, 0) scale(0.6);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.95;
+  }
+  75% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate3d(var(--xmas-drift, 12px), 108%, 0) scale(1);
+    opacity: 0;
+  }
 }

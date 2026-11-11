@@ -282,7 +282,23 @@ export function useHeaderIntroEngine(
     // to the slowest (331 kB) file: on slow lines the logo revealed seconds
     // late, which is exactly what LCP measures. Failure of sheet 0 still
     // falls back to the final logo like before.
+    //
+    // Slow-network staggering: sheet 0 (+ the preloaded copy) is all the
+    // first paint needs. Sheets 1-3 are each due 1.5 s after the previous,
+    // so on slow lines (2g / save-data) their downloads start ~1.2 s before
+    // they are first drawn instead of all four racing the LCP image and the
+    // app bundle from second zero. Fast networks keep the old fire-at-once
+    // behavior — zero visual difference there.
     let settled = false;
+    const staggerTimers: number[] = [];
+    const slowLine = (() => {
+      try {
+        const conn = (navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }).connection;
+        return conn?.saveData === true || conn?.effectiveType === 'slow-2g' || conn?.effectiveType === '2g';
+      } catch {
+        return false;
+      }
+    })();
     const settle = (ok: boolean) => {
       if (settled) return;
       settled = true;
@@ -290,12 +306,21 @@ export function useHeaderIntroEngine(
       if (ok) {
         startStamp = performance.now();
         kick();
+        if (slowLine) {
+          // Chapter i starts at i*1.5 s; begin its download 1.2 s earlier.
+          for (let i = 1; i < SHEETS.length; i += 1) {
+            const delayMs = Math.max(0, i * 1500 - 1200);
+            staggerTimers.push(window.setTimeout(() => loadSheet(i), delayMs));
+          }
+        }
       } else {
         finishNow();
       }
     };
 
-    SHEETS.forEach((src, i) => {
+    const loadSheet = (i: number) => {
+      const src = SHEETS[i];
+      if (!src) return;
       const img = new Image();
       img.decoding = 'async';
       img.onload = () => {
@@ -313,7 +338,13 @@ export function useHeaderIntroEngine(
         else sheetFailed[i] = true;
       };
       img.src = src;
-    });
+    };
+
+    if (slowLine) {
+      loadSheet(0);
+    } else {
+      SHEETS.forEach((_, i) => loadSheet(i));
+    }
 
     // Safety net: if the sheets never arrive, show the final logo.
     // Same 3.5 s window the video version used.
@@ -339,6 +370,7 @@ export function useHeaderIntroEngine(
     return () => {
       isRunning = false;
       window.clearTimeout(stallTimer);
+      for (const t of staggerTimers) window.clearTimeout(t);
       io.disconnect();
       cancelAnimationFrame(animId);
       animId = 0;

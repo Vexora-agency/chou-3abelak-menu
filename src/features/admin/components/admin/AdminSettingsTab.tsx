@@ -14,6 +14,7 @@ import { SocialSection } from '../SocialSection';
 import { VisitorDefaultsSection } from '../VisitorDefaultsSection';
 import { SmartBadgesSection } from '../SmartBadgesSection';
 import { ShowMoreSection } from '../ShowMoreSection';
+import { ImageRecompressSection } from '../ImageRecompressSection';
 import { AccessSection } from '../AccessSection';
 import { TeamAccessSection } from '../TeamAccessSection';
 import { SentrySection } from '../SentrySection';
@@ -384,6 +385,14 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
               return { ...m, settings: { ...m.settings, ...next } };
             })
           }
+        />
+
+        <ImageRecompressSection
+          menu={menu}
+          lang={lang}
+          onUpdateMenu={onUpdateMenu}
+          collapsed={!!collapsedGroups['img-recompress']}
+          onToggleCollapse={() => onToggleCollapse('img-recompress')}
         />
 
       </SettingsParentGroup>

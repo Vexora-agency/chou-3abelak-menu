@@ -36,14 +36,14 @@ export interface UploadedImage {
 const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
 const MAX_SOURCE_PIXELS = 80 * 1000 * 1000;
 const MAX_EDGE = 1600;
-const QUALITY = 0.82;
+const QUALITY = 0.75;
 const SERVER_MAX_BYTES = 8 * 1024 * 1024;
 
 /** Responsive variant widths (px) derived from the same crop rect. The full
- *  image keeps the current behaviour (QUALITY 0.82); variants use a slightly
+ *  image keeps the current behaviour (QUALITY 0.75); variants use a slightly
  *  lower quality since downscaling already removes detail. */
 export const VARIANT_WIDTHS = { s: 400, m: 800 };
-export const VARIANT_QUALITY = 0.76;
+export const VARIANT_QUALITY = 0.70;
 /** A variant is only generated when the crop rect is clearly wider than the
  *  variant (avoids uploading near-duplicate files of the same pixels). */
 const VARIANT_MIN_MARGIN = 1.15;
@@ -258,8 +258,9 @@ export async function exportCrop(
   if (!blob || blob.type !== 'image/webp') blob = await encode('image/jpeg', QUALITY);
   if (!blob) throw new ImagePrepareError('encode_failed');
   if (blob.size > SERVER_MAX_BYTES) {
-    blob = await encode('image/webp', 0.75);
-    if (!blob || blob.type !== 'image/webp') blob = await encode('image/jpeg', 0.75);
+    // Oversized fallback (tighter quality; ~20-30% smaller than before).
+    blob = await encode('image/webp', 0.68);
+    if (!blob || blob.type !== 'image/webp') blob = await encode('image/jpeg', 0.68);
   }
   if (!blob) throw new ImagePrepareError('encode_failed');
   if (blob.size > SERVER_MAX_BYTES) throw new ImagePrepareError('too_large');
@@ -444,9 +445,9 @@ export async function prepareImage(file: File): Promise<PreparedImage> {
     const retryScale = Math.min(scale, 1280 / Math.max(sourceWidth, sourceHeight));
     finalWidth = Math.max(1, Math.round(sourceWidth * retryScale));
     finalHeight = Math.max(1, Math.round(sourceHeight * retryScale));
-    blob = await renderToBlob(source, finalWidth, finalHeight, 'image/webp', 0.75);
+    blob = await renderToBlob(source, finalWidth, finalHeight, 'image/webp', 0.68);
     if (!blob || blob.type !== 'image/webp') {
-      blob = await renderToBlob(source, finalWidth, finalHeight, 'image/jpeg', 0.75);
+      blob = await renderToBlob(source, finalWidth, finalHeight, 'image/jpeg', 0.68);
     }
   }
   if (!blob) throw new ImagePrepareError('encode_failed');

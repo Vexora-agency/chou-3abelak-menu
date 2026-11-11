@@ -3,7 +3,9 @@
  * App.tsx import from here, never from ./components or ./hooks directly.
  */
 export { CartBar } from './components/CartBar';
-export { CartDrawer } from './components/CartDrawer';
+// NOTE: CartDrawer is intentionally NOT re-exported here — App.tsx imports
+// it directly (lazy) so it splits into its own chunk instead of riding the
+// main bundle through this barrel.
 export { useShopCartState } from './hooks/useShopCartState';
 export { useCartCheckoutSubmit } from './hooks/useCartCheckoutSubmit';
 export { submitOrder } from './services/cart.api';

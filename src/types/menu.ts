@@ -143,6 +143,16 @@ export interface Category {
 /** Social platforms shown in "Connect with Us" (admin-reorderable). */
 export type SocialPlatform = 'instagram' | 'facebook' | 'whatsapp';
 
+/** Seasonal storefront theme id: `off` = none. Extensible — future
+ *  seasons (ramadan, halloween, …) add an id here plus a registry entry
+ *  in `src/features/seasonal/themes.ts`. Unknown stored values normalize
+ *  to `off` (client + server), so an old app never breaks on a new id. */
+export type SeasonalTheme = 'off' | 'christmas';
+
+export interface SeasonalSettings {
+  theme: SeasonalTheme;
+}
+
 export interface MenuSettings {  name: { en: string; ar: string };
   tagline: { en: string; ar: string };
   logoText: string;
@@ -243,6 +253,9 @@ export interface MenuSettings {  name: { en: string; ar: string };
     /** Marquee speed 1 (slow) .. 10 (fast). Default 5. */
     speed?: number;
   };
+  /** Seasonal storefront theme (snow, greetings, …). Missing in old docs
+   *  → `{ theme: 'off' }` (see seasonalOrDefault). */
+  seasonal: SeasonalSettings;
   privacy: {
     /** Owner-written extra notes shown on the privacy page. */
     extra: { en: string; ar: string };

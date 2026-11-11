@@ -11,6 +11,7 @@ import {
   isoDateOrNull,
   receiveDelayOrDefault,
   roadFactorOrDefault,
+  seasonalOrDefault,
   socialFlagsOrDefault,
   socialOrderOrDefault,
   soundsOrDefault,
@@ -139,6 +140,7 @@ export function ensureSettingsBlocks(menu: MenuData): MenuData {
         scroll: a.scroll !== false,
         speed: tickerSpeedOrDefault(a.speed),
       },
+      seasonal: seasonalOrDefault((s as unknown as { seasonal?: unknown }).seasonal),
       privacy: {
         extra: {
           en: typeof p.extra?.en === 'string' ? p.extra.en : '',

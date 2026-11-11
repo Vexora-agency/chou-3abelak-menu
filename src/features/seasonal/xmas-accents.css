@@ -1,0 +1,160 @@
+/**
+ * Christmas accents for menu sections / cards / add-button.
+ *
+ * Scope: every rule below is opt-in — it only applies when the matching
+ * `xmas-*` class is present, and that class is only rendered while the
+ * seasonal theme `christmas` is active (see `festive` prop threading from
+ * MenuList). When the theme is `off` the DOM carries no xmas classes, so
+ * this file costs nothing visually.
+ *
+ * CSS-only: no external images, no libraries. Motion uses transform /
+ * opacity (sparks, gloss fade) so long menus stay smooth.
+ */
+
+/* 1. Section header bar: frosty winter strip. Same box as the gold bar
+   (w-1.5 h-6 rounded-sm come from Tailwind) so layout never shifts. */
+.xmas-section-bar {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    #f7fdff 0%,
+    #cdeafb 32%,
+    #7cbfe4 62%,
+    #a9d9f2 82%,
+    #e8f7ff 100%
+  );
+  box-shadow:
+    0 0 7px rgba(141, 201, 238, 0.75),
+    inset 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+/* Soft travelling gloss — opacity only, loops gently. */
+.xmas-section-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  animation: xmas-bar-gloss 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes xmas-bar-gloss {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 2. Badge snow cap: a wavy white rim riding the badge's top edge.
+   Text, colors and borders stay exactly as they are. */
+.xmas-badge {
+  position: relative;
+}
+
+.xmas-badge::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 6px;
+  right: 6px;
+  height: 8px;
+  pointer-events: none;
+  background:
+    radial-gradient(5.5px at 6px 8px, #ffffff 98%, rgba(255, 255, 255, 0)) left top / 12px 8px repeat-x,
+    linear-gradient(#ffffff, #ffffff) left bottom / 100% 4px no-repeat;
+  background-repeat: repeat-x, no-repeat;
+  filter: drop-shadow(0 1px 1px rgba(148, 184, 208, 0.7));
+}
+
+/* 3. Add (+) button snowfall burst: 4 sparks scatter on hover / tap /
+   keyboard focus, then fade. Replays on every hover entry because the
+   animation only exists while :hover/:active/:focus-visible matches. */
+.xmas-add {
+  position: relative;
+}
+
+.xmas-add .xmas-spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    #ffffff 0%,
+    #d6efff 55%,
+    rgba(214, 239, 255, 0) 72%
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Scatter targets — one per spark, spread around the button. */
+.xmas-add .xmas-spark-1 {
+  --tx: -24px;
+  --ty: -18px;
+}
+
+.xmas-add .xmas-spark-2 {
+  --tx: 22px;
+  --ty: -20px;
+}
+
+.xmas-add .xmas-spark-3 {
+  --tx: -20px;
+  --ty: 20px;
+}
+
+.xmas-add .xmas-spark-4 {
+  --tx: 22px;
+  --ty: 18px;
+}
+
+.xmas-add:hover .xmas-spark,
+.xmas-add:focus-visible .xmas-spark,
+.xmas-add:active .xmas-spark {
+  animation: xmas-spark-burst 0.55s ease-out;
+}
+
+/* Slight stagger so the burst reads as snowfall, not a single pop. */
+.xmas-add:hover .xmas-spark-2,
+.xmas-add:focus-visible .xmas-spark-2,
+.xmas-add:active .xmas-spark-2 {
+  animation-delay: 0.05s;
+}
+
+.xmas-add:hover .xmas-spark-3,
+.xmas-add:focus-visible .xmas-spark-3,
+.xmas-add:active .xmas-spark-3 {
+  animation-delay: 0.1s;
+}
+
+.xmas-add:hover .xmas-spark-4,
+.xmas-add:focus-visible .xmas-spark-4,
+.xmas-add:active .xmas-spark-4 {
+  animation-delay: 0.15s;
+}
+
+@keyframes xmas-spark-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty)))
+      scale(1.1);
+  }
+}

@@ -1,13 +1,13 @@
 /**
  * Celebration confetti — `canvas-confetti` is ALWAYS loaded via dynamic
- * `import()` so it never joins the initial bundle: `off`/calm visitors
- * download zero extra bytes; the chunk (~25 KB raw, ~8 KB gzip) loads only
- * at the exact moment a celebration fires.
+ * `import()` so it never joins the initial bundle: `off` visitors
+ * download zero extra bytes; the chunk loads only at the exact moment a
+ * celebration fires.
  *
- * Total silence rules (same as the snow itself):
- * - `prefers-reduced-motion: reduce` → no confetti, ever.
- * - Data-saver (`navigator.connection.saveData`) → no confetti, ever.
- * Failures are swallowed — confetti is decorative, never load-bearing.
+ * Owner decision: celebrations fire for everyone while the season is on
+ * (no reduced-motion / save-data auto-silencing — the dashboard toggle is
+ * the single on/off switch). Failures are swallowed — confetti is
+ * decorative, never load-bearing.
  */
 
 export interface ConfettiOrigin {
@@ -15,17 +15,9 @@ export interface ConfettiOrigin {
   y: number;
 }
 
-/** False on the server, under reduced motion, or on metered connections. */
+/** Always true in the browser (owner: celebrations for everyone while on). */
 export function celebrationAllowed(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false;
-    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-    if (conn?.saveData === true) return false;
-  } catch {
-    return false;
-  }
-  return true;
+  return typeof window !== 'undefined';
 }
 
 /** Viewport-normalized center of an element — so the burst starts inside it. */

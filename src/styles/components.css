@@ -453,11 +453,6 @@
     transform: translateX(32px);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .xmas-snow {
-    display: none;
-  }
-}
 /* ---------- Touch press feedback (no hover on phones) ----------
    The hover choreography above lives inside (hover:hover) on purpose, but a
    tap must still feel alive. :active fires on touch, so these tactile rules

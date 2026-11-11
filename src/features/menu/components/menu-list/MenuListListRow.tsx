@@ -5,6 +5,7 @@ import { Flame, Sparkles, Award } from 'lucide-react';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
 import { MenuListItemAction } from './MenuListItemAction';
+import '@/src/features/seasonal/xmas-accents.css';
 
 interface MenuListListRowProps {
   item: MenuItem;
@@ -24,6 +25,8 @@ interface MenuListListRowProps {
   onOpenItem: (item: MenuItem) => void;
   /** Menu-only mode (starter): hides ordering UI, rows are not clickable. */
   orderingEnabled?: boolean;
+  /** Christmas theme on: snow-capped badges + snowfall add-button. */
+  festive?: boolean;
 }
 
 export const MenuListListRow: React.FC<MenuListListRowProps> = ({
@@ -41,6 +44,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
   onUpdateLine,
   onOpenItem,
   orderingEnabled = true,
+  festive = false,
 }) => {
   const idx = index;
   const isSoldOut = !item.available;
@@ -89,7 +93,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         {effectiveBadges(menu, item).map((b) => (
           <span
             key={b}
-            className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]"
+            className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]${festive ? ' xmas-badge' : ''}`}
           >
             {b === 'spicy' && <Flame size={10} className="fill-[var(--primary)]" />}
             {b === 'top' && <Award size={10} className="fill-[var(--primary)]" />}
@@ -126,7 +130,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="flex-shrink-0"
           >
-            <MenuListItemAction item={item} small={false} qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} />
+            <MenuListItemAction item={item} small={false} qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} festive={festive} />
           </div>
         )}
       </div>
@@ -147,7 +151,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         {effectiveBadges(menu, item).map((b) => (
           <span
             key={b}
-            className="shrink-0 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]"
+            className={`shrink-0 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]${festive ? ' xmas-badge' : ''}`}
           >
             {b === 'spicy' && <Flame size={10} className="fill-[var(--primary)]" />}
             {b === 'top' && <Award size={10} className="fill-[var(--primary)]" />}
@@ -171,7 +175,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="flex-shrink-0"
           >
-            <MenuListItemAction item={item} small={false} qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} />
+            <MenuListItemAction item={item} small={false} qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} festive={festive} />
           </div>
         )}
       </div>

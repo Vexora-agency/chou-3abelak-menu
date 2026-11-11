@@ -5,23 +5,27 @@ import { Flame, Sparkles, Award } from 'lucide-react';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
 import { MenuListItemAction } from './MenuListItemAction';
+import '@/src/features/seasonal/xmas-accents.css';
 
 interface MenuListSectionHeaderProps {
   title: string;
   darkMode: boolean;
   /** Item count pill (total in section, or filtered count while searching). */
   count?: number;
+  /** Christmas theme on: frosty bar instead of the gold bar (same size). */
+  festive?: boolean;
 }
 
 export const MenuListSectionHeader: React.FC<MenuListSectionHeaderProps> = ({
   title,
   darkMode,
   count,
+  festive = false,
 }) => {
   return (
     <div className="flex items-center gap-2.5 mb-4">
       <motion.span
-        className="w-1.5 h-6 bg-[var(--primary)] rounded-sm origin-center"
+        className={`w-1.5 h-6 rounded-sm origin-center ${festive ? 'xmas-section-bar' : 'bg-[var(--primary)]'}`}
         initial={{ scaleY: 0 }}
         whileInView={{ scaleY: 1 }}
         viewport={{ once: true }}
@@ -58,6 +62,8 @@ interface MenuListRowProps {
   onOpenItem: (item: MenuItem) => void;
   /** Menu-only mode (starter): hides ordering UI, rows are not clickable. */
   orderingEnabled?: boolean;
+  /** Christmas theme on: snow-capped badges + snowfall add-button. */
+  festive?: boolean;
 }
 
 export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
@@ -75,6 +81,7 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
   onUpdateLine,
   onOpenItem,
   orderingEnabled = true,
+  festive = false,
 }) => {
   const idx = index;
   const isSoldOut = !item.available;
@@ -116,7 +123,7 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
           {effectiveBadges(menu, item).map((b) => (
             <span
               key={b}
-              className="inline-flex shrink-0 items-center gap-0.5 px-1.5 py-px rounded-full text-[10px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]"
+              className={`inline-flex shrink-0 items-center gap-0.5 px-1.5 py-px rounded-full text-[10px] font-extrabold bg-[#0A0A0A] text-[var(--primary)] border border-[var(--primary)]${festive ? ' xmas-badge' : ''}`}
             >
                 {b === 'spicy' && <Flame size={9} className="fill-[var(--primary)]" />}
                 {b === 'top' && <Award size={9} className="fill-[var(--primary)]" />}
@@ -148,7 +155,7 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
           onClick={(e) => e.stopPropagation()}
           className="flex-shrink-0"
         >
-          <MenuListItemAction item={item} small qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} />
+          <MenuListItemAction item={item} small qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} festive={festive} />
         </div>
       )}
     </motion.div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, Minus } from 'lucide-react';
 import type { MenuItem } from '@/src/types/menu';
 import { cartLineKey, hasOptions } from '@/src/utils/pricing';
+import '@/src/features/seasonal/xmas-accents.css';
 
 interface MenuListItemActionProps {
   item: MenuItem;
@@ -11,6 +12,8 @@ interface MenuListItemActionProps {
   onAddItem: (item: MenuItem) => void;
   onUpdateLine: (key: string, dir: 1 | -1) => void;
   onOpenItem: (item: MenuItem) => void;
+  /** Christmas theme on: snowfall spark burst around the + button on hover/tap. */
+  festive?: boolean;
 }
 
 // Dense rows keep their compact look: the visible buttons stay small but
@@ -49,18 +52,29 @@ export const MenuListItemAction: React.FC<MenuListItemActionProps> = ({
   onAddItem,
   onUpdateLine,
   onOpenItem,
+  festive = false,
 }) => {
   const options = hasOptions(item);
+  // Festive sparkles around the + button (CSS-only, aria-hidden).
+  const sparks = festive && qty === 0 ? (
+    <>
+      <span aria-hidden="true" className="xmas-spark xmas-spark-1" />
+      <span aria-hidden="true" className="xmas-spark xmas-spark-2" />
+      <span aria-hidden="true" className="xmas-spark xmas-spark-3" />
+      <span aria-hidden="true" className="xmas-spark xmas-spark-4" />
+    </>
+  ) : null;
   if (options) {
     if (qty === 0) {
       return (
         <button
           type="button"
           onClick={() => onAddItem(item)}
-          className={`group ${small ? 'w-8 h-8' : 'w-10 h-10'} relative after:absolute after:-inset-1.5 after:content-[""] rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center font-bold shadow-md hover:brightness-110 hover:scale-110 hover:shadow-[0_0_22px_color-mix(in_srgb,var(--primary)_55%,transparent)] active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 transition-all duration-200`}
+          className={`group ${small ? 'w-8 h-8' : 'w-10 h-10'} relative after:absolute after:-inset-1.5 after:content-[""] rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center font-bold shadow-md hover:brightness-110 hover:scale-110 hover:shadow-[0_0_22px_color-mix(in_srgb,var(--primary)_55%,transparent)] active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 transition-all duration-200${festive ? ' xmas-add' : ''}`}
           aria-label={isAr ? `إضافة ${item.name.ar}` : `Add ${item.name.en}`}
         >
           <Plus size={small ? 16 : 18} className="stroke-[2.5] transition-transform duration-300 group-hover:scale-125" />
+          {sparks}
         </button>
       );
     }
@@ -80,10 +94,11 @@ export const MenuListItemAction: React.FC<MenuListItemActionProps> = ({
       <button
         type="button"
         onClick={() => onAddItem(item)}
-        className={`group ${small ? 'w-8 h-8' : 'w-10 h-10'} rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center font-bold shadow-md hover:brightness-110 hover:scale-110 hover:shadow-[0_0_22px_color-mix(in_srgb,var(--primary)_55%,transparent)] active:scale-90 transition-all duration-200`}
+        className={`group ${small ? 'w-8 h-8' : 'w-10 h-10'} rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center font-bold shadow-md hover:brightness-110 hover:scale-110 hover:shadow-[0_0_22px_color-mix(in_srgb,var(--primary)_55%,transparent)] active:scale-90 transition-all duration-200${festive ? ' xmas-add' : ''}`}
         aria-label={isAr ? `إضافة ${item.name.ar}` : `Add ${item.name.en}`}
       >
         <Plus size={small ? 16 : 18} className="stroke-[2.5] transition-transform duration-300 group-hover:scale-125" />
+        {sparks}
       </button>
     );
   }

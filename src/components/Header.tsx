@@ -8,6 +8,7 @@ import { useHeaderMotion } from '@/src/hooks/useHeaderMotion';
 import { HeaderTopBar } from '@/src/components/header/HeaderTopBar';
 import { HeaderBrandBlock } from '@/src/components/header/HeaderBrandBlock';
 import { HeaderActions } from '@/src/components/header/HeaderActions';
+import { XmasHeader } from '@/src/features/seasonal/XmasHeader';
 
 interface HeaderProps {
   menu: MenuData;
@@ -19,6 +20,8 @@ interface HeaderProps {
   orderingState?: OrderingStatus | null;
   /** Menu-only mode (starter): WhatsApp CTA hidden, Call becomes primary. */
   orderingEnabled?: boolean;
+  /** Christmas seasonal dressing (lights + frost + logo hat). Off = nothing. */
+  festive?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -30,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAdmin,
   orderingState,
   orderingEnabled = true,
+  festive = false,
 }) => {
   const { parY, glowY, intro, rise } = useHeaderMotion();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -64,6 +68,8 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
       <div className="header-grain" aria-hidden="true" />
       <div className="edge-line edge-line-b" aria-hidden="true" />
+      {/* Christmas dressing (lights + frost): theme-gated, pointer-events-none */}
+      {festive ? <XmasHeader festive /> : null}
 
       {/* Top Utility Row */}
       <HeaderTopBar
@@ -88,6 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
         smokeCanvasRef={smokeCanvasRef}
         hasEnded={hasEnded}
         engineDone={engineDone}
+        festive={festive}
       />
 
       {/* Actions: WhatsApp is the primary call to action, Call and Map are secondary

@@ -3,6 +3,7 @@
  * Single consumer: the validate.js orchestrator.
  */
 import { stripControls, validateBilingual, validateBilingualOpt, TIME_REGEX, PHONE_REGEX, WHATSAPP_REGEX } from './validate-core.js';
+import { normalizeDeliveryFeeTiersJs } from './delivery-fees.js';
 import { buildFeatureLibrary } from './validate-feature-library.js';
 import VALID_COUNTRIES from './geodata/countries.js';
 
@@ -165,6 +166,51 @@ function validateSettings(s, errors) {
   // value means enabled (so real menus without the flags still enforce them).
   const minOrderEnabled = typeof ord.minOrderEnabled === 'boolean' ? ord.minOrderEnabled : minOrder > 0;
   const deliveryFeeEnabled = typeof ord.deliveryFeeEnabled === 'boolean' ? ord.deliveryFeeEnabled : deliveryFee > 0;
+
+  // Smart distance fees: validated shape, normalized order (sorted, deduped,
+  // capped at 8). Raw shape errors are reported; normalization still yields
+  // a safe value so one bad tier never blocks the whole menu save.
+  let deliveryFeeTiers = [];
+  if (ord.deliveryFeeTiers !== undefined && ord.deliveryFeeTiers !== null) {
+    if (!Array.isArray(ord.deliveryFeeTiers)) {
+      errors.push('settings.ordering.deliveryFeeTiers must be an array');
+    } else {
+      if (ord.deliveryFeeTiers.length > 8) errors.push('Maximum 8 delivery fee tiers allowed');
+      for (let i = 0; i < ord.deliveryFeeTiers.length; i++) {
+        const t = ord.deliveryFeeTiers[i];
+        if (!t || typeof t !== 'object') {
+          errors.push(`settings.ordering.deliveryFeeTiers[${i}] must be an object`);
+          continue;
+        }
+        const up = t.upToKm;
+        const fee = t.fee;
+        if (typeof up !== 'number' || !Number.isFinite(up) || up < 0.1 || up > 2000) {
+          errors.push(`settings.ordering.deliveryFeeTiers[${i}].upToKm must be a number between 0.1 and 2000`);
+        }
+        if (typeof fee !== 'number' || !Number.isFinite(fee) || fee < 0 || fee > 50000000) {
+          errors.push(`settings.ordering.deliveryFeeTiers[${i}].fee must be a number between 0 and 50000000`);
+        }
+      }
+      deliveryFeeTiers = normalizeDeliveryFeeTiersJs(ord.deliveryFeeTiers);
+      for (let i = 1; i < deliveryFeeTiers.length; i++) {
+        if (deliveryFeeTiers[i].upToKm <= deliveryFeeTiers[i - 1].upToKm) {
+          errors.push('settings.ordering.deliveryFeeTiers must have strictly increasing upToKm');
+          break;
+        }
+      }
+    }
+  }
+  const deliveryFeeMode = ord.deliveryFeeMode === 'distance' && deliveryFeeTiers.length > 0 ? 'distance' : 'flat';
+  // Free delivery threshold (both modes): subtotal >= min → fee 0.
+  let freeDeliveryMin = 0;
+  if (ord.freeDeliveryMin !== undefined && ord.freeDeliveryMin !== null && ord.freeDeliveryMin !== '') {
+    if (typeof ord.freeDeliveryMin !== 'number' || !Number.isFinite(ord.freeDeliveryMin) || ord.freeDeliveryMin < 0 || ord.freeDeliveryMin > 100000000) {
+      errors.push('settings.ordering.freeDeliveryMin must be a number between 0 and 100000000');
+    } else {
+      freeDeliveryMin = Math.round(ord.freeDeliveryMin * 100) / 100;
+    }
+  }
+  const freeDeliveryEnabled = ord.freeDeliveryEnabled === true && freeDeliveryMin > 0;
 
   // Delivery zones: 'all' serves everywhere (legacy behavior); 'selected'
   // restricts delivery pins to the listed countries, each either fully
@@ -464,6 +510,10 @@ function validateSettings(s, errors) {
       minOrderEnabled,
       deliveryFee,
       deliveryFeeEnabled,
+      deliveryFeeMode,
+      deliveryFeeTiers,
+      freeDeliveryMin,
+      freeDeliveryEnabled,
       note,
       deliveryZones,
       paused,

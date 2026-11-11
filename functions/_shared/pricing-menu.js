@@ -5,6 +5,7 @@
  * Re-exported from ./pricing.js so existing importers keep working.
  */
 import { normalizeDeliveryZones } from './delivery-zones.js';
+import { normalizeDeliveryFeeTiersJs } from './delivery-fees.js';
 
 export const UNITS = ['pc', 'portion', 'dozen', 'box', 'bottle', 'glass', 'kg'];
 
@@ -331,6 +332,9 @@ export function normalizeMenu(menu) {
   const ord = settings.ordering && typeof settings.ordering === 'object' ? settings.ordering : {};
   const minOrder = typeof ord.minOrder === 'number' && Number.isFinite(ord.minOrder) ? ord.minOrder : 0;
   const deliveryFee = typeof ord.deliveryFee === 'number' && Number.isFinite(ord.deliveryFee) ? ord.deliveryFee : 0;
+  const deliveryFeeTiers = normalizeDeliveryFeeTiersJs(ord.deliveryFeeTiers);
+  const deliveryFeeMode = ord.deliveryFeeMode === 'distance' && deliveryFeeTiers.length > 0 ? 'distance' : 'flat';
+  const freeDeliveryMin = typeof ord.freeDeliveryMin === 'number' && Number.isFinite(ord.freeDeliveryMin) ? Math.max(0, ord.freeDeliveryMin) : 0;
   const etaMinutesOr = (v, fb) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 180 ? Math.round(v) : fb);
   const receiveDelayOr = (v, fb) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 720 ? Math.round(v) : fb);
   const prepMinutes = etaMinutesOr(ord.prepMinutes, 15);
@@ -363,6 +367,10 @@ export function normalizeMenu(menu) {
       deliveryFee,
       minOrderEnabled: typeof ord.minOrderEnabled === 'boolean' ? ord.minOrderEnabled : minOrder > 0,
       deliveryFeeEnabled: typeof ord.deliveryFeeEnabled === 'boolean' ? ord.deliveryFeeEnabled : deliveryFee > 0,
+      deliveryFeeMode,
+      deliveryFeeTiers,
+      freeDeliveryMin,
+      freeDeliveryEnabled: ord.freeDeliveryEnabled === true && freeDeliveryMin > 0,
       prepMinutes,
       kitchenMinutesPerOrder,
       courierSpeedKmh,

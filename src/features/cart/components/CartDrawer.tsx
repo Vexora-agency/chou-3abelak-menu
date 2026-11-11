@@ -56,6 +56,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     distanceWarning,
     subtotal,
     deliveryFee,
+    feeDetail,
+    feeFreeApplied,
     grandTotal,
     feeActive,
     isBelowMin,
@@ -254,6 +256,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 location={location}
                 distanceText={distanceText}
                 distanceWarning={distanceWarning}
+                feeHint={feeDetail}
+                feeFreeApplied={feeFreeApplied}
                 lang={lang}
               darkMode={darkMode}
               onOpenLocSheet={() => setLocSheetOpen(true)}
@@ -267,6 +271,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               menu={menu}
               subtotal={subtotal}
               deliveryFee={deliveryFee}
+              feeDetail={feeDetail}
+              feeFreeApplied={feeFreeApplied}
               grandTotal={grandTotal}
               feeActive={feeActive}
               isBelowMin={isBelowMin}

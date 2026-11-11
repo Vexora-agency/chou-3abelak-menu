@@ -21,6 +21,7 @@ import {
   workingDaysOrAll,
 } from '@/src/utils/settingsDefaults';
 import { normalizeDeliveryZones } from '@/src/utils/deliveryZones';
+import { normalizeDeliveryFeeTiers } from '@/src/utils/deliveryFees';
 
 type AnnouncementInput = Partial<MenuData['settings']['announcement']> & {
   text?: Partial<{ en: string; ar: string }>;
@@ -96,6 +97,17 @@ export function ensureSettingsBlocks(menu: MenuData): MenuData {
           : (['delivery', 'pickup', 'dinein'] as MenuData['settings']['ordering']['types']),
         minOrder: typeof (o as { minOrder?: unknown }).minOrder === 'number' ? (o as { minOrder: number }).minOrder : 0,
         deliveryFee: typeof (o as { deliveryFee?: unknown }).deliveryFee === 'number' ? (o as { deliveryFee: number }).deliveryFee : 0,
+        deliveryFeeMode: (() => {
+          const tiers = normalizeDeliveryFeeTiers((o as { deliveryFeeTiers?: unknown }).deliveryFeeTiers);
+          return (o as { deliveryFeeMode?: unknown }).deliveryFeeMode === 'distance' && tiers.length > 0 ? 'distance' : 'flat';
+        })() as 'flat' | 'distance',
+        deliveryFeeTiers: normalizeDeliveryFeeTiers((o as { deliveryFeeTiers?: unknown }).deliveryFeeTiers),
+        freeDeliveryMin: typeof (o as { freeDeliveryMin?: unknown }).freeDeliveryMin === 'number'
+          ? Math.max(0, (o as { freeDeliveryMin: number }).freeDeliveryMin)
+          : 0,
+        freeDeliveryEnabled: (o as { freeDeliveryEnabled?: unknown }).freeDeliveryEnabled === true
+          && typeof (o as { freeDeliveryMin?: unknown }).freeDeliveryMin === 'number'
+          && ((o as { freeDeliveryMin: number }).freeDeliveryMin) > 0,
         minOrderEnabled: typeof (o as { minOrderEnabled?: unknown }).minOrderEnabled === 'boolean'
           ? (o as { minOrderEnabled: boolean }).minOrderEnabled
           : Number((o as { minOrder?: unknown }).minOrder) > 0,

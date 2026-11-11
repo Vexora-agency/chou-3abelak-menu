@@ -37,6 +37,9 @@ const L = {
     orderingTypes: 'Order types',
     minOrder: 'Minimum order',
     deliveryFee: 'Delivery fee',
+    deliveryFeeMode: 'Delivery fee model',
+    deliveryFeeTiers: 'Delivery fee tiers',
+    freeDeliveryMin: 'Free delivery threshold',
   on: 'on',
   off: 'off',
   emptyCategory: 'Empty category',
@@ -66,6 +69,9 @@ ar: {
     orderingTypes: 'أنواع الطلب',
     minOrder: 'أقل طلب',
     deliveryFee: 'رسوم التوصيل',
+    deliveryFeeMode: 'طريقة حساب التوصيل',
+    deliveryFeeTiers: 'شرائح رسوم التوصيل',
+    freeDeliveryMin: 'حد التوصيل المجاني',
     on: 'مفعّل',
     off: 'مغلق',
     emptyCategory: 'قسم فارغ',
@@ -250,6 +256,9 @@ export function diffMenus(a, b, lang = 'en') {
     ['orderingTypes', Array.isArray(oA.types) ? oA.types.join(',') : oA.types, Array.isArray(oB.types) ? oB.types.join(',') : oB.types],
     ['minOrder', oA.minOrder, oB.minOrder],
     ['deliveryFee', oA.deliveryFee, oB.deliveryFee],
+    ['deliveryFeeMode', oA.deliveryFeeMode, oB.deliveryFeeMode],
+    ['deliveryFeeTiers', Array.isArray(oA.deliveryFeeTiers) ? oA.deliveryFeeTiers.map((t) => `${t.upToKm}:${t.fee}`).join('|') : oA.deliveryFeeTiers, Array.isArray(oB.deliveryFeeTiers) ? oB.deliveryFeeTiers.map((t) => `${t.upToKm}:${t.fee}`).join('|') : oB.deliveryFeeTiers],
+    ['freeDeliveryMin', oA.freeDeliveryEnabled ? oA.freeDeliveryMin : 0, oB.freeDeliveryEnabled ? oB.freeDeliveryMin : 0],
   ];
   for (const [key, va, vb] of paths) {
     const sa = str(va);

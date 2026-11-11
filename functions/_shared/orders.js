@@ -17,6 +17,7 @@ import {
 } from './pricing.js';
 import { normalizeDeliveryZones } from './delivery-zones.js';
 import { haversineKm, parseMapUrlCoordsJs } from './eta.js';
+import { resolveDeliveryFeeJs } from './delivery-fees.js';
 
 export function newOrderId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -359,7 +360,23 @@ export function validateOrderInput(body, menu) {
   }
 
   const deliveryFee = type === 'delivery' && ordering.deliveryFeeEnabled
-    ? round2(Number(ordering.deliveryFee) || 0)
+    ? (() => {
+        // Smart distance fee: authoritative server computation from the
+        // trusted pin (client totals are never trusted). Unknown distance
+        // (no pin / no restaurant coords) resolves to the highest tier
+        // (fail-closed) via resolveDeliveryFeeJs — never free by accident.
+        let distanceKm = null;
+        try {
+          if (location) {
+            const rest = parseMapUrlCoordsJs(typeof norm?.settings?.mapUrl === 'string' ? norm.settings.mapUrl : '');
+            if (rest) {
+              const km = haversineKm(location.lat, location.lng, rest.lat, rest.lng);
+              if (Number.isFinite(km) && km >= 0) distanceKm = km;
+            }
+          }
+        } catch {}
+        return resolveDeliveryFeeJs(ordering, distanceKm, subtotal).fee;
+      })()
     : 0;
 
   return {

@@ -11,6 +11,8 @@ interface OrderSummaryLinesProps {
   menu: MenuData;
   subtotal: number;
   deliveryFee: number;
+  feeDetail?: string | null;
+  feeFreeApplied?: boolean;
   grandTotal: number;
   feeActive: boolean;
   isBelowMin: boolean;
@@ -26,6 +28,8 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
   menu,
   subtotal,
   deliveryFee,
+  feeDetail,
+  feeFreeApplied,
   grandTotal,
   feeActive,
   isBelowMin,
@@ -132,9 +136,18 @@ export const OrderSummaryLines: React.FC<OrderSummaryLinesProps> = ({
           <div className="flex justify-between items-center gap-2">
             <span className={`min-w-0 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
               {isAr ? 'رسوم التوصيل:' : 'Delivery Fee:'}
+              {feeDetail && (
+                <span className={`block text-[10px] font-normal ${feeFreeApplied ? 'text-green-500 font-bold' : ''}`} dir="auto">
+                  {feeFreeApplied ? `🎉 ${feeDetail}` : feeDetail}
+                </span>
+              )}
             </span>
             <span className={`font-bold text-sm tabular-nums shrink-0 ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-              <bdi dir="ltr" className="tabular-nums">{formatPrice(deliveryFee)}</bdi> <span dir="auto">{currency}</span>
+              {feeFreeApplied ? (
+                <span className="text-green-500">{isAr ? 'مجاني' : 'FREE'}</span>
+              ) : (
+                <><bdi dir="ltr" className="tabular-nums">{formatPrice(deliveryFee)}</bdi> <span dir="auto">{currency}</span></>
+              )}
             </span>
           </div>
         )}

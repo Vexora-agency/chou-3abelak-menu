@@ -1,7 +1,12 @@
-import * as Sentry from '@sentry/react';
-
 /**
  * Frontend Sentry initialization — error monitoring only.
+ *
+ * Lazy by design: `@sentry/react` is dynamically imported ONLY when the build
+ * actually reports (PROD + VITE_SENTRY_DSN). Without a DSN (or in dev) this
+ * module ships zero Sentry code in the main chunk — the SDK lives in its own
+ * async chunk that the customer bundle never downloads. Every export below is
+ * a no-op until the SDK chunk arrives, so behavior without a DSN is identical
+ * to the old static path (nothing captured, nothing thrown).
  *
  * Privacy rules (never relaxed):
  * - No secret token lives in the frontend: only the public DSN
@@ -12,6 +17,23 @@ import * as Sentry from '@sentry/react';
  * - Development builds never report: init is a no-op unless PROD + DSN.
  * - init never throws: a dead monitoring service must not break the menu.
  */
+
+type SentryModule = typeof import('@sentry/react');
+
+/** SDK module once its async chunk has loaded (null = not loaded / no DSN). */
+let sentryModule: SentryModule | null = null;
+let loadPromise: Promise<SentryModule | null> | null = null;
+
+function loadSentry(): Promise<SentryModule | null> {
+  if (sentryModule) return Promise.resolve(sentryModule);
+  if (!loadPromise) {
+    loadPromise = import('@sentry/react').then(
+      (m) => (sentryModule = m),
+      () => null,
+    );
+  }
+  return loadPromise;
+}
 
 const SENSITIVE_KEY = /(password|passwd|pwd|secret|token|auth|session|cookie|credential|phone|mobile|email|address|whatsapp)/i;
 
@@ -65,7 +87,7 @@ function readEnvName(): string {
 /** True when the SDK client actually initialized (not just DSN present). */
 export function isSentryActive(): boolean {
   try {
-    return Boolean(Sentry.getClient());
+    return Boolean(sentryModule?.getClient());
   } catch {
     return false;
   }
@@ -88,57 +110,67 @@ export function initSentry(): void {
   const envName = readEnvName();
   // Dev / preview-local builds never report — production only.
   if (!dsn || !import.meta.env.PROD) return;
-  try {
-    Sentry.init({
-      dsn,
-      environment: envName,
-      release: (import.meta.env.VITE_SENTRY_RELEASE as string | undefined) || undefined,
-      // Error monitoring only: no tracing, no replay (keeps the bundle lean
-      // and avoids collecting session data).
-      tracesSampleRate: 0,
-      replaysSessionSampleRate: 0,
-      replaysOnErrorSampleRate: 0,
-      // Benign browser noise that is never an app bug.
-      ignoreErrors: ['ResizeObserver loop completed with undelivered notifications'],
-      beforeSend(event) {
-        try {
-          if (event.request?.url) event.request.url = scrubUrl(event.request.url);
-          if (event.request?.headers) event.request.headers = scrubValue(event.request.headers, 0) as Record<string, string>;
-          if (event.request?.cookies) event.request.cookies = { filtered: '[Filtered]' };
-          // Never attach user identity from the storefront.
-          if (event.user) delete event.user;
-          if (event.breadcrumbs) {
-            for (const crumb of event.breadcrumbs) {
-              if (crumb.data) crumb.data = scrubValue(crumb.data, 0) as typeof crumb.data;
-              if (crumb.message && typeof crumb.message === 'string') {
-                crumb.message = scrubValue(crumb.message, 0) as string;
+  // Async on purpose: the SDK chunk downloads in the background, first paint
+  // never waits for it. initSentry() itself stays synchronous (same call site
+  // in main.tsx), only the SDK load + init defer.
+  void loadSentry().then((m) => {
+    if (!m) return;
+    try {
+      m.init({
+        dsn,
+        environment: envName,
+        release: (import.meta.env.VITE_SENTRY_RELEASE as string | undefined) || undefined,
+        // Error monitoring only: no tracing, no replay (keeps the bundle lean
+        // and avoids collecting session data).
+        tracesSampleRate: 0,
+        replaysSessionSampleRate: 0,
+        replaysOnErrorSampleRate: 0,
+        // Benign browser noise that is never an app bug.
+        ignoreErrors: ['ResizeObserver loop completed with undelivered notifications'],
+        beforeSend(event) {
+          try {
+            if (event.request?.url) event.request.url = scrubUrl(event.request.url);
+            if (event.request?.headers) event.request.headers = scrubValue(event.request.headers, 0) as Record<string, string>;
+            if (event.request?.cookies) event.request.cookies = { filtered: '[Filtered]' };
+            // Never attach user identity from the storefront.
+            if (event.user) delete event.user;
+            if (event.breadcrumbs) {
+              for (const crumb of event.breadcrumbs) {
+                if (crumb.data) crumb.data = scrubValue(crumb.data, 0) as typeof crumb.data;
+                if (crumb.message && typeof crumb.message === 'string') {
+                  crumb.message = scrubValue(crumb.message, 0) as string;
+                }
               }
             }
+            if (event.contexts) event.contexts = scrubValue(event.contexts, 0) as typeof event.contexts;
+            if (event.extra) event.extra = scrubValue(event.extra, 0) as typeof event.extra;
+          } catch {
+            // Scrubbing must never drop the event itself.
           }
-          if (event.contexts) event.contexts = scrubValue(event.contexts, 0) as typeof event.contexts;
-          if (event.extra) event.extra = scrubValue(event.extra, 0) as typeof event.extra;
-        } catch {
-          // Scrubbing must never drop the event itself.
-        }
-        return event;
-      },
-    });
-  } catch {
-    // Monitoring init failure is silent by design — the menu must work.
-  }
+          return event;
+        },
+      });
+    } catch {
+      // Monitoring init failure is silent by design — the menu must work.
+    }
+  });
 }
 
 /** Send one manually-caught frontend error. Returns the Sentry event id, or null when it could not be captured. */
 export function captureFrontendError(err: unknown, extra?: Record<string, string>): string | null {
   try {
+    // SDK chunk absent (no DSN, dev, or still downloading): no-op, same as the
+    // old static path where capture without init went nowhere.
+    if (!sentryModule) return null;
     let eventId: string | null = null;
-    Sentry.withScope((scope) => {
+    const m = sentryModule;
+    m.withScope((scope) => {
       scope.setLevel('error');
       scope.setTag('source', 'admin-test');
       if (extra) {
         for (const [k, v] of Object.entries(extra)) scope.setTag(k, v);
       }
-      eventId = Sentry.captureException(err);
+      eventId = m.captureException(err);
     });
     return typeof eventId === 'string' && eventId ? eventId : null;
   } catch {

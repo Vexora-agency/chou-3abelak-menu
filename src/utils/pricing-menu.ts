@@ -10,6 +10,7 @@ import {
   SPICY_SECTION_DEFAULT,
 } from '@/src/utils/menuHelpers';
 import { normalizeDeliveryZones } from '@/src/utils/deliveryZones';
+import { normalizeDeliveryFeeTiers } from '@/src/utils/deliveryFees';
 import {
   autoplayIntervalOrDefault,
   bilingualBlock,
@@ -388,6 +389,13 @@ export function normalizeMenu<T>(menu: T): T {
   const ordRaw = settings.ordering && typeof settings.ordering === 'object' ? (settings.ordering as Record<string, unknown>) : {};
   const minOrder = typeof ordRaw.minOrder === 'number' && Number.isFinite(ordRaw.minOrder) ? ordRaw.minOrder : 0;
   const deliveryFee = typeof ordRaw.deliveryFee === 'number' && Number.isFinite(ordRaw.deliveryFee) ? ordRaw.deliveryFee : 0;
+  const deliveryFeeTiers = normalizeDeliveryFeeTiers((ordRaw as Record<string, unknown>).deliveryFeeTiers);
+  const deliveryFeeMode = (ordRaw as Record<string, unknown>).deliveryFeeMode === 'distance' && deliveryFeeTiers.length > 0
+    ? 'distance'
+    : 'flat';
+  const freeDeliveryMin = typeof (ordRaw as Record<string, unknown>).freeDeliveryMin === 'number' && Number.isFinite((ordRaw as Record<string, unknown>).freeDeliveryMin as number)
+    ? Math.max(0, (ordRaw as Record<string, unknown>).freeDeliveryMin as number)
+    : 0;
   const bRaw = (settings.badges && typeof settings.badges === 'object' ? settings.badges : {}) as Record<string, unknown>;
   const intOr = (v: unknown, fb: number, min: number, max: number) =>
     isInt(v) && (v) >= min && (v) <= max ? (v) : fb;
@@ -434,6 +442,10 @@ export function normalizeMenu<T>(menu: T): T {
       minOrderEnabled: typeof ordRaw.minOrderEnabled === 'boolean' ? ordRaw.minOrderEnabled : minOrder > 0,
       deliveryFeeEnabled:
         typeof ordRaw.deliveryFeeEnabled === 'boolean' ? ordRaw.deliveryFeeEnabled : deliveryFee > 0,
+      deliveryFeeMode,
+      deliveryFeeTiers,
+      freeDeliveryMin,
+      freeDeliveryEnabled: (ordRaw as Record<string, unknown>).freeDeliveryEnabled === true && freeDeliveryMin > 0,
       note: bilingualBlock(Object.keys(ordNoteRaw).length ? ordNoteRaw : ordRaw.note, 120),
       paused: ordRaw.paused === true,
       pausedUntil: isoDateOrNull(ordRaw.pausedUntil),

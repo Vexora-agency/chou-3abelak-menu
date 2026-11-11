@@ -9,8 +9,17 @@ import { AnnouncementBanner } from '@/src/components/AnnouncementBanner';
 import { type OrderingStatus } from '@/src/utils/status';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { serverNow } from '@/src/utils/serverTime';
-import { SearchAndChips, FeaturedCarousel, MenuList, ItemDetailsModal, useMenuLoader } from '@/src/features/menu';
-import { CartBar, CartDrawer } from '@/src/features/cart';
+import { SearchAndChips, FeaturedCarousel, MenuList, useMenuLoader } from '@/src/features/menu';
+// Item modal, cart drawer and order bell load lazily (own chunks): none of
+// them renders before interaction, so Suspense fallback={null} is
+// pixel-identical. Direct paths (not the barrels) keep them out of main.
+const ItemDetailsModal = lazy(() =>
+  import('@/src/features/menu/components/ItemDetailsModal').then((m) => ({ default: m.ItemDetailsModal }))
+);
+import { CartBar } from '@/src/features/cart';
+const CartDrawer = lazy(() =>
+  import('@/src/features/cart/components/CartDrawer').then((m) => ({ default: m.CartDrawer }))
+);
 import { Footer } from '@/src/components/Footer';
 import { useAdminSaveMenu } from '@/src/features/admin/hooks/useAdminSaveMenu';
 import { useAdminSaveAuth } from '@/src/features/admin/hooks/useAdminSaveAuth';
@@ -40,10 +49,12 @@ const TrackView = lazy(() =>
 const SeasonalEffects = lazy(() =>
   import('@/src/features/seasonal/SeasonalEffects').then((m) => ({ default: m.SeasonalEffects }))
 );
-// Floating order bell (12h shelf): tiny, lives in the main chunk — it must
-// be present on the menu page itself. ReceivedButton stays out (only the
+// Floating order bell (12h shelf): tiny, lazy chunk — it only downloads when
+// the customer actually has orders. ReceivedButton stays out (only the
 // bell + tracking page pull it, via their own imports).
-import { OrdersBell } from '@/src/features/track/components/OrdersBell';
+const OrdersBell = lazy(() =>
+  import('@/src/features/track/components/OrdersBell').then((m) => ({ default: m.OrdersBell }))
+);
 import { WifiOff } from 'lucide-react';
 import { useShopCartState } from '@/src/features/cart';
 import { useOrderingState } from '@/src/features/orders';
@@ -567,7 +578,9 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
             only while the customer actually has orders — otherwise it
             doesn't exist at all (no timers, no listeners, no audio). */}
         {orderingOn && bellReady && hasOrders && (
-          <OrdersBell lang={lang} darkMode={darkMode} />
+          <Suspense fallback={null}>
+            <OrdersBell lang={lang} darkMode={darkMode} />
+          </Suspense>
         )}
 
         {/* Floating Cart Bottom Bar (ordering plans only) */}
@@ -585,6 +598,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
 
         {/* Item Details Bottom Sheet Modal (ordering plans only) */}
         {orderingOn && (
+        <Suspense fallback={null}>
         <ItemDetailsModal
           item={activeItem}
           menu={displayMenu}
@@ -594,10 +608,12 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           lang={lang}
           darkMode={darkMode}
         />
+        </Suspense>
         )}
 
         {/* Full Cart Checkout Bottom Sheet (ordering plans only) */}
         {orderingOn && (
+        <Suspense fallback={null}>
         <CartDrawer
           isOpen={isCartOpen}
           onClose={() => setIsCartOpen(false)}
@@ -612,6 +628,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           darkMode={darkMode}
           orderingState={liveOrderingState}
         />
+        </Suspense>
         )}
       </div>
     </div>

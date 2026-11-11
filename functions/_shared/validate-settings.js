@@ -339,10 +339,13 @@ function validateSettings(s, errors) {
   // seasons add an id to SEASONAL_THEMES. Unknown values normalize to
   // 'off' (never rejected with an error) so an old client never breaks
   // on a new id. Twin of seasonalOrDefault (src/utils/settingsDefaults.ts).
+  // `live` is the dashboard go-live switch (Settings only arms a season) —
+  // strictly boolean, never truthy-coerced.
   const SEASONAL_THEMES = ['off', 'christmas'];
   const seasonalRaw = s.seasonal && typeof s.seasonal === 'object' ? s.seasonal : {};
   const seasonal = {
     theme: SEASONAL_THEMES.includes(seasonalRaw.theme) ? seasonalRaw.theme : 'off',
+    live: seasonalRaw.live === true,
   };
   // Privacy page extras (owner-editable plain text) + review flag.
   const priv = s.privacy && typeof s.privacy === 'object' ? s.privacy : {};

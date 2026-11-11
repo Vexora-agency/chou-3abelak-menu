@@ -431,12 +431,15 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   // resolveLiveOrdering additionally discards a provably-stale paused value
   // so bar and drawer flip in the same second the deadline passes.
   const liveOrderingState: OrderingStatus | null = resolveLiveOrdering(orderingState, displayMenu, serverNow());
-  // Seasonal theme id (old docs lack the block → undefined → treated as off).
-  // Equality against the known id (not `!== 'off'`): a future id an old
-  // client doesn't know must NOT download the seasonal chunk — it renders
-  // as plain `off` until the client learns it.
+  // Seasonal theme id + go-live flag. Effects render only when a known
+  // season is armed AND the dashboard flipped it live (old docs lack the
+  // block → treated as off). Equality against the known id (not `!== 'off'`):
+  // a future id an old client doesn't know must NOT download the seasonal
+  // chunk — it renders as plain `off` until the client learns it.
   const seasonalTheme: 'christmas' | null =
-    displayMenu.settings.seasonal?.theme === 'christmas' ? 'christmas' : null;
+    displayMenu.settings.seasonal?.theme === 'christmas' && displayMenu.settings.seasonal?.live === true
+      ? 'christmas'
+      : null;
 
   return (
     <MotionConfig reducedMotion="never">

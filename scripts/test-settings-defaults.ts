@@ -145,11 +145,18 @@ const baseMenu = (settings: unknown): MenuData => ({
 }
 
 // 9. Seasonal theme default, keeps and normalizes (mirrors server validate).
+// Two-stage switch: Settings arms a theme, only the dashboard flips `live`.
 {
   const out = ensureSettingsBlocks(baseMenu({}));
   ok(out.settings.seasonal.theme === 'off', 'seasonal defaults to off');
+  ok(out.settings.seasonal.live === false, 'seasonal defaults to not-live');
   const kept = ensureSettingsBlocks(baseMenu({ seasonal: { theme: 'christmas' } }));
   ok(kept.settings.seasonal.theme === 'christmas', 'seasonal keeps christmas');
+  ok(kept.settings.seasonal.live === false, 'arming alone never goes live');
+  const live = ensureSettingsBlocks(baseMenu({ seasonal: { theme: 'christmas', live: true } }));
+  ok(live.settings.seasonal.live === true, 'dashboard live flag survives');
+  const liveStr = ensureSettingsBlocks(baseMenu({ seasonal: { theme: 'christmas', live: 'yes' } }));
+  ok(liveStr.settings.seasonal.live === false, 'non-boolean live normalizes to false');
   for (const bad of ['ramadan', 'XMAS', '', 7, null, undefined]) {
     const c = ensureSettingsBlocks(baseMenu({ seasonal: { theme: bad } }));
     ok(c.settings.seasonal.theme === 'off', `seasonal ${String(bad)} normalizes to off`);

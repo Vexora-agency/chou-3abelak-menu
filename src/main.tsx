@@ -1,11 +1,13 @@
+import { Component, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
-import * as Sentry from '@sentry/react';
 import App from '@/src/App.tsx';
 import { applyTheme } from '@/src/config/theme.config';
-import { initSentry } from '@/src/lib/sentry';
+import { captureFrontendError, initSentry } from '@/src/lib/sentry';
 import './index.css';
 
 // Error monitoring first (no-op without VITE_SENTRY_DSN in production).
+// initSentry loads the Sentry SDK in a background chunk only when PROD + DSN;
+// otherwise this whole path costs zero bytes in the main bundle.
 initSentry();
 
 // White-label theme: push themeConfig onto :root before first render (no flash).
@@ -31,8 +33,31 @@ function CrashFallback() {
   );
 }
 
+/**
+ * Lightweight local error boundary: identical crash UI to the old
+ * Sentry.ErrorBoundary (same fallback, same reload contract). Caught errors
+ * are forwarded to Sentry only when its background chunk actually loaded —
+ * without a DSN this is a pure no-op, matching the old behavior exactly.
+ */
+class LocalErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown): void {
+    captureFrontendError(error);
+  }
+
+  render(): ReactNode {
+    if (this.state.hasError) return <CrashFallback />;
+    return this.props.children;
+  }
+}
+
 createRoot(document.getElementById('root')!).render(
-  <Sentry.ErrorBoundary fallback={<CrashFallback />}>
+  <LocalErrorBoundary>
     <App />
-  </Sentry.ErrorBoundary>
+  </LocalErrorBoundary>
 );

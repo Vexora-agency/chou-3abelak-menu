@@ -12,6 +12,11 @@
  *  - Content-Security-Policy: default-src 'none'; sandbox
  *  - Cross-Origin-Resource-Policy: same-origin (no hotlinking)
  *  - immutable caching + ETag / If-None-Match -> 304
+ *
+ * Edge caching (Cache API, same pattern as /api/menu): keys are
+ * content-addressed uuids and the response is immutable, so a cached entry
+ * can never go stale for its URL — a replaced photo always mints a new key.
+ * 404/503/405 responses are never stored.
  */
 
 import { contentTypeFor, keyFromPath } from '../../_shared/image-meta.js';
@@ -54,6 +59,30 @@ export async function onRequest(context) {
     return plain(503, 'unavailable');
   }
 
+  // Edge cache first (Cache API): warm after the first fetch per colo, then
+  // served without the R2 round-trip. Guarded so unit tests (plain Node, no
+  // `caches`) and contexts without waitUntil keep working.
+  const cache = typeof caches !== 'undefined' && caches.default ? caches.default : null;
+  const cacheKey = cache ? new Request(request.url, { method: 'GET' }) : null;
+  if (cache && cacheKey) {
+    let cachedResponse = null;
+    try {
+      cachedResponse = await cache.match(cacheKey);
+    } catch {
+      cachedResponse = null;
+    }
+    if (cachedResponse) {
+      if (request.method === 'HEAD') {
+        return new Response(null, { status: 200, headers: cachedResponse.headers });
+      }
+      const cachedEtag = cachedResponse.headers.get('ETag');
+      if (cachedEtag && matchesEtag(request.headers.get('If-None-Match'), cachedEtag)) {
+        return new Response(null, { status: 304, headers: cachedResponse.headers });
+      }
+      return cachedResponse;
+    }
+  }
+
   let object;
   try {
     object = await env.MENU_IMAGES.get(key);
@@ -87,5 +116,11 @@ export async function onRequest(context) {
     return new Response(null, { status: 200, headers });
   }
 
-  return new Response(object.body, { status: 200, headers });
+  const response = new Response(object.body, { status: 200, headers });
+
+  if (cache && cacheKey && typeof context.waitUntil === 'function') {
+    context.waitUntil(cache.put(cacheKey, response.clone()));
+  }
+
+  return response;
 }

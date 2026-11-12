@@ -52,7 +52,7 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
     <motion.div {...rise(0.48)} id="orders-list" className="scroll-mt-4 pt-2">
       <h2 className={h2}>{kitchen ? t.orders : t.recent}</h2>
       <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
-        {(['all', 'new', 'confirmed', 'ready', 'completed', 'cancelled'] as const).map((s) => {
+        {(['all', 'new', 'confirmed', 'completed', 'cancelled'] as const).map((s) => {
           const active = filter === s;
           return (
             <button key={s} type="button" onClick={() => { onFilterChange(s); }} aria-pressed={active}
@@ -150,9 +150,8 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                             <div className="flex justify-between text-sm font-extrabold text-white"><span>{t.total}</span><span className="tabular-nums"><bdi dir="ltr" className="tabular-nums">{fmt(o.total)}</bdi> <span dir="auto">{currency}</span></span></div>
                             <div className="flex justify-between items-center pt-0.5">
                               <span>{t.payment}</span>
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold border border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[var(--primary)]">
-                                <span aria-hidden="true">💵</span>
-                                <span dir="auto">{t.cod}</span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[var(--primary)]" dir="auto">
+                                {t.cod}
                               </span>
                             </div>
                           </div>

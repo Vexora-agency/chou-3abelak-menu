@@ -211,6 +211,13 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   const sendOrder = async () => {
     setErrorMsg('');
 
+    // Payments kill-switch: COD is the only method, so a disabled COD means
+    // there is no way to pay — refuse before any validation or network use.
+    if (menu.settings.payments?.codEnabled === false) {
+      setErrorMsg(isAr ? 'الدفع غير متاح حاليًا — تواصل معنا لإتمام طلبك' : 'Payment is currently unavailable — please contact us to place your order');
+      return;
+    }
+
     // Submit-time availability check: ask the server first (2.5 s timeout).
     // A non-open answer stops everything here. When the call fails, fall
     // back to the last known menu state (fail open).
@@ -355,22 +362,24 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         },
         lang
       );
-      if (result.blockedMessage) {
+      if (result.failure === 'blocked') {
         // Server-side availability gate (paused/closed/disabled): show the
-        // message and stop here.
-        setErrorMsg(result.blockedMessage || (isAr ? 'الطلب غير متاح حالياً' : 'Ordering is currently unavailable'));
+        // message and stop here — never a clean confirmation without a
+        // tracking number, and the cart stays intact for later.
+        setErrorMsg(result.blockedMessage || (isAr ? 'الطلب غير متاح حاليًا — تواصل معنا' : 'Ordering is currently unavailable — please contact us'));
         return;
       }
       if (result.failure === 'timeout' || result.failure === 'invalid') {
-        // Fail-open ordering: the order may still be saved below, but the
-        // customer sees exactly why it carries no number — and the code
-        // in caps is the machine cause for remote diagnosis. A retry reuses
-        // the same idempotency key, so it can never double-record.
+        // Transport/server rejection with no order number: stay on the form
+        // with the cart intact so the customer can retry. The retry reuses
+        // the same idempotency key, so it can never double-record — if the
+        // first attempt was actually saved, the retry resolves to it.
         setErrorMsg(
           result.failure === 'timeout'
           ? (isAr ? 'انقطع الاتصال أثناء الإرسال — قد يكون طلبك محفوظًا: تحقق من صفحة التتبع قبل إعادة المحاولة' : 'Connection dropped while sending — your order may be saved: check the dashboard before retrying')
           : (isAr ? 'تعذّر إرسال الطلب — حدّث الصفحة وحاول مجددًا' : 'Server rejected the order — refresh and try again')
         );
+        return;
       }
       if (result.orderNumber) {
         setLastOrder({ number: result.orderNumber, trackToken: result.trackToken ?? null });

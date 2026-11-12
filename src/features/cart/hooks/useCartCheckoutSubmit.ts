@@ -72,14 +72,14 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   const [honeypot, setHoneypot] = useState('');
 
   // Shared delivery location (React state only — never persisted, never
-  // logged). Every checkout starts pin-less ON PURPOSE, even when "remember
+  // logged). Every checkout starts pin-less on purpose, even when "remember
   // my details" is checked: a remembered pin is never restored, so a stale
-  // pin from another visit/city can never ride along silently — the
-  // customer picks a fresh pin every order (required below). Cleared when
+  // pin from another visit/city can never ride along silently. Pinning is
+  // OPTIONAL — a typed address alone is enough to order; a fresh pin is a
+  // precision bonus (exact Telegram link, distance-based fee). Cleared when
   // the cart closes/clears or after an order is sent.
-  // Detection + picking live in the LocationPicker sheet below.
-  // Text + pin travel as a pair — editing the address by hand drops the pin
-  // (see the address field), which then must be re-picked.
+  // Text + pin travel as a pair: typing refines the address but keeps the
+  // pin (explicit X removes it).
   const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [locSheetOpen, setLocSheetOpen] = useState(false);
   // Delivery-zone gate: resolves the pin to country/subdivision (BigDataCloud
@@ -266,13 +266,13 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       setErrorMsg(isAr ? 'يرجى إدخال عنوان التوصيل بالتفصيل' : 'Please enter delivery address');
       return;
     }
-    // Fresh pin every order (never remembered): the ticket's exact-pin link
-    // and ETA distance need a position chosen NOW — a typed address alone
-    // is not enough. Coarse fixes still pass here (fresh but imprecise);
-    // sharpness is enforced downstream, never by blocking the order.
-    if (!location || !Number.isFinite(location.lat) || !Number.isFinite(location.lng)) {
-      setErrorMsg(isAr ? 'يرجى تحديد موقعك على الخريطة (خطوة مطلوبة)' : 'Please pin your location on the map (required step)');
-      return;
+    // Pin is OPTIONAL (manual addresses allowed): a typed delivery address
+    // alone is enough. A present pin sharpens the ticket (exact Telegram
+    // link, distance-based fee); coarse fixes are degraded downstream,
+    // never blocking. A malformed pin state (non-finite) is ignored, not
+    // fatal — the order rides on the address text.
+    if (location && (!Number.isFinite(location.lat) || !Number.isFinite(location.lng))) {
+      clearLocation();
     }
     // Delivery-zone hard block (selected zones only): the pin resolved
     // outside the served area. Same copy as the on-screen panel.
@@ -311,8 +311,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         })();
 
     // Save remember details (checked = persist, unchecked = erase). The pin
-    // is deliberately NEVER persisted: every order needs a freshly picked
-    // pin (validated mandatory above), so no stale pin can ever ride along.
+    // is deliberately NEVER persisted, so no stale pin can ever ride along.
     // Same for the delivery address: withoutAddress() drops it (old blobs
     // keep their field but it is ignored on load above).
     saveRememberedDetails(withoutAddress(customerToSave));
@@ -349,9 +348,9 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
           ...(l.addonQty && Object.keys(l.addonQty).length ? { addonQty: { ...l.addonQty } } : {}),
           qty: l.quantity,
         })),
-        // The pin passed validation above, so it always rides along (even
-        // coarse — the server degrades coarse fixes to the address-query
-        // fallback instead of a fake "exact" pin, but never rejects).
+        // The pin rides along only when present (optional): the server
+        // degrades coarse fixes to the address-query fallback instead of a
+        // fake "exact" pin, and address-only orders store no coords.
         ...(location ? { location: { lat: location.lat, lng: location.lng, accuracy: Math.round(location.accuracy) } } : {}),
         // Zone claim for the server-side gate: resolved country (+
         // subdivision when known). Omit when unresolved — the server

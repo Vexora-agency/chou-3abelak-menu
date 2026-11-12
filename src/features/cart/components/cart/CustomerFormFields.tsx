@@ -93,13 +93,13 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             type="text"
             value={customer.address} dir={isAr ? 'rtl' : 'ltr'}
             onChange={(e) => {
-              // Hand-typed text breaks the validated text+pin pair: drop the
-              // pin so a stale point can never ride with a new address.
-              // (Picker auto-fills set state directly and keep the pin.)
-              if (location) onClearLocation();
+              // Typing refines the address but keeps the pin: a picked point
+              // plus a detailed address (building, floor, landmark) is the
+              // best pair for the driver. The pin is removed only via its
+              // explicit X button.
               setCustomer({ ...customer, address: e.target.value });
             }}
-            placeholder={isAr ? 'المنطقة والشارع ورقم المبنى… ثم حدّد موقعك على الخريطة (خطوة مطلوبة)' : 'Area, street, building… then pin your location (required)'}
+            placeholder={isAr ? 'المنطقة والشارع ورقم المبنى… (تحديد الموقع على الخريطة اختياري ويساعد السائق)' : 'Area, street, building… (pinning on the map is optional and helps the driver)'}
             maxLength={200}
             autoComplete="street-address"
             enterKeyHint="next"
@@ -113,8 +113,8 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             <button
               type="button"
               onClick={onOpenLocSheet}
-              title={isAr ? 'افتح الخريطة لتحديد موقعك (خطوة مطلوبة)' : 'Open the map to pin your location (required)'}
-              aria-label={isAr ? 'افتح الخريطة لتحديد موقعك (خطوة مطلوبة)' : 'Open the map to pin your location (required)'}
+              title={isAr ? 'افتح الخريطة لتحديد موقعك (اختياري ويساعد السائق)' : 'Open the map to pin your location (optional, helps the driver)'}
+              aria-label={isAr ? 'افتح الخريطة لتحديد موقعك (اختياري ويساعد السائق)' : 'Open the map to pin your location (optional, helps the driver)'}
               className={`absolute end-0.5 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                 darkMode
                   ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'

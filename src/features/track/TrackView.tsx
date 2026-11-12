@@ -386,9 +386,8 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
               </div>
               <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/[0.07] px-3 py-2">
                 <span className="text-[11px] font-bold text-neutral-400">{isAr ? 'طريقة الدفع' : 'Payment'}</span>
-                <span className="inline-flex items-center gap-1.5 text-xs font-black text-[var(--primary)]">
-                  <span aria-hidden="true">💵</span>
-                  <span dir="auto">{isAr ? 'الدفع عند الاستلام' : 'Cash on Delivery'}</span>
+                <span className="text-xs font-black text-[var(--primary)]" dir="auto">
+                  {isAr ? 'الدفع عند الاستلام' : 'Cash on Delivery'}
                 </span>
               </div>
             </div>

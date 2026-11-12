@@ -102,6 +102,10 @@ export const STR = {
     min: (n: number) => `${n} min ago`, hr: (n: number) => `${n}h ago`,
     arrives: (t: string) => `Arrives ~${t}`, late: (n: number) => `${n}m late`,
     linkedShort: (n: number) => `Linked to #${n}`, linkedLong: (n: number) => `Follow-up to order #${n} — same customer, prepare together`,
+    jointTitle: (n: number) => n === 2 ? 'Linked pair — prepare & deliver together' : `Linked group (${n}) — prepare & deliver together`,
+    ackBoth: (n: number) => `Start preparing all (${n})`,
+    completeBoth: (n: number) => `Complete all (${n})`,
+    alignBoth: (n: number) => `Bring all to the same stage (${n})`,
     by: (n: string) => `by ${n}`,
   },
   ar: {
@@ -120,6 +124,10 @@ export const STR = {
     min: (n: number) => `قبل ${n} د`, hr: (n: number) => `قبل ${n} س`,
     arrives: (t: string) => `يوصل ~${t}`, late: (n: number) => `متأخر ${n} د`,
     linkedShort: (n: number) => `مرتبط بـ #${n}`, linkedLong: (n: number) => `تابع للطلب #${n} — نفس الزبون، يُجهَّز معه`,
+    jointTitle: (n: number) => n === 2 ? 'طلبان مرتبطان — يُجهَّزان ويوصلان معًا' : `طلبات مرتبطة (${n}) — تُجهَّز وتوصل معًا`,
+    ackBoth: (n: number) => `بدء تحضير الكل (${n})`,
+    completeBoth: (n: number) => `إتمام الكل (${n})`,
+    alignBoth: (n: number) => `توحيد مرحلة الكل (${n})`,
     by: (n: string) => `بواسطة ${n}`,
   },
 } as const;

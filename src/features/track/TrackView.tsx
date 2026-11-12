@@ -37,6 +37,12 @@ interface TrackData {
   paymentStatus?: string | null;
   /** Follow-up link (server-computed): earlier order number or null. */
   parentNumber?: number | null;
+  /**
+   * Joint group (server-computed): OTHER member numbers + their combined
+   * total. Present when this order rides with follow-ups — the page offers
+   * one tap confirming them all. Null when solo.
+   */
+  linked?: { numbers: number[]; total: number } | null;
   items: TrackItem[];
   subtotal: number;
   deliveryFee: number;
@@ -316,6 +322,13 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                 {isAr ? `🔗 هذا الطلب سيصل مع الطلب #${data.parentNumber} — نفس عملية التوصيل` : `🔗 Arriving with order #${data.parentNumber} — same delivery`}
               </p>
             )}
+            {data.linked && Array.isArray(data.linked.numbers) && data.linked.numbers.length > 0 && (
+              <p className="mt-2 text-center text-[11px] font-extrabold text-[var(--primary)] bg-[var(--primary)]/10 border border-[var(--primary)]/30 rounded-xl px-3 py-1.5" dir="auto">
+                {isAr
+                  ? `🔗 طلباتك ستصل معًا (${[data.number, ...data.linked.numbers].sort((a, b) => a - b).map((n) => `#${n}`).join(' + ')}) — زر واحد يؤكد استلام الكل`
+                  : `🔗 Your orders (${[data.number, ...data.linked.numbers].sort((a, b) => a - b).map((n) => `#${n}`).join(' + ')}) arrive together — one tap confirms them all`}
+              </p>
+            )}
 
             {cancelled ? (
               <div className="mt-6 rounded-2xl border border-red-500/40 bg-red-950/30 p-5 text-center">
@@ -425,6 +438,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                   token={token}
                   lang={lang}
                   darkMode
+                  groupCount={data.linked && Array.isArray(data.linked.numbers) && data.linked.numbers.length > 0 ? data.linked.numbers.length + 1 : undefined}
                   disabled={receivedDisabled}
                   waitingHint={awaitingConfirm ? (
                     inCancelWindow ? (

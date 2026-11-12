@@ -9,6 +9,13 @@ interface ReceivedButtonProps {
   darkMode?: boolean;
   compact?: boolean;
 /**
+ * Joint receipt ("both go together — one tap"): when set with count >= 2,
+ * the tap completes the WHOLE linked group (server flips every active
+ * member atomically and answers with completedNumbers). Copy switches to
+ * the plural automatically.
+ */
+  groupCount?: number;
+/**
  * Gated by confirmation: true while the order is still `new` (the owner
  * hasn't tapped "بدء التحضير" yet). The button renders disabled with a
  * waiting hint instead of completing — backend enforces the same rule.
@@ -32,9 +39,10 @@ interface ReceivedButtonProps {
  * server-side and pings the owner on Telegram.
  */
 export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
-  number, token, lang, darkMode = true, compact = false, disabled = false, waitingHint, onConfirmed,
+  number, token, lang, darkMode = true, compact = false, groupCount, disabled = false, waitingHint, onConfirmed,
 }) => {
   const isAr = lang === 'ar';
+  const joint = typeof groupCount === 'number' && groupCount >= 2;
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -58,7 +66,7 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
     setBusy(true);
     setFailed(false);
     try {
-      const res = await publicPostRaw('/api/track/received', { number, t: token }, 8000);
+      const res = await publicPostRaw('/api/track/received', { number, t: token, ...(joint ? { group: true } : {}) }, 8000);
       if (!res) {
         setFailed(true);
         return;
@@ -87,7 +95,9 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
     <div className={compact ? '' : 'rounded-xl border border-neutral-800 bg-black/40 p-3 text-center'}>
       {!compact && (
         <p className={`text-xs font-black mb-2.5 ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
-          {isAr ? 'هل استلمت طلبك؟' : 'Did you receive your order?'}
+          {joint
+            ? (isAr ? `هل استلمت الطلبين #${number} معًا؟` : `Did you receive both orders (with #${number})?`)
+            : (isAr ? 'هل استلمت طلبك؟' : 'Did you receive your order?')}
         </p>
       )}
       <button
@@ -100,7 +110,7 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
         } ${disabled ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed' : 'bg-[var(--primary)] text-[#0A0A0A]'}`}
       >
         {busy ? <Loader2 size={15} className="animate-spin" /> : <PackageCheck size={15} />}
-        {isAr ? 'نعم، استلمت' : 'Yes, received'}
+        {joint ? (isAr ? 'نعم، استلمت الكل' : 'Yes, received all') : (isAr ? 'نعم، استلمت' : 'Yes, received')}
       </button>
       {disabled && (
         waitingHint !== undefined ? (

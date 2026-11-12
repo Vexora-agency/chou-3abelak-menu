@@ -43,6 +43,8 @@ interface BellOrder extends StoredCustomerOrder {
   etaAt: string | null;
   /** Follow-up link (server-computed joint delivery); null = standalone. */
   parentNumber: number | null;
+  /** Joint group members (server-computed); empty = solo. One tap confirms all. */
+  groupNumbers: number[];
 }
 
 function timeAgo(at: string, isAr: boolean, nowMs: number): string {
@@ -104,7 +106,7 @@ const STATUS_LABEL: Record<BellOrder['status'], { en: string; ar: string }> = {
 async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<number, BellOrder>> {
   const next: Record<number, BellOrder> = {};
   const unknown = (o: StoredCustomerOrder): BellOrder => ({
-    ...o, status: 'unknown', total: null, itemsCount: null, createdAt: null, receivableAt: null, etaAt: null, parentNumber: null,
+    ...o, status: 'unknown', total: null, itemsCount: null, createdAt: null, receivableAt: null, etaAt: null, parentNumber: null, groupNumbers: [],
   });
   if (list.length === 0) return next;
   try {
@@ -119,9 +121,9 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
       return next;
     }
     const d = (await res.json()) as {
-      results?: Array<{ number?: unknown; status?: unknown; total?: unknown; itemsCount?: unknown; createdAt?: unknown; receivableAt?: unknown; etaAt?: unknown; parentNumber?: unknown }>;
+      results?: Array<{ number?: unknown; status?: unknown; total?: unknown; itemsCount?: unknown; createdAt?: unknown; receivableAt?: unknown; etaAt?: unknown; parentNumber?: unknown; groupNumbers?: unknown }>;
     };
-    const byNum = new Map<number, { status: BellOrder['status']; total: number | null; itemsCount: number | null; createdAt: string | null; receivableAt: string | null; etaAt: string | null; parentNumber: number | null }>();
+    const byNum = new Map<number, { status: BellOrder['status']; total: number | null; itemsCount: number | null; createdAt: string | null; receivableAt: string | null; etaAt: string | null; parentNumber: number | null; groupNumbers: number[] }>();
     for (const r of Array.isArray(d?.results) ? d.results : []) {
       if (!r || typeof r.number !== 'number') continue;
       const st = typeof r.status === 'string' ? r.status : '';
@@ -133,6 +135,7 @@ async function fetchOrderStates(list: StoredCustomerOrder[]): Promise<Record<num
         receivableAt: typeof r.receivableAt === 'string' ? r.receivableAt : null,
         etaAt: typeof r.etaAt === 'string' ? r.etaAt : null,
         parentNumber: typeof r.parentNumber === 'number' ? r.parentNumber : null,
+        groupNumbers: Array.isArray(r.groupNumbers) ? r.groupNumbers.filter((n): n is number => typeof n === 'number') : [],
       });
     }
     for (const o of list) {
@@ -489,7 +492,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
   // confirm button already flips local state, so this is instant — the
   // next poll just confirms it). Unknown (not yet fetched) counts as
   // active so the bell never flickers on mount.
-  const orders = shelf.map((o) => states[o.n] ?? { ...o, status: 'unknown' as const, total: null, itemsCount: null, createdAt: null, receivableAt: null, etaAt: null, parentNumber: null });
+  const orders = shelf.map((o) => states[o.n] ?? { ...o, status: 'unknown' as const, total: null, itemsCount: null, createdAt: null, receivableAt: null, etaAt: null, parentNumber: null, groupNumbers: [] });
   const allTerminal = orders.length > 0 && orders.every((o) => o.status === 'completed' || o.status === 'cancelled');
   // Live display clock (1 s) while any shelf order needs a live countdown:
   // either a delivery lock (60 s batch poll only re-stamps `nowMs`, so
@@ -695,7 +698,11 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                         <span className="inline-flex items-center gap-1 ms-1"><PackageSearch size={11} />{isAr ? 'تعذر التحديث' : 'Update unavailable'}</span>
                       )}
                     </p>
-                    {typeof o.parentNumber === 'number' && (o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && (
+                    {Array.isArray(o.groupNumbers) && o.groupNumbers.length > 0 && (o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') ? (
+                      <p className={`mt-1 text-[11px] font-bold ${darkMode ? 'text-amber-300' : 'text-amber-700'}`} dir="auto">
+                        {isAr ? `🔗 طلباتك ستصل معًا — زر واحد يؤكد استلام الكل` : `🔗 Your orders arrive together — one tap confirms all`}
+                      </p>
+                    ) : typeof o.parentNumber === 'number' && (o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && (
                       <p className={`mt-1 text-[11px] font-bold ${darkMode ? 'text-amber-300' : 'text-amber-700'}`} dir="auto">
                         {isAr ? `🔗 سيصل مع الطلب #${o.parentNumber} — نفس عملية التوصيل` : `🔗 Arriving with order #${o.parentNumber} — same delivery`}
                       </p>
@@ -734,6 +741,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                           lang={lang}
                           darkMode={darkMode}
                           compact
+                          groupCount={Array.isArray(o.groupNumbers) && o.groupNumbers.length > 0 ? o.groupNumbers.length + 1 : undefined}
                           disabled={o.status === 'new' || locked}
                           waitingHint={o.status === 'new' ? (
                             inCancelWindow ? (
@@ -751,7 +759,17 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                             )
                           ) : undefined}
                           onConfirmed={() =>
-                            setStates((prev) => (prev[o.n] ? { ...prev, [o.n]: { ...prev[o.n], status: 'completed' } } : prev))
+                            setStates((prev) => {
+                              const next = { ...prev };
+                              // Joint receipt flips the whole group server-side:
+                              // mirror every member locally so no stale row
+                              // lingers until the next 60 s poll.
+                              const ids = [o.n, ...(Array.isArray(o.groupNumbers) ? o.groupNumbers : [])];
+                              for (const n of ids) {
+                                if (next[n]) next[n] = { ...next[n], status: 'completed' };
+                              }
+                              return next;
+                            })
                           }
                         />
                       )}

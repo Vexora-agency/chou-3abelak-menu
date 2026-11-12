@@ -114,7 +114,12 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   // Always enter at the top: a reload restores the old scroll position and
   // a bfcache return lands mid-page — the tracking page must start at its
   // header. Restores the browser default on unmount so menu navigation
-  // keeps its native behavior.
+  // keeps its native behavior. NOTE: leaving this page is always a FULL
+  // navigation (back button = location.href), so the React cleanup below
+  // never runs — the pagehide listener resets the value on the way out,
+  // otherwise the tab stays poisoned on 'manual' and later menu
+  // restores (swipe-back / reload after iOS discards the tab) wrongly
+  // land at the top.
   useEffect(() => {
     let prev: ScrollRestoration = 'auto';
     try {
@@ -124,7 +129,14 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
       }
     } catch {}
     window.scrollTo(0, 0);
+    const heal = () => {
+      try {
+        if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'auto';
+      } catch {}
+    };
+    window.addEventListener('pagehide', heal);
     return () => {
+      window.removeEventListener('pagehide', heal);
       try {
         if ('scrollRestoration' in window.history) window.history.scrollRestoration = prev;
       } catch {}

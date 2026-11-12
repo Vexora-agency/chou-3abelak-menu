@@ -169,6 +169,24 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     }, 2000);
   }, [showAdmin]);
 
+  // Scroll-restoration hygiene (iOS jump-to-top fix): the track page sets
+  // history.scrollRestoration='manual' while it is showing, but leaving it
+  // is ALWAYS a full navigation (back button = location.href), so its React
+  // cleanup never runs and the tab stays poisoned on 'manual' forever —
+  // swipe-back to the menu / reload after iOS discards the background tab
+  // then lands at the TOP instead of the previous position. Healing it here
+  // on every full app load covers all return flows (menu, admin, invite).
+  // Child effects run first, so on a track visit TrackView still applies
+  // its own 'manual' + explicit scrollTo(0,0) AFTER this — mount behavior
+  // there is unchanged; only the leftover value is gone.
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'auto';
+      }
+    } catch {}
+  }, []);
+
   // Thin reading-progress line at the top of the page — hand-rolled on purpose:
   // motion's useScroll measures document geometry on every scroll (forced
   // reflow ~235 ms on a low-end phone, the top flagged offender in traces).

@@ -99,7 +99,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               // explicit X button.
               setCustomer({ ...customer, address: e.target.value });
             }}
-            placeholder={isAr ? 'اكتب عنوانك هنا أو حدّده على الخريطة بزر 📍' : 'Type your address here, or pin it on the map with 📍'}
+            placeholder={isAr ? 'اكتب عنوانك هنا أو حدّده على الخريطة' : 'Type your address here, or pin it on the map'}
             maxLength={200}
             autoComplete="street-address"
             enterKeyHint="next"
@@ -128,7 +128,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         <p className={`mt-1 text-[11px] ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>
           {location
             ? (isAr ? 'يُكتب مع كل طلب ولا يُحفظ على هذا الجهاز.' : 'Entered fresh each order — never saved on this device.')
-            : (isAr ? '📍 اضغط على أيقونة الموقع لتحديد عنوانك بدقة وسهولة — أو اكتبه يدويًا.' : '📍 Tap the location icon to pin your address quickly and accurately — or type it manually.')}
+            : (isAr ? 'اضغط على أيقونة الموقع لتحديد عنوانك بدقة وسهولة — أو اكتبه يدويًا.' : 'Tap the location icon to pin your address quickly and accurately — or type it manually.')}
         </p>
         {location && (
           <div className={`mt-1.5 flex items-center flex-wrap gap-x-2 gap-y-1 text-xs font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>

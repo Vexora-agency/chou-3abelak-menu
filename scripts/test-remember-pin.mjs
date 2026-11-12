@@ -15,6 +15,7 @@ import {
   formatNewOrderMessage,
   orderRowToCleaned,
   rebuildOrderMessage,
+  storeCountry,
   MAPS_ACCURACY_OK_M,
 } from '../functions/_shared/telegram.js';
 import {
@@ -107,6 +108,17 @@ ok(loadRememberedDetails() === null, 'unchecked forgets details');
   const already = buildMapsLink({ ...cleaned, address: 'Beirut, Hamra, Lebanon', location: null });
   const decAlready = decodeURIComponent(already.url);
   ok(decAlready.includes('Hamra, Lebanon') && (decAlready.match(/Lebanon/g) || []).length === 1, 'existing Lebanon suffix not duplicated');
+
+  // Store country is automatic per client (white-label): selected delivery
+  // zones win, then the store timezone, then Lebanon as the last resort.
+  ok(storeCountry({ ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'AE', subdivisions: 'ALL' }] } }, timezone: 'Asia/Beirut' }).en === 'United Arab Emirates', 'selected zone country wins over timezone');
+  ok(storeCountry({ ordering: { deliveryZones: { mode: 'all', countries: [] } }, timezone: 'Asia/Dubai' }).en === 'United Arab Emirates', 'timezone resolves UAE');
+  ok(storeCountry({ ordering: { deliveryZones: { mode: 'all', countries: [] } }, timezone: 'Africa/Cairo' }).ar === 'مصر', 'timezone resolves Egypt with Arabic name');
+  ok(storeCountry(null).en === 'Lebanon' && storeCountry({}).ar === 'لبنان', 'missing settings fall back to Lebanon');
+  const aeLink = buildMapsLink({ ...cleaned, address: 'Marina Walk', location: null }, { en: 'United Arab Emirates', ar: 'الإمارات' });
+  ok(aeLink && decodeURIComponent(aeLink.url).includes('Marina Walk, United Arab Emirates'), 'fallback query suffixed with the store country');
+  const aeDup = buildMapsLink({ ...cleaned, address: 'دبي مارينا، الإمارات', location: null }, { en: 'United Arab Emirates', ar: 'الإمارات' });
+  ok((decodeURIComponent(aeDup.url).match(/الإمارات/g) || []).length === 1, 'existing Arabic country suffix not duplicated');
 
   // Release-sweep round-trip (DB drops accuracy, keeps lat/lng): good pin stays exact.
   const row = {

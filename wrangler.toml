@@ -15,7 +15,7 @@ binding = "ORDERS_DB"
 database_name = "chou-3abelak-orders"
 # Placeholder: only used for --remote runs against a real database created
 # with `wrangler d1 create`. Local runs (--local) ignore this id.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "7d585e65-5bea-4b81-b727-ebb001bc72e6"
 migrations_dir = "migrations"
 
 [[kv_namespaces]]

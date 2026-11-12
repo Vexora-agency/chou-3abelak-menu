@@ -21,6 +21,7 @@ import { SentrySection } from '../SentrySection';
 import { TelegramSection } from '../TelegramSection';
 import { PaymentsSection } from '../PaymentsSection';
 import { SoundsSection } from '../SoundsSection';
+import { PhoneBlocklistSection } from '../PhoneBlocklistSection';
 import { NotifyEmailSection } from '../NotifyEmailSection';
 import { AutoplaySection } from '../AutoplaySection';
 import { SeasonalSection } from '../SeasonalSection';
@@ -312,6 +313,14 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                 },
               }))
             }
+          />
+
+          <PhoneBlocklistSection
+            lang={lang}
+            adminFetch={adminFetch}
+            onConfirm={onConfirm}
+            collapsed={!!collapsedGroups['phone-blocks']}
+            onToggleCollapse={() => onToggleCollapse('phone-blocks')}
           />
 
           <SoundsSection

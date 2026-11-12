@@ -66,7 +66,7 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
           for (let i = 0; i < list.length; i++) {
             const a = prev[i];
             const b = list[i];
-            if (!a || !b || a.id !== b.id || a.status !== b.status || a.total !== b.total || a.updatedBy !== b.updatedBy) {
+            if (!a || !b || a.id !== b.id || a.status !== b.status || a.total !== b.total || a.updatedBy !== b.updatedBy || a.needsReview !== b.needsReview) {
               same = false;
               break;
             }

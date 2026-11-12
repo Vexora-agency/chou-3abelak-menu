@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { BellRing, Check, ChevronDown, Inbox, MapPin, MessageCircle, Phone, Store, X } from 'lucide-react';
 import { STR } from './ordersDashTypes';
 import type { Order, OrderStatus } from './ordersDashTypes';
+import { OrderReviewBadge } from './OrderReviewBadge';
 import { STATUS_STYLE, TYPE_ICON, digits, fmt, itemTitle, itemBaseTitle, itemAddonsSuffix, lineIsSpicy, lineSpicyId, loc, relTime } from './ordersDashUtils';
 import { unitLabel } from '@/src/utils/pricing';
 import { HeatPill } from '@/src/components/HeatPill';
@@ -103,6 +104,7 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                         </span>
                       )}
                       <span className="text-sm font-semibold truncate">{o.customer.name}</span>
+                      <OrderReviewBadge lang={lang} needsReview={o.needsReview} riskReasons={o.riskReasons} />
                     </span>
                     <span className="block text-[11px] text-neutral-500 truncate mt-0.5" dir="auto">
                       <bdi>{relTime(o.createdAt, lang, now)}</bdi> · {o.items.map((it) => `${it.qty}× ${typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, lang)} ` : ''}${itemTitle(it, lang)}`).join(isAr ? '، ' : ', ')}

@@ -32,6 +32,7 @@ import { sha256Hex } from './access.js';
 import { unitLabel } from './pricing.js';
 import { safeCompareStrings } from './session.js';
 import { captureBackendException } from './sentry.js';
+import { RISK_REASON_LABEL } from './order-risk.js';
 import COUNTRIES from './geodata/countries.js';
 import { findOrderById, countActiveKitchenOrders, updateOrderStatus } from './repositories/orders.repo.js';
 import { orderDistanceKm, orderingEtaOrDefaults } from './eta.js';
@@ -634,6 +635,28 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency, country) {
   if (cleaned && Number.isInteger(cleaned.parentNumber)) {
     lines.push(`🔁 <b>طلب إضافي مرتبط بالطلب ${bidi(`#${cleaned.parentNumber}`)}</b> — من العميل نفسه، يُجهَّز معه`);
   }
+  // Fake-order review flag (migration 0032): stable reason CODES only, never
+  // the score internals. Localized here from RISK_REASON_LABEL (single
+  // source, mirrored by the dashboard badge); unknown codes render raw.
+  // Renders in the FIRST message and every rebuild (it lives in
+  // formatNewOrderMessage itself, like the follow-up badge above).
+  if (cleaned && cleaned.needsReview === true) {
+    let reasons = [];
+    try {
+      if (Array.isArray(cleaned.riskReasons)) reasons = cleaned.riskReasons.filter((s) => typeof s === 'string' && s).slice(0, 4);
+    } catch {
+      reasons = [];
+    }
+    const label = (code) => {
+      try {
+        const hit = RISK_REASON_LABEL && RISK_REASON_LABEL[code];
+        if (hit && typeof hit.ar === 'string' && hit.ar) return hit.ar;
+      } catch {}
+      return code;
+    };
+    const tail = reasons.length ? ` ${escapeHtml(reasons.map(label).join(' · '))}` : '';
+    lines.push(`⚠️ <b>طلب يحتاج مراجعة:</b>${tail}`);
+  }
   const typeLabel = TYPE_LABEL[cleaned.type] || escapeHtml(String(cleaned.type || ''));
   lines.push(`<b>النوع:</b> ${typeLabel}`);
   lines.push(`<b>العميل:</b> ${escapeHtml(cleaned.name || '-')}`);
@@ -997,6 +1020,22 @@ export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, 
 }
 
 /**
+ * Risk columns (migration 0032) to the cleaned shape formatNewOrderMessage
+ * reads. Local parser (not importing orders.js) — legacy rows read as
+ * unscored, reasons are capped bilingual strings.
+ */
+function telegramRiskFields(o) {
+  const score = o && Number.isInteger(o.risk_score) && o.risk_score >= 0 ? o.risk_score : 0;
+  let reasons = [];
+  try {
+    const parsed = JSON.parse(typeof o?.risk_reasons === 'string' ? o.risk_reasons : '[]');
+    if (Array.isArray(parsed)) reasons = parsed.filter((s) => typeof s === 'string' && s).slice(0, 10);
+  } catch {
+    reasons = [];
+  }
+  return { riskScore: score, riskReasons: reasons, needsReview: score >= 50 };
+}
+/**
  * Map a raw `orders` DB row to the `cleaned` shape formatNewOrderMessage
  * reads (single source — used by the live order route, the release sweep,
  * and rebuildOrderMessage below).
@@ -1028,6 +1067,10 @@ export function orderRowToCleaned(order) {
     lang: o.lang,
     // Follow-up link (migration 0023): integer or null, never 0/''.
     parentNumber: Number.isInteger(o.parent_number) ? o.parent_number : null,
+    // Fake-order risk (migration 0032): mirrors mapOrderRow so the release
+    // sweep's first message and rebuildOrderMessage carry the review flag.
+    // Legacy rows (no columns) read as unscored.
+    ...telegramRiskFields(o),
     location: (o.location_lat !== null && o.location_lat !== undefined &&
       o.location_lng !== null && o.location_lng !== undefined)
       ? { lat: o.location_lat, lng: o.location_lng }

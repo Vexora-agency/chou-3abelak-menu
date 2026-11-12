@@ -85,12 +85,14 @@ async function postOrder(env, body) {
     return { kv, db: makeDB([]), ready: kv.put('menu', JSON.stringify(MENU)) };
   };
   // 15 distinct orders pass, the 16th is capped — sequentially.
+  // Distinct phones per order: the per-phone daily cap (3/day, migration
+  // 0032) would otherwise fire before the IP cap under test here.
   {
     const { kv, db, ready } = freshEnv();
     await ready;
     const statuses = [];
     for (let i = 0; i < 16; i++) {
-      const r = await postOrder({ MENU_KV: kv, ORDERS_DB: db }, orderBody({ location: pin, idemKey: `seq-${i}` }));
+      const r = await postOrder({ MENU_KV: kv, ORDERS_DB: db }, orderBody({ customer: { name: 'John', phone: `78${100000 + i}`, address: 'Hamra' }, location: pin, idemKey: `seq-${i}` }));
       statuses.push(r.status);
     }
     ok(statuses.slice(0, 15).every((s) => s === 200), 'first 15 distinct orders accepted');
@@ -102,7 +104,7 @@ async function postOrder(env, body) {
     const { kv, db, ready } = freshEnv();
     await ready;
     const results = await Promise.all(
-      Array.from({ length: 30 }, (_, i) => postOrder({ MENU_KV: kv, ORDERS_DB: db }, orderBody({ location: pin, idemKey: `burst-${i}` })))
+      Array.from({ length: 30 }, (_, i) => postOrder({ MENU_KV: kv, ORDERS_DB: db }, orderBody({ customer: { name: 'John', phone: `78${200000 + i}`, address: 'Hamra' }, location: pin, idemKey: `burst-${i}` })))
     );
     const okCount = results.filter((r) => r.status === 200).length;
     const limitedCount = results.filter((r) => r.status === 429).length;
@@ -129,7 +131,7 @@ async function postOrder(env, body) {
     ok(bad.status === 400, 'invalid body rejected');
     const statuses = [];
     for (let i = 0; i < 15; i++) {
-      statuses.push((await postOrder(env, orderBody({ location: pin, idemKey: `after-bad-${i}` }))).status);
+      statuses.push((await postOrder(env, orderBody({ customer: { name: 'John', phone: `78${300000 + i}`, address: 'Hamra' }, location: pin, idemKey: `after-bad-${i}` }))).status);
     }
     ok(statuses.every((s) => s === 200), '400s consumed no budget');
   }

@@ -167,6 +167,15 @@ export interface SeasonalSettings {
   live: boolean;
 }
 
+/** Payment method ids. Today only `cod` exists — the type is a seam for
+ *  future online gateways (stripe / paypal / …) without touching orders. */
+export type PaymentMethodId = 'cod';
+
+export interface PaymentsSettings {
+  /** Cash on delivery master switch. Default true (legacy menus). */
+  codEnabled: boolean;
+}
+
 export interface MenuSettings {  name: { en: string; ar: string };
   tagline: { en: string; ar: string };
   logoText: string;
@@ -301,6 +310,9 @@ export interface MenuSettings {  name: { en: string; ar: string };
     customer: string;
   };
   badges: BadgeSettings;
+  /** Payments block. Missing in old docs → `{ codEnabled: true }`
+   *  (legacy behavior: COD is the only method and it is on). */
+  payments?: PaymentsSettings;
   /** Feature library (names only — prices live per item). */
   featureDefs: FeatureDef[];
   /** Library sections. Missing in old docs → default Sizes/Add-ons groups. */

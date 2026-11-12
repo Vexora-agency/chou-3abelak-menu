@@ -32,6 +32,9 @@ interface TrackData {
   /** `ready` is legacy (pre-simplification orders) — mapped to preparing. */
   status: 'new' | 'confirmed' | 'ready' | 'completed' | 'cancelled';
   type?: 'delivery' | 'pickup' | 'dinein';
+  /** Payment method (today always 'cod') + status. */
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
   /** Follow-up link (server-computed): earlier order number or null. */
   parentNumber?: number | null;
   items: TrackItem[];
@@ -380,6 +383,13 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
               <div className="border-t border-neutral-800 mt-2 pt-2 flex justify-between text-sm font-black">
                 <span>{isAr ? 'الإجمالي' : 'Total'}</span>
                 <span className="tabular-nums text-[var(--primary)]"><bdi dir="ltr">{formatPrice(data.total)}</bdi> <span dir="auto">{currency}</span></span>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/[0.07] px-3 py-2">
+                <span className="text-[11px] font-bold text-neutral-400">{isAr ? 'طريقة الدفع' : 'Payment'}</span>
+                <span className="inline-flex items-center gap-1.5 text-xs font-black text-[var(--primary)]">
+                  <span aria-hidden="true">💵</span>
+                  <span dir="auto">{isAr ? 'الدفع عند الاستلام' : 'Cash on Delivery'}</span>
+                </span>
               </div>
             </div>
 

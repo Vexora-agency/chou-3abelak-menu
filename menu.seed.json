@@ -164,6 +164,9 @@
       },
       "acceptWhenClosed": false
     },
+    "payments": {
+      "codEnabled": true
+    },
     "announcement": {
       "enabled": false,
       "text": {

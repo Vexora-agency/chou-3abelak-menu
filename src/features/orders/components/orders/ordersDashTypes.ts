@@ -23,6 +23,9 @@ export interface Order {
   createdAt: string; // ISO date
   status: OrderStatus;
   type: OrderType;
+  /** Payment method (today always 'cod') + status ('pending' until collected). */
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
   customer: { name: string; phone: string; address?: string; table?: string };
   location?: { lat: number; lng: number };
   notes?: string;
@@ -88,7 +91,7 @@ export const STR = {
     emptyTitle: 'No orders yet', emptyDesc: 'Orders placed from your menu will appear here instantly.',
     emptyView: 'No orders in this view.', noData: 'No data for this period.',
     itemsLabel: 'Items', phone: 'Phone', address: 'Address', table: 'Table', notes: 'Notes', openMaps: 'Open in Maps',
-    subtotal: 'Subtotal', fee: 'Delivery fee', total: 'Total',
+    subtotal: 'Subtotal', fee: 'Delivery fee', total: 'Total', payment: 'Payment', cod: 'Cash on Delivery',
     complete: 'Mark completed', cancel: 'Cancel order', reopen: 'Reopen', ack: 'Start preparing', markReady: 'Mark ready',
     wa: 'WhatsApp', call: 'Call', now: 'Just now',
     min: (n: number) => `${n} min ago`, hr: (n: number) => `${n}h ago`,
@@ -106,7 +109,7 @@ export const STR = {
     emptyTitle: 'لا توجد طلبات بعد', emptyDesc: 'الطلبات القادمة من القائمة ستظهر هنا فورًا.',
     emptyView: 'لا توجد طلبات في هذا العرض.', noData: 'لا توجد بيانات لهذه الفترة.',
     itemsLabel: 'الأصناف', phone: 'الهاتف', address: 'العنوان', table: 'الطاولة', notes: 'ملاحظات', openMaps: 'فتح في الخرائط',
-    subtotal: 'المجموع الفرعي', fee: 'رسوم التوصيل', total: 'الإجمالي',
+    subtotal: 'المجموع الفرعي', fee: 'رسوم التوصيل', total: 'الإجمالي', payment: 'الدفع', cod: 'الدفع عند الاستلام',
     complete: 'تم التسليم', cancel: 'إلغاء الطلب', reopen: 'إعادة فتح', ack: 'بدء التحضير', markReady: 'تعيين جاهز',
     wa: 'واتساب', call: 'اتصال', now: 'الآن',
     min: (n: number) => `قبل ${n} د`, hr: (n: number) => `قبل ${n} س`,

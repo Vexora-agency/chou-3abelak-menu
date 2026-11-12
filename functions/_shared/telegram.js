@@ -696,6 +696,13 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
     lines.push(`التوصيل: ${money(cleaned.deliveryFee)}`);
   }
   lines.push(`<b>الإجمالي: ${money(cleaned.total)}</b>`);
+  // Payment method (today always COD): explicit line so the kitchen never
+  // wonders whether to collect cash. Future gateways render their own label
+  // here (paid/pending) without touching the layout above.
+  const payLabel = typeof cleaned.paymentMethod === 'string' && cleaned.paymentMethod
+    ? cleaned.paymentMethod.toLowerCase()
+    : 'cod';
+  lines.push(`💵 <b>الدفع:</b> ${payLabel === 'cod' ? 'عند الاستلام (نقدًا)' : escapeHtml(cleaned.paymentMethod)}`);
   if (cleaned.notes) {
     lines.push('');
     lines.push(`📝 <b>ملاحظات:</b> ${escapeHtml(cleaned.notes)}`);
@@ -956,6 +963,8 @@ export function orderRowToCleaned(order) {
     address: o.customer_address || null,
     table: o.customer_table || null,
     notes: o.notes || null,
+    paymentMethod: typeof o.payment_method === 'string' && o.payment_method ? o.payment_method : (typeof o.paymentMethod === 'string' && o.paymentMethod ? o.paymentMethod : 'cod'),
+    paymentStatus: typeof o.payment_status === 'string' && o.payment_status ? o.payment_status : (typeof o.paymentStatus === 'string' && o.paymentStatus ? o.paymentStatus : 'pending'),
     items,
     subtotal: o.subtotal,
     // camelCase: formatNewOrderMessage reads deliveryFee (snake_case here

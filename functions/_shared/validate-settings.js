@@ -469,6 +469,16 @@ function validateSettings(s, errors) {
     },
   };
 
+  // Payments block: today only COD exists. Missing in old docs → COD on
+  // (legacy behavior). `codEnabled: false` is accepted but never breaks
+  // checkout: the client hides the section and the server still defaults
+  // unknown/absent methods to 'cod' (whitelist, fail-safe). Future online
+  // gateways add keys here (e.g. stripe: { enabled }) without migration.
+  const payRaw = s.payments && typeof s.payments === 'object' && !Array.isArray(s.payments)
+    ? s.payments
+    : {};
+  const payments = { codEnabled: payRaw.codEnabled !== false };
+
   // Feature groups + library (names only; prices live per item) are parsed
   // by the feature-library module so settings can carry them; legacy docs
   // migrate into the library during items validation below.
@@ -494,6 +504,7 @@ function validateSettings(s, errors) {
     socialOrder,
     about,
     currency: currency.en ? currency : { en: 'LBP', ar: 'ل.ل' },
+    payments,
     defaultTheme,
     defaultLang,
     featuredAutoplay,

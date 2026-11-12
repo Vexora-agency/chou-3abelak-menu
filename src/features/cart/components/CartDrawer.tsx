@@ -7,6 +7,7 @@ import { useCartCheckoutSubmit } from '../hooks/useCartCheckoutSubmit';
 import { CartLinesList } from './cart/CartLinesList';
 import { CustomerFormFields } from './cart/CustomerFormFields';
 import { OrderSummaryLines } from './cart/OrderSummaryLines';
+import { PaymentMethodSection } from './cart/PaymentMethodSection';
 import { CartCheckoutFooter } from './cart/CartCheckoutFooter';
 import { CartLocationSheet } from './cart/CartLocationSheet';
 import { ZoneBlockedPanel } from './cart/ZoneBlockedPanel';
@@ -262,6 +263,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               darkMode={darkMode}
               onOpenLocSheet={() => setLocSheetOpen(true)}
               onClearLocation={clearLocation}
+            />
+
+            {/* Payment method (COD preselected + locked; future gateways
+                show as disabled "soon" chips). Sits between the customer
+                form and the bill so the total reads as "pay this on delivery". */}
+            <PaymentMethodSection
+              lang={lang}
+              darkMode={darkMode}
+              codEnabled={(menu.settings as { payments?: { codEnabled?: boolean } }).payments?.codEnabled !== false}
             />
 
             {/* Error + Bill Summary */}

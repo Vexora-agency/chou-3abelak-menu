@@ -345,6 +345,16 @@ export function validateOrderInput(body, menu) {
     ? body.idemKey.trim().slice(0, 128)
     : null;
 
+  // Payment method: whitelist + fail-safe default. Today only 'cod'
+  // exists (cash on delivery, pending until the courier collects). Any
+  // absent/unknown value falls back to 'cod' — never errors, never trusts
+  // the client for a future 'paid' state. Online gateways will extend
+  // ALLOWED_METHODS, never change this default.
+  const ALLOWED_PAYMENT_METHODS = ['cod'];
+  const rawMethod = typeof body.paymentMethod === 'string' ? body.paymentMethod.trim().toLowerCase() : '';
+  const paymentMethod = ALLOWED_PAYMENT_METHODS.includes(rawMethod) ? rawMethod : 'cod';
+  const paymentStatus = 'pending';
+
   if (errors.length > 0) return { ok: false, errors, cleaned: null };
 
   let subtotal = 0;
@@ -398,6 +408,8 @@ export function validateOrderInput(body, menu) {
       total: subtotal + deliveryFee,
       lang,
       idemKey,
+      paymentMethod,
+      paymentStatus,
     },
   };
 }
@@ -480,6 +492,10 @@ export function mapOrderRow(row) {
     subtotal: row.subtotal,
     deliveryFee: row.delivery_fee,
     total: row.total,
+    // Payment (migration 0031): legacy rows predate the columns and read
+    // as COD/pending — the same fail-safe default the validator applies.
+    paymentMethod: typeof row.payment_method === 'string' && row.payment_method ? row.payment_method : 'cod',
+    paymentStatus: typeof row.payment_status === 'string' && row.payment_status ? row.payment_status : 'pending',
     ...(row.lang ? { lang: row.lang } : {}),
     ...(row.track_token ? { trackToken: row.track_token } : {}),
   };

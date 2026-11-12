@@ -9,7 +9,7 @@
  * All functions are pure and never mutate their input.
  */
 
-import type { SeasonalSettings, SocialPlatform } from '@/src/types/menu';
+import type { PaymentsSettings, SeasonalSettings, SocialPlatform } from '@/src/types/menu';
 import { isBellSoundId } from '@/src/utils/bellPatterns';
 
 export interface Bilingual {
@@ -176,6 +176,12 @@ export function seasonalThemeOrDefault(v: unknown): SeasonalThemeId {
 export function seasonalOrDefault(v: unknown): SeasonalSettings {
   const r = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
   return { theme: seasonalThemeOrDefault(r.theme), live: r.live === true };
+}
+
+/** Payments block; missing in old docs → COD on (legacy behavior). */
+export function paymentsOrDefault(v: unknown): PaymentsSettings {
+  const r = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+  return { codEnabled: r.codEnabled !== false };
 }
 
 /**

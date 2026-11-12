@@ -8,6 +8,10 @@ export interface SubmitOrderPayload {
   type: string;
   customer: { name: string; phone: string; address: string; email?: string };
   notes: string;
+  // Payment method: today always 'cod' (whitelisted server-side, fail-safe
+  // default). Sent explicitly so future gateways plug in without payload
+  // shape changes.
+  paymentMethod?: 'cod' | string;
   // Split quantities: present ONLY when the line actually uses splits
   // (non-trivial per-option counts). Legacy lines omit the key entirely so
   // the payload byte-shape is untouched until a real split is sent.

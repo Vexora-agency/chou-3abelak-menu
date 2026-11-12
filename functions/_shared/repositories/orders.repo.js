@@ -581,10 +581,13 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
     ? cleaned.parentNumber
     : null;
   const emailVal = cleaned && typeof cleaned.email === 'string' && cleaned.email ? cleaned.email : null;
-  const runInsert = (withParent, withEmail) => {
+  const paymentMethod = cleaned && typeof cleaned.paymentMethod === 'string' && cleaned.paymentMethod ? cleaned.paymentMethod : 'cod';
+  const paymentStatus = cleaned && typeof cleaned.paymentStatus === 'string' && cleaned.paymentStatus ? cleaned.paymentStatus : 'pending';
+  const runInsert = (withParent, withEmail, withPayment) => {
     const cols = ['id', 'number', 'idem_key', 'track_token', 'created_at', 'updated_at', 'status', 'type', 'customer_name', 'customer_phone', 'phone_norm'];
     if (withEmail) cols.push('customer_email');
     cols.push('customer_address', 'customer_table', 'notes', 'location_lat', 'location_lng', 'items_json', 'subtotal', 'delivery_fee', 'total', 'lang');
+    if (withPayment) cols.push('payment_method', 'payment_status');
     if (withParent) cols.push('parent_number');
     const placeholders = cols.map((_, i) => `?${i + 1}`).join(',');
     const values = [
@@ -613,6 +616,7 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
       cleaned.total,
       cleaned.lang
     );
+    if (withPayment) values.push(paymentMethod, paymentStatus);
     if (withParent) values.push(parent);
     return db.batch([db.prepare(`INSERT INTO orders (${cols.join(', ')}) VALUES (${placeholders})`).bind(...values)]);
   };
@@ -621,9 +625,12 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
   // keep the exact pre-0024 shape for the common email-less order, while
   // email orders carry the new column (NULL default covers the rest).
   let withEmail = emailVal !== null;
-  for (let attempt = 0; attempt < 4; attempt += 1) {
+  // Payment columns (migration 0031): included when the DB has them,
+  // dropped on `no such column` so unmigrated DBs still record the order.
+  let withPayment = true;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
-      await runInsert(withParent, withEmail);
+      await runInsert(withParent, withEmail, withPayment);
       break;
     } catch (e) {
       // Unmigrated DB (missing parent_number and/or customer_email): drop
@@ -633,12 +640,21 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
       if (!/no such column/i.test(msg)) throw e;
       const missingEmail = /customer_email/i.test(msg);
       const missingParent = /parent_number/i.test(msg);
+      const missingPayment = /payment_method|payment_status/i.test(msg);
+      if (missingPayment && withPayment) {
+        withPayment = false;
+        continue;
+      }
       if (missingEmail && withEmail) {
         withEmail = false;
         continue;
       }
       if (missingParent && withParent) {
         withParent = false;
+        continue;
+      }
+      if (withPayment) {
+        withPayment = false;
         continue;
       }
       if (withEmail) {

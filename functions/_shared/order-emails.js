@@ -116,6 +116,60 @@ function formatTotal(total, currency, lang) {
   return cur ? `${amount} ${cur}` : amount;
 }
 
+/** Localized item name with fallback (mirrors the Telegram pickName rule). */
+function pickItemName(name, lang) {
+  try {
+    const o = name && typeof name === 'object' ? name : null;
+    const en = o && typeof o.en === 'string' ? o.en.trim() : '';
+    const ar = o && typeof o.ar === 'string' ? o.ar.trim() : '';
+    if (lang === 'ar') return ar || en;
+    return en || ar;
+  } catch {
+    return '';
+  }
+}
+
+/** Add-on / variant suffix for one stored line: "Variant + Addon أ، Addon ب". */
+function pickLineExtras(line, lang) {
+  const parts = [];
+  try {
+    const vn = line && line.variantName && typeof line.variantName === 'object'
+      ? (lang === 'ar'
+        ? (line.variantName.ar || line.variantName.en || '')
+        : (line.variantName.en || line.variantName.ar || ''))
+      : '';
+    if (typeof vn === 'string' && vn.trim()) parts.push(vn.trim());
+    const names = line && Array.isArray(line.addonNames) ? line.addonNames : [];
+    for (const a of names) {
+      if (!a || typeof a !== 'object') continue;
+      const nm = lang === 'ar' ? (a.ar || a.en || '') : (a.en || a.ar || '');
+      if (typeof nm !== 'string' || !nm.trim()) continue;
+      const c = typeof a.count === 'number' && Number.isInteger(a.count) ? a.count : NaN;
+      const q = typeof line.qty === 'number' ? line.qty : NaN;
+      // Split lines: partial picks render as "name ×n", full counts stay plain.
+      parts.push(Number.isInteger(c) && Number.isInteger(q) && c > 0 && c < q ? `${nm.trim()} ×${c}` : nm.trim());
+    }
+  } catch {}
+  return parts.join(lang === 'ar' ? '، ' : ', ');
+}
+
+/** Renderable order lines only: entries with a name or a positive quantity.
+ *  Malformed rows (legacy/empty test fixtures) are skipped, never printed. */
+function renderableLines(items) {
+  if (!Array.isArray(items)) return [];
+  const out = [];
+  for (const it of items) {
+    if (!it || typeof it !== 'object') continue;
+    const qty = typeof it.qty === 'number' && Number.isFinite(it.qty) ? it.qty : 0;
+    const unit = typeof it.unitPrice === 'number' && Number.isFinite(it.unitPrice) ? it.unitPrice : NaN;
+    const hasName = !!(it.name && typeof it.name === 'object'
+      && ((typeof it.name.en === 'string' && it.name.en.trim()) || (typeof it.name.ar === 'string' && it.name.ar.trim())));
+    if (!hasName && !(qty > 0 && Number.isFinite(unit))) continue;
+    out.push({ line: it, qty, unit });
+  }
+  return out.slice(0, 30);
+}
+
 /** Logo lives on the same origin as the tracking link (sender domain only, https). */
 function logoFromTrackUrl(trackUrl) {
   try {
@@ -128,6 +182,16 @@ function logoFromTrackUrl(trackUrl) {
 const STR = {
   ar: {
     meta: { number: 'رقم الطلب', total: 'الإجمالي', items: 'عدد الأصناف', eta: 'الوقت المتوقع' },
+    details: {
+      title: 'تفاصيل الطلب',
+      item: 'الصنف',
+      qty: 'الكمية',
+      price: 'السعر',
+      subtotal: 'المجموع الفرعي',
+      fee: 'رسوم التوصيل',
+      payment: 'طريقة الدفع',
+      cod: 'الدفع عند الاستلام (نقدًا)',
+    },
     footer: (store) => `هذه الرسالة من ${store}.`,
     cta: 'تتبع طلبك',
     placed: {
@@ -164,6 +228,16 @@ const STR = {
   },
   en: {
     meta: { number: 'Order number', total: 'Total', items: 'Items', eta: 'Estimated time' },
+    details: {
+      title: 'Order details',
+      item: 'Item',
+      qty: 'Qty',
+      price: 'Price',
+      subtotal: 'Subtotal',
+      fee: 'Delivery fee',
+      payment: 'Payment method',
+      cod: 'Cash on Delivery',
+    },
     footer: (store) => `This message is from ${store}.`,
     cta: 'Track your order',
     placed: {
@@ -232,6 +306,68 @@ export function buildOrderEmail({ event, order, storeName, currency, lang, track
   const body = event === 'confirmed' ? (eta ? ev.withEta(number, eta) : ev.withoutEta(number)) : ev.body(number, store);
   const badgeClass = event === 'cancelled' ? 'em-red' : 'em-grn';
   const badgeColor = event === 'cancelled' ? RED : GREEN;
+  const d = t.details;
+
+  // Order-lines section: same items the kitchen ticket carries (names,
+  // quantities, line totals) plus money rows + payment method. Rendered
+  // only when at least one line is usable — malformed rows never print.
+  const orderLines = renderableLines(order ? order.items : null);
+  const subtotal = formatTotal(order ? order.subtotal : undefined, currency, l);
+  const fee = formatTotal(order ? order.deliveryFee : undefined, currency, l);
+  const feeNum = typeof (order ? order.deliveryFee : undefined) === 'number' ? order.deliveryFee : NaN;
+  const payRaw = order && typeof order.paymentMethod === 'string' ? order.paymentMethod.trim().toLowerCase() : '';
+  const payLabel = payRaw ? (payRaw === 'cod' ? d.cod : payRaw) : '';
+  const detailRows = orderLines
+    .map(({ line, qty, unit }) => {
+      const name = pickItemName(line ? line.name : null, l) || (isAr ? 'صنف' : 'Item');
+      const extras = pickLineExtras(line, l);
+      const lineTotal = Number.isFinite(unit) && qty > 0 ? formatTotal(qty * unit, currency, l) : '';
+      const qtyText = qty > 0 ? `× ${qty}` : '';
+      return `<tr><td style="padding:8px 0;border-bottom:1px solid ${LINE};">
+        <table role="presentation" dir="${dir}" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td class="em-tink" style="font-size:13px;font-weight:bold;color:${BLACK};text-align:${align};" dir="auto">${esc(name)}${extras ? `<div class="em-tgrey" style="font-size:11px;font-weight:normal;color:${GREY};margin-top:2px;" dir="auto">${esc(extras)}</div>` : ''}</td>
+        <td class="em-tgrey" dir="ltr" style="font-size:12px;color:${GREY};text-align:center;white-space:nowrap;" width="52">${esc(qtyText)}</td>
+        <td class="em-tink" dir="ltr" style="font-size:13px;font-weight:bold;color:${BLACK};text-align:${isAr ? 'left' : 'right'};white-space:nowrap;" width="110">${esc(lineTotal)}</td>
+        </tr></table></td></tr>`;
+    })
+    .join('');
+  const moneyRows = [
+    ...(subtotal ? [[d.subtotal, subtotal]] : []),
+    ...(fee && Number.isFinite(feeNum) && feeNum > 0 ? [[d.fee, fee]] : []),
+    ...(total ? [[t.meta.total, total]] : []),
+    ...(payLabel ? [[d.payment, payLabel]] : []),
+  ]
+    .map(
+      ([k, v], i, arr) => `<tr><td style="padding:7px 0;${i < arr.length - 1 ? `border-bottom:1px solid ${LINE};` : ''}"><table role="presentation" dir="${dir}" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td class="em-tgrey" style="font-size:12px;color:${GREY};text-align:${align};" width="38%">${esc(k)}</td>
+        <td class="em-tink" dir="ltr" style="font-size:14px;font-weight:bold;color:${BLACK};text-align:${isAr ? 'left' : 'right'};">${esc(v)}</td></tr></table></td></tr>`
+    )
+    .join('');
+  const detailsHtml = detailRows || moneyRows
+    ? `<tr><td class="em-bgw px" bgcolor="#FFFFFF" style="padding:14px 28px 0;text-align:${align};">
+      <div class="em-tink" style="font-size:14px;font-weight:bold;color:${BLACK};margin-bottom:4px;" dir="auto">${esc(d.title)}</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td class="em-bgchip" bgcolor="${LIGHT}" style="background:${LIGHT};border:1px solid ${LINE};border-radius:14px;padding:6px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="padding:7px 0;border-bottom:1px solid ${LINE};"><table role="presentation" dir="${dir}" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td class="em-tgrey" style="font-size:11px;font-weight:bold;color:${GREY};text-align:${align};" dir="auto">${esc(d.item)}</td>
+        <td class="em-tgrey" style="font-size:11px;font-weight:bold;color:${GREY};text-align:center;" width="52">${esc(d.qty)}</td>
+        <td class="em-tgrey" style="font-size:11px;font-weight:bold;color:${GREY};text-align:${isAr ? 'left' : 'right'};" width="110">${esc(d.price)}</td>
+      </tr></table></td></tr>${detailRows}${moneyRows}</table>
+      </td></tr></table>
+    </td></tr>`
+    : '';
+  const detailLines = orderLines.map(({ line, qty, unit }) => {
+    const name = pickItemName(line ? line.name : null, l) || (isAr ? 'صنف' : 'Item');
+    const extras = pickLineExtras(line, l);
+    const lineTotal = Number.isFinite(unit) && qty > 0 ? formatTotal(qty * unit, currency, l) : '';
+    return `- ${name}${extras ? ` (${extras})` : ''}${qty > 0 ? ` × ${qty}` : ''}${lineTotal ? ` = ${lineTotal}` : ''}`;
+  });
+  const detailText = [
+    ...(detailLines.length ? ['', `${d.title}:`, ...detailLines] : []),
+    ...(subtotal ? [`${d.subtotal}: ${subtotal}`] : []),
+    ...(fee && Number.isFinite(feeNum) && feeNum > 0 ? [`${d.fee}: ${fee}`] : []),
+    ...(payLabel ? [`${d.payment}: ${payLabel}`] : []),
+  ];
 
   const metaRows = [
     [t.meta.number, `#${number}`],
@@ -288,7 +424,7 @@ export function buildOrderEmail({ event, order, storeName, currency, lang, track
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td class="em-bgchip" bgcolor="${LIGHT}" style="background:${LIGHT};border:1px solid ${LINE};border-radius:14px;padding:6px 16px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${metaRows}</table>
     </td></tr></table>
-  </td></tr>${btn}
+  </td></tr>${detailsHtml}${btn}
   <tr><td class="em-dark-keep" bgcolor="${BLACK}" align="center" style="background:${BLACK};border-radius:0 0 20px 20px;padding:22px 24px;font-size:12px;line-height:19px;color:#BDBDBD;">
     ${esc(t.footer(store))}
   </td></tr>
@@ -298,6 +434,7 @@ export function buildOrderEmail({ event, order, storeName, currency, lang, track
   if (total) lines.push(`${t.meta.total}: ${total}`);
   if (items) lines.push(`${t.meta.items}: ${items}`);
   if (eta) lines.push(`${t.meta.eta}: ${eta}`);
+  lines.push(...detailText);
   if (track) lines.push('', `${t.cta}: ${track}`);
   lines.push('', t.footer(store));
   return { subject, html, text: lines.join('\n') };

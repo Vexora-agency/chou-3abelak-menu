@@ -148,6 +148,13 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                             <div className="flex justify-between"><span>{t.subtotal}</span><span className="tabular-nums" dir="ltr">{fmt(o.subtotal)}</span></div>
                             {o.deliveryFee > 0 && <div className="flex justify-between"><span>{t.fee}</span><span className="tabular-nums" dir="ltr">{fmt(o.deliveryFee)}</span></div>}
                             <div className="flex justify-between text-sm font-extrabold text-white"><span>{t.total}</span><span className="tabular-nums"><bdi dir="ltr" className="tabular-nums">{fmt(o.total)}</bdi> <span dir="auto">{currency}</span></span></div>
+                            <div className="flex justify-between items-center pt-0.5">
+                              <span>{t.payment}</span>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold border border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[var(--primary)]">
+                                <span aria-hidden="true">💵</span>
+                                <span dir="auto">{t.cod}</span>
+                              </span>
+                            </div>
                           </div>
                           {showEta && (
                             <p dir="auto" className={`text-[11px] tabular-nums truncate ${etaLate ? 'text-amber-400 font-bold' : 'text-neutral-500'}`}>

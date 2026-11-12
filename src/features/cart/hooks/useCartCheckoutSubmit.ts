@@ -323,6 +323,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         {
           idemKey: idemKeyRef.current,
           type: 'delivery',
+          paymentMethod: 'cod',
           customer: {
             name: customer.name.trim(),
             phone: customer.phone.trim(),

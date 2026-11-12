@@ -3,7 +3,7 @@ import type { MenuData } from '@/src/types/menu';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { featuresConfig } from '@/src/config/features.config';
 import { socialOrderOrDefault } from '@/src/utils/settingsDefaults';
-import { Store, ShoppingBag, BellRing, LayoutGrid, ShieldCheck, Users } from 'lucide-react';
+import { Store, ShoppingBag, BellRing, LayoutGrid, ShieldCheck, Users, CreditCard } from 'lucide-react';
 import { SettingsGroupBody, SettingsGroupHeader } from '../SettingsCollapsible';
 import { AnnouncementSection } from '../AnnouncementSection';
 import { DeliveryZonesSection } from '../DeliveryZonesSection';
@@ -19,6 +19,7 @@ import { AccessSection } from '../AccessSection';
 import { TeamAccessSection } from '../TeamAccessSection';
 import { SentrySection } from '../SentrySection';
 import { TelegramSection } from '../TelegramSection';
+import { PaymentsSection } from '../PaymentsSection';
 import { SoundsSection } from '../SoundsSection';
 import { NotifyEmailSection } from '../NotifyEmailSection';
 import { AutoplaySection } from '../AutoplaySection';
@@ -245,6 +246,37 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
               onUpdateMenu((m) => ({
                 ...m,
                 settings: { ...m.settings, badges: updater(m.settings.badges) },
+              }))
+            }
+          />
+        </SettingsParentGroup>
+      )}
+
+      {/* 2b. Payments — المدفوعات. COD is the live method (preselected +
+          locked at checkout); online gateways are staged "soon" chips, and
+          the Vexora card below sells the Visa-grade setup professionally. */}
+      {featuresConfig.enableOrdering && (
+        <SettingsParentGroup
+          groupKey="grp-payments"
+          title={isAr ? 'المدفوعات' : 'Payments'}
+          subtitle={isAr ? 'الدفع عند الاستلام والبوابات الإلكترونية' : 'Cash on delivery and online gateways'}
+          icon={<CreditCard size={18} />}
+          lang={lang}
+          collapsedGroups={collapsedGroups}
+          onToggleCollapse={onToggleCollapse}
+        >
+          <PaymentsSection
+            payments={menu.settings.payments ?? { codEnabled: true }}
+            lang={lang}
+            collapsed={!!collapsedGroups['payments']}
+            onToggleCollapse={() => onToggleCollapse('payments')}
+            onUpdate={(updater) =>
+              onUpdateMenu((m) => ({
+                ...m,
+                settings: {
+                  ...m.settings,
+                  payments: updater(m.settings.payments ?? { codEnabled: true }),
+                },
               }))
             }
           />

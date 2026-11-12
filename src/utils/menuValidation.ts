@@ -9,6 +9,7 @@ import {
   DEFAULT_TAGLINE,
   etaMinutesOrDefault,
   isoDateOrNull,
+  paymentsOrDefault,
   receiveDelayOrDefault,
   roadFactorOrDefault,
   seasonalOrDefault,
@@ -66,6 +67,7 @@ export function ensureSettingsBlocks(menu: MenuData): MenuData {
         return { en: t.en || DEFAULT_TAGLINE.en, ar: t.ar || DEFAULT_TAGLINE.ar };
       })(),
       currency: (s.currency as unknown as { en?: unknown } | undefined)?.en ? s.currency : { en: 'LBP', ar: 'ل.ل' },
+      payments: paymentsOrDefault((s as unknown as { payments?: unknown }).payments),
       defaultTheme: (s as unknown as { defaultTheme?: unknown }).defaultTheme === 'light' ? 'light' : 'dark',
       defaultLang: (s as unknown as { defaultLang?: unknown }).defaultLang === 'ar' ? 'ar' : 'en',
       featuredAutoplay: (s as unknown as { featuredAutoplay?: unknown }).featuredAutoplay !== undefined

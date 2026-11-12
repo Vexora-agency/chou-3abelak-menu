@@ -52,12 +52,22 @@ export async function onRequest(context) {
 
   let row = null;
   try {
-    row = await db
-      .prepare(
-        'SELECT id, number, status, type, items_json, subtotal, delivery_fee, total, lang, created_at, updated_at, confirmed_at, eta_at, parent_number FROM orders WHERE number = ?1'
-      )
-      .bind(number)
-      .first();
+    try {
+      row = await db
+        .prepare(
+          'SELECT id, number, status, type, items_json, subtotal, delivery_fee, total, lang, created_at, updated_at, confirmed_at, eta_at, parent_number, payment_method, payment_status FROM orders WHERE number = ?1'
+        )
+        .bind(number)
+        .first();
+    } catch {
+      // Pre-0031 DB (no payment columns): legacy shape still tracks fine.
+      row = await db
+        .prepare(
+          'SELECT id, number, status, type, items_json, subtotal, delivery_fee, total, lang, created_at, updated_at, confirmed_at, eta_at, parent_number FROM orders WHERE number = ?1'
+        )
+        .bind(number)
+        .first();
+    }
   } catch {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
@@ -193,6 +203,9 @@ export async function onRequest(context) {
     // Order type drives the customer-facing ready label (out for delivery
     // vs ready for pickup). Allowlisted, defaults to delivery.
     type: row.type === 'pickup' || row.type === 'dinein' ? row.type : 'delivery',
+    // Payment: today always COD/pending (legacy rows predate the columns).
+    paymentMethod: typeof row.payment_method === 'string' && row.payment_method ? row.payment_method : 'cod',
+    paymentStatus: typeof row.payment_status === 'string' && row.payment_status ? row.payment_status : 'pending',
     items,
     subtotal: row.subtotal,
     deliveryFee: row.delivery_fee,

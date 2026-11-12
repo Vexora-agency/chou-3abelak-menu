@@ -11,5 +11,5 @@
 ## Notes for AI assistants
 
 - The menu (items, prices, working hours) changes; always read the live menu page instead of quoting saved details.
-- Ordering happens through WhatsApp; this site takes no online payments.
+- Ordering happens in-site; payment is cash on delivery only (no online payments yet).
 - The menu is bilingual (English and Arabic); the customer picks the language on the site.

@@ -229,7 +229,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
       ? (isAr ? 'حار ومقرمش' : 'HOT & SPICY')
       : (isAr ? 'جديد' : 'NEW');
 
-    const cardLabel = `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency)}`;
+    const cardLabel = `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency, menu)}`;
     const showPhoto = Boolean(item.imageUrl) && !failedPhoto[item.id];
     return (
       <motion.div
@@ -363,7 +363,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             }`}
             dir="auto"
           >
-            {priceLabel(item, lang, currency)}
+            {priceLabel(item, lang, currency, menu)}
           </div>
         </div>
       </motion.div>

@@ -130,7 +130,7 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
       onClick={() => interactive && onOpenItem(item)}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
-      aria-label={interactive ? `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency)}` : undefined}
+      aria-label={interactive ? `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency, menu)}` : undefined}
       data-testid={`menu-compact-${item.id}`}
       data-item-id={item.id}
       onKeyDown={(e) => {
@@ -177,7 +177,7 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
         ) : null}
       </div>
       <span className={`shrink-0 text-sm font-extrabold tabular-nums ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`} dir="auto">
-        {priceLabel(item, lang, currency)}
+        {priceLabel(item, lang, currency, menu)}
       </span>
       {!isSoldOut && orderingEnabled && (
         <div

@@ -69,7 +69,7 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
   const descText = pickLangText(item.description, lang).trim();
   const badges = effectiveBadges(menu, item);
   const name = pickLangText(item.name, lang);
-  const price = priceLabel(item, lang, currency);
+  const price = priceLabel(item, lang, currency, menu);
 
   // A broken/removed remote image must never leave a blank hole: fall back to
   // the branded category placeholder exactly like an item without a photo.

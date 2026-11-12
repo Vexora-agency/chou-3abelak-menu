@@ -71,7 +71,7 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
   const BadgeIcon =
     badge === 'top' ? Award : badge === 'new' ? Sparkles : badge === 'spicy' ? Flame : null;
   const options = hasOptions(item);
-  const price = priceLabel(item, lang, currency);
+  const price = priceLabel(item, lang, currency, menu);
   const name = pickLangText(item.name, lang);
   const showOptionsHint = options || isSoldOut;
 

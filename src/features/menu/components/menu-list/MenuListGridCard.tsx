@@ -87,7 +87,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
       onClick={() => interactive && onOpenItem(item)}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
-      aria-label={interactive ? `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency)}` : undefined}
+      aria-label={interactive ? `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency, menu)}` : undefined}
       data-testid={`menu-card-${item.id}`}
       data-item-id={item.id}
       onKeyDown={(e) => {
@@ -207,7 +207,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
         darkMode ? 'border-neutral-800' : 'border-neutral-200'
       }`}>
         <span className={`font-extrabold text-sm tabular-nums ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`} dir="auto">
-          {priceLabel(item, lang, currency)}
+          {priceLabel(item, lang, currency, menu)}
         </span>
 
         {!isSoldOut && orderingEnabled && (

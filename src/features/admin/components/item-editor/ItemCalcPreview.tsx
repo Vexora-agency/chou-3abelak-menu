@@ -29,7 +29,7 @@ export const ItemCalcPreview: React.FC<ItemCalcPreviewProps> = ({
         const pv = { ...item, variants: pvSizes.length ? pvSizes : undefined };
         let label = '—';
         try {
-          label = priceLabel(pv, lang, cur);
+          label = priceLabel(pv, lang, cur, menu);
         } catch {}
         const desc = (isAr ? item.description.ar : item.description.en).trim();
         const p = item.pricing;

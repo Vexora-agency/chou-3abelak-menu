@@ -165,7 +165,7 @@ export const ItemsTab: React.FC<ItemsTabProps> = ({
                   )}
                 </div>
                 <div className="text-xs text-neutral-400 mt-0.5">
-                  {priceLabel(item, lang, menu.settings.currency[lang] || menu.settings.currency.en)} ·{' '}
+                  {priceLabel(item, lang, menu.settings.currency[lang] || menu.settings.currency.en, menu)} ·{' '}
                   {menu.categories.find((c) => c.id === item.categoryId)?.name[lang] || item.categoryId}
                 </div>
               </div>

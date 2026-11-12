@@ -149,8 +149,7 @@ export function saveRememberedDetails<T extends { remember?: boolean }>(customer
 }
 
 /**
- * Map pins are SESSION-ONLY by design and are never remembered: every order
- * needs a freshly picked pin (the checkout blocks without one), so no
+ * Map pins are SESSION-ONLY by design and are never remembered, so no
  * storage helpers exist here on purpose — a stale pin from another
  * visit/city can never ride along silently. (An orphaned
  * `customer_location_v1` key from older app versions is simply never read.)

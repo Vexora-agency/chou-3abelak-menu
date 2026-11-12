@@ -1,11 +1,9 @@
 // Pin/address pair, session-only pins: the Telegram maps link must always
 // match what the customer actually submitted this order. Pins are NEVER
-// remembered — every delivery order carries a freshly picked position, so
-// no stale pin from another visit/city can ride along. Remember-me persists
-// name/phone/address only.
-//   - delivery without a pin -> invalid_location (order cannot send)
+// remembered, so no stale pin from another visit/city can ride along.
+//   - delivery without a pin -> allowed (address-only order, fallback link)
 //   - fresh-picked good coords -> exact pin link (same lat/lng as submitted)
-//   - hand-edited address (pin cleared) -> must re-pin, never the stale one
+//   - hand-edited address keeps the pin -> best pair (precise + detailed)
 //   - coarse fix (>250m) -> dropped before store, fallback (never fake "exact")
 //   - no saved pin -> picker auto-locates every time (fresh fix, never silent)
 // Run: node scripts/test-remember-pin.mjs
@@ -49,11 +47,11 @@ ok(d1 && d1.address === 'Hamra, Main Rd' && d1.remember === true, 'details round
 // Unchecked forgets the details. Pins live in session state only.
 saveRememberedDetails({ name: 'Ali', phone: '70123456', address: 'Hamra', remember: false });
 ok(loadRememberedDetails() === null, 'unchecked forgets details');
-// Delivery without a freshly picked pin cannot send, even with details.
+// Delivery without a pin is allowed (address-only order).
 {
   const m = JSON.parse(JSON.stringify(MENU));
   const noPin = validateOrderInput(orderBody(), m);
-  ok(noPin.ok === false && noPin.errors.includes('invalid_location'), 'remembered details alone are not enough — pin required');
+  ok(noPin.ok === true && noPin.cleaned.location === null, 'address-only order allowed without pin');
 }
 // The address is never stored: withoutAddress drops it, keeps the rest.
 {

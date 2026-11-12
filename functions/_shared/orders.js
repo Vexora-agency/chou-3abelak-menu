@@ -88,29 +88,32 @@ export function validateOrderInput(body, menu) {
 
   const notes = cleanStr(body.notes, 200);
 
-  // Delivery REQUIRES a freshly picked pin every order (the client never
-  // remembers it): presence is mandatory, precision is not. Finite numbers
-  // in range, rounded to 5 decimals. Only for delivery; ignored for other
-  // types. Accuracy (meters, from the OS fix) rides along when sane —
-  // downstream uses it to distrust coarse cell-tower fixes instead of
-  // mislabeling them "precise". Coarse fixes (>250m, mirrors
-  // MAPS_ACCURACY_OK_M in telegram.js) are still dropped to null so the
-  // order stores no pin and Telegram falls back to the address-query link —
-  // but the order itself is never rejected for imprecision. Storing coarse
-  // fixes would upgrade to a fake "exact" pin after the DB round-trip
-  // (accuracy column does not exist, and a missing accuracy reads as
-  // sharp).
-  if (type === 'delivery' && (!body.location || typeof body.location !== 'object')) {
-    errors.push('invalid_location');
-  }
+  // Delivery pin is OPTIONAL (manual addresses allowed): a typed address
+  // alone is enough to order. A pin is a precision bonus, never a gate.
+  // When omitted/null, the order rides on the address text (Telegram falls
+  // back to the address-query link, the fee quote uses no distance).
+  // When provided it must be finite numbers in range, rounded to 5
+  // decimals. Only for delivery; ignored for other types. Accuracy
+  // (meters, from the OS fix) rides along when sane — downstream uses it
+  // to distrust coarse cell-tower fixes instead of mislabeling them
+  // "precise". Coarse fixes (>250m, mirrors MAPS_ACCURACY_OK_M in
+  // telegram.js) are dropped to null so the order stores no pin and
+  // Telegram falls back to the address-query link. A present-but-malformed
+  // location (truthy non-object, out-of-range numbers) is still rejected
+  // as invalid_location to catch tampering.
   let location = null;
-  if (type === 'delivery' && body.location && typeof body.location === 'object') {
-    const lat = typeof body.location.lat === 'number' ? body.location.lat : NaN;
-    const lng = typeof body.location.lng === 'number' ? body.location.lng : NaN;
+  const locRaw = type === 'delivery' ? body.location : undefined;
+  if (locRaw === undefined || locRaw === null) {
+    location = null;
+  } else if (typeof locRaw !== 'object' || Array.isArray(locRaw)) {
+    errors.push('invalid_location');
+  } else {
+    const lat = typeof locRaw.lat === 'number' ? locRaw.lat : NaN;
+    const lng = typeof locRaw.lng === 'number' ? locRaw.lng : NaN;
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
       errors.push('invalid_location');
     } else {
-      const rawAcc = body.location.accuracy;
+      const rawAcc = locRaw.accuracy;
       const acc = typeof rawAcc === 'number' && Number.isFinite(rawAcc) && rawAcc >= 0 && rawAcc <= 100000
         ? Math.round(rawAcc)
         : null;
@@ -157,20 +160,17 @@ export function validateOrderInput(body, menu) {
           }
         }
       }
-      if (!blocked) {
-        if (!location) {
-          // No verifiable pin (coarse fix dropped above): cannot prove the
-          // point is served, so it does not go through as delivery.
-          blocked = true;
-        } else {
-          try {
-            const rest = parseMapUrlCoordsJs(typeof norm?.settings?.mapUrl === 'string' ? norm.settings.mapUrl : '');
-            if (rest && Number.isFinite(haversineKm(location.lat, location.lng, rest.lat, rest.lng))) {
-              if (haversineKm(location.lat, location.lng, rest.lat, rest.lng) > zones.maxKm) blocked = true;
-            }
-          } catch {
-            blocked = true;
+      // Distance backstop applies ONLY when a pin is present: a bad pin
+      // outside maxKm is blocked, but a missing pin (address-only order)
+      // is allowed — the driver confirms the zone by phone.
+      if (!blocked && location) {
+        try {
+          const rest = parseMapUrlCoordsJs(typeof norm?.settings?.mapUrl === 'string' ? norm.settings.mapUrl : '');
+          if (rest && Number.isFinite(haversineKm(location.lat, location.lng, rest.lat, rest.lng))) {
+            if (haversineKm(location.lat, location.lng, rest.lat, rest.lng) > zones.maxKm) blocked = true;
           }
+        } catch {
+          blocked = true;
         }
       }
       if (blocked) errors.push('out_of_zone');

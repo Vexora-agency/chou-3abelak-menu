@@ -528,7 +528,10 @@ export const MAPS_ACCURACY_OK_M = 250;
  *   nearest named place and its address card reads WRONG (the reported
  *   bug). Same form as the customer-facing link in the checkout sheet.
  * - Coarse fix (cell tower, urban canyon) or no pin -> address-text search
- *   (or the raw pin as last resort), honestly labeled approximate.
+ *   (or the raw pin as last resort), honestly labeled approximate. The
+ *   address query gets ", Lebanon" appended unless already present: bare
+ *   local text ("Hamra, building 5, floor 3") otherwise misses on Google
+ *   Maps with "no result" instead of landing in the right country.
  * Rendered as a short pretty anchor (never a bare long URL).
  * Returns { url, precise } or null.
  */
@@ -548,8 +551,14 @@ export function buildMapsLink(cleaned) {
     };
   }
   if (typeof cleaned.address === 'string' && cleaned.address.trim()) {
+    const text = cleaned.address.trim();
+    // Bare local addresses miss on Google Maps without a country ("no
+    // result"): suffix Lebanon unless the customer already wrote it (en/ar),
+    // so the approximate search lands in the right country.
+    const hasCountry = /(lebanon|لبنان)\s*$/i.test(text);
+    const q = hasCountry ? text : `${text}, Lebanon`;
     return {
-      url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleaned.address.trim())}`,
+      url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`,
       precise: false,
     };
   }

@@ -61,7 +61,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
       onClick={() => interactive && onOpenItem(item)}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
-      aria-label={interactive ? `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency)}` : undefined}
+      aria-label={interactive ? `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency, menu)}` : undefined}
       data-testid={`menu-row-${item.id}`}
       data-item-id={item.id}
       onKeyDown={(e) => {
@@ -110,7 +110,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
 
         {/* Price Pill */}
         <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[var(--primary)] text-[#0A0A0A] shadow-sm flex-shrink-0 tabular-nums group-hover:scale-105 transition-transform" dir="auto">
-          {priceLabel(item, lang, currency)}
+          {priceLabel(item, lang, currency, menu)}
         </span>
       </div>
 
@@ -167,7 +167,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         )}
 
         <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[var(--primary)] text-[#0A0A0A] shadow-sm flex-shrink-0 tabular-nums transition-transform group-hover:scale-105" dir="auto">
-          {priceLabel(item, lang, currency)}
+          {priceLabel(item, lang, currency, menu)}
         </span>
 
         {!isSoldOut && orderingEnabled && (

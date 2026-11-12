@@ -128,6 +128,56 @@ export function minVariantPrice(item: MenuItem): number {
   return min;
 }
 
+/**
+ * Minimum the customer MUST pay for one unit (qty 1): the cheapest enabled
+ * option of every required add-on group (groups with no enabled option are
+ * skipped, same rule as validation), plus the cheapest heat degree for
+ * badged-spicy items (a heat degree is mandatory there too). Pure — never
+ * throws (garbage reads as 0 extra).
+ *
+ * This is what the menu cards must add on top of the base/variant price: an
+ * item with base price 0 but a required flavor (mango/orange/…) is NOT free —
+ * its card reads the cheapest required flavor instead of FREE.
+ */
+export function requiredExtrasMin(item: MenuItem, menu: MenuData): number {
+  try {
+    const enabled = itemAddons(item);
+    if (!enabled.length) return 0;
+    const priceOf = (a: ItemAddon): number | null =>
+      a && typeof a.featureId === 'string' && isMoney(a.price) && a.price >= 0 ? a.price : null;
+    const required = new Set(
+      (Array.isArray(item.requiredGroups) ? item.requiredGroups : []).filter(
+        (g): g is string => typeof g === 'string' && g !== ''
+      )
+    );
+    const badgedSpicy = Array.isArray(item.badges) && (item.badges as unknown[]).includes('spicy');
+    // Locked heat ids (legacy 'spicy' + the three levels).
+    const HEAT_IDS = new Set(['spicy', 'spicy-mild', 'spicy-medium', 'spicy-hot']);
+    let heatMin: number | null = null;
+    const groupMin = new Map<string, number>();
+    for (const a of enabled) {
+      const p = priceOf(a);
+      if (p === null) continue;
+      const fid = (a as ItemAddon).featureId;
+      // Heat rows count only toward the heat requirement (never double-count
+      // them in their library group too).
+      if (badgedSpicy && HEAT_IDS.has(fid)) {
+        if (heatMin === null || p < heatMin) heatMin = p;
+        continue;
+      }
+      const gid = featureGroupId(menu, fid);
+      if (gid === null || !required.has(gid)) continue;
+      const cur = groupMin.get(gid);
+      if (cur === undefined || p < cur) groupMin.set(gid, p);
+    }
+    let extra = heatMin ?? 0;
+    for (const v of groupMin.values()) extra += v;
+    return extra;
+  } catch {
+    return 0;
+  }
+}
+
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);
 }
@@ -464,17 +514,25 @@ export function unitLabel(unit: string, qty: number, lang: 'en' | 'ar'): string 
   }
 }
 
-/** Card price label: lowest variant price ("80,000 LBP"), "FREE"/"مجاناً" when 0. */
-export function priceLabel(item: MenuItem, lang: 'en' | 'ar', currency: string): string {
+/** Card price label: lowest ORDERABLE price ("80,000 LBP"), "FREE"/"مجاناً" when 0.
+ *  Orderable = base (or cheapest variant) + cheapest option of every required
+ *  add-on group (see requiredExtrasMin). A 0-base item with a required priced
+ *  flavor reads the flavor — never FREE. Without menu context (legacy 3-arg
+ *  callers) the extras read as 0, exactly like before. */
+export function priceLabel(item: MenuItem, lang: 'en' | 'ar', currency: string, menu?: MenuData): string {
   const free = lang === 'ar' ? 'مجانًا' : 'FREE';
   const p = normalizePricing(item);
+  // Menu-less callers (and garbage menus) keep the legacy behavior.
+  const extras = menu && typeof menu === 'object' ? requiredExtrasMin(item, menu) : 0;
   if (hasVariants(item)) {
-    if (minVariantPrice(item) === 0) return free;
-    return formatPrice(minVariantPrice(item), currency);
+    const min = minVariantPrice(item) + extras;
+    if (min === 0) return free;
+    return formatPrice(min, currency);
   }
-  if (!isMoney(p.price)) return '—';
-  if (p.price === 0) return free;
-  const base = formatPrice(p.price, currency);
+  if (!isMoney(p.price)) return extras > 0 ? formatPrice(extras, currency) : '—';
+  const min = p.price + extras;
+  if (min === 0) return free;
+  const base = formatPrice(min, currency);
   if (p.showUnit) return `${base} / ${unitLabel(p.unit, 1, lang)}`;
   return base;
 }

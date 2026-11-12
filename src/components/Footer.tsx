@@ -200,7 +200,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
           </div>
           <div className="flex items-center gap-2">
             <a
-              href="privacy"
+              href="/privacy"
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors"
             >
               <Shield size={12} />

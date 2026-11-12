@@ -160,6 +160,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         ref={scrollerRef}
         role="dialog"
         aria-modal="true"
+        dir={isAr ? 'rtl' : 'ltr'}
         aria-label={isAr ? 'سلة الطلبات وإتمام الشراء' : 'Order Checkout'}
         className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-6 sm:px-8 pb-[max(2rem,env(safe-area-inset-bottom))] overflow-x-clip scroll-pb-32"
       >

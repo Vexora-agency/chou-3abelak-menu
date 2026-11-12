@@ -69,7 +69,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           type="tel"
           inputMode="tel"
           autoComplete="tel"
-          value={customer.phone} dir={isAr ? 'rtl' : 'ltr'}
+          value={customer.phone} dir="ltr"
           onChange={(e) => setCustomer({ ...customer, phone: cleanPhoneInput(e.target.value) })}
           placeholder={isAr ? 'مثال: 70123456' : '+961 70 123 456'}
           maxLength={20}

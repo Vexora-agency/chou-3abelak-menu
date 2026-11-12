@@ -478,7 +478,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     <div
       ref={progressRef}
       style={{ transform: 'scaleX(0)', opacity: 0, background: themeConfig.colors.primary }}
-      className="fixed top-0 inset-x-0 h-[3px] origin-left rtl:origin-right z-[60] pointer-events-none"
+      className="fixed top-[env(safe-area-inset-top)] inset-x-0 h-[3px] origin-left rtl:origin-right z-[60] pointer-events-none"
       aria-hidden="true"
     />
     {/* Seasonal layer (customer site only — the admin path returned above):

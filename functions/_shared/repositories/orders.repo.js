@@ -45,6 +45,97 @@ export async function checkAndReserveOrderBudget(db, key, max, windowSec, nowSec
   return { allowed: n >= 1 && n <= max, count: n };
 }
 
+/**
+ * Fake-order protection: phone blocklist + per-phone caps (migration 0032).
+ * All reads THROW on DB failure — callers fail OPEN for infra blips
+ * (availability) and fail CLOSED only on a positive abuse signal.
+ */
+
+/** True when this digits-only phone is owner-blocked. */
+export async function isPhoneBlocked(db, phoneNorm) {
+  if (typeof phoneNorm !== 'string' || !phoneNorm) return false;
+  const row = await db
+    .prepare('SELECT 1 AS x FROM phone_blocks WHERE phone_norm = ?1')
+    .bind(phoneNorm)
+    .first();
+  return !!(row && row.x === 1);
+}
+
+/** Owner blocklist, newest first. Never throws (empty on any failure). */
+export async function listPhoneBlocks(db) {
+  try {
+    const res = await db
+      .prepare('SELECT phone_norm, reason, created_at FROM phone_blocks ORDER BY created_at DESC LIMIT 500')
+      .all();
+    const rows = (res && res.results) || [];
+    // Snake-case rows: the admin dashboard renders these keys directly.
+    return rows
+      .filter((r) => r && typeof r.phone_norm === 'string' && r.phone_norm)
+      .map((r) => ({
+        phone_norm: r.phone_norm,
+        reason: typeof r.reason === 'string' && r.reason ? r.reason : null,
+        created_at: typeof r.created_at === 'string' ? r.created_at : null,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+/** Block a phone (upsert — re-blocking updates reason + stamp). */
+export async function addPhoneBlock(db, phoneNorm, reason) {
+  const nowIso = new Date().toISOString();
+  const rsn = typeof reason === 'string' && reason.trim() ? reason.trim().slice(0, 140) : null;
+  await db
+    .prepare(
+      'INSERT INTO phone_blocks (phone_norm, reason, created_at) VALUES (?1, ?2, ?3) ' +
+        'ON CONFLICT(phone_norm) DO UPDATE SET reason = ?2, created_at = ?3'
+    )
+    .bind(phoneNorm, rsn, nowIso)
+    .run();
+  return { phone_norm: phoneNorm, reason: rsn, created_at: nowIso };
+}
+
+/** Unblock a phone. Returns true only when a row was removed. */
+export async function removePhoneBlock(db, phoneNorm) {
+  const res = await db.prepare('DELETE FROM phone_blocks WHERE phone_norm = ?1').bind(phoneNorm).run();
+  const changed = res && res.meta ? res.meta.changes : 0;
+  return changed === 1;
+}
+
+/**
+ * Non-terminal orders for a phone: new/confirmed/ready (the only live
+ * states — released_at is a column, not a status; completed/cancelled are
+ * terminal). The per-phone active cap (2) reads this.
+ */
+export async function countActiveOrdersByPhone(db, phoneNorm) {
+  const row = await db
+    .prepare("SELECT COUNT(*) AS c FROM orders WHERE phone_norm = ?1 AND status IN ('new','confirmed','ready')")
+    .bind(phoneNorm)
+    .first();
+  const c = row && typeof row.c === 'number' ? row.c : 0;
+  return Number.isFinite(c) && c >= 0 ? Math.floor(c) : 0;
+}
+
+/** Orders from a phone since an ISO instant (any status — risk history). */
+export async function countRecentOrdersByPhone(db, phoneNorm, sinceIso) {
+  const row = await db
+    .prepare('SELECT COUNT(*) AS c FROM orders WHERE phone_norm = ?1 AND created_at >= ?2')
+    .bind(phoneNorm, sinceIso)
+    .first();
+  const c = row && typeof row.c === 'number' ? row.c : 0;
+  return Number.isFinite(c) && c >= 0 ? Math.floor(c) : 0;
+}
+
+/** Cancelled orders from a phone since an ISO instant (risk history). */
+export async function countRecentCancelledByPhone(db, phoneNorm, sinceIso) {
+  const row = await db
+    .prepare("SELECT COUNT(*) AS c FROM orders WHERE phone_norm = ?1 AND status = 'cancelled' AND created_at >= ?2")
+    .bind(phoneNorm, sinceIso)
+    .first();
+  const c = row && typeof row.c === 'number' ? row.c : 0;
+  return Number.isFinite(c) && c >= 0 ? Math.floor(c) : 0;
+}
+
 export async function findOrderById(db, id) {
   return db.prepare('SELECT * FROM orders WHERE id = ?1').bind(id).first();
 }
@@ -583,12 +674,27 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
   const emailVal = cleaned && typeof cleaned.email === 'string' && cleaned.email ? cleaned.email : null;
   const paymentMethod = cleaned && typeof cleaned.paymentMethod === 'string' && cleaned.paymentMethod ? cleaned.paymentMethod : 'cod';
   const paymentStatus = cleaned && typeof cleaned.paymentStatus === 'string' && cleaned.paymentStatus ? cleaned.paymentStatus : 'pending';
-  const runInsert = (withParent, withEmail, withPayment) => {
+  // Risk score (migration 0032): integers only, reasons capped so one row
+  // stays a few dozen bytes. Absent/invalid reads as unscored (0 / '[]').
+  const riskScore = cleaned && Number.isInteger(cleaned.riskScore) && cleaned.riskScore >= 0 ? cleaned.riskScore : 0;
+  let riskReasons = '[]';
+  try {
+    const rr = Array.isArray(cleaned.riskReasons) ? cleaned.riskReasons : [];
+    riskReasons = JSON.stringify(
+      rr.filter((s) => typeof s === 'string' && s).map((s) => s.slice(0, 120)).slice(0, 10)
+    );
+  } catch {
+    riskReasons = '[]';
+  }
+  const runInsert = (withParent, withEmail, withPayment, withRisk) => {
     const cols = ['id', 'number', 'idem_key', 'track_token', 'created_at', 'updated_at', 'status', 'type', 'customer_name', 'customer_phone', 'phone_norm'];
     if (withEmail) cols.push('customer_email');
     cols.push('customer_address', 'customer_table', 'notes', 'location_lat', 'location_lng', 'items_json', 'subtotal', 'delivery_fee', 'total', 'lang');
     if (withPayment) cols.push('payment_method', 'payment_status');
     if (withParent) cols.push('parent_number');
+    // Risk columns ride LAST so the missing-column retry below only ever
+    // drops trailing columns (keeps the legacy fake-DB column mapping intact).
+    if (withRisk) cols.push('risk_score', 'risk_reasons');
     const placeholders = cols.map((_, i) => `?${i + 1}`).join(',');
     const values = [
       id,
@@ -618,6 +724,7 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
     );
     if (withPayment) values.push(paymentMethod, paymentStatus);
     if (withParent) values.push(parent);
+    if (withRisk) values.push(riskScore, riskReasons);
     return db.batch([db.prepare(`INSERT INTO orders (${cols.join(', ')}) VALUES (${placeholders})`).bind(...values)]);
   };
   let withParent = parent !== null;
@@ -628,9 +735,11 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
   // Payment columns (migration 0031): included when the DB has them,
   // dropped on `no such column` so unmigrated DBs still record the order.
   let withPayment = true;
-  for (let attempt = 0; attempt < 5; attempt += 1) {
+  // Risk columns (migration 0032): same degrade path as payment above.
+  let withRisk = true;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
     try {
-      await runInsert(withParent, withEmail, withPayment);
+      await runInsert(withParent, withEmail, withPayment, withRisk);
       break;
     } catch (e) {
       // Unmigrated DB (missing parent_number and/or customer_email): drop
@@ -641,6 +750,7 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
       const missingEmail = /customer_email/i.test(msg);
       const missingParent = /parent_number/i.test(msg);
       const missingPayment = /payment_method|payment_status/i.test(msg);
+      const missingRisk = /risk_score|risk_reasons/i.test(msg);
       if (missingPayment && withPayment) {
         withPayment = false;
         continue;
@@ -651,6 +761,10 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
       }
       if (missingParent && withParent) {
         withParent = false;
+        continue;
+      }
+      if (missingRisk && withRisk) {
+        withRisk = false;
         continue;
       }
       if (withPayment) {

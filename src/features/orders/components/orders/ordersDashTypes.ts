@@ -43,6 +43,11 @@ export interface Order {
    *  Set server-side on status changes; absent on older rows or when the
    *  owner changes the status (nothing renders then — by design). */
   updatedBy?: string | null;
+  /** Fake-order risk (server-scored). Absent on older rows — treat undefined
+   *  as not-review (back-compat: the badge simply does not render). */
+  riskScore?: number;
+  riskReasons?: string[];
+  needsReview?: boolean;
 }
 
 /** Kitchen health signal: the 1-minute order-nag sweep heartbeat.

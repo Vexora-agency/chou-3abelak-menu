@@ -8,8 +8,9 @@
 import { jsonNoStore, readJsonBody } from '../_shared/session.js';
 import { captureBackendException } from '../_shared/sentry.js';
 import { mapOrderRow, validateOrderInput } from '../_shared/orders.js';
+import { assessOrderRisk } from '../_shared/order-risk.js';
 import { newTrackToken } from '../_shared/push.js';
-import { LINK_WINDOW_MS, checkAndReserveOrderBudget, findLinkCandidate, findOrderById, findOrderByIdemKey, insertOrderWithNumber, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
+import { LINK_WINDOW_MS, checkAndReserveOrderBudget, countActiveOrdersByPhone, findLinkCandidate, findOrderById, findOrderByIdemKey, insertOrderWithNumber, isPhoneBlocked, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
 import { getOrderingState } from '../_shared/status.js';
 
 const MAX_BODY_BYTES = 8 * 1024;
@@ -19,6 +20,20 @@ const RATE_MAX = 15;
 // Human bursts welcome (family + guests ordering together), bots capped:
 // 15 distinct orders per 10 minutes per IP. Same-key retries never consume
 // budget (a retry is not a new order — the dedupe returns the stored row).
+const PHONE_KEY_PREFIX = 'order:phone:';
+// Per-phone fake-order caps (migration 0032): max 3 new delivery orders per
+// phone per UTC calendar day, and max 2 orders still in a non-terminal
+// state (new/confirmed/ready — the only live states). Same atomic
+// check-and-reserve UPSERT as the IP budget (rate_counters table).
+const PHONE_DAILY_MAX = 3;
+const PHONE_ACTIVE_MAX = 2;
+// Generic refusal (Arabic-first): caps AND the blocklist share ONE code and
+// ONE message so probers cannot distinguish a blocked number from a capped
+// one. The frontend maps any 403 to its blocked UI + this message.
+const REJECTED_MESSAGE = {
+  en: 'This order could not be placed right now. Please try again later or contact us.',
+  ar: 'تعذّر تسجيل الطلب حاليًا. يرجى المحاولة لاحقًا أو التواصل معنا.',
+};
 
 function clientIp(request) {
   return request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -113,6 +128,11 @@ export async function onRequest(context) {
     if (code === 'out_of_zone') {
       return jsonNoStore({ error: code, message: { en: 'Your location isn’t in our delivery area right now — contact us.', ar: 'موقعك خارج منطقة التوصيل حاليًا. يرجى التواصل معنا.' } }, 400);
     }
+    if (code === 'blocked_phone') {
+      // Dead path kept for shape-compat: the route enforces the blocklist
+      // directly (single 'rejected' code) and never passes opts.isBlocked.
+      return jsonNoStore({ error: 'rejected', message: REJECTED_MESSAGE }, 403);
+    }
     return jsonNoStore({ error: code }, 400);
   }
   const c = checked.cleaned;
@@ -137,6 +157,18 @@ export async function onRequest(context) {
     } catch {}
   }
 
+  // Owner blocklist (migration 0032): checked BEFORE any budget reserve so
+  // a blocked phone burns no IP budget. Fails CLOSED with the single
+  // generic 403 (never reveals the block). Fail OPEN on infra errors — a
+  // blip must not eat real dinner orders.
+  try {
+    if (await isPhoneBlocked(db, c.phoneNorm)) {
+      return jsonNoStore({ error: 'rejected', message: REJECTED_MESSAGE }, 403);
+    }
+  } catch (err) {
+    captureBackendException(context, err, { binding: 'd1', code: 'order_block_read' });
+  }
+
   // Rate limit: 15 orders per 10 minutes per IP (atomic check-and-reserve
   // BEFORE the insert, so parallel bursts cannot slip past a stale read).
   // Same-key retries were already deduped above and cost no budget.
@@ -156,6 +188,55 @@ export async function onRequest(context) {
     // Fail OPEN (a blip must not eat real dinner orders — the insert itself
     // would 503 anyway) and log for the owner.
     captureBackendException(context, err, { binding: 'd1', code: 'order_rate_reserve' });
+  }
+
+  // Per-phone caps (migration 0032): active non-terminal orders first, then
+  // the atomic daily reserve BEFORE the insert. The active-count read is
+  // intentionally read-then-insert (NOT atomic): a millisecond race can slip
+  // one extra active order past the cap, but the atomic daily reserve below
+  // bounds the damage to 3/day/phone — an accepted trade-off, documented.
+  // UTC-midnight window (not Beirut): up to ~3h skew around midnight is
+  // accepted to keep the reserve a single atomic UPSERT with no DST math.
+  // Same fail-closed posture as the IP budget. Same-key retries were
+  // already deduped above and cost no budget.
+  try {
+    const active = await countActiveOrdersByPhone(db, c.phoneNorm);
+    if (active >= PHONE_ACTIVE_MAX) {
+      return jsonNoStore({ error: 'rejected', message: REJECTED_MESSAGE }, 403);
+    }
+  } catch (err) {
+    captureBackendException(context, err, { binding: 'd1', code: 'order_phone_active_read' });
+  }
+  try {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const d = new Date(nowSec * 1000);
+    const midnightSec = Math.floor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1) / 1000);
+    const budget = await checkAndReserveOrderBudget(
+      db,
+      PHONE_KEY_PREFIX + c.phoneNorm,
+      PHONE_DAILY_MAX,
+      Math.max(1, midnightSec - nowSec),
+      nowSec
+    );
+    if (!budget.allowed) {
+      return jsonNoStore({ error: 'rejected', message: REJECTED_MESSAGE }, 403);
+    }
+  } catch (err) {
+    captureBackendException(context, err, { binding: 'd1', code: 'order_phone_daily_reserve' });
+  }
+
+  // Suspicious-order risk score (migration 0032): stored at insert, powers
+  // the Telegram review line + the admin badge. Fail-open — a scoring blip
+  // must never block a real order.
+  try {
+    const risk = await assessOrderRisk({ name: c.name, phoneNorm: c.phoneNorm }, { db, nowMs: Date.now() });
+    c.riskScore = risk.riskScore;
+    c.riskReasons = risk.riskReasons;
+    c.needsReview = risk.needsReview;
+  } catch {
+    c.riskScore = 0;
+    c.riskReasons = [];
+    c.needsReview = false;
   }
 
   // One timestamp per request (verbatim original: created_at/updated_at identical, even on retry).

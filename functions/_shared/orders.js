@@ -55,6 +55,8 @@ function westernDigits(v) {
  * Strict validation of a public order payload against the live menu.
  * NEVER trusts client prices or names — those always come from the menu.
  * Returns { ok, errors, cleaned } where cleaned is safe to store.
+ * NOTE: the phone blocklist is enforced by the route (single 'rejected'
+ * 403), never here — validation stays a pure function of body + menu.
  */
 export function validateOrderInput(body, menu) {
   const errors = [];
@@ -445,6 +447,21 @@ export function isSameCustomerPhone(a, b) {
   return false;
 }
 
+/** Risk columns (migration 0032) to the camelCase dashboard shape. */
+export function riskFields(row) {
+  const score = row && Number.isInteger(row.risk_score) && row.risk_score >= 0 ? row.risk_score : 0;
+  let reasons = [];
+  try {
+    const parsed = JSON.parse(typeof row?.risk_reasons === 'string' ? row.risk_reasons : '[]');
+    if (Array.isArray(parsed)) reasons = parsed.filter((s) => typeof s === 'string' && s).slice(0, 10);
+  } catch {
+    reasons = [];
+  }
+  // Mirrors RISK_THRESHOLD in order-risk.js (kept literal here so orders.js
+  // never imports the scorer — the repo already imports this module).
+  return { riskScore: score, riskReasons: reasons, needsReview: score >= 50 };
+}
+
 /** Map a D1 row to the camelCase Order shape the dashboard expects. */
 export function mapOrderRow(row) {
   let items = [];
@@ -496,6 +513,11 @@ export function mapOrderRow(row) {
     // as COD/pending — the same fail-safe default the validator applies.
     paymentMethod: typeof row.payment_method === 'string' && row.payment_method ? row.payment_method : 'cod',
     paymentStatus: typeof row.payment_status === 'string' && row.payment_status ? row.payment_status : 'pending',
+    // Fake-order risk (migration 0032): stored at insert, read here for the
+    // admin feed badge. Legacy rows (no columns) read as unscored — the
+    // keys are ALWAYS present so the dashboard shape never shifts.
+    // CONTRACT: riskScore:number, riskReasons:string[], needsReview:boolean.
+    ...riskFields(row),
     ...(row.lang ? { lang: row.lang } : {}),
     ...(row.track_token ? { trackToken: row.track_token } : {}),
   };

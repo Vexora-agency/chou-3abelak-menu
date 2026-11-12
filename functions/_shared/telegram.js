@@ -32,6 +32,7 @@ import { sha256Hex } from './access.js';
 import { unitLabel } from './pricing.js';
 import { safeCompareStrings } from './session.js';
 import { captureBackendException } from './sentry.js';
+import COUNTRIES from './geodata/countries.js';
 import { findOrderById, countActiveKitchenOrders, updateOrderStatus } from './repositories/orders.repo.js';
 import { orderDistanceKm, orderingEtaOrDefaults } from './eta.js';
 import { notifyOrderStatus } from './push.js';
@@ -41,6 +42,47 @@ export const PAIRING_TTL_SEC = 10 * 60;
 export const PAIRING_CODE_BYTES = 32;
 /** Cap of live (unused, unexpired) codes — bounds table growth per admin. */
 export const MAX_ACTIVE_PAIRING_CODES = 5;
+
+/**
+ * Store country for the approximate-maps fallback (white-label safe: never
+ * hardcoded per client). Priority: the admin's selected delivery-zone
+ * country (first entry — already configured per client) -> the store
+ * timezone -> Lebanon (this client's default, preserves legacy behavior).
+ * Returns { en, ar } English + Arabic names for query suffixing.
+ */
+const COUNTRY_EN_BY_CC = new Map(
+  (Array.isArray(COUNTRIES) ? COUNTRIES : [])
+    .filter((c) => c && typeof c.cc === 'string' && typeof c.en === 'string')
+    .map((c) => [c.cc.trim().toUpperCase(), { en: c.en, ar: typeof c.ar === 'string' ? c.ar : '' }]),
+);
+const TIMEZONE_COUNTRY = {
+  'Asia/Beirut': { en: 'Lebanon', ar: 'لبنان' },
+  'Asia/Dubai': { en: 'United Arab Emirates', ar: 'الإمارات' },
+  'Asia/Riyadh': { en: 'Saudi Arabia', ar: 'السعودية' },
+  'Africa/Cairo': { en: 'Egypt', ar: 'مصر' },
+  'Asia/Amman': { en: 'Jordan', ar: 'الأردن' },
+  'Asia/Qatar': { en: 'Qatar', ar: 'قطر' },
+  'Asia/Kuwait': { en: 'Kuwait', ar: 'الكويت' },
+  'Asia/Bahrain': { en: 'Bahrain', ar: 'البحرين' },
+  'Asia/Muscat': { en: 'Oman', ar: 'عُمان' },
+  'Asia/Baghdad': { en: 'Iraq', ar: 'العراق' },
+  'Asia/Damascus': { en: 'Syria', ar: 'سوريا' },
+  'Asia/Istanbul': { en: 'Türkiye', ar: 'تركيا' },
+  'Europe/Istanbul': { en: 'Türkiye', ar: 'تركيا' },
+};
+export function storeCountry(settings) {
+  try {
+    const zones = settings && settings.ordering && settings.ordering.deliveryZones;
+    if (zones && zones.mode === 'selected' && Array.isArray(zones.countries) && zones.countries.length) {
+      const cc = String((zones.countries[0] && zones.countries[0].cc) || '').trim().toUpperCase();
+      const hit = COUNTRY_EN_BY_CC.get(cc);
+      if (hit && hit.en) return { en: hit.en, ar: hit.ar || hit.en };
+    }
+    const tz = settings && typeof settings.timezone === 'string' ? settings.timezone.trim() : '';
+    if (tz && TIMEZONE_COUNTRY[tz]) return TIMEZONE_COUNTRY[tz];
+  } catch {}
+  return { en: 'Lebanon', ar: 'لبنان' };
+}
 
 const CODE_RE = /^[A-Za-z0-9_-]{43}$/;
 const BOT_USERNAME_RE = /^[A-Za-z0-9_]{5,32}$/;
@@ -529,14 +571,17 @@ export const MAPS_ACCURACY_OK_M = 250;
  *   bug). Same form as the customer-facing link in the checkout sheet.
  * - Coarse fix (cell tower, urban canyon) or no pin -> address-text search
  *   (or the raw pin as last resort), honestly labeled approximate. The
- *   address query gets ", Lebanon" appended unless already present: bare
- *   local text ("Hamra, building 5, floor 3") otherwise misses on Google
- *   Maps with "no result" instead of landing in the right country.
+ *   address query gets the store country appended unless already present:
+ *   bare local text otherwise misses on Google Maps with "no result".
  * Rendered as a short pretty anchor (never a bare long URL).
  * Returns { url, precise } or null.
  */
-export function buildMapsLink(cleaned) {
+export function buildMapsLink(cleaned, country) {
   if (!cleaned || cleaned.type !== 'delivery') return null;
+  const cty = country && typeof country.en === 'string' && country.en.trim()
+    ? { en: country.en.trim(), ar: typeof country.ar === 'string' && country.ar.trim() ? country.ar.trim() : country.en.trim() }
+    : { en: 'Lebanon', ar: 'لبنان' };
+  const escRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const loc = cleaned.location;
   const hasCoords = loc &&
     typeof loc.lat === 'number' && Number.isFinite(loc.lat) &&
@@ -553,10 +598,10 @@ export function buildMapsLink(cleaned) {
   if (typeof cleaned.address === 'string' && cleaned.address.trim()) {
     const text = cleaned.address.trim();
     // Bare local addresses miss on Google Maps without a country ("no
-    // result"): suffix Lebanon unless the customer already wrote it (en/ar),
-    // so the approximate search lands in the right country.
-    const hasCountry = /(lebanon|لبنان)\s*$/i.test(text);
-    const q = hasCountry ? text : `${text}, Lebanon`;
+    // result"): suffix the store country unless the customer already wrote
+    // it (English or Arabic), so the approximate search lands in-country.
+    const hasCountry = new RegExp(`(${escRe(cty.en)}|${escRe(cty.ar)})\\s*$`, 'i').test(text);
+    const q = hasCountry ? text : `${text}, ${cty.en}`;
     return {
       url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`,
       precise: false,
@@ -577,7 +622,7 @@ export function buildMapsLink(cleaned) {
  * important bits, every LTR run bidi-isolated, all interpolated values
  * escaped. Caps length defensively for Telegram's 4096-char limit.
  */
-export function formatNewOrderMessage(cleaned, orderNumber, currency) {
+export function formatNewOrderMessage(cleaned, orderNumber, currency, country) {
   const cur = typeof currency === 'string' && currency ? escapeHtml(currency) : '';
   const money = (n) => (cur ? `${bidi(fmtMoney(n))} ${cur}` : bidi(fmtMoney(n)));
   const lines = [];
@@ -595,7 +640,7 @@ export function formatNewOrderMessage(cleaned, orderNumber, currency) {
   lines.push(`<b>الهاتف:</b> <code>${bidi(escapeHtml(cleaned.phone || '-'))}</code>`);
   if (cleaned.type === 'delivery' && cleaned.address) {
     lines.push(`<b>العنوان:</b> ${escapeHtml(cleaned.address)}`);
-    const maps = buildMapsLink(cleaned);
+    const maps = buildMapsLink(cleaned, country);
     if (maps) {
       const hasAddress = typeof cleaned.address === 'string' && cleaned.address.trim() !== '';
       const anchor = maps.precise
@@ -858,7 +903,7 @@ async function stampLedger(db, orderId, status, attempts, lastError, sent, refs)
  * Telegram's retry_after capped at 30 s. Anything else is recorded as
  * failed with attempts + last_error for the admin status view.
  */
-export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, cleaned, storeName, currency, adminUrl }) {
+export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, cleaned, storeName, currency, adminUrl, storeCountry }) {
   const fail = (reason) => ({ sent: 0, reason });
   try {
     if (typeof token !== 'string' || !token) return fail('no_token');
@@ -875,7 +920,7 @@ export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, 
     if (prior === 'sent') return fail('duplicate');
 
     const prefix = typeof storeName === 'string' && storeName ? escapeHtml(storeName) + '\n' : '';
-    const text = prefix + formatNewOrderMessage(cleaned || {}, orderNumber, currency);
+    const text = prefix + formatNewOrderMessage(cleaned || {}, orderNumber, currency, storeCountry);
     const params = {
       chat_id: link.chatId,
       text,
@@ -1008,6 +1053,7 @@ export async function rebuildOrderMessage(db, env, order) {
     }
     const cleaned = orderRowToCleaned(order);
     let currency = '';
+    let country = { en: 'Lebanon', ar: 'لبنان' };
     try {
       const kv = env && env.MENU_KV ? env.MENU_KV : null;
       // Currency string only — safe to edge-cache for minutes.
@@ -1015,8 +1061,9 @@ export async function rebuildOrderMessage(db, env, order) {
       const cur = menu && menu.settings && menu.settings.currency;
       // Arabic-first to match the message language (ل.ل), English fallback.
       if (cur && typeof cur === 'object') currency = String(cur.ar || cur.en || '');
+      country = storeCountry(menu && menu.settings);
     } catch {}
-    return formatNewOrderMessage(cleaned, order.number, currency);
+    return formatNewOrderMessage(cleaned, order.number, currency, country);
   } catch {
     return null;
   }

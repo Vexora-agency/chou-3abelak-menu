@@ -48,6 +48,7 @@ import {
   notifyOwnerAutoCompleted,
   notifyNewOrderTelegram,
   orderRowToCleaned,
+  storeCountry,
   syncOrderStatusToTelegram,
 } from '../../_shared/telegram.js';
 
@@ -127,6 +128,7 @@ export async function onRequest(context) {
   };
   let storeName = '';
   let cur = '';
+  let country = { en: 'Lebanon', ar: 'لبنان' };
   const needMenuText = async () => {
     const menu = await loadMenu();
     try {
@@ -136,6 +138,7 @@ export async function onRequest(context) {
       // Arabic-first: the Telegram order message is Arabic-first, so the
       // currency word must match (ل.ل), falling back to English when unset.
       cur = currency && typeof currency === 'object' ? String(currency.ar || currency.en || '') : '';
+      country = storeCountry(menu?.settings);
     } catch {}
   };
 
@@ -214,6 +217,7 @@ export async function onRequest(context) {
           storeName,
           currency: cur,
           adminUrl: dashUrl,
+          storeCountry: country,
         });
       } catch {}
       try {

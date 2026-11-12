@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { type OrderingStatus } from '@/src/utils/status';
@@ -82,6 +82,17 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   // Radical phone-scroll fix: shared counter lock (iOS-safe, nested-sheet
   // aware) instead of a bare overflow flag that iOS Safari ignores.
   useBodyScrollLock(isOpen, 'cart-drawer');
+  // The drawer scroller keeps its scrollTop across the form -> confirmation
+  // swap: after Send the tall form is replaced by a short confirmation, and
+  // a stale scrollTop leaves a blank gap (iOS often fails to clamp it, which
+  // reads as "stuck, can't scroll up"). Reset to top the moment the
+  // confirmation lands so it is always fully visible. Legacy
+  // scrollTo(0, 0) = instant everywhere (no 'instant' keyword needed, which
+  // iOS throws on).
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isOpen && orderPrepared) scrollerRef.current?.scrollTo(0, 0);
+  }, [isOpen, orderPrepared]);
   useEffect(() => {
     if (!isOpen) {
       idemKeyRef.current = null;
@@ -146,6 +157,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         }`}
       >
       <div
+        ref={scrollerRef}
         role="dialog"
         aria-modal="true"
         aria-label={isAr ? 'سلة الطلبات وإتمام الشراء' : 'Order Checkout'}

@@ -21,11 +21,11 @@ const RATE_MAX = 15;
 // 15 distinct orders per 10 minutes per IP. Same-key retries never consume
 // budget (a retry is not a new order — the dedupe returns the stored row).
 const PHONE_KEY_PREFIX = 'order:phone:';
-// Per-phone fake-order caps (migration 0032): max 3 new delivery orders per
+// Per-phone fake-order caps (migration 0032): max 5 new delivery orders per
 // phone per UTC calendar day, and max 2 orders still in a non-terminal
 // state (new/confirmed/ready — the only live states). Same atomic
 // check-and-reserve UPSERT as the IP budget (rate_counters table).
-const PHONE_DAILY_MAX = 3;
+const PHONE_DAILY_MAX = 5;
 const PHONE_ACTIVE_MAX = 2;
 // Generic refusal (Arabic-first): caps AND the blocklist share ONE code and
 // ONE message so probers cannot distinguish a blocked number from a capped
@@ -242,7 +242,7 @@ export async function onRequest(context) {
   // One timestamp per request (verbatim original: created_at/updated_at identical, even on retry).
   const nowIso = new Date().toISOString();
   // Follow-up link (display-only, never merged): same phone with an ACTIVE
-  // order inside the 15-minute window links to the most recent one. Best
+  // order inside the 20-minute window links to the most recent one. Best
   // effort — any failure reads as standalone, the order itself never waits.
   try {
     const cutoff = new Date(Date.now() - LINK_WINDOW_MS).toISOString();

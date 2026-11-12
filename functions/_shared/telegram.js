@@ -914,6 +914,30 @@ async function stampLedger(db, orderId, status, attempts, lastError, sent, refs)
 }
 
 /**
+ * Threading for follow-up orders: reply to the parent order's owner message
+ * so a linked pair reads as ONE conversation in the kitchen chat. Returns
+ * the parent message_id when it exists in the SAME chat, else null (the
+ * caller then sends a normal message). Fail-open everywhere — threading
+ * must never block or break the notification.
+ */
+export async function resolveReplyToMessageId(db, parentNumber, chatId) {
+  try {
+    if (!db || !Number.isInteger(parentNumber) || !Number.isInteger(chatId)) return null;
+    const prow = await db.prepare('SELECT id FROM orders WHERE number = ?1').bind(parentNumber).first();
+    const pid = prow && typeof prow.id === 'string' && prow.id ? prow.id : null;
+    if (!pid) return null;
+    const led = await db
+      .prepare('SELECT message_id, chat_id FROM telegram_notifications WHERE order_id = ?1')
+      .bind(pid)
+      .first();
+    if (led && Number.isInteger(led.message_id) && led.chat_id === chatId) return led.message_id;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Send the new-order notification. NEVER throws and NEVER fails order
  * creation — every failure path returns { sent: 0, reason }.
  *
@@ -950,6 +974,16 @@ export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, 
       parse_mode: 'HTML',
       reply_markup: buildOrderKeyboard(adminUrl, orderId),
     };
+    // Joint delivery threading: a follow-up replies to its parent's message
+    // so the kitchen reads both as one conversation (falls back to a normal
+    // message when the parent message is unknown or in another chat).
+    try {
+      const pnum = cleaned && Number.isInteger(cleaned.parentNumber) ? cleaned.parentNumber : null;
+      if (pnum !== null) {
+        const replyTo = await resolveReplyToMessageId(db, pnum, link.chatId);
+        if (replyTo !== null) params.reply_to_message_id = replyTo;
+      }
+    } catch {}
 
     let attempts = 0;
     let res = await callTelegramApi(token, 'sendMessage', params);
@@ -974,19 +1008,40 @@ export async function notifyNewOrderTelegram(db, token, { orderId, orderNumber, 
       });
       // Delivery-crew fan-out (best-effort, never fails the owner send):
       // same text, no admin-url row, each copy recorded for later sync.
+      // Follow-ups thread under the parent's crew message in the same chat.
       try {
         const crew = await listDeliveryChats(db);
         if (Array.isArray(crew) && crew.length) {
+          let parentId = null;
+          try {
+            const pnum = cleaned && Number.isInteger(cleaned.parentNumber) ? cleaned.parentNumber : null;
+            if (pnum !== null) {
+              const prow = await db.prepare('SELECT id FROM orders WHERE number = ?1').bind(pnum).first();
+              if (prow && typeof prow.id === 'string' && prow.id) parentId = prow.id;
+            }
+          } catch {
+            parentId = null;
+          }
           const crewKeyboard = buildOrderKeyboard('', orderId);
           for (const dc of crew) {
             try {
               if (!dc || !Number.isInteger(dc.chatId)) continue;
-              const cres = await callTelegramApi(token, 'sendMessage', {
+              const crewParams = {
                 chat_id: dc.chatId,
                 text,
                 parse_mode: 'HTML',
                 reply_markup: crewKeyboard,
-              });
+              };
+              try {
+                if (parentId !== null) {
+                  const cmsg = await db
+                    .prepare('SELECT message_id FROM telegram_order_chats WHERE order_id = ?1 AND chat_id = ?2')
+                    .bind(parentId, dc.chatId)
+                    .first();
+                  if (cmsg && Number.isInteger(cmsg.message_id)) crewParams.reply_to_message_id = cmsg.message_id;
+                }
+              } catch {}
+              const cres = await callTelegramApi(token, 'sendMessage', crewParams);
               if (cres && cres.ok) {
                 const cmsg = cres.result && typeof cres.result === 'object' ? cres.result : null;
                 const cid = cmsg && Number.isInteger(cmsg.message_id) ? cmsg.message_id : null;
@@ -1588,7 +1643,7 @@ export async function syncOrderStatusToTelegram(db, token, { orderId, status, ad
  * Best-effort and silent — NEVER throws. Only the linked owner chat gets
  * it (customer name goes to the owner only, never to a public surface).
  */
-export async function notifyOwnerReceived(db, token, { orderNumber, customerName }) {
+export async function notifyOwnerReceived(db, token, { orderNumber, customerName, jointNumbers }) {
   const skip = (reason) => ({ sent: 0, reason });
   try {
     if (!db || typeof token !== 'string' || !token) return skip('misconfigured');
@@ -1603,7 +1658,17 @@ export async function notifyOwnerReceived(db, token, { orderNumber, customerName
     const name = typeof customerName === 'string' && customerName.trim()
       ? escapeHtml(customerName.trim().slice(0, 60))
       : 'العميل';
-    const text = `📦 ${name} أكّد استلام الطلب ${bidi(`#${orderNumber}`)} بنجاح ✅`;
+    // Joint delivery: one ping names the whole group ("both go together"),
+    // exact legacy text when solo so nothing downstream shifts shape.
+    let text;
+    try {
+      const extra = Array.isArray(jointNumbers) ? [...new Set(jointNumbers)].filter((n) => Number.isInteger(n) && n !== orderNumber).sort((a, b) => a - b).slice(0, 10) : [];
+      text = extra.length
+        ? `📦 ${name} أكّد استلام الطلبات ${[orderNumber, ...extra].map((n) => bidi(`#${n}`)).join('، ')} معًا بنجاح ✅`
+        : `📦 ${name} أكّد استلام الطلب ${bidi(`#${orderNumber}`)} بنجاح ✅`;
+    } catch {
+      text = `📦 ${name} أكّد استلام الطلب ${bidi(`#${orderNumber}`)} بنجاح ✅`;
+    }
     const res = await callTelegramApi(token, 'sendMessage', {
       chat_id: link.chatId,
       text,

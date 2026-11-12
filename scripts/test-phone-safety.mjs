@@ -203,8 +203,8 @@ const daysAgo = (n) => new Date(Date.now() - n * 86400 * 1000).toISOString();
   await insertDirect(db, { phone: '71110044', status: 'cancelled' });
   await insertDirect(db, { phone: '71110044', status: 'completed' });
   await insertDirect(db, { phone: '71110044', status: 'completed' });
-  const a50 = await assessOrderRisk({ name: 'Sara Nour', phoneNorm: '71110044' }, { db });
-  ok(a50.riskScore === 50 && a50.needsReview === true, 'score 50 needs review (boundary)');
+  const a50 = await assessOrderRisk({ name: 'Sara Nour', phoneNorm: '71110044' }, { db, nowMs: DAY_INSTANT });
+  ok(a50.riskScore === 50 && a50.needsReview === true, 'score 50 needs review (boundary, pinned daytime)');
   // 40 alone stays below.
   const a40 = await assessOrderRisk(
     { name: 'test', phoneNorm: '70123456' },
@@ -223,33 +223,39 @@ const daysAgo = (n) => new Date(Date.now() - n * 86400 * 1000).toISOString();
   const { env, ready } = freshEnv(db);
   await ready;
 
-  // Daily cap: 3 new orders/day ok, 4th capped. Completing older orders
+  // Daily cap: 5 new orders/day ok, 6th capped. Completing older orders
   // keeps the ACTIVE cap out of the way so the daily cap is what fires.
   const P1 = '71345678';
   const r1 = await postOrder(env, orderBody({ customer: { name: 'Sara Nour', phone: P1, address: 'Hamra' }, location: TEST_PIN, idemKey: 'd1' }), '10.1.0.1');
-  ok(r1.status === 200, 'daily 1/3 accepted');
+  ok(r1.status === 200, 'daily 1/5 accepted');
   await updateOrderStatus(db, (await db.prepare('SELECT id FROM orders WHERE number = ?1').bind(r1.data.orderNumber).first()).id, 'completed');
   const r2 = await postOrder(env, orderBody({ customer: { name: 'Sara Nour', phone: P1, address: 'Hamra' }, location: TEST_PIN, idemKey: 'd2' }), '10.1.0.1');
-  ok(r2.status === 200, 'daily 2/3 accepted');
+  ok(r2.status === 200, 'daily 2/5 accepted');
   await updateOrderStatus(db, (await db.prepare('SELECT id FROM orders WHERE number = ?1').bind(r2.data.orderNumber).first()).id, 'completed');
   const r3 = await postOrder(env, orderBody({ customer: { name: 'Sara Nour', phone: P1, address: 'Hamra' }, location: TEST_PIN, idemKey: 'd3' }), '10.1.0.1');
-  ok(r3.status === 200, 'daily 3/3 accepted');
+  ok(r3.status === 200, 'daily 3/5 accepted');
+  await updateOrderStatus(db, (await db.prepare('SELECT id FROM orders WHERE number = ?1').bind(r3.data.orderNumber).first()).id, 'completed');
   const r4 = await postOrder(env, orderBody({ customer: { name: 'Sara Nour', phone: P1, address: 'Hamra' }, location: TEST_PIN, idemKey: 'd4' }), '10.1.0.1');
-  ok(r4.status === 403 && r4.data.error === 'rejected', 'daily 4th rejected 403 (single code)');
-  ok(r4.data.message && typeof r4.data.message.ar === 'string' && r4.data.message.ar.length > 0, 'rejected message is generic Arabic-first');
+  ok(r4.status === 200, 'daily 4/5 accepted');
+  await updateOrderStatus(db, (await db.prepare('SELECT id FROM orders WHERE number = ?1').bind(r4.data.orderNumber).first()).id, 'completed');
+  const r5 = await postOrder(env, orderBody({ customer: { name: 'Sara Nour', phone: P1, address: 'Hamra' }, location: TEST_PIN, idemKey: 'd5' }), '10.1.0.1');
+  ok(r5.status === 200, 'daily 5/5 accepted');
+  const r6 = await postOrder(env, orderBody({ customer: { name: 'Sara Nour', phone: P1, address: 'Hamra' }, location: TEST_PIN, idemKey: 'd6' }), '10.1.0.1');
+  ok(r6.status === 403 && r6.data.error === 'rejected', 'daily 6th rejected 403 (single code)');
+  ok(r6.data.message && typeof r6.data.message.ar === 'string' && r6.data.message.ar.length > 0, 'rejected message is generic Arabic-first');
   const p1rows = await db.prepare('SELECT COUNT(*) AS c FROM orders WHERE phone_norm = ?1').bind(P1).first();
-  ok(p1rows.c === 3, 'capped order stored nothing');
+  ok(p1rows.c === 5, 'capped order stored nothing');
   // Same-key retry after the cap is still free (dedupe returns the original).
   const retry = await postOrder(env, orderBody({ customer: { name: 'Sara Nour', phone: P1, address: 'Hamra' }, location: TEST_PIN, idemKey: 'd1' }), '10.1.0.1');
   ok(retry.status === 200 && retry.data.orderNumber === r1.data.orderNumber, 'retry after cap free, same number');
   const p1rows2 = await db.prepare('SELECT COUNT(*) AS c FROM orders WHERE phone_norm = ?1').bind(P1).first();
-  ok(p1rows2.c === 3, 'retry stored nothing new');
-  // Phone budget row: 4 reserves (3 allowed + 1 rejected), window = UTC midnight.
+  ok(p1rows2.c === 5, 'retry stored nothing new');
+  // Phone budget row: 6 reserves (5 allowed + 1 rejected), window = UTC midnight.
   const rate = await db.prepare('SELECT hits, window_reset FROM rate_counters WHERE "key" = ?1').bind('order:phone:' + P1).first();
   const nowSec = Math.floor(Date.now() / 1000);
   const d = new Date(nowSec * 1000);
   const midnight = Math.floor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1) / 1000);
-  ok(rate && rate.hits === 4 && rate.window_reset === midnight, 'phone daily budget reuses rate_counters, midnight window');
+  ok(rate && rate.hits === 6 && rate.window_reset === midnight, 'phone daily budget reuses rate_counters, midnight window');
 
   // Active cap: 2 non-terminal ok, 3rd capped; completing one frees a slot.
   const P2 = '71456789';

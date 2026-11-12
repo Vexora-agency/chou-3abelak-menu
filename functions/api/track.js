@@ -8,6 +8,7 @@
 import { jsonNoStore } from '../_shared/session.js';
 import { isRateLimited, noteRateLimitHit, rateKey } from '../_shared/access.js';
 import { linkedReceivableAtMs, receivableAtMs } from '../_shared/eta.js';
+import { findLinkedGroup } from '../_shared/repositories/orders.repo.js';
 
 // Polling math: the bell re-checks each order every 60s, so a customer
 // with a few orders stays far below this. 120 hits / 5 min per IP only
@@ -167,6 +168,9 @@ export async function onRequest(context) {
   let receivableAt = null;
   // Follow-up link for the customer (display-only, MSA copy in TrackView):
   // integer or null, never 0. Lets the track page print "سيصل مع #X".
+  // Joint group (one-tap receipt): other member numbers + their combined
+  // total so the page can offer a single "confirm both" button. Best-effort,
+  // never fails the page.
   const parentNumber = Number.isInteger(row.parent_number) ? row.parent_number : null;
   if (row.status === 'confirmed' || row.status === 'ready') {
     try {
@@ -195,11 +199,30 @@ export async function onRequest(context) {
     }
   }
 
+  // Joint group for one-tap receipt: sibling numbers + their combined total
+  // (fail-open: the page falls back to the single-order button).
+  let linked = null;
+  try {
+    const g = await findLinkedGroup(db, row);
+    const others = (Array.isArray(g.members) ? g.members : []).filter(
+      (m) => m && Number.isInteger(m.number) && m.number !== row.number
+    );
+    if (others.length) {
+      linked = {
+        numbers: others.map((m) => m.number).sort((a, b) => a - b),
+        total: others.reduce((s, m) => s + (typeof m.total === 'number' && Number.isFinite(m.total) ? m.total : 0), 0),
+      };
+    }
+  } catch {
+    linked = null;
+  }
+
   return jsonNoStore({
     ok: true,
     number: row.number,
     status: row.status,
     parentNumber,
+    linked,
     // Order type drives the customer-facing ready label (out for delivery
     // vs ready for pickup). Allowlisted, defaults to delivery.
     type: row.type === 'pickup' || row.type === 'dinein' ? row.type : 'delivery',

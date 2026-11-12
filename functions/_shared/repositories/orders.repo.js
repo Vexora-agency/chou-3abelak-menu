@@ -9,11 +9,11 @@ import { orderingEtaOrDefaults } from '../eta.js';
 /**
  * Follow-up window: a new order within this long after an ACTIVE order
  * (new/confirmed/ready) from the same phone links to it via parent_number.
- * 15 minutes covers "نسيت أضيف صنف" without ever merging strangers —
+ * 20 minutes covers "نسيت أضيف صنف" without ever merging strangers —
  * completed/cancelled orders never link, and the link is display-only
  * (two separate kitchen tickets, two separate totals, never auto-merged).
  */
-export const LINK_WINDOW_MS = 15 * 60 * 1000;
+export const LINK_WINDOW_MS = 20 * 60 * 1000;
 
 export async function findOrderByIdemKey(db, idemKey) {
   return db.prepare('SELECT number, total, track_token, sent_via FROM orders WHERE idem_key = ?1').bind(idemKey).first();
@@ -149,7 +149,7 @@ export async function findOrderByNumber(db, number) {
  * inside the link window whose phone matches (exact or shared suffix —
  * see isSameCustomerPhone). Returns { number } or null. Read-only, never
  * throws (fail open = standalone order). Bounded to the last 50 rows in
- * the window so a busy 15 minutes stays one cheap indexed read.
+ * the window so a busy 20 minutes stays one cheap indexed read.
  */
 export async function findLinkCandidate(db, phoneNorm, cutoffIso) {
   try {
@@ -192,6 +192,82 @@ export async function completeOrderByTrackToken(db, number, token) {
     .run();
   const changed = res && res.meta ? res.meta.changes : 0;
   return changed === 1;
+}
+
+/**
+ * Linked delivery group for joint receipt (migration 0023 parent_number
+ * chains). Walks up to the root (<=5 hops, cycle-guarded), then collects
+ * every descendant (2 rounds, <=12 members). Returns { root, members }
+ * with full rows sorted by number. A group is same-customer by
+ * construction (links only form on a phone match inside the window).
+ * Fail-open: { root: null, members: [] } on any error.
+ */
+export async function findLinkedGroup(db, row) {
+  try {
+    if (!db || !row || !Number.isInteger(row.number)) return { root: null, members: [] };
+    const seen = new Map();
+    seen.set(row.number, row);
+    let cur = row;
+    for (let i = 0; i < 5; i++) {
+      const p = Number.isInteger(cur.parent_number) ? cur.parent_number : null;
+      if (p === null || seen.has(p)) break;
+      let prow = null;
+      try {
+        prow = await findOrderByNumber(db, p);
+      } catch {
+        break;
+      }
+      if (!prow || !Number.isInteger(prow.number)) break;
+      seen.set(prow.number, prow);
+      cur = prow;
+    }
+    const root = cur.number;
+    for (let round = 0; round < 2 && seen.size < 12; round++) {
+      const nums = [...seen.keys()];
+      let res = null;
+      try {
+        res = await db
+          .prepare(`SELECT * FROM orders WHERE parent_number IN (${nums.map(() => '?').join(',')}) LIMIT 50`)
+          .bind(...nums)
+          .all();
+      } catch {
+        break;
+      }
+      const rows = (res && res.results) || [];
+      let added = false;
+      for (const r of rows) {
+        if (r && Number.isInteger(r.number) && !seen.has(r.number)) {
+          seen.set(r.number, r);
+          added = true;
+        }
+      }
+      if (!added) break;
+    }
+    const members = [...seen.values()].sort((a, b) => a.number - b.number);
+    return { root, members };
+  } catch {
+    return { root: null, members: [] };
+  }
+}
+
+/**
+ * Joint receipt: flip every confirmed|ready member of a linked group in ONE
+ * atomic UPDATE. Siblings ride on the requester's token: the group exists
+ * only because the same phone placed follow-ups inside the link window, so
+ * one member's capability covers the joint delivery. Cancelled/completed
+ * members are never touched. Returns the flipped numbers (via RETURNING).
+ */
+export async function completeGroupByNumbers(db, numbers) {
+  const list = [...new Set((Array.isArray(numbers) ? numbers : []).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 12);
+  if (!list.length) return [];
+  const res = await db
+    .prepare(
+      `UPDATE orders SET status = 'completed', updated_at = ?1 WHERE number IN (${list.map(() => '?').join(',')}) AND status IN ('confirmed','ready') RETURNING number`
+    )
+    .bind(new Date().toISOString(), ...list)
+    .all();
+  const rows = (res && res.results) || [];
+  return rows.map((r) => r.number).filter((n) => Number.isInteger(n));
 }
 
 /**

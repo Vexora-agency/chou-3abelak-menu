@@ -1,5 +1,5 @@
 /**
- * Customer self-confirm receipt: POST /api/track/received { number, t }
+ * Customer self-confirm receipt: POST /api/track/received { number, t, group? }
  * PUBLIC (no admin session) — the 128-bit track_token IS the capability,
  * same trust model as GET /api/track (unguessable, per-order, no PII in
  * the request beyond what the customer already knows).
@@ -16,11 +16,19 @@
  * owner is pinged on Telegram (new short message + original order message
  * stamped completed) — best-effort via waitUntil, never blocks the reply.
  * Unknown number/token reads 404 identically (no oracle).
+ *
+ * Joint delivery: { group: true } completes the WHOLE linked group (same
+ * customer, parent_number chain) in ONE atomic UPDATE and answers with
+ * completedNumbers. Siblings ride on the requester's token — the group
+ * exists only because the same phone placed follow-ups inside the link
+ * window. The unlock gate is the earliest instant across active members.
  */
 
 import { jsonNoStore, readJsonBody, safeCompareStrings } from '../../_shared/session.js';
 import {
+  completeGroupByNumbers,
   completeOrderByTrackToken,
+  findLinkedGroup,
   findOrderByNumber,
 } from '../../_shared/repositories/orders.repo.js';
 import { linkedReceivableAtMs, receivableAtMs } from '../../_shared/eta.js';
@@ -28,6 +36,105 @@ import { notifyOwnerReceived, syncOrderStatusToTelegram } from '../../_shared/te
 
 const MAX_BODY_BYTES = 1 * 1024;
 const TOKEN_RE = /^[0-9a-f]{32}$/;
+
+/**
+ * Joint receipt for a linked delivery group ("both go together — one tap").
+ * Returns a response when the group path applies, else null (the caller
+ * falls through to the single-order path, which stays the source of truth).
+ *
+ * Gate: earliest receivable instant across ACTIVE members (a `new` member
+ * neither gates nor flips — it simply isn't ready). Flip: ONE atomic UPDATE
+ * of confirmed|ready members; cancelled/completed members are never
+ * touched. Owner gets ONE combined ping; each flipped order is stamped on
+ * Telegram and emailed individually (best-effort, never blocks).
+ */
+async function receiveLinkedGroup({ db, env, request, row, number, waitUntil }) {
+  try {
+    const g = await findLinkedGroup(db, row);
+    const members = Array.isArray(g.members) ? g.members : [];
+    if (members.length < 2) return null;
+    let ordering = null;
+    try {
+      const kv = env.MENU_KV || null;
+      const menu = kv ? await kv.get('menu', { type: 'json', cacheTtl: 300 }) : null;
+      ordering = menu && menu.settings ? menu.settings.ordering : null;
+    } catch {
+      ordering = null;
+    }
+    const nowMs = Date.now();
+    let unlockAtMs = Infinity;
+    for (const m of members) {
+      try {
+        const st = m && typeof m.status === 'string' ? m.status : '';
+        if (st !== 'confirmed' && st !== 'ready') continue;
+        const ownMs = receivableAtMs({
+          confirmedAt: m.confirmed_at,
+          createdAt: m.created_at,
+          etaAt: m.eta_at,
+          orderType: m.type,
+          settings: ordering,
+          nowMs,
+        });
+        if (Number.isFinite(ownMs) && ownMs < unlockAtMs) unlockAtMs = ownMs;
+      } catch {}
+    }
+    if (!Number.isFinite(unlockAtMs)) unlockAtMs = -Infinity;
+    if (nowMs < unlockAtMs) {
+      return jsonNoStore(
+        { error: 'too_early', status: row.status, retryAfterSec: Math.max(1, Math.ceil((unlockAtMs - nowMs) / 1000)) },
+        409
+      );
+    }
+    const flipped = await completeGroupByNumbers(db, members.map((m) => m.number));
+    if (!flipped.includes(number)) return null;
+    const after = (async () => {
+      try {
+        const token2 = env.TELEGRAM_BOT_TOKEN || null;
+        let origin = '';
+        try {
+          origin = new URL(request.url).origin;
+        } catch {}
+        const name = row && typeof row.customer_name === 'string' ? row.customer_name : '';
+        await notifyOwnerReceived(db, token2, {
+          orderNumber: number,
+          customerName: name,
+          jointNumbers: flipped.filter((n) => n !== number),
+        });
+        const { mapOrderRow } = await import('../../_shared/orders.js');
+        const { notifyCustomerOrderEvent } = await import('../../_shared/customer-email.js');
+        for (const n of flipped) {
+          try {
+            const fr = await findOrderByNumber(db, n);
+            if (fr && typeof fr.id === 'string' && fr.id) {
+              await syncOrderStatusToTelegram(db, token2, {
+                orderId: fr.id,
+                status: 'completed',
+                adminUrl: origin ? `${origin}/admin/dashboard` : '',
+                env,
+              });
+            }
+            if (fr) {
+              const mapped = mapOrderRow(fr);
+              if (mapped && mapped.customer && typeof mapped.customer.email === 'string' && mapped.customer.email) {
+                await notifyCustomerOrderEvent(db, env, { order: mapped, event: 'completed', origin });
+              }
+            }
+          } catch {}
+        }
+      } catch {}
+    })();
+    if (typeof waitUntil === 'function') {
+      try {
+        waitUntil(after);
+      } catch {}
+    } else {
+      await after;
+    }
+    return jsonNoStore({ ok: true, status: 'completed', number, completedNumbers: flipped });
+  } catch {
+    return null;
+  }
+}
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -87,6 +194,14 @@ export async function onRequest(context) {
   }
   if (row.status !== 'confirmed' && row.status !== 'ready') {
     return jsonNoStore({ error: 'not_found' }, 404);
+  }
+  const wantGroup = body && body.group === true;
+  if (wantGroup) {
+    const waitUntil = context && typeof context.waitUntil === 'function' ? context.waitUntil.bind(context) : null;
+    const groupRes = await receiveLinkedGroup({ db, env, request, row, number, waitUntil });
+    if (groupRes !== null) return groupRes;
+    // Fall through to the single-order path below (group resolved to one,
+    // or the flip raced — the single path stays the source of truth).
   }
   let ordering = null;
   try {

@@ -38,6 +38,8 @@ const unknownShape = (number) => ({
   createdAt: null,
   receivableAt: null,
   etaAt: null,
+  parentNumber: null,
+  groupNumbers: [],
 });
 
 function cleanPair(pair) {
@@ -146,6 +148,25 @@ export async function onRequest(context) {
   } catch {
     parentByNumber = new Map();
   }
+  // Joint groups for one-tap receipt: children of every shelf number AND of
+  // every shelf parent, in ONE extra round-trip (≤100 rows). Best-effort.
+  let childrenByParent = new Map();
+  try {
+    const keys = [...new Set([...byNumber.keys(), ...parentByNumber.keys()])].slice(0, 40);
+    if (keys.length) {
+      const cres = await db
+        .prepare(`SELECT number, parent_number FROM orders WHERE parent_number IN (${keys.map(() => '?').join(',')}) LIMIT 100`)
+        .bind(...keys)
+        .all();
+      for (const r of (cres && cres.results) || []) {
+        if (!r || !Number.isInteger(r.number) || !Number.isInteger(r.parent_number)) continue;
+        if (!childrenByParent.has(r.parent_number)) childrenByParent.set(r.parent_number, []);
+        childrenByParent.get(r.parent_number).push(r.number);
+      }
+    }
+  } catch {
+    childrenByParent = new Map();
+  }
   // Preserve request order and duplicates: one entry per input pair.
   // Malformed pairs also yield one `unknown` entry (number: null) so
   // result length never leaks well-formed vs malformed.
@@ -204,6 +225,22 @@ export async function onRequest(context) {
       number: row.number,
       status: row.status,
       parentNumber,
+      // Joint group (one-tap receipt): parent + fellow children + own
+      // children, minus self. Empty when solo — the bell keeps single taps.
+      groupNumbers: (() => {
+        try {
+          const set = new Set();
+          if (parentNumber !== null) {
+            set.add(parentNumber);
+            for (const n of childrenByParent.get(parentNumber) || []) set.add(n);
+          }
+          for (const n of childrenByParent.get(row.number) || []) set.add(n);
+          set.delete(row.number);
+          return [...set].sort((a, b) => a - b);
+        } catch {
+          return [];
+        }
+      })(),
       total: typeof row.total === 'number' ? row.total : null,
       itemsCount: countItems(row),
       createdAt: typeof row.created_at === 'string' ? row.created_at : null,

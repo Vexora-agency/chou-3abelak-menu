@@ -1,6 +1,6 @@
-import type { FC } from 'react';
+import { useMemo, useState, type FC } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { BellRing, Check, ChevronDown, Inbox, MapPin, MessageCircle, Phone, Store, X } from 'lucide-react';
+import { BellRing, Check, ChevronDown, Inbox, Link2, Loader2, MapPin, MessageCircle, Phone, Store, X } from 'lucide-react';
 import { STR } from './ordersDashTypes';
 import type { Order, OrderStatus } from './ordersDashTypes';
 import { OrderReviewBadge } from './OrderReviewBadge';
@@ -34,6 +34,238 @@ interface OrdersDashListProps {
   kitchen?: boolean;
 }
 
+interface OrderRowProps {
+  o: Order;
+  open: boolean;
+  onToggleOpen: (id: string | null) => void;
+  t: (typeof STR)[keyof typeof STR];
+  isAr: boolean;
+  currency: string;
+  now: Date;
+  flashId: string | null;
+  onStatusChange: (id: string, status: OrderStatus) => void;
+  onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
+}
+
+/** Single order card (row + expandable detail). Pure presentational. */
+const OrderRow: FC<OrderRowProps> = ({ o, open, onToggleOpen, t, isAr, currency, now, flashId, onStatusChange, onConfirm }) => {
+  const TypeIcon = TYPE_ICON[o.type] ?? Store;
+  // Smart ETA: absolute 12h time while on-time, mins-late once passed.
+  const etaMs = typeof o.etaAt === 'string' && o.etaAt ? Date.parse(o.etaAt) : NaN;
+  const showEta = (o.status === 'confirmed' || o.status === 'ready') && Number.isFinite(etaMs);
+  const etaTime = showEta
+    ? new Date(etaMs).toLocaleTimeString(loc(isAr ? 'ar' : 'en'), { hour: 'numeric', minute: '2-digit', hour12: true })
+    : '';
+  const etaLateMins = showEta ? Math.floor((now.getTime() - etaMs) / 60000) : 0;
+  const etaLate = showEta ? now.getTime() > etaMs : false;
+  return (
+    <motion.div key={o.id} layout="position"
+      initial={{ opacity: 1, y: -12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className={`rounded-2xl bg-neutral-900 border transition-colors ${flashId === o.id ? 'border-[var(--primary)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_18%,transparent)]' : 'border-neutral-800'}`}>
+      <button type="button" onClick={() => onToggleOpen(open ? null : o.id)} aria-expanded={open}
+        className="w-full text-start p-3.5 flex items-center gap-3">
+        <span className="shrink-0 w-10 h-10 rounded-xl bg-black border border-neutral-800 text-[var(--primary)] flex items-center justify-center"><TypeIcon size={18} /></span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <b className="text-sm tabular-nums" dir="ltr">#{o.number}</b>
+            {typeof o.parentNumber === 'number' && (
+              <span dir="auto" className="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-300">
+                {t.linkedShort(o.parentNumber)}
+              </span>
+            )}
+            <span className="text-sm font-semibold truncate">{o.customer.name}</span>
+            <OrderReviewBadge lang={isAr ? 'ar' : 'en'} needsReview={o.needsReview} riskReasons={o.riskReasons} />
+          </span>
+          <span className="block text-[11px] text-neutral-500 truncate mt-0.5" dir="auto">
+            <bdi>{relTime(o.createdAt, isAr ? 'ar' : 'en', now)}</bdi> · {o.items.map((it) => `${it.qty}× ${typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, isAr ? 'ar' : 'en')} ` : ''}${itemTitle(it, isAr ? 'ar' : 'en')}`).join(isAr ? '، ' : ', ')}
+          </span>
+        </span>
+        <span className="shrink-0 text-end">
+          <span className="block text-sm font-extrabold tabular-nums" dir="ltr">{fmt(o.total)}</span>
+          <span className={`mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${STATUS_STYLE[o.status]}`}>
+            {o.status === 'new' && <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0A] animate-pulse" />}
+            {t[o.status]}
+          </span>
+          {typeof o.updatedBy === 'string' && o.updatedBy.trim() !== '' && (
+            <span className="mt-0.5 block text-[10px] font-bold text-neutral-500 truncate max-w-[110px]" dir="auto">
+              {t.by(o.updatedBy.trim())}
+            </span>
+          )}
+        </span>
+        <ChevronDown size={16} className={`shrink-0 text-neutral-500 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden">
+            <div className="px-3.5 pb-3.5 pt-3 border-t border-neutral-800 space-y-3 text-[13px]">
+              {typeof o.parentNumber === 'number' && (
+                <p dir="auto" className="text-[11px] font-bold text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-xl px-3 py-1.5">
+                  {`🔗 ${t.linkedLong(o.parentNumber)}`}
+                </p>
+              )}
+              <div className="space-y-1.5">
+                <p className={`text-[11px] font-bold text-neutral-500 ${isAr ? '' : 'uppercase tracking-wide'}`}>{t.itemsLabel}</p>
+                {o.items.map((it, idx) => (
+                  <div key={`${it.id}-${idx}`} className="flex justify-between gap-3">
+                    <span className="min-w-0 flex-1 break-words"><bdi dir="ltr" className="tabular-nums">{it.qty}</bdi><span dir="ltr">×</span> {typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, isAr ? 'ar' : 'en')} ` : ''}<span dir="auto">{itemBaseTitle(it, isAr ? 'ar' : 'en')}</span>{lineIsSpicy(it) && <HeatPill featureId={lineSpicyId(it) ?? undefined} lang={isAr ? 'ar' : 'en'} size="sm" className="ms-1.5 me-0.5 align-middle" />}<span dir="auto">{itemAddonsSuffix(it, isAr ? 'ar' : 'en')}</span></span>
+                    <span className="text-neutral-400 tabular-nums whitespace-nowrap shrink-0"><bdi dir="ltr" className="tabular-nums">{fmt(it.qty)}</bdi><span dir="ltr"> × </span><bdi dir="ltr" className="tabular-nums">{fmt(it.unitPrice)}</bdi><span dir="ltr"> = </span><bdi dir="ltr" className="tabular-nums">{fmt(it.qty * it.unitPrice)}</bdi></span>
+                  </div>
+                ))}
+                <div className="pt-1.5 border-t border-neutral-800 space-y-1 text-xs text-neutral-400">
+                  <div className="flex justify-between"><span>{t.subtotal}</span><span className="tabular-nums" dir="ltr">{fmt(o.subtotal)}</span></div>
+                  {o.deliveryFee > 0 && <div className="flex justify-between"><span>{t.fee}</span><span className="tabular-nums" dir="ltr">{fmt(o.deliveryFee)}</span></div>}
+                  <div className="flex justify-between text-sm font-extrabold text-white"><span>{t.total}</span><span className="tabular-nums"><bdi dir="ltr">{fmt(o.total)}</bdi> <span dir="auto">{currency}</span></span></div>
+                  <div className="flex justify-between items-center pt-0.5">
+                    <span>{t.payment}</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[var(--primary)]" dir="auto">
+                      {t.cod}
+                    </span>
+                  </div>
+                </div>
+                {showEta && (
+                  <p dir="auto" className={`text-[11px] tabular-nums truncate ${etaLate ? 'text-amber-400 font-bold' : 'text-neutral-500'}`}>
+                    {etaLate ? t.late(etaLateMins) : t.arrives(etaTime)}
+                  </p>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-2 text-neutral-300 min-w-0"><Phone size={14} className="text-[var(--primary)] shrink-0" /><span dir="ltr" className="tabular-nums truncate">{o.customer.phone}</span></div>
+                {(o.customer.address || o.customer.table) && (
+                  <div className="flex items-center gap-2 text-neutral-300 min-w-0"><MapPin size={14} className="text-[var(--primary)] shrink-0" /><span dir="auto" className="truncate">{o.customer.address ?? `${t.table} ${o.customer.table}`}</span></div>
+                )}
+                {o.location && Number.isFinite(o.location.lat) && Number.isFinite(o.location.lng) && (
+                  <a
+                    href={`https://www.google.com/maps?q=${o.location.lat},${o.location.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-tactile h-10 px-4 rounded-full border border-[var(--primary)]/50 text-[var(--primary)] text-xs font-bold inline-flex items-center gap-1.5"
+                  >
+                    <MapPin size={14} />{t.openMaps}
+                  </a>
+                )}
+              </div>
+              {o.notes && <p className="text-xs text-neutral-300 bg-black/50 rounded-xl border border-neutral-800 px-3 py-2"><b className="text-neutral-500">{t.notes}: </b>{o.notes}</p>}
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                {/* Kitchen flow (simplified: new = acknowledge (start preparing),
+                    confirmed = complete on delivery/pickup. Legacy `ready`
+                    orders keep their complete button — no new order ever
+                    enters `ready`. Cancel stays available until
+                    completion; terminal orders can only reopen. */}
+                {o.status === 'new' && <button type="button" onClick={() => onStatusChange(o.id, 'confirmed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><BellRing size={14} strokeWidth={2.5} />{t.ack}</button>}
+                {o.status === 'confirmed' && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Check size={14} strokeWidth={3} />{t.complete}</button>}
+                {o.status === 'ready' && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Check size={14} strokeWidth={3} />{t.complete}</button>}
+                {(o.status === 'completed' || o.status === 'cancelled') && <button type="button" onClick={() => onStatusChange(o.id, 'new')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">{t.reopen}</button>}
+                {(o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && <button type="button" onClick={() => {
+                  if (onConfirm) {
+                    onConfirm({
+                      title: isAr ? `هل تود إلغاء الطلب #${o.number}؟` : `Cancel order #${o.number}?`,
+                      body: isAr ? 'سيتم إلغاء الطلب نهائيًا. لن يتم إشعار الزبون تلقائيًا — تواصل معه إذا لزم.' : 'The order will be cancelled for good. The customer is not notified automatically — contact them if needed.',
+                      confirmText: isAr ? 'تأكيد الإلغاء' : 'Confirm cancel',
+                      action: () => onStatusChange(o.id, 'cancelled'),
+                    });
+                  } else {
+                    onStatusChange(o.id, 'cancelled');
+                  }
+                }} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-red-500/40 text-red-400 text-xs font-bold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"><X size={14} />{t.cancel}</button>}
+                <a href={`https://wa.me/${digits(o.customer.phone)}`} target="_blank" rel="noopener noreferrer" className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><MessageCircle size={14} className="text-[var(--primary)]" />{t.wa}</a>
+                <a href={`tel:+${digits(o.customer.phone)}`} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Phone size={14} className="text-[var(--primary)]" />{t.call}</a>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
+
+interface GroupCardProps extends Omit<OrderRowProps, 'o' | 'open'> {
+  members: Order[];
+  openId: string | null;
+}
+
+/**
+ * Joint-delivery container: a linked parent + follow-up(s) in ONE card with
+ * ONE advance button ("both go together"). The button aligns the laggards
+ * first (mixed new + preparing -> ack the new ones), then moves the whole
+ * pair forward together (ack all -> complete all). Cancel stays per-order
+ * (cancelling one must never silently kill the other).
+ */
+const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, t, isAr, currency, now, flashId, onStatusChange, onConfirm }) => {
+  const [busy, setBusy] = useState(false);
+  const active = members.filter((m) => m.status === 'new' || m.status === 'confirmed' || m.status === 'ready');
+  const allNew = active.length > 0 && active.every((m) => m.status === 'new');
+  const allPrep = active.length > 0 && active.every((m) => m.status === 'confirmed' || m.status === 'ready');
+  let action: { label: string; targets: { id: string; status: OrderStatus }[] } | null = null;
+  if (active.length > 0) {
+    if (allNew) {
+      action = { label: t.ackBoth(active.length), targets: active.map((m) => ({ id: m.id, status: 'confirmed' as OrderStatus })) };
+    } else if (allPrep) {
+      action = { label: t.completeBoth(active.length), targets: active.map((m) => ({ id: m.id, status: 'completed' as OrderStatus })) };
+    } else {
+      action = { label: t.alignBoth(active.length), targets: active.filter((m) => m.status === 'new').map((m) => ({ id: m.id, status: 'confirmed' as OrderStatus })) };
+    }
+  }
+  const combined = members.reduce((s, m) => s + (typeof m.total === 'number' && Number.isFinite(m.total) ? m.total : 0), 0);
+  const run = async () => {
+    if (!action || busy) return;
+    setBusy(true);
+    try {
+      for (const tg of action.targets) {
+        await onStatusChange(tg.id, tg.status);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <motion.div layout="position"
+      initial={{ opacity: 1, y: -12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className="rounded-2xl border-2 border-[var(--primary)]/40 bg-neutral-900/80 overflow-hidden">
+      <div className="px-3.5 pt-3 pb-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-[var(--primary)]/20">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[var(--primary)]" dir="auto">
+          <Link2 size={13} />{t.jointTitle(members.length)}
+        </span>
+        <span className="text-[11px] font-extrabold tabular-nums text-neutral-200" dir="ltr">
+          #{members.map((m) => m.number).join(' + #')}
+        </span>
+        <span className="ms-auto text-[11px] font-extrabold tabular-nums text-neutral-300" dir="ltr">
+          {fmt(combined)} <span dir="auto">{currency}</span>
+        </span>
+      </div>
+      <div className="p-1.5 space-y-2">
+        {members.map((m) => (
+          <OrderRow
+            key={m.id}
+            o={m}
+            open={openId === m.id}
+            onToggleOpen={onToggleOpen}
+            t={t}
+            isAr={isAr}
+            currency={currency}
+            now={now}
+            flashId={flashId}
+            onStatusChange={onStatusChange}
+            onConfirm={onConfirm}
+          />
+        ))}
+      </div>
+      {action && (
+        <div className="px-3.5 pb-3.5">
+          <button type="button" onClick={() => void run()} disabled={busy}
+            className="btn-tactile w-full h-11 min-h-[44px] rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center justify-center gap-1.5 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} strokeWidth={3} />}{action.label}
+          </button>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
 export const OrdersDashList: FC<OrdersDashListProps> = ({
   lang, currency, loading, totalCount, list, counts, filter, onFilterChange,
   limit, onShowMore, openId, onToggleOpen, flashId, now, onStatusChange, onConfirm, kitchen,
@@ -48,6 +280,66 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] as const },
   });
+
+  // Joint-delivery groups over the VISIBLE slice: a follow-up attaches to
+  // its parent when the parent is on screen, otherwise it renders
+  // standalone (its linked badge still explains the relation). Parents
+  // render with their whole subtree as ONE container + ONE advance button.
+  type PlanEntry = { kind: 'single'; order: Order } | { kind: 'group'; key: string; members: Order[] };
+  const visible = list.slice(0, limit);
+  const plan = useMemo<PlanEntry[]>(() => {
+    const byNumber = new Map<number, Order>();
+    for (const o of visible) if (!byNumber.has(o.number)) byNumber.set(o.number, o);
+    const childrenOf = new Map<string, Order[]>();
+    for (const o of visible) {
+      if (typeof o.parentNumber !== 'number') continue;
+      const p = byNumber.get(o.parentNumber);
+      if (!p || p.id === o.id) continue;
+      const arr = childrenOf.get(p.id) ?? [];
+      arr.push(o);
+      childrenOf.set(p.id, arr);
+    }
+    const claimed = new Set<string>();
+    const out: PlanEntry[] = [];
+    const collect = (root: Order): Order[] => {
+      const members = [root];
+      const seen = new Set([root.id]);
+      const queue = [root];
+      while (queue.length) {
+        const cur = queue.shift()!;
+        for (const ch of childrenOf.get(cur.id) ?? []) {
+          if (seen.has(ch.id)) continue;
+          seen.add(ch.id);
+          members.push(ch);
+          queue.push(ch);
+        }
+      }
+      members.sort((a, b) => a.number - b.number);
+      return members;
+    };
+    for (const o of visible) {
+      if (claimed.has(o.id)) continue;
+      // Walk up to the visible root (cycle-guarded), then emit its group
+      // at the first encountered member so pairs stay adjacent.
+      let root = o;
+      const chain = new Set<string>();
+      while (typeof root.parentNumber === 'number' && !chain.has(root.id)) {
+        chain.add(root.id);
+        const p = byNumber.get(root.parentNumber);
+        if (!p || p.id === root.id) break;
+        root = p;
+      }
+      const members = collect(root);
+      if (members.length > 1) {
+        for (const m of members) claimed.add(m.id);
+        out.push({ kind: 'group', key: `g-${root.id}`, members });
+      } else {
+        claimed.add(o.id);
+        out.push({ kind: 'single', order: o });
+      }
+    }
+    return out;
+  }, [list, limit]);
 
   return (
     <motion.div {...rise(0.48)} id="orders-list" className="scroll-mt-4 pt-2">
@@ -76,143 +368,37 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
         {!loading && totalCount > 0 && list.length === 0 && <p className="text-center text-xs text-neutral-500 py-8">{t.emptyView}</p>}
 
         <AnimatePresence initial={false}>
-          {list.slice(0, limit).map((o) => {
-            const open = openId === o.id;
-            const TypeIcon = TYPE_ICON[o.type] ?? Store;
-            // Smart ETA: absolute 12h time while on-time, mins-late once passed.
-            const etaMs = typeof o.etaAt === 'string' && o.etaAt ? Date.parse(o.etaAt) : NaN;
-            const showEta = (o.status === 'confirmed' || o.status === 'ready') && Number.isFinite(etaMs);
-            const etaTime = showEta
-              ? new Date(etaMs).toLocaleTimeString(loc(lang), { hour: 'numeric', minute: '2-digit', hour12: true })
-              : '';
-            const etaLateMins = showEta ? Math.floor((now.getTime() - etaMs) / 60000) : 0;
-            const etaLate = showEta ? now.getTime() > etaMs : false;
-            return (
-              <motion.div key={o.id} layout={reduce ? false : 'position'}
-                initial={reduce ? false : { opacity: 0, y: -12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className={`rounded-2xl bg-neutral-900 border transition-colors ${flashId === o.id ? 'border-[var(--primary)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_18%,transparent)]' : 'border-neutral-800'}`}>
-                <button type="button" onClick={() => onToggleOpen(open ? null : o.id)} aria-expanded={open}
-                  className="w-full text-start p-3.5 flex items-center gap-3">
-                  <span className="shrink-0 w-10 h-10 rounded-xl bg-black border border-neutral-800 text-[var(--primary)] flex items-center justify-center"><TypeIcon size={18} /></span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-2">
-                      <b className="text-sm tabular-nums" dir="ltr">#{o.number}</b>
-                      {typeof o.parentNumber === 'number' && (
-                        <span dir="auto" className="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-300">
-                          {t.linkedShort(o.parentNumber)}
-                        </span>
-                      )}
-                      <span className="text-sm font-semibold truncate">{o.customer.name}</span>
-                      <OrderReviewBadge lang={lang} needsReview={o.needsReview} riskReasons={o.riskReasons} />
-                    </span>
-                    <span className="block text-[11px] text-neutral-500 truncate mt-0.5" dir="auto">
-                      <bdi>{relTime(o.createdAt, lang, now)}</bdi> · {o.items.map((it) => `${it.qty}× ${typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, lang)} ` : ''}${itemTitle(it, lang)}`).join(isAr ? '، ' : ', ')}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-end">
-                    <span className="block text-sm font-extrabold tabular-nums" dir="ltr">{fmt(o.total)}</span>
-                    <span className={`mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${STATUS_STYLE[o.status]}`}>
-                      {o.status === 'new' && <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0A] animate-pulse" />}
-                      {t[o.status]}
-                    </span>
-                    {/* Last actor: shown only when the backend names one
-                        (kitchen/member change). Owner changes carry no
-                        updatedBy, so nothing renders for them — by design. */}
-                    {typeof o.updatedBy === 'string' && o.updatedBy.trim() !== '' && (
-                      <span className="mt-0.5 block text-[10px] font-bold text-neutral-500 truncate max-w-[110px]" dir="auto">
-                        {t.by(o.updatedBy.trim())}
-                      </span>
-                    )}
-                  </span>
-                  <ChevronDown size={16} className={`shrink-0 text-neutral-500 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
-                </button>
-
-                <AnimatePresence initial={false}>
-                  {open && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden">
-                      <div className="px-3.5 pb-3.5 pt-3 border-t border-neutral-800 space-y-3 text-[13px]">
-                        {typeof o.parentNumber === 'number' && (
-                          <p dir="auto" className="text-[11px] font-bold text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-xl px-3 py-1.5">
-                            {`🔗 ${t.linkedLong(o.parentNumber)}`}
-                          </p>
-                        )}
-                        <div className="space-y-1.5">
-                          <p className={`text-[11px] font-bold text-neutral-500 ${isAr ? '' : 'uppercase tracking-wide'}`}>{t.itemsLabel}</p>
-                          {o.items.map((it, idx) => (
-                            <div key={`${it.id}-${idx}`} className="flex justify-between gap-3">
-                              <span className="min-w-0 flex-1 break-words"><bdi dir="ltr" className="tabular-nums">{it.qty}</bdi><span dir="ltr">×</span> {typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, lang)} ` : ''}<span dir="auto">{itemBaseTitle(it, lang)}</span>{lineIsSpicy(it) && <HeatPill featureId={lineSpicyId(it) ?? undefined} lang={lang} size="sm" className="ms-1.5 me-0.5 align-middle" />}<span dir="auto">{itemAddonsSuffix(it, lang)}</span></span>
-                              <span className="text-neutral-400 tabular-nums whitespace-nowrap shrink-0"><bdi dir="ltr" className="tabular-nums">{fmt(it.qty)}</bdi><span dir="ltr"> × </span><bdi dir="ltr" className="tabular-nums">{fmt(it.unitPrice)}</bdi><span dir="ltr"> = </span><bdi dir="ltr" className="tabular-nums">{fmt(it.qty * it.unitPrice)}</bdi></span>
-                            </div>
-                          ))}
-                          <div className="pt-1.5 border-t border-neutral-800 space-y-1 text-xs text-neutral-400">
-                            <div className="flex justify-between"><span>{t.subtotal}</span><span className="tabular-nums" dir="ltr">{fmt(o.subtotal)}</span></div>
-                            {o.deliveryFee > 0 && <div className="flex justify-between"><span>{t.fee}</span><span className="tabular-nums" dir="ltr">{fmt(o.deliveryFee)}</span></div>}
-                            <div className="flex justify-between text-sm font-extrabold text-white"><span>{t.total}</span><span className="tabular-nums"><bdi dir="ltr" className="tabular-nums">{fmt(o.total)}</bdi> <span dir="auto">{currency}</span></span></div>
-                            <div className="flex justify-between items-center pt-0.5">
-                              <span>{t.payment}</span>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[var(--primary)]" dir="auto">
-                                {t.cod}
-                              </span>
-                            </div>
-                          </div>
-                          {showEta && (
-                            <p dir="auto" className={`text-[11px] tabular-nums truncate ${etaLate ? 'text-amber-400 font-bold' : 'text-neutral-500'}`}>
-                              {etaLate ? t.late(etaLateMins) : t.arrives(etaTime)}
-                            </p>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                          <div className="flex items-center gap-2 text-neutral-300 min-w-0"><Phone size={14} className="text-[var(--primary)] shrink-0" /><span dir="ltr" className="tabular-nums truncate">{o.customer.phone}</span></div>
-                          {(o.customer.address || o.customer.table) && (
-                            <div className="flex items-center gap-2 text-neutral-300 min-w-0"><MapPin size={14} className="text-[var(--primary)] shrink-0" /><span dir="auto" className="truncate">{o.customer.address ?? `${t.table} ${o.customer.table}`}</span></div>
-                          )}
-                          {o.location && Number.isFinite(o.location.lat) && Number.isFinite(o.location.lng) && (
-                            <a
-                              href={`https://www.google.com/maps?q=${o.location.lat},${o.location.lng}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn-tactile h-10 px-4 rounded-full border border-[var(--primary)]/50 text-[var(--primary)] text-xs font-bold inline-flex items-center gap-1.5"
-                            >
-                              <MapPin size={14} />{t.openMaps}
-                            </a>
-                          )}
-                        </div>
-                        {o.notes && <p className="text-xs text-neutral-300 bg-black/50 rounded-xl border border-neutral-800 px-3 py-2"><b className="text-neutral-500">{t.notes}: </b>{o.notes}</p>}
-
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        {/* Kitchen flow (simplified): new = acknowledge (start preparing),
-                            confirmed = complete on delivery/pickup. Legacy `ready`
-                            orders keep their complete button — no new order ever
-                            enters `ready`. Cancel stays available until
-                            completion; terminal orders can only reopen. */}
-                        {o.status === 'new' && <button type="button" onClick={() => onStatusChange(o.id, 'confirmed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><BellRing size={14} strokeWidth={2.5} />{t.ack}</button>}
-                        {o.status === 'confirmed' && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Check size={14} strokeWidth={3} />{t.complete}</button>}
-                        {o.status === 'ready' && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Check size={14} strokeWidth={3} />{t.complete}</button>}
-                        {(o.status === 'completed' || o.status === 'cancelled') && <button type="button" onClick={() => onStatusChange(o.id, 'new')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">{t.reopen}</button>}
-                        {(o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && <button type="button" onClick={() => {
-                          if (onConfirm) {
-                            onConfirm({
-                              title: isAr ? `هل تود إلغاء الطلب #${o.number}؟` : `Cancel order #${o.number}?`,
-                              body: isAr ? 'سيتم إلغاء الطلب نهائيًا. لن يتم إشعار الزبون تلقائيًا — تواصل معه إذا لزم.' : 'The order will be cancelled for good. The customer is not notified automatically — contact them if needed.',
-                              confirmText: isAr ? 'تأكيد الإلغاء' : 'Confirm cancel',
-                              action: () => onStatusChange(o.id, 'cancelled'),
-                            });
-                          } else {
-                            onStatusChange(o.id, 'cancelled');
-                          }
-                        }} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-red-500/40 text-red-400 text-xs font-bold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"><X size={14} />{t.cancel}</button>}
-                          <a href={`https://wa.me/${digits(o.customer.phone)}`} target="_blank" rel="noopener noreferrer" className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><MessageCircle size={14} className="text-[var(--primary)]" />{t.wa}</a>
-                          <a href={`tel:+${digits(o.customer.phone)}`} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-neutral-700 text-neutral-200 text-xs font-bold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Phone size={14} className="text-[var(--primary)]" />{t.call}</a>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            );
-          })}
+          {plan.map((entry) =>
+            entry.kind === 'single' ? (
+              <OrderRow
+                key={entry.order.id}
+                o={entry.order}
+                open={openId === entry.order.id}
+                onToggleOpen={onToggleOpen}
+                t={t}
+                isAr={isAr}
+                currency={currency}
+                now={now}
+                flashId={flashId}
+                onStatusChange={onStatusChange}
+                onConfirm={onConfirm}
+              />
+            ) : (
+              <GroupCard
+                key={entry.key}
+                members={entry.members}
+                openId={openId}
+                onToggleOpen={onToggleOpen}
+                t={t}
+                isAr={isAr}
+                currency={currency}
+                now={now}
+                flashId={flashId}
+                onStatusChange={onStatusChange}
+                onConfirm={onConfirm}
+              />
+            )
+          )}
         </AnimatePresence>
       </div>
 

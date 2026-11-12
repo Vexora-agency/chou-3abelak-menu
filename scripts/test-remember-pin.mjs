@@ -98,6 +98,15 @@ ok(loadRememberedDetails() === null, 'unchecked forgets details');
   const msg2 = formatNewOrderMessage(edited, 1002, '');
   ok(msg2.includes('بحث تقريبي') && !msg2.includes('الموقع الدقيق'), 'fallback message never claims exact');
   ok(!msg2.includes('33.8938'), 'fallback message carries no stale coords');
+  // Country suffix: bare local text gets ", Lebanon" so Google Maps lands
+  // in-country instead of "no result"; an existing suffix is not doubled.
+  ok(decodeURIComponent(link2.url).includes('Tripoli, Azmi St 12, Lebanon'), 'fallback query suffixed with Lebanon');
+  const arNoPin = { ...cleaned, address: 'الحمرا، بناية 5', location: null };
+  const linkAr = buildMapsLink(arNoPin);
+  ok(linkAr && linkAr.precise === false && decodeURIComponent(linkAr.url).includes('الحمرا، بناية 5, Lebanon'), 'arabic fallback query suffixed too');
+  const already = buildMapsLink({ ...cleaned, address: 'Beirut, Hamra, Lebanon', location: null });
+  const decAlready = decodeURIComponent(already.url);
+  ok(decAlready.includes('Hamra, Lebanon') && (decAlready.match(/Lebanon/g) || []).length === 1, 'existing Lebanon suffix not duplicated');
 
   // Release-sweep round-trip (DB drops accuracy, keeps lat/lng): good pin stays exact.
   const row = {

@@ -99,7 +99,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               // explicit X button.
               setCustomer({ ...customer, address: e.target.value });
             }}
-            placeholder={isAr ? 'المنطقة والشارع ورقم المبنى… (تحديد الموقع على الخريطة اختياري ويساعد السائق)' : 'Area, street, building… (pinning on the map is optional and helps the driver)'}
+            placeholder={isAr ? 'اكتب عنوانك هنا أو حدّده على الخريطة بزر 📍' : 'Type your address here, or pin it on the map with 📍'}
             maxLength={200}
             autoComplete="street-address"
             enterKeyHint="next"

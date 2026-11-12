@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense, lazy, useRef } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { MenuData, MenuItem } from '@/src/types/menu';
 import { normalizeMenu } from '@/src/utils/pricing';
 import { clientConfig } from '@/src/config/client.config';
@@ -13,17 +13,18 @@ import { SearchAndChips, FeaturedCarousel, MenuList, useMenuLoader } from '@/src
 // Item modal, cart drawer and order bell load lazily (own chunks): none of
 // them renders before interaction, so Suspense fallback={null} is
 // pixel-identical. Direct paths (not the barrels) keep them out of main.
-const ItemDetailsModal = lazy(() =>
+const ItemDetailsModal = lazyWithReload(() =>
   import('@/src/features/menu/components/ItemDetailsModal').then((m) => ({ default: m.ItemDetailsModal }))
 );
 import { CartBar } from '@/src/features/cart';
-const CartDrawer = lazy(() =>
+const CartDrawer = lazyWithReload(() =>
   import('@/src/features/cart/components/CartDrawer').then((m) => ({ default: m.CartDrawer }))
 );
 import { Footer } from '@/src/components/Footer';
 import { useAdminSaveMenu } from '@/src/features/admin/hooks/useAdminSaveMenu';
 import { useAdminSaveAuth } from '@/src/features/admin/hooks/useAdminSaveAuth';
 import { scheduleIdle } from '@/src/utils/scheduleIdle';
+import { lazyWithReload } from '@/src/utils/lazyRetry';
 import { loadCustomerOrders } from '@/src/utils/customerOrders';
 // Admin UI is a separate chunk, downloaded only when /admin opens: customers
 // never pay for the panel, editors and backup code. NOTE: these dynamic
@@ -31,28 +32,28 @@ import { loadCustomerOrders } from '@/src/utils/customerOrders';
 // lazily) keeps it in the main chunk because the hooks above import it
 // statically, which silently disables the split (verified: 1,164 kB stayed
 // 1,164 kB). Static imports elsewhere still go through the barrel.
-const AdminPanel = lazy(() => import('@/src/features/admin/components/AdminPanel').then((m) => ({ default: m.AdminPanel })));
-const AdminLogin = lazy(() => import('@/src/features/admin/components/AdminLogin'));
+const AdminPanel = lazyWithReload(() => import('@/src/features/admin/components/AdminPanel').then((m) => ({ default: m.AdminPanel })));
+const AdminLogin = lazyWithReload(() => import('@/src/features/admin/components/AdminLogin'));
 // One-time invite landing (/invite/<token>): its own chunk — customers never
 // download it, and it downloads no admin code either.
-const InvitePage = lazy(() =>
+const InvitePage = lazyWithReload(() =>
   import('@/src/features/invite/components/InvitePage').then((m) => ({ default: m.InvitePage }))
 );
 // Customer order tracking (?track=N&t=token): its own chunk — only tracking
 // visitors download it.
-const TrackView = lazy(() =>
+const TrackView = lazyWithReload(() =>
   import('@/src/features/track/TrackView').then((m) => ({ default: m.TrackView }))
 );
 // Seasonal storefront layer (snow + greeting): its own chunk, downloaded
 // ONLY while a seasonal theme is active — `off` costs zero bytes (the
 // component below renders nothing and the import never fires).
-const SeasonalEffects = lazy(() =>
+const SeasonalEffects = lazyWithReload(() =>
   import('@/src/features/seasonal/SeasonalEffects').then((m) => ({ default: m.SeasonalEffects }))
 );
 // Floating order bell (12h shelf): tiny, lazy chunk — it only downloads when
 // the customer actually has orders. ReceivedButton stays out (only the
 // bell + tracking page pull it, via their own imports).
-const OrdersBell = lazy(() =>
+const OrdersBell = lazyWithReload(() =>
   import('@/src/features/track/components/OrdersBell').then((m) => ({ default: m.OrdersBell }))
 );
 import { WifiOff } from 'lucide-react';

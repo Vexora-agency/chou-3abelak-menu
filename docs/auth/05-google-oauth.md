@@ -1,6 +1,6 @@
 # Phase 4 — Google Login Runbook
 
-Status: 🟨 code + UI ready; **owner must create the Google OAuth client and add two secrets** before the button appears.
+Status: 🟨 code + UI deployed to production; **owner must create the Google OAuth client and add two secrets** before the button appears.
 Date: 2026-11-13
 
 > **بالعربي باختصار:** كود جوجل جاهز، وزرار "المتابعة باستخدام Google"
@@ -149,3 +149,20 @@ or chat.
 
 Real Google consent/login is the only step that cannot be verified until the
 owner creates the client and adds the two secrets.
+
+---
+
+## 6. Production deployment (2026-11-13)
+
+| Item | Value |
+|------|-------|
+| PR | #120 `feat/google-auth` → `main` |
+| Merge commit | `52c29c9` |
+| Pages deployment | `1470eaf0-fa5d-4a3e-9744-6687cc072212` (Active, Production) |
+| Production probe | `GET /api/auth/public-config` → `{"google":false}` (button correctly hidden) |
+
+The production environment does **not** have Google credentials yet. That is
+the expected safe state: the code is live, the button is hidden, and no broken
+OAuth flow is exposed. Once the two values are added and the project is
+redeployed, the same URL will return `{"google":true}` and the button appears.
+

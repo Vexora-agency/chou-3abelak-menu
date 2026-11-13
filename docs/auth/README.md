@@ -18,11 +18,11 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 1 | Investigate + Better Auth docs + plan | ✅ done | `01-investigation.md`, `02-plan.md` |
 | 2 | Backend: Better Auth + D1 + migrations (local) + email/password + session helper + rate-limit table | ✅ done (local + production) | Auth factory, `/api/auth/*`, `0033_better_auth.sql`, session helper, tests |
 | 3 | Frontend: login/signup UI + header state + protected routes + link orders + admin customers | ✅ done (local + production) | Auth/account sheets, profile button, account APIs, admin Accounts view |
-| 4 | Google login + Google Console instructions | 🟨 code + UI ready; waiting owner Google credentials | Google provider config + `05-google-oauth.md` |
+| 4 | Google login + Google Console instructions | 🟨 code + UI deployed; awaiting Google credentials | Google provider config + `05-google-oauth.md` |
 | 5 | Hardening: rate-limit tuning, headers, reset password + email verification | ⬜ pending | Security config + email provider |
 | 6 | Testing + Cloudflare Pages deployment guide | ⬜ pending | Manual test checklist + deploy runbook |
 
-**Current step:** Phase 4 code + UI ready. Google button is hidden until the owner creates the Google OAuth client and sets `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` in Cloudflare; see `05-google-oauth.md`.
+**Current step:** Phase 4 code + UI deployed (`main`, deployment `1470eaf0-fa5d-4a3e-9744-6687cc072212`). Google button is hidden until the owner creates the OAuth client and sets `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` in Cloudflare; see `05-google-oauth.md`. Then Phase 5 hardening.
 
 ---
 
@@ -78,3 +78,4 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 2026-11-13 | 3 | Added auth/account sheets, header profile button, profile phone/address table, session-scoped order history (365 days), order linking, admin registered-customer badge, and admin Accounts view. Migrations 0034/0035 applied locally. Browser-tested EN/dark + AR/light, prefill, orders, settings, signout. |
 | 2026-11-13 | 3 | PR #119 merged; production D1 backed up + 0034/0035 applied; deployment `fa5fdd99` active. Production signup/sign-in/profile PATCH/account orders/sign-out verified; anonymous admin customers 403; profile button + auth sheet present. Test account deleted (0 remaining). |
 | 2026-11-13 | 4 | Google OAuth code + UI: provider gated by both secrets, public-config probe, Google button + or divider, CSP avatar host, exact Console runbook. Fake-credential test confirmed redirect URI + minimal scopes; real consent pending owner credentials. |
+| 2026-11-13 | 4 | PR #120 merged; production deployment `1470eaf0` active; `/api/auth/public-config` → `{"google":false}` so the button is safely hidden until the owner adds the two Google secrets. |

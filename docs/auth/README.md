@@ -18,11 +18,11 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 1 | Investigate + Better Auth docs + plan | ✅ done | `01-investigation.md`, `02-plan.md` |
 | 2 | Backend: Better Auth + D1 + migrations (local) + email/password + session helper + rate-limit table | ✅ done (local + production) | Auth factory, `/api/auth/*`, `0033_better_auth.sql`, session helper, tests |
 | 3 | Frontend: login/signup UI + header state + protected routes + link orders + admin customers | ✅ done (local + production) | Auth/account sheets, profile button, account APIs, admin Accounts view |
-| 4 | Google login + Google Console instructions | ⬜ pending | Google provider config + owner checklist |
+| 4 | Google login + Google Console instructions | 🟨 code + UI ready; waiting owner Google credentials | Google provider config + `05-google-oauth.md` |
 | 5 | Hardening: rate-limit tuning, headers, reset password + email verification | ⬜ pending | Security config + email provider |
 | 6 | Testing + Cloudflare Pages deployment guide | ⬜ pending | Manual test checklist + deploy runbook |
 
-**Current step:** Phase 3 deployed to production (`main`, deployment `fa5fdd99-d1c7-455b-bd51-d1557f967447`) and verified. Next is Phase 4 (Google login), then Phase 5 hardening.
+**Current step:** Phase 4 code + UI ready. Google button is hidden until the owner creates the Google OAuth client and sets `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` in Cloudflare; see `05-google-oauth.md`.
 
 ---
 
@@ -34,6 +34,7 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | `02-plan.md` | Proposed files, schema, env vars, route protection, open questions |
 | `03-phase-2-report.md` | Phase 2 local results, test evidence, preview CPU checklist |
 | `04-phase-3-report.md` | Phase 3 customer account UI, order linking, admin customers, test evidence |
+| `05-google-oauth.md` | Phase 4 Google OAuth code status, Console steps, exact URIs, test checklist |
 | `decisions.md` | Decision log (pinned versions, provider choices, owner answers) |
 | `manual-checklist.md` | Everything only the owner can do (Google Console, secrets, D1, deploy) — created in Phase 6 |
 
@@ -76,3 +77,4 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 2026-11-13 | 2 | PR #117 merged to `main`; production deployment `701a5708-470d-493b-942f-ea6bb182a381` active. Production signup/signin/get-session/signout verified on `https://chou3abelak.site`; cookie `__Secure-chou.session_token` (HttpOnly/Secure/SameSite=Lax); CPU tail `outcome: ok` at 162–172 ms; admin routes still JSON; evil origin 403. Test accounts deleted (0 remaining). |
 | 2026-11-13 | 3 | Added auth/account sheets, header profile button, profile phone/address table, session-scoped order history (365 days), order linking, admin registered-customer badge, and admin Accounts view. Migrations 0034/0035 applied locally. Browser-tested EN/dark + AR/light, prefill, orders, settings, signout. |
 | 2026-11-13 | 3 | PR #119 merged; production D1 backed up + 0034/0035 applied; deployment `fa5fdd99` active. Production signup/sign-in/profile PATCH/account orders/sign-out verified; anonymous admin customers 403; profile button + auth sheet present. Test account deleted (0 remaining). |
+| 2026-11-13 | 4 | Google OAuth code + UI: provider gated by both secrets, public-config probe, Google button + or divider, CSP avatar host, exact Console runbook. Fake-credential test confirmed redirect URI + minimal scopes; real consent pending owner credentials. |

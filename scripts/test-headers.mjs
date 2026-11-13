@@ -37,6 +37,7 @@ for (const h of ['X-Content-Type-Options: nosniff', 'X-Frame-Options: DENY', 'Re
 }
 ok(global.includes('geolocation=(self)'), 'geolocation allowed for self (map picker)');
 ok(global.includes('tile.openstreetmap.org'), 'CSP allows OSM tiles');
+ok(global.includes('lh3.googleusercontent.com'), 'CSP allows Google avatars');
 ok(global.includes('nominatim.openstreetmap.org'), 'CSP allows Nominatim');
 
 for (const p of ['/admin/*', '/admin', '/invite/*', '/invite']) {

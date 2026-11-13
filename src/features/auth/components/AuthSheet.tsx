@@ -4,6 +4,8 @@ import { motion } from 'motion/react';
 import { authClient } from '@/src/lib/auth-client';
 import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useAuthProviders } from '../hooks/useAuthProviders';
+import { GoogleIcon } from './GoogleIcon';
 import { AUTH_STR } from '../strings';
 
 interface AuthSheetProps {
@@ -33,6 +35,7 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode }: AuthShee
   const t = AUTH_STR[lang];
   const isAr = lang === 'ar';
   const sheetRef = useRef<HTMLDivElement>(null);
+  const providers = useAuthProviders(open);
 
   const [mode, setMode] = useState<Mode>('signin');
   const [name, setName] = useState('');
@@ -40,6 +43,7 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode }: AuthShee
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -54,6 +58,7 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode }: AuthShee
     setPassword('');
     setShowPassword(false);
     setLoading(false);
+    setGoogleLoading(false);
     setError('');
     setSuccess('');
   }, [open]);
@@ -86,6 +91,31 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode }: AuthShee
     if (code.includes('name')) return t.errorName;
     if (mode === 'signup') return t.errorSignup;
     return t.errorGeneric;
+  };
+
+  const googleSignIn = async () => {
+    setError('');
+    setSuccess('');
+    setGoogleLoading(true);
+    try {
+      const { error: socialError } = await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: '/?account=1',
+      });
+      if (socialError) {
+        const code = errorCode(socialError);
+        setError(
+          code.includes('account_not_linked') || code.includes('email_not_verified')
+            ? t.googleLinkError
+            : t.googleError
+        );
+        setGoogleLoading(false);
+      }
+      // On success the browser navigates to Google; keep the spinner until then.
+    } catch {
+      setError(t.googleError);
+      setGoogleLoading(false);
+    }
   };
 
   const submit = async (event: FormEvent) => {
@@ -215,7 +245,30 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode }: AuthShee
             })}
           </div>
 
-          <form onSubmit={(e) => void submit(e)} noValidate className="mt-4 space-y-3">
+          {providers.google && (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => void googleSignIn()}
+                disabled={googleLoading || loading}
+                className={`btn-tactile w-full h-12 min-h-[48px] rounded-full border text-sm font-extrabold inline-flex items-center justify-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                  darkMode
+                    ? 'bg-white text-[#0A0A0A] border-white hover:bg-neutral-100'
+                    : 'bg-white text-[#0A0A0A] border-neutral-300 hover:bg-neutral-50'
+                }`}
+              >
+                {googleLoading ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon size={18} />}
+                {t.continueGoogle}
+              </button>
+              <div className={`mt-3 flex items-center gap-3 ${mutedClass}`} aria-hidden="true">
+                <span className={`h-px flex-1 ${darkMode ? 'bg-neutral-800' : 'bg-neutral-200'}`} />
+                <span className="text-[11px] font-bold">{t.or}</span>
+                <span className={`h-px flex-1 ${darkMode ? 'bg-neutral-800' : 'bg-neutral-200'}`} />
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={(e) => void submit(e)} noValidate className={`${providers.google ? 'mt-3' : 'mt-4'} space-y-3`}>
             {mode === 'signup' && (
               <div>
                 <label className={labelClass} htmlFor="auth-name">{t.nameLabel}</label>

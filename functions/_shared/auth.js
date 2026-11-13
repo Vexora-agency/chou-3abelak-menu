@@ -28,6 +28,13 @@ export class AuthConfigError extends Error {
   }
 }
 
+/** Google is enabled only when BOTH credentials are present and non-empty. */
+export function isGoogleConfigured(env = {}) {
+  const id = typeof env.GOOGLE_CLIENT_ID === 'string' ? env.GOOGLE_CLIENT_ID.trim() : '';
+  const secret = typeof env.GOOGLE_CLIENT_SECRET === 'string' ? env.GOOGLE_CLIENT_SECRET.trim() : '';
+  return !!(id && secret);
+}
+
 function fail(variable) {
   throw new AuthConfigError(variable);
 }
@@ -163,6 +170,17 @@ function userHooks() {
  */
 export function createAuth(env, _request, _waitUntil) {
   const { secret, baseURL, secureCookies, trustedOrigins } = resolveAuthConfig(env);
+  const socialProviders = isGoogleConfigured(env)
+    ? {
+        google: {
+          clientId: String(env.GOOGLE_CLIENT_ID).trim(),
+          clientSecret: String(env.GOOGLE_CLIENT_SECRET).trim(),
+          // Google's provider already requests the minimal openid/email/profile
+          // scopes. Do not append our own list: it would duplicate them.
+          prompt: 'select_account',
+        },
+      }
+    : {};
 
   return betterAuth({
     appName: 'Chou 3abelak',
@@ -171,6 +189,7 @@ export function createAuth(env, _request, _waitUntil) {
     secret,
     trustedOrigins,
     database: env.ORDERS_DB,
+    socialProviders,
     telemetry: { enabled: false },
     emailAndPassword: {
       enabled: true,

@@ -731,6 +731,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
             darkMode={darkMode}
             currency={currency}
             cancelWindowMs={cancelWindowMsFromMenu(displayMenu)}
+            bellSound={displayMenu.settings.sounds?.customer || 'classic'}
           />
         </Suspense>
       </div>

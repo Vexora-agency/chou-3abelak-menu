@@ -1,0 +1,85 @@
+/**
+ * GET/PATCH /api/account/profile
+ *
+ * The signed-in customer's own profile. Name/email/image live in Better
+ * Auth's user table (name updates go through authClient.updateUser); the
+ * optional phone/address live in customer_profiles.
+ *
+ * Every request is session-gated; the user id always comes from the session.
+ */
+
+import { jsonNoStore, readJsonBody } from '../../_shared/session.js';
+import { checkCustomerApiHeaders, requireCustomer } from '../../_shared/auth-session.js';
+import { getCustomerProfile, upsertCustomerProfile } from '../../_shared/repositories/customers.repo.js';
+import { authErrorMessage, validateProfileAddress, validateProfilePhone } from '../../_shared/validate-auth.js';
+
+function publicUser(user) {
+  return {
+    id: user.id,
+    name: typeof user.name === 'string' ? user.name : '',
+    email: typeof user.email === 'string' ? user.email : '',
+    image: typeof user.image === 'string' && user.image ? user.image : null,
+    createdAt: user.createdAt || null,
+  };
+}
+
+export async function onRequest(context) {
+  const { request, env } = context;
+
+  if (request.method !== 'GET' && request.method !== 'PATCH') {
+    return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'GET, PATCH' });
+  }
+
+  const gate = checkCustomerApiHeaders(request);
+  if (!gate.ok) return jsonNoStore({ error: gate.error, message: gate.message }, gate.status);
+
+  const auth = await requireCustomer(request, env);
+  if (!auth.ok) return auth.response;
+
+  const db = env.ORDERS_DB || null;
+  if (!db) return jsonNoStore({ error: 'unavailable' }, 503);
+
+  if (request.method === 'GET') {
+    try {
+      const row = await getCustomerProfile(db, auth.user.id);
+      return jsonNoStore({
+        user: publicUser(auth.user),
+        profile: {
+          phone: row && row.phone ? row.phone : null,
+          address: row && row.address ? row.address : null,
+          updatedAt: row && row.profileUpdatedAt ? row.profileUpdatedAt : null,
+        },
+      });
+    } catch {
+      return jsonNoStore({ error: 'unavailable' }, 503);
+    }
+  }
+
+  let body;
+  try {
+    body = await readJsonBody(request, 8 * 1024);
+  } catch {
+    return jsonNoStore({ error: 'bad_request' }, 400);
+  }
+
+  const phone = validateProfilePhone(body && body.phone);
+  if (!phone.ok) {
+    return jsonNoStore({ error: phone.code, message: authErrorMessage(phone.code) }, 400);
+  }
+  const address = validateProfileAddress(body && body.address);
+  if (!address.ok) {
+    return jsonNoStore({ error: address.code, message: authErrorMessage(address.code) }, 400);
+  }
+
+  try {
+    const saved = await upsertCustomerProfile(
+      db,
+      auth.user.id,
+      { phone: phone.phone, address: address.address },
+      new Date().toISOString()
+    );
+    return jsonNoStore({ ok: true, profile: saved });
+  } catch {
+    return jsonNoStore({ error: 'unavailable' }, 503);
+  }
+}

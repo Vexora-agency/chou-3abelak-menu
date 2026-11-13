@@ -6,6 +6,7 @@
  */
 
 import { jsonNoStore, readJsonBody } from '../_shared/session.js';
+import { getCustomerSession } from '../_shared/auth-session.js';
 import { captureBackendException } from '../_shared/sentry.js';
 import { mapOrderRow, validateOrderInput } from '../_shared/orders.js';
 import { assessOrderRisk } from '../_shared/order-risk.js';
@@ -237,6 +238,19 @@ export async function onRequest(context) {
     c.riskScore = 0;
     c.riskReasons = [];
     c.needsReview = false;
+  }
+
+  // Registered customer link: read the Better Auth session server-side and
+  // attach its user id to the new order. Never trust a client-supplied id.
+  // A session lookup failure must NOT block a real guest order (availability
+  // first); it simply records as guest and can be linked on a future order.
+  try {
+    const session = await getCustomerSession(request, env);
+    if (session && session.user && typeof session.user.id === 'string' && session.user.id) {
+      c.customerUserId = session.user.id;
+    }
+  } catch {
+    // Guest order path.
   }
 
   // One timestamp per request (verbatim original: created_at/updated_at identical, even on retry).

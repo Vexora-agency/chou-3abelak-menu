@@ -38,6 +38,8 @@ export const AUTH_ERROR_MESSAGES = Object.freeze({
   password_letter_required: 'Password must include at least one letter.',
   password_number_required: 'Password must include at least one number.',
   password_too_common: 'Choose a stronger password.',
+  phone_invalid: 'Phone must be 6–15 digits.',
+  address_invalid: 'Address must be 200 characters or fewer.',
 });
 
 /** Collapse whitespace and trim; never returns null/undefined. */
@@ -127,3 +129,39 @@ export function parseOrderNumber(value) {
   const n = Number(value);
   return Number.isSafeInteger(n) && n > 0 ? n : null;
 }
+
+/** Eastern Arabic + Persian digits to Western, then strip non-digits. */
+export function normalizePhoneDigits(value) {
+  if (typeof value !== 'string') return '';
+  const western = value.replace(/[٠-٩۰-۹]/g, (ch) => {
+    const code = ch.charCodeAt(0);
+    if (code >= 0x0660 && code <= 0x0669) return String(code - 0x0660);
+    return String(code - 0x06f0);
+  });
+  return western.replace(/[^0-9]/g, '');
+}
+
+/**
+ * Account phone: optional. Empty clears the field; otherwise 6–15 digits.
+ * @returns {{ ok: true, phone: string|null } | { ok: false, code: string }}
+ */
+export function validateProfilePhone(value) {
+  if (value === undefined || value === null || value === '') return { ok: true, phone: null };
+  if (typeof value !== 'string') return { ok: false, code: 'phone_invalid' };
+  const digits = normalizePhoneDigits(value);
+  if (!digits) return { ok: true, phone: null };
+  if (digits.length < 6 || digits.length > 15) return { ok: false, code: 'phone_invalid' };
+  return { ok: true, phone: digits };
+}
+
+/**
+ * Account address: optional. Trim + collapse whitespace, max 200 chars.
+ * @returns {{ ok: true, address: string|null } | { ok: false, code: string }}
+ */
+export function validateProfileAddress(value) {
+  if (value === undefined || value === null || value === '') return { ok: true, address: null };
+  if (typeof value !== 'string') return { ok: false, code: 'address_invalid' };
+  const address = value.replace(/\s+/g, ' ').trim().slice(0, 200);
+  return { ok: true, address: address || null };
+}
+

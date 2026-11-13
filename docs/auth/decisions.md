@@ -1,7 +1,7 @@
 # Decision Log
 
 Last updated: 2026-11-13
-Status: Phase 1 approved; Phase 2 complete locally and in production. Preview host pending.
+Status: Phase 1 approved; Phase 2 complete locally and in production; Phase 3 complete locally. Preview host pending.
 
 > Format: one decision per row, with the date, the choice, and the reason.
 > When an owner answer arrives, fill the "Answer" column and the date — do not
@@ -37,6 +37,9 @@ Status: Phase 1 approved; Phase 2 complete locally and in production. Preview ho
 | T22 | 2026-11-13 | Add `checkCustomerApiHeaders` (`X-Requested-With: menu-customer` + same-origin Origin on mutations) | Reuses the repo's existing anti-CSRF pattern without overloading the admin header value. |
 | T23 | 2026-11-13 | Rate limits: sign-in 10/60s, sign-up 5/60s, reset request 3/60s, reset 5/60s | Owner relaxed sign-in/sign-up for shared mobile IPs; reset limits stay strict. |
 | T24 | 2026-11-13 | `.dependency-cruiser.json` excludes `node_modules` from the graph | Better Auth bundles kysely, whose internal circular imports are third-party code, not our no-circular rule. |
+| T25 | 2026-11-13 | Account UI is a lazy sheet (orders + settings), not a separate `/account` route | The owner's required interaction is "tap profile → see orders/settings"; a sheet is faster on mobile and avoids a new SPA route. A page can be added later without data changes. |
+| T26 | 2026-11-13 | Phone/address live in `customer_profiles`, not Better Auth's `user` | Keeps the auth schema untouched; name/email/image stay Better Auth-owned. |
+| T27 | 2026-11-13 | Order link is `orders.customer_user_id` written only from the session | Guest checkout stays available; no client-supplied user id; idempotent replays never re-link. |
 
 ---
 

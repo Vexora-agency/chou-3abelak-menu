@@ -3,6 +3,7 @@ import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { type OrderingStatus } from '@/src/utils/status';
 import { X, CheckCircle2 } from 'lucide-react';
+import { useCustomerProfile } from '@/src/features/auth';
 import { useCartCheckoutSubmit } from '../hooks/useCartCheckoutSubmit';
 import { CartLinesList } from './cart/CartLinesList';
 import { CustomerFormFields } from './cart/CustomerFormFields';
@@ -42,6 +43,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   orderingState,
 }) => {
   const isAr = lang === 'ar';
+  const account = useCustomerProfile(isOpen);
   const {
     customer,
     setCustomer,
@@ -77,7 +79,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     handleSendOrder,
     zoneBlocked,
     zonePlaceName,
-  } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart });
+  } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart, accountUser: account.user, accountProfile: account.profile });
 
   // Radical phone-scroll fix: shared counter lock (iOS-safe, nested-sheet
   // aware) instead of a bare overflow flag that iOS Safari ignores.

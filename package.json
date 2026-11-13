@@ -13,7 +13,7 @@
     "lint:circular": "depcruise src functions scheduler scripts",
     "lint:isolation": "depcruise src/features",
     "test:client": "tsx scripts/test-safe-json.ts",
-    "test:auth": "node scripts/test-auth-config.mjs && node scripts/test-auth-password-policy.mjs && node scripts/test-auth-name-policy.mjs && node scripts/test-auth-session.mjs && node scripts/test-auth-redirect.mjs",
+    "test:auth": "node scripts/test-auth-config.mjs && node scripts/test-auth-password-policy.mjs && node scripts/test-auth-name-policy.mjs && node scripts/test-auth-profile-policy.mjs && node scripts/test-auth-session.mjs && node scripts/test-auth-redirect.mjs && node scripts/test-order-link.mjs && node scripts/test-account-orders-scope.mjs",
     "test:crop": "tsx scripts/test-crop-math.ts",
     "test:telegram": "node scripts/test-telegram.mjs",
     "test:digits": "tsx scripts/test-digits.ts",

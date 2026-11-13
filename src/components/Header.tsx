@@ -17,6 +17,8 @@ interface HeaderProps {
   darkMode: boolean;
   onToggleDarkMode: () => void;
   onOpenAdmin?: () => void;
+  onOpenAuth?: () => void;
+  onOpenAccount?: () => void;
   orderingState?: OrderingStatus | null;
   /** Menu-only mode (starter): WhatsApp CTA hidden, Call becomes primary. */
   orderingEnabled?: boolean;
@@ -31,6 +33,8 @@ export const Header: React.FC<HeaderProps> = ({
   darkMode,
   onToggleDarkMode,
   onOpenAdmin,
+  onOpenAuth,
+  onOpenAccount,
   orderingState,
   orderingEnabled = true,
   festive = false,
@@ -78,6 +82,8 @@ export const Header: React.FC<HeaderProps> = ({
         darkMode={darkMode}
         onToggleDarkMode={onToggleDarkMode}
         onOpenAdmin={onOpenAdmin}
+        onOpenAuth={onOpenAuth}
+        onOpenAccount={onOpenAccount}
         rise={rise}
       />
 

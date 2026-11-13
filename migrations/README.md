@@ -27,5 +27,7 @@ Apply remote: `npx wrangler d1 migrations apply ORDERS_DB --remote` (needs the r
 | `0029_updated_by.sql` | Last status actor (`orders.updated_by` TEXT nullable, no backfill — kitchen/client PATCH stamps the login name, owner PATCH clears to NULL; reads as `updatedBy`). |
 | `0030_account_expiry.sql` | Optional account lifetime (`invites.duration_days` INTEGER nullable, `client_users.expires_at` TEXT nullable, no backfill — NULL = open-ended; redeem stamps `expires_at = now + duration`, sessions capped at the remaining time, login rejects expired exactly like disabled; disable/delete unchanged). |
 | `0033_better_auth.sql` | Customer auth tables for Better Auth 1.7.23 (`user`, `session`, `account`, `verification`, `rateLimit`) + indexes. Generated from the real config and reviewed by hand. Additive only; no existing table touched. |
+| `0034_orders_customer_link.sql` | `orders.customer_user_id` TEXT nullable + `(customer_user_id, created_at DESC)` index. Guest/legacy rows stay NULL; written only from the server-side session. |
+| `0035_customer_profiles.sql` | `customer_profiles` (user_id PK → user cascade, phone, address, updated_at) + phone index. Name/email stay in Better Auth's `user`. |
 
 Rules: additive only, never edit an applied migration — add a new `00NN_*.sql` with the next free number (see `docs/ADD_NEW_FEATURE.md` step 1).

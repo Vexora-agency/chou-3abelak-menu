@@ -44,6 +44,14 @@ const InvitePage = lazyWithReload(() =>
 const TrackView = lazyWithReload(() =>
   import('@/src/features/track/TrackView').then((m) => ({ default: m.TrackView }))
 );
+// Customer auth/account sheets: own chunks, downloaded only when the profile
+// button is used. The header itself reads the shared Better Auth store.
+const AuthSheet = lazyWithReload(() =>
+  import('@/src/features/auth/components/AuthSheet').then((m) => ({ default: m.AuthSheet }))
+);
+const AccountSheet = lazyWithReload(() =>
+  import('@/src/features/auth/components/AccountSheet').then((m) => ({ default: m.AccountSheet }))
+);
 // Seasonal storefront layer (snow + greeting): its own chunk, downloaded
 // ONLY while a seasonal theme is active — `off` costs zero bytes (the
 // component below renders nothing and the import never fires).
@@ -297,6 +305,8 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
 
   // Cart Drawer
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
 
   // Floating order bell mounts after first paint (idle, 2 s ceiling): on
   // mount it polls statuses, installs audio-gesture listeners and vibrates —
@@ -522,6 +532,8 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           darkMode={darkMode}
           onToggleDarkMode={() => setDarkMode(!darkMode)}
           onOpenAdmin={adminUnlocked ? () => openAdmin() : undefined}
+          onOpenAuth={() => setIsAuthOpen(true)}
+          onOpenAccount={() => setIsAccountOpen(true)}
           orderingState={liveOrderingState}
           orderingEnabled={orderingOn}
           festive={seasonalTheme === 'christmas'}
@@ -649,6 +661,35 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
         />
         </Suspense>
         )}
+
+        {/* Customer auth sheet (lazy chunk) */}
+        <Suspense fallback={null}>
+          <AuthSheet
+            open={isAuthOpen}
+            onClose={() => setIsAuthOpen(false)}
+            onSuccess={() => {
+              setIsAuthOpen(false);
+              setIsAccountOpen(true);
+            }}
+            lang={lang}
+            darkMode={darkMode}
+          />
+        </Suspense>
+
+        {/* Customer account sheet: orders + saved details (lazy chunk) */}
+        <Suspense fallback={null}>
+          <AccountSheet
+            open={isAccountOpen}
+            onClose={() => setIsAccountOpen(false)}
+            onSignIn={() => {
+              setIsAccountOpen(false);
+              setIsAuthOpen(true);
+            }}
+            lang={lang}
+            darkMode={darkMode}
+            currency={currency}
+          />
+        </Suspense>
       </div>
     </div>
     </MotionConfig>

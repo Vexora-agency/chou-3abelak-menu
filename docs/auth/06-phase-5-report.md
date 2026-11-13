@@ -1,13 +1,13 @@
 # Phase 5 — Password Reset, Email Verification, Hardening
 
-Status: ✅ complete locally; production rollout + real inbox test pending in this phase's PR.
+Status: ✅ complete locally and deployed to production; real-inbox click-through remains for the owner.
 Date: 2026-11-14
 
 > **بالعربي باختصار:** دلوقتي العميل يقدر يعمل "نسيت كلمة المرور" ويستقبل
 > رابط على إيميله، وأي حساب جديد بالإيميل لازم يتأكد من بريده قبل الدخول.
 > الإيميلات بتتبعت من Resend المجاني، بالعربي والإنجليزي. الرابط صالح ساعة،
-> وإعادة تعيين الباسورد بتلغي كل الجلسات القديمة. كل ده اتجرب محليًا،
-> وناقص بس النشر واختبار وصول الإيميل الحقيقي.
+> وإعادة تعيين الباسورد بتلغي كل الجلسات القديمة. الإنتاج اتطبق واتجرب
+> (الحساب غير الموثّق اترفض بـ 403)، وناقص بس إنك تفتح رابط من إنبوكس حقيقي.
 
 ---
 
@@ -136,8 +136,36 @@ Google accounts are unaffected.
 
 ---
 
-## 6. Remaining after this phase
+## 6. Production deployment (2026-11-14)
 
-- Real inbox verification in production.
+| Item | Value |
+|------|-------|
+| PR | #121 `feat/auth-emails-hardening` → `main` |
+| Merge commit | `f5fee2c` |
+| Pages deployment | `6ade9148-f79e-4f1b-a98f-168ead772a9b` (Active, Production) |
+| Public config | `{"google":true,"requireEmailVerification":true}` |
+| New secrets | none (Resend env already present) |
+
+### Production verification
+
+| Check | Result |
+|-------|--------|
+| Unknown-email reset request | ✅ 200 generic message |
+| New signup (`delivered@resend.dev`) | ✅ 200, `emailVerified: false` |
+| Sign-in before verification | ✅ 403 `EMAIL_NOT_VERIFIED` (gate works) |
+| `send-verification-email` | ✅ 200; deployment tail showed no `[auth-email]` failure |
+| Test account cleanup | ✅ D1 `remaining = 0` |
+| Storefront/auth sheet | ✅ site 200, public config reachable |
+
+Resend accepted the send (no failure warning in the tail). The final click-through
+needs a real inbox: open the verification email, click the link, then repeat the
+reset flow. That is the only owner-assisted check left.
+
+---
+
+## 7. Remaining after this phase
+
+- Real inbox click-through in production (verification + reset).
 - Phase 6: full regression pass, manual accessibility/RTL/theme checklist,
   deployment/rollback runbook, and final handover.
+

@@ -19,10 +19,10 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 2 | Backend: Better Auth + D1 + migrations (local) + email/password + session helper + rate-limit table | ✅ done (local + production) | Auth factory, `/api/auth/*`, `0033_better_auth.sql`, session helper, tests |
 | 3 | Frontend: login/signup UI + header state + protected routes + link orders + admin customers | ✅ done (local + production) | Auth/account sheets, profile button, account APIs, admin Accounts view |
 | 4 | Google login + Google Console instructions | 🟨 code + UI deployed; awaiting Google credentials | Google provider config + `05-google-oauth.md` |
-| 5 | Hardening: rate-limit tuning, headers, reset password + email verification | ✅ done (local) | Resend reset/verify emails + UI + hardening |
+| 5 | Hardening: rate-limit tuning, headers, reset password + email verification | ✅ done (local + production) | Resend reset/verify emails + UI + hardening |
 | 6 | Testing + Cloudflare Pages deployment guide | ⬜ pending | Manual test checklist + deploy runbook |
 
-**Current step:** Phase 5 complete locally (reset + verification + Resend + rate limits). Production rollout and one real-inbox test are next; Google code is already live with credentials.
+**Current step:** Phase 5 deployed to production (`main`, deployment `6ade9148-f79e-4f1b-a98f-168ead772a9b`) and verified. Remaining: one real-inbox verification/reset click-through, then Phase 6 (full regression + handover).
 
 ---
 
@@ -80,4 +80,5 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 2026-11-13 | 3 | PR #119 merged; production D1 backed up + 0034/0035 applied; deployment `fa5fdd99` active. Production signup/sign-in/profile PATCH/account orders/sign-out verified; anonymous admin customers 403; profile button + auth sheet present. Test account deleted (0 remaining). |
 | 2026-11-13 | 4 | Google OAuth code + UI: provider gated by both secrets, public-config probe, Google button + or divider, CSP avatar host, exact Console runbook. Fake-credential test confirmed redirect URI + minimal scopes; real consent pending owner credentials. |
 | 2026-11-13 | 4 | PR #120 merged; production deployment `1470eaf0` active; `/api/auth/public-config` → `{"google":false}` so the button is safely hidden until the owner adds the two Google secrets. |
-| 2026-11-14 | 5 | Added Resend reset/verification emails (bilingual), require-email-verification gate, forgot/reset UI, resend verification, token stripping, and new rate limits. Tests/lint/build/depcruise green; local AR/RTL forgot/reset UI verified. Production rollout + real inbox test pending. |
+| 2026-11-14 | 5 | Added Resend reset/verification emails (bilingual), require-email-verification gate, forgot/reset UI, resend verification, token stripping, and new rate limits. Tests/lint/build/depcruise green; local AR/RTL forgot/reset UI verified. |
+| 2026-11-14 | 5 | PR #121 merged; production deployment `6ade9148` active. Verified public config (`google:true`, verification:true), unknown-email reset 200, unverified sign-in 403 `EMAIL_NOT_VERIFIED`, Resend send accepted (no failure warning), test account deleted. Real-inbox click-through remains. |

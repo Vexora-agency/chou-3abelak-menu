@@ -1,7 +1,7 @@
 # Decision Log
 
 Last updated: 2026-11-13
-Status: Phase 1 approved; Phase 2 complete locally and in production; Phase 3 complete locally and in production; Phase 4 code deployed, waiting Google credentials. Preview host pending.
+Status: Phase 1 approved; Phase 2 complete locally and in production; Phase 3 complete locally and in production; Phase 4 code deployed with Google credentials; Phase 5 complete locally. Preview host pending.
 
 > Format: one decision per row, with the date, the choice, and the reason.
 > When an owner answer arrives, fill the "Answer" column and the date — do not
@@ -42,6 +42,9 @@ Status: Phase 1 approved; Phase 2 complete locally and in production; Phase 3 co
 | T27 | 2026-11-13 | Order link is `orders.customer_user_id` written only from the session | Guest checkout stays available; no client-supplied user id; idempotent replays never re-link. |
 | T28 | 2026-11-13 | Google provider enabled only when both env credentials exist; UI reads `/api/auth/public-config` | No dead Google button in production before Console setup; no secret exposed to the browser. |
 | T29 | 2026-11-13 | Google OAuth uses the canonical apex and `/?account=1` callback | Keeps the OAuth state cookie and callback on one host; account sheet opens after the redirect. www should 301 to apex. |
+| T30 | 2026-11-14 | Email verification required in production; `AUTH_REQUIRE_EMAIL_VERIFICATION=0` only for local dev | Production had 0 users, so enabling the gate is safe; local UI work should not need a real inbox. |
+| T31 | 2026-11-14 | Reset link is `/?reset=1&token=...`; token stripped from the URL immediately | The token is a credential; keeping it in history/screenshots is unnecessary exposure. |
+| T32 | 2026-11-14 | Resend sends are queued with `waitUntil`, bilingual templates, no recipient/token logs | Mail latency/failure must never change auth results; logs must stay PII-free. |
 
 ---
 

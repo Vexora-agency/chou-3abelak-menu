@@ -46,6 +46,9 @@ ALLOW_LOCAL_DEV=1
 BETTER_AUTH_SECRET=<base64-of-32-plus-random-bytes>
 BETTER_AUTH_URL=http://localhost:3000
 TRUSTED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+# Local convenience: skip the verify-before-login gate. Production must leave
+# this unset (or set it to 1) so email/password accounts must verify.
+AUTH_REQUIRE_EMAIL_VERIFICATION=0
 # Phase 4 only (leave blank until Google OAuth is configured):
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=

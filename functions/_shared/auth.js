@@ -12,6 +12,7 @@
 
 import { betterAuth } from 'better-auth';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
+import { buildAuthEmail, queueAuthEmail } from './auth-email.js';
 import {
   authErrorMessage,
   validateAuthName,
@@ -112,6 +113,8 @@ function rateLimitRules() {
     '/sign-up/email': { window: 60, max: 5 },
     '/request-password-reset': { window: 60, max: 3 },
     '/reset-password': { window: 60, max: 5 },
+    '/send-verification-email': { window: 60, max: 3 },
+    '/verify-email': { window: 60, max: 10 },
     '/sign-in/social': { window: 60, max: 10 },
     '/callback/*': { window: 60, max: 20 },
     '/get-session': false,
@@ -168,8 +171,9 @@ function userHooks() {
  * @param {Request} [_request] reserved for future per-request logic
  * @param {(promise: Promise<unknown>) => void} [_waitUntil] reserved for Phase 5 email sends
  */
-export function createAuth(env, _request, _waitUntil) {
+export function createAuth(env, _request, waitUntil) {
   const { secret, baseURL, secureCookies, trustedOrigins } = resolveAuthConfig(env);
+  const requireEmailVerification = env.AUTH_REQUIRE_EMAIL_VERIFICATION !== '0';
   const socialProviders = isGoogleConfigured(env)
     ? {
         google: {
@@ -196,7 +200,22 @@ export function createAuth(env, _request, _waitUntil) {
       minPasswordLength: 10,
       maxPasswordLength: 128,
       autoSignIn: false,
-      requireEmailVerification: false,
+      requireEmailVerification,
+      resetPasswordTokenExpiresIn: 3600,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: async ({ user, url }) => {
+        const mail = buildAuthEmail({ kind: 'reset', url, name: user?.name });
+        queueAuthEmail(env, { to: user?.email, ...mail }, waitUntil);
+      },
+    },
+    emailVerification: {
+      sendVerificationEmail: async ({ user, url }) => {
+        const mail = buildAuthEmail({ kind: 'verify', url, name: user?.name });
+        queueAuthEmail(env, { to: user?.email, ...mail }, waitUntil);
+      },
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      expiresIn: 3600,
     },
     session: {
       expiresIn: 604800, // 7 days

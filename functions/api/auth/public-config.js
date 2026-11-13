@@ -17,5 +17,8 @@ export async function onRequest(context) {
   if (request.method !== 'GET') {
     return jsonNoStore({ error: 'method_not_allowed' }, 405, { Allow: 'GET' });
   }
-  return jsonNoStore({ google: isGoogleConfigured(env) });
+  return jsonNoStore({
+    google: isGoogleConfigured(env),
+    requireEmailVerification: env.AUTH_REQUIRE_EMAIL_VERIFICATION !== '0',
+  });
 }

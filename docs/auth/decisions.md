@@ -1,7 +1,7 @@
 # Decision Log
 
 Last updated: 2026-11-13
-Status: Phase 1 approved; Phase 2 complete locally and in production; Phase 3 complete locally. Preview host pending.
+Status: Phase 1 approved; Phase 2 complete locally and in production; Phase 3 complete locally and in production. Preview host pending.
 
 > Format: one decision per row, with the date, the choice, and the reason.
 > When an owner answer arrives, fill the "Answer" column and the date — do not

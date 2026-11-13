@@ -17,12 +17,12 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 |---|-------|--------|-------------|
 | 1 | Investigate + Better Auth docs + plan | ✅ done | `01-investigation.md`, `02-plan.md` |
 | 2 | Backend: Better Auth + D1 + migrations (local) + email/password + session helper + rate-limit table | ✅ done (local + production) | Auth factory, `/api/auth/*`, `0033_better_auth.sql`, session helper, tests |
-| 3 | Frontend: login/signup UI + header state + protected routes + link orders + admin customers | ✅ done (local) | Auth/account sheets, profile button, account APIs, admin Accounts view |
+| 3 | Frontend: login/signup UI + header state + protected routes + link orders + admin customers | ✅ done (local + production) | Auth/account sheets, profile button, account APIs, admin Accounts view |
 | 4 | Google login + Google Console instructions | ⬜ pending | Google provider config + owner checklist |
 | 5 | Hardening: rate-limit tuning, headers, reset password + email verification | ⬜ pending | Security config + email provider |
 | 6 | Testing + Cloudflare Pages deployment guide | ⬜ pending | Manual test checklist + deploy runbook |
 
-**Current step:** Phase 3 complete locally (auth/account sheets, order linking, admin Accounts view). Production rollout is the next step; Google remains Phase 4.
+**Current step:** Phase 3 deployed to production (`main`, deployment `fa5fdd99-d1c7-455b-bd51-d1557f967447`) and verified. Next is Phase 4 (Google login), then Phase 5 hardening.
 
 ---
 
@@ -74,4 +74,5 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 2026-11-13 | 1 | Frontend + backend audit complete; Better Auth 1.7.23 docs verified; workerd hashing benchmark (scrypt 115–144 ms, PBKDF2 100k 123 ms); catch-all syntax corrected to Cloudflare's `[[all]]`; `02-plan.md` written; awaiting owner approval |
 | 2026-11-13 | 2 | Installed `better-auth@1.7.23` (exact); added auth factory + `/api/auth/[[all]].js` + customer session helper + validation; generated/reviewed `0033_better_auth.sql` (5 tables); applied locally; signup/login/logout/update/duplicate-email/rate-limit tests passed; admin login/session/logout still hit their static routes; temp schema endpoint deleted; lint green |
 | 2026-11-13 | 2 | PR #117 merged to `main`; production deployment `701a5708-470d-493b-942f-ea6bb182a381` active. Production signup/signin/get-session/signout verified on `https://chou3abelak.site`; cookie `__Secure-chou.session_token` (HttpOnly/Secure/SameSite=Lax); CPU tail `outcome: ok` at 162–172 ms; admin routes still JSON; evil origin 403. Test accounts deleted (0 remaining). |
-| 2026-11-13 | 3 | Added auth/account sheets, header profile button, profile phone/address table, session-scoped order history (365 days), order linking, admin registered-customer badge, and admin Accounts view. Migrations 0034/0035 applied locally. Browser-tested EN/dark + AR/light, prefill, orders, settings, signout. Production rollout pending. |
+| 2026-11-13 | 3 | Added auth/account sheets, header profile button, profile phone/address table, session-scoped order history (365 days), order linking, admin registered-customer badge, and admin Accounts view. Migrations 0034/0035 applied locally. Browser-tested EN/dark + AR/light, prefill, orders, settings, signout. |
+| 2026-11-13 | 3 | PR #119 merged; production D1 backed up + 0034/0035 applied; deployment `fa5fdd99` active. Production signup/sign-in/profile PATCH/account orders/sign-out verified; anonymous admin customers 403; profile button + auth sheet present. Test account deleted (0 remaining). |

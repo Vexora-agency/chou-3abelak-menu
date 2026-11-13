@@ -1,6 +1,6 @@
 # Phase 3 — Customer Account UI + Admin Customers
 
-Status: ✅ complete locally; production rollout pending in this phase's PR.
+Status: ✅ complete locally and deployed to production.
 Date: 2026-11-13
 
 > **بالعربي باختصار:** العميل بقى له أيقونة حساب جنب زرار الثيم. لو مش مسجل
@@ -8,7 +8,7 @@ Date: 2026-11-13
 > (الاسم/الهاتف/العنوان) مع زرار خروج. الطلب بيتسجل باسم الحساب لو مسجل،
 > والأدمن بيشوف بادج "عميل مسجل" على الطلبات، وله تبويب "الحسابات" فيه
 > كل العملاء المسجلين وتفاصيلهم وإحصائياتهم. الواجهة اتجربت عربي/إنجليزي
-> ودارك/لايت.
+> ودارك/لايت، واترفعت على production واتجربت على الدومين الحقيقي.
 
 ---
 
@@ -121,7 +121,34 @@ All customer routes require `X-Requested-With: menu-customer` and a valid sessio
 
 ## 5. Pending
 
-- Production migration `0034`/`0035` + deploy (handled by the Phase 3 PR runbook).
 - Google button remains Phase 4.
 - Password reset/email verification remain Phase 5.
 - A dedicated `/account` URL is not required by this design: the profile button opens the account sheet. A page can be added later without changing the data layer.
+
+## 6. Production deployment (2026-11-13)
+
+| Item | Value |
+|------|-------|
+| PR | #119 `feat/customer-accounts-ui` → `main` |
+| Merge commit | `18fa37f` |
+| Pages deployment | `fa5fdd99-d1c7-455b-bd51-d1557f967447` (Active, Production, branch `main`) |
+| Production domain | `https://chou3abelak.site` |
+| D1 backup | `C:\Users\Mina\Desktop\backups\chou-before-accounts-2026-11-13.sql` (17,335 bytes; outside repo) |
+| Migrations | `0034_orders_customer_link.sql` + `0035_customer_profiles.sql` applied remotely; verified `customer_profiles`, `idx_orders_customer_user_id`, and `orders.customer_user_id` |
+
+### Production verification
+
+| Check | Result |
+|-------|--------|
+| Signup | ✅ 200, `token: null` |
+| Sign-in | ✅ 200 + secure cookie |
+| Profile GET | ✅ 200, empty phone/address |
+| Profile PATCH | ✅ 200, phone/address persisted |
+| Account orders | ✅ 200, `count: 0` for a fresh account |
+| Sign-out | ✅ 200 |
+| Anonymous admin customers | ✅ 403 |
+| Storefront header | ✅ "Sign in" profile button present |
+| Production auth sheet | ✅ opens, LTR, "Welcome back" |
+
+The production test account was deleted; D1 returned `remaining = 0`.
+

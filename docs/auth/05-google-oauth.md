@@ -1,7 +1,7 @@
 # Phase 4 — Google Login Runbook
 
-Status: 🟨 code + UI deployed to production; **owner must create the Google OAuth client and add two secrets** before the button appears.
-Date: 2026-11-13
+Status: 🟢 live in production with credentials; one real Google-account click-through remains.
+Date: 2026-11-14
 
 > **بالعربي باختصار:** كود جوجل جاهز، وزرار "المتابعة باستخدام Google"
 > بيظهر فقط لما `GOOGLE_CLIENT_ID` و`GOOGLE_CLIENT_SECRET` يكونوا
@@ -152,17 +152,18 @@ owner creates the client and adds the two secrets.
 
 ---
 
-## 6. Production deployment (2026-11-13)
+## 6. Production deployment (2026-11-14)
 
 | Item | Value |
 |------|-------|
 | PR | #120 `feat/google-auth` → `main` |
 | Merge commit | `52c29c9` |
-| Pages deployment | `1470eaf0-fa5d-4a3e-9744-6687cc072212` (Active, Production) |
-| Production probe | `GET /api/auth/public-config` → `{"google":false}` (button correctly hidden) |
+| Pages deployment | `1470eaf0-fa5d-4a3e-9744-6687cc072212` (code) |
+| Production probe | `GET /api/auth/public-config` → `{"google":true}` |
+| OAuth start | `redirect_uri=https://chou3abelak.site/api/auth/callback/google`, `scope=email profile openid`, `prompt=select_account` |
 
-The production environment does **not** have Google credentials yet. That is
-the expected safe state: the code is live, the button is hidden, and no broken
-OAuth flow is exposed. Once the two values are added and the project is
-redeployed, the same URL will return `{"google":true}` and the button appears.
+The owner added the Google OAuth client and the two production values. The
+button is visible on the live site and the OAuth start URL is correct. The only
+remaining check is completing one real Google consent with a test account.
+
 

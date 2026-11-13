@@ -20,9 +20,9 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 3 | Frontend: login/signup UI + header state + protected routes + link orders + admin customers | ✅ done (local + production) | Auth/account sheets, profile button, account APIs, admin Accounts view |
 | 4 | Google login + Google Console instructions | 🟨 code + UI deployed; awaiting Google credentials | Google provider config + `05-google-oauth.md` |
 | 5 | Hardening: rate-limit tuning, headers, reset password + email verification | ✅ done (local + production) | Resend reset/verify emails + UI + hardening |
-| 6 | Testing + Cloudflare Pages deployment guide | ⬜ pending | Manual test checklist + deploy runbook |
+| 6 | Testing + Cloudflare Pages deployment guide | ✅ done (handover) | Manual checklist + deploy/rollback runbook |
 
-**Current step:** Phase 5 deployed to production (`main`, deployment `6ade9148-f79e-4f1b-a98f-168ead772a9b`) and verified. Remaining: one real-inbox verification/reset click-through, then Phase 6 (full regression + handover).
+**Current step:** All six phases shipped. Final handover in `07-phase-6-report.md`; owner-only checks: one real Google login, one real inbox verify + reset click-through, and an admin visual pass.
 
 ---
 
@@ -36,6 +36,7 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | `04-phase-3-report.md` | Phase 3 customer account UI, order linking, admin customers, test evidence |
 | `05-google-oauth.md` | Phase 4 Google OAuth code status, Console steps, exact URIs, test checklist |
 | `06-phase-5-report.md` | Phase 5 reset/verification emails, hardening, test evidence |
+| `07-phase-6-report.md` | Final handover, regression evidence, deployment/rollback runbook, owner checks |
 | `decisions.md` | Decision log (pinned versions, provider choices, owner answers) |
 | `manual-checklist.md` | Everything only the owner can do (Google Console, secrets, D1, deploy) — created in Phase 6 |
 
@@ -82,3 +83,4 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 2026-11-13 | 4 | PR #120 merged; production deployment `1470eaf0` active; `/api/auth/public-config` → `{"google":false}` so the button is safely hidden until the owner adds the two Google secrets. |
 | 2026-11-14 | 5 | Added Resend reset/verification emails (bilingual), require-email-verification gate, forgot/reset UI, resend verification, token stripping, and new rate limits. Tests/lint/build/depcruise green; local AR/RTL forgot/reset UI verified. |
 | 2026-11-14 | 5 | PR #121 merged; production deployment `6ade9148` active. Verified public config (`google:true`, verification:true), unknown-email reset 200, unverified sign-in 403 `EMAIL_NOT_VERIFIED`, Resend send accepted (no failure warning), test account deleted. Real-inbox click-through remains. |
+| 2026-11-14 | 6 | Final handover written: deployment/rollback runbook, security posture, test evidence, known limitations, 4 owner-only live checks. Production at `6ade9148` (`f5fee2c`); docs deployment `89959f13`. |

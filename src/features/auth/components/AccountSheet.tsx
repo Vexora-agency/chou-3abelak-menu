@@ -445,7 +445,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                     value={user?.email || ''}
                     readOnly
                     dir="ltr"
-                    className={`${inputClass} pe-10 opacity-80 cursor-not-allowed`}
+                    className={`${inputClass} pe-10 opacity-80 cursor-not-allowed ${isAr ? 'text-end' : 'text-start'}`}
                     aria-describedby="account-email-note"
                   />
                   <LockKeyhole size={15} className={`absolute end-3 top-1/2 -translate-y-1/2 ${mutedClass}`} aria-hidden="true" />
@@ -465,7 +465,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                   dir="ltr"
                   maxLength={20}
                   placeholder={isAr ? '70123456' : '+961 70 123 456'}
-                  className={`${inputClass} tabular-nums text-start`}
+                  className={`${inputClass} tabular-nums ${isAr ? 'text-end' : 'text-start'}`}
                   aria-describedby="account-phone-note"
                 />
                 <p id="account-phone-note" className={`mt-1 text-[10px] ${mutedClass}`}>{t.phoneHint}</p>

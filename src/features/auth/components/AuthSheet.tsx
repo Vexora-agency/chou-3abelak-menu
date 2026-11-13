@@ -411,7 +411,7 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode, resetToken
                   maxLength={254}
                   enterKeyHint="next"
                   data-autofocus={mode === 'signin' || mode === 'forgot' ? '' : undefined}
-                  className={`${inputClass} text-start`}
+                  className={`${inputClass} ${isAr ? 'text-end' : 'text-start'}`}
                 />
               </div>
             )}

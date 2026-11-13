@@ -22,7 +22,7 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 5 | Hardening: rate-limit tuning, headers, reset password + email verification | ✅ done (local + production) | Resend reset/verify emails + UI + hardening |
 | 6 | Testing + Cloudflare Pages deployment guide | ✅ done (handover) | Manual checklist + deploy/rollback runbook |
 
-**Current step:** All six phases shipped. Final handover in `07-phase-6-report.md`; owner-only checks: one real Google login, one real inbox verify + reset click-through, and an admin visual pass. Arabic RTL field alignment (email/phone/password + eye side) is deployed and verified on production.
+**Current step:** All six phases shipped. Final handover in `07-phase-6-report.md`; owner-only checks: one real Google login, one real inbox verify + reset click-through, and an admin visual pass. Arabic RTL field alignment is deployed and verified. Members' live orders now live in My Orders (guest bell stays guest-only), and all customer avatars use the letter style.
 
 ---
 
@@ -88,3 +88,4 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 2026-11-14 | 6 | PR #123 merged: Arabic form alignment fixed. Email (auth + account + checkout), read-only account email with its lock icon, and phone fields (account + checkout) now align right in Arabic while keeping LTR character order and no icon overlap. English unchanged; checkout name placeholder generic. Production `4692418f` (`50c872a`); verified live. |
 | 2026-11-14 | 6 | PR #124 merged: password/confirm fields align right in Arabic while the eye stays on the physical right with reserved padding (no overlap). Production `3ab450ab` (`2308010`); verified live. |
 | 2026-11-14 | 6 | PR #125 merged: Arabic keeps the password eye on the physical left (no overlap with the right-aligned value); English keeps it on the right. Footer note now says the data is protected to professional standards without cookies/HttpOnly wording. Production `ea7cb247` (`df4242f`); verified live in AR and EN. |
+| 2026-11-14 | 6 | PR #126 merged: members no longer see the floating guest bell. Active orders now live in My Orders with track/cancel/receive actions, joint-delivery unlock rules, and a silent 30 s refresh. Account orders stay session-scoped and include the owner's track token + computed live state. Google profile photos are ignored: every avatar is the gold letter. Production `9e2bbc04` (`075da08`); verified live (bell hidden with a shelf order, order actions present, no avatar image request). |

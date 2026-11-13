@@ -57,6 +57,9 @@
     "tsConfig": {
       "fileName": "tsconfig.json"
     },
+    "doNotFollow": {
+      "path": "node_modules"
+    },
     "enhancedResolveOptions": {
       "exportsFields": ["exports"],
       "conditionNames": ["import", "require", "node", "default"]

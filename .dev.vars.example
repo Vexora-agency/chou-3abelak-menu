@@ -38,3 +38,14 @@ VITE_SENTRY_RELEASE=
 TELEGRAM_BOT_TOKEN=<bot-token-from-BotFather-or-any-fake-string>
 TELEGRAM_BOT_USERNAME=TestRestaurantBot
 TELEGRAM_WEBHOOK_SECRET=<64-hex-chars>
+
+# --- Customer auth (Better Auth, local only — FAKE VALUES) ---
+# Generate a fresh secret: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+# Never reuse SESSION_SECRET. Production values live in Cloudflare secrets.
+ALLOW_LOCAL_DEV=1
+BETTER_AUTH_SECRET=<base64-of-32-plus-random-bytes>
+BETTER_AUTH_URL=http://localhost:3000
+TRUSTED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+# Phase 4 only (leave blank until Google OAuth is configured):
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=

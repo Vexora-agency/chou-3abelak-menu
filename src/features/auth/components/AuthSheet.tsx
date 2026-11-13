@@ -434,14 +434,14 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode, resetToken
                     enterKeyHint={mode === 'reset' ? 'next' : 'done'}
                     aria-describedby={mode === 'signup' || mode === 'reset' ? 'auth-password-rules' : undefined}
                     data-autofocus={mode === 'reset' ? '' : undefined}
-                    className={`${inputClass} pr-12 ${isAr ? 'text-end' : 'text-start'}`}
+                    className={`${inputClass} ${isAr ? 'pl-12 text-end' : 'pr-12 text-start'}`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                     aria-label={showPassword ? t.hidePassword : t.showPassword}
                     aria-pressed={showPassword}
-                    className={`absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                    className={`absolute ${isAr ? 'left-1' : 'right-1'} top-1/2 -translate-y-1/2 w-10 h-10 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                       darkMode ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-black'
                     }`}
                   >

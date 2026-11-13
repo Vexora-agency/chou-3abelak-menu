@@ -1,6 +1,6 @@
 import { useMemo, useState, type FC } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { BellRing, Check, ChevronDown, Inbox, Link2, Loader2, MapPin, MessageCircle, Phone, Store, X } from 'lucide-react';
+import { BellRing, BadgeCheck, Check, ChevronDown, Inbox, Link2, Loader2, MapPin, MessageCircle, Phone, Store, X } from 'lucide-react';
 import { STR } from './ordersDashTypes';
 import type { Order, OrderStatus } from './ordersDashTypes';
 import { OrderReviewBadge } from './OrderReviewBadge';
@@ -75,6 +75,16 @@ const OrderRow: FC<OrderRowProps> = ({ o, open, onToggleOpen, t, isAr, currency,
               </span>
             )}
             <span className="text-sm font-semibold truncate">{o.customer.name}</span>
+            {o.customerUserId && (
+              <span
+                title={t.registeredTip}
+                aria-label={t.registered}
+                className="shrink-0 inline-flex items-center gap-1 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 text-emerald-300"
+              >
+                <BadgeCheck size={11} aria-hidden="true" />
+                <span className="hidden sm:inline">{t.registered}</span>
+              </span>
+            )}
             <OrderReviewBadge lang={isAr ? 'ar' : 'en'} needsReview={o.needsReview} riskReasons={o.riskReasons} />
           </span>
           <span className="block text-[11px] text-neutral-500 truncate mt-0.5" dir="auto">

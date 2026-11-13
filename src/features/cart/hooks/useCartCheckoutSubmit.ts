@@ -24,9 +24,12 @@ interface UseCartCheckoutSubmitArgs {
  *  owner wires the cart owner's clear; gated by client.config
  *  cart.clearAfterOrder so white-labels can opt out. */
   onOrderSuccess?: () => void;
+  /** Signed-in customer, used only to prefill empty checkout fields. */
+  accountUser?: { id: string; name: string; email: string } | null;
+  accountProfile?: { phone: string | null; address: string | null } | null;
 }
 
-export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess }: UseCartCheckoutSubmitArgs) {
+export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess, accountUser, accountProfile }: UseCartCheckoutSubmitArgs) {
   const isAr = lang === 'ar';
   const ordering = menu.settings.ordering;
 
@@ -60,6 +63,35 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     }
     return merged;
   });
+
+  // Signed-in profile: fill only EMPTY checkout fields once the profile
+  // arrives. Typed values are never overwritten, and the address is still
+  // editable per order. This is server-side profile data, not the device
+  // "remember me" blob, so it is safe to prefill across devices.
+  useEffect(() => {
+    if (!accountUser && !accountProfile) return;
+    setCustomer((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      if (!prev.name.trim() && accountUser?.name) {
+        next.name = accountUser.name;
+        changed = true;
+      }
+      if (!prev.phone.trim() && accountProfile?.phone) {
+        next.phone = accountProfile.phone;
+        changed = true;
+      }
+      if (!prev.address.trim() && accountProfile?.address) {
+        next.address = accountProfile.address;
+        changed = true;
+      }
+      if (!(prev.email || '').trim() && accountUser?.email) {
+        next.email = accountUser.email;
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [accountUser?.id, accountUser?.name, accountUser?.email, accountProfile?.phone, accountProfile?.address]);
 
   const [orderPrepared, setOrderPrepared] = useState(false);
   // Last placed order (number + tracking token) for the confirmation

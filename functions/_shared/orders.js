@@ -489,6 +489,10 @@ export function mapOrderRow(row) {
     // touches read as the login name. Always present as string-or-null
     // so the dashboard shape never shifts keys; the UI hides null).
     updatedBy: typeof row.updated_by === 'string' && row.updated_by ? row.updated_by : null,
+    // Account link (migration 0034, nullable): present only for orders
+    // placed while signed in. Always string-or-null so the shape never
+    // shifts for legacy/guest rows; the admin UI uses it for the badge.
+    customerUserId: typeof row.customer_user_id === 'string' && row.customer_user_id ? row.customer_user_id : null,
     customer: {
       name: row.customer_name || '',
       phone: row.customer_phone || '',

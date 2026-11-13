@@ -52,7 +52,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     // A starter /admin/backup link falls back to the dashboard (tab hidden).
     const m = /^\/admin\/([a-z]+)\/?$/.exec(window.location.pathname);
     const raw = m ? m[1] : null;
-    if (raw === 'reports' || raw === 'customers') return 'dashboard';
+    if (raw === 'reports' || raw === 'customers' || raw === 'accounts') return 'dashboard';
     if (raw === 'backup' && !featuresConfig.enableBackup) return 'dashboard';
     return raw === 'dashboard' || raw === 'settings' || raw === 'categories' || raw === 'libraries' || raw === 'items' || raw === 'backup'
       ? (raw as AdminTab)
@@ -170,14 +170,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     // load async, and the first renders would otherwise replaceState it away
     // on mount (this race also broke /admin/reports).
     if (!deepLinkHandled.current) {
-      const inc = /^\/admin\/(reports|customers)\/?$/.exec(window.location.pathname)?.[1];
+      const inc = /^\/admin\/(reports|customers|accounts)\/?$/.exec(window.location.pathname)?.[1];
       if (inc && report.dashView !== inc) return;
     }
     const want = activeTab === 'dashboard' && report.dashView === 'reports' && report.reportsOn
       ? '/admin/reports'
       : activeTab === 'dashboard' && report.dashView === 'customers' && report.customersOn
         ? '/admin/customers'
-        : `/admin/${activeTab}`;
+        : activeTab === 'dashboard' && report.dashView === 'accounts' && featuresConfig.enableCustomerData
+          ? '/admin/accounts'
+          : `/admin/${activeTab}`;
     if (window.location.pathname !== want) {
       window.history.replaceState(null, '', want + window.location.search);
     }
@@ -190,14 +192,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Skipped for kitchen sessions (pinned to the overview above).
   useEffect(() => {
     if (isKitchen) return;
-    const m = /^\/admin\/(reports|customers)\/?$/.exec(window.location.pathname);
+    const m = /^\/admin\/(reports|customers|accounts)\/?$/.exec(window.location.pathname);
     if (!m) {
       deepLinkHandled.current = true;
       return;
     }
     if (deepLinkHandled.current) return;
-    const view = m[1] as 'reports' | 'customers';
-    const flag = view === 'reports' ? report.reportsOn : report.customersOn;
+    const view = m[1] as 'reports' | 'customers' | 'accounts';
+    const flag = view === 'reports'
+      ? report.reportsOn
+      : view === 'customers'
+        ? report.customersOn
+        : featuresConfig.enableCustomerData;
     if (flag) {
       deepLinkHandled.current = true;
       report.setDashView(view);
@@ -205,7 +211,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
     const timer = window.setTimeout(() => {
       deepLinkHandled.current = true;
-      if (/^\/admin\/(reports|customers)\/?$/.test(window.location.pathname)) {
+      if (/^\/admin\/(reports|customers|accounts)\/?$/.test(window.location.pathname)) {
         window.history.replaceState(null, '', '/admin/dashboard' + window.location.search);
       }
     }, 4000);
@@ -234,7 +240,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       }
       const m = /^\/admin\/([a-z]+)\/?$/.exec(window.location.pathname);
       const raw = m ? m[1] : null;
-      if (raw === 'reports' || raw === 'customers') {
+      if (raw === 'reports' || raw === 'customers' || raw === 'accounts') {
         deepLinkHandled.current = true;
         setActiveTab('dashboard');
         report.setDashView(raw);

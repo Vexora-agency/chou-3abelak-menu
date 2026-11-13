@@ -750,6 +750,11 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
   const emailVal = cleaned && typeof cleaned.email === 'string' && cleaned.email ? cleaned.email : null;
   const paymentMethod = cleaned && typeof cleaned.paymentMethod === 'string' && cleaned.paymentMethod ? cleaned.paymentMethod : 'cod';
   const paymentStatus = cleaned && typeof cleaned.paymentStatus === 'string' && cleaned.paymentStatus ? cleaned.paymentStatus : 'pending';
+  // Registered-customer link (migration 0034): set by the route from the
+  // server-side session, never from the request body. Null = guest order.
+  const customerUserId = cleaned && typeof cleaned.customerUserId === 'string' && cleaned.customerUserId
+    ? cleaned.customerUserId
+    : null;
   // Risk score (migration 0032): integers only, reasons capped so one row
   // stays a few dozen bytes. Absent/invalid reads as unscored (0 / '[]').
   const riskScore = cleaned && Number.isInteger(cleaned.riskScore) && cleaned.riskScore >= 0 ? cleaned.riskScore : 0;
@@ -762,7 +767,7 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
   } catch {
     riskReasons = '[]';
   }
-  const runInsert = (withParent, withEmail, withPayment, withRisk) => {
+  const runInsert = (withParent, withEmail, withPayment, withRisk, withCustomer) => {
     const cols = ['id', 'number', 'idem_key', 'track_token', 'created_at', 'updated_at', 'status', 'type', 'customer_name', 'customer_phone', 'phone_norm'];
     if (withEmail) cols.push('customer_email');
     cols.push('customer_address', 'customer_table', 'notes', 'location_lat', 'location_lng', 'items_json', 'subtotal', 'delivery_fee', 'total', 'lang');
@@ -771,6 +776,7 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
     // Risk columns ride LAST so the missing-column retry below only ever
     // drops trailing columns (keeps the legacy fake-DB column mapping intact).
     if (withRisk) cols.push('risk_score', 'risk_reasons');
+    if (withCustomer) cols.push('customer_user_id');
     const placeholders = cols.map((_, i) => `?${i + 1}`).join(',');
     const values = [
       id,
@@ -801,6 +807,7 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
     if (withPayment) values.push(paymentMethod, paymentStatus);
     if (withParent) values.push(parent);
     if (withRisk) values.push(riskScore, riskReasons);
+    if (withCustomer) values.push(customerUserId);
     return db.batch([db.prepare(`INSERT INTO orders (${cols.join(', ')}) VALUES (${placeholders})`).bind(...values)]);
   };
   let withParent = parent !== null;
@@ -813,9 +820,13 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
   let withPayment = true;
   // Risk columns (migration 0032): same degrade path as payment above.
   let withRisk = true;
-  for (let attempt = 0; attempt < 6; attempt += 1) {
+  // Customer link (migration 0034): only present for a signed-in customer.
+  // Drop it on an unmigrated DB so a registered order still records as guest
+  // instead of failing.
+  let withCustomer = customerUserId !== null;
+  for (let attempt = 0; attempt < 7; attempt += 1) {
     try {
-      await runInsert(withParent, withEmail, withPayment, withRisk);
+      await runInsert(withParent, withEmail, withPayment, withRisk, withCustomer);
       break;
     } catch (e) {
       // Unmigrated DB (missing parent_number and/or customer_email): drop
@@ -827,6 +838,7 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
       const missingParent = /parent_number/i.test(msg);
       const missingPayment = /payment_method|payment_status/i.test(msg);
       const missingRisk = /risk_score|risk_reasons/i.test(msg);
+      const missingCustomer = /customer_user_id/i.test(msg);
       if (missingPayment && withPayment) {
         withPayment = false;
         continue;
@@ -843,6 +855,10 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
         withRisk = false;
         continue;
       }
+      if (missingCustomer && withCustomer) {
+        withCustomer = false;
+        continue;
+      }
       if (withPayment) {
         withPayment = false;
         continue;
@@ -853,6 +869,14 @@ export async function insertOrderWithNumber(db, cleaned, num, nowIso) {
       }
       if (withParent) {
         withParent = false;
+        continue;
+      }
+      if (withRisk) {
+        withRisk = false;
+        continue;
+      }
+      if (withCustomer) {
+        withCustomer = false;
         continue;
       }
       throw e;
@@ -898,6 +922,44 @@ export async function listOrdersByWindow(db, { from, to, days }, limit) {
   const n = Number.isInteger(days) ? Math.min(365, Math.max(1, days)) : 35;
   return listOrders(db, WINDOW_WHERE.days, [new Date(Date.now() - n * 86400000).toISOString()], limit);
 }
+
+/* ---------- Customer account history (session-scoped, never user-supplied) ---------- */
+
+function stripCustomerTrackToken(order) {
+  if (!order || typeof order !== 'object') return order;
+  // The account UI does not need the public tracking capability URL: the
+  // signed-in customer already owns the order, and keeping the token out of
+  // the JSON reduces accidental copy/paste leakage.
+  const { trackToken, ...rest } = order;
+  void trackToken;
+  return rest;
+}
+
+/** Orders for one authenticated customer, newest first, capped window. */
+export async function listOrdersForCustomer(db, userId, sinceIso, limit = 50) {
+  const max = Math.min(50, Math.max(1, Number.isInteger(limit) ? limit : 50));
+  const res = await db
+    .prepare(
+      `SELECT * FROM orders
+       WHERE customer_user_id = ?1 AND created_at >= ?2
+       ORDER BY created_at DESC
+       LIMIT ?3`
+    )
+    .bind(userId, sinceIso, max)
+    .all();
+  const rows = (res && res.results) || [];
+  return rows.map((row) => stripCustomerTrackToken(mapOrderRow(row)));
+}
+
+/** One order only when it belongs to the authenticated customer. */
+export async function findOrderForCustomer(db, userId, number) {
+  const row = await db
+    .prepare('SELECT * FROM orders WHERE customer_user_id = ?1 AND number = ?2')
+    .bind(userId, number)
+    .first();
+  return row ? stripCustomerTrackToken(mapOrderRow(row)) : null;
+}
+
 
 export async function updateOrderStatus(db, id, status, opts) {
   const nowIso = new Date().toISOString();

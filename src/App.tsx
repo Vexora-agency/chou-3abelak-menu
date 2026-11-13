@@ -307,6 +307,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [resetToken, setResetToken] = useState<string | null>(null);
 
   // Floating order bell mounts after first paint (idle, 2 s ceiling): on
   // mount it polls statuses, installs audio-gesture listeners and vibrates —
@@ -363,12 +364,25 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     };
   }, []);
 
-  // Google OAuth returns to /?account=1: open the account sheet once, then
-  // strip the marker so a refresh doesn't re-open it. The auth store is
-  // already populated by the callback cookie when this runs.
+  // OAuth/reset return markers:
+  // - Google returns to /?account=1 → open the account sheet.
+  // - Password-reset email returns to /?reset=1&token=... → open the reset form.
+  // Both markers are stripped from the address bar immediately (the reset
+  // token is a credential; it must not linger in history/screenshots).
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
+    const token = (params.get('token') || '').trim();
+    if (params.get('reset') === '1' && token) {
+      setResetToken(token);
+      setIsAuthOpen(true);
+      params.delete('reset');
+      params.delete('token');
+      const qs = params.toString();
+      const next = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
+      window.history.replaceState(null, '', next);
+      return;
+    }
     if (params.get('account') !== '1') return;
     setIsAccountOpen(true);
     params.delete('account');
@@ -682,13 +696,18 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
         <Suspense fallback={null}>
           <AuthSheet
             open={isAuthOpen}
-            onClose={() => setIsAuthOpen(false)}
+            onClose={() => {
+              setIsAuthOpen(false);
+              setResetToken(null);
+            }}
             onSuccess={() => {
               setIsAuthOpen(false);
               setIsAccountOpen(true);
             }}
             lang={lang}
             darkMode={darkMode}
+            resetToken={resetToken}
+            onResetComplete={() => setResetToken(null)}
           />
         </Suspense>
 

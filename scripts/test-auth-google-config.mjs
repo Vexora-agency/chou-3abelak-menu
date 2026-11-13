@@ -42,12 +42,16 @@ check('no provider without credentials', !noGoogle.options.socialProviders?.goog
 
 const request = new Request('https://chou3abelak.site/api/auth/public-config');
 const offRes = await publicConfig({ request, env: {} });
-check('public config off', (await offRes.json()).google === false);
+const offBody = await offRes.json();
+check('public config off', offBody.google === false);
+check('public config defaults verification on', offBody.requireEmailVerification === true);
 const onRes = await publicConfig({
   request,
-  env: { GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: 'secret' },
+  env: { GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: 'secret', AUTH_REQUIRE_EMAIL_VERIFICATION: '0' },
 });
-check('public config on', (await onRes.json()).google === true);
+const onBody = await onRes.json();
+check('public config on', onBody.google === true);
+check('public config local verification override', onBody.requireEmailVerification === false);
 
 console.log(`\n${fails === 0 ? 'PASS' : 'FAIL'} — ${fails} failure(s)`);
 process.exit(fails === 0 ? 0 : 1);

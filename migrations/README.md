@@ -26,5 +26,6 @@ Apply remote: `npx wrangler d1 migrations apply ORDERS_DB --remote` (needs the r
 | `0028_kitchen_role.sql` | Kitchen role for invites + client accounts (`invites.role`, `client_users.role` — `client` default, CHECK pins `client`/`kitchen`; pre-0028 rows backfill to `client`). |
 | `0029_updated_by.sql` | Last status actor (`orders.updated_by` TEXT nullable, no backfill — kitchen/client PATCH stamps the login name, owner PATCH clears to NULL; reads as `updatedBy`). |
 | `0030_account_expiry.sql` | Optional account lifetime (`invites.duration_days` INTEGER nullable, `client_users.expires_at` TEXT nullable, no backfill — NULL = open-ended; redeem stamps `expires_at = now + duration`, sessions capped at the remaining time, login rejects expired exactly like disabled; disable/delete unchanged). |
+| `0033_better_auth.sql` | Customer auth tables for Better Auth 1.7.23 (`user`, `session`, `account`, `verification`, `rateLimit`) + indexes. Generated from the real config and reviewed by hand. Additive only; no existing table touched. |
 
 Rules: additive only, never edit an applied migration — add a new `00NN_*.sql` with the next free number (see `docs/ADD_NEW_FEATURE.md` step 1).

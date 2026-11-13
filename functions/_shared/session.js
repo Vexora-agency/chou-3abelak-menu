@@ -239,9 +239,12 @@ export function jsonNoStore(obj, status = 200, extraHeaders = {}) {
  * requests. Browsers never send Origin on same-origin GET/HEAD, so those
  * only need the custom header (they are read-only; CSRF cannot exfiltrate
  * or mutate through them).
+ *
+ * `expectedHeader` defaults to the admin value. Customer routes pass
+ * "menu-customer" so the two surfaces never accept each other's header.
  */
-export function checkApiHeaders(request) {
-  if (request.headers.get('X-Requested-With') !== 'menu-admin') {
+export function checkApiHeaders(request, expectedHeader = 'menu-admin') {
+  if (request.headers.get('X-Requested-With') !== expectedHeader) {
     return { ok: false, status: 400, error: 'bad_request', message: 'Missing custom request header' };
   }
   const method = (request.method || 'GET').toUpperCase();

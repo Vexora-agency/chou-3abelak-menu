@@ -30,12 +30,11 @@ Date: 2026-11-14
 |------|-------|
 | Domain | `https://chou3abelak.site` |
 | Pages project | `chou-3abelak-menu` |
-| Latest code deployment | `3ba19334-1d82-4a80-8bac-6717d4cf15fc` (`8755f8c`) |
-| Latest docs deployment | `63303560-e27f-444d-bccc-ba941beb83e0` (`4ae7f8b`) |
+| Latest code deployment | `3ab450ab-82c7-459b-9e76-0ad10d44d6b7` (`2308010`) |
 | D1 | `chou-3abelak-orders` (`7d585e65-5bea-4b81-b727-ebb001bc72e6`) |
 | Migrations | 0033, 0034, 0035 applied |
 | Public flags | `{"google":true,"requireEmailVerification":true}` |
-| Customer rows | 0 users / 0 sessions after test cleanup |
+| Customer rows | test accounts removed after checks; owner accounts untouched |
 | Google OAuth | client configured; redirect URI verified |
 | Resend | key + from + reply-to present; test send accepted |
 

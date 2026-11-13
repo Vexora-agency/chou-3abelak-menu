@@ -22,7 +22,7 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 5 | Hardening: rate-limit tuning, headers, reset password + email verification | ✅ done (local + production) | Resend reset/verify emails + UI + hardening |
 | 6 | Testing + Cloudflare Pages deployment guide | ✅ done (handover) | Manual checklist + deploy/rollback runbook |
 
-**Current step:** All six phases shipped. Final handover in `07-phase-6-report.md`; owner-only checks: one real Google login, one real inbox verify + reset click-through, and an admin visual pass.
+**Current step:** All six phases shipped. Final handover in `07-phase-6-report.md`; owner-only checks: one real Google login, one real inbox verify + reset click-through, and an admin visual pass. Arabic RTL field alignment (email/phone/password) is deployed and verified on production.
 
 ---
 
@@ -85,3 +85,5 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 2026-11-14 | 5 | PR #121 merged; production deployment `6ade9148` active. Verified public config (`google:true`, verification:true), unknown-email reset 200, unverified sign-in 403 `EMAIL_NOT_VERIFIED`, Resend send accepted (no failure warning), test account deleted. Real-inbox click-through remains. |
 | 2026-11-14 | 6 | Final handover written: deployment/rollback runbook, security posture, test evidence, known limitations, 4 owner-only live checks. Production at `6ade9148` (`f5fee2c`); docs deployment `89959f13`. |
 | 2026-11-14 | 6 | PR #122 merged: Arabic password eye moved to the physical right and name placeholder is now "Your name" / "اسمك". Production `3ba19334` (`8755f8c`); verified live in AR RTL (eye inside field, right of center). |
+| 2026-11-14 | 6 | PR #123 merged: Arabic form alignment fixed. Email (auth + account + checkout), read-only account email with its lock icon, and phone fields (account + checkout) now align right in Arabic while keeping LTR character order and no icon overlap. English unchanged; checkout name placeholder generic. Production `4692418f` (`50c872a`); verified live. |
+| 2026-11-14 | 6 | PR #124 merged: password/confirm fields align right in Arabic while the eye stays on the physical right with reserved padding (no overlap). Production `3ab450ab` (`2308010`); verified live. |

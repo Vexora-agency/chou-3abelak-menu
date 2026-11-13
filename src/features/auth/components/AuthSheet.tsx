@@ -434,7 +434,7 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode, resetToken
                     enterKeyHint={mode === 'reset' ? 'next' : 'done'}
                     aria-describedby={mode === 'signup' || mode === 'reset' ? 'auth-password-rules' : undefined}
                     data-autofocus={mode === 'reset' ? '' : undefined}
-                    className={`${inputClass} pr-12 text-start`}
+                    className={`${inputClass} pr-12 ${isAr ? 'text-end' : 'text-start'}`}
                   />
                   <button
                     type="button"
@@ -475,7 +475,7 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode, resetToken
                   dir="ltr"
                   maxLength={128}
                   enterKeyHint="done"
-                  className={`${inputClass} text-start`}
+                  className={`${inputClass} ${isAr ? 'text-end' : 'text-start'}`}
                 />
               </div>
             )}

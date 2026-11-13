@@ -1,7 +1,7 @@
 # Decision Log
 
 Last updated: 2026-11-13
-Status: Phase 1 approved; Phase 2 complete locally. D4 placeholders pending.
+Status: Phase 1 approved; Phase 2 complete locally and in production. Preview host pending.
 
 > Format: one decision per row, with the date, the choice, and the reason.
 > When an owner answer arrives, fill the "Answer" column and the date — do not
@@ -36,6 +36,7 @@ Status: Phase 1 approved; Phase 2 complete locally. D4 placeholders pending.
 | T21 | 2026-11-13 | No CLI devDependency; use `npx auth@1.7.23` on demand (supersedes T2) | The CLI cannot reach D1; schema generation uses the official `getMigrations()` API inside the local Worker. Avoid an unused dependency. |
 | T22 | 2026-11-13 | Add `checkCustomerApiHeaders` (`X-Requested-With: menu-customer` + same-origin Origin on mutations) | Reuses the repo's existing anti-CSRF pattern without overloading the admin header value. |
 | T23 | 2026-11-13 | Rate limits: sign-in 10/60s, sign-up 5/60s, reset request 3/60s, reset 5/60s | Owner relaxed sign-in/sign-up for shared mobile IPs; reset limits stay strict. |
+| T24 | 2026-11-13 | `.dependency-cruiser.json` excludes `node_modules` from the graph | Better Auth bundles kysely, whose internal circular imports are third-party code, not our no-circular rule. |
 
 ---
 
@@ -68,9 +69,9 @@ No silent weakening. No custom hashing without an owner decision.
 | D1 | Confirm protected routes (`02-plan.md` §7) | Approve as listed | ✅ Approved as listed; menu/cart/tracking/invite public | 2026-11-13 |
 | D2 | Keep guest checkout or require login? | Keep guest checkout; link orders when signed in | ✅ Keep guest checkout; link only with a valid session; lookup failure never blocks | 2026-11-13 |
 | D3 | Email provider for reset/verification | Resend free tier (already integrated for reports) | ✅ Resend free tier, Phase 5 only | 2026-11-13 |
-| D4 | Production domain + stable preview host | Exact origins, no wildcards | 🟨 placeholders given; real values pending | 2026-11-13 |
+| D4 | Production domain + stable preview host | Exact origins, no wildcards | ✅ production `https://chou3abelak.site` + `https://www.chou3abelak.site`; preview host still pending | 2026-11-13 |
 | D5 | Approve `orders.customer_user_id` migration | Approve (nullable, additive, no backfill) | ✅ Approved; Phase 3 | 2026-11-13 |
-| D6 | If preview hits Free CPU: PBKDF2 100k or Paid? | Try scrypt first; decide only if it fails | ✅ Try scrypt; on CPU error STOP and report; owner chooses | 2026-11-13 |
+| D6 | If preview hits Free CPU: PBKDF2 100k or Paid? | Try scrypt first; decide only if it fails | ✅ Production scrypt verified: signup `cpuTime 172`, signin `cpuTime 162`, both `outcome: ok`; no fallback | 2026-11-13 |
 | D7 | Signup: `autoSignIn: false` vs instant login | `autoSignIn: false` | ✅ `autoSignIn: false`; revisit in Phase 5 | 2026-11-13 |
 | D8 | Google avatar display (one CSP host) | Add `https://lh3.googleusercontent.com` | ✅ Phase 4 only | 2026-11-13 |
 

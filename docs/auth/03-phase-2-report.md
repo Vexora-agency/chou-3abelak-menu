@@ -1,12 +1,12 @@
-# Phase 2 — Backend Report (local only)
+# Phase 2 — Backend Report (local + production)
 
-Status: ✅ complete locally. No remote command, deploy, or production secret was run.
+Status: ✅ complete locally and deployed to production.
 Date: 2026-11-13
 
-> **بالعربي باختصار:** الباك إند اتعمل واتجرب محليًا: تسجيل/دخول/خروج،
-> التحقق من الباسورد والاسم، rate limit، وجداول D1. مسارات الأدمن القديمة
-> لسه شغالة. مفيش أي حاجة اترفعت أو اتغيرت في الإنتاج. الخطوة الجاية
-> اختبار الـ CPU على preview (أوامرها تحت) وبعدها Phase 3.
+> **بالعربي باختصار:** الباك إند اتعمل واتجرب محليًا، وبعدها اترفع على
+> production واتجرب على الدومين الحقيقي. تسجيل/دخول/خروج شغالين،
+> مسارات الأدمن القديمة لسه شغالة، والـ scrypt اشتغل من غير أي CPU error.
+> مفيش أي تغيير في أسرار الإنتاج أثناء الرفع — كانت متظبطة بالفعل.
 
 ---
 
@@ -153,4 +153,42 @@ Pages gives each branch a stable alias automatically: `<sanitized-branch>.<proje
 - Customer UI, profile icon, `/account` page (Phase 3).
 - Google OAuth + Console setup + `lh3.googleusercontent.com` CSP (Phase 4).
 - Resend reset/verification emails (Phase 5).
-- Production deploy and secrets (Phase 6).
+
+## 10. Production deployment (2026-11-13)
+
+| Item | Value |
+|------|-------|
+| PR | #117 `feat/customer-auth-phase-2` → `main` |
+| Merge commit | `c251ccb` |
+| Pages deployment | `701a5708-470d-493b-942f-ea6bb182a381` (Active, Production, branch `main`) |
+| Production domain | `https://chou3abelak.site` |
+| Env already present | `BETTER_AUTH_SECRET` (secret), `BETTER_AUTH_URL=https://chou3abelak.site`, `TRUSTED_ORIGINS=https://chou3abelak.site,https://www.chou3abelak.site`, `NODE_VERSION=22` |
+| Production migration | `0033_better_auth.sql` was already applied (`applied_at 2026-11-13 19:37:35`); no migration command was run during this deploy |
+
+No secret was created or changed during the deploy. No production secret values were printed.
+
+### Production verification
+
+| Check | Result |
+|-------|--------|
+| `GET /api/auth/get-session` | ✅ 200 `null` JSON, `Cache-Control: no-store` |
+| Signup | ✅ 200, `token: null`, user created |
+| Sign-in | ✅ 200 + `Set-Cookie` |
+| Cookie | ✅ `__Secure-chou.session_token; Max-Age=604800; Path=/; HttpOnly; Secure; SameSite=Lax` |
+| Session with cookie | ✅ 200 with user + session |
+| Sign-out | ✅ 200 `{"success":true}` |
+| Session after sign-out | ✅ 200 `null` |
+| Admin `GET /api/auth/session` | ✅ 200 `{"authenticated":false}` (static admin route still wins) |
+| Cross-origin sign-in (`https://evil.example`) | ✅ 403 |
+| CPU tail — signup | ✅ `cpuTime: 172`, `outcome: ok` |
+| CPU tail — sign-in | ✅ `cpuTime: 162`, `outcome: ok` |
+| CPU tail — session reads | ✅ 6–35 ms, `outcome: ok` |
+
+Verdict: built-in scrypt works in production; **no fallback / no hashing change needed (D6 resolved)**.
+
+Both production test accounts were deleted after verification; the D1 query returned `remaining = 0`.
+
+### Still pending for a full preview test
+
+The preview host has not been configured yet. The preview-specific steps above remain valid for Phase 6, but production is already verified.
+

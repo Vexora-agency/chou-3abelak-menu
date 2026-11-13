@@ -363,6 +363,22 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     };
   }, []);
 
+  // Google OAuth returns to /?account=1: open the account sheet once, then
+  // strip the marker so a refresh doesn't re-open it. The auth store is
+  // already populated by the callback cookie when this runs.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('account') !== '1') return;
+    setIsAccountOpen(true);
+    params.delete('account');
+    const qs = params.toString();
+    const next = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
+    window.history.replaceState(null, '', next);
+    // One-shot on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // DOM-safe route parsing (standalone pages need no menu data, so they
   // resolve BEFORE any menu gate — the storefront shell below paints
   // instantly while /api/menu is still in flight).

@@ -40,6 +40,8 @@ Status: Phase 1 approved; Phase 2 complete locally and in production; Phase 3 co
 | T25 | 2026-11-13 | Account UI is a lazy sheet (orders + settings), not a separate `/account` route | The owner's required interaction is "tap profile → see orders/settings"; a sheet is faster on mobile and avoids a new SPA route. A page can be added later without data changes. |
 | T26 | 2026-11-13 | Phone/address live in `customer_profiles`, not Better Auth's `user` | Keeps the auth schema untouched; name/email/image stay Better Auth-owned. |
 | T27 | 2026-11-13 | Order link is `orders.customer_user_id` written only from the session | Guest checkout stays available; no client-supplied user id; idempotent replays never re-link. |
+| T28 | 2026-11-13 | Google provider enabled only when both env credentials exist; UI reads `/api/auth/public-config` | No dead Google button in production before Console setup; no secret exposed to the browser. |
+| T29 | 2026-11-13 | Google OAuth uses the canonical apex and `/?account=1` callback | Keeps the OAuth state cookie and callback on one host; account sheet opens after the redirect. www should 301 to apex. |
 
 ---
 
@@ -76,7 +78,7 @@ No silent weakening. No custom hashing without an owner decision.
 | D5 | Approve `orders.customer_user_id` migration | Approve (nullable, additive, no backfill) | ✅ Approved; Phase 3 | 2026-11-13 |
 | D6 | If preview hits Free CPU: PBKDF2 100k or Paid? | Try scrypt first; decide only if it fails | ✅ Production scrypt verified: signup `cpuTime 172`, signin `cpuTime 162`, both `outcome: ok`; no fallback | 2026-11-13 |
 | D7 | Signup: `autoSignIn: false` vs instant login | `autoSignIn: false` | ✅ `autoSignIn: false`; revisit in Phase 5 | 2026-11-13 |
-| D8 | Google avatar display (one CSP host) | Add `https://lh3.googleusercontent.com` | ✅ Phase 4 only | 2026-11-13 |
+| D8 | Google avatar display (one CSP host) | Add `https://lh3.googleusercontent.com` | ✅ added to CSP; provider code ready | 2026-11-13 |
 
 ---
 

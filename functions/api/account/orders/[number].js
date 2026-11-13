@@ -8,6 +8,7 @@
 import { jsonNoStore } from '../../../_shared/session.js';
 import { checkCustomerApiHeaders, requireCustomer } from '../../../_shared/auth-session.js';
 import { findOrderForCustomer } from '../../../_shared/repositories/orders.repo.js';
+import { attachOrderLiveState } from '../../../_shared/order-live-state.js';
 import { parseOrderNumber } from '../../../_shared/validate-auth.js';
 
 export async function onRequest(context) {
@@ -32,7 +33,8 @@ export async function onRequest(context) {
   try {
     const order = await findOrderForCustomer(db, auth.user.id, number);
     if (!order) return jsonNoStore({ error: 'not_found' }, 404);
-    return jsonNoStore({ order });
+    const [enriched] = await attachOrderLiveState(db, env, [order]);
+    return jsonNoStore({ order: enriched });
   } catch {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }

@@ -8,6 +8,7 @@
 import { jsonNoStore } from '../../_shared/session.js';
 import { checkCustomerApiHeaders, requireCustomer } from '../../_shared/auth-session.js';
 import { listOrdersForCustomer } from '../../_shared/repositories/orders.repo.js';
+import { attachOrderLiveState } from '../../_shared/order-live-state.js';
 
 function intParam(value, fallback, min, max) {
   const n = Number.parseInt(String(value ?? ''), 10);
@@ -37,7 +38,8 @@ export async function onRequest(context) {
 
   try {
     const orders = await listOrdersForCustomer(db, auth.user.id, since, limit);
-    return jsonNoStore({ orders, days, count: orders.length });
+    const enriched = await attachOrderLiveState(db, env, orders);
+    return jsonNoStore({ orders: enriched, days, count: enriched.length });
   } catch {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }

@@ -67,6 +67,8 @@ const OrdersBell = lazyWithReload(() =>
 import { WifiOff } from 'lucide-react';
 import { useShopCartState } from '@/src/features/cart';
 import { useOrderingState } from '@/src/features/orders';
+import { useCustomerSession } from '@/src/features/auth';
+import { cancelWindowMsFromMenu } from '@/src/features/track/orderPhases';
 import { useAppPrefs } from '@/src/hooks/useAppPrefs';
 import { MotionConfig } from 'motion/react';
 
@@ -302,6 +304,10 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
 
   // Modal Item Details
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
+
+  // Signed-in members get their live order surface inside "My orders";
+  // the floating guest bell is hidden for them (guests keep it).
+  const customerSession = useCustomerSession();
 
   // Cart Drawer
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -635,10 +641,11 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           lang={lang}
         />
 
-        {/* Floating order bell (12h shelf, ordering plans only): mounted
-            only while the customer actually has orders — otherwise it
-            doesn't exist at all (no timers, no listeners, no audio). */}
-        {orderingOn && bellReady && hasOrders && (
+        {/* Floating order bell (12h shelf, ordering plans only): guests only.
+            Signed-in members track the same orders inside "My orders", so the
+            bell never mounts for them. For guests it mounts only while the
+            shelf is non-empty (no timers, listeners or audio otherwise). */}
+        {orderingOn && bellReady && hasOrders && !customerSession.isPending && !customerSession.user && (
           <Suspense fallback={null}>
             <OrdersBell lang={lang} darkMode={darkMode} />
           </Suspense>
@@ -723,6 +730,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
             lang={lang}
             darkMode={darkMode}
             currency={currency}
+            cancelWindowMs={cancelWindowMsFromMenu(displayMenu)}
           />
         </Suspense>
       </div>

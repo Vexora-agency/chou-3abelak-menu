@@ -94,7 +94,6 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
           ) : user ? (
             <CustomerAvatar
               name={user.name}
-              image={user.image}
               className="w-7 h-7 min-w-[28px] rounded-full"
               textClassName="text-xs"
             />

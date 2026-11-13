@@ -925,17 +925,10 @@ export async function listOrdersByWindow(db, { from, to, days }, limit) {
 
 /* ---------- Customer account history (session-scoped, never user-supplied) ---------- */
 
-function stripCustomerTrackToken(order) {
-  if (!order || typeof order !== 'object') return order;
-  // The account UI does not need the public tracking capability URL: the
-  // signed-in customer already owns the order, and keeping the token out of
-  // the JSON reduces accidental copy/paste leakage.
-  const { trackToken, ...rest } = order;
-  void trackToken;
-  return rest;
-}
-
-/** Orders for one authenticated customer, newest first, capped window. */
+/** Orders for one authenticated customer, newest first, capped window.
+ *  The owner's track token rides along so the account sheet can reuse the
+ *  bell's track/cancel/receive actions; the response is session-scoped and
+ *  no-store, so the capability never leaves the owner's own session. */
 export async function listOrdersForCustomer(db, userId, sinceIso, limit = 50) {
   const max = Math.min(50, Math.max(1, Number.isInteger(limit) ? limit : 50));
   const res = await db
@@ -948,7 +941,7 @@ export async function listOrdersForCustomer(db, userId, sinceIso, limit = 50) {
     .bind(userId, sinceIso, max)
     .all();
   const rows = (res && res.results) || [];
-  return rows.map((row) => stripCustomerTrackToken(mapOrderRow(row)));
+  return rows.map(mapOrderRow);
 }
 
 /** One order only when it belongs to the authenticated customer. */
@@ -957,7 +950,7 @@ export async function findOrderForCustomer(db, userId, number) {
     .prepare('SELECT * FROM orders WHERE customer_user_id = ?1 AND number = ?2')
     .bind(userId, number)
     .first();
-  return row ? stripCustomerTrackToken(mapOrderRow(row)) : null;
+  return row ? mapOrderRow(row) : null;
 }
 
 

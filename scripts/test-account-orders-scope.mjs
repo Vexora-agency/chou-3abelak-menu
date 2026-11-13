@@ -15,7 +15,7 @@ const check = (name, cond) => {
   }
 };
 
-function fakeDb() {
+function fakeDb(seed = []) {
   const calls = [];
   return {
     calls,
@@ -24,7 +24,7 @@ function fakeDb() {
         bind(...values) {
           calls.push({ sql, values });
           return {
-            all: async () => ({ results: [] }),
+            all: async () => ({ results: seed }),
             first: async () => null,
           };
         },
@@ -50,6 +50,24 @@ function fakeDb() {
   check('detail scopes by customer_user_id', call.sql.includes('customer_user_id = ?1'));
   check('detail scopes by order number', call.sql.includes('number = ?2'));
   check('detail binds user id + number', call.values[0] === 'user-2' && call.values[1] === 1001);
+}
+
+{
+  const row = {
+    id: 'order-1',
+    number: 1001,
+    track_token: 'f'.repeat(32),
+    status: 'new',
+    type: 'delivery',
+    created_at: '2025-01-01T00:00:00.000Z',
+    items_json: '[]',
+    subtotal: 0,
+    delivery_fee: 0,
+    total: 0,
+  };
+  const db = fakeDb([row]);
+  const orders = await listOrdersForCustomer(db, 'user-3', '2025-01-01T00:00:00.000Z', 50);
+  check('account list keeps the owner track token', orders[0]?.trackToken === row.track_token);
 }
 
 console.log(`\n${fails === 0 ? 'PASS' : 'FAIL'} — ${fails} failure(s)`);

@@ -4,6 +4,7 @@ import {
   AlertCircle,
   Check,
   ChevronDown,
+  ExternalLink,
   Loader2,
   LockKeyhole,
   LogOut,
@@ -16,9 +17,13 @@ import {
 } from 'lucide-react';
 import { authClient } from '@/src/lib/auth-client';
 import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
+import { useNow } from '@/src/hooks/useNow';
 import { cleanPhoneInput } from '@/src/utils/digits';
+import { formatMMSS } from '@/src/utils/countdown';
 import { formatPrice } from '@/src/utils/pricing';
 import { CustomerAvatar } from './CustomerAvatar';
+import { CancelOrderButton } from '@/src/features/track/components/CancelOrderButton';
+import { ReceivedButton } from '@/src/features/track/components/ReceivedButton';
 import { useCustomerSession } from '../hooks/useCustomerSession';
 import { useCustomerProfile } from '../hooks/useCustomerProfile';
 import { useCustomerOrders } from '../hooks/useCustomerOrders';
@@ -34,6 +39,8 @@ interface AccountSheetProps {
   lang: 'en' | 'ar';
   darkMode: boolean;
   currency: string;
+  /** Owner-tuned self-cancel window (ms) — same setting as the guest bell. */
+  cancelWindowMs: number;
 }
 
 type Tab = 'orders' | 'settings';
@@ -73,9 +80,18 @@ const OrderCard: FC<{
   lang: 'en' | 'ar';
   darkMode: boolean;
   currency: string;
-}> = ({ order, open, onToggle, lang, darkMode, currency }) => {
+  cancelWindowMs: number;
+  onChanged: () => void;
+}> = ({ order, open, onToggle, lang, darkMode, currency, cancelWindowMs, onChanged }) => {
   const t = AUTH_STR[lang];
   const isAr = lang === 'ar';
+  const isActive = order.status === 'new' || order.status === 'confirmed' || order.status === 'ready';
+  const nowMs = useNow(open && (order.status === 'confirmed' || order.status === 'ready'));
+  const receivableMs = order.receivableAt ? Date.parse(order.receivableAt) : NaN;
+  const receivableLocked = (order.status === 'confirmed' || order.status === 'ready')
+    && Number.isFinite(receivableMs)
+    && receivableMs > nowMs;
+  const trackToken = typeof order.trackToken === 'string' ? order.trackToken : '';
   const statusLabel = {
     new: t.statusNew,
     confirmed: t.statusConfirmed,
@@ -155,6 +171,52 @@ const OrderCard: FC<{
                   <span dir="auto">{order.notes}</span>
                 </p>
               )}
+
+              {isActive && trackToken && (
+                <div className="pt-1 space-y-2">
+                  {order.status === 'new' && (
+                    <CancelOrderButton
+                      number={order.number}
+                      token={trackToken}
+                      createdAt={order.createdAt}
+                      status={order.status}
+                      lang={lang}
+                      darkMode={darkMode}
+                      cancelWindowMs={cancelWindowMs}
+                      onCancelled={onChanged}
+                    />
+                  )}
+                  <div className="flex flex-wrap items-start gap-2">
+                    <a
+                      href={`/?track=${order.number}&t=${encodeURIComponent(trackToken)}`}
+                      className={`h-11 min-h-[44px] px-5 rounded-full border text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                        darkMode ? 'border-neutral-700 text-neutral-200 hover:border-[var(--primary)] hover:text-[var(--primary)]' : 'border-neutral-300 text-neutral-700 hover:border-[var(--primary)]'
+                      }`}
+                    >
+                      <ExternalLink size={13} aria-hidden="true" />
+                      {t.trackLive}
+                    </a>
+                    {(order.status === 'confirmed' || order.status === 'ready') && (
+                      <ReceivedButton
+                        number={order.number}
+                        token={trackToken}
+                        lang={lang}
+                        darkMode={darkMode}
+                        compact
+                        groupCount={Array.isArray(order.groupNumbers) && order.groupNumbers.length > 0 ? order.groupNumbers.length + 1 : undefined}
+                        disabled={receivableLocked}
+                        waitingHint={receivableLocked ? t.unlockHint(formatMMSS(Math.max(0, receivableMs - nowMs))) : undefined}
+                        onConfirmed={onChanged}
+                      />
+                    )}
+                  </div>
+                  {(order.status === 'confirmed' || order.status === 'ready') && !receivableLocked && (
+                    <p className={`text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                      {t.receivedPrompt}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -163,7 +225,7 @@ const OrderCard: FC<{
   );
 };
 
-export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency }: AccountSheetProps) {
+export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency, cancelWindowMs }: AccountSheetProps) {
   const t = AUTH_STR[lang];
   const isAr = lang === 'ar';
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -295,7 +357,6 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
             <div className="flex items-start gap-3">
               <CustomerAvatar
                 name={user?.name || ''}
-                image={user?.image}
                 className="w-14 h-14 min-w-[56px] rounded-full"
                 textClassName="text-xl"
               />
@@ -409,6 +470,8 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                       lang={lang}
                       darkMode={darkMode}
                       currency={currency}
+                      cancelWindowMs={cancelWindowMs}
+                      onChanged={() => ordersState.refetch(true)}
                     />
                   ))}
                 </div>

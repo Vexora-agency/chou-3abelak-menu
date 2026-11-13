@@ -247,7 +247,7 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
           {rows.map((row, index) => (
             <motion.div key={row.id} {...rise(Math.min(0.1 + index * 0.03, 0.3))} className={card}>
               <div className="flex items-start gap-3">
-                <CustomerAvatar name={row.name} image={row.image} className="w-12 h-12 min-w-[48px] rounded-full" textClassName="text-lg" />
+                <CustomerAvatar name={row.name} className="w-12 h-12 min-w-[48px] rounded-full" textClassName="text-lg" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <b className="text-sm font-extrabold truncate">{row.name || '—'}</b>

@@ -41,4 +41,13 @@ export interface AccountOrder {
   paymentMethod?: string | null;
   paymentStatus?: string | null;
   location?: { lat: number; lng: number };
+  /** Server-computed live state (account orders API). */
+  confirmedAt?: string | null;
+  etaAt?: string | null;
+  parentNumber?: number | null;
+  receivableAt?: string | null;
+  groupNumbers?: number[];
+  /** Owner-scoped capability used by the account sheet's track/cancel/receive actions. */
+  trackToken?: string;
+  receiptAskedAt?: string;
 }

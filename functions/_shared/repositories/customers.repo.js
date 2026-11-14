@@ -102,7 +102,7 @@ export async function listRegisteredCustomers(db, query, limit = 200) {
     .prepare(
       `SELECT u.id, u.name, u.email, u.emailVerified, u.image,
               u."createdAt" AS joinedAt,
-              p.phone, p.address,
+              p.phone, p.address, p.location_lat, p.location_lng,
               (SELECT COUNT(*) FROM orders o WHERE o.customer_user_id = u.id) AS ordersCount,
               (SELECT COALESCE(SUM(o.total), 0) FROM orders o
                  WHERE o.customer_user_id = u.id AND o.status <> 'cancelled') AS totalSpent,
@@ -136,6 +136,7 @@ export async function listRegisteredCustomers(db, query, limit = 200) {
     image: typeof row.image === 'string' && row.image ? row.image : null,
     phone: typeof row.phone === 'string' && row.phone ? row.phone : null,
     address: typeof row.address === 'string' && row.address ? row.address : null,
+    hasLocation: Number.isFinite(row.location_lat) && Number.isFinite(row.location_lng),
     joinedAt: row.joinedAt || null,
     ordersCount: Number.isFinite(Number(row.ordersCount)) ? Number(row.ordersCount) : 0,
     totalSpent: Number.isFinite(Number(row.totalSpent)) ? Number(row.totalSpent) : 0,

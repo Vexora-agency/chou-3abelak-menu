@@ -93,7 +93,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
                   <>
                     {/* English is much wider than Arabic: a compact title on
                         phones keeps the plan badge + Auto-save on one row. */}
-                    <span className="min-[480px]:hidden">Menu</span>
+                    <span className="min-[480px]:hidden">Admin</span>
                     <span className="hidden min-[480px]:inline">Menu Management</span>
                   </>
                 )}

@@ -1,14 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   AlertCircle,
+  ArrowUpDown,
   BadgeCheck,
   CalendarDays,
+  Crown,
   Mail,
   MapPin,
   Phone,
   ReceiptText,
   RefreshCw,
+  RotateCcw,
   Search,
   Users,
   X,
@@ -18,20 +21,16 @@ import { readJson, isRecord } from '@/src/utils/safeJson';
 import { formatPrice } from '@/src/utils/pricing';
 import { CustomerAvatar } from '@/src/features/auth';
 
-export interface AdminCustomer {
-  id: string;
-  name: string;
-  email: string;
-  emailVerified: boolean;
-  image: string | null;
-  phone: string | null;
-  address: string | null;
-  joinedAt: string | null;
-  ordersCount: number;
-  totalSpent: number;
-  firstOrderAt: string | null;
-  lastOrderAt: string | null;
-}
+import {
+  customerSegmentMeta,
+  customerVisibleSpend,
+  filterAndSortCustomers,
+  type AdminCustomer,
+  type CustomerSegment,
+  type CustomerSort,
+} from '../../customerFilters';
+
+export type { AdminCustomer } from '../../customerFilters';
 
 interface AdminCustomersTabProps {
   lang: 'en' | 'ar';
@@ -45,6 +44,7 @@ const STR = {
     subtitle: 'Accounts created on the site, with their saved details and order history.',
     searchPh: 'Search by name, email or phone',
     search: 'Search customers',
+    clearSearch: 'Clear search',
     loading: 'Loading customers…',
     error: 'Could not load registered customers.',
     retry: 'Try again',
@@ -62,13 +62,40 @@ const STR = {
     email: 'Email',
     addressMissing: 'No saved address',
     phoneMissing: 'No saved phone',
-    showing: (n: number) => `${n} ${n === 1 ? 'account' : 'accounts'}`,
+    pinMissing: 'No pin',
+    countHintSearch: 'Matching registered accounts',
+    sortBy: 'Sort by',
+    sortNewest: 'Newest',
+    sortOrders: 'Most orders',
+    sortSpend: 'Highest spend',
+    sortAvg: 'Highest average',
+    sortRecent: 'Recent order',
+    sortName: 'Name A–Z',
+    filterCustomers: 'Filter customers',
+    segAll: 'All',
+    segOrdered: 'With orders',
+    segNew: 'New 30d',
+    segActive: 'Active 30d',
+    segRepeat: 'Repeat',
+    segVip: 'Top spenders',
+    segRisk: 'At risk 60d',
+    segNoOrders: 'No orders',
+    segIncomplete: 'Missing details',
+    clearFilters: 'Clear filters',
+    visibleSpend: 'Visible spend',
+    noMatch: 'No customers match these filters',
+    noMatchDesc: 'Try another search or clear the filters.',
+    showing: (n: number, total: number) =>
+      n === total
+        ? `${n} ${n === 1 ? 'account' : 'accounts'}`
+        : `${n} of ${total} accounts`,
   },
   ar: {
     title: 'العملاء المسجلون',
     subtitle: 'الحسابات التي أنشأها العملاء على الموقع، مع بياناتهم وسجل طلباتهم.',
     searchPh: 'ابحث بالاسم أو البريد أو الهاتف',
     search: 'بحث عن العملاء',
+    clearSearch: 'مسح البحث',
     loading: 'جارٍ تحميل العملاء…',
     error: 'تعذّر تحميل العملاء المسجلين.',
     retry: 'إعادة المحاولة',
@@ -86,7 +113,31 @@ const STR = {
     email: 'البريد',
     addressMissing: 'لا يوجد عنوان محفوظ',
     phoneMissing: 'لا يوجد هاتف محفوظ',
-    showing: (n: number) => `${n} حساب`,
+    pinMissing: 'بدون موقع',
+    countHintSearch: 'حسابات مسجلة مطابقة',
+    sortBy: 'ترتيب حسب',
+    sortNewest: 'الأحدث',
+    sortOrders: 'الأكثر طلبًا',
+    sortSpend: 'الأعلى إنفاقًا',
+    sortAvg: 'أعلى متوسط طلب',
+    sortRecent: 'آخر طلب',
+    sortName: 'الاسم أ–ي',
+    filterCustomers: 'تصفية العملاء',
+    segAll: 'الكل',
+    segOrdered: 'لديهم طلبات',
+    segNew: 'جديد 30 يومًا',
+    segActive: 'نشط 30 يومًا',
+    segRepeat: 'متكرر',
+    segVip: 'أعلى إنفاقًا',
+    segRisk: 'بعيد 60 يومًا',
+    segNoOrders: 'بدون طلبات',
+    segIncomplete: 'بيانات ناقصة',
+    clearFilters: 'مسح الفلاتر',
+    visibleSpend: 'إجمالي الإنفاق',
+    noMatch: 'لا يوجد عملاء مطابقون',
+    noMatchDesc: 'جرّب بحثًا آخر أو امسح الفلاتر.',
+    showing: (n: number, total: number) =>
+      n === total ? `${n} حساب` : `${n} من ${total} حساب`,
   },
 } as const;
 
@@ -111,6 +162,8 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [version, setVersion] = useState(0);
+  const [sort, setSort] = useState<CustomerSort>('newest');
+  const [segment, setSegment] = useState<CustomerSegment>('all');
   const reqId = useRef(0);
 
   useEffect(() => {
@@ -138,6 +191,39 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
     }, query ? 320 : 0);
     return () => window.clearTimeout(timer);
   }, [query, version, adminFetch]);
+
+  const segmentMeta = useMemo(() => customerSegmentMeta(rows), [rows]);
+  const visibleRows = useMemo(
+    () => filterAndSortCustomers(rows, { segment, sort, lang, topIds: segmentMeta.topIds }),
+    [rows, segment, sort, lang, segmentMeta.topIds]
+  );
+  const visibleSpend = useMemo(() => customerVisibleSpend(visibleRows), [visibleRows]);
+  const hasActiveFilters = query.trim().length > 0 || sort !== 'newest' || segment !== 'all';
+  const clearFilters = () => {
+    setQuery('');
+    setSort('newest');
+    setSegment('all');
+  };
+
+  const sortOptions: Array<{ value: CustomerSort; label: string }> = [
+    { value: 'newest', label: t.sortNewest },
+    { value: 'orders', label: t.sortOrders },
+    { value: 'spend', label: t.sortSpend },
+    { value: 'avg', label: t.sortAvg },
+    { value: 'recent', label: t.sortRecent },
+    { value: 'name', label: t.sortName },
+  ];
+  const segmentOptions: Array<{ value: CustomerSegment; label: string; crown?: boolean }> = [
+    { value: 'all', label: t.segAll },
+    { value: 'ordered', label: t.segOrdered },
+    { value: 'new', label: t.segNew },
+    { value: 'active', label: t.segActive },
+    { value: 'repeat', label: t.segRepeat },
+    { value: 'vip', label: t.segVip, crown: true },
+    { value: 'risk', label: t.segRisk },
+    { value: 'no-orders', label: t.segNoOrders },
+    { value: 'incomplete', label: t.segIncomplete },
+  ];
 
   const rise = (delay: number) => ({
     initial: { opacity: 0, y: 12 },
@@ -178,7 +264,7 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
             <button
               type="button"
               onClick={() => setQuery('')}
-              aria-label={t.refresh}
+              aria-label={t.clearSearch}
               className="absolute end-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full text-neutral-400 hover:text-white flex items-center justify-center"
             >
               <X size={15} />
@@ -192,9 +278,69 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-[11px] font-bold text-neutral-300">{t.customers}</span>
-            <span className="block text-[10px] text-neutral-500 truncate">{t.countHint}</span>
+            <span className="block text-[10px] text-neutral-500 truncate">
+              {query.trim() ? t.countHintSearch : t.countHint}
+            </span>
           </span>
-          <b className="text-xl font-black tabular-nums text-white" dir="ltr">{rows.length}</b>
+          <b className="text-xl font-black tabular-nums text-white" dir="ltr">{loading ? '…' : rows.length}</b>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <label
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-950 px-3 text-xs font-bold text-neutral-300 focus-within:ring-2 focus-within:ring-[var(--primary)]"
+          >
+            <ArrowUpDown size={14} className="shrink-0 text-[var(--primary)]" aria-hidden="true" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">{t.sortBy}</span>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as CustomerSort)}
+              aria-label={t.sortBy}
+              style={{ colorScheme: 'dark' }}
+              className="min-w-0 bg-transparent text-xs font-extrabold text-white focus:outline-none"
+            >
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-neutral-700 px-3 text-xs font-bold text-neutral-300 transition-colors hover:border-red-400/60 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+            >
+              <RotateCcw size={13} aria-hidden="true" />
+              {t.clearFilters}
+            </button>
+          )}
+        </div>
+
+        <div className="mt-2 -mx-0.5 overflow-x-auto no-scrollbar" role="group" aria-label={t.filterCustomers}>
+          <div className="flex w-max gap-1.5 px-0.5 py-0.5 sm:w-auto sm:flex-wrap">
+            {segmentOptions.map((option) => {
+              const active = segment === option.value;
+              const count = segmentMeta.counts[option.value];
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setSegment(option.value)}
+                  aria-pressed={active}
+                  className={`inline-flex min-h-[44px] items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[11px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                    active
+                      ? 'border-[var(--primary)] bg-[var(--primary)] text-[#0A0A0A]'
+                      : 'border-neutral-800 bg-neutral-950 text-neutral-300 hover:border-[var(--primary)]/60 hover:text-white'
+                  }`}
+                >
+                  {option.crown && <Crown size={12} aria-hidden="true" />}
+                  <span>{option.label}</span>
+                  <span className={`tabular-nums ${active ? 'text-[#0A0A0A]/65' : 'text-neutral-500'}`} dir="ltr">
+                    {loading ? '…' : count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </motion.div>
 
@@ -214,18 +360,43 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
         </div>
       )}
 
-      {!loading && !error && rows.length === 0 && (
-        <div className={`${card} py-10 text-center`}>
-          <Users size={34} className="mx-auto text-[var(--primary)]/70" aria-hidden="true" />
-          <p className="mt-3 text-sm font-extrabold">{t.empty}</p>
-          <p className="mt-1 text-xs text-neutral-500">{t.emptyDesc}</p>
-        </div>
+      {!loading && !error && visibleRows.length === 0 && (
+        query.trim() || rows.length > 0 ? (
+          <div className={`${card} py-10 text-center`}>
+            <Search size={34} className="mx-auto text-[var(--primary)]/70" aria-hidden="true" />
+            <p className="mt-3 text-sm font-extrabold">{t.noMatch}</p>
+            <p className="mt-1 text-xs text-neutral-500">{t.noMatchDesc}</p>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="mt-4 inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-xs font-extrabold text-[#0A0A0A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900"
+            >
+              <RotateCcw size={14} aria-hidden="true" />
+              {t.clearFilters}
+            </button>
+          </div>
+        ) : (
+          <div className={`${card} py-10 text-center`}>
+            <Users size={34} className="mx-auto text-[var(--primary)]/70" aria-hidden="true" />
+            <p className="mt-3 text-sm font-extrabold">{t.empty}</p>
+            <p className="mt-1 text-xs text-neutral-500">{t.emptyDesc}</p>
+          </div>
+        )
       )}
 
-      {!loading && !error && rows.length > 0 && (
+      {!loading && !error && visibleRows.length > 0 && (
         <div className="space-y-2.5">
-          <p className="text-[11px] font-bold text-neutral-500">{t.showing(rows.length)}</p>
-          {rows.map((row, index) => (
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            <p className="text-[11px] font-bold text-neutral-500">
+              {t.showing(visibleRows.length, rows.length)}
+            </p>
+            {visibleSpend > 0 && (
+              <p className="text-[11px] font-bold text-neutral-500">
+                {t.visibleSpend}: <b className="tabular-nums text-neutral-300" dir="ltr">{formatPrice(visibleSpend, currency)}</b>
+              </p>
+            )}
+          </div>
+          {visibleRows.map((row, index) => (
             <motion.div key={row.id} {...rise(Math.min(0.1 + index * 0.03, 0.3))} className={card}>
               <div className="flex items-start gap-3">
                 <CustomerAvatar name={row.name} className="w-12 h-12 min-w-[48px] rounded-full" textClassName="text-lg" />
@@ -265,6 +436,9 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
                 <div className="flex items-center gap-2 min-w-0 text-neutral-300">
                   <MapPin size={13} className="shrink-0 text-[var(--primary)]" aria-hidden="true" />
                   <span className="truncate" dir="auto">{row.address || t.addressMissing}</span>
+                  {row.address && !row.hasLocation && (
+                    <span className="shrink-0 text-[10px] font-bold text-amber-400/90">{t.pinMissing}</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 text-neutral-500">
                   <CalendarDays size={13} className="shrink-0 text-[var(--primary)]" aria-hidden="true" />

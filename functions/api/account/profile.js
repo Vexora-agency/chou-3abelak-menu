@@ -11,7 +11,7 @@
 import { jsonNoStore, readJsonBody } from '../../_shared/session.js';
 import { checkCustomerApiHeaders, requireCustomer } from '../../_shared/auth-session.js';
 import { getCustomerProfile, upsertCustomerProfile } from '../../_shared/repositories/customers.repo.js';
-import { authErrorMessage, validateProfileAddress, validateProfilePhone } from '../../_shared/validate-auth.js';
+import { authErrorMessage, validateProfileAddress, validateProfileLocation, validateProfilePhone } from '../../_shared/validate-auth.js';
 
 function publicUser(user) {
   return {
@@ -47,6 +47,7 @@ export async function onRequest(context) {
         profile: {
           phone: row && row.phone ? row.phone : null,
           address: row && row.address ? row.address : null,
+          location: row && row.location ? row.location : null,
           updatedAt: row && row.profileUpdatedAt ? row.profileUpdatedAt : null,
         },
       });
@@ -70,12 +71,25 @@ export async function onRequest(context) {
   if (!address.ok) {
     return jsonNoStore({ error: address.code, message: authErrorMessage(address.code) }, 400);
   }
+  const location = validateProfileLocation(body && body.location);
+  if (!location.ok) {
+    return jsonNoStore({ error: location.code, message: authErrorMessage(location.code) }, 400);
+  }
+  // The default address is only useful when its point is known: require the
+  // pin whenever an address is saved. Clearing the address clears the pin.
+  if (address.address && !location.location) {
+    return jsonNoStore({ error: 'address_pin_required', message: authErrorMessage('address_pin_required') }, 400);
+  }
 
   try {
     const saved = await upsertCustomerProfile(
       db,
       auth.user.id,
-      { phone: phone.phone, address: address.address },
+      {
+        phone: phone.phone,
+        address: address.address,
+        location: address.address ? location.location : null,
+      },
       new Date().toISOString()
     );
     return jsonNoStore({ ok: true, profile: saved });

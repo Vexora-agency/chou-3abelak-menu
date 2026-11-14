@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Check, Globe } from 'lucide-react';
+import { ArrowLeft, Check, Globe, LogOut } from 'lucide-react';
 import { featuresConfig } from '@/src/config/features.config';
 
 export type AdminTab = 'dashboard' | 'settings' | 'categories' | 'libraries' | 'items' | 'backup';
@@ -83,9 +83,12 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
           <button
             type="button"
             onClick={onSignOut}
-            className="text-xs px-4 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full bg-neutral-800 border border-neutral-700 text-neutral-400 hover:text-red-400 hover:border-red-400/60 transition-colors font-bold whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+            aria-label={isAr ? 'تسجيل الخروج' : 'Sign out'}
+            title={isAr ? 'تسجيل الخروج' : 'Sign out'}
+            className="w-11 h-11 min-w-[44px] min-h-[44px] sm:w-auto sm:px-3 inline-flex items-center justify-center gap-1.5 rounded-full bg-neutral-800 border border-neutral-700 text-neutral-400 hover:text-red-400 hover:border-red-400/60 transition-colors font-bold whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
           >
-            {isAr ? 'تسجيل الخروج' : 'Sign out'}
+            <LogOut size={16} aria-hidden="true" />
+            <span className="hidden sm:inline text-xs">{isAr ? 'تسجيل الخروج' : 'Sign out'}</span>
           </button>
           )}
         </div>

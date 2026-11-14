@@ -26,7 +26,7 @@ interface UseCartCheckoutSubmitArgs {
   onOrderSuccess?: () => void;
   /** Signed-in customer, used only to prefill empty checkout fields. */
   accountUser?: { id: string; name: string; email: string } | null;
-  accountProfile?: { phone: string | null; address: string | null } | null;
+  accountProfile?: { phone: string | null; address: string | null; location?: { lat: number; lng: number; accuracy: number } | null } | null;
   /** Session/profile still loading — don't treat a pending member as a guest. */
   accountLoading?: boolean;
   /** Opens the signup sheet when cash-on-delivery needs an account. */
@@ -110,16 +110,28 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   const [honeypot, setHoneypot] = useState('');
 
   // Shared delivery location (React state only — never persisted, never
-  // logged). Every checkout starts pin-less on purpose, even when "remember
-  // my details" is checked: a remembered pin is never restored, so a stale
-  // pin from another visit/city can never ride along silently. Pinning is
-  // OPTIONAL — a typed address alone is enough to order; a fresh pin is a
-  // precision bonus (exact Telegram link, distance-based fee). Cleared when
-  // the cart closes/clears or after an order is sent.
-  // Text + pin travel as a pair: typing refines the address but keeps the
-  // pin (explicit X removes it).
+  // logged). Members may start from their saved default pin once; guests
+  // start pin-less. The device "remember me" blob never restores a pin, so a
+  // stale pin from another visit/city cannot ride along silently. Pinning is
+  // OPTIONAL at checkout — a typed address alone is enough; a fresh pin is a
+  // precision bonus (exact Telegram link, distance-based fee). Clearing the
+  // pin is respected until the profile pin changes. Text + pin travel as a
+  // pair: typing refines the address but keeps the pin (explicit X removes
+  // it).
   const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [locSheetOpen, setLocSheetOpen] = useState(false);
+  // A member's saved default pin seeds the checkout once. Guests still start
+  // pin-less; clearing the pin afterward is respected until the profile pin
+  // changes. Manual address text remains editable either way.
+  const prefilledPinKeyRef = useRef('');
+  useEffect(() => {
+    const saved = accountProfile?.location;
+    if (!saved) return;
+    const key = `${saved.lat},${saved.lng}`;
+    if (prefilledPinKeyRef.current === key) return;
+    prefilledPinKeyRef.current = key;
+    setLocation((prev) => prev ?? { lat: saved.lat, lng: saved.lng, accuracy: saved.accuracy ?? 0 });
+  }, [accountUser?.id, accountProfile?.location?.lat, accountProfile?.location?.lng, accountProfile?.location?.accuracy]);
   // Delivery-zone gate: resolves the pin to country/subdivision (BigDataCloud
   // client-side reverse-geocode, fail-soft) and hard-blocks delivery pins
   // outside the admin's selected zones. Pickup/dinein unaffected (this

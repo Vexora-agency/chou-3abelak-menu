@@ -26,6 +26,7 @@ import { formatMMSS } from '@/src/utils/countdown';
 import { formatPrice } from '@/src/utils/pricing';
 import { isSoundOff, setSoundOff } from '@/src/utils/customerOrders';
 import { CustomerAvatar } from './CustomerAvatar';
+import { CartLocationSheet } from '@/src/features/cart/components/cart/CartLocationSheet';
 import { CancelOrderButton } from '@/src/features/track/components/CancelOrderButton';
 import { ReceivedButton } from '@/src/features/track/components/ReceivedButton';
 import { useCustomerSession } from '../hooks/useCustomerSession';
@@ -256,6 +257,8 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  const [locSheetOpen, setLocSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveOk, setSaveOk] = useState(false);
@@ -274,6 +277,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     setSaveOk(false);
     setSignOutError('');
     setSigningOut(false);
+    setLocSheetOpen(false);
   }, [open]);
 
   useEffect(() => {
@@ -281,7 +285,8 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     setName(session.user?.name || '');
     setPhone(profileState.profile?.phone || '');
     setAddress(profileState.profile?.address || '');
-  }, [open, session.user?.id, profileState.profile?.phone, profileState.profile?.address]);
+    setLocation(profileState.profile?.location ?? null);
+  }, [open, session.user?.id, profileState.profile?.phone, profileState.profile?.address, profileState.profile?.location]);
 
   // The mute control is shared with the guest bell: a new order re-arms it.
   useEffect(() => {
@@ -344,13 +349,22 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
       setSaveError(t.errorName);
       return;
     }
+    const trimmedAddress = address.trim();
+    if (trimmedAddress && !location) {
+      setSaveError(t.pinRequired);
+      return;
+    }
     setSaving(true);
     setSaveError('');
     setSaveOk(false);
     try {
       const { error } = await authClient.updateUser({ name: name.trim() });
       if (error) throw error;
-      await updateMyProfile({ phone, address });
+      await updateMyProfile({
+        phone,
+        address: trimmedAddress,
+        location: trimmedAddress ? location : null,
+      });
       await Promise.all([session.refetch(), profileState.refetch()]);
       setSaveOk(true);
       window.setTimeout(() => setSaveOk(false), 2500);
@@ -405,9 +419,9 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
               />
               <div className="min-w-0 flex-1">
                 <h2 className="text-lg font-black leading-tight truncate">{user?.name || t.accountTitle}</h2>
-                <p className={`mt-0.5 text-xs truncate flex items-center gap-1.5 ${mutedClass}`}>
+                <p dir="ltr" className={`mt-0.5 text-xs truncate flex items-center gap-1.5 ${isAr ? 'justify-end' : ''} ${mutedClass}`}>
                   <Mail size={12} className="shrink-0" aria-hidden="true" />
-                  <span dir="ltr">{user?.email || ''}</span>
+                  <span className="truncate">{user?.email || ''}</span>
                 </p>
                 {user?.createdAt && (
                   <p className={`mt-1 text-[10px] ${mutedClass}`}>
@@ -600,17 +614,43 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
 
               <div>
                 <label className={labelClass} htmlFor="account-address">{t.defaultAddress}</label>
-                <input
-                  id="account-address"
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  autoComplete="street-address"
-                  maxLength={200}
-                  className={inputClass}
-                  aria-describedby="account-address-note"
-                />
+                <div className="relative">
+                  <input
+                    id="account-address"
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    autoComplete="street-address"
+                    maxLength={200}
+                    className={`${inputClass} pe-12`}
+                    aria-describedby="account-address-note"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setLocSheetOpen(true)}
+                    aria-label={t.pinAddress}
+                    title={t.pinAddress}
+                    className={`absolute end-0.5 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                      darkMode
+                        ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
+                        : 'text-[#8a6d00] hover:bg-[var(--primary)]/15'
+                    }`}
+                  >
+                    <MapPin size={19} aria-hidden="true" />
+                  </button>
+                </div>
                 <p id="account-address-note" className={`mt-1 text-[10px] ${mutedClass}`}>{t.addressHint}</p>
+                {location ? (
+                  <p className={`mt-1.5 flex items-start gap-1.5 text-[11px] font-bold ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                    <MapPin size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+                    <span>{t.pinSet}</span>
+                  </p>
+                ) : address.trim() && saveError !== t.pinRequired ? (
+                  <p className={`mt-1.5 flex items-start gap-1.5 text-[11px] font-bold ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>
+                    <MapPin size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+                    <span>{t.pinRequired}</span>
+                  </p>
+                ) : null}
               </div>
 
               {saveError && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs font-bold text-red-600 dark:text-red-300">{saveError}</p>}
@@ -643,6 +683,25 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
             </div>
           )}
         </div>
+        {locSheetOpen && (
+          <CartLocationSheet
+            location={location}
+            lang={lang}
+            darkMode={darkMode}
+            onCloseSheet={() => setLocSheetOpen(false)}
+            onPick={(lat, lng, accuracy, addressText) => {
+              setLocation({ lat, lng, accuracy });
+              setSaveError('');
+              if (!address.trim()) {
+                const fill = addressText && addressText.trim()
+                  ? addressText.trim()
+                  : `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                setAddress(fill.slice(0, 200));
+              }
+              setLocSheetOpen(false);
+            }}
+          />
+        )}
       </div>
     </div>
   );

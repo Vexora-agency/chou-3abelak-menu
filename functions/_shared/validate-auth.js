@@ -40,6 +40,8 @@ export const AUTH_ERROR_MESSAGES = Object.freeze({
   password_too_common: 'Choose a stronger password.',
   phone_invalid: 'Phone must be 6–15 digits.',
   address_invalid: 'Address must be 200 characters or fewer.',
+  address_pin_required: 'Pin the default address on the map.',
+  location_invalid: 'The pinned location is invalid.',
 });
 
 /** Collapse whitespace and trim; never returns null/undefined. */
@@ -163,5 +165,25 @@ export function validateProfileAddress(value) {
   if (typeof value !== 'string') return { ok: false, code: 'address_invalid' };
   const address = value.replace(/\s+/g, ' ').trim().slice(0, 200);
   return { ok: true, address: address || null };
+}
+
+/**
+ * Account default-address pin: optional shape; lat/lng must be finite and in
+ * range. Accuracy is coerced to a sane non-negative metre value.
+ * @returns {{ ok: true, location: {lat:number,lng:number,accuracy:number}|null } | { ok: false, code: string }}
+ */
+export function validateProfileLocation(value) {
+  if (value === undefined || value === null) return { ok: true, location: null };
+  if (typeof value !== 'object' || Array.isArray(value)) return { ok: false, code: 'location_invalid' };
+  const lat = Number(value.lat);
+  const lng = Number(value.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return { ok: false, code: 'location_invalid' };
+  }
+  const rawAccuracy = Number(value.accuracy);
+  const accuracy = Number.isFinite(rawAccuracy)
+    ? Math.max(0, Math.min(100000, Math.round(rawAccuracy)))
+    : 0;
+  return { ok: true, location: { lat, lng, accuracy } };
 }
 

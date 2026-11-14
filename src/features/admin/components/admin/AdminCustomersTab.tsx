@@ -240,8 +240,8 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
                   </div>
                   <a
                     href={`mailto:${row.email}`}
-                    dir={isAr ? 'rtl' : 'ltr'}
-                    className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-neutral-400 hover:text-[var(--primary)] truncate"
+                    dir="ltr"
+                    className={`mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-neutral-400 hover:text-[var(--primary)] truncate ${isAr ? 'justify-end' : ''}`}
                   >
                     <Mail size={12} className="shrink-0" aria-hidden="true" />
                     <span dir="ltr" className="truncate">{row.email || '—'}</span>

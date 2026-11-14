@@ -5,6 +5,8 @@ import {
   ArrowUpDown,
   BadgeCheck,
   CalendarDays,
+  Check,
+  ChevronDown,
   Mail,
   MapPin,
   Phone,
@@ -140,6 +142,9 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
   const [error, setError] = useState(false);
   const [version, setVersion] = useState(0);
   const [sort, setSort] = useState<CustomerSort>('newest');
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortWrapRef = useRef<HTMLDivElement>(null);
+  const sortButtonRef = useRef<HTMLButtonElement>(null);
   const reqId = useRef(0);
 
   useEffect(() => {
@@ -184,6 +189,26 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
     { value: 'recent', label: t.sortRecent },
     { value: 'name', label: t.sortName },
   ];
+  const selectedSortLabel = sortOptions.find((option) => option.value === sort)?.label || t.sortNewest;
+
+  useEffect(() => {
+    if (!sortOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!sortWrapRef.current?.contains(event.target as Node)) setSortOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSortOpen(false);
+        sortButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [sortOpen]);
 
   const rise = (delay: number) => ({
     initial: { opacity: 0, y: 12 },
@@ -246,23 +271,65 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <label
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-950 px-3 text-xs font-bold text-neutral-300 focus-within:ring-2 focus-within:ring-[var(--primary)]"
+          <div
+            ref={sortWrapRef}
+            className="relative w-full sm:w-auto"
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setSortOpen(false);
+            }}
           >
-            <ArrowUpDown size={14} className="shrink-0 text-[var(--primary)]" aria-hidden="true" />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">{t.sortBy}</span>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as CustomerSort)}
+            <button
+              ref={sortButtonRef}
+              type="button"
+              onClick={() => setSortOpen((open) => !open)}
+              aria-haspopup="listbox"
+              aria-expanded={sortOpen}
               aria-label={t.sortBy}
-              style={{ colorScheme: 'dark' }}
-              className="min-w-0 bg-transparent text-xs font-extrabold text-white focus:outline-none"
+              className="flex min-h-[44px] w-full items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-950 px-3 text-xs font-bold text-neutral-300 transition-colors hover:border-[var(--primary)]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] sm:w-auto"
             >
-              {sortOptions.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-          </label>
+              <ArrowUpDown size={14} className="shrink-0 text-[var(--primary)]" aria-hidden="true" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">{t.sortBy}</span>
+              <span className="min-w-0 flex-1 truncate text-start text-xs font-extrabold text-white">{selectedSortLabel}</span>
+              <ChevronDown
+                size={14}
+                aria-hidden="true"
+                className={`shrink-0 text-neutral-400 transition-transform duration-200 ${sortOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {sortOpen && (
+              <div
+                role="listbox"
+                aria-label={t.sortBy}
+                className="absolute start-0 top-full z-30 mt-1.5 w-full min-w-[220px] overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-1 shadow-2xl sm:w-[240px]"
+              >
+                {sortOptions.map((option) => {
+                  const selected = option.value === sort;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      autoFocus={selected}
+                      onClick={() => {
+                        setSort(option.value);
+                        setSortOpen(false);
+                        sortButtonRef.current?.focus();
+                      }}
+                      className={`flex min-h-[44px] w-full items-center gap-2 rounded-lg px-3 text-start text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                        selected
+                          ? 'bg-[var(--primary)]/15 text-[var(--primary)]'
+                          : 'text-neutral-300 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                      {selected && <Check size={14} aria-hidden="true" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           {hasActiveControls && (
             <button
               type="button"

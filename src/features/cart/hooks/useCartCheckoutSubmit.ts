@@ -72,37 +72,6 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     return merged;
   });
 
-  // Signed-in profile: fill only EMPTY checkout fields once the profile
-  // arrives. Typed values are never overwritten, and the address is still
-  // editable per order. This is server-side profile data, not the device
-  // "remember me" blob, so it is safe to prefill across devices.
-  useEffect(() => {
-    if (!accountUser && !accountProfile) return;
-    setCustomer((prev) => {
-      const next = { ...prev };
-      let changed = false;
-      if (!prev.name.trim() && accountUser?.name) {
-        next.name = accountUser.name;
-        changed = true;
-      }
-      if (!prev.phone.trim() && accountProfile?.phone) {
-        next.phone = accountProfile.phone;
-        changed = true;
-      }
-      if (!prev.address.trim() && accountProfile?.address) {
-        next.address = accountProfile.address;
-        changed = true;
-      }
-      // A member's order must use the account email, even if an old guest
-      // email was remembered on this device (the field is hidden for members).
-      if (accountUser?.email && (prev.email || '') !== accountUser.email) {
-        next.email = accountUser.email;
-        changed = true;
-      }
-      return changed ? next : prev;
-    });
-  }, [accountUser?.id, accountUser?.name, accountUser?.email, accountProfile?.phone, accountProfile?.address]);
-
   const [orderPrepared, setOrderPrepared] = useState(false);
   // Last placed order (number + tracking token) for the confirmation
   // screen: tracking link + push subscribe. Reset when the drawer closes.
@@ -124,18 +93,64 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // it).
   const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [locSheetOpen, setLocSheetOpen] = useState(false);
-  // A member's saved default pin seeds the checkout once. Guests still start
-  // pin-less; clearing the pin afterward is respected until the profile pin
-  // changes. Manual address text remains editable either way.
-  const prefilledPinKeyRef = useRef('');
+
+  // A signed-in member's account is the source of truth for identity
+  // (name/phone/email) and for the starting delivery defaults. The device
+  // "remember me" blob is guest data and must never override it. This runs
+  // when the profile values change, so account-settings edits land here
+  // without a reload; a per-order address/pin edit remains intact until the
+  // next profile change.
+  const memberProfileKeyRef = useRef('');
+  const memberIdentitySeenRef = useRef(false);
   useEffect(() => {
+    if (!accountUser) {
+      // Signing out must not leave the member's name/phone/address in a
+      // guest checkout on a shared device. The initial guest render never
+      // enters this branch with a seen member, so remembered guest details
+      // are preserved.
+      if (memberIdentitySeenRef.current) {
+        memberIdentitySeenRef.current = false;
+        memberProfileKeyRef.current = '';
+        setCustomer((prev) => ({ ...prev, name: '', phone: '', address: '', email: '', remember: false }));
+        setLocation(null);
+      }
+      return;
+    }
+    memberIdentitySeenRef.current = true;
     const saved = accountProfile?.location;
-    if (!saved) return;
-    const key = `${saved.lat},${saved.lng}`;
-    if (prefilledPinKeyRef.current === key) return;
-    prefilledPinKeyRef.current = key;
-    setLocation((prev) => prev ?? { lat: saved.lat, lng: saved.lng, accuracy: saved.accuracy ?? 0 });
-  }, [accountUser?.id, accountProfile?.location?.lat, accountProfile?.location?.lng, accountProfile?.location?.accuracy]);
+    const key = [
+      accountUser.id,
+      accountUser.name,
+      accountUser.email,
+      accountProfile?.phone ?? '',
+      accountProfile?.address ?? '',
+      saved?.lat ?? '',
+      saved?.lng ?? '',
+      saved?.accuracy ?? '',
+    ].join('|');
+    if (memberProfileKeyRef.current === key) return;
+    memberProfileKeyRef.current = key;
+    setCustomer((prev) => ({
+      ...prev,
+      name: accountUser.name || prev.name,
+      phone: accountProfile?.phone || '',
+      address: accountProfile?.address || '',
+      email: accountUser.email || '',
+      // The account already stores these details; member checkout does not
+      // use the guest "remember me" device blob.
+      remember: false,
+    }));
+    setLocation(saved ? { lat: saved.lat, lng: saved.lng, accuracy: saved.accuracy ?? 0 } : null);
+  }, [
+    accountUser?.id,
+    accountUser?.name,
+    accountUser?.email,
+    accountProfile?.phone,
+    accountProfile?.address,
+    accountProfile?.location?.lat,
+    accountProfile?.location?.lng,
+    accountProfile?.location?.accuracy,
+  ]);
   // Delivery-zone gate: resolves the pin to country/subdivision (BigDataCloud
   // client-side reverse-geocode, fail-soft) and hard-blocks delivery pins
   // outside the admin's selected zones. Pickup/dinein unaffected (this
@@ -395,11 +410,14 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
           return rest;
         })();
 
-    // Save remember details (checked = persist, unchecked = erase). The pin
-    // is deliberately NEVER persisted, so no stale pin can ever ride along.
-    // Same for the delivery address: withoutAddress() drops it (old blobs
-    // keep their field but it is ignored on load above).
-    saveRememberedDetails(withoutAddress(customerToSave));
+    // Save remember details (checked = persist, unchecked = erase). Members
+    // never use the guest device blob: their account already carries the
+    // identity, so a member submit clears any old guest record instead. The
+    // pin is deliberately NEVER persisted, and withoutAddress() drops the
+    // delivery address from guest records too.
+    saveRememberedDetails(
+      withoutAddress({ ...customerToSave, remember: accountUser ? false : customerToSave.remember })
+    );
 
     // Record the order on the server. Transport lives in
     // features/cart/services/cart.api.ts (single place).

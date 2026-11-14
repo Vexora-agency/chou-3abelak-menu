@@ -53,6 +53,19 @@ ok(
   checkout.includes('isProfileComplete(accountProfile)') && checkout.includes('onRequireProfile'),
   'checkout blocks an incomplete member profile and opens account settings without losing the cart'
 );
+ok(
+  checkout.includes('memberProfileKeyRef') && checkout.includes("phone: accountProfile?.phone || ''") && checkout.includes("address: accountProfile?.address || ''"),
+  'member checkout always takes name/phone/address from the account, overriding stale guest data'
+);
+const formFields = read('src/features/cart/components/cart/CustomerFormFields.tsx');
+ok(
+  formFields.includes('readOnly={isMember}') && formFields.includes('{!isMember && ('),
+  'member name/phone are account-owned and the guest remember-me checkbox is hidden'
+);
+ok(
+  route.includes('memberProfile') && route.includes('c.phoneNorm = profilePhone') && route.includes('c.email = accountEmail'),
+  'orders use the account name/phone/email for every member order'
+);
 const profileRoute = read('functions/api/account/profile.js');
 ok(
   profileRoute.includes("error: 'phone_required'") && profileRoute.includes("error: 'address_required'") && profileRoute.includes("error: 'address_pin_required'"),

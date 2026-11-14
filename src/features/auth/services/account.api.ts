@@ -13,7 +13,7 @@ export async function fetchMyProfile(): Promise<ProfileResponse> {
   return apiFetch<ProfileResponse>('/api/account/profile', { headers });
 }
 
-export async function updateMyProfile(input: { phone: string; address: string }): Promise<{ profile: CustomerProfile }> {
+export async function updateMyProfile(input: { phone: string; address: string; location?: { lat: number; lng: number; accuracy: number } | null }): Promise<{ profile: CustomerProfile }> {
   return apiFetch<{ profile: CustomerProfile }>('/api/account/profile', {
     method: 'PATCH',
     headers: { ...headers, 'Content-Type': 'application/json' },

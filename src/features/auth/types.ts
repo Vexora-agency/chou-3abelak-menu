@@ -13,6 +13,8 @@ export interface CustomerUser {
 export interface CustomerProfile {
   phone: string | null;
   address: string | null;
+  /** Pinned point for the default address (required when address is set). */
+  location?: { lat: number; lng: number; accuracy: number } | null;
   updatedAt?: string | null;
 }
 

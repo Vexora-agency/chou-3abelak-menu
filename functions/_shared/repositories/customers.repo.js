@@ -13,7 +13,9 @@ export async function getCustomerProfile(db, userId) {
     .prepare(
       `SELECT u.id, u.name, u.email, u.image,
               u."createdAt" AS createdAt, u."updatedAt" AS updatedAt,
-              p.phone, p.address, p.updated_at AS profileUpdatedAt
+              p.phone, p.address,
+              p.location_lat, p.location_lng, p.location_accuracy,
+              p.updated_at AS profileUpdatedAt
        FROM "user" u
        LEFT JOIN customer_profiles p ON p.user_id = u.id
        WHERE u.id = ?1`
@@ -21,6 +23,8 @@ export async function getCustomerProfile(db, userId) {
     .bind(userId)
     .first();
   if (!row) return null;
+  const lat = Number.isFinite(row.location_lat) ? Number(row.location_lat) : null;
+  const lng = Number.isFinite(row.location_lng) ? Number(row.location_lng) : null;
   return {
     id: row.id,
     name: typeof row.name === 'string' ? row.name : '',
@@ -30,25 +34,43 @@ export async function getCustomerProfile(db, userId) {
     updatedAt: row.updatedAt || null,
     phone: typeof row.phone === 'string' && row.phone ? row.phone : null,
     address: typeof row.address === 'string' && row.address ? row.address : null,
+    location: lat !== null && lng !== null
+      ? {
+          lat,
+          lng,
+          accuracy: Number.isFinite(row.location_accuracy) ? Number(row.location_accuracy) : 0,
+        }
+      : null,
     profileUpdatedAt: row.profileUpdatedAt || null,
   };
 }
 
 /** Insert or replace the optional profile fields for a user. */
-export async function upsertCustomerProfile(db, userId, { phone, address }, nowIso) {
+export async function upsertCustomerProfile(db, userId, { phone, address, location }, nowIso) {
   const stamp = typeof nowIso === 'string' ? nowIso : new Date().toISOString();
+  const lat = location && Number.isFinite(location.lat) ? location.lat : null;
+  const lng = location && Number.isFinite(location.lng) ? location.lng : null;
+  const accuracy = location && Number.isFinite(location.accuracy) ? location.accuracy : null;
   await db
     .prepare(
-      `INSERT INTO customer_profiles (user_id, phone, address, updated_at)
-       VALUES (?1, ?2, ?3, ?4)
+      `INSERT INTO customer_profiles (user_id, phone, address, location_lat, location_lng, location_accuracy, updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
        ON CONFLICT(user_id) DO UPDATE SET
          phone = excluded.phone,
          address = excluded.address,
+         location_lat = excluded.location_lat,
+         location_lng = excluded.location_lng,
+         location_accuracy = excluded.location_accuracy,
          updated_at = excluded.updated_at`
     )
-    .bind(userId, phone || null, address || null, stamp)
+    .bind(userId, phone || null, address || null, lat, lng, accuracy, stamp)
     .run();
-  return { phone: phone || null, address: address || null, updatedAt: stamp };
+  return {
+    phone: phone || null,
+    address: address || null,
+    location: lat !== null && lng !== null ? { lat, lng, accuracy: accuracy ?? 0 } : null,
+    updatedAt: stamp,
+  };
 }
 
 /**

@@ -4,6 +4,7 @@
 import {
   normalizePhoneDigits,
   validateProfileAddress,
+  validateProfileLocation,
   validateProfilePhone,
 } from '../functions/_shared/validate-auth.js';
 
@@ -27,6 +28,12 @@ check('empty address clears', validateProfileAddress('   ').ok && validateProfil
 check('address trims + collapses', validateProfileAddress('  Beirut   street  ').address === 'Beirut street');
 check('address max 200', validateProfileAddress('x'.repeat(220)).address.length === 200);
 check('null address is allowed', validateProfileAddress(null).ok);
+check('valid default pin', validateProfileLocation({ lat: 33.8938, lng: 35.5018, accuracy: 25 }).location?.lat === 33.8938);
+check('null pin allowed', validateProfileLocation(null).ok && validateProfileLocation(null).location === null);
+check('pin without lng rejected', validateProfileLocation({ lat: 33.89 }).code === 'location_invalid');
+check('pin out of range rejected', validateProfileLocation({ lat: 200, lng: 35 }).code === 'location_invalid');
+check('pin accuracy clamped', validateProfileLocation({ lat: 33.89, lng: 35.5, accuracy: 999999 }).location?.accuracy === 100000);
+check('pin accuracy defaults to zero', validateProfileLocation({ lat: 33.89, lng: 35.5 }).location?.accuracy === 0);
 
 console.log(`\n${fails === 0 ? 'PASS' : 'FAIL'} — ${fails} failure(s)`);
 process.exit(fails === 0 ? 0 : 1);

@@ -3,7 +3,8 @@ import { Bell, Moon, Settings, Sun, UserRound } from 'lucide-react';
 import { motion } from 'motion/react';
 import type { useHeaderMotion } from '@/src/hooks/useHeaderMotion';
 import { useNow } from '@/src/hooks/useNow';
-import { isSoundOff } from '@/src/utils/customerOrders';
+import { isSoundOff, setSoundOff } from '@/src/utils/customerOrders';
+import { ALARM_INTERVAL_MS, ALARM_SESSION_MS } from '@/src/utils/bellPatterns';
 import { CustomerAvatar, useCustomerOrders, useCustomerSession } from '@/src/features/auth';
 
 interface HeaderTopBarProps {
@@ -51,6 +52,8 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
   const hasActive = activeOrders.length > 0;
   const bellSoundRef = useRef(bellSound);
   bellSoundRef.current = bellSound;
+  const lastChimeRef = useRef(0);
+  const alarmStartRef = useRef(0);
 
   // Audio listeners for the header chime (the account sheet has its own).
   useEffect(() => {
@@ -67,8 +70,8 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
   }, [user?.id]);
 
   // Ring once when a timed order crosses its unlock instant. The first
-  // completed fetch only seeds the state, so opening the site after the
-  // unlock is silent (the bell badge still shows).
+  // completed fetch only seeds the state (the repeating alarm below still
+  // takes over if the page opens on an already-unlocked order).
   const settledRef = useRef(false);
   const prevDueRef = useRef<boolean | null>(null);
   useEffect(() => {
@@ -87,12 +90,69 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
       void import('@/src/utils/bellSound')
         .then((mod) => {
           mod.vibrateBell();
-          void mod.playBellChime(bellSoundRef.current);
+          void mod.playBellChime(bellSoundRef.current).then((ok) => {
+            if (ok) lastChimeRef.current = Date.now();
+          });
         })
         .catch(() => {});
     }
     prevDueRef.current = due;
   }, [due, ordersLoaded, user?.id]);
+
+  // Keep reminding until the customer confirms receipt (or mutes): same
+  // 4 s cadence and 30-minute session cap as the guest bell. Hidden tabs
+  // never ring; returning to the tab starts a fresh session.
+  useEffect(() => {
+    if (!user || !due) {
+      alarmStartRef.current = 0;
+      return;
+    }
+    const tick = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (isSoundOff()) {
+        alarmStartRef.current = 0;
+        return;
+      }
+      const now = Date.now();
+      if (!alarmStartRef.current) alarmStartRef.current = now;
+      if (now - alarmStartRef.current > ALARM_SESSION_MS) return;
+      if (now - lastChimeRef.current < 3500) return;
+      void import('@/src/utils/bellSound')
+        .then((mod) => {
+          mod.vibrateBell();
+          void mod.playBellChime(bellSoundRef.current).then((ok) => {
+            if (ok) lastChimeRef.current = Date.now();
+          });
+        })
+        .catch(() => {});
+    };
+    const id = window.setInterval(tick, ALARM_INTERVAL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') alarmStartRef.current = 0;
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [due, user?.id]);
+
+  // A genuinely NEW order re-arms the sound even if the previous alert was
+  // muted (the guest bell does the same through saveCustomerOrder).
+  const knownActiveRef = useRef<Set<number> | null>(null);
+  useEffect(() => {
+    if (!user) {
+      knownActiveRef.current = null;
+      return;
+    }
+    if (!ordersLoaded) return;
+    const current = new Set(activeOrders.map((order) => order.number));
+    const prev = knownActiveRef.current;
+    if (prev && [...current].some((n) => !prev.has(n)) && isSoundOff()) {
+      setSoundOff(false);
+    }
+    knownActiveRef.current = current;
+  }, [ordersLoaded, orders, user?.id]);
 
   const accountLabel = isPending
     ? (isAr ? 'جارٍ تحميل الحساب' : 'Loading account')
@@ -182,11 +242,13 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
           {user && hasActive && (
             <span
               aria-hidden="true"
-              className={`pointer-events-none absolute -top-1 -end-1 z-10 rounded-full bg-[var(--primary)] text-[#0A0A0A] shadow-[0_0_0_2px_#0A0A0A] ${
-                due ? 'w-5 h-5 flex items-center justify-center' : 'w-2.5 h-2.5 anim-dot'
+              className={`pointer-events-none absolute -top-1 -end-1 z-10 w-5 h-5 rounded-full flex items-center justify-center shadow-[0_0_0_2px_#0A0A0A] ${
+                due
+                  ? 'bg-[var(--primary)] text-[#0A0A0A]'
+                  : 'border border-[var(--primary)]/70 bg-[#0A0A0A] text-[var(--primary)]'
               }`}
             >
-              {due && <Bell size={12} strokeWidth={3} className="anim-bell-ring" />}
+              <Bell size={12} strokeWidth={2.8} className={due ? 'anim-bell-ring-loop' : ''} />
             </span>
           )}
         </button>

@@ -27,9 +27,13 @@ interface UseCartCheckoutSubmitArgs {
   /** Signed-in customer, used only to prefill empty checkout fields. */
   accountUser?: { id: string; name: string; email: string } | null;
   accountProfile?: { phone: string | null; address: string | null } | null;
+  /** Session/profile still loading — don't treat a pending member as a guest. */
+  accountLoading?: boolean;
+  /** Opens the signup sheet when cash-on-delivery needs an account. */
+  onRequireAccount?: () => void;
 }
 
-export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess, accountUser, accountProfile }: UseCartCheckoutSubmitArgs) {
+export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess, accountUser, accountProfile, accountLoading = false, onRequireAccount }: UseCartCheckoutSubmitArgs) {
   const isAr = lang === 'ar';
   const ordering = menu.settings.ordering;
 
@@ -85,7 +89,9 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         next.address = accountProfile.address;
         changed = true;
       }
-      if (!(prev.email || '').trim() && accountUser?.email) {
+      // A member's order must use the account email, even if an old guest
+      // email was remembered on this device (the field is hidden for members).
+      if (accountUser?.email && (prev.email || '') !== accountUser.email) {
         next.email = accountUser.email;
         changed = true;
       }
@@ -242,6 +248,23 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
 
   const sendOrder = async () => {
     setErrorMsg('');
+
+    // Cash on delivery now requires a registered account (the owner's rule).
+    // The same rule is enforced server-side; this gate keeps the UX clear and
+    // opens the signup sheet in-place without losing the cart.
+    if (!accountUser) {
+      if (accountLoading) {
+        setErrorMsg(isAr ? 'جارٍ التحقق من حسابك — لحظة واحدة ثم حاول مجددًا' : 'Checking your account — one moment, then try again');
+        return;
+      }
+      setErrorMsg(
+        isAr
+          ? 'الدفع عند الاستلام متاح لحسابات المسجلة فقط. أنشئ حسابًا لإتمام طلبك.'
+          : 'Cash on delivery is available to registered accounts. Create an account to place your order.'
+      );
+      onRequireAccount?.();
+      return;
+    }
 
     // Payments kill-switch: COD is the only method, so a disabled COD means
     // there is no way to pay — refuse before any validation or network use.

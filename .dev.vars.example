@@ -2,6 +2,10 @@
 # Production values live in the Cloudflare dashboard per client account, never here.
 ALLOW_LOCAL_DEV=1
 
+# COD orders require a signed-in account (owner rule). Set to 0 only for local
+# guest-checkout testing; production leaves it unset (required).
+# REQUIRE_ACCOUNT_FOR_COD=0
+
 # --- Admin login (generate locally; nothing here is a real credential) ---
 # 1) node scripts/hash-password.mjs "YourStrongPasswordHere" -> paste below
 ADMIN_USERNAME=admin

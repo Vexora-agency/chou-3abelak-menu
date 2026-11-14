@@ -62,7 +62,7 @@ function migratedDb() {
 function freshEnv(db) {
   const kv = makeKV();
   const ready = kv.put('menu', JSON.stringify(MENU));
-  return { env: { MENU_KV: kv, ORDERS_DB: db }, ready };
+  return { env: { MENU_KV: kv, ORDERS_DB: db, REQUIRE_ACCOUNT_FOR_COD: '0' }, ready };
 }
 
 async function postOrder(env, body, ip = '10.7.0.1') {

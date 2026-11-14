@@ -1,23 +1,33 @@
 import React from 'react';
-import { Banknote, CheckCircle2 } from 'lucide-react';
+import { Banknote, Check, ShieldCheck, UserRound } from 'lucide-react';
 
 interface PaymentMethodSectionProps {
   lang: 'en' | 'ar';
   darkMode: boolean;
   /** Admin setting — COD master switch. Missing/old menus read as on. */
   codEnabled?: boolean;
+  /** Signed-in member: COD is allowed and the order links automatically. */
+  isMember?: boolean;
+  /** Session/profile still loading — show a neutral checking state. */
+  accountLoading?: boolean;
+  /** Opens the signup sheet without losing the cart. */
+  onRequireAccount?: () => void;
 }
 
 /**
  * Checkout payment step — Cash on Delivery is the ONLY live method.
- * It renders preselected + locked (the customer cannot pick anything else).
  *
- * No card data is ever collected here (COD = no PAN/CVV, no storage).
+ * Cash on delivery requires a registered account (server-enforced). Guests
+ * get an inline explanation + a one-tap "Create account" CTA in the same
+ * section instead of a dead-end error. No card data is ever collected here.
  */
 export const PaymentMethodSection: React.FC<PaymentMethodSectionProps> = ({
   lang,
   darkMode,
   codEnabled = true,
+  isMember = false,
+  accountLoading = false,
+  onRequireAccount,
 }) => {
   const isAr = lang === 'ar';
   if (!codEnabled) return null;
@@ -25,54 +35,125 @@ export const PaymentMethodSection: React.FC<PaymentMethodSectionProps> = ({
   return (
     <section
       aria-labelledby="payment-method-title"
-      className={`rounded-2xl border p-4 space-y-3 transition-colors ${
-        darkMode ? 'bg-[#1c1c1c] border-neutral-800' : 'bg-neutral-50 border-neutral-200'
+      className={`rounded-2xl border p-4 sm:p-5 space-y-3.5 transition-colors ${
+        darkMode
+          ? 'bg-gradient-to-b from-[#1c1c1c] to-[#161616] border-neutral-800'
+          : 'bg-gradient-to-b from-white to-neutral-50 border-neutral-200 shadow-sm'
       }`}
     >
-      <h3
-        id="payment-method-title"
-        className={`text-sm font-black ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}
-      >
-        {isAr ? 'طريقة الدفع' : 'Payment method'}
-      </h3>
-
-      {/* The only live method — preselected + locked. role=radiogroup with a
-          single checked + disabled radio: screen readers announce it as the
-          chosen method, and the customer cannot pick anything else. */}
-      <div role="radiogroup" aria-label={isAr ? 'طريقة الدفع' : 'Payment method'}>
-        <label
-          className={`relative flex items-start gap-3 rounded-2xl border-2 p-3.5 cursor-default transition-colors ${
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3
+            id="payment-method-title"
+            className={`text-sm font-black ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}
+          >
+            {isAr ? 'طريقة الدفع' : 'Payment method'}
+          </h3>
+          <p className={`mt-0.5 text-[11px] leading-relaxed ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
+            {isAr ? 'ادفع عند استلام طلبك — بدون دفع مقدم.' : 'Pay when your order arrives — no upfront payment.'}
+          </p>
+        </div>
+        <span
+          className={`shrink-0 inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-extrabold ${
             darkMode
-              ? 'border-[var(--primary)] bg-[var(--primary)]/[0.07]'
-              : 'border-[var(--primary)] bg-[var(--primary)]/10 shadow-xs'
+              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+              : 'border-emerald-600/20 bg-emerald-50 text-emerald-700'
           }`}
         >
-          <input
-            type="radio"
-            checked
-            disabled
-            readOnly
-            aria-checked="true"
-            className="mt-1 w-5 h-5 shrink-0 accent-[var(--primary)] cursor-not-allowed"
-          />
-          <span
-            className={`shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center ${
-              darkMode ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-[var(--primary)] text-[#0A0A0A]'
-            }`}
-          >
-            <Banknote size={22} strokeWidth={2.25} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className={`flex items-center gap-1.5 text-sm font-black ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-              {isAr ? 'الدفع عند الاستلام' : 'Cash on Delivery'}
-              <CheckCircle2 size={15} className="shrink-0 text-green-500" aria-hidden="true" />
-            </span>
-            <span className={`block text-xs mt-0.5 leading-relaxed ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
-              {isAr ? 'ادفع نقدًا عند الاستلام.' : 'Pay cash on delivery.'}
-            </span>
-          </span>
-        </label>
+          <ShieldCheck size={12} aria-hidden="true" />
+          {isAr ? 'آمن' : 'Secure'}
+        </span>
       </div>
+
+      <div role="radiogroup" aria-label={isAr ? 'طريقة الدفع' : 'Payment method'}>
+        <div
+          className={`relative overflow-hidden rounded-2xl border-2 p-4 transition-colors ${
+            darkMode
+              ? 'border-[var(--primary)]/75 bg-[var(--primary)]/[0.06]'
+              : 'border-[var(--primary)] bg-amber-50/70'
+          }`}
+        >
+          <input type="radio" checked disabled readOnly aria-checked="true" aria-label={isAr ? 'الدفع عند الاستلام' : 'Cash on Delivery'} className="sr-only" />
+          <span aria-hidden="true" className="absolute inset-y-0 start-0 w-1 bg-[var(--primary)]" />
+          <div className="flex items-start gap-3">
+            <span
+              className={`shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center ${
+                darkMode ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-[var(--primary)] text-[#0A0A0A]'
+              }`}
+            >
+              <Banknote size={22} strokeWidth={2.25} aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`text-sm font-black ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+                  {isAr ? 'الدفع عند الاستلام' : 'Cash on Delivery'}
+                </span>
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                    darkMode ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-[var(--primary)]/20 text-[#7a5d00]'
+                  }`}
+                >
+                  {isAr ? 'محددة' : 'Selected'}
+                </span>
+              </div>
+              <p className={`mt-1 text-xs leading-relaxed ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                {isAr ? 'ادفع نقدًا عند استلام طلبك من المندوب.' : 'Pay cash to the courier when your order arrives.'}
+              </p>
+            </div>
+            <span
+              aria-hidden="true"
+              className="shrink-0 w-6 h-6 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center"
+            >
+              <Check size={14} strokeWidth={3.2} />
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {isMember ? (
+        <p className={`flex items-center gap-1.5 text-[11px] font-bold ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
+          <ShieldCheck size={13} aria-hidden="true" />
+          {isAr ? 'طلبك مرتبط بحسابك تلقائيًا.' : 'Your order is linked to your account automatically.'}
+        </p>
+      ) : accountLoading ? (
+        <p className={`text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
+          {isAr ? 'جارٍ التحقق من حسابك…' : 'Checking your account…'}
+        </p>
+      ) : (
+        <div
+          className={`rounded-xl border p-3 ${
+            darkMode ? 'border-[var(--primary)]/30 bg-[var(--primary)]/[0.06]' : 'border-amber-300 bg-amber-50'
+          }`}
+        >
+          <div className="flex items-start gap-2.5">
+            <span
+              className={`shrink-0 w-8 h-8 min-w-[32px] rounded-full flex items-center justify-center ${
+                darkMode ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-amber-100 text-amber-700'
+              }`}
+            >
+              <UserRound size={15} aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className={`text-xs font-extrabold ${darkMode ? 'text-neutral-100' : 'text-neutral-800'}`}>
+                {isAr ? 'الدفع عند الاستلام يتطلب حسابًا' : 'Cash on delivery needs an account'}
+              </p>
+              <p className={`mt-0.5 text-[11px] leading-relaxed ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                {isAr
+                  ? 'أنشئ حسابًا سريعًا لإتمام الطلب ومتابعته بسهولة.'
+                  : 'Create a quick account to place and track this order.'}
+              </p>
+              <button
+                type="button"
+                onClick={onRequireAccount}
+                className="btn-tactile mt-2.5 inline-flex h-10 min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-xs font-extrabold text-[#0A0A0A] shadow-sm hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+              >
+                <UserRound size={14} aria-hidden="true" />
+                {isAr ? 'إنشاء حساب' : 'Create account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

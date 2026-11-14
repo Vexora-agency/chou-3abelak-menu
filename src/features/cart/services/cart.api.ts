@@ -86,6 +86,17 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
           failure: 'blocked',
         };
       }
+      if (res.status === 401 && isRecord(data) && data.error === 'account_required') {
+        const msg = isRecord(data.message) ? str(lang === 'ar' ? data.message.ar : data.message.en) : '';
+        return {
+          orderNumber: null,
+          trackToken: null,
+          blockedMessage: msg || (lang === 'ar'
+            ? 'أنشئ حسابًا لإتمام طلب الدفع عند الاستلام.'
+            : 'Create an account to place a cash-on-delivery order.'),
+          failure: 'blocked',
+        };
+      }
       if (res.status === 403) {
         const msg = isRecord(data) && isRecord(data.message) ? str(lang === 'ar' ? data.message.ar : data.message.en) : '';
         return { orderNumber: null, trackToken: null, blockedMessage: msg || null, failure: 'blocked' };

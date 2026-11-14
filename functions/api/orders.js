@@ -158,6 +158,34 @@ export async function onRequest(context) {
     } catch {}
   }
 
+  // Registered-account requirement (owner rule): cash on delivery is only
+  // available to signed-in customers. Read the session here — before any
+  // rate/phone budget is consumed — and reuse it for the order link below.
+  // Local/unit runs may set REQUIRE_ACCOUNT_FOR_COD=0 to exercise the public
+  // order pipeline without auth; production leaves it unset (required).
+  const requireAccount = env.REQUIRE_ACCOUNT_FOR_COD !== '0';
+  let customerSession = null;
+  try {
+    customerSession = await getCustomerSession(request, env);
+  } catch {
+    if (requireAccount) return jsonNoStore({ error: 'auth_unavailable' }, 503);
+    customerSession = null;
+  }
+  const customerUserId =
+    customerSession && customerSession.user && typeof customerSession.user.id === 'string' && customerSession.user.id
+      ? customerSession.user.id
+      : null;
+  if (requireAccount && (c.paymentMethod || 'cod') === 'cod' && !customerUserId) {
+    return jsonNoStore({
+      error: 'account_required',
+      message: {
+        en: 'Create an account to place a cash-on-delivery order.',
+        ar: 'أنشئ حسابًا لإتمام طلب الدفع عند الاستلام.',
+      },
+    }, 401);
+  }
+  c.customerUserId = customerUserId;
+
   // Owner blocklist (migration 0032): checked BEFORE any budget reserve so
   // a blocked phone burns no IP budget. Fails CLOSED with the single
   // generic 403 (never reveals the block). Fail OPEN on infra errors — a
@@ -240,18 +268,7 @@ export async function onRequest(context) {
     c.needsReview = false;
   }
 
-  // Registered customer link: read the Better Auth session server-side and
-  // attach its user id to the new order. Never trust a client-supplied id.
-  // A session lookup failure must NOT block a real guest order (availability
-  // first); it simply records as guest and can be linked on a future order.
-  try {
-    const session = await getCustomerSession(request, env);
-    if (session && session.user && typeof session.user.id === 'string' && session.user.id) {
-      c.customerUserId = session.user.id;
-    }
-  } catch {
-    // Guest order path.
-  }
+  // (customerUserId was read and attached before the budget gates above.)
 
   // One timestamp per request (verbatim original: created_at/updated_at identical, even on retry).
   const nowIso = new Date().toISOString();

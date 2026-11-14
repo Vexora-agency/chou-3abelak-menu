@@ -190,6 +190,11 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
     { value: 'name', label: t.sortName },
   ];
   const selectedSortLabel = sortOptions.find((option) => option.value === sort)?.label || t.sortNewest;
+  const selectSort = (value: CustomerSort) => {
+    setSort(value);
+    setSortOpen(false);
+    sortButtonRef.current?.focus();
+  };
 
   useEffect(() => {
     if (!sortOpen) return;
@@ -275,7 +280,12 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
             ref={sortWrapRef}
             className="relative w-full sm:w-auto"
             onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setSortOpen(false);
+              // Mobile Safari/Chrome often report a null relatedTarget when a
+              // tapped button is not focusable. Closing here would unmount the
+              // menu before its click fires, so outside-pointerdown handles
+              // those taps instead; only a real keyboard focus move closes it.
+              if (!event.relatedTarget) return;
+              if (!event.currentTarget.contains(event.relatedTarget as Node)) setSortOpen(false);
             }}
           >
             <button
@@ -311,11 +321,13 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
                       role="option"
                       aria-selected={selected}
                       autoFocus={selected}
-                      onClick={() => {
-                        setSort(option.value);
-                        setSortOpen(false);
-                        sortButtonRef.current?.focus();
+                      onPointerDown={(event) => {
+                        // Select on the pointer itself: mobile browsers can
+                        // blur/dismiss the popover before a click is delivered.
+                        event.preventDefault();
+                        selectSort(option.value);
                       }}
+                      onClick={() => selectSort(option.value)}
                       className={`flex min-h-[44px] w-full items-center gap-2 rounded-lg px-3 text-start text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                         selected
                           ? 'bg-[var(--primary)]/15 text-[var(--primary)]'

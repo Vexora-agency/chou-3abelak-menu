@@ -24,7 +24,7 @@ change** (both white-label configurable, see below).
 | What server stores | One-shot order snapshot (items/prices recomputed from live menu) | `functions/api/orders.js:98-107`, repo INSERT |
 | TTL / expiry | 7-day sliding window (`cart_timestamp_v1`, refreshed on every save; stale carts dropped on load) | `useShopCartState.ts` (`CART_TS_KEY`, `CART_EXPIRY_DAYS`), window from `client.config.ts cart.expiryDays` |
 | Auto-clear after order | **Yes** — on the recorded-order success path the hook calls `onOrderSuccess` (wired to the cart owner's clear); validation/availability gates return early so failed sends keep the cart | `useCartCheckoutSubmit.ts:234-239`, `CartDrawer.tsx:69` (`onOrderSuccess: onClearCart`), kill-switch `client.config.ts cart.clearAfterOrder` |
-| Related keys (same scoping) | `customer_details_v1` (only if "remember me"), `menu_cache_v3`, `menu_lang_v1`, `menu_theme_v1` | `useCartCheckoutSubmit.ts:24,167,169`, `useMenuLoader.ts:19`, `useAppPrefs.ts:8,17` |
+| Related keys (same scoping) | `customer_details_v2` (explicit "remember me" opt-in), `menu_cache_v3`, `menu_lang_v1`, `menu_theme_v1` | `customerOrders.ts`, `useCartCheckoutSubmit.ts`, `useMenuLoader.ts`, `useAppPrefs.ts` |
 
 ## Manual test checklist (5 minutes, no tools)
 
@@ -42,6 +42,9 @@ change** (both white-label configurable, see below).
       `client.config.ts` → send order → cart STAYS (per-client opt-out).
 - [ ] **Corrupt data:** cart with unknown item ids self-heals on load
       (unavailable lines are dropped, `useShopCartState.ts:68-101`).
+- [ ] **Remember box:** clear `customer_details_v2` → open checkout → box is
+      unchecked. Seed a legacy `customer_details_v1` → box still unchecked;
+      the legacy key is removed after the visit.
 
 ## Security notes
 
@@ -50,9 +53,11 @@ change** (both white-label configurable, see below).
   per-drawer-session UUID, `useCartCheckoutSubmit.ts:178-182`).
 - **Abuse ceiling (not identity):** `POST /api/orders` is limited to
   5 orders / 10 min / IP (`functions/api/orders.js:13-16,110-127`).
-- **Privacy note:** `customer_details_v1` persists name/phone/address only
-  when the user ticks "remember me"; otherwise it is removed on send
-  (`useCartCheckoutSubmit.ts:165-171`).
+- **Privacy note:** `customer_details_v2` persists name/phone/email only when
+  the user explicitly ticks "remember me"; unchecking removes it on send. The
+  delivery address is never stored. A legacy `customer_details_v1` record is
+  read once for prefill with the box **unchecked**, then deleted, so an old
+  record can never look like fresh consent.
 
 ## Recommendation
 

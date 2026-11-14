@@ -56,7 +56,7 @@ Last updated: 2026-11-13
 ### 3.2 State management
 - **No React Context anywhere.** All state is lifted into `App.tsx` and prop-drilled.
 - Hooks: `useAppPrefs` (lang/theme), `useAdminSaveAuth` (admin session), `useShopCartState` (cart), `useOrderingState` (open/paused).
-- Persistence keys: `menu_lang_v1`, `menu_theme_v1`, `menu_cache_v3`, `cart_v1`, `cart_timestamp_v1`, `customer_orders_v1`, `customer_details_v1`, `customer_email_v1`.
+- Persistence keys: `menu_lang_v1`, `menu_theme_v1`, `menu_cache_v3`, `cart_v1`, `cart_timestamp_v1`, `customer_orders_v1`, `customer_details_v2` (explicit opt-in; legacy `customer_details_v1` read once then removed), `customer_email_v1`.
 - Cart expiry: 7 days (`src/config/client.config.ts:13-17`).
 
 ### 3.3 Header and theme toggle

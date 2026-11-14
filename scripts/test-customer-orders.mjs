@@ -56,10 +56,27 @@ ok('unchecked erases details', loadRememberedDetails() === null);
 saveRememberedDetails({ name: 'Ali', phone: '70123456', remember: true });
 const loaded = loadRememberedDetails();
 ok('checked persists details', loaded !== null && loaded.name === 'Ali');
-// THE BUG: second visit must load CHECKED, or the next submit wipes storage.
-ok('second visit loads checked', loaded !== null && loaded.remember === true);
+// A real opt-in stores remember:true, so the next visit keeps it checked.
+ok('explicit opt-in loads checked', loaded !== null && loaded.remember === true);
+ok('opt-in record is the v2 key', mem.has('customer_details_v2') && !mem.has('customer_details_v1'));
 saveRememberedDetails({ name: 'Ali', phone: '70123456', remember: false });
 ok('unchecking erases on purpose', loadRememberedDetails() === null);
+
+// Regression: a legacy record must NEVER check the box on its own. It may
+// still prefill name/phone, but the customer must opt in again explicitly.
+mem.set('customer_details_v1', JSON.stringify({ name: 'Old Ali', phone: '70111222', remember: true }));
+const legacy = loadRememberedDetails();
+ok('legacy record still prefills', legacy !== null && legacy.name === 'Old Ali');
+ok('legacy record never checks the box', legacy !== null && legacy.remember === false);
+ok('legacy record is cleared after one read', !mem.has('customer_details_v1'));
+saveRememberedDetails({ ...legacy, remember: false });
+ok('unchecked submit leaves nothing', loadRememberedDetails() === null);
+
+// A current record without the literal flag is also not consent.
+mem.set('customer_details_v2', JSON.stringify({ name: 'No Flag', phone: '70123456' }));
+const noFlag = loadRememberedDetails();
+ok('missing remember flag stays unchecked', noFlag !== null && noFlag.remember === false);
+mem.delete('customer_details_v2');
 ok('rung starts empty', loadRung().length === 0);
 markRung([1001, 1002, -5, 1001]);
 const rung = loadRung();

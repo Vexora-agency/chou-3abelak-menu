@@ -109,9 +109,12 @@ function detailsShelf(): Storage | null {
 
 /**
  * Remembered checkout details ("remember me on this device").
- * Presence of a saved record means the box was checked, so loading
- * always returns remember:true. Forcing false here was the "second visit
- * wipes everything" bug: unchecked box + submit = removeItem.
+ *
+ * Only an explicit `remember: true` in the CURRENT record may check the box.
+ * The old v1 record treated "a record exists" as consent, so an accidental or
+ * legacy entry kept re-checking itself forever — the reported "I never tapped
+ * it" bug. v1 is now read for prefilling only (box stays unchecked); the next
+ * submit clears it. A real opt-in writes the v2 record.
  */
 
 /**
@@ -125,29 +128,54 @@ export function withoutAddress<T extends { address?: unknown }>(customer: T): Om
   void _omit;
   return rest;
 }
-const DETAILS_KEY = 'customer_details_v1';
+const DETAILS_KEY = 'customer_details_v2';
+const LEGACY_DETAILS_KEY = 'customer_details_v1';
 
-export function loadRememberedDetails(): Record<string, unknown> | null {
+function parseDetails(raw: string | null): Record<string, unknown> | null {
+  if (!raw) return null;
   try {
-    const shelf = detailsShelf();
-    if (!shelf) return null;
-    const raw = shelf.getItem(DETAILS_KEY);
-    if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return null;
-    return { ...(parsed as Record<string, unknown>), remember: true };
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    return parsed as Record<string, unknown>;
   } catch {
     return null;
   }
 }
 
-/** Persist on submit when checked; erase when the customer unchecked. */
+export function loadRememberedDetails(): Record<string, unknown> | null {
+  try {
+    const shelf = detailsShelf();
+    if (!shelf) return null;
+    // Current record: prefill, and check only when the stored flag is
+    // literally true (a missing/false flag must never look like consent).
+    const current = parseDetails(shelf.getItem(DETAILS_KEY));
+    if (current) return { ...current, remember: current.remember === true };
+    // Legacy record: useful for name/phone prefill, but it cannot prove an
+    // explicit opt-in. Use it once, keep the box unchecked, and delete it so
+    // an ambiguous old entry can never resurrect itself on a later visit.
+    const legacy = parseDetails(shelf.getItem(LEGACY_DETAILS_KEY));
+    if (legacy) {
+      shelf.removeItem(LEGACY_DETAILS_KEY);
+      return { ...legacy, remember: false };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Persist on submit when checked; erase both generations when unchecked. */
 export function saveRememberedDetails<T extends { remember?: boolean }>(customer: T): void {
   try {
     const shelf = detailsShelf();
     if (!shelf) return;
-    if (customer.remember) shelf.setItem(DETAILS_KEY, JSON.stringify(customer));
-    else shelf.removeItem(DETAILS_KEY);
+    if (customer.remember) {
+      shelf.setItem(DETAILS_KEY, JSON.stringify({ ...customer, remember: true }));
+      shelf.removeItem(LEGACY_DETAILS_KEY);
+    } else {
+      shelf.removeItem(DETAILS_KEY);
+      shelf.removeItem(LEGACY_DETAILS_KEY);
+    }
   } catch {}
 }
 

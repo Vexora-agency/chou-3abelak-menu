@@ -41,8 +41,9 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   const ordering = menu.settings.ordering;
 
   // Retrieve remembered customer details if available (delivery only).
-  // A saved record means the box was checked, so it loads checked —
-  // the box stays on until the customer unchecks it themself.
+  // Prefill is independent from consent: the box checks only when the saved
+  // record carries an explicit `remember: true` from the current opt-in. A
+  // legacy record can prefill name/phone but never checks itself.
   // The delivery address is NEVER remembered (fresh every order by design):
   // it is dropped on load even from legacy blobs, and never stored on save.
   const [customer, setCustomer] = useState<CustomerDetails>(() => {

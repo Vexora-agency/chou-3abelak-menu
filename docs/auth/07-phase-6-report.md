@@ -30,7 +30,7 @@ Date: 2026-11-14
 |------|-------|
 | Domain | `https://chou3abelak.site` |
 | Pages project | `chou-3abelak-menu` |
-| Latest code deployment | `16f7a363-e049-4679-badb-e9626d6b25d0` (`fe5633b`) |
+| Latest code deployment | `21886d2c-125d-445b-822e-349d73f5be7d` (`5c6236c`) |
 | D1 | `chou-3abelak-orders` (`7d585e65-5bea-4b81-b727-ebb001bc72e6`) |
 | Migrations | 0033, 0034, 0035, 0036 applied |
 | Public flags | `{"google":true,"requireEmailVerification":true}` |

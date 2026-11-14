@@ -155,7 +155,7 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
       <motion.div {...rise(0)} className={card}>
         <h2 className={`text-sm font-extrabold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>{t.title}</h2>
         <p className="mt-1 text-xs text-neutral-400">{t.intro}</p>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-col sm:flex-row gap-2">
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -164,13 +164,13 @@ const CustomerData: React.FC<CustomerDataProps> = ({ lang, currency, onSearch, o
             dir="ltr"
             placeholder={t.searchPh}
             aria-label={t.searchPh}
-            className="flex-1 h-12 rounded-xl bg-black border border-neutral-700 px-3 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/15"
+            className="w-full sm:flex-1 min-w-0 h-12 rounded-xl bg-black border border-neutral-700 px-3 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/15"
           />
           <button
             type="button"
             onClick={() => void doSearch()}
             disabled={busy}
-            className="btn-tactile h-12 px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center gap-2 disabled:opacity-40"
+            className="btn-tactile w-full sm:w-auto h-12 px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold inline-flex items-center justify-center gap-2 disabled:opacity-40"
           >
             <Search size={16} />{busy ? t.searching : t.search}
           </button>

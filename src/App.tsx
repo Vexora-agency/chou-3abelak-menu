@@ -312,6 +312,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   // Cart Drawer
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authEntry, setAuthEntry] = useState<'account' | 'checkout'>('account');
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [resetToken, setResetToken] = useState<string | null>(null);
 
@@ -389,7 +390,15 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
       window.history.replaceState(null, '', next);
       return;
     }
-    if (params.get('account') !== '1') return;
+    if (params.get('account') !== '1' && params.get('checkout') !== '1') return;
+    if (params.get('checkout') === '1') {
+      setIsCartOpen(true);
+      params.delete('checkout');
+      const qs = params.toString();
+      const next = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
+      window.history.replaceState(null, '', next);
+      return;
+    }
     setIsAccountOpen(true);
     params.delete('account');
     const qs = params.toString();
@@ -568,7 +577,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           darkMode={darkMode}
           onToggleDarkMode={() => setDarkMode(!darkMode)}
           onOpenAdmin={adminUnlocked ? () => openAdmin() : undefined}
-          onOpenAuth={() => setIsAuthOpen(true)}
+          onOpenAuth={() => { setAuthEntry('account'); setIsAuthOpen(true); }}
           onOpenAccount={() => setIsAccountOpen(true)}
           orderingState={liveOrderingState}
           orderingEnabled={orderingOn}
@@ -695,6 +704,10 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           lang={lang}
           darkMode={darkMode}
           orderingState={liveOrderingState}
+          onRequireAccount={() => {
+            setAuthEntry('checkout');
+            setIsAuthOpen(true);
+          }}
         />
         </Suspense>
         )}
@@ -706,15 +719,23 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
             onClose={() => {
               setIsAuthOpen(false);
               setResetToken(null);
+              setAuthEntry('account');
             }}
             onSuccess={() => {
               setIsAuthOpen(false);
+              if (authEntry === 'checkout') {
+                setAuthEntry('account');
+                setIsCartOpen(true);
+                return;
+              }
               setIsAccountOpen(true);
             }}
             lang={lang}
             darkMode={darkMode}
             resetToken={resetToken}
             onResetComplete={() => setResetToken(null)}
+            initialMode={authEntry === 'checkout' ? 'signup' : 'signin'}
+            googleCallback={authEntry === 'checkout' ? '/?checkout=1' : '/?account=1'}
           />
         </Suspense>
 
@@ -725,6 +746,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
             onClose={() => setIsAccountOpen(false)}
             onSignIn={() => {
               setIsAccountOpen(false);
+              setAuthEntry('account');
               setIsAuthOpen(true);
             }}
             lang={lang}

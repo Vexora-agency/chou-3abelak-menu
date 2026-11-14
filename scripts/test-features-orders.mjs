@@ -42,7 +42,7 @@ const json = readJson;
 async function postOrder(env, body) {
   const res = await ordersReq({
     request: req('POST', 'https://x/api/orders', { headers: { 'Content-Type': 'application/json', Origin: 'https://x' }, body: JSON.stringify(body) }),
-    env,
+    env: { ...env, REQUIRE_ACCOUNT_FOR_COD: '0' },
   });
   return { status: res.status, data: await json(res) };
 }

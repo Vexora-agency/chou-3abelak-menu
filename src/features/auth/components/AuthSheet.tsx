@@ -17,6 +17,10 @@ interface AuthSheetProps {
   /** Token from the password-reset email; opens the reset form directly. */
   resetToken?: string | null;
   onResetComplete?: () => void;
+  /** Landing tab when the sheet opens (checkout CTA asks for signup). */
+  initialMode?: 'signin' | 'signup';
+  /** Google OAuth return URL (checkout keeps the cart flow). */
+  googleCallback?: string;
 }
 
 type Mode = 'signin' | 'signup' | 'forgot' | 'reset';
@@ -34,7 +38,7 @@ function errorCode(error: unknown): string {
   return typeof value === 'string' ? value.toLowerCase() : '';
 }
 
-export function AuthSheet({ open, onClose, onSuccess, lang, darkMode, resetToken, onResetComplete }: AuthSheetProps) {
+export function AuthSheet({ open, onClose, onSuccess, lang, darkMode, resetToken, onResetComplete, initialMode = 'signin', googleCallback = '/?account=1' }: AuthSheetProps) {
   const t = AUTH_STR[lang];
   const isAr = lang === 'ar';
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -58,7 +62,7 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode, resetToken
 
   useEffect(() => {
     if (!open) return;
-    setMode('signin');
+    setMode(resetToken ? 'reset' : initialMode);
     setName('');
     setEmail('');
     setPassword('');
@@ -70,7 +74,7 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode, resetToken
     setNeedsVerification(false);
     setError('');
     setSuccess('');
-  }, [open]);
+  }, [open, initialMode]);
 
   // A reset link can open the sheet directly, or arrive while it is already
   // open. It must not re-run when the token is cleared after a successful
@@ -126,7 +130,7 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode, resetToken
     try {
       const { error: socialError } = await authClient.signIn.social({
         provider: 'google',
-        callbackURL: '/?account=1',
+        callbackURL: googleCallback,
       });
       if (socialError) {
         const code = errorCode(socialError);

@@ -86,7 +86,7 @@ const kitchenCookie = async () =>
 function freshEnv(db) {
   const kv = makeKV();
   const ready = kv.put('menu', JSON.stringify(MENU));
-  return { env: { MENU_KV: kv, ORDERS_DB: db, SESSION_SECRET }, ready };
+  return { env: { MENU_KV: kv, ORDERS_DB: db, SESSION_SECRET, REQUIRE_ACCOUNT_FOR_COD: '0' }, ready };
 }
 
 async function postOrder(env, body, ip = '10.9.9.9') {

@@ -26,6 +26,8 @@ interface CartDrawerProps {
   lang: 'en' | 'ar';
   darkMode: boolean;
   orderingState?: OrderingStatus | null;
+  /** Opens the auth sheet straight on Create account (COD requires one). */
+  onRequireAccount?: () => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -41,6 +43,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   lang,
   darkMode,
   orderingState,
+  onRequireAccount,
 }) => {
   const isAr = lang === 'ar';
   const account = useCustomerProfile(isOpen);
@@ -79,7 +82,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     handleSendOrder,
     zoneBlocked,
     zonePlaceName,
-  } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart, accountUser: account.user, accountProfile: account.profile });
+  } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart, accountUser: account.user, accountProfile: account.profile, accountLoading: account.loading, onRequireAccount });
 
   // Radical phone-scroll fix: shared counter lock (iOS-safe, nested-sheet
   // aware) instead of a bare overflow flag that iOS Safari ignores.
@@ -278,6 +281,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               darkMode={darkMode}
               onOpenLocSheet={() => setLocSheetOpen(true)}
               onClearLocation={clearLocation}
+              isMember={!!account.user}
             />
 
             {/* Payment method (COD preselected + locked; future gateways
@@ -287,6 +291,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               lang={lang}
               darkMode={darkMode}
               codEnabled={(menu.settings as { payments?: { codEnabled?: boolean } }).payments?.codEnabled !== false}
+              isMember={!!account.user}
+              accountLoading={account.loading}
+              onRequireAccount={onRequireAccount}
             />
 
             {/* Error + Bill Summary */}

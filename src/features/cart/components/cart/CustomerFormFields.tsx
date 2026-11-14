@@ -15,6 +15,8 @@ interface CustomerFormFieldsProps {
   feeFreeApplied?: boolean;
   lang: 'en' | 'ar';
   darkMode: boolean;
+  /** Signed-in members already have their email on every linked order. */
+  isMember?: boolean;
   onOpenLocSheet: () => void;
   onClearLocation: () => void;
 }
@@ -31,6 +33,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   feeFreeApplied,
   lang,
   darkMode,
+  isMember = false,
   onOpenLocSheet,
   onClearLocation,
 }) => {
@@ -202,8 +205,10 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         />
       </div>
 
-      {/* Order-status email: RECOMMENDED (still optional). High-visibility
-          yellow card with black text in both themes so nobody misses it. */}
+      {/* Order-status email: RECOMMENDED (still optional). Hidden for
+          registered members — their account email already rides with every
+          linked order, so asking again is noise. */}
+      {!isMember && (
       <div className="rounded-xl border border-[var(--primary)] bg-[var(--primary)] text-[#0A0A0A]">
         <button
           type="button"
@@ -243,6 +248,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           </div>
         )}
       </div>
+      )}
 
       {/* Honeypot: invisible to real users, bots fill it and get a fake success */}
       <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }}>

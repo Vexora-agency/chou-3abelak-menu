@@ -44,6 +44,7 @@ ok(!existsSync(join(ROOT, 'functions/api/cart')), 'no server-side cart endpoints
 ok(api.includes("publicPostRaw('/api/orders'") && !/http\.get|\.get\(/.test(api), 'transport is fire-and-forget POST /api/orders only (no cart GET to leak from)');
 ok(/randomUUID|Math\.random/.test(checkout), 'idempotency key is random per drawer session, not a user identity (checkout:178-182)');
 ok(route.includes('CF-Connecting-IP') && route.includes('RATE_KEY_PREFIX') && route.includes('checkAndReserveOrderBudget'), 'server rate limit is per-IP abuse cap, not per-user identity');
+ok(route.includes('account_required') && route.includes("REQUIRE_ACCOUNT_FOR_COD !== '0'"), 'COD order gate requires a signed-in account (local tests opt out explicitly)');
 
 /* ---------- B. two-browser separation (simulation) ---------- */
 function makeStore() {

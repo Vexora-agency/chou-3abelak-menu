@@ -622,7 +622,11 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                     onChange={(e) => setAddress(e.target.value)}
                     autoComplete="street-address"
                     maxLength={200}
-                    className={`${inputClass} pe-12`}
+                    disabled={!location}
+                    placeholder={!location
+                      ? (isAr ? 'ثبّت الموقع على الخريطة أولًا' : 'Pin the location on the map first')
+                      : (isAr ? 'اكتب عنوانك هنا' : 'Type your address here')}
+                    className={`${inputClass} pe-12 disabled:opacity-70 disabled:cursor-not-allowed`}
                     aria-describedby="account-address-note"
                   />
                   <button
@@ -645,7 +649,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                     <MapPin size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
                     <span>{t.pinSet}</span>
                   </p>
-                ) : address.trim() && saveError !== t.pinRequired ? (
+                ) : saveError !== t.pinRequired ? (
                   <p className={`mt-1.5 flex items-start gap-1.5 text-[11px] font-bold ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>
                     <MapPin size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
                     <span>{t.pinRequired}</span>

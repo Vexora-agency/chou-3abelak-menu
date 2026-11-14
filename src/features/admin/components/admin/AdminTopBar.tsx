@@ -58,27 +58,6 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
               <span>{isAr ? 'EN' : 'عربي'}</span>
             </button>
           )}
-          {!kitchenOnly && (
-          <button
-            type="button"
-            role="switch"
-            aria-checked={autoSave}
-            aria-label={isAr ? 'الحفظ التلقائي' : 'Auto-save'}
-            title={isAr ? 'حفظ تلقائي لكل تعديل' : 'Auto-save every change'}
-            onClick={onToggleAutoSave}
-            className="flex items-center gap-1.5 text-xs font-bold px-3 min-h-[44px] rounded-full border transition-colors cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
-            style={{ borderColor: autoSave ? 'var(--primary)' : '#3f3f46', color: autoSave ? 'var(--primary)' : '#a1a1aa' }}
-          >
-            <span
-              className={`relative w-8 h-[18px] rounded-full transition-colors duration-200 ${autoSave ? 'bg-[var(--primary)]' : 'bg-neutral-700'}`}
-            >
-              <span
-                className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white shadow transition-all duration-200 ${autoSave ? 'left-[18px]' : 'left-[2px]'}`}
-              />
-            </span>
-            <span>{isAr ? 'حفظ تلقائي' : 'Auto-save'}</span>
-          </button>
-          )}
           {onSignOut && (
           <button
             type="button"
@@ -95,34 +74,57 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
       </div>
       </div>
 
-      <h1 className="text-2xl font-black mt-4 mb-2 flex items-center gap-2.5">
-        <img
-          src="/assets/pan-icon-yellow-192.webp"
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-          className="w-8 h-8 object-contain -rotate-12"
-        />
-        {/* Kitchen session: its own title, never "Menu Management". */}
-        <span>{kitchenOnly ? (isAr ? 'المطبخ' : 'Kitchen') : (isAr ? 'إدارة القائمة' : 'Menu Management')}</span>
-        {/* Client's sold plan (from features.config `plan`, set by the setup
-            script — keep SITE_PLAN in sync on rebuild). Gold for pro, gray
-            for starter. Kitchen never sees plan info. */}
+      <div className="mt-4 mb-2 flex flex-wrap items-center gap-x-2.5 gap-y-2">
+        <h1 className="text-2xl font-black flex items-center gap-2.5 min-w-0">
+          <img
+            src="/assets/pan-icon-yellow-192.webp"
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            className="w-8 h-8 object-contain -rotate-12"
+          />
+          {/* Kitchen session: its own title, never "Menu Management". */}
+          <span>{kitchenOnly ? (isAr ? 'المطبخ' : 'Kitchen') : (isAr ? 'إدارة القائمة' : 'Menu Management')}</span>
+          {/* Client's sold plan (from features.config `plan`, set by the setup
+              script — keep SITE_PLAN in sync on rebuild). Gold for pro, gray
+              for starter. Kitchen never sees plan info. */}
+          {!kitchenOnly && (
+          <span
+            title={isAr ? 'باقة العميل' : 'Client plan'}
+            className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${isAr ? '' : 'uppercase tracking-wider'} ${
+              featuresConfig.plan === 'pro'
+                ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
+                : 'bg-neutral-800 text-neutral-300 border-neutral-700'
+            }`}
+          >
+            {featuresConfig.plan === 'pro'
+              ? (isAr ? 'برو' : 'Pro')
+              : (isAr ? 'ستارتر' : 'Starter')}
+          </span>
+          )}
+        </h1>
         {!kitchenOnly && (
-        <span
-          title={isAr ? 'باقة العميل' : 'Client plan'}
-          className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${isAr ? '' : 'uppercase tracking-wider'} ${
-            featuresConfig.plan === 'pro'
-              ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
-              : 'bg-neutral-800 text-neutral-300 border-neutral-700'
-          }`}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={autoSave}
+          aria-label={isAr ? 'الحفظ التلقائي' : 'Auto-save'}
+          title={isAr ? 'حفظ تلقائي لكل تعديل' : 'Auto-save every change'}
+          onClick={onToggleAutoSave}
+          className="flex items-center gap-1.5 text-xs font-bold px-3 min-h-[44px] rounded-full border transition-colors cursor-pointer whitespace-nowrap shrink-0 ms-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+          style={{ borderColor: autoSave ? 'var(--primary)' : '#3f3f46', color: autoSave ? 'var(--primary)' : '#a1a1aa' }}
         >
-          {featuresConfig.plan === 'pro'
-            ? (isAr ? 'برو' : 'Pro')
-            : (isAr ? 'ستارتر' : 'Starter')}
-        </span>
+          <span
+            className={`relative w-8 h-[18px] rounded-full transition-colors duration-200 ${autoSave ? 'bg-[var(--primary)]' : 'bg-neutral-700'}`}
+          >
+            <span
+              className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white shadow transition-all duration-200 ${autoSave ? 'left-[18px]' : 'left-[2px]'}`}
+            />
+          </span>
+          <span>{isAr ? 'حفظ تلقائي' : 'Auto-save'}</span>
+        </button>
         )}
-      </h1>
+      </div>
 
       {/* Tabs (Backup hidden on starter — backend 404s it too).
           Mobile shows a 3×2 grid so every tab is visible with no hidden

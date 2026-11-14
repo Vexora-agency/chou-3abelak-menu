@@ -5,7 +5,6 @@ import {
   ArrowUpDown,
   BadgeCheck,
   CalendarDays,
-  Crown,
   Mail,
   MapPin,
   Phone,
@@ -22,15 +21,13 @@ import { formatPrice } from '@/src/utils/pricing';
 import { CustomerAvatar } from '@/src/features/auth';
 
 import {
-  customerSegmentMeta,
   customerVisibleSpend,
-  filterAndSortCustomers,
+  sortCustomers,
   type AdminCustomer,
-  type CustomerSegment,
   type CustomerSort,
-} from '../../customerFilters';
+} from '../../customerSorting';
 
-export type { AdminCustomer } from '../../customerFilters';
+export type { AdminCustomer } from '../../customerSorting';
 
 interface AdminCustomersTabProps {
   lang: 'en' | 'ar';
@@ -71,20 +68,10 @@ const STR = {
     sortAvg: 'Highest average',
     sortRecent: 'Recent order',
     sortName: 'Name A–Z',
-    filterCustomers: 'Filter customers',
-    segAll: 'All',
-    segOrdered: 'With orders',
-    segNew: 'New 30d',
-    segActive: 'Active 30d',
-    segRepeat: 'Repeat',
-    segVip: 'Top spenders',
-    segRisk: 'At risk 60d',
-    segNoOrders: 'No orders',
-    segIncomplete: 'Missing details',
-    clearFilters: 'Clear filters',
+    reset: 'Reset',
     visibleSpend: 'Visible spend',
-    noMatch: 'No customers match these filters',
-    noMatchDesc: 'Try another search or clear the filters.',
+    noMatch: 'No customers match this search',
+    noMatchDesc: 'Try another name, email or phone.',
     showing: (n: number, total: number) =>
       n === total
         ? `${n} ${n === 1 ? 'account' : 'accounts'}`
@@ -122,20 +109,10 @@ const STR = {
     sortAvg: 'أعلى متوسط طلب',
     sortRecent: 'آخر طلب',
     sortName: 'الاسم أ–ي',
-    filterCustomers: 'تصفية العملاء',
-    segAll: 'الكل',
-    segOrdered: 'لديهم طلبات',
-    segNew: 'جديد 30 يومًا',
-    segActive: 'نشط 30 يومًا',
-    segRepeat: 'متكرر',
-    segVip: 'أعلى إنفاقًا',
-    segRisk: 'بعيد 60 يومًا',
-    segNoOrders: 'بدون طلبات',
-    segIncomplete: 'بيانات ناقصة',
-    clearFilters: 'مسح الفلاتر',
+    reset: 'إعادة ضبط',
     visibleSpend: 'إجمالي الإنفاق',
-    noMatch: 'لا يوجد عملاء مطابقون',
-    noMatchDesc: 'جرّب بحثًا آخر أو امسح الفلاتر.',
+    noMatch: 'لا يوجد عملاء مطابقون لهذا البحث',
+    noMatchDesc: 'جرّب اسمًا أو بريدًا أو هاتفًا آخر.',
     showing: (n: number, total: number) =>
       n === total ? `${n} حساب` : `${n} من ${total} حساب`,
   },
@@ -163,7 +140,6 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
   const [error, setError] = useState(false);
   const [version, setVersion] = useState(0);
   const [sort, setSort] = useState<CustomerSort>('newest');
-  const [segment, setSegment] = useState<CustomerSegment>('all');
   const reqId = useRef(0);
 
   useEffect(() => {
@@ -192,17 +168,12 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
     return () => window.clearTimeout(timer);
   }, [query, version, adminFetch]);
 
-  const segmentMeta = useMemo(() => customerSegmentMeta(rows), [rows]);
-  const visibleRows = useMemo(
-    () => filterAndSortCustomers(rows, { segment, sort, lang, topIds: segmentMeta.topIds }),
-    [rows, segment, sort, lang, segmentMeta.topIds]
-  );
+  const visibleRows = useMemo(() => sortCustomers(rows, { sort, lang }), [rows, sort, lang]);
   const visibleSpend = useMemo(() => customerVisibleSpend(visibleRows), [visibleRows]);
-  const hasActiveFilters = query.trim().length > 0 || sort !== 'newest' || segment !== 'all';
-  const clearFilters = () => {
+  const hasActiveControls = query.trim().length > 0 || sort !== 'newest';
+  const resetControls = () => {
     setQuery('');
     setSort('newest');
-    setSegment('all');
   };
 
   const sortOptions: Array<{ value: CustomerSort; label: string }> = [
@@ -212,17 +183,6 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
     { value: 'avg', label: t.sortAvg },
     { value: 'recent', label: t.sortRecent },
     { value: 'name', label: t.sortName },
-  ];
-  const segmentOptions: Array<{ value: CustomerSegment; label: string; crown?: boolean }> = [
-    { value: 'all', label: t.segAll },
-    { value: 'ordered', label: t.segOrdered },
-    { value: 'new', label: t.segNew },
-    { value: 'active', label: t.segActive },
-    { value: 'repeat', label: t.segRepeat },
-    { value: 'vip', label: t.segVip, crown: true },
-    { value: 'risk', label: t.segRisk },
-    { value: 'no-orders', label: t.segNoOrders },
-    { value: 'incomplete', label: t.segIncomplete },
   ];
 
   const rise = (delay: number) => ({
@@ -303,44 +263,16 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
               ))}
             </select>
           </label>
-          {hasActiveFilters && (
+          {hasActiveControls && (
             <button
               type="button"
-              onClick={clearFilters}
+              onClick={resetControls}
               className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-neutral-700 px-3 text-xs font-bold text-neutral-300 transition-colors hover:border-red-400/60 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
             >
               <RotateCcw size={13} aria-hidden="true" />
-              {t.clearFilters}
+              {t.reset}
             </button>
           )}
-        </div>
-
-        <div className="mt-2 -mx-0.5 overflow-x-auto no-scrollbar" role="group" aria-label={t.filterCustomers}>
-          <div className="flex w-max gap-1.5 px-0.5 py-0.5 sm:w-auto sm:flex-wrap">
-            {segmentOptions.map((option) => {
-              const active = segment === option.value;
-              const count = segmentMeta.counts[option.value];
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setSegment(option.value)}
-                  aria-pressed={active}
-                  className={`inline-flex min-h-[44px] items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[11px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
-                    active
-                      ? 'border-[var(--primary)] bg-[var(--primary)] text-[#0A0A0A]'
-                      : 'border-neutral-800 bg-neutral-950 text-neutral-300 hover:border-[var(--primary)]/60 hover:text-white'
-                  }`}
-                >
-                  {option.crown && <Crown size={12} aria-hidden="true" />}
-                  <span>{option.label}</span>
-                  <span className={`tabular-nums ${active ? 'text-[#0A0A0A]/65' : 'text-neutral-500'}`} dir="ltr">
-                    {loading ? '…' : count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
         </div>
       </motion.div>
 
@@ -360,19 +292,19 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
         </div>
       )}
 
-      {!loading && !error && visibleRows.length === 0 && (
-        query.trim() || rows.length > 0 ? (
+      {!loading && !error && rows.length === 0 && (
+        query.trim() ? (
           <div className={`${card} py-10 text-center`}>
             <Search size={34} className="mx-auto text-[var(--primary)]/70" aria-hidden="true" />
             <p className="mt-3 text-sm font-extrabold">{t.noMatch}</p>
             <p className="mt-1 text-xs text-neutral-500">{t.noMatchDesc}</p>
             <button
               type="button"
-              onClick={clearFilters}
+              onClick={resetControls}
               className="mt-4 inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-xs font-extrabold text-[#0A0A0A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900"
             >
               <RotateCcw size={14} aria-hidden="true" />
-              {t.clearFilters}
+              {t.reset}
             </button>
           </div>
         ) : (
@@ -384,7 +316,7 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
         )
       )}
 
-      {!loading && !error && visibleRows.length > 0 && (
+      {!loading && !error && rows.length > 0 && (
         <div className="space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <p className="text-[11px] font-bold text-neutral-500">

@@ -3,7 +3,7 @@ import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { type OrderingStatus } from '@/src/utils/status';
 import { X, CheckCircle2 } from 'lucide-react';
-import { useCustomerProfile } from '@/src/features/auth';
+import { isProfileComplete, useCustomerProfile } from '@/src/features/auth';
 import { useCartCheckoutSubmit } from '../hooks/useCartCheckoutSubmit';
 import { CartLinesList } from './cart/CartLinesList';
 import { CustomerFormFields } from './cart/CustomerFormFields';
@@ -28,6 +28,8 @@ interface CartDrawerProps {
   orderingState?: OrderingStatus | null;
   /** Opens the auth sheet straight on Create account (COD requires one). */
   onRequireAccount?: () => void;
+  /** Opens account settings over the cart (mandatory phone/address/pin). */
+  onRequireProfile?: () => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -44,9 +46,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   darkMode,
   orderingState,
   onRequireAccount,
+  onRequireProfile,
 }) => {
   const isAr = lang === 'ar';
   const account = useCustomerProfile(isOpen);
+  // New members (including Google sign-ups) must add a phone, default address
+  // and map pin before any order. While the profile is still loading, stay
+  // neutral instead of flashing the incomplete banner.
+  const profileIncomplete = !!account.user && !account.loading && (!account.profile || !isProfileComplete(account.profile));
   const {
     customer,
     setCustomer,
@@ -82,7 +89,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     handleSendOrder,
     zoneBlocked,
     zonePlaceName,
-  } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart, accountUser: account.user, accountProfile: account.profile, accountLoading: account.loading, onRequireAccount });
+  } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart, accountUser: account.user, accountProfile: account.profile, accountLoading: account.loading, onRequireAccount, onRequireProfile });
 
   // Radical phone-scroll fix: shared counter lock (iOS-safe, nested-sheet
   // aware) instead of a bare overflow flag that iOS Safari ignores.
@@ -292,8 +299,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               darkMode={darkMode}
               codEnabled={(menu.settings as { payments?: { codEnabled?: boolean } }).payments?.codEnabled !== false}
               isMember={!!account.user}
+              profileIncomplete={profileIncomplete}
               accountLoading={account.loading}
               onRequireAccount={onRequireAccount}
+              onCompleteProfile={onRequireProfile}
             />
 
             {/* Error + Bill Summary */}

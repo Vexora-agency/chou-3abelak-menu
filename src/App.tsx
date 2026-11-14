@@ -314,7 +314,13 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authEntry, setAuthEntry] = useState<'account' | 'checkout'>('account');
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [accountInitialTab, setAccountInitialTab] = useState<'orders' | 'settings'>('orders');
   const [resetToken, setResetToken] = useState<string | null>(null);
+
+  const openAccount = (tab: 'orders' | 'settings' = 'orders') => {
+    setAccountInitialTab(tab);
+    setIsAccountOpen(true);
+  };
 
   // Floating order bell mounts after first paint (idle, 2 s ceiling): on
   // mount it polls statuses, installs audio-gesture listeners and vibrates —
@@ -399,7 +405,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
       window.history.replaceState(null, '', next);
       return;
     }
-    setIsAccountOpen(true);
+    openAccount();
     params.delete('account');
     const qs = params.toString();
     const next = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
@@ -578,7 +584,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           onToggleDarkMode={() => setDarkMode(!darkMode)}
           onOpenAdmin={adminUnlocked ? () => openAdmin() : undefined}
           onOpenAuth={() => { setAuthEntry('account'); setIsAuthOpen(true); }}
-          onOpenAccount={() => setIsAccountOpen(true)}
+          onOpenAccount={() => openAccount()}
           orderingState={liveOrderingState}
           orderingEnabled={orderingOn}
           festive={seasonalTheme === 'christmas'}
@@ -708,6 +714,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
             setAuthEntry('checkout');
             setIsAuthOpen(true);
           }}
+          onRequireProfile={() => openAccount('settings')}
         />
         </Suspense>
         )}
@@ -728,7 +735,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
                 setIsCartOpen(true);
                 return;
               }
-              setIsAccountOpen(true);
+              openAccount();
             }}
             lang={lang}
             darkMode={darkMode}
@@ -753,6 +760,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
             darkMode={darkMode}
             currency={currency}
             cancelWindowMs={cancelWindowMsFromMenu(displayMenu)}
+            initialTab={accountInitialTab}
           />
         </Suspense>
       </div>

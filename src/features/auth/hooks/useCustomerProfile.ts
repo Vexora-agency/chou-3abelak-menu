@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { MEMBER_PROFILE_CHANGED } from '../profile';
 import { fetchMyProfile } from '../services/account.api';
 import type { CustomerProfile } from '../types';
 import { useCustomerSession } from './useCustomerSession';
@@ -16,6 +17,16 @@ export function useCustomerProfile(enabled = true) {
   const [version, setVersion] = useState(0);
 
   const refetch = useCallback(() => setVersion((v) => v + 1), []);
+
+  // The account sheet saves the profile; every mounted consumer (checkout,
+  // header, another account view) must see the new phone/address/pin without
+  // a reload.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sync = () => setVersion((v) => v + 1);
+    window.addEventListener(MEMBER_PROFILE_CHANGED, sync);
+    return () => window.removeEventListener(MEMBER_PROFILE_CHANGED, sync);
+  }, []);
 
   useEffect(() => {
     if (!enabled || !userId) {
@@ -44,5 +55,9 @@ export function useCustomerProfile(enabled = true) {
     };
   }, [enabled, userId, version]);
 
-  return { user, profile, loading: isPending || loading, error, refetch };
+  // Treat "signed in but the first profile fetch has not resolved yet" as
+  // loading, not as an incomplete profile: avoids a false banner/block on
+  // the first render. A failed fetch sets error, so it stops counting.
+  const awaitingProfile = !!userId && !profile && !error;
+  return { user, profile, loading: isPending || loading || awaitingProfile, error, refetch };
 }

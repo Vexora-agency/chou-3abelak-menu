@@ -193,10 +193,11 @@ export async function onRequest(context) {
   // an incomplete account consumes no order budget. Fail OPEN on infra errors
   // (the account/profile read is already best-effort and a DB blip must not
   // eat real dinner orders); the client mirrors this gate for a clear UX.
+  let memberProfile = null;
   if (customerUserId && (c.paymentMethod || 'cod') === 'cod') {
     try {
-      const profile = await getCustomerProfile(db, customerUserId);
-      if (!isProfileComplete(profile)) {
+      memberProfile = await getCustomerProfile(db, customerUserId);
+      if (!isProfileComplete(memberProfile)) {
         return jsonNoStore({
           error: 'profile_incomplete',
           message: {
@@ -208,6 +209,30 @@ export async function onRequest(context) {
     } catch (err) {
       captureBackendException(context, err, { binding: 'd1', code: 'order_profile_read' });
     }
+  }
+
+  // A member's identity comes from the account, not from the checkout payload:
+  // every linked order therefore carries the saved name, phone and email even
+  // if the device has stale guest data. The delivery address stays per-order
+  // (the client starts from the saved default and lets the customer refine
+  // it); the phone budget/blocklist below use the account phone.
+  if (memberProfile) {
+    const profileName = typeof memberProfile.name === 'string' ? memberProfile.name.trim().slice(0, 60) : '';
+    if (profileName) c.name = profileName;
+    const profilePhone = typeof memberProfile.phone === 'string'
+      ? memberProfile.phone.replace(/[^0-9]/g, '')
+      : '';
+    if (profilePhone.length >= 6 && profilePhone.length <= 15) {
+      c.phone = profilePhone;
+      c.phoneNorm = profilePhone;
+    }
+    if (!c.address && typeof memberProfile.address === 'string' && memberProfile.address) {
+      c.address = memberProfile.address.trim().slice(0, 200);
+    }
+    const accountEmail = customerSession && customerSession.user && typeof customerSession.user.email === 'string'
+      ? customerSession.user.email.trim().toLowerCase().slice(0, 254)
+      : '';
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(accountEmail)) c.email = accountEmail;
   }
 
   // Owner blocklist (migration 0032): checked BEFORE any budget reserve so

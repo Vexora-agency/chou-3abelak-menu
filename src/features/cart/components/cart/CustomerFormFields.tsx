@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CustomerDetails } from '@/src/types/menu';
 import { cleanPhoneInput } from '@/src/utils/digits';
-import { MapPin, Navigation, X } from 'lucide-react';
+import { MapPin, Navigation, UserRound, X } from 'lucide-react';
 
 interface CustomerFormFieldsProps {
   customer: CustomerDetails;
@@ -41,6 +41,20 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   const [emailOpen, setEmailOpen] = useState(() => !!(customer.email && customer.email.trim()));
   return (
     <div className="space-y-3">
+      {isMember && (
+        <p className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 text-[11px] font-bold leading-relaxed ${
+          darkMode
+            ? 'border-[var(--primary)]/25 bg-[var(--primary)]/[0.06] text-neutral-300'
+            : 'border-amber-300 bg-amber-50 text-neutral-700'
+        }`}>
+          <UserRound size={14} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
+          <span>
+            {isAr
+              ? 'اسمك وهاتفك وبريدك الإلكتروني تُؤخذ من حسابك تلقائيًا. العنوان الافتراضي والموقع مُعبّآن مسبقًا، ويمكنك تعديلهما لهذا الطلب.'
+              : 'Your name, phone and email come from your account automatically. The default address and pin are filled in and can be changed for this order.'}
+          </span>
+        </p>
+      )}
       <div>
         <label className={`block text-xs font-bold mb-1 ${
           darkMode ? 'text-neutral-200' : 'text-neutral-800'
@@ -54,7 +68,11 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           placeholder={isAr ? 'اسمك' : 'Your name'}
           maxLength={40}
           autoComplete="name"
+          readOnly={isMember}
+          aria-readonly={isMember || undefined}
           className={`w-full h-11 px-3.5 rounded-xl border text-base focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
+            isMember ? 'opacity-80 cursor-not-allowed' : ''
+          } ${
             darkMode
               ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-400'
               : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-500 shadow-xs'
@@ -77,7 +95,11 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           placeholder={isAr ? 'مثال: 70123456' : '+961 70 123 456'}
           maxLength={20}
           enterKeyHint="next"
+          readOnly={isMember}
+          aria-readonly={isMember || undefined}
           className={`w-full h-11 px-3.5 rounded-xl border text-base tabular-nums ${isAr ? 'text-end' : 'text-start'} focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
+            isMember ? 'opacity-80 cursor-not-allowed' : ''
+          } ${
             darkMode
               ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-400'
               : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-500 shadow-xs'
@@ -265,23 +287,25 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         </label>
       </div>
 
-      <div className="flex items-center gap-3 pt-1 min-h-[44px]">
-        <input
-          id="remember-details"
-          type="checkbox"
-          checked={customer.remember}
-          onChange={(e) => setCustomer({ ...customer, remember: e.target.checked })}
-          className="w-6 h-6 shrink-0 rounded text-[var(--primary)] focus:ring-[var(--primary)]"
-        />
-        <label
-          htmlFor="remember-details"
-          className={`text-sm py-2 flex-1 select-none cursor-pointer font-bold ${
-            darkMode ? 'text-neutral-300' : 'text-neutral-700'
-          }`}
-        >
-          {isAr ? 'تذكر بياناتي على هذا الجهاز' : 'Remember my details on this device'}
-        </label>
-      </div>
+      {!isMember && (
+        <div className="flex items-center gap-3 pt-1 min-h-[44px]">
+          <input
+            id="remember-details"
+            type="checkbox"
+            checked={customer.remember}
+            onChange={(e) => setCustomer({ ...customer, remember: e.target.checked })}
+            className="w-6 h-6 shrink-0 rounded text-[var(--primary)] focus:ring-[var(--primary)]"
+          />
+          <label
+            htmlFor="remember-details"
+            className={`text-sm py-2 flex-1 select-none cursor-pointer font-bold ${
+              darkMode ? 'text-neutral-300' : 'text-neutral-700'
+            }`}
+          >
+            {isAr ? 'تذكر بياناتي على هذا الجهاز' : 'Remember my details on this device'}
+          </label>
+        </div>
+      )}
     </div>
   );
 };

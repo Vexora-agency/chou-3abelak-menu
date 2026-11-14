@@ -47,6 +47,12 @@ interface OrderRowProps {
   onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
 }
 
+/** First two whitespace-separated name parts for narrow screens. */
+function shortCustomerName(name: string): string {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  return parts.slice(0, 2).join(' ') || '—';
+}
+
 /** Single order card (row + expandable detail). Pure presentational. */
 const OrderRow: FC<OrderRowProps> = ({ o, open, onToggleOpen, t, isAr, currency, now, flashId, onStatusChange, onConfirm }) => {
   const TypeIcon = TYPE_ICON[o.type] ?? Store;
@@ -67,14 +73,17 @@ const OrderRow: FC<OrderRowProps> = ({ o, open, onToggleOpen, t, isAr, currency,
         className="w-full text-start p-3.5 flex items-center gap-3">
         <span className="shrink-0 w-10 h-10 rounded-xl bg-black border border-neutral-800 text-[var(--primary)] flex items-center justify-center"><TypeIcon size={18} /></span>
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2">
+          <span className="flex min-w-0 flex-wrap items-center gap-2">
             <b className="text-sm tabular-nums" dir="ltr">#{o.number}</b>
             {typeof o.parentNumber === 'number' && (
               <span dir="auto" className="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-300">
                 {t.linkedShort(o.parentNumber)}
               </span>
             )}
-            <span className="text-sm font-semibold truncate">{o.customer.name}</span>
+            <span className="min-w-0 flex-1 text-sm font-semibold" title={o.customer.name || undefined}>
+              <span className="sm:hidden block truncate">{shortCustomerName(o.customer.name)}</span>
+              <span className="hidden sm:block truncate">{o.customer.name || '—'}</span>
+            </span>
             {o.customerUserId && (
               <span
                 title={t.registeredTip}

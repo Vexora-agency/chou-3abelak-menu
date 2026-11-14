@@ -169,6 +169,36 @@
   animation: bellGlow 1.1s ease-out both;
 }
 
+/* --- Account order cards: a calm gold edge breathing while live --- */
+@keyframes orderGlow {
+  0%, 100% {
+    border-color: color-mix(in srgb, var(--primary) 18%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent);
+  }
+  50% {
+    border-color: color-mix(in srgb, var(--primary) 52%, transparent);
+    box-shadow: 0 0 18px -8px color-mix(in srgb, var(--primary) 45%, transparent);
+  }
+}
+.anim-order-glow {
+  animation: orderGlow 3.6s ease-in-out infinite;
+}
+
+/* Stronger beat when the receive button has unlocked. */
+@keyframes orderReadyGlow {
+  0%, 100% {
+    border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent);
+  }
+  50% {
+    border-color: var(--primary);
+    box-shadow: 0 0 22px -6px color-mix(in srgb, var(--primary) 70%, transparent);
+  }
+}
+.anim-order-ready {
+  animation: orderReadyGlow 2.2s ease-in-out infinite;
+}
+
 /* --- Orders dashboard (appended as provided) --- */
 /* Bell wiggle used by the orders dashboard "awaiting you" card */
 @keyframes wiggle {  0%, 60%, 100% { transform: rotate(0); }

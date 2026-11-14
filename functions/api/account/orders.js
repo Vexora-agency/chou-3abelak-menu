@@ -33,11 +33,12 @@ export async function onRequest(context) {
 
   const url = new URL(request.url);
   const days = intParam(url.searchParams.get('days'), 365, 1, 365);
-  const limit = intParam(url.searchParams.get('limit'), 50, 1, 50);
+  const activeOnly = url.searchParams.get('active') === '1';
+  const limit = intParam(url.searchParams.get('limit'), activeOnly ? 20 : 50, 1, 50);
   const since = new Date(Date.now() - days * 86400000).toISOString();
 
   try {
-    const orders = await listOrdersForCustomer(db, auth.user.id, since, limit);
+    const orders = await listOrdersForCustomer(db, auth.user.id, since, limit, activeOnly);
     const enriched = await attachOrderLiveState(db, env, orders);
     return jsonNoStore({ orders: enriched, days, count: enriched.length });
   } catch {

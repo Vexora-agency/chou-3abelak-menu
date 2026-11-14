@@ -21,8 +21,6 @@ import { useNow } from '@/src/hooks/useNow';
 import { cleanPhoneInput } from '@/src/utils/digits';
 import { formatMMSS } from '@/src/utils/countdown';
 import { formatPrice } from '@/src/utils/pricing';
-import { isSoundOff } from '@/src/utils/customerOrders';
-import { playBellChime, unlockBellAudio, vibrateBell } from '@/src/utils/bellSound';
 import { CustomerAvatar } from './CustomerAvatar';
 import { CancelOrderButton } from '@/src/features/track/components/CancelOrderButton';
 import { ReceivedButton } from '@/src/features/track/components/ReceivedButton';
@@ -43,8 +41,6 @@ interface AccountSheetProps {
   currency: string;
   /** Owner-tuned self-cancel window (ms) — same setting as the guest bell. */
   cancelWindowMs: number;
-  /** Owner-picked customer chime (menu settings.sounds.customer). */
-  bellSound: string;
 }
 
 type Tab = 'orders' | 'settings';
@@ -85,9 +81,8 @@ const OrderCard: FC<{
   darkMode: boolean;
   currency: string;
   cancelWindowMs: number;
-  bellSound: string;
   onChanged: () => void;
-}> = ({ order, open, onToggle, lang, darkMode, currency, cancelWindowMs, bellSound, onChanged }) => {
+}> = ({ order, open, onToggle, lang, darkMode, currency, cancelWindowMs, onChanged }) => {
   const t = AUTH_STR[lang];
   const isAr = lang === 'ar';
   const isActive = order.status === 'new' || order.status === 'confirmed' || order.status === 'ready';
@@ -97,26 +92,8 @@ const OrderCard: FC<{
     && Number.isFinite(receivableMs)
     && receivableMs > nowMs;
   const trackToken = typeof order.trackToken === 'string' ? order.trackToken : '';
-
-  // Ring the same customer chime the moment the receive button unlocks
-  // (the countdown ends or a refresh returns an elapsed unlock instant).
-  // Mounting already-unlocked is silent; closing/reopening is silent too.
-  const wasLockedRef = useRef<boolean | null>(null);
-  const bellSoundRef = useRef(bellSound);
-  bellSoundRef.current = bellSound;
-  useEffect(() => {
-    const awaiting = order.status === 'confirmed' || order.status === 'ready';
-    if (!open || !awaiting) {
-      wasLockedRef.current = null;
-      return;
-    }
-    const wasLocked = wasLockedRef.current;
-    if (wasLocked === true && !receivableLocked && !isSoundOff()) {
-      vibrateBell();
-      void playBellChime(bellSoundRef.current);
-    }
-    wasLockedRef.current = receivableLocked;
-  }, [open, order.status, receivableLocked]);
+  const readyToConfirm = (order.status === 'confirmed' || order.status === 'ready') && !receivableLocked;
+  const cardGlow = isActive ? (readyToConfirm ? 'anim-order-ready' : 'anim-order-glow') : '';
   const statusLabel = {
     new: t.statusNew,
     confirmed: t.statusConfirmed,
@@ -132,7 +109,7 @@ const OrderCard: FC<{
   const itemCount = order.items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
 
   return (
-    <div className={`rounded-2xl border overflow-hidden transition-colors ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-[#fafafa] border-neutral-200'}`}>
+    <div className={`rounded-2xl border overflow-hidden transition-colors ${cardGlow} ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-[#fafafa] border-neutral-200'}`}>
       <button type="button" onClick={onToggle} aria-expanded={open} className="w-full text-start p-3.5 flex items-center gap-3 min-h-[64px]">
         <span className="shrink-0 w-10 h-10 rounded-xl bg-[var(--primary)]/10 border border-[var(--primary)]/30 text-[var(--primary)] flex items-center justify-center">
           <ShoppingBag size={18} aria-hidden="true" />
@@ -250,7 +227,7 @@ const OrderCard: FC<{
   );
 };
 
-export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency, cancelWindowMs, bellSound }: AccountSheetProps) {
+export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency, cancelWindowMs }: AccountSheetProps) {
   const t = AUTH_STR[lang];
   const isAr = lang === 'ar';
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -271,13 +248,6 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
 
   useBodyScrollLock(open, 'account-sheet');
   useFocusTrap(open, sheetRef, onClose);
-
-  // Members have no bell component to install the audio unlock listeners;
-  // do it here so the receive-unlock chime can actually ring.
-  useEffect(() => {
-    if (!open) return;
-    unlockBellAudio();
-  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -503,8 +473,10 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                       darkMode={darkMode}
                       currency={currency}
                       cancelWindowMs={cancelWindowMs}
-                      bellSound={bellSound}
-                      onChanged={() => ordersState.refetch(true)}
+                      onChanged={() => {
+                        ordersState.refetch(true);
+                        window.dispatchEvent(new Event('member-orders-changed'));
+                      }}
                     />
                   ))}
                 </div>

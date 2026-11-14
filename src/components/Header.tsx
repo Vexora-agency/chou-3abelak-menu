@@ -85,6 +85,7 @@ export const Header: React.FC<HeaderProps> = ({
         onOpenAuth={onOpenAuth}
         onOpenAccount={onOpenAccount}
         rise={rise}
+        bellSound={menu.settings.sounds?.customer || 'classic'}
       />
 
       {/* Center Brand Identity */}

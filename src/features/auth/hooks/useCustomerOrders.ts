@@ -14,11 +14,12 @@ const LIVE_REFRESH_MS = 30000;
  * catch-up refresh when the tab becomes visible keeps statuses, unlock
  * countdowns and actions current without flashing skeletons.
  */
-export function useCustomerOrders(enabled = true) {
+export function useCustomerOrders(enabled = true, activeOnly = false) {
   const { user } = useCustomerSession();
   const userId = user?.id ?? null;
   const [orders, setOrders] = useState<AccountOrder[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   const [version, setVersion] = useState(0);
   const silentRef = useRef(false);
@@ -32,6 +33,7 @@ export function useCustomerOrders(enabled = true) {
     if (!enabled || !userId) {
       setOrders([]);
       setLoading(false);
+      setLoaded(false);
       setError(false);
       return;
     }
@@ -42,20 +44,23 @@ export function useCustomerOrders(enabled = true) {
     setError(false);
     void (async () => {
       try {
-        const data = await fetchMyOrders(365, 50);
+        const data = await fetchMyOrders(365, activeOnly ? 20 : 50, activeOnly);
         if (!alive) return;
         setOrders(Array.isArray(data.orders) ? data.orders : []);
       } catch {
         if (!alive) return;
         setError(true);
       } finally {
-        if (alive) setLoading(false);
+        if (alive) {
+          setLoading(false);
+          setLoaded(true);
+        }
       }
     })();
     return () => {
       alive = false;
     };
-  }, [enabled, userId, version]);
+  }, [enabled, userId, version, activeOnly]);
 
   // Members have no floating bell: keep the open sheet fresh instead.
   useEffect(() => {
@@ -73,5 +78,18 @@ export function useCustomerOrders(enabled = true) {
     };
   }, [enabled, userId, refetch]);
 
-  return { orders, loading, error, refetch };
+  // Checkout/account actions ping this event so the header badge and the
+  // open sheet update immediately instead of waiting for the next poll.
+  useEffect(() => {
+    if (!enabled || !userId) return;
+    const onChange = () => refetch(true);
+    window.addEventListener('member-orders-changed', onChange);
+    window.addEventListener('customer-orders-changed', onChange);
+    return () => {
+      window.removeEventListener('member-orders-changed', onChange);
+      window.removeEventListener('customer-orders-changed', onChange);
+    };
+  }, [enabled, userId, refetch]);
+
+  return { orders, loading, loaded, error, refetch };
 }

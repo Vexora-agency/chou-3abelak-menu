@@ -926,15 +926,18 @@ export async function listOrdersByWindow(db, { from, to, days }, limit) {
 /* ---------- Customer account history (session-scoped, never user-supplied) ---------- */
 
 /** Orders for one authenticated customer, newest first, capped window.
- *  The owner's track token rides along so the account sheet can reuse the
- *  bell's track/cancel/receive actions; the response is session-scoped and
+ *  `activeOnly` restricts the query to live orders for the header badge
+ *  (new/confirmed/ready), keeping that light surface small. The owner's
+ *  track token rides along so the account sheet can reuse the bell's
+ *  track/cancel/receive actions; the response is session-scoped and
  *  no-store, so the capability never leaves the owner's own session. */
-export async function listOrdersForCustomer(db, userId, sinceIso, limit = 50) {
+export async function listOrdersForCustomer(db, userId, sinceIso, limit = 50, activeOnly = false) {
   const max = Math.min(50, Math.max(1, Number.isInteger(limit) ? limit : 50));
+  const activeWhere = activeOnly ? " AND status IN ('new','confirmed','ready')" : '';
   const res = await db
     .prepare(
       `SELECT * FROM orders
-       WHERE customer_user_id = ?1 AND created_at >= ?2
+       WHERE customer_user_id = ?1 AND created_at >= ?2${activeWhere}
        ORDER BY created_at DESC
        LIMIT ?3`
     )

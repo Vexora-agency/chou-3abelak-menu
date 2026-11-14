@@ -53,6 +53,19 @@ function fakeDb(seed = []) {
 }
 
 {
+  const db = fakeDb();
+  await listOrdersForCustomer(db, 'user-4', '2025-01-01T00:00:00.000Z', 50, true);
+  const call = db.calls[0];
+  check('active-only filters live statuses', call.sql.includes("status IN ('new','confirmed','ready')"));
+}
+
+{
+  const db = fakeDb();
+  await listOrdersForCustomer(db, 'user-5', '2025-01-01T00:00:00.000Z', 50, false);
+  check('full history has no status filter', !db.calls[0].sql.includes('status IN'));
+}
+
+{
   const row = {
     id: 'order-1',
     number: 1001,

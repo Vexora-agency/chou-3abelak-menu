@@ -127,7 +127,9 @@ const OrderCard: FC<{
                 role="img"
                 aria-label={isAr ? 'جاهز لتأكيد الاستلام' : 'Ready to confirm'}
                 title={isAr ? 'جاهز لتأكيد الاستلام' : 'Ready to confirm'}
-                className="inline-flex items-center justify-center text-[var(--primary)]"
+                className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${
+                  darkMode ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-amber-500/15 text-amber-700'
+                }`}
               >
                 <Bell size={13} strokeWidth={2.8} className="anim-bell-ring-loop" />
               </span>

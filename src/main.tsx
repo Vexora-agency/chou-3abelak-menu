@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from '@/src/App.tsx';
 import { applyTheme } from '@/src/config/theme.config';
 import { captureFrontendError, initSentry } from '@/src/lib/sentry';
+import { recoverFromChunkError, reloadFresh } from '@/src/utils/lazyRetry';
 import './index.css';
 
 // Error monitoring first (no-op without VITE_SENTRY_DSN in production).
@@ -24,7 +25,7 @@ function CrashFallback() {
       <p className="text-sm text-neutral-400">Please reload the page / يرجى إعادة تحميل الصفحة</p>
       <button
         type="button"
-        onClick={() => window.location.reload()}
+        onClick={() => reloadFresh()}
         className="h-11 px-6 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-sm font-extrabold"
       >
         Reload / إعادة التحميل
@@ -48,6 +49,9 @@ class LocalErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 
   componentDidCatch(error: unknown): void {
     captureFrontendError(error);
+    // Defense in depth: a chunk import that bypassed lazyWithReload still gets
+    // one automatic cache-busting reload instead of the permanent crash card.
+    recoverFromChunkError(error);
   }
 
   render(): ReactNode {

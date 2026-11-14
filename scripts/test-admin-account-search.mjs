@@ -38,6 +38,7 @@ function fakeDb() {
   check('search keeps raw phone matching', sql.includes("COALESCE(p.phone, '') LIKE ?2"));
   check('phone digits normalized for search', values[2] === '%70123%');
   check('profile phone separators normalized', sql.includes("REPLACE(REPLACE(REPLACE(COALESCE(p.phone, ''), ' ', ''), '-', ''), '+', '')"));
+  check('profile pin columns selected', sql.includes('p.location_lat') && sql.includes('p.location_lng'));
   check('order phone fallback present', sql.includes('o2.phone_norm LIKE ?3'));
   check('limit is capped at 200', values[3] === 200);
 }

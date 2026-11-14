@@ -377,6 +377,20 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     };
   }, []);
 
+  // A stale-chunk recovery navigates with a one-time `_r` cache-buster so the
+  // fresh entry HTML is fetched. Strip it as soon as the new app boots so the
+  // address stays clean (other query markers are preserved for the effect
+  // below).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('_r')) return;
+    params.delete('_r');
+    const qs = params.toString();
+    const next = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
+    window.history.replaceState(null, '', next);
+  }, []);
+
   // OAuth/reset return markers:
   // - Google returns to /?account=1 → open the account sheet.
   // - Password-reset email returns to /?reset=1&token=... → open the reset form.

@@ -74,24 +74,37 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
       </div>
       </div>
 
-      <div className="mt-4 mb-2 flex flex-wrap items-center gap-x-2.5 gap-y-2">
-        <h1 className="text-2xl font-black flex items-center gap-2.5 min-w-0">
+      <div className="mt-4 mb-2 flex flex-nowrap items-center gap-2 sm:gap-2.5 min-w-0">
+        <h1 className="text-lg min-[380px]:text-xl sm:text-2xl font-black flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
           <img
             src="/assets/pan-icon-yellow-192.webp"
             alt=""
             aria-hidden="true"
             draggable={false}
-            className="w-8 h-8 object-contain -rotate-12"
+            className="w-7 h-7 min-[380px]:w-8 min-[380px]:h-8 shrink-0 object-contain -rotate-12"
           />
           {/* Kitchen session: its own title, never "Menu Management". */}
-          <span>{kitchenOnly ? (isAr ? 'المطبخ' : 'Kitchen') : (isAr ? 'إدارة القائمة' : 'Menu Management')}</span>
+          <span className="min-w-0 truncate" title={kitchenOnly ? (isAr ? 'المطبخ' : 'Kitchen') : (isAr ? 'إدارة القائمة' : 'Menu Management')}>
+            {kitchenOnly
+              ? (isAr ? 'المطبخ' : 'Kitchen')
+              : isAr
+                ? 'إدارة القائمة'
+                : (
+                  <>
+                    {/* English is much wider than Arabic: a compact title on
+                        phones keeps the plan badge + Auto-save on one row. */}
+                    <span className="min-[480px]:hidden">Menu</span>
+                    <span className="hidden min-[480px]:inline">Menu Management</span>
+                  </>
+                )}
+          </span>
           {/* Client's sold plan (from features.config `plan`, set by the setup
               script — keep SITE_PLAN in sync on rebuild). Gold for pro, gray
               for starter. Kitchen never sees plan info. */}
           {!kitchenOnly && (
           <span
             title={isAr ? 'باقة العميل' : 'Client plan'}
-            className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${isAr ? '' : 'uppercase tracking-wider'} ${
+            className={`shrink-0 text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${isAr ? '' : 'uppercase tracking-wider'} ${
               featuresConfig.plan === 'pro'
                 ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
                 : 'bg-neutral-800 text-neutral-300 border-neutral-700'
@@ -111,7 +124,7 @@ export const AdminTopBar: React.FC<AdminTopBarProps> = ({
           aria-label={isAr ? 'الحفظ التلقائي' : 'Auto-save'}
           title={isAr ? 'حفظ تلقائي لكل تعديل' : 'Auto-save every change'}
           onClick={onToggleAutoSave}
-          className="flex items-center gap-1.5 text-xs font-bold px-3 min-h-[44px] rounded-full border transition-colors cursor-pointer whitespace-nowrap shrink-0 ms-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+          className="flex items-center gap-1.5 text-xs font-bold px-2.5 min-[420px]:px-3 min-h-[44px] rounded-full border transition-colors cursor-pointer whitespace-nowrap shrink-0 ms-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
           style={{ borderColor: autoSave ? 'var(--primary)' : '#3f3f46', color: autoSave ? 'var(--primary)' : '#a1a1aa' }}
         >
           <span

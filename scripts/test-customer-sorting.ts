@@ -1,6 +1,5 @@
 // Pure /admin/accounts sorting logic. Run: npm run test:customer-sorting
 import {
-  customerVisibleSpend,
   sortCustomers,
   type AdminCustomer,
 } from '../src/features/admin/customerSorting';
@@ -61,8 +60,6 @@ ok('newest account first', byNewest[0].id === 'c4');
 const originalOrder = rows.map((row) => row.id).join(',');
 sortCustomers(rows, { sort: 'spend', lang: 'en' });
 ok('sorting does not mutate the source rows', rows.map((row) => row.id).join(',') === originalOrder);
-ok('visible spend sums the visible rows', customerVisibleSpend(rows) === 1600);
-ok('visible spend of a subset', customerVisibleSpend(bySpend.slice(0, 2)) === 1500);
 
 console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} — ${fail} failure(s)`);
 process.exit(fail === 0 ? 0 : 1);

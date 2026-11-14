@@ -23,7 +23,6 @@ import { formatPrice } from '@/src/utils/pricing';
 import { CustomerAvatar } from '@/src/features/auth';
 
 import {
-  customerVisibleSpend,
   sortCustomers,
   type AdminCustomer,
   type CustomerSort,
@@ -71,7 +70,6 @@ const STR = {
     sortRecent: 'Recent order',
     sortName: 'Name A–Z',
     reset: 'Reset',
-    visibleSpend: 'Visible spend',
     noMatch: 'No customers match this search',
     noMatchDesc: 'Try another name, email or phone.',
     showing: (n: number, total: number) =>
@@ -112,7 +110,6 @@ const STR = {
     sortRecent: 'آخر طلب',
     sortName: 'الاسم أ–ي',
     reset: 'إعادة ضبط',
-    visibleSpend: 'إجمالي الإنفاق',
     noMatch: 'لا يوجد عملاء مطابقون لهذا البحث',
     noMatchDesc: 'جرّب اسمًا أو بريدًا أو هاتفًا آخر.',
     showing: (n: number, total: number) =>
@@ -174,7 +171,6 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
   }, [query, version, adminFetch]);
 
   const visibleRows = useMemo(() => sortCustomers(rows, { sort, lang }), [rows, sort, lang]);
-  const visibleSpend = useMemo(() => customerVisibleSpend(visibleRows), [visibleRows]);
   const hasActiveControls = query.trim().length > 0 || sort !== 'newest';
   const resetControls = () => {
     setQuery('');
@@ -397,16 +393,9 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
 
       {!loading && !error && rows.length > 0 && (
         <div className="space-y-2.5">
-          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-            <p className="text-[11px] font-bold text-neutral-500">
-              {t.showing(visibleRows.length, rows.length)}
-            </p>
-            {visibleSpend > 0 && (
-              <p className="text-[11px] font-bold text-neutral-500">
-                {t.visibleSpend}: <b className="tabular-nums text-neutral-300" dir="ltr">{formatPrice(visibleSpend, currency)}</b>
-              </p>
-            )}
-          </div>
+          <p className="text-[11px] font-bold text-neutral-500">
+            {t.showing(visibleRows.length, rows.length)}
+          </p>
           {visibleRows.map((row, index) => (
             <motion.div key={row.id} {...rise(Math.min(0.1 + index * 0.03, 0.3))} className={card}>
               <div className="flex items-start gap-3">

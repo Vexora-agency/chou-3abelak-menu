@@ -63,7 +63,3 @@ export function sortCustomers(
   return list;
 }
 
-/** Total spend of the rows currently visible (already searched). */
-export function customerVisibleSpend(rows: AdminCustomer[]): number {
-  return rows.reduce((sum, row) => sum + (Number(row.totalSpent) || 0), 0);
-}

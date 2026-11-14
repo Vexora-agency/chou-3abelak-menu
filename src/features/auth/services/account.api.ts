@@ -27,8 +27,11 @@ export interface MyOrdersResponse {
   days: number;
 }
 
-export async function fetchMyOrders(days = 365, limit = 50): Promise<MyOrdersResponse> {
-  return apiFetch<MyOrdersResponse>(`/api/account/orders?days=${days}&limit=${limit}`, { headers });
+export async function fetchMyOrders(days = 365, limit = 50, activeOnly = false): Promise<MyOrdersResponse> {
+  return apiFetch<MyOrdersResponse>(
+    `/api/account/orders?days=${days}&limit=${limit}${activeOnly ? '&active=1' : ''}`,
+    { headers },
+  );
 }
 
 export async function fetchMyOrder(number: number): Promise<AccountOrder> {

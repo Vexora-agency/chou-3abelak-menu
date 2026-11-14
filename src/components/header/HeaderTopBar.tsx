@@ -1,8 +1,10 @@
-import React from 'react';
-import { Moon, Settings, Sun, UserRound } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { Bell, Moon, Settings, Sun, UserRound } from 'lucide-react';
 import { motion } from 'motion/react';
 import type { useHeaderMotion } from '@/src/hooks/useHeaderMotion';
-import { CustomerAvatar, useCustomerSession } from '@/src/features/auth';
+import { useNow } from '@/src/hooks/useNow';
+import { isSoundOff } from '@/src/utils/customerOrders';
+import { CustomerAvatar, useCustomerOrders, useCustomerSession } from '@/src/features/auth';
 
 interface HeaderTopBarProps {
   lang: 'en' | 'ar';
@@ -13,7 +15,11 @@ interface HeaderTopBarProps {
   onOpenAuth?: () => void;
   onOpenAccount?: () => void;
   rise: ReturnType<typeof useHeaderMotion>['rise'];
+  /** Owner-picked customer chime (menu settings.sounds.customer). */
+  bellSound: string;
 }
+
+const ACTIVE_STATUSES = new Set(['new', 'confirmed', 'ready']);
 
 export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
   lang,
@@ -24,10 +30,79 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
   onOpenAuth,
   onOpenAccount,
   rise,
+  bellSound,
 }) => {
   const isAr = lang === 'ar';
   const { user, isPending } = useCustomerSession();
   const firstName = user?.name?.trim().split(/\s+/)[0] || user?.email?.split('@')[0] || '';
+
+  // Members no longer have the floating bell: surface their live order on
+  // the account button instead. The same account-orders hook keeps it fresh
+  // (30 s + visibility + action events).
+  const { orders, loaded: ordersLoaded } = useCustomerOrders(!!user, true);
+  const activeOrders = orders.filter((order) => ACTIVE_STATUSES.has(order.status));
+  const timedOrders = activeOrders.filter(
+    (order) => (order.status === 'confirmed' || order.status === 'ready')
+      && typeof order.receivableAt === 'string'
+      && Number.isFinite(Date.parse(order.receivableAt)),
+  );
+  const nowMs = useNow(timedOrders.length > 0);
+  const due = timedOrders.some((order) => Date.parse(order.receivableAt as string) <= nowMs);
+  const hasActive = activeOrders.length > 0;
+  const bellSoundRef = useRef(bellSound);
+  bellSoundRef.current = bellSound;
+
+  // Audio listeners for the header chime (the account sheet has its own).
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    void import('@/src/utils/bellSound')
+      .then((mod) => {
+        if (alive) mod.unlockBellAudio();
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [user?.id]);
+
+  // Ring once when a timed order crosses its unlock instant. The first
+  // completed fetch only seeds the state, so opening the site after the
+  // unlock is silent (the bell badge still shows).
+  const settledRef = useRef(false);
+  const prevDueRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!user) {
+      settledRef.current = false;
+      prevDueRef.current = null;
+      return;
+    }
+    if (!ordersLoaded) return;
+    if (!settledRef.current) {
+      settledRef.current = true;
+      prevDueRef.current = due;
+      return;
+    }
+    if (due && !prevDueRef.current && !isSoundOff()) {
+      void import('@/src/utils/bellSound')
+        .then((mod) => {
+          mod.vibrateBell();
+          void mod.playBellChime(bellSoundRef.current);
+        })
+        .catch(() => {});
+    }
+    prevDueRef.current = due;
+  }, [due, ordersLoaded, user?.id]);
+
+  const accountLabel = isPending
+    ? (isAr ? 'جارٍ تحميل الحساب' : 'Loading account')
+    : user
+      ? due
+        ? (isAr ? 'حسابي — طلب جاهز لتأكيد الاستلام' : 'My account — order ready to confirm')
+        : hasActive
+          ? (isAr ? 'حسابي — لديك طلب نشط' : 'My account — active order')
+          : (isAr ? 'حسابي' : 'My account')
+      : (isAr ? 'تسجيل الدخول' : 'Sign in');
 
   return (
     <motion.div
@@ -85,9 +160,9 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
           onClick={() => (user ? onOpenAccount?.() : onOpenAuth?.())}
           disabled={isPending || (!user && !onOpenAuth) || (!!user && !onOpenAccount)}
           aria-busy={isPending}
-          aria-label={isPending ? (isAr ? 'جارٍ تحميل الحساب' : 'Loading account') : user ? (isAr ? 'حسابي' : 'My account') : (isAr ? 'تسجيل الدخول' : 'Sign in')}
+          aria-label={accountLabel}
           title={isPending ? undefined : user ? (isAr ? 'حسابي وطلباتي' : 'My account and orders') : (isAr ? 'تسجيل الدخول' : 'Sign in')}
-          className="glass-pill btn-tactile h-11 min-h-[44px] w-11 sm:w-auto sm:px-3 rounded-full text-[var(--primary)] flex items-center justify-center gap-2 shrink-0 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+          className="glass-pill btn-tactile relative h-11 min-h-[44px] w-11 sm:w-auto sm:px-3 rounded-full text-[var(--primary)] flex items-center justify-center gap-2 shrink-0 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
         >
           {isPending ? (
             <span className="w-5 h-5 rounded-full bg-white/20 animate-pulse" aria-hidden="true" />
@@ -103,6 +178,17 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
           <span className={`hidden sm:inline text-xs font-bold text-white/85 max-w-[92px] truncate ${isPending ? 'opacity-0' : ''}`} dir="auto">
             {user ? firstName : (isAr ? 'دخول' : 'Sign in')}
           </span>
+
+          {user && hasActive && (
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none absolute -top-1 -end-1 z-10 rounded-full bg-[var(--primary)] text-[#0A0A0A] shadow-[0_0_0_2px_#0A0A0A] ${
+                due ? 'w-5 h-5 flex items-center justify-center' : 'w-2.5 h-2.5 anim-dot'
+              }`}
+            >
+              {due && <Bell size={12} strokeWidth={3} className="anim-bell-ring" />}
+            </span>
+          )}
         </button>
 
         {onOpenAdmin && (

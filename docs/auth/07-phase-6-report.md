@@ -30,7 +30,7 @@ Date: 2026-11-14
 |------|-------|
 | Domain | `https://chou3abelak.site` |
 | Pages project | `chou-3abelak-menu` |
-| Latest code deployment | `8e863c46-5294-4bf2-9229-56291d0ac44a` (`dd41a48`) |
+| Latest code deployment | `3b11729b-0465-4f7e-b13e-75625088a516` (`7a27fad`) |
 | D1 | `chou-3abelak-orders` (`7d585e65-5bea-4b81-b727-ebb001bc72e6`) |
 | Migrations | 0033, 0034, 0035 applied |
 | Public flags | `{"google":true,"requireEmailVerification":true}` |
@@ -197,7 +197,7 @@ Local `.dev.vars`:
 ## 8. Final acceptance
 
 - [x] Menu/cart/tracking/invite remain public.
-- [x] Guest checkout works; signed-in orders link to the account.
+- [x] Cash-on-delivery checkout requires a signed-in account (owner update); signed-in orders link to the account.
 - [x] Email/password auth + Google auth code.
 - [x] Account orders (365 days), settings, sign-out.
 - [x] Admin registered-customer badge + Accounts view.

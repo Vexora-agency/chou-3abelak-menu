@@ -22,7 +22,7 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 5 | Hardening: rate-limit tuning, headers, reset password + email verification | ✅ done (local + production) | Resend reset/verify emails + UI + hardening |
 | 6 | Testing + Cloudflare Pages deployment guide | ✅ done (handover) | Manual checklist + deploy/rollback runbook |
 
-**Current step:** All six phases shipped. Final handover in `07-phase-6-report.md`; owner-only checks: one real Google login, one real inbox verify + reset click-through, and an admin visual pass. Arabic RTL field alignment is deployed and verified. Members' live orders now live in My Orders (guest bell stays guest-only), the account button shows a basket while an order is active and a looping bell at unlock, My Orders has a sound toggle, active order cards glow, and all customer avatars use the letter style.
+**Current step:** All six phases shipped. Final handover in `07-phase-6-report.md`; owner-only checks: one real Google login, one real inbox verify + reset click-through, and an admin visual pass. Arabic RTL field alignment is deployed and verified. Members' live orders now live in My Orders (guest bell stays guest-only), the account button shows a basket while an order is active and a looping bell at unlock, My Orders has a sound toggle, active order cards glow, all customer avatars use the letter style, and COD checkout now requires an account with an in-place signup CTA.
 
 ---
 
@@ -47,7 +47,7 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | # | Question | Needed by | Answer |
 |---|----------|-----------|--------|
 | D1 | Which routes become login-required? (proposal in `02-plan.md` §7) | Phase 3 | ✅ approved as listed; menu/cart/tracking/invite stay public |
-| D2 | Keep guest checkout or require login at checkout? | Phase 3 | ✅ keep guest checkout; link only with a valid session; lookup failure never blocks the order |
+| D2 | Keep guest checkout or require login at checkout? | Phase 3 | 🔄 owner update: COD checkout now requires a signed-in account; the client shows an in-place signup CTA and the server enforces `account_required` (local tests opt out via `REQUIRE_ACCOUNT_FOR_COD=0`) |
 | D3 | Email provider for verification/reset (proposal: Resend free tier) | Phase 5 | ✅ Resend free tier, reuse `RESEND_API_KEY`; Phase 5 only |
 | D4 | Production domain + stable preview URL for `BETTER_AUTH_URL` / `trustedOrigins` | Phase 6 (preview) | ✅ production: `https://chou3abelak.site` + `https://www.chou3abelak.site`; preview host still pending |
 | D5 | Order-to-user linking migration approval | Phase 3 | ✅ approved: nullable `customer_user_id`, index, no backfill |
@@ -94,3 +94,4 @@ Status legend: ⬜ pending · 🟨 in progress · ✅ done · ⛔ blocked (needs
 | 2026-11-14 | 6 | PR #129 merged: the member bell keeps chiming every 4 s and swinging until receipt (30-min session cap; fresh on tab return). My Orders has a sound toggle; a new order re-arms it. The pulsing dot is replaced by a static outline bell that fills and loops at unlock. The status chip grows a looping bell on the right in EN / left in AR. Production `48a342f8` (`0cdee88`); verified live (repeat chime 2→5, status bell right of chip, mute stops it). |
 | 2026-11-14 | 6 | PR #130 merged: `/admin/accounts` keeps only the registered-Customers count (orders/spent stay on the dashboard overview), Arabic email alignment fixed, and phone search now normalizes spaces/dashes/+/Arabic digits and falls back to order `phone_norm`. The active-order header badge is now a basket; the ringing bell is reserved for unlock. The status-chip bell has a high-contrast light-mode amber circle. Production `24dd292c` (`fd6e543`); verified live (basket → bell, light-mode bell colors). |
 | 2026-11-14 | 6 | PR #131 merged: mobile layout pass on the admin pages. The accounts count is a full-width horizontal summary strip; the `/admin/customers` search stacks its button below the field on phones and stays inline from `sm` upward. Production `8e863c46` (`dd41a48`); deployed chunk verified. |
+| 2026-11-14 | 6 | PR #132 merged: COD checkout now requires a signed-in account (server-enforced before budgets), with an in-place Create account CTA in the payment card and a `/?checkout=1` Google return. The email-recommended card is hidden for members and the account email rides on the order; the payment card was redesigned for light/dark. Production `3b11729b` (`7a27fad`); verified guest notice/CTA and signup-over-cart (store closed at test time, so the 401 gate was verified locally). |

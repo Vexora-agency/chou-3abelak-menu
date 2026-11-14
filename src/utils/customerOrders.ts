@@ -93,6 +93,9 @@ export function setSoundOff(off: boolean): void {
     if (off) shelf.setItem(SOUND_KEY, 'off');
     else shelf.removeItem(SOUND_KEY);
   } catch {}
+  try {
+    window.dispatchEvent(new Event('bell-sound-changed'));
+  } catch {}
 }
 
 function detailsShelf(): Storage | null {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FC } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   AlertCircle,
+  Bell,
   Check,
   ChevronDown,
   ExternalLink,
@@ -13,6 +14,8 @@ import {
   RefreshCw,
   ShoppingBag,
   UserRound,
+  Volume2,
+  VolumeX,
   X,
 } from 'lucide-react';
 import { authClient } from '@/src/lib/auth-client';
@@ -21,6 +24,7 @@ import { useNow } from '@/src/hooks/useNow';
 import { cleanPhoneInput } from '@/src/utils/digits';
 import { formatMMSS } from '@/src/utils/countdown';
 import { formatPrice } from '@/src/utils/pricing';
+import { isSoundOff, setSoundOff } from '@/src/utils/customerOrders';
 import { CustomerAvatar } from './CustomerAvatar';
 import { CancelOrderButton } from '@/src/features/track/components/CancelOrderButton';
 import { ReceivedButton } from '@/src/features/track/components/ReceivedButton';
@@ -118,6 +122,16 @@ const OrderCard: FC<{
           <span className="flex items-center gap-2 flex-wrap">
             <b className="text-sm tabular-nums" dir="ltr">#{order.number}</b>
             <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${STATUS_STYLE[order.status]}`}>{statusLabel}</span>
+            {readyToConfirm && (
+              <span
+                role="img"
+                aria-label={isAr ? 'جاهز لتأكيد الاستلام' : 'Ready to confirm'}
+                title={isAr ? 'جاهز لتأكيد الاستلام' : 'Ready to confirm'}
+                className="inline-flex items-center justify-center text-[var(--primary)]"
+              >
+                <Bell size={13} strokeWidth={2.8} className="anim-bell-ring-loop" />
+              </span>
+            )}
           </span>
           <span className={`mt-0.5 block text-[11px] ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
             {dateLabel(order.createdAt, isAr)} · {typeLabel} · {t.itemsCount(itemCount)}
@@ -245,6 +259,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   const [saveOk, setSaveOk] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState('');
+  const [soundOff, setSoundOffState] = useState(() => isSoundOff());
 
   useBodyScrollLock(open, 'account-sheet');
   useFocusTrap(open, sheetRef, onClose);
@@ -266,10 +281,34 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     setAddress(profileState.profile?.address || '');
   }, [open, session.user?.id, profileState.profile?.phone, profileState.profile?.address]);
 
+  // The mute control is shared with the guest bell: a new order re-arms it.
+  useEffect(() => {
+    if (!open) return;
+    setSoundOffState(isSoundOff());
+    const sync = () => setSoundOffState(isSoundOff());
+    window.addEventListener('bell-sound-changed', sync);
+    return () => window.removeEventListener('bell-sound-changed', sync);
+  }, [open]);
+
   if (!open) return null;
 
   const user = session.user;
   const profile = profileState.profile;
+  const hasActiveOrders = ordersState.orders.some(
+    (order) => order.status === 'new' || order.status === 'confirmed' || order.status === 'ready',
+  );
+
+  const toggleSound = () => {
+    const next = !soundOff;
+    setSoundOff(next);
+    setSoundOffState(next);
+    if (next) {
+      // Silence an in-flight chime immediately when muting.
+      void import('@/src/utils/bellSound')
+        .then((mod) => mod.stopBellChime())
+        .catch(() => {});
+    }
+  };
 
   if (!session.isPending && !user) {
     return (
@@ -421,15 +460,33 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                   <h3 className="text-sm font-extrabold">{t.ordersTitle}</h3>
                   <p className={`mt-0.5 text-[11px] ${mutedClass}`}>{t.ordersSubtitle}</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => ordersState.refetch()}
-                  aria-label={t.refresh}
-                  title={t.refresh}
-                  className={`shrink-0 w-11 h-11 min-w-[44px] rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 text-neutral-300 hover:text-white' : 'border-neutral-300 text-neutral-600 hover:text-black'}`}
-                >
-                  <RefreshCw size={16} className={ordersState.loading ? 'animate-spin' : ''} aria-hidden="true" />
-                </button>
+                <div className="shrink-0 flex items-center gap-1.5">
+                  {hasActiveOrders && (
+                    <button
+                      type="button"
+                      onClick={toggleSound}
+                      aria-label={soundOff ? t.unmuteSound : t.muteSound}
+                      aria-pressed={soundOff}
+                      title={soundOff ? t.unmuteSound : t.muteSound}
+                      className={`w-11 h-11 min-w-[44px] rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                        soundOff
+                          ? 'border-amber-500/40 text-amber-600 dark:text-amber-300'
+                          : 'border-[var(--primary)]/40 text-[var(--primary)]'
+                      }`}
+                    >
+                      {soundOff ? <VolumeX size={16} aria-hidden="true" /> : <Volume2 size={16} aria-hidden="true" />}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => ordersState.refetch()}
+                    aria-label={t.refresh}
+                    title={t.refresh}
+                    className={`w-11 h-11 min-w-[44px] rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 text-neutral-300 hover:text-white' : 'border-neutral-300 text-neutral-600 hover:text-black'}`}
+                  >
+                    <RefreshCw size={16} className={ordersState.loading ? 'animate-spin' : ''} aria-hidden="true" />
+                  </button>
+                </div>
               </div>
 
               {ordersState.loading && (

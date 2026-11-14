@@ -9,11 +9,6 @@
   100% { opacity: 0.22; }
 }
 
-@keyframes dotPulse {
-  0%, 100% { transform: scale(0.85); opacity: 0.6; }
-  50% { transform: scale(1.3); opacity: 1; }
-}
-
 @keyframes bounceCart {
   0%, 100% { transform: translateY(0); }
   40% { transform: translateY(-8px) scale(1.02); }
@@ -36,10 +31,6 @@
 
 .anim-glow {
   animation: glow 3.5s ease-in-out infinite alternate;
-}
-
-.anim-dot {
-  animation: dotPulse 1.6s ease-in-out infinite;
 }
 
 .anim-bounce-cart {
@@ -159,6 +150,12 @@
 }
 .anim-bell-ring {
   animation: bellRing 1.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  transform-origin: top center;
+}
+
+/* Keeps a gentle swing going while an order still needs the customer. */
+.anim-bell-ring-loop {
+  animation: bellRing 2.8s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
   transform-origin: top center;
 }
 @keyframes bellGlow {

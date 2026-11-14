@@ -52,6 +52,7 @@ const STR = {
     empty: 'No registered customers yet',
     emptyDesc: 'Customers who create an account will appear here with their details.',
     customers: 'Customers',
+    countHint: 'Registered site accounts',
     orders: 'Orders',
     verified: 'Verified',
     joined: 'Joined',
@@ -75,6 +76,7 @@ const STR = {
     empty: 'لا يوجد عملاء مسجلون بعد',
     emptyDesc: 'سيظهر هنا كل عميل ينشئ حسابًا مع بياناته.',
     customers: 'العملاء',
+    countHint: 'حسابات مسجلة على الموقع',
     orders: 'الطلبات',
     verified: 'موثّق',
     joined: 'انضم',
@@ -184,14 +186,15 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
           )}
         </div>
 
-        <div className="mt-3 max-w-[220px]">
-          <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-2.5 min-w-0">
-            <span className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-500">
-              <Users size={13} className="text-[var(--primary)]" aria-hidden="true" />
-              <span className="truncate">{t.customers}</span>
-            </span>
-            <b className="mt-1 block text-sm tabular-nums truncate" dir="auto">{rows.length}</b>
-          </div>
+        <div className="mt-3 flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-950 px-3.5 py-2.5">
+          <span className="w-9 h-9 min-w-[36px] rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center">
+            <Users size={17} aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[11px] font-bold text-neutral-300">{t.customers}</span>
+            <span className="block text-[10px] text-neutral-500 truncate">{t.countHint}</span>
+          </span>
+          <b className="text-xl font-black tabular-nums text-white" dir="ltr">{rows.length}</b>
         </div>
       </motion.div>
 

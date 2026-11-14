@@ -12,7 +12,9 @@ import { mapOrderRow, validateOrderInput } from '../_shared/orders.js';
 import { assessOrderRisk } from '../_shared/order-risk.js';
 import { newTrackToken } from '../_shared/push.js';
 import { LINK_WINDOW_MS, checkAndReserveOrderBudget, countActiveOrdersByPhone, findLinkCandidate, findOrderById, findOrderByIdemKey, insertOrderWithNumber, isPhoneBlocked, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
+import { getCustomerProfile } from '../_shared/repositories/customers.repo.js';
 import { getOrderingState } from '../_shared/status.js';
+import { isProfileComplete } from '../_shared/validate-auth.js';
 
 const MAX_BODY_BYTES = 8 * 1024;
 const RATE_KEY_PREFIX = 'order:ip:';
@@ -185,6 +187,28 @@ export async function onRequest(context) {
     }, 401);
   }
   c.customerUserId = customerUserId;
+
+  // Mandatory member profile (owner rule): phone + default address + pin are
+  // required before an order. This runs before the blocklist/rate budgets so
+  // an incomplete account consumes no order budget. Fail OPEN on infra errors
+  // (the account/profile read is already best-effort and a DB blip must not
+  // eat real dinner orders); the client mirrors this gate for a clear UX.
+  if (customerUserId && (c.paymentMethod || 'cod') === 'cod') {
+    try {
+      const profile = await getCustomerProfile(db, customerUserId);
+      if (!isProfileComplete(profile)) {
+        return jsonNoStore({
+          error: 'profile_incomplete',
+          message: {
+            en: 'Complete your profile — phone and default address with a map pin — before placing an order.',
+            ar: 'أكمل بيانات حسابك — رقم الهاتف والعنوان الافتراضي مع تثبيت الموقع — قبل إرسال الطلب.',
+          },
+        }, 403);
+      }
+    } catch (err) {
+      captureBackendException(context, err, { binding: 'd1', code: 'order_profile_read' });
+    }
+  }
 
   // Owner blocklist (migration 0032): checked BEFORE any budget reserve so
   // a blocked phone burns no IP budget. Fails CLOSED with the single

@@ -45,6 +45,19 @@ ok(api.includes("publicPostRaw('/api/orders'") && !/http\.get|\.get\(/.test(api)
 ok(/randomUUID|Math\.random/.test(checkout), 'idempotency key is random per drawer session, not a user identity (checkout:178-182)');
 ok(route.includes('CF-Connecting-IP') && route.includes('RATE_KEY_PREFIX') && route.includes('checkAndReserveOrderBudget'), 'server rate limit is per-IP abuse cap, not per-user identity');
 ok(route.includes('account_required') && route.includes("REQUIRE_ACCOUNT_FOR_COD !== '0'"), 'COD order gate requires a signed-in account (local tests opt out explicitly)');
+ok(
+  route.includes('profile_incomplete') && route.includes('getCustomerProfile') && route.includes('isProfileComplete'),
+  'orders route requires a complete phone + address + pin profile before budgets/insert'
+);
+ok(
+  checkout.includes('isProfileComplete(accountProfile)') && checkout.includes('onRequireProfile'),
+  'checkout blocks an incomplete member profile and opens account settings without losing the cart'
+);
+const profileRoute = read('functions/api/account/profile.js');
+ok(
+  profileRoute.includes("error: 'phone_required'") && profileRoute.includes("error: 'address_required'") && profileRoute.includes("error: 'address_pin_required'"),
+  'profile PATCH rejects a missing phone, address or map pin'
+);
 
 /* ---------- B. two-browser separation (simulation) ---------- */
 function makeStore() {

@@ -8,10 +8,14 @@ interface PaymentMethodSectionProps {
   codEnabled?: boolean;
   /** Signed-in member: COD is allowed and the order links automatically. */
   isMember?: boolean;
+  /** Member account is missing the mandatory phone/address/pin. */
+  profileIncomplete?: boolean;
   /** Session/profile still loading — show a neutral checking state. */
   accountLoading?: boolean;
   /** Opens the signup sheet without losing the cart. */
   onRequireAccount?: () => void;
+  /** Opens account settings over the cart so the profile can be completed. */
+  onCompleteProfile?: () => void;
 }
 
 /**
@@ -26,8 +30,10 @@ export const PaymentMethodSection: React.FC<PaymentMethodSectionProps> = ({
   darkMode,
   codEnabled = true,
   isMember = false,
+  profileIncomplete = false,
   accountLoading = false,
   onRequireAccount,
+  onCompleteProfile,
 }) => {
   const isAr = lang === 'ar';
   if (!codEnabled) return null;
@@ -111,10 +117,50 @@ export const PaymentMethodSection: React.FC<PaymentMethodSectionProps> = ({
       </div>
 
       {isMember ? (
-        <p className={`flex items-center gap-1.5 text-[11px] font-bold ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
-          <ShieldCheck size={13} aria-hidden="true" />
-          {isAr ? 'طلبك مرتبط بحسابك تلقائيًا.' : 'Your order is linked to your account automatically.'}
-        </p>
+        accountLoading ? (
+          <p className={`text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
+            {isAr ? 'جارٍ التحقق من بيانات حسابك…' : 'Checking your account details…'}
+          </p>
+        ) : profileIncomplete ? (
+          <div
+            className={`rounded-xl border p-3 ${
+              darkMode ? 'border-[var(--primary)]/30 bg-[var(--primary)]/[0.06]' : 'border-amber-300 bg-amber-50'
+            }`}
+          >
+            <div className="flex items-start gap-2.5">
+              <span
+                className={`shrink-0 w-8 h-8 min-w-[32px] rounded-full flex items-center justify-center ${
+                  darkMode ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-amber-100 text-amber-700'
+                }`}
+              >
+                <UserRound size={15} aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <p className={`text-xs font-extrabold ${darkMode ? 'text-neutral-100' : 'text-neutral-800'}`}>
+                  {isAr ? 'أكمل بيانات حسابك أولًا' : 'Complete your profile first'}
+                </p>
+                <p className={`mt-0.5 text-[11px] leading-relaxed ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                  {isAr
+                    ? 'أضف رقم الهاتف والعنوان الافتراضي مع تثبيت الموقع على الخريطة لتتمكن من إرسال الطلب.'
+                    : 'Add your phone and default address — with a map pin — to place your order.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={onCompleteProfile}
+                  className="btn-tactile mt-2.5 inline-flex h-10 min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-xs font-extrabold text-[#0A0A0A] shadow-sm hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                >
+                  <UserRound size={14} aria-hidden="true" />
+                  {isAr ? 'أكمل البيانات' : 'Complete profile'}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className={`flex items-center gap-1.5 text-[11px] font-bold ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
+            <ShieldCheck size={13} aria-hidden="true" />
+            {isAr ? 'طلبك مرتبط بحسابك تلقائيًا.' : 'Your order is linked to your account automatically.'}
+          </p>
+        )
       ) : accountLoading ? (
         <p className={`text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
           {isAr ? 'جارٍ التحقق من حسابك…' : 'Checking your account…'}

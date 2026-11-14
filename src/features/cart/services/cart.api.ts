@@ -28,7 +28,7 @@ export interface SubmitOrderResult {
   trackToken: string | null;
   blockedMessage: string | null;
   /** Machine cause for UI + remote diagnosis (null = recorded OK). */
-  failure: null | 'timeout' | 'rate' | 'blocked' | 'invalid';
+  failure: null | 'timeout' | 'rate' | 'blocked' | 'invalid' | 'profile';
 }
 
 export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'): Promise<SubmitOrderResult> {
@@ -95,6 +95,15 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
             ? 'أنشئ حسابًا لإتمام طلب الدفع عند الاستلام.'
             : 'Create an account to place a cash-on-delivery order.'),
           failure: 'blocked',
+        };
+      }
+      if (res.status === 403 && isRecord(data) && data.error === 'profile_incomplete') {
+        const msg = isRecord(data.message) ? str(lang === 'ar' ? data.message.ar : data.message.en) : '';
+        return {
+          orderNumber: null,
+          trackToken: null,
+          blockedMessage: msg || null,
+          failure: 'profile',
         };
       }
       if (res.status === 403) {

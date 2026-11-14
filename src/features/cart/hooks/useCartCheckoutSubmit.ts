@@ -11,6 +11,7 @@ import { shouldOverwriteAddress } from './useMidSplitLocationMap';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { formatMMSS } from '@/src/utils/countdown';
 import { clientConfig } from '@/src/config/client.config';
+import { AUTH_STR, isProfileComplete } from '@/src/features/auth';
 import { submitOrder } from '../services/cart.api';
 import { useDeliveryZoneCheck } from './useDeliveryZoneCheck';
 
@@ -31,9 +32,11 @@ interface UseCartCheckoutSubmitArgs {
   accountLoading?: boolean;
   /** Opens the signup sheet when cash-on-delivery needs an account. */
   onRequireAccount?: () => void;
+  /** Opens account settings when the mandatory profile is incomplete. */
+  onRequireProfile?: () => void;
 }
 
-export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess, accountUser, accountProfile, accountLoading = false, onRequireAccount }: UseCartCheckoutSubmitArgs) {
+export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess, accountUser, accountProfile, accountLoading = false, onRequireAccount, onRequireProfile }: UseCartCheckoutSubmitArgs) {
   const isAr = lang === 'ar';
   const ordering = menu.settings.ordering;
 
@@ -278,6 +281,20 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       return;
     }
 
+    // Mandatory member profile (owner rule, server-enforced): phone, default
+    // address and its map pin must exist before any order. Google accounts
+    // go through the same gate. Opening Settings over the cart keeps the
+    // basket intact.
+    if (accountLoading) {
+      setErrorMsg(isAr ? 'جارٍ التحقق من بيانات حسابك — لحظة واحدة ثم حاول مجددًا' : 'Checking your account details — one moment, then try again');
+      return;
+    }
+    if (!isProfileComplete(accountProfile)) {
+      setErrorMsg(AUTH_STR[lang].profileIncompleteOrder);
+      onRequireProfile?.();
+      return;
+    }
+
     // Payments kill-switch: COD is the only method, so a disabled COD means
     // there is no way to pay — refuse before any validation or network use.
     if (menu.settings.payments?.codEnabled === false) {
@@ -428,6 +445,13 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         },
         lang
       );
+      if (result.failure === 'profile') {
+        // Server-side profile gate (defense in depth): the client may hold a
+        // stale complete profile. Show why and open Settings over the cart.
+        setErrorMsg(result.blockedMessage || AUTH_STR[lang].profileIncompleteOrder);
+        onRequireProfile?.();
+        return;
+      }
       if (result.failure === 'blocked') {
         // Server-side availability gate (paused/closed/disabled): show the
         // message and stop here — never a clean confirmation without a

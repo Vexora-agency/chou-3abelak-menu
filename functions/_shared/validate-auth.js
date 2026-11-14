@@ -39,7 +39,9 @@ export const AUTH_ERROR_MESSAGES = Object.freeze({
   password_number_required: 'Password must include at least one number.',
   password_too_common: 'Choose a stronger password.',
   phone_invalid: 'Phone must be 6–15 digits.',
+  phone_required: 'Please enter your phone number.',
   address_invalid: 'Address must be 200 characters or fewer.',
+  address_required: 'Please enter your default address.',
   address_pin_required: 'Pin the default address on the map.',
   location_invalid: 'The pinned location is invalid.',
 });
@@ -168,6 +170,30 @@ export function validateProfileAddress(value) {
 }
 
 /**
+ * A customer account is order-ready only when phone, default address and the
+ * address pin are all present. One predicate shared by the profile route, the
+ * order route and the policy tests.
+ * @param {{ phone?: unknown, address?: unknown, location?: unknown } | null | undefined} profile
+ */
+export function isProfileComplete(profile) {
+  if (!profile || typeof profile !== 'object') return false;
+  const phone = typeof profile.phone === 'string' ? profile.phone.trim() : '';
+  const address = typeof profile.address === 'string' ? profile.address.trim() : '';
+  const location = profile.location;
+  return !!(
+    phone &&
+    address &&
+    location &&
+    location.lat !== null &&
+    location.lat !== undefined &&
+    location.lng !== null &&
+    location.lng !== undefined &&
+    Number.isFinite(Number(location.lat)) &&
+    Number.isFinite(Number(location.lng))
+  );
+}
+
+/**
  * Account default-address pin: optional shape; lat/lng must be finite and in
  * range. Accuracy is coerced to a sane non-negative metre value.
  * @returns {{ ok: true, location: {lat:number,lng:number,accuracy:number}|null } | { ok: false, code: string }}
@@ -175,8 +201,20 @@ export function validateProfileAddress(value) {
 export function validateProfileLocation(value) {
   if (value === undefined || value === null) return { ok: true, location: null };
   if (typeof value !== 'object' || Array.isArray(value)) return { ok: false, code: 'location_invalid' };
-  const lat = Number(value.lat);
-  const lng = Number(value.lng);
+  const rawLat = value.lat;
+  const rawLng = value.lng;
+  // Reject null/undefined/empty coordinates before Number() can turn them
+  // into 0,0 — a missing pin must never be stored as the Gulf of Guinea.
+  if (
+    (typeof rawLat !== 'number' && typeof rawLat !== 'string') ||
+    (typeof rawLng !== 'number' && typeof rawLng !== 'string') ||
+    rawLat === '' ||
+    rawLng === ''
+  ) {
+    return { ok: false, code: 'location_invalid' };
+  }
+  const lat = Number(rawLat);
+  const lng = Number(rawLng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
     return { ok: false, code: 'location_invalid' };
   }

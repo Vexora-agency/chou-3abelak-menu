@@ -67,9 +67,15 @@ export async function onRequest(context) {
   if (!phone.ok) {
     return jsonNoStore({ error: phone.code, message: authErrorMessage(phone.code) }, 400);
   }
+  if (!phone.phone) {
+    return jsonNoStore({ error: 'phone_required', message: authErrorMessage('phone_required') }, 400);
+  }
   const address = validateProfileAddress(body && body.address);
   if (!address.ok) {
     return jsonNoStore({ error: address.code, message: authErrorMessage(address.code) }, 400);
+  }
+  if (!address.address) {
+    return jsonNoStore({ error: 'address_required', message: authErrorMessage('address_required') }, 400);
   }
   const location = validateProfileLocation(body && body.location);
   if (!location.ok) {

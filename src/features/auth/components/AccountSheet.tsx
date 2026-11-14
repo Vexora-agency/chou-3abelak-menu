@@ -21,7 +21,7 @@ import {
 import { authClient } from '@/src/lib/auth-client';
 import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { useNow } from '@/src/hooks/useNow';
-import { cleanPhoneInput } from '@/src/utils/digits';
+import { cleanPhoneInput, phoneDigitsOnly } from '@/src/utils/digits';
 import { formatMMSS } from '@/src/utils/countdown';
 import { formatPrice } from '@/src/utils/pricing';
 import { isSoundOff, setSoundOff } from '@/src/utils/customerOrders';
@@ -33,6 +33,7 @@ import { useCustomerSession } from '../hooks/useCustomerSession';
 import { useCustomerProfile } from '../hooks/useCustomerProfile';
 import { useCustomerOrders } from '../hooks/useCustomerOrders';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { isProfileComplete, MEMBER_PROFILE_CHANGED } from '../profile';
 import { updateMyProfile } from '../services/account.api';
 import { AUTH_STR } from '../strings';
 import type { AccountOrder, AccountStatus } from '../types';
@@ -46,6 +47,8 @@ interface AccountSheetProps {
   currency: string;
   /** Owner-tuned self-cancel window (ms) — same setting as the guest bell. */
   cancelWindowMs: number;
+  /** Open directly on Settings (checkout's "complete profile" CTA). */
+  initialTab?: 'orders' | 'settings';
 }
 
 type Tab = 'orders' | 'settings';
@@ -244,7 +247,7 @@ const OrderCard: FC<{
   );
 };
 
-export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency, cancelWindowMs }: AccountSheetProps) {
+export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency, cancelWindowMs, initialTab = 'orders' }: AccountSheetProps) {
   const t = AUTH_STR[lang];
   const isAr = lang === 'ar';
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -252,7 +255,10 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   const profileState = useCustomerProfile(open);
   const ordersState = useCustomerOrders(open);
 
-  const [tab, setTab] = useState<Tab>('orders');
+  const [tab, setTab] = useState<Tab>(initialTab);
+  // Auto-selecting Settings runs once per opening: the customer can still
+  // browse My orders afterwards without being pulled back on every refetch.
+  const autoTabDoneRef = useRef(false);
   const [openOrder, setOpenOrder] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -270,15 +276,19 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   useFocusTrap(open, sheetRef, onClose);
 
   useEffect(() => {
-    if (!open) return;
-    setTab('orders');
+    if (!open) {
+      autoTabDoneRef.current = false;
+      return;
+    }
+    autoTabDoneRef.current = false;
+    setTab(initialTab);
     setOpenOrder(null);
     setSaveError('');
     setSaveOk(false);
     setSignOutError('');
     setSigningOut(false);
     setLocSheetOpen(false);
-  }, [open]);
+  }, [open, initialTab]);
 
   useEffect(() => {
     if (!open) return;
@@ -297,10 +307,22 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     return () => window.removeEventListener('bell-sound-changed', sync);
   }, [open]);
 
+  const profile = profileState.profile;
+  const profileReady = !profileState.loading && !!profile;
+  const profileIncomplete = profileReady && !isProfileComplete(profile);
+
+  // New accounts (password or Google) land here with no phone/address/pin.
+  // Open Settings for them once the profile fetch settles, so completion is
+  // the first thing they see instead of an empty order list.
+  useEffect(() => {
+    if (!open || !profileReady || autoTabDoneRef.current) return;
+    autoTabDoneRef.current = true;
+    if (profileIncomplete) setTab('settings');
+  }, [open, profileReady, profileIncomplete]);
+
   if (!open) return null;
 
   const user = session.user;
-  const profile = profileState.profile;
   const hasActiveOrders = ordersState.orders.some(
     (order) => order.status === 'new' || order.status === 'confirmed' || order.status === 'ready',
   );
@@ -349,8 +371,25 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
       setSaveError(t.errorName);
       return;
     }
+    // Phone + default address + pin are mandatory for every account (Google
+    // included), matching the profile API and the order API. Validate here
+    // first so the customer gets a specific field-level message, not a
+    // generic server failure.
+    if (!phone.trim()) {
+      setSaveError(t.phoneRequired);
+      return;
+    }
+    const phoneDigits = phoneDigitsOnly(phone);
+    if (phoneDigits.length < 6 || phoneDigits.length > 15) {
+      setSaveError(t.phoneInvalid);
+      return;
+    }
     const trimmedAddress = address.trim();
-    if (trimmedAddress && !location) {
+    if (!trimmedAddress) {
+      setSaveError(t.addressRequired);
+      return;
+    }
+    if (!location) {
       setSaveError(t.pinRequired);
       return;
     }
@@ -363,9 +402,12 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
       await updateMyProfile({
         phone,
         address: trimmedAddress,
-        location: trimmedAddress ? location : null,
+        location,
       });
-      await Promise.all([session.refetch(), profileState.refetch()]);
+      await session.refetch();
+      // Refreshes every profile consumer (this sheet, checkout, header) via
+      // the shared event, so the order gate clears without a reload.
+      window.dispatchEvent(new Event(MEMBER_PROFILE_CHANGED));
       setSaveOk(true);
       window.setTimeout(() => setSaveOk(false), 2500);
     } catch {
@@ -471,6 +513,39 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
 
           {tab === 'orders' && (
             <div className="pt-1">
+              {profileIncomplete && (
+                <div
+                  aria-labelledby="profile-required-title"
+                  className={`mb-3 rounded-2xl border p-3.5 ${
+                    darkMode ? 'border-[var(--primary)]/30 bg-[var(--primary)]/[0.07]' : 'border-amber-300 bg-amber-50'
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <span
+                      className={`shrink-0 w-9 h-9 min-w-[36px] rounded-full flex items-center justify-center ${
+                        darkMode ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-amber-100 text-amber-700'
+                      }`}
+                    >
+                      <UserRound size={17} aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p id="profile-required-title" className={`text-xs font-extrabold ${darkMode ? 'text-neutral-100' : 'text-neutral-800'}`}>
+                        {t.profileRequiredTitle}
+                      </p>
+                      <p className={`mt-0.5 text-[11px] leading-relaxed ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                        {t.profileRequiredDesc}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setTab('settings')}
+                        className="btn-tactile mt-2.5 inline-flex h-10 min-h-[44px] items-center justify-center rounded-full bg-[var(--primary)] px-4 text-xs font-extrabold text-[#0A0A0A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                      >
+                        {t.completeProfile}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-extrabold">{t.ordersTitle}</h3>
@@ -595,7 +670,9 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
               </div>
 
               <div>
-                <label className={labelClass} htmlFor="account-phone">{t.phone}</label>
+                <label className={labelClass} htmlFor="account-phone">
+                  {t.phone} <span className="text-red-500" aria-hidden="true">*</span>
+                </label>
                 <input
                   id="account-phone"
                   type="tel"
@@ -608,12 +685,15 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                   placeholder={isAr ? '70123456' : '+961 70 123 456'}
                   className={`${inputClass} tabular-nums ${isAr ? 'text-end' : 'text-start'}`}
                   aria-describedby="account-phone-note"
+                  aria-required="true"
                 />
                 <p id="account-phone-note" className={`mt-1 text-[10px] ${mutedClass}`}>{t.phoneHint}</p>
               </div>
 
               <div>
-                <label className={labelClass} htmlFor="account-address">{t.defaultAddress}</label>
+                <label className={labelClass} htmlFor="account-address">
+                  {t.defaultAddress} <span className="text-red-500" aria-hidden="true">*</span>
+                </label>
                 <div className="relative">
                   <input
                     id="account-address"
@@ -628,6 +708,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                       : (isAr ? 'اكتب عنوانك هنا' : 'Type your address here')}
                     className={`${inputClass} pe-12 disabled:opacity-70 disabled:cursor-not-allowed`}
                     aria-describedby="account-address-note"
+                    aria-required="true"
                   />
                   <button
                     type="button"

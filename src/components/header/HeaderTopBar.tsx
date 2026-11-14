@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Bell, Moon, Settings, Sun, UserRound } from 'lucide-react';
+import { Bell, Moon, Settings, ShoppingBasket, Sun, UserRound } from 'lucide-react';
 import { motion } from 'motion/react';
 import type { useHeaderMotion } from '@/src/hooks/useHeaderMotion';
 import { useNow } from '@/src/hooks/useNow';
@@ -248,7 +248,11 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
                   : 'border border-[var(--primary)]/70 bg-[#0A0A0A] text-[var(--primary)]'
               }`}
             >
-              <Bell size={12} strokeWidth={2.8} className={due ? 'anim-bell-ring-loop' : ''} />
+              {due ? (
+                <Bell size={12} strokeWidth={2.8} className="anim-bell-ring-loop" />
+              ) : (
+                <ShoppingBasket size={12} strokeWidth={2.6} />
+              )}
             </span>
           )}
         </button>

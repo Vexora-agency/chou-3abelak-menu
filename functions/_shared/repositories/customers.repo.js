@@ -53,11 +53,28 @@ export async function upsertCustomerProfile(db, userId, { phone, address }, nowI
 
 /**
  * Admin list: registered accounts + aggregate order stats.
- * `query` matches name/email/phone (case-insensitive for ASCII); limit capped.
+ * `query` matches name/email/phone (case-insensitive for ASCII); phone
+ * matching also normalizes Arabic/Persian digits and separators, and falls
+ * back to the order's stored `phone_norm` for accounts without a profile
+ * phone. Limit capped.
  */
+function phoneSearchDigits(value) {
+  const western = String(value || '').replace(/[٠-٩۰-۹]/g, (ch) => {
+    const code = ch.charCodeAt(0);
+    if (code >= 0x0660 && code <= 0x0669) return String(code - 0x0660);
+    return String(code - 0x06f0);
+  });
+  return western.replace(/\D/g, '');
+}
+
 export async function listRegisteredCustomers(db, query, limit = 200) {
   const q = typeof query === 'string' ? query.trim().slice(0, 80) : '';
   const like = `%${q}%`;
+  // Only treat the query as a phone fragment when it has no letters/email
+  // marker; this keeps name/email searches from accidentally matching a
+  // stray digit run inside a profile phone.
+  const digits = phoneSearchDigits(q);
+  const phoneLike = digits.length >= 3 && !/[a-z@]/i.test(q) ? `%${digits}%` : '';
   const max = Math.min(200, Math.max(1, Number.isInteger(limit) ? limit : 200));
   const res = await db
     .prepare(
@@ -71,11 +88,22 @@ export async function listRegisteredCustomers(db, query, limit = 200) {
               (SELECT MAX(o.created_at) FROM orders o WHERE o.customer_user_id = u.id) AS lastOrderAt
        FROM "user" u
        LEFT JOIN customer_profiles p ON p.user_id = u.id
-       WHERE (?1 = '' OR u.name LIKE ?2 OR u.email LIKE ?2 OR COALESCE(p.phone, '') LIKE ?2)
+       WHERE (
+         ?1 = '' OR u.name LIKE ?2 OR u.email LIKE ?2 OR COALESCE(p.phone, '') LIKE ?2
+         OR (
+           ?3 <> '' AND (
+             REPLACE(REPLACE(REPLACE(COALESCE(p.phone, ''), ' ', ''), '-', ''), '+', '') LIKE ?3
+             OR EXISTS (
+               SELECT 1 FROM orders o2
+               WHERE o2.customer_user_id = u.id AND o2.phone_norm LIKE ?3
+             )
+           )
+         )
+       )
        ORDER BY u."createdAt" DESC
-       LIMIT ?3`
+       LIMIT ?4`
     )
-    .bind(q, like, max)
+    .bind(q, like, phoneLike, max)
     .all();
   const rows = res && Array.isArray(res.results) ? res.results : [];
   return rows.map((row) => ({

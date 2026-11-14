@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   AlertCircle,
@@ -11,7 +11,6 @@ import {
   RefreshCw,
   Search,
   Users,
-  Wallet,
   X,
 } from 'lucide-react';
 import type { AdminFetch } from '@/src/lib/api-client';
@@ -54,7 +53,6 @@ const STR = {
     emptyDesc: 'Customers who create an account will appear here with their details.',
     customers: 'Customers',
     orders: 'Orders',
-    spent: 'Total spent',
     verified: 'Verified',
     joined: 'Joined',
     lastOrder: 'Last order',
@@ -78,7 +76,6 @@ const STR = {
     emptyDesc: 'سيظهر هنا كل عميل ينشئ حسابًا مع بياناته.',
     customers: 'العملاء',
     orders: 'الطلبات',
-    spent: 'إجمالي الإنفاق',
     verified: 'موثّق',
     joined: 'انضم',
     lastOrder: 'آخر طلب',
@@ -140,16 +137,6 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
     return () => window.clearTimeout(timer);
   }, [query, version, adminFetch]);
 
-  const totals = useMemo(() => {
-    let orders = 0;
-    let spent = 0;
-    for (const row of rows) {
-      orders += Number(row.ordersCount) || 0;
-      spent += Number(row.totalSpent) || 0;
-    }
-    return { orders, spent };
-  }, [rows]);
-
   const rise = (delay: number) => ({
     initial: { opacity: 0, y: 12 },
     animate: { opacity: 1, y: 0 },
@@ -197,23 +184,14 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
           )}
         </div>
 
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {[
-            [Users, t.customers, rows.length],
-            [ReceiptText, t.orders, totals.orders],
-            [Wallet, t.spent, formatPrice(totals.spent, currency)],
-          ].map(([Icon, label, value]) => {
-            const Ico = Icon as typeof Users;
-            return (
-              <div key={String(label)} className="rounded-xl border border-neutral-800 bg-neutral-950 p-2.5 min-w-0">
-                <span className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-500">
-                  <Ico size={13} className="text-[var(--primary)]" aria-hidden="true" />
-                  <span className="truncate">{String(label)}</span>
-                </span>
-                <b className="mt-1 block text-sm tabular-nums truncate" dir="auto">{String(value)}</b>
-              </div>
-            );
-          })}
+        <div className="mt-3 max-w-[220px]">
+          <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-2.5 min-w-0">
+            <span className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-500">
+              <Users size={13} className="text-[var(--primary)]" aria-hidden="true" />
+              <span className="truncate">{t.customers}</span>
+            </span>
+            <b className="mt-1 block text-sm tabular-nums truncate" dir="auto">{rows.length}</b>
+          </div>
         </div>
       </motion.div>
 
@@ -257,9 +235,13 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
                       </span>
                     )}
                   </div>
-                  <a href={`mailto:${row.email}`} className="mt-0.5 flex items-center gap-1.5 text-xs text-neutral-400 hover:text-[var(--primary)] truncate" dir="ltr">
+                  <a
+                    href={`mailto:${row.email}`}
+                    dir={isAr ? 'rtl' : 'ltr'}
+                    className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-neutral-400 hover:text-[var(--primary)] truncate"
+                  >
                     <Mail size={12} className="shrink-0" aria-hidden="true" />
-                    <span className="truncate">{row.email || '—'}</span>
+                    <span dir="ltr" className="truncate">{row.email || '—'}</span>
                   </a>
                 </div>
                 <div className="shrink-0 text-end">

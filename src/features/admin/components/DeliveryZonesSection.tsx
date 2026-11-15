@@ -216,7 +216,7 @@ export const DeliveryZonesSection: React.FC<DeliveryZonesSectionProps> = ({
                     aria-label={isAr ? 'البحث عن دولة' : 'Search countries'}
                   />
                 </div>
-                <div className="max-h-60 overflow-y-auto rounded-lg border border-neutral-800 divide-y divide-neutral-800/70" role="listbox" aria-label={isAr ? 'الدول' : 'Countries'}>
+                <div data-lenis-prevent className="max-h-60 overflow-y-auto rounded-lg border border-neutral-800 divide-y divide-neutral-800/70" role="listbox" aria-label={isAr ? 'الدول' : 'Countries'}>
                   {filtered.map((c) => {
                     const on = selectedSet.has(c.cc);
                     return (
@@ -304,7 +304,7 @@ export const DeliveryZonesSection: React.FC<DeliveryZonesSectionProps> = ({
                             {isAr ? 'لا توجد تقسيمات مسجلة لهذه الدولة — تُعامل كاملة مفتوحة.' : 'No recorded subdivisions for this country — treated as fully open.'}
                           </p>
                         ) : (
-                          <div className="max-h-56 overflow-y-auto rounded-lg border border-neutral-800 divide-y divide-neutral-800/70">
+                          <div data-lenis-prevent className="max-h-56 overflow-y-auto rounded-lg border border-neutral-800 divide-y divide-neutral-800/70">
                             {list.map((s) => {
                               const on = allOpen || (Array.isArray(entry.subdivisions) && entry.subdivisions.includes(s.code));
                               return (

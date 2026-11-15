@@ -13,6 +13,7 @@ import { MenuListListRow } from './menu-list/MenuListListRow';
 import { MenuListGridCard } from './menu-list/MenuListGridCard';
 import { MenuListPhotoCard } from './menu-list/MenuListPhotoCard';
 import { MenuListRoundCard } from './menu-list/MenuListRoundCard';
+import { scrollToElementId } from '@/src/lib/motion/smoothScroll';
 
 interface MenuListProps {
   categories: Category[];
@@ -492,7 +493,7 @@ export const MenuList: React.FC<MenuListProps> = ({
             const after = pagerAfter ? pagerAfter.getBoundingClientRect().top : null;
             if (before != null && after != null) window.scrollBy(0, after - before);
             if (landing) {
-              document.getElementById(`category-${cat.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              scrollToElementId(`category-${cat.id}`);
             }
           }, 520);
         };
@@ -560,7 +561,7 @@ export const MenuList: React.FC<MenuListProps> = ({
           </>
         );
         return (
-          <section key={cat.id} id={`category-${cat.id}`} className={`scroll-mt-[160px] menu-section${isFestive ? ' xmas-festive' : ''}`}>
+          <section key={cat.id} id={`category-${cat.id}`} data-motion-reveal="fade" className={`scroll-mt-[160px] menu-section${isFestive ? ' xmas-festive' : ''}`}>
             {sectionInnerClass ? (
               <div className={sectionWrapClass}>
                 <div className={sectionInnerClass}>

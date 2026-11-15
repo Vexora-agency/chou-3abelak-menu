@@ -4,6 +4,8 @@ import { formatPrice, unitLabel } from '@/src/utils/pricing';
 import { formatMMSS } from '@/src/utils/countdown';
 import { useNow } from '@/src/hooks/useNow';
 import { etaRange, formatEtaRangeWithDay } from '@/src/utils/etaFormat';
+import { CountUp, SplitText } from '@/src/components/motion';
+import { scrollPageToTop } from '@/src/lib/motion/smoothScroll';
 import { ReceivedButton } from './components/ReceivedButton';
 import { CancelOrderButton } from './components/CancelOrderButton';
 import { InstallAppCard } from './components/InstallAppCard';
@@ -269,8 +271,11 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   const etaLabel = etaWindow ? formatEtaRangeWithDay(etaWindow.fromIso, etaWindow.toIso, lang, storeTz, displayNowMs) : '';
 
   return (
-    <div dir={isAr ? 'rtl' : 'ltr'} className="min-h-dvh bg-[#0A0A0A] text-white flex flex-col items-center px-5 pb-[max(2rem,env(safe-area-inset-bottom))]">
-      <div className="w-full max-w-[520px]">
+    <div dir={isAr ? 'rtl' : 'ltr'} className="relative isolate min-h-dvh overflow-x-clip bg-[#0A0A0A] text-white flex flex-col items-center px-5 pb-[max(2rem,env(safe-area-inset-bottom))]">
+      {/* Premium depth aura behind the status card (GSAP parallax once the
+          motion layer is idle; static and safe before that). */}
+      <div className="fx-aura z-0" data-gsap-parallax="0.1" aria-hidden="true" />
+      <div className="relative z-10 w-full max-w-[520px]">
         {/* Sticky top bar: back-to-menu + language stay reachable no matter
             how far down the order details scroll (mobile-first fix).
             Solid background on purpose: backdrop-blur on a sticky bar is a
@@ -312,10 +317,10 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
         ) : (
           <>
             <p className="text-center text-xs font-bold text-neutral-400">
-              {storeName || (isAr ? 'تتبع الطلب' : 'Order tracking')}
+              <SplitText text={storeName || (isAr ? 'تتبع الطلب' : 'Order tracking')} stagger={45} />
             </p>
             <h1 className="text-center text-2xl sm:text-3xl font-black mt-1 tabular-nums" dir="ltr">
-              #{data.number}
+              <CountUp value={data.number} duration={1.05} format={(n) => `#${Math.round(n)}`} />
             </h1>
             {typeof data.parentNumber === 'number' && (
               <p className="mt-2 text-center text-[11px] font-bold text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-xl px-3 py-1.5" dir="auto">
@@ -339,7 +344,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                 </p>
               </div>
             ) : (
-              <ol className="mt-6 space-y-0">
+              <ol data-motion-reveal="fade" className="mt-6 space-y-0">
                 {steps.map((s, i) => {
                   const done = i <= stage;
                   const current = i === stage;
@@ -379,7 +384,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
               </p>
             )}
 
-            <div className="mt-2 rounded-2xl border border-neutral-800 border-t-2 border-t-[var(--primary)] bg-neutral-900/60 p-4 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)]">
+            <div data-motion-reveal="up" data-motion-delay="80" className="mt-2 rounded-2xl border border-neutral-800 border-t-2 border-t-[var(--primary)] bg-neutral-900/60 p-4 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)]">
               {data.items.map((it, i) => (
                 <div key={i} className="flex justify-between gap-3 py-1.5 text-sm">
                   <span className="min-w-0 flex-1 break-words text-neutral-200">
@@ -407,7 +412,11 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
               ))}
               <div className="border-t border-neutral-800 mt-2 pt-2 flex justify-between text-sm font-black">
                 <span>{isAr ? 'الإجمالي' : 'Total'}</span>
-                <span className="tabular-nums text-[var(--primary)]"><bdi dir="ltr">{formatPrice(data.total)}</bdi> <span dir="auto">{currency}</span></span>
+                <span className="tabular-nums text-[var(--primary)]">
+                  <CountUp value={data.total} duration={1.25} format={(n) => formatPrice(Math.round(n))} />
+                  {' '}
+                  <span dir="auto">{currency}</span>
+                </span>
               </div>
               <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/[0.07] px-3 py-2">
                 <span className="text-[11px] font-bold text-neutral-400">{isAr ? 'طريقة الدفع' : 'Payment'}</span>
@@ -474,7 +483,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
       {showTop && (
         <button
           type="button"
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          onClick={() => scrollPageToTop()}
           aria-label={isAr ? 'الرجوع لأعلى الصفحة' : 'Back to top'}
           className="btn-tactile fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] end-5 z-30 w-12 h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-1 ring-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
         >

@@ -5,6 +5,7 @@ import { Flame, Sparkles, Award } from 'lucide-react';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
 import { MenuListItemAction } from './MenuListItemAction';
+import { SplitText } from '@/src/components/motion';
 import '@/src/features/seasonal/xmas-accents.css';
 
 interface MenuListSectionHeaderProps {
@@ -62,7 +63,7 @@ export const MenuListSectionHeader: React.FC<MenuListSectionHeaderProps> = ({
       />
       )}
       <h2 className={`text-xl sm:text-2xl font-extrabold ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-        {title}
+        <SplitText text={title} stagger={45} />
       </h2>
       {typeof count === 'number' && (
         <span className={`text-[11px] font-extrabold tabular-nums px-2 py-0.5 rounded-full border ${darkMode ? 'text-neutral-400 border-neutral-800 bg-black/40' : 'text-neutral-600 border-neutral-200 bg-black/5'}`}>

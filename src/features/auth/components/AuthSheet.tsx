@@ -308,7 +308,7 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode, resetToken
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
       >
-        <div className="overflow-y-auto overscroll-contain no-scrollbar flex-1 min-h-0 px-6 sm:px-7 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div data-lenis-prevent className="overflow-y-auto overscroll-contain no-scrollbar flex-1 min-h-0 px-6 sm:px-7 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <div className={`w-11 h-1.5 rounded-full mx-auto mt-3 mb-2 md:hidden ${darkMode ? 'bg-neutral-600' : 'bg-neutral-300'}`} />
           <div className="flex items-start justify-between gap-3 pt-2">
             <div className="min-w-0">

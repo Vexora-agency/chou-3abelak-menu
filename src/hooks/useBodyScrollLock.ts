@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { pauseSmoothScroll, resumeSmoothScroll } from '@/src/lib/motion/smoothScroll';
 
 /**
  * Radical scroll fix for bottom sheets on phones.
@@ -34,7 +35,7 @@ interface LockEntry {
   y: number;
 }
 
-let stack: LockEntry[] = [];
+const stack: LockEntry[] = [];
 let prevOverflow = '';
 let prevOverscroll = '';
 let prevPosition = '';
@@ -94,7 +95,12 @@ function lockBody(id: string): void {
   // there, so inherit the offset the body is actually pinned at.
   const y = stack.length === 0 ? window.scrollY || 0 : stack[stack.length - 1].y;
   stack.push({ id, y });
-  if (stack.length === 1) pinBody(y);
+  if (stack.length === 1) {
+    // Pause Lenis before the body is pinned: a wheel tick must never fight
+    // the fixed-position lock or leave a stale target behind the overlay.
+    pauseSmoothScroll();
+    pinBody(y);
+  }
 }
 
 function unlockBody(id: string): void {
@@ -111,6 +117,9 @@ function unlockBody(id: string): void {
   } catch {}
   unpinBody();
   restoreScroll(entry.y);
+  // Re-seat Lenis on the restored offset before restarting, so its first
+  // animation frame can never snap the page back to the top.
+  resumeSmoothScroll(entry.y);
 }
 
 /** Lock body scroll while `active`; `id` must be stable per sheet. */

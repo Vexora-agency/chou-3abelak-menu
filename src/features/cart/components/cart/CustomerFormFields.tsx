@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CustomerDetails } from '@/src/types/menu';
 import { cleanPhoneInput } from '@/src/utils/digits';
-import { MapPin, Navigation, UserRound, X } from 'lucide-react';
+import { ChevronDown, Mail, MapPin, Navigation, UserRound, X } from 'lucide-react';
 
 interface CustomerFormFieldsProps {
   customer: CustomerDetails;
@@ -44,8 +44,8 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
       {isMember && (
         <p className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 text-[11px] font-bold leading-relaxed ${
           darkMode
-            ? 'border-[var(--primary)]/25 bg-[var(--primary)]/[0.06] text-neutral-300'
-            : 'border-amber-300 bg-amber-50 text-neutral-700'
+            ? 'border-white/10 bg-white/[0.03] text-neutral-300'
+            : 'border-neutral-200 bg-neutral-50 text-neutral-700'
         }`}>
           <UserRound size={14} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
           <span>
@@ -231,31 +231,64 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           registered members — their account email already rides with every
           linked order, so asking again is noise. */}
       {!isMember && (
-      <div className="rounded-xl border border-[var(--primary)] bg-[var(--primary)] text-[#0A0A0A]">
+      <div className={`rounded-2xl border transition-colors duration-300 ${
+        darkMode
+          ? 'border-white/10 bg-[#171717]'
+          : 'border-neutral-200/90 bg-white shadow-[0_1px_2px_rgba(10,10,10,0.04)]'
+      }`}>
         <button
           type="button"
           onClick={() => setEmailOpen((v) => !v)}
           aria-expanded={emailOpen}
-          className="w-full flex items-center justify-between gap-3 text-start min-h-[44px] px-3.5 py-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] text-[#0A0A0A]"
+          aria-controls="cart-email-panel"
+          className={`w-full flex items-center gap-3 text-start min-h-[56px] px-3 py-2.5 rounded-2xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+            darkMode ? 'hover:bg-white/[0.03]' : 'hover:bg-neutral-50'
+          }`}
         >
-          <span className="min-w-0">
-            <span className="block text-xs font-black">
-              {isAr ? 'يُنصح بإضافة البريد الإلكتروني' : 'Email recommended'}
+          <span className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${
+            darkMode ? 'bg-[var(--primary)]/[0.12] text-[var(--primary)]' : 'bg-[var(--primary)]/15 text-[#7a5d00]'
+          }`}>
+            <Mail size={16} strokeWidth={2.2} aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1.5 min-w-0">
+              <span className={`truncate text-[13px] font-extrabold ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+                {isAr ? 'تحديثات البريد' : 'Email updates'}
+              </span>
+              <span className={`shrink-0 rounded-full px-1.5 py-px text-[9px] font-black ${
+                isAr ? '' : 'uppercase tracking-[0.08em]'
+              } ${
+                darkMode ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-[var(--primary)]/[0.18] text-[#7a5d00]'
+              }`}>
+                {isAr ? 'مُستحسن' : 'Recommended'}
+              </span>
             </span>
-            <span className="block text-[11px] mt-0.5 font-bold text-black/70">
-              {isAr ? 'لتوصلك تحديثات طلبك لحظة بلحظة.' : 'To receive instant updates about your order.'}
+            <span className={`mt-0.5 block truncate text-[11px] font-semibold ${
+              darkMode ? 'text-neutral-400' : 'text-neutral-500'
+            }`}>
+              {isAr ? 'تحديثات فورية للطلب.' : 'Instant order updates.'}
             </span>
           </span>
-          <span aria-hidden="true" className="shrink-0 text-lg leading-none transition-transform duration-200 text-[#0A0A0A]">
-            <span className={`inline-block transition-transform duration-200 ${emailOpen ? 'rotate-180' : ''}`}>▾</span>
-          </span>
+          <ChevronDown
+            size={16}
+            aria-hidden="true"
+            className={`shrink-0 transition-transform duration-300 ${
+              emailOpen ? 'rotate-180' : ''
+            } ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}
+          />
         </button>
         {emailOpen && (
-          <div className="px-3.5 pb-3.5 anim-fade-in">
-            <label className="block text-xs font-bold mb-1 text-[#0A0A0A]">
-              {isAr ? 'البريد الإلكتروني (اختياري)' : 'Email (optional)'}
+          <div id="cart-email-panel" className="px-3 pb-3 anim-fade-in">
+            <label
+              htmlFor="cart-email-input"
+              className={`mb-1 block text-[10px] font-extrabold ${
+                isAr ? '' : 'uppercase tracking-[0.08em]'
+              } ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}
+            >
+              {isAr ? 'البريد الإلكتروني' : 'Email address'}
             </label>
             <input
+              id="cart-email-input"
               type="email"
               inputMode="email"
               dir="ltr"
@@ -265,7 +298,11 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               maxLength={254}
               autoComplete="email"
               enterKeyHint="done"
-              className={`w-full h-11 px-3.5 rounded-xl border border-black/20 bg-white text-[#0A0A0A] placeholder-neutral-500 text-base ${isAr ? 'text-end' : 'text-start'} shadow-xs focus:outline-none focus:ring-2 focus:ring-[#0A0A0A] transition-colors`}
+              className={`w-full h-11 px-3.5 rounded-xl border text-start text-base transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${
+                darkMode
+                  ? 'border-neutral-700 bg-[#111111] text-white placeholder-neutral-500'
+                  : 'border-neutral-200 bg-neutral-50/60 text-[#0A0A0A] placeholder-neutral-400'
+              }`}
             />
           </div>
         )}

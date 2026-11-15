@@ -96,7 +96,7 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({ value, onC
               className="no-focus-ring w-full h-10 bg-transparent text-sm text-white placeholder-neutral-500 focus:outline-none"
             />
           </div>
-          <div role="listbox" aria-label={isAr ? 'الدول' : 'Countries'} className="overflow-y-auto py-1">
+          <div role="listbox" aria-label={isAr ? 'الدول' : 'Countries'} data-lenis-prevent className="overflow-y-auto py-1">
             {rows.map((c, i) => {
               const isSel = c.iso === value;
               return (

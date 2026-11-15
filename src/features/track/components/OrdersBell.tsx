@@ -642,6 +642,7 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
             </div>
           </div>
           <div
+            data-lenis-prevent
             className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-5 sm:px-6 pt-3 pb-[max(1.75rem,env(safe-area-inset-bottom))] overflow-x-clip"
           >
             {loading && !orders.length ? (

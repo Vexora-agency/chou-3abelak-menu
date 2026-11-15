@@ -1,0 +1,241 @@
+/* ==========================================================================
+   PREMIUM MOTION LAYER — Lenis + GSAP + React Bits-style primitives
+   --------------------------------------------------------------------------
+   Owner decision (same as App.tsx MotionConfig and the header intro engine):
+   every animation on this site runs for every visitor, even under
+   prefers-reduced-motion or device power saving. Nothing in this file is
+   gated behind a reduced-motion media query on purpose.
+
+   Performance contract:
+   - opacity / translate / scale / filter only (compositor-friendly).
+   - `will-change` is opt-in while an entrance runs, then dropped
+     (data-fx-done) so long pages never keep dozens of compositor layers.
+   - pointer-driven effects (magnetic / spotlight) are disabled on touch.
+   ========================================================================== */
+
+/* ---------- Lenis: official runtime styles ---------- */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+/* Lenis owns programmatic scrolling; the stylesheet's native smooth scroll
+   would fight it and double-ease every anchor jump. */
+html.lenis {
+  scroll-behavior: auto;
+}
+
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
+}
+
+.lenis [data-lenis-prevent],
+.lenis [data-lenis-prevent-wheel],
+.lenis [data-lenis-prevent-touch],
+.lenis [data-lenis-prevent-vertical],
+.lenis [data-lenis-prevent-horizontal] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   REVEAL  (React Bits "AnimatedContent / ScrollReveal" feel)
+   Elements are only hidden after the runtime marks them
+   [data-fx-init] — a JS failure can never blank the page.
+   ========================================================================== */
+[data-fx-init] {
+  transition:
+    opacity var(--fx-dur, 0.85s) var(--fx-ease, cubic-bezier(0.22, 1, 0.36, 1)) var(--fx-delay, 0ms),
+    translate var(--fx-dur, 0.85s) var(--fx-ease, cubic-bezier(0.22, 1, 0.36, 1)) var(--fx-delay, 0ms),
+    scale var(--fx-dur, 0.85s) var(--fx-ease, cubic-bezier(0.22, 1, 0.36, 1)) var(--fx-delay, 0ms),
+    filter var(--fx-dur, 0.85s) var(--fx-ease, cubic-bezier(0.22, 1, 0.36, 1)) var(--fx-delay, 0ms);
+  backface-visibility: hidden;
+}
+
+[data-fx-init]:not([data-fx-in]) {
+  opacity: 0;
+  translate: 0 var(--fx-y, 18px);
+  scale: var(--fx-s, 1);
+  filter: blur(var(--fx-blur, 0px));
+}
+
+[data-fx-init][data-fx-in] {
+  opacity: 1;
+  translate: 0 0;
+  scale: 1;
+  filter: blur(0);
+}
+
+[data-fx-init][data-fx-done] {
+  transition: opacity 0.3s ease, translate 0.3s ease;
+}
+
+/* Edge-safe reveal variants: every transform is a single compositor axis. */
+[data-motion-reveal='fade'] {
+  --fx-y: 0px;
+}
+[data-motion-reveal='down'] {
+  --fx-y: -18px;
+}
+[data-motion-reveal='scale'] {
+  --fx-y: 14px;
+  --fx-s: 0.97;
+}
+[data-motion-reveal='zoom'] {
+  --fx-y: 0px;
+  --fx-s: 0.94;
+}
+[data-motion-reveal='blur'] {
+  --fx-y: 10px;
+  --fx-blur: 8px;
+}
+
+/* ==========================================================================
+   SPLIT TEXT  (React Bits "SplitText" feel, word-level only)
+   Words are the safe unit in Arabic: splitting at spaces never breaks the
+   cursive joining inside a word.
+   ========================================================================== */
+.fx-split-word {
+  display: inline-block;
+  opacity: 0;
+  animation: fxWordIn 0.82s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--fx-delay, 0ms) + var(--fx-i, 0) * var(--fx-stagger, 55ms));
+  backface-visibility: hidden;
+}
+
+@keyframes fxWordIn {
+  from {
+    opacity: 0;
+    translate: 0 0.5em;
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    filter: blur(0);
+  }
+}
+
+/* ==========================================================================
+   MAGNETIC  (pointer magnet; fine pointers only)
+   Uses the independent `translate` property, so it never fights a motion
+   `transform` entrance or a Tailwind scale/translate utility.
+   ========================================================================== */
+.fx-magnetic {
+  transition: translate 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .fx-magnetic {
+    translate: none !important;
+  }
+}
+
+/* ==========================================================================
+   SPOTLIGHT  (cursor-follow sheen inside premium cards)
+   ========================================================================== */
+.fx-spotlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  background: radial-gradient(
+    220px circle at var(--fx-mx, 50%) var(--fx-my, 50%),
+    var(--fx-spot, rgba(255, 255, 255, 0.2)),
+    transparent 66%
+  );
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fx-spotlight-host:hover .fx-spotlight {
+    opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   SHINY TEXT  (premium headline sweep; base + sweep colors are variables so
+   the same class works on gold, white and black surfaces)
+   ========================================================================== */
+.fx-shiny {
+  background-image: linear-gradient(
+    100deg,
+    var(--fx-shine-base, #ffffff) 0%,
+    var(--fx-shine-base, #ffffff) 38%,
+    var(--fx-shine, var(--primary)) 50%,
+    var(--fx-shine-base, #ffffff) 62%,
+    var(--fx-shine-base, #ffffff) 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: fxShineSweep 5.5s linear infinite;
+}
+
+@keyframes fxShineSweep {
+  from {
+    background-position: 160% 0;
+  }
+  to {
+    background-position: -60% 0;
+  }
+}
+
+/* ==========================================================================
+   SOFT AURA  (standalone pages: track / invite / admin login)
+   ========================================================================== */
+.fx-aura {
+  position: absolute;
+  inset: -20% -10% auto;
+  height: 70vh;
+  pointer-events: none;
+  background:
+    radial-gradient(52% 58% at 50% 30%, color-mix(in srgb, var(--primary) 18%, transparent) 0%, color-mix(in srgb, var(--primary) 6%, transparent) 46%, transparent 76%),
+    radial-gradient(90% 46% at 50% 100%, color-mix(in srgb, var(--primary) 8%, transparent) 0%, transparent 70%);
+  opacity: 0.9;
+}
+
+/* ==========================================================================
+   CART PREMIUM CASCADE
+   The drawer only mounts while open, so this plays on every open. It is a
+   CSS mirror of the GSAP stagger used elsewhere: same expo feel, zero JS.
+   ========================================================================== */
+.cart-stagger > * {
+  animation: fxCartRise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.cart-stagger > *:nth-child(1) {
+  animation-delay: 0.02s;
+}
+.cart-stagger > *:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.cart-stagger > *:nth-child(3) {
+  animation-delay: 0.12s;
+}
+.cart-stagger > *:nth-child(4) {
+  animation-delay: 0.17s;
+}
+.cart-stagger > *:nth-child(5) {
+  animation-delay: 0.22s;
+}
+.cart-stagger > *:nth-child(6) {
+  animation-delay: 0.27s;
+}
+.cart-stagger > *:nth-child(n + 7) {
+  animation-delay: 0.32s;
+}
+
+@keyframes fxCartRise {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}

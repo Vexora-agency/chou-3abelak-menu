@@ -5,6 +5,7 @@ import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { pickLangText } from '@/src/utils/menuHelpers';
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
+import { SplitText } from '@/src/components/motion';
 
 interface FeaturedCarouselProps {
   items: MenuItem[];
@@ -252,7 +253,13 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '100px' }}
         transition={{ duration: 0.55, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
-        className={`group relative flex-shrink-0 w-full ${forceSlider ? '' : 'md:w-auto md:min-w-0 md:grow-0 md:shrink-0 md:basis-[calc((100%_-_2rem)/3)]'} h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden ${interactive ? 'cursor-pointer' : ''} card-lift shadow-md border ${
+        onPointerMove={(e) => {
+          if (e.pointerType !== 'mouse') return;
+          const r = e.currentTarget.getBoundingClientRect();
+          e.currentTarget.style.setProperty('--fx-mx', `${e.clientX - r.left}px`);
+          e.currentTarget.style.setProperty('--fx-my', `${e.clientY - r.top}px`);
+        }}
+        className={`group fx-spotlight-host relative flex-shrink-0 w-full ${forceSlider ? '' : 'md:w-auto md:min-w-0 md:grow-0 md:shrink-0 md:basis-[calc((100%_-_2rem)/3)]'} h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden ${interactive ? 'cursor-pointer' : ''} card-lift shadow-md border ${
           isYellowCard
             ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
             : darkMode
@@ -286,6 +293,19 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             />
           </div>
         )}
+
+        {/* Cursor spotlight (React Bits feel): a soft depth sheen that follows
+            the mouse. Pure CSS variable writes — no React re-render, and the
+            media query keeps it off touch devices. */}
+        <span
+          aria-hidden="true"
+          className="fx-spotlight"
+          style={
+            {
+              '--fx-spot': isYellowCard ? 'rgba(255,255,255,0.55)' : 'rgba(255,196,0,0.18)',
+            } as React.CSSProperties
+          }
+        />
 
         {/* Brand mark from the logo (pan + handle) as a quiet watermark.
             Decorative: lazy everywhere except the first card so it never
@@ -371,7 +391,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   };
 
   return (
-    <div className="mt-6 mb-4 px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
+    <div data-motion-reveal="fade" className="mt-6 mb-4 px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
       {/* Section Title with Yellow Bar */}
       <div className="flex items-center gap-2.5 mb-3.5">
         <motion.span
@@ -383,7 +403,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
           aria-hidden="true"
         />
         <h2 className={`text-xl sm:text-2xl font-extrabold ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-          {isAr ? 'المميز والأكثر طلبًا' : 'Featured Items'}
+          <SplitText text={isAr ? 'المميز والأكثر طلبًا' : 'Featured Items'} stagger={65} />
         </h2>
       </div>
 

@@ -68,9 +68,9 @@ export const Header: React.FC<HeaderProps> = ({
     >
       {/* Warm spotlight behind the logo (replaces the old ring + hatch pattern) */}
       <div ref={glowY} className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        <div className="header-spot" />
+        <div className="header-spot" data-gsap-parallax="0.08" />
       </div>
-      <div className="header-grain" aria-hidden="true" />
+      <div className="header-grain" data-gsap-parallax="0.04" aria-hidden="true" />
       <div className="edge-line edge-line-b" aria-hidden="true" />
       {/* Christmas dressing (lights + frost): theme-gated, pointer-events-none */}
       {festive ? <XmasHeader festive /> : null}

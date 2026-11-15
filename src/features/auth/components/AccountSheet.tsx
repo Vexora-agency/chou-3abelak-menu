@@ -449,7 +449,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
       >
-        <div className="overflow-y-auto overscroll-contain no-scrollbar flex-1 min-h-0 px-5 sm:px-7 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div data-lenis-prevent className="overflow-y-auto overscroll-contain no-scrollbar flex-1 min-h-0 px-5 sm:px-7 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <div className={`w-11 h-1.5 rounded-full mx-auto mt-3 mb-2 md:hidden ${darkMode ? 'bg-neutral-600' : 'bg-neutral-300'}`} />
 
           <div className={`sticky top-0 z-10 -mx-5 sm:-mx-7 px-5 sm:px-7 pt-2 pb-3 ${darkMode ? 'bg-[#141414]' : 'bg-white'}`}>

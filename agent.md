@@ -7,14 +7,35 @@
 
 ## What this is
 - Restaurant menu + WhatsApp ordering (Arabic-first, RTL, EN/AR).
-- Stack: React + Vite + Tailwind + motion/react + Cloudflare Pages
-  Functions + D1 (`ORDERS_DB`) + R2 (`REPORTS`) + KV (`MENU_KV`).
+- Stack: React + Vite + Tailwind + motion/react + GSAP/ScrollTrigger + Lenis
+  + Cloudflare Pages Functions + D1 (`ORDERS_DB`) + R2 (`REPORTS`) + KV (`MENU_KV`).
 - Repo: `Vexora-agency/chou-3abelak-menu`, branch `main`.
 - Local dev: `serve-local.bat` → `http://localhost:3000` (site + API, one
   port). Admin at `/#admin` (cookie session login; test login lives in
   untracked `.dev.vars`).
 - Owner's domains: `vexora.agency` (Resend sending domain, **verified**),
   Zoho for receiving (`info@vexora.agency`).
+
+## Done: premium motion layer (site-wide)
+- `src/lib/motion/` = boot (`index.ts`), Lenis singleton (`smoothScroll.ts`),
+  reveal IO + MutationObserver (`reveal.ts`), lazy GSAP/ScrollTrigger layer
+  (`gsapLayer.ts`). Booted once from `main.tsx` before React's first commit.
+- `src/components/motion/` = React Bits-style primitives written in-house
+  (React Bits is not an npm package): `Reveal`, `SplitText` (word-level only
+  for Arabic joining), `CountUp`, `useMagnetic` (fine pointers only).
+- Owner decision: motion is FORCED for every visitor — no reduced-motion or
+  battery-saver gate (`respectReducedMotion: false`, no CSS media query).
+- Lenis smooths wheel only; touch stays native (iOS momentum + body-lock
+  contract). Every sheet/admin modal scroller carries `data-lenis-prevent`.
+  `useBodyScrollLock` pauses/resumes Lenis and re-seats it on the restored y.
+- GSAP is idle-loaded (LCP untouched) and powers parallax on header/footer
+  grain + standalone-page auras. `refreshMotionRuntime()` runs on menu version.
+- Cart premium pass: neutral `Email updates` card (gold accent, no solid
+  yellow block) and an in-card `Create an account` row inside the selected
+  COD surface (replaces the amber-on-amber warning box).
+- Verification: `npm run lint`, `npm run build`, browser-tested EN/AR,
+  light/dark, 390px + 1440px, reduced-motion forced, cart open/close scroll
+  restore, admin login/invite/track GSAP transforms.
 
 ## Done: monthly reports (plan-gated: pro, 404-when-off)- `SITE_PLAN` env (`starter` default). All report routes + `run-reports`
   return 404 on starter.

@@ -38,10 +38,24 @@
   grain + standalone-page auras. `refreshMotionRuntime()` runs on menu version.
 - Cart premium pass: neutral `Email updates` card (gold accent, no solid
   yellow block) and an in-card `Create an account` row inside the selected
-  COD surface (replaces the amber-on-amber warning box).
-- Verification: `npm run lint`, `npm run build`, browser-tested EN/AR,
-  light/dark, 390px + 1440px, reduced-motion forced, cart open/close scroll
-  restore, admin login/invite/track GSAP transforms.
+  COD surface (replaces the amber-on-amber warning box). The member
+  "name/phone/email come from your account" note was removed, and the
+  remember-details checkbox now renders for members too.
+- Desktop performance pass (owner complaint: heavy scroll / slow start):
+  - Lenis runs with `smoothWheel: false`: native wheel/trackpad, no added
+    latency. Lenis remains for programmatic chip/back-to-top scrolls.
+  - GSAP is opt-in: the runtime only imports it when a `data-gsap-*` target
+    exists. No storefront element uses one, so the 113 kB GSAP+ScrollTrigger
+    pair is never requested.
+  - Reveals are opacity/translate/scale only (no filter/blur, no
+    backface-visibility); the reveal MutationObserver watches childList only.
+  - `useHeaderMotion` skips redundant transform writes after scrollY 320.
+  - Featured autoplay pauses offscreen; the announcement marquee pauses when
+    the bar slides away.
+  - Logo reveal plays once per browser per 24 h (localStorage), with a Skip
+    button on first play; repeat visits paint the final logo immediately and
+    skip both the pixel-keyed intro and the intro-sheet preload. Header
+    entrance delays collapse to 0 on repeat/skip.
 
 ## Done: monthly reports (plan-gated: pro, 404-when-off)- `SITE_PLAN` env (`starter` default). All report routes + `run-reports`
   return 404 on starter.

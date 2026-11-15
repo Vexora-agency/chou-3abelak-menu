@@ -36,6 +36,14 @@ export function useMagnetic<T extends HTMLElement = HTMLElement>(
     const invalidate = () => {
       rect = null;
     };
+    const listenInvalidate = () => {
+      window.addEventListener('scroll', invalidate, { passive: true });
+      window.addEventListener('resize', invalidate);
+    };
+    const stopInvalidate = () => {
+      window.removeEventListener('scroll', invalidate);
+      window.removeEventListener('resize', invalidate);
+    };
 
     const paint = () => {
       raf = 0;
@@ -46,6 +54,9 @@ export function useMagnetic<T extends HTMLElement = HTMLElement>(
     };
     const onEnter = () => {
       measure();
+      // Only pay for scroll/resize invalidation while the pointer is on the
+      // target. Idle pages keep zero magnetic listeners on the scroll path.
+      listenInvalidate();
     };
     const onMove = (event: PointerEvent) => {
       if (event.pointerType && event.pointerType !== 'mouse') return;
@@ -59,7 +70,11 @@ export function useMagnetic<T extends HTMLElement = HTMLElement>(
       kick();
     };
     const reset = () => {
-      if (!inside && tx === 0 && ty === 0) return;
+      stopInvalidate();
+      if (!inside && tx === 0 && ty === 0) {
+        rect = null;
+        return;
+      }
       inside = false;
       rect = null;
       tx = 0;
@@ -72,8 +87,6 @@ export function useMagnetic<T extends HTMLElement = HTMLElement>(
     el.addEventListener('pointerleave', reset);
     el.addEventListener('pointercancel', reset);
     el.addEventListener('blur', reset);
-    window.addEventListener('scroll', invalidate, { passive: true });
-    window.addEventListener('resize', invalidate);
     return () => {
       if (raf) cancelAnimationFrame(raf);
       el.removeEventListener('pointerenter', onEnter);
@@ -81,8 +94,7 @@ export function useMagnetic<T extends HTMLElement = HTMLElement>(
       el.removeEventListener('pointerleave', reset);
       el.removeEventListener('pointercancel', reset);
       el.removeEventListener('blur', reset);
-      window.removeEventListener('scroll', invalidate);
-      window.removeEventListener('resize', invalidate);
+      stopInvalidate();
       el.style.translate = '';
     };
   }, [strength, max]);

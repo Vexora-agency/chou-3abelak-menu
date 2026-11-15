@@ -37,7 +37,11 @@ export function initSmoothScroll(): Lenis | null {
       // that makes long menus hard to aim.
       duration: 1.05,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
+      // NATIVE WHEEL ON DESKTOP. Smooth-wheel hijacking adds a frame of
+      // latency to every tick and was the main reason desktop scroll felt
+      // heavy. Lenis stays alive for programmatic scrolls (category chips,
+      // back-to-top) but never touches the wheel/trackpad.
+      smoothWheel: false,
       syncTouch: false,
       touchMultiplier: 1,
       wheelMultiplier: 0.95,

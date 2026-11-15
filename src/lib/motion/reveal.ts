@@ -107,14 +107,6 @@ export function initRevealSystem(): void {
     mutation = new MutationObserver((records) => {
       let needSweep = false;
       for (const record of records) {
-        if (record.type === 'attributes') {
-          const target = record.target;
-          if (target instanceof Element) {
-            // A re-render re-used a node that lost our state? Re-arm it.
-            if (target.matches(SELECTOR) && !target.hasAttribute(INIT_ATTR)) prepare(target);
-          }
-          continue;
-        }
         for (const node of record.addedNodes) {
           if (node.nodeType !== 1) continue;
           needSweep = true;
@@ -126,9 +118,6 @@ export function initRevealSystem(): void {
     mutation.observe(document.body, {
       childList: true,
       subtree: true,
-      // className rewrites are exactly what React does on theme changes.
-      attributes: true,
-      attributeFilter: ['class', 'data-motion-reveal'],
     });
   }
 }

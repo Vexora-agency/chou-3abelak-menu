@@ -25,10 +25,6 @@ html.lenis {
   scroll-behavior: auto;
 }
 
-.lenis:not(.lenis-autoToggle).lenis-stopped {
-  overflow: clip;
-}
-
 .lenis [data-lenis-prevent],
 .lenis [data-lenis-prevent-wheel],
 .lenis [data-lenis-prevent-touch],

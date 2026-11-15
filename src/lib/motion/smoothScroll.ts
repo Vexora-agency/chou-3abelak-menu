@@ -43,13 +43,23 @@ export function initSmoothScroll(): Lenis | null {
       wheelMultiplier: 0.95,
       autoRaf: true,
       autoResize: true,
-      autoToggle: true,
+      // DO NOT use Lenis autoToggle here. With autoToggle, stop() writes
+      // `overflow: clip` on <html> and start() only removes it after a
+      // discrete overflow transitionend. If that event is missed (common on
+      // mobile after an interrupted sheet animation), start() early-returns
+      // because isStopped is still false and the inline clip stays forever —
+      // the page becomes completely unscrollable. Manual stop()/start()
+      // (used by useBodyScrollLock) is symmetric only with autoToggle OFF.
+      autoToggle: false,
       anchors: { offset: -8 },
       // Overlays that own their scroll (sheets, drawers, code blocks) opt out.
       prevent: (node) =>
         !!node.closest('[data-lenis-prevent], [data-lenis-prevent-wheel], [data-lenis-prevent-touch]'),
       respectReducedMotion: false,
     });
+    // Safety net for a tab that was hot-reloaded mid-lock by an older build:
+    // never leave the root element clipped.
+    document.documentElement.style.removeProperty('overflow');
     if (lockDepth > 0) instance.stop();
   } catch {
     instance = null;
@@ -73,6 +83,11 @@ export function pauseSmoothScroll(): void {
 export function resumeSmoothScroll(restoreY?: number): void {
   lockDepth = Math.max(0, lockDepth - 1);
   if (lockDepth > 0) return;
+  if (typeof document !== 'undefined') {
+    // Belt-and-braces: a root overflow clip must never survive an unlock,
+    // whatever path the overlay took to close.
+    document.documentElement.style.removeProperty('overflow');
+  }
   if (!instance) return;
   if (typeof restoreY === 'number' && Number.isFinite(restoreY)) {
     try {

@@ -1,29 +1,6 @@
 import { useEffect } from 'react';
-import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from 'react';
+import type { Dispatch, RefObject, SetStateAction } from 'react';
 import type { SmokeParticle, SparkParticle } from '@/src/components/header/headerIntroParticles';
-
-const INTRO_SEEN_KEY = 'intro_seen_at_v1';
-const INTRO_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-
-/** True when the logo reveal should play (first visit, or after 24 h). */
-export function shouldPlayIntro(): boolean {
-  if (typeof window === 'undefined') return true;
-  try {
-    const raw = window.localStorage.getItem(INTRO_SEEN_KEY);
-    if (!raw) return true;
-    const ts = Number(raw);
-    if (!Number.isFinite(ts) || ts <= 0) return true;
-    return Date.now() - ts >= INTRO_COOLDOWN_MS;
-  } catch {
-    return true;
-  }
-}
-
-function markIntroSeen(): void {
-  try {
-    window.localStorage.setItem(INTRO_SEEN_KEY, String(Date.now()));
-  } catch {}
-}
 
 // Forced-playback intro: the same 6 s / 24 fps logo reveal as the old video,
 // but sourced from 4 preloaded sprite sheets instead of a <video> element.
@@ -50,20 +27,10 @@ export function useHeaderIntroEngine(
   smokeCanvasRef: RefObject<HTMLCanvasElement | null>,
   headerRef: RefObject<HTMLElement | null>,
   setHasEnded: Dispatch<SetStateAction<boolean>>,
-  setEngineDone: Dispatch<SetStateAction<boolean>>,
-  /** Filled with a one-shot skip() while the intro is running. */
-  skipRef?: MutableRefObject<(() => void) | null>
+  setEngineDone: Dispatch<SetStateAction<boolean>>
 ): void {
   // Real-time High-Definition Canvas Alpha Extraction + Cinematic Steam & Ember Engine
   useEffect(() => {
-    // Returning visitors get the final logo immediately: the 6 s per-pixel
-    // reveal is a first-impression moment, not a tax on every page load.
-    if (!shouldPlayIntro()) {
-      setHasEnded(true);
-      setEngineDone(true);
-      return;
-    }
-
     const canvas = canvasRef.current;
     const smokeCanvas = smokeCanvasRef.current;
     if (!canvas || !smokeCanvas) return;
@@ -109,12 +76,9 @@ export function useHeaderIntroEngine(
     const finishNow = () => {
       isRunning = false;
       finished = true;
-      markIntroSeen();
       setHasEnded(true);
       setEngineDone(true);
-      if (skipRef) skipRef.current = null;
     };
-    if (skipRef) skipRef.current = finishNow;
 
     const renderLoop = () => {
       if (!isRunning) {
@@ -189,7 +153,6 @@ export function useHeaderIntroEngine(
         }
 
         if (t >= END_AT_S) {
-          markIntroSeen();
           setHasEnded(true);
         }
 
@@ -406,7 +369,6 @@ export function useHeaderIntroEngine(
 
     return () => {
       isRunning = false;
-      if (skipRef) skipRef.current = null;
       window.clearTimeout(stallTimer);
       for (const t of staggerTimers) window.clearTimeout(t);
       io.disconnect();
@@ -414,5 +376,5 @@ export function useHeaderIntroEngine(
       animId = 0;
       sheets = [null, null, null, null];
     };
-  }, [canvasRef, smokeCanvasRef, headerRef, setHasEnded, setEngineDone, skipRef]);
+  }, [canvasRef, smokeCanvasRef, headerRef, setHasEnded, setEngineDone]);
 }

@@ -20,8 +20,6 @@ interface HeaderBrandBlockProps {
   smokeCanvasRef: RefObject<HTMLCanvasElement | null>;
   hasEnded: boolean;
   engineDone: boolean;
-  /** Skip the 6 s logo reveal (one-shot while it is still running). */
-  onSkipIntro?: () => void;
   /** Christmas theme: perches a small Santa hat on the logo corner. */
   festive?: boolean;
 }
@@ -38,7 +36,6 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
   smokeCanvasRef,
   hasEnded,
   engineDone,
-  onSkipIntro,
   festive = false,
 }) => {
   const isAr = lang === 'ar';
@@ -106,19 +103,6 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
           } ${engineDone ? 'hidden' : ''}`}
           style={{ backgroundColor: 'transparent', mixBlendMode: 'screen' }}
         />
-
-        {/* One-tap skip while the reveal is running. Returning visitors never
-            see it (the intro starts already-ended after the 24 h cooldown). */}
-        {!hasEnded && onSkipIntro && (
-          <button
-            type="button"
-            onClick={onSkipIntro}
-            className="absolute bottom-2 end-2 z-10 inline-flex h-8 items-center justify-center rounded-full border border-white/20 bg-black/60 px-3 text-[10px] font-bold text-white/80 transition-colors hover:bg-black/80 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] after:absolute after:-inset-2 after:content-['']"
-            aria-label={isAr ? 'تخطي المقدمة' : 'Skip intro'}
-          >
-            {isAr ? 'تخطي' : 'Skip'}
-          </button>
-        )}
 
       </div>
 

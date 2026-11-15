@@ -3,7 +3,7 @@ import { MenuData } from '@/src/types/menu';
 import { isOpenNow, buildMapUrl } from '@/src/utils/menuHelpers';
 import { serverNow } from '@/src/utils/serverTime';
 import type { OrderingStatus } from '@/src/utils/status';
-import { useHeaderIntroEngine, shouldPlayIntro } from '@/src/hooks/useHeaderIntroEngine';
+import { useHeaderIntroEngine } from '@/src/hooks/useHeaderIntroEngine';
 import { useHeaderMotion } from '@/src/hooks/useHeaderMotion';
 import { HeaderTopBar } from '@/src/components/header/HeaderTopBar';
 import { HeaderBrandBlock } from '@/src/components/header/HeaderBrandBlock';
@@ -39,19 +39,14 @@ export const Header: React.FC<HeaderProps> = ({
   orderingEnabled = true,
   festive = false,
 }) => {
-  // Returning visitors (same browser, last 24 h) skip the 6 s per-pixel
-  // reveal: initial state starts already-ended, so the final logo paints on
-  // the first frame instead of an empty canvas.
-  const [introPlays, setIntroPlays] = useState(() => shouldPlayIntro());
-  const { parY, glowY, intro, rise } = useHeaderMotion(introPlays ? 1.5 : 0);
+  const { parY, glowY, intro, rise } = useHeaderMotion();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const smokeCanvasRef = useRef<HTMLCanvasElement>(null);
   const headerRef = useRef<HTMLElement>(null);
-  const [hasEnded, setHasEnded] = useState(() => !introPlays);
+  const [hasEnded, setHasEnded] = useState(false);
   // True once the intro engine has fully stopped: canvases are unmounted so
   // they cost zero compositing / main-thread time during scroll.
-  const [engineDone, setEngineDone] = useState(() => !introPlays);
-  const skipIntroRef = useRef<(() => void) | null>(null);
+  const [engineDone, setEngineDone] = useState(false);
 
   const status = isOpenNow(
     menu.settings,
@@ -59,14 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
     orderingState && typeof orderingState.reopensAt === 'string' ? orderingState.reopensAt : null,
   );
 
-  useHeaderIntroEngine(canvasRef, smokeCanvasRef, headerRef, setHasEnded, setEngineDone, skipIntroRef);
-
-  const handleSkipIntro = () => {
-    skipIntroRef.current?.();
-    // Also collapse the entrance delays so the tagline/status/CTAs are usable
-    // immediately instead of waiting out the 1.5–2 s intro choreography.
-    setIntroPlays(false);
-  };
+  useHeaderIntroEngine(canvasRef, smokeCanvasRef, headerRef, setHasEnded, setEngineDone);
 
   const phoneLink = `tel:${menu.settings.phone || '+96170123456'}`;
   const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
@@ -113,7 +101,6 @@ export const Header: React.FC<HeaderProps> = ({
         smokeCanvasRef={smokeCanvasRef}
         hasEnded={hasEnded}
         engineDone={engineDone}
-        onSkipIntro={handleSkipIntro}
         festive={festive}
       />
 

@@ -10,9 +10,8 @@ import Lenis from 'lenis';
  * - Touch is deliberately left native (`syncTouch: false`): iOS/Android
  *   already have the silkiest inertia there, and hijacking it is the #1
  *   cause of "stuck scroll" bug reports.
- * - `autoToggle` pauses Lenis automatically while an overlay locks the page;
- *   useBodyScrollLock additionally calls pauseSmoothScroll()/resumeSmoothScroll()
- *   so a drawer never fights the page behind it.
+ * - `autoToggle` is deliberately OFF. It is not used to pause while an
+ *   overlay locks the page; `useBodyScrollLock` calls stop()/start() manually.
  * - `respectReducedMotion: false` follows the owner decision: motion runs for
  *   every visitor, even with OS reduced-motion or power saving enabled.
  *

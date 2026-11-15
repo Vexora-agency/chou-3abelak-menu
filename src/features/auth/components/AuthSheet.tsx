@@ -304,27 +304,29 @@ export function AuthSheet({ open, onClose, onSuccess, lang, darkMode, resetToken
         aria-modal="true"
         aria-label={title}
         dir={isAr ? 'rtl' : 'ltr'}
-        className={`anim-drawer-in relative z-10 w-full max-w-[440px] max-h-[92dvh] flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
+        className={`anim-drawer-in relative z-10 w-full max-w-[520px] h-[min(88dvh,660px)] max-h-[92dvh] flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
       >
         <div data-lenis-prevent className="overflow-y-auto overscroll-contain no-scrollbar flex-1 min-h-0 px-6 sm:px-7 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-          <div className={`w-11 h-1.5 rounded-full mx-auto mt-3 mb-2 md:hidden ${darkMode ? 'bg-neutral-600' : 'bg-neutral-300'}`} />
-          <div className="flex items-start justify-between gap-3 pt-2">
-            <div className="min-w-0">
-              <h2 className="text-xl font-black leading-tight">{title}</h2>
-              <p className={`mt-1 text-xs leading-relaxed ${mutedClass}`}>{subtitle}</p>
+          <div className={`sticky top-0 z-10 -mx-6 sm:-mx-7 px-6 sm:px-7 pb-3 ${darkMode ? 'bg-[#141414]' : 'bg-white'}`}>
+            <div className={`w-11 h-1.5 rounded-full mx-auto mt-3 mb-2 md:hidden ${darkMode ? 'bg-neutral-600' : 'bg-neutral-300'}`} />
+            <div className="flex items-start justify-between gap-3 pt-2">
+              <div className="min-w-0">
+                <h2 className="text-xl font-black leading-tight">{title}</h2>
+                <p className={`mt-1 text-xs leading-relaxed ${mutedClass}`}>{subtitle}</p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={t.close}
+                className={`shrink-0 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                  darkMode ? 'text-neutral-400 hover:text-white hover:bg-white/10' : 'text-neutral-500 hover:text-black hover:bg-black/5'
+                }`}
+              >
+                <X size={20} />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={t.close}
-              className={`shrink-0 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
-                darkMode ? 'text-neutral-400 hover:text-white hover:bg-white/10' : 'text-neutral-500 hover:text-black hover:bg-black/5'
-              }`}
-            >
-              <X size={20} />
-            </button>
           </div>
 
           {(mode === 'signin' || mode === 'signup') && (

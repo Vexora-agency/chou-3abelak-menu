@@ -50,6 +50,17 @@
   Typing after a pin refines that same pin, but a new pin can never inherit
   the previous pin's manual text — that created old-text + new-coords tickets.
   Pure rule + tests in `scripts/test-remember-pin.mjs`.
+- Phone country gate: `src/utils/phoneCountry.ts` derives the restaurant dial
+  code from the admin WhatsApp picker (fallback: restaurant phone). Cart and
+  Account Settings render a fixed `+code` prefix, normalize national numbers
+  to full international, and reject explicit foreign numbers ("not
+  supported"). The server mirrors the gate in `functions/_shared/dial-codes.js`
+  + `orders.js` (`unsupported_phone_country` for long foreign numbers).
+  Tests: `test:remember-pin` (51 checks).
+- Auth/account sheets share a 520 px width, fixed responsive heights
+  (`h-[min(88dvh,...)]`), sticky headers, and a scroller reset on tab change so
+  Orders/Settings and Sign in/Create account never jump in size. Settings/Login
+  country hints are part of the same frame.
 - Desktop performance pass (owner complaint: heavy scroll / slow start):
   - Lenis runs with `smoothWheel: false`: native wheel/trackpad, no added
     latency. Lenis remains for programmatic chip/back-to-top scrolls.

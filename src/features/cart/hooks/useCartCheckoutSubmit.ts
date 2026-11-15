@@ -5,7 +5,7 @@ import { resolveDeliveryFee } from '@/src/utils/deliveryFees';
 import { formatPrice } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
-import { phoneDigitsOnly } from '@/src/utils/digits';
+import { checkPhone, dialFromSettings } from '@/src/utils/phoneCountry';
 import { loadRememberedDetails, loadSavedEmail, saveCustomerOrder, saveEmailAddress, saveRememberedDetails, withoutAddress } from '@/src/utils/customerOrders';
 import { pinAddress } from './useMidSplitLocationMap';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
@@ -39,6 +39,7 @@ interface UseCartCheckoutSubmitArgs {
 export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess, accountUser, accountProfile, accountLoading = false, onRequireAccount, onRequireProfile }: UseCartCheckoutSubmitArgs) {
   const isAr = lang === 'ar';
   const ordering = menu.settings.ordering;
+  const phoneDial = dialFromSettings(menu.settings);
 
   // Retrieve remembered customer details if available (delivery only).
   // Prefill is independent from consent: the box checks only when the saved
@@ -339,16 +340,25 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     }
 
     // Strict customer validation — mirrors the server (validateOrderInput)
-    // EXACTLY, so a bad field can never "still send": name 2+ chars,
-    // phone 6–15 digits, delivery address required. Anything else stops
-    // here with a specific message.
+    // with one extra gate: the phone must belong to the restaurant's country
+    // (admin WhatsApp picker). Name 2+ chars, delivery address required,
+    // phone 6–15 digits and matching dial code. Anything else stops here with
+    // a specific message.
     if (customer.name.trim().length < 2) {
       setErrorMsg(isAr ? 'يرجى إدخال الاسم (حرفان على الأقل)' : 'Please enter your name (2+ characters)');
       return;
     }
-    const phoneDigits = phoneDigitsOnly(customer.phone);
-    if (phoneDigits.length < 6 || phoneDigits.length > 15) {
-      setErrorMsg(isAr ? 'رقم الهاتف يجب أن يكون من 6 إلى 15 رقمًا (أرقام فقط)' : 'Phone must be 6–15 digits (numbers only)');
+    const phoneCheck = checkPhone(customer.phone, phoneDial.code);
+    if (!phoneCheck.ok) {
+      setErrorMsg(
+        phoneCheck.reason === 'country'
+          ? (isAr
+            ? `رقم الهاتف غير مدعوم. نقبل أرقام +${phoneDial.code} فقط.`
+            : `This phone number isn’t supported. Use a +${phoneDial.code} number.`)
+          : (isAr
+            ? 'رقم الهاتف يجب أن يكون من 6 إلى 15 رقمًا (أرقام فقط)'
+            : 'Phone must be 6–15 digits (numbers only)')
+      );
       return;
     }
     if (!customer.address.trim()) {
@@ -423,7 +433,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
           paymentMethod: 'cod',
           customer: {
             name: customer.name.trim(),
-            phone: customer.phone.trim(),
+            phone: phoneCheck.normalized,
             address: customer.address.trim(),
             ...(validEmail ? { email: validEmail } : {}),
           },

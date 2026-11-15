@@ -10,7 +10,7 @@ import { type OrderingStatus } from '@/src/utils/status';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { serverNow } from '@/src/utils/serverTime';
 import { refreshMotionRuntime } from '@/src/lib/motion';
-import { SearchAndChips, FeaturedCarousel, MenuList, useMenuLoader } from '@/src/features/menu';
+import { dialFromSettings } from '@/src/utils/phoneCountry';import { SearchAndChips, FeaturedCarousel, MenuList, useMenuLoader } from '@/src/features/menu';
 // Item modal, cart drawer and order bell load lazily (own chunks): none of
 // them renders before interaction, so Suspense fallback={null} is
 // pixel-identical. Direct paths (not the barrels) keep them out of main.
@@ -782,6 +782,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
             darkMode={darkMode}
             currency={currency}
             cancelWindowMs={cancelWindowMsFromMenu(displayMenu)}
+            phoneDial={dialFromSettings(displayMenu.settings)}
             initialTab={accountInitialTab}
           />
         </Suspense>

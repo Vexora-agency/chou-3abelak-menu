@@ -11,6 +11,7 @@ import {
   LogOut,
   Mail,
   MapPin,
+  Phone,
   RefreshCw,
   ShoppingBag,
   UserRound,
@@ -22,6 +23,14 @@ import { authClient } from '@/src/lib/auth-client';
 import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { useNow } from '@/src/hooks/useNow';
 import { cleanPhoneInput, phoneDigitsOnly } from '@/src/utils/digits';
+import {
+  checkPhone,
+  composeNational,
+  isForeignNumber,
+  isInternationalInput,
+  nationalPart,
+  type DialCountry,
+} from '@/src/utils/phoneCountry';
 import { formatMMSS } from '@/src/utils/countdown';
 import { formatPrice } from '@/src/utils/pricing';
 import { isSoundOff, setSoundOff } from '@/src/utils/customerOrders';
@@ -47,6 +56,8 @@ interface AccountSheetProps {
   currency: string;
   /** Owner-tuned self-cancel window (ms) — same setting as the guest bell. */
   cancelWindowMs: number;
+  /** Restaurant country/dial code (admin WhatsApp picker) for phone safety. */
+  phoneDial?: DialCountry;
   /** Open directly on Settings (checkout's "complete profile" CTA). */
   initialTab?: 'orders' | 'settings';
 }
@@ -247,10 +258,11 @@ const OrderCard: FC<{
   );
 };
 
-export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency, cancelWindowMs, initialTab = 'orders' }: AccountSheetProps) {
+export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency, cancelWindowMs, phoneDial, initialTab = 'orders' }: AccountSheetProps) {
   const t = AUTH_STR[lang];
   const isAr = lang === 'ar';
   const sheetRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const session = useCustomerSession();
   const profileState = useCustomerProfile(open);
   const ordersState = useCustomerOrders(open);
@@ -262,6 +274,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   const [openOrder, setOpenOrder] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [address, setAddress] = useState('');
   const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [locSheetOpen, setLocSheetOpen] = useState(false);
@@ -271,6 +284,37 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState('');
   const [soundOff, setSoundOffState] = useState(() => isSoundOff());
+  const dial: DialCountry = phoneDial ?? { iso: '', code: '' };
+  const phoneForeign = isForeignNumber(phone, dial.code);
+  const phoneDisplay = phoneForeign
+    ? phone
+    : dial.code
+      ? nationalPart(phone, dial.code)
+      : phone;
+
+  const onPhoneChange = (raw: string) => {
+    if (!dial.code) {
+      setPhoneError('');
+      setPhone(cleanPhoneInput(raw));
+      return;
+    }
+    if (isInternationalInput(raw)) {
+      const check = checkPhone(raw, dial.code);
+      if (!check.ok) {
+        setPhoneError(check.reason === 'country'
+          ? (isAr
+            ? `الرقم غير مدعوم. نقبل أرقام +${dial.code} فقط.`
+            : `This number isn’t supported. Use a +${dial.code} number.`)
+          : (isAr ? 'رقم الهاتف يجب أن يكون من 6 إلى 15 رقمًا' : 'Phone must be 6–15 digits'));
+        return;
+      }
+      setPhoneError('');
+      setPhone(check.normalized);
+      return;
+    }
+    setPhoneError('');
+    setPhone(composeNational(phoneDigitsOnly(raw), dial.code));
+  };
 
   useBodyScrollLock(open, 'account-sheet');
   useFocusTrap(open, sheetRef, onClose);
@@ -283,12 +327,20 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     autoTabDoneRef.current = false;
     setTab(initialTab);
     setOpenOrder(null);
+    setPhoneError('');
     setSaveError('');
     setSaveOk(false);
     setSignOutError('');
     setSigningOut(false);
     setLocSheetOpen(false);
   }, [open, initialTab]);
+
+  // Stable frame, fresh page: switching Orders <-> Settings resets the inner
+  // scroller so the next tab always starts at its header, never at the old
+  // tab's scroll offset.
+  useEffect(() => {
+    if (open) scrollRef.current?.scrollTo(0, 0);
+  }, [tab, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -379,9 +431,13 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
       setSaveError(t.phoneRequired);
       return;
     }
-    const phoneDigits = phoneDigitsOnly(phone);
-    if (phoneDigits.length < 6 || phoneDigits.length > 15) {
-      setSaveError(t.phoneInvalid);
+    const phoneCheck = checkPhone(phone, dial.code);
+    if (!phoneCheck.ok) {
+      setSaveError(phoneCheck.reason === 'country'
+        ? (isAr
+          ? `رقم الهاتف غير مدعوم. نقبل أرقام +${dial.code} فقط.`
+          : `This phone number isn’t supported. Use a +${dial.code} number.`)
+        : t.phoneInvalid);
       return;
     }
     const trimmedAddress = address.trim();
@@ -400,7 +456,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
       const { error } = await authClient.updateUser({ name: name.trim() });
       if (error) throw error;
       await updateMyProfile({
-        phone,
+        phone: phoneCheck.normalized,
         address: trimmedAddress,
         location,
       });
@@ -445,11 +501,11 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
         aria-modal="true"
         aria-label={t.accountTitle}
         dir={isAr ? 'rtl' : 'ltr'}
-        className={`anim-drawer-in relative z-10 w-full max-w-[560px] max-h-[92dvh] flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
+        className={`anim-drawer-in relative z-10 w-full max-w-[520px] h-[min(88dvh,760px)] max-h-[92dvh] flex flex-col rounded-t-[28px] md:rounded-[28px] border-t-[5px] border-t-[var(--primary)] md:border-2 md:border-[var(--primary)] shadow-2xl overflow-hidden transition-colors duration-200 ${
           darkMode ? 'bg-[#141414] text-white' : 'bg-white text-[#0A0A0A]'
         }`}
       >
-        <div data-lenis-prevent className="overflow-y-auto overscroll-contain no-scrollbar flex-1 min-h-0 px-5 sm:px-7 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div ref={scrollRef} data-lenis-prevent className="overflow-y-auto overscroll-contain no-scrollbar flex-1 min-h-0 px-5 sm:px-7 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <div className={`w-11 h-1.5 rounded-full mx-auto mt-3 mb-2 md:hidden ${darkMode ? 'bg-neutral-600' : 'bg-neutral-300'}`} />
 
           <div className={`sticky top-0 z-10 -mx-5 sm:-mx-7 px-5 sm:px-7 pt-2 pb-3 ${darkMode ? 'bg-[#141414]' : 'bg-white'}`}>
@@ -512,7 +568,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
           </div>
 
           {tab === 'orders' && (
-            <div className="pt-1">
+            <div className="pt-1 anim-fade-in">
               {profileIncomplete && (
                 <div
                   aria-labelledby="profile-required-title"
@@ -633,7 +689,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
           )}
 
           {tab === 'settings' && (
-            <div className="pt-1 space-y-3">
+            <div className="pt-1 space-y-3 anim-fade-in">
               <div>
                 <h3 className="text-sm font-extrabold">{t.profileTitle}</h3>
                 <p className={`mt-0.5 text-[11px] ${mutedClass}`}>{t.profileSubtitle}</p>
@@ -673,21 +729,53 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                 <label className={labelClass} htmlFor="account-phone">
                   {t.phone} <span className="text-red-500" aria-hidden="true">*</span>
                 </label>
-                <input
-                  id="account-phone"
-                  type="tel"
-                  inputMode="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(cleanPhoneInput(e.target.value))}
-                  autoComplete="tel"
-                  dir="ltr"
-                  maxLength={20}
-                  placeholder={isAr ? '70123456' : '+961 70 123 456'}
-                  className={`${inputClass} tabular-nums ${isAr ? 'text-end' : 'text-start'}`}
-                  aria-describedby="account-phone-note"
-                  aria-required="true"
-                />
-                <p id="account-phone-note" className={`mt-1 text-[10px] ${mutedClass}`}>{t.phoneHint}</p>
+                <div className="flex" dir="ltr">
+                  {dial.code && !phoneForeign && (
+                    <span
+                      className={`inline-flex h-12 shrink-0 items-center gap-1.5 rounded-s-xl border border-e-0 px-3 text-sm font-extrabold tabular-nums ${
+                        darkMode
+                          ? 'bg-[#181818] border-neutral-700 text-[var(--primary)]'
+                          : 'bg-neutral-50 border-neutral-300 text-[#7a5d00]'
+                      }`}
+                    >
+                      <Phone size={13} className="opacity-70" aria-hidden="true" />
+                      +{dial.code}
+                    </span>
+                  )}
+                  <input
+                    id="account-phone"
+                    type="tel"
+                    inputMode="tel"
+                    value={phoneDisplay}
+                    onChange={(e) => onPhoneChange(e.target.value)}
+                    autoComplete={dial.code ? 'tel-national' : 'tel'}
+                    dir="ltr"
+                    maxLength={20}
+                    placeholder={dial.code ? '70 123 456' : '+961 70 123 456'}
+                    className={`${inputClass} !w-auto min-w-0 flex-1 tabular-nums text-start ${
+                      dial.code && !phoneForeign ? 'rounded-s-none' : ''
+                    } ${phoneError || phoneForeign ? 'border-red-500/60' : ''}`}
+                    aria-describedby="account-phone-note"
+                    aria-invalid={phoneError || phoneForeign ? true : undefined}
+                    aria-required="true"
+                  />
+                </div>
+                <p
+                  id="account-phone-note"
+                  className={`mt-1 text-[10px] leading-relaxed ${
+                    phoneError || phoneForeign ? 'text-red-500' : mutedClass
+                  }`}
+                  role={phoneError || phoneForeign ? 'alert' : undefined}
+                >
+                  {phoneError
+                    || (phoneForeign
+                      ? (isAr
+                        ? `الرقم المحفوظ ليس من +${dial.code}. امسح الحقل وأدخل رقمًا من +${dial.code}.`
+                        : `Your saved number isn’t from +${dial.code}. Clear the field and enter a +${dial.code} number.`)
+                      : dial.code
+                        ? (isAr ? `نقبل أرقام +${dial.code} فقط.` : `Only +${dial.code} numbers are accepted.`)
+                        : t.phoneHint)}
+                </p>
               </div>
 
               <div>

@@ -7,6 +7,7 @@ import { isProfileComplete, useCustomerProfile } from '@/src/features/auth';
 import { useCartCheckoutSubmit } from '../hooks/useCartCheckoutSubmit';
 import { CartLinesList } from './cart/CartLinesList';
 import { CustomerFormFields } from './cart/CustomerFormFields';
+import { dialFromSettings } from '@/src/utils/phoneCountry';
 import { OrderSummaryLines } from './cart/OrderSummaryLines';
 import { PaymentMethodSection } from './cart/PaymentMethodSection';
 import { CartCheckoutFooter } from './cart/CartCheckoutFooter';
@@ -49,6 +50,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onRequireProfile,
 }) => {
   const isAr = lang === 'ar';
+  const phoneDial = dialFromSettings(menu.settings);
   const account = useCustomerProfile(isOpen);
   // New members (including Google sign-ups) must add a phone, default address
   // and map pin before any order. While the profile is still loading, stay
@@ -290,6 +292,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               onOpenLocSheet={() => setLocSheetOpen(true)}
               onClearLocation={clearLocation}
               isMember={!!account.user}
+              phoneDial={phoneDial}
             />
 
             {/* Payment method (COD preselected + locked; future gateways

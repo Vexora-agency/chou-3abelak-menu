@@ -44,12 +44,37 @@ export function useHeaderIntroEngine(
     sCtx.imageSmoothingEnabled = true;
     sCtx.imageSmoothingQuality = 'high';
 
+    // Pre-render ONE soft smoke puff (gradient baked once) and stamp it per
+    // particle. The old loop built a fresh radial gradient for every particle
+    // on every rAF tick (~35 gradients × 60 fps × 6 s); on a throttled phone
+    // that alone added seconds of main-thread work and delayed LCP paint.
+    const SMOKE_SPRITE_PX = 128;
+    const smokeSprite = document.createElement('canvas');
+    smokeSprite.width = SMOKE_SPRITE_PX;
+    smokeSprite.height = SMOKE_SPRITE_PX;
+    const smokeCtx = smokeSprite.getContext('2d');
+    if (smokeCtx) {
+      const half = SMOKE_SPRITE_PX / 2;
+      const grad = smokeCtx.createRadialGradient(half, half, 0, half, half, half);
+      // Alpha ratios match the old per-particle gradient; globalAlpha scales
+      // the whole stamp by the particle's remaining life.
+      grad.addColorStop(0, 'rgba(255, 235, 190, 0.55)');
+      grad.addColorStop(0.35, 'rgba(220, 220, 220, 0.32)');
+      grad.addColorStop(0.75, 'rgba(180, 180, 180, 0.1)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      smokeCtx.fillStyle = grad;
+      smokeCtx.fillRect(0, 0, SMOKE_SPRITE_PX, SMOKE_SPRITE_PX);
+    }
+
     let animId = 0;
     let isRunning = true;
     let finished = false;
+    let endedSent = false;
+    let doneTimer = 0;
     // Frame currently painted as the canvas CSS background. Style writes happen
     // only when the 24 fps frame changes, not on every 60 fps rAF tick.
     let lastDrawnFrame = -1;
+    let lastSheetIndex = -1;
     // Sheets fill in as each downloads (sheet 0 starts the clock; 1-3 stream
     // in during playback — each is needed 1.5 s after the previous, so even
     // slow networks stay ahead). A null slot = still downloading.
@@ -116,14 +141,22 @@ export function useHeaderIntroEngine(
         // main thread never runs a getImageData/putImageData readback.
         if (frame !== lastDrawnFrame) {
           lastDrawnFrame = frame;
-          canvas.style.backgroundImage = `url("${SHEETS[si]}")`;
-          canvas.style.backgroundSize = '400% 900%';
+          if (si !== lastSheetIndex) {
+            lastSheetIndex = si;
+            canvas.style.backgroundImage = `url("${SHEETS[si]}")`;
+            canvas.style.backgroundSize = '400% 900%';
+            // Chapters already behind us are never drawn again: drop their
+            // decoded 2880×2394 bitmaps (~27 MB each) so the phone is not
+            // holding all four sheets for the rest of the visit.
+            for (let k = 0; k < si; k += 1) sheets[k] = null;
+          }
           canvas.style.backgroundPosition =
             `${(local % COLS) * (100 / (COLS - 1))}% ` +
             `${Math.floor(local / COLS) * (100 / (Math.ceil(FRAMES_PER_SHEET / COLS) - 1))}%`;
         }
 
-        if (t >= END_AT_S) {
+        if (t >= END_AT_S && !endedSent) {
+          endedSent = true;
           setHasEnded(true);
         }
 
@@ -175,29 +208,47 @@ export function useHeaderIntroEngine(
       // 3. Render Smoke & Embers on the overlay canvas
       sCtx.clearRect(0, 0, w, h);
 
-      // Render smoke particles with soft radial dissipation
-      for (let i = smokeParticles.length - 1; i >= 0; i--) {
-        const p = smokeParticles[i];
-        p.x += p.vx + Math.sin(tick * p.wobbleSpeed + p.seed) * p.wobbleAmount * 0.5;
-        p.y += p.vy;
-        p.radius += (p.maxRadius - p.radius) * 0.03;
-        p.alpha -= p.decay;
+      // Render smoke particles: one cached sprite stamp each (no gradient
+      // allocation in the hot path).
+      if (smokeCtx) {
+        for (let i = smokeParticles.length - 1; i >= 0; i--) {
+          const p = smokeParticles[i];
+          p.x += p.vx + Math.sin(tick * p.wobbleSpeed + p.seed) * p.wobbleAmount * 0.5;
+          p.y += p.vy;
+          p.radius += (p.maxRadius - p.radius) * 0.03;
+          p.alpha -= p.decay;
 
-        if (p.alpha <= 0.01 || p.y < -40) {
-          smokeParticles.splice(i, 1);
-          continue;
+          if (p.alpha <= 0.01 || p.y < -40) {
+            smokeParticles.splice(i, 1);
+            continue;
+          }
+
+          sCtx.globalAlpha = p.alpha;
+          sCtx.drawImage(smokeSprite, p.x - p.radius, p.y - p.radius, p.radius * 2, p.radius * 2);
         }
-
-        // Soft steam / smoke radial gradient
-        const grad = sCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
-        grad.addColorStop(0, `rgba(255, 235, 190, ${p.alpha * 0.55})`);
-        grad.addColorStop(0.35, `rgba(220, 220, 220, ${p.alpha * 0.32})`);
-        grad.addColorStop(0.75, `rgba(180, 180, 180, ${p.alpha * 0.1})`);
-        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        sCtx.fillStyle = grad;
-        sCtx.beginPath();
-        sCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        sCtx.fill();
+        sCtx.globalAlpha = 1;
+      } else {
+        // Canvas 2D unavailable for the offscreen sprite: keep the old path.
+        for (let i = smokeParticles.length - 1; i >= 0; i--) {
+          const p = smokeParticles[i];
+          p.x += p.vx + Math.sin(tick * p.wobbleSpeed + p.seed) * p.wobbleAmount * 0.5;
+          p.y += p.vy;
+          p.radius += (p.maxRadius - p.radius) * 0.03;
+          p.alpha -= p.decay;
+          if (p.alpha <= 0.01 || p.y < -40) {
+            smokeParticles.splice(i, 1);
+            continue;
+          }
+          const grad = sCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+          grad.addColorStop(0, `rgba(255, 235, 190, ${p.alpha * 0.55})`);
+          grad.addColorStop(0.35, `rgba(220, 220, 220, ${p.alpha * 0.32})`);
+          grad.addColorStop(0.75, `rgba(180, 180, 180, ${p.alpha * 0.1})`);
+          grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          sCtx.fillStyle = grad;
+          sCtx.beginPath();
+          sCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          sCtx.fill();
+        }
       }
 
       // Render spark embers (two-pass plain fill glow: same look as shadowBlur
@@ -225,14 +276,14 @@ export function useHeaderIntroEngine(
         sCtx.globalAlpha = 1;
       }
 
-      // The intro is over and every particle has faded: stop the loop for good
-      // and unmount the canvases (they are already invisible via opacity-0).
-      // This frees the main thread for scroll / hover for the rest of the visit.
-      const done = startStamp !== 0 && (performance.now() - startStamp) / 1000 >= DURATION_S;
-      if (done && smokeParticles.length === 0 && sparkParticles.length === 0) {
+      // The logo has fully formed and its CSS fade has begun. Nothing below is
+      // visible, so stop the rAF loop now instead of painting invisible smoke
+      // for another second, then unmount both canvases once the 700 ms fade
+      // completes. This hands the main thread back to scroll/hover immediately.
+      if (t >= DURATION_S) {
         finished = true;
         animId = 0;
-        setEngineDone(true);
+        doneTimer = window.setTimeout(() => setEngineDone(true), 800);
         return;
       }
 
@@ -341,6 +392,7 @@ export function useHeaderIntroEngine(
     return () => {
       isRunning = false;
       window.clearTimeout(stallTimer);
+      window.clearTimeout(doneTimer);
       for (const t of staggerTimers) window.clearTimeout(t);
       io.disconnect();
       cancelAnimationFrame(animId);

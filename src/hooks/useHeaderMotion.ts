@@ -13,8 +13,7 @@ export function useHeaderMotion(introDelay = 1.5) {
   const glowY = useParallaxRef(-30);
 
   // Entrance choreography: content rises in while the logo video draws itself
-  // (always on - site owner decision). Returning visitors / skipped intros
-  // pass 0 here, so the header content is immediately usable.
+  // (always on - site owner decision).
   const intro = introDelay;
   const rise = (delay: number) => ({
     initial: { opacity: 0, y: 14 },

@@ -25,8 +25,10 @@
   for Arabic joining), `CountUp`, `useMagnetic` (fine pointers only).
 - Owner decision: motion is FORCED for every visitor — no reduced-motion or
   battery-saver gate (`respectReducedMotion: false`, no CSS media query).
-- Lenis smooths wheel only; touch stays native (iOS momentum + body-lock
-  contract). Every sheet/admin modal scroller carries `data-lenis-prevent`.
+- Lenis stays native on the wheel/trackpad (`smoothWheel: false`) and is used
+  only for programmatic chip/back-to-top scrolls. Touch stays native (iOS
+  momentum + body-lock contract). Every sheet/admin modal scroller carries
+  `data-lenis-prevent`.
   `useBodyScrollLock` pauses/resumes Lenis and re-seats it on the restored y.
   NEVER set `autoToggle: true`: its `stop()` writes `overflow: clip` on
   `<html>` and `start()` waits for a discrete transitionend that mobile
@@ -34,8 +36,10 @@
   stop()/start() is symmetric only with autoToggle OFF, and the Lenis
   `.lenis-stopped { overflow: clip }` rule must stay deleted. Boot also clears
   any stale inline `html` overflow as a safety net.
-- GSAP is idle-loaded (LCP untouched) and powers parallax on header/footer
-  grain + standalone-page auras. `refreshMotionRuntime()` runs on menu version.
+- GSAP is opt-in: `initGsapLayer()` is called only when a `data-gsap-*`
+  target exists. Nothing on the storefront uses one today, so the
+  113 kB GSAP+ScrollTrigger pair is never requested; the layer remains ready
+  for a future small accent. `refreshMotionRuntime()` runs on menu version.
 - Cart premium pass: neutral `Email updates` card (gold accent, no solid
   yellow block) and an in-card `Create an account` row inside the selected
   COD surface (replaces the amber-on-amber warning box). The member
@@ -52,10 +56,9 @@
   - `useHeaderMotion` skips redundant transform writes after scrollY 320.
   - Featured autoplay pauses offscreen; the announcement marquee pauses when
     the bar slides away.
-  - Logo reveal plays once per browser per 24 h (localStorage), with a Skip
-    button on first play; repeat visits paint the final logo immediately and
-    skip both the pixel-keyed intro and the intro-sheet preload. Header
-    entrance delays collapse to 0 on repeat/skip.
+  - The logo reveal still plays on EVERY open/refresh (owner decision) and has
+    no Skip button. It is the pre-existing 6 s canvas intro; the rest of the
+    page does not wait on it.
 
 ## Done: monthly reports (plan-gated: pro, 404-when-off)- `SITE_PLAN` env (`starter` default). All report routes + `run-reports`
   return 404 on starter.

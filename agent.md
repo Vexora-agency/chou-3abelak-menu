@@ -81,6 +81,10 @@
   - Intro logo is a CSS screen-blended sprite background (no per-frame
     getImageData/putImageData); it looks like the old alpha-keyed frames and
     frees the main thread for LCP.
+  - Intro smoke is stamped from ONE pre-rendered 128 px sprite instead of a
+    fresh radial gradient per particle per frame; passed chapters release their
+    decoded sheet (~27 MB each) and the rAF loop stops at 6 s, then unmounts
+    the canvases after the CSS fade. No visual change.
   - `logo-final-640.webp` added for DPR2 phones (29 KB vs 48 KB).
   - First featured menu image is preloaded as soon as `/api/menu` JSON arrives
     (`preloadFirstFeatured`), before React renders the cards.

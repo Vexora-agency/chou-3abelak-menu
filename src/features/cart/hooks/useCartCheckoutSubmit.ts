@@ -7,7 +7,7 @@ import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
 import { phoneDigitsOnly } from '@/src/utils/digits';
 import { loadRememberedDetails, loadSavedEmail, saveCustomerOrder, saveEmailAddress, saveRememberedDetails, withoutAddress } from '@/src/utils/customerOrders';
-import { shouldOverwriteAddress } from './useMidSplitLocationMap';
+import { pinAddress } from './useMidSplitLocationMap';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { formatMMSS } from '@/src/utils/countdown';
 import { clientConfig } from '@/src/config/client.config';
@@ -167,14 +167,10 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // A re-pin overwrites the field only when it is empty or still holds our
   // own previous auto-fill — genuinely typed text (building, floor,
   // landmark) is never destroyed. Without this, a first wrong auto-fill
-  // (coarse fix) stuck forever: the field was non-empty so later correct
-  // picks were ignored — the "address is wrong" bug.
-  // No remembered-address seeding: the address is never stored, so every
-  // mount starts with a blank field. A re-pin overwrites it only while it
-  // is empty or a previous auto-fill/coords fallback — genuinely typed text
-  // (building, floor, landmark) is never destroyed. This keeps pin and
-  // address from ever disagreeing on the ticket.
-  const lastAutoFillRef = useRef<string | null>(null);
+  // A confirmed pick always owns the address. Typing after the pin is kept
+  // for that pin, but the next pick replaces the text with the new pin's
+  // reverse geocode (or coords when geocoding fails) — a manual address from
+  // a previous location must never ride with fresh coordinates.
   // State-only clear. Storage is the remembered pair and is synced atomically
   // on submit (see sendOrder) so a pick without a submit, a sheet dismiss,
   // or a drawer close can never strand a new pin against an old address.
@@ -187,17 +183,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   const closeLocSheet = (_keep: boolean) => { void _keep; setLocSheetOpen(false); };
   const handleMapPick = (lat: number, lng: number, accuracy: number, addressText: string | null) => {
     setLocation({ lat, lng, accuracy });
-    const fill = addressText && addressText.trim() ? addressText.trim().slice(0, 200) : `${lat}, ${lng}`;
-    const prevFill = lastAutoFillRef.current;
-    lastAutoFillRef.current = fill;
-    setCustomer((prev) => {
-      // Pure rule (see shouldOverwriteAddress): empty / our previous
-      // auto-fill (including the seeded remembered pair) / coords fallback
-      // refresh so a wrong auto-fill never sticks; genuinely typed text
-      // (building, floor, landmark) is kept with the fresh pin.
-      if (shouldOverwriteAddress(prev.address, prevFill)) return { ...prev, address: fill };
-      return prev;
-    });
+    const fill = pinAddress(lat, lng, addressText);
+    setCustomer((prev) => ({ ...prev, address: fill }));
     setLocSheetOpen(false);
   };
 

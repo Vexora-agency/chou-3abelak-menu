@@ -17,24 +17,18 @@ export function shouldAutoLocateOnOpen(
   return initial == null;
 }
 
-/** Bare-coords fallback shape (`"33.89352, 35.50161"`): always overwritable. */
-export const COORDS_RE = /^-?\d{1,3}\.\d{1,5},\s*-?\d{1,3}\.\d{1,5}$/;
-
 /**
- * Pure address-merge rule for a confirmed pick (testable without React).
- * Overwrite the field when it is empty, still holds our own previous
- * auto-fill, or is a bare coords fallback — genuinely typed text
- * (building, floor, landmark) is preserved. A remembered address paired
- * with a remembered pin must be passed as `prevFill` (see the checkout
- * hook seeding) so the first re-pin overwrites it instead of stranding a
- * stale street with a fresh pin.
+ * A confirmed pin is the source of truth for the delivery address.
+ *
+ * The picker's reverse-geocoded text (or the bare coords fallback when
+ * geocoding fails) always replaces whatever was in the address field. A
+ * manually typed address belongs to the PREVIOUS pin; keeping it after a new
+ * pin created a mismatched ticket (old text + new coords). The customer can
+ * still refine the fresh address afterwards (building, floor, landmark).
  */
-export function shouldOverwriteAddress(curAddress: string, prevFill: string | null): boolean {
-  const cur = (curAddress ?? '').trim();
-  if (!cur) return true;
-  if (prevFill !== null && cur === prevFill) return true;
-  if (COORDS_RE.test(cur)) return true;
-  return false;
+export function pinAddress(lat: number, lng: number, addressText: string | null): string {
+  const text = typeof addressText === 'string' ? addressText.trim() : '';
+  return (text || `${lat}, ${lng}`).slice(0, 200);
 }
 
 /** Reverse-geocode via OpenStreetMap Nominatim (called only on Confirm). */

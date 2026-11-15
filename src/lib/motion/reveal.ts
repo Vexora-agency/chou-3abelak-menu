@@ -51,14 +51,10 @@ function prepare(el: Element): void {
     el.setAttribute(DONE_ATTR, '');
     return;
   }
-  const rect = el.getBoundingClientRect();
-  const vh = window.innerHeight || document.documentElement.clientHeight;
-  // Above-the-fold elements enter immediately (double rAF lets the hidden
-  // start state paint first, so the entrance is actually visible).
-  if (rect.top < vh * 0.96 && rect.bottom > -40) {
-    requestAnimationFrame(() => requestAnimationFrame(() => reveal(el)));
-    return;
-  }
+  // No synchronous getBoundingClientRect here: menu sections mount in a big
+  // commit and a rect read forces a full-page layout (the 322 ms forced
+  // reflow flagged by Lighthouse). The IntersectionObserver itself decides
+  // visibility on its next callback, including above-the-fold elements.
   observer.observe(el);
 }
 

@@ -63,18 +63,32 @@
   country hints are part of the same frame.
 - Desktop performance pass (owner complaint: heavy scroll / slow start):
   - Lenis runs with `smoothWheel: false`: native wheel/trackpad, no added
-    latency. Lenis remains for programmatic chip/back-to-top scrolls.
+    latency. Lenis remains for programmatic chip/back-to-top scrolls and is
+    initialised on idle, after first paint.
   - GSAP is opt-in: the runtime only imports it when a `data-gsap-*` target
     exists. No storefront element uses one, so the 113 kB GSAP+ScrollTrigger
     pair is never requested.
   - Reveals are opacity/translate/scale only (no filter/blur, no
-    backface-visibility); the reveal MutationObserver watches childList only.
+    backface-visibility); the reveal observer watches childList only and never
+    reads getBoundingClientRect synchronously.
   - `useHeaderMotion` skips redundant transform writes after scrollY 320.
   - Featured autoplay pauses offscreen; the announcement marquee pauses when
-    the bar slides away.
+    the bar slides away; the featured card width is measured on idle.
   - The logo reveal still plays on EVERY open/refresh (owner decision) and has
     no Skip button. It is the pre-existing 6 s canvas intro; the rest of the
     page does not wait on it.
+- Image/LCP pass:
+  - Intro logo is a CSS screen-blended sprite background (no per-frame
+    getImageData/putImageData); it looks like the old alpha-keyed frames and
+    frees the main thread for LCP.
+  - `logo-final-640.webp` added for DPR2 phones (29 KB vs 48 KB).
+  - First featured menu image is preloaded as soon as `/api/menu` JSON arrives
+    (`preloadFirstFeatured`), before React renders the cards.
+  - Upload/recompress quality is now full 0.70 / variants 0.62; existing
+    internal menu photos need ONE admin run of Settings → Recompress Old Photos
+    to apply it (R2 objects are immutable; code cannot rewrite them).
+  - Carousel first measure, Lenis init/resize and reveal rect reads are
+    deferred off the commit frame to remove forced reflow.
 
 ## Done: monthly reports (plan-gated: pro, 404-when-off)- `SITE_PLAN` env (`starter` default). All report routes + `run-reports`
   return 404 on starter.

@@ -118,7 +118,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({
       <main className="relative z-10 w-full max-w-[420px] flex flex-col items-center">
         <motion.img
           src="/assets/logo-final.png"
-          srcSet="/assets/logo-final-480.webp 480w, /assets/logo-final-880.webp 880w"
+          srcSet="/assets/logo-final-480.webp 480w, /assets/logo-final-640.webp 640w, /assets/logo-final-880.webp 880w"
           sizes="(max-width: 640px) 210px, 240px"
           alt={restaurantName}
           width={1440}

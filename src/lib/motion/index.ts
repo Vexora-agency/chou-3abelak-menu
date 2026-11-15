@@ -25,9 +25,20 @@ export function initMotionRuntime(): void {
     initRevealSystem();
   } catch {}
 
+  // A stale inline root clip must never survive into the new page boot.
   try {
-    initSmoothScroll();
+    document.documentElement.style.removeProperty('overflow');
   } catch {}
+
+  // Lenis is programmatic-only (native wheel) and its constructor measures
+  // document geometry. Start it after the first paint/idle so it can never
+  // force a layout on the critical path; scrollTo helpers fall back to the
+  // platform API until it is ready.
+  scheduleIdle(() => {
+    try {
+      initSmoothScroll();
+    } catch {}
+  }, 1200);
 
   // GSAP is now strictly opt-in: if no element asks for a data-gsap-* effect,
   // the 113 kB GSAP + ScrollTrigger pair is never requested. That keeps the
@@ -55,9 +66,13 @@ export function initMotionRuntime(): void {
 export function refreshMotionRuntime(): void {
   try {
     refreshReveals();
-    refreshSmoothScroll();
+    // Lenis resize + ScrollTrigger refresh read page geometry. Defer them off
+    // the commit frame so the menu swap never pays a forced reflow.
+    scheduleIdle(() => {
+      refreshSmoothScroll();
+      refreshGsapLayer();
+    }, 900);
     if (hasGsapTargets()) void initGsapLayer();
-    refreshGsapLayer();
   } catch {}
 }
 

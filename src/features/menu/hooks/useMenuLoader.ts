@@ -10,6 +10,40 @@ const MENU_KEY = 'menu';
 /** Coalescing window for focus/visibility/pageshow refreshes (see refreshGate). */
 const EVENT_WINDOW_MS = 15000;
 
+/**
+ * Start the first featured photo download the moment the menu JSON is parsed,
+ * before React commits the cards. The HTML preload only covers warm cache
+ * visits; this covers cold visits and shaves the resource-load delay off LCP.
+ */
+function preloadFirstFeatured(menu: MenuData): void {
+  if (typeof document === 'undefined') return;
+  const item = menu.items.find((i) => i.featured && i.available !== false && i.imageUrl);
+  const src = item?.imageUrl;
+  if (!item || !src || !src.startsWith('/api/images/')) return;
+  const variants = item.imageVariants || {};
+  const candidates: string[] = [];
+  if (variants.s) candidates.push(`${variants.s} 400w`);
+  if (variants.m) candidates.push(`${variants.m} 800w`);
+  candidates.push(`${src} 1280w`);
+  const href = variants.m || variants.s || src;
+  let link = document.querySelector<HTMLLinkElement>('link[data-menu-image-preload="1"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.dataset.menuImagePreload = '1';
+    link.setAttribute(
+      'imagesizes',
+      '(max-width: 767px) 90vw, (max-width: 1279px) 31vw, 395px'
+    );
+    document.head.appendChild(link);
+  }
+  if (link.getAttribute('href') !== href) link.setAttribute('href', href);
+  const srcSet = candidates.join(', ');
+  if (link.getAttribute('imagesrcset') !== srcSet) link.setAttribute('imagesrcset', srcSet);
+  link.setAttribute('fetchpriority', 'high');
+}
+
 /** Loads the menu document (API → cache → seed) and exposes it with its setter. */
 export function useMenuLoader() {
   const [menu, setMenu] = useState<MenuData | null>(null);
@@ -54,6 +88,7 @@ export function useMenuLoader() {
         const data = await publicGet<MenuData>('/api/menu');
         if (data) {
           const normalized = normalizeMenu(data);
+          preloadFirstFeatured(normalized);
           // Stale-while-revalidate: the cache already painted instantly above;
           // swap only when the server version actually moved (same rule as the
           // 60 s background refresh), so repeat visits never flash or re-render.
@@ -87,6 +122,7 @@ export function useMenuLoader() {
           if (seedRes.ok) {
             const seedData = (await readJson(seedRes)) as MenuData;
             const normalized = normalizeMenu(seedData);
+            preloadFirstFeatured(normalized);
             setMenu(normalized);
             try {
               localStorage.setItem('menu_cache_v3', JSON.stringify(normalized));

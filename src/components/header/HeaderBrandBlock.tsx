@@ -11,7 +11,6 @@ import { XmasLogoHat, XmasLogoMelt } from '@/src/features/seasonal/XmasHeader';
 interface HeaderBrandBlockProps {
   menu: MenuData;
   lang: 'en' | 'ar';
-  parY: ReturnType<typeof useHeaderMotion>['parY'];
   rise: ReturnType<typeof useHeaderMotion>['rise'];
   intro: number;
   status: { isOpen: boolean; label: { en: string; ar: string } };
@@ -27,7 +26,6 @@ interface HeaderBrandBlockProps {
 export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
   menu,
   lang,
-  parY,
   rise,
   intro,
   status,
@@ -42,13 +40,12 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
 
   return (
     <div
-      ref={parY}
-      className="relative z-10 text-center mt-3 sm:mt-5 flex flex-col items-center max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full"
+      className="relative text-center mt-3 sm:mt-5 flex flex-col items-center max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full"
     >
       {/* Logo Container with Transparent Video & Atmospheric Sizzle Smoke */}
       <div
-        className="relative w-full max-w-[320px] sm:max-w-[380px] md:max-w-[440px] aspect-[1440/532] mx-auto overflow-hidden rounded-xl"
-        style={{ isolation: 'isolate', backgroundColor: 'transparent' }}
+        className="relative w-full max-w-[320px] sm:max-w-[380px] md:max-w-[440px] aspect-[1440/532] mx-auto"
+        style={{ backgroundColor: 'transparent' }}
       >
         {/* Santa hat (finale reveal once the intro ends) + melting snow */}
         {festive && hasEnded ? <XmasLogoHat /> : null}
@@ -64,7 +61,7 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
             fetchpriority=high + loading=eager: this is the LCP image. */}
         <img
           src="/assets/logo-final-480.webp"
-          srcSet="/assets/logo-final-480.webp 480w, /assets/logo-final-880.webp 880w, /assets/logo-final-1440.webp 1440w"
+          srcSet="/assets/logo-final-480.webp 480w, /assets/logo-final-640.webp 640w, /assets/logo-final-880.webp 880w, /assets/logo-final-1440.webp 1440w"
           sizes="(max-width: 360px) calc(100vw - 40px), (max-width: 640px) 320px, (max-width: 768px) 380px, 440px"
           fetchPriority="high"
           loading="eager"
@@ -82,7 +79,9 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
             the intro engine (forced playback: no autoplay policy applies).
             The canvases hide once the intro completes. */}
 
-        {/* Real-time Alpha-Keyed Video Canvas (720x266 buffer, CSS-upscaled) */}
+        {/* Screen-blended sprite canvas (720x266 buffer, CSS-upscaled). The
+            sheet is painted as a CSS background so the black frame disappears
+            over the dark header with zero per-pixel JavaScript. */}
         <canvas
           ref={canvasRef}
           width={720}
@@ -90,7 +89,7 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
           className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-700 pointer-events-none ${
             hasEnded ? 'opacity-0' : 'opacity-100'
           } ${engineDone ? 'hidden' : ''}`}
-          style={{ backgroundColor: 'transparent' }}
+          style={{ backgroundColor: 'transparent', mixBlendMode: 'screen', backgroundRepeat: 'no-repeat' }}
         />
 
         {/* Smoke & Sizzle Sparks Overlay Canvas (720x266 buffer) */}

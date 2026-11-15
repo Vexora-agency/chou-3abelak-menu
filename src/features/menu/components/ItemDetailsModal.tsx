@@ -320,6 +320,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         aria-label={headerTitle}
         data-testid="item-modal"
         data-item-id={item.id}
+        data-lenis-prevent
         className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 px-6 sm:px-8 pb-[max(1.25rem,env(safe-area-inset-bottom))] overflow-x-clip"
       >
         {/* Drag Pill Handle (Mobile only) */}

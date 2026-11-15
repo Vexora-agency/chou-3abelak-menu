@@ -9,6 +9,7 @@ import { AnnouncementBanner } from '@/src/components/AnnouncementBanner';
 import { type OrderingStatus } from '@/src/utils/status';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { serverNow } from '@/src/utils/serverTime';
+import { refreshMotionRuntime } from '@/src/lib/motion';
 import { SearchAndChips, FeaturedCarousel, MenuList, useMenuLoader } from '@/src/features/menu';
 // Item modal, cart drawer and order bell load lazily (own chunks): none of
 // them renders before interaction, so Suspense fallback={null} is
@@ -285,6 +286,13 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
       window.removeEventListener('resize', onResize);
       window.removeEventListener('load', onResize);
     };
+  }, [menu?.version]);
+
+  // Menu swap / version change: new sections mount, page height changes.
+  // Re-arming reveals + Lenis dimensions here keeps the glide accurate and
+  // lets newly mounted GSAP parallax accents attach on the same idle beat.
+  useEffect(() => {
+    refreshMotionRuntime();
   }, [menu?.version]);
 
   // Search & Category Filter

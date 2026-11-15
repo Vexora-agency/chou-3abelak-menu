@@ -1,5 +1,6 @@
 import React from 'react';
 import { PauseCircle, Send } from 'lucide-react';
+import { useMagnetic } from '@/src/components/motion';
 
 interface CartCheckoutFooterProps {
   orderBlocked: boolean;
@@ -28,6 +29,7 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
 }) => {
   const isAr = lang === 'ar';
   const locked = orderBlocked || sendLocked;
+  const sendRef = useMagnetic<HTMLButtonElement>(0.08, 3);
   return (
     <>
       {/* Availability status line */}
@@ -42,10 +44,11 @@ export const CartCheckoutFooter: React.FC<CartCheckoutFooterProps> = ({
       <div className="space-y-2.5 pt-1">
         <button
           type="button"
+          ref={sendRef}
           onClick={onSend}
           disabled={locked || sending}
           aria-describedby={orderBlocked ? 'order-status-line' : undefined}
-          className={`btn-tactile w-full rounded-full font-black text-sm flex items-center justify-center gap-2 shadow-lg ${locked ? 'min-h-12 h-auto py-2.5 px-4 text-xs leading-snug bg-neutral-700 text-neutral-300 cursor-not-allowed' : 'h-12 bg-[var(--primary)] text-[#0A0A0A] hover:brightness-110'} ${sending && !locked ? 'opacity-70 cursor-wait' : ''}`}
+          className={`btn-tactile fx-magnetic w-full rounded-full font-black text-sm flex items-center justify-center gap-2 shadow-lg ${locked ? 'min-h-12 h-auto py-2.5 px-4 text-xs leading-snug bg-neutral-700 text-neutral-300 cursor-not-allowed' : 'btn-primary-shine h-12 bg-[var(--primary)] text-[#0A0A0A] hover:brightness-110'} ${sending && !locked ? 'opacity-70 cursor-wait' : ''}`}
         >
           {locked ? (
             /* Blocked: the status line above (or the zone panel) already says

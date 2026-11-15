@@ -4,6 +4,8 @@ import { Clock, MapPin, Phone, ArrowUp, Instagram, Facebook, MessageCircle, Shie
 import { sanitizeUrl, buildMapUrl, looksLikeMapInput, formatHoursRange } from '@/src/utils/menuHelpers';
 import { aboutOrDefault, socialOrderOrDefault } from '@/src/utils/settingsDefaults';
 import type { SocialPlatform } from '@/src/types/menu';
+import { useMagnetic } from '@/src/components/motion';
+import { scrollPageToTop } from '@/src/lib/motion/smoothScroll';
 
 interface FooterProps {
   menu: MenuData;
@@ -41,8 +43,10 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollPageToTop();
   };
+
+  const directionsRef = useMagnetic<HTMLAnchorElement>(0.12, 4);
 
   const phoneDigits = (menu.settings.phone || '').replace(/[^0-9]/g, '');
   const phoneLink = phoneDigits ? `tel:+${phoneDigits}` : 'tel:+96170123456';
@@ -72,7 +76,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
 
   return (
     <footer className="relative isolate mt-12 bg-[#0A0A0A] text-white rounded-t-[32px] md:rounded-t-[44px] pt-11 px-5 sm:px-8 md:px-12 pb-8 shadow-[0_-24px_60px_-24px_rgba(0,0,0,0.6)]">
-      <div className="header-grain" aria-hidden="true" />
+      <div className="header-grain" data-gsap-parallax="0.05" aria-hidden="true" />
       <div className="edge-line edge-line-t" aria-hidden="true" />
       {/* Floating Back to Top Button */}
       {showBackToTop && (
@@ -90,7 +94,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
         {/* Responsive Grid: 1-col mobile, 3-col tablet & desktop */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start mb-6">
           {/* Col 1: Brand Logo & Tagline */}
-          <div>
+          <div data-motion-reveal="up" data-motion-delay="0">
             <div className="w-48 max-w-[80%] mb-3">
               <img
                 src="/assets/logo-final.png"
@@ -109,7 +113,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
           </div>
 
           {/* Col 2: Hours & Location */}
-          <div className="space-y-3.5 text-xs text-neutral-300">
+          <div data-motion-reveal="up" data-motion-delay="70" className="space-y-3.5 text-xs text-neutral-300">
             <h3 className={`text-xs font-bold text-[var(--primary)] mb-2 ${isAr ? '' : 'uppercase tracking-wider'}`}>
               {isAr ? 'معلومات المتجر' : 'Store Information'}
             </h3>
@@ -150,7 +154,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
           </div>
 
           {/* Col 3: Social Links & Directions CTA */}
-          <div className="flex flex-col gap-4">
+          <div data-motion-reveal="up" data-motion-delay="140" className="flex flex-col gap-4">
             <h3 className={`text-xs font-bold text-[var(--primary)] ${isAr ? '' : 'uppercase tracking-wider'}`}>
               {isAr ? 'تواصل معنا' : 'Connect with Us'}
             </h3>
@@ -180,10 +184,11 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
 
             {/* Get Directions Button */}
             <a
+              ref={directionsRef}
               href={mapLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-tactile w-full h-11 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center font-bold text-xs shadow-md hover:brightness-110"
+              className="btn-tactile fx-magnetic w-full h-11 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center font-bold text-xs shadow-md hover:brightness-110"
             >
               {isAr ? 'الاتجاهات على الخريطة' : 'Get Directions'}
             </a>

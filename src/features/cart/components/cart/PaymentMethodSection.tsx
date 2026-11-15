@@ -1,5 +1,5 @@
 import React from 'react';
-import { Banknote, Check, ShieldCheck, UserRound } from 'lucide-react';
+import { Banknote, Check, ChevronRight, ShieldCheck, UserRound } from 'lucide-react';
 
 interface PaymentMethodSectionProps {
   lang: 'en' | 'ar';
@@ -17,6 +17,77 @@ interface PaymentMethodSectionProps {
   /** Opens account settings over the cart so the profile can be completed. */
   onCompleteProfile?: () => void;
 }
+
+interface AccountNoticeProps {
+  darkMode: boolean;
+  title: string;
+  body: string;
+  onClick?: () => void;
+}
+
+/**
+ * Compact in-card account prompt.
+ *
+ * Sits INSIDE the selected COD card on a neutral, elevated surface — the old
+ * amber-on-amber block muddied the gold selection and read like an error.
+ * One line of title, one line of why, one short CTA.
+ */
+const AccountNotice: React.FC<AccountNoticeProps> = ({ darkMode, title, body, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`group mt-3 flex w-full items-center gap-2.5 rounded-xl border px-2.5 py-2 min-h-[52px] text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+      darkMode
+        ? 'border-white/10 bg-black/30 hover:bg-black/40'
+        : 'border-black/[0.06] bg-white/80 shadow-[0_1px_2px_rgba(10,10,10,0.03)] hover:bg-white'
+    }`}
+  >
+    <span
+      className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+        darkMode ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-[var(--primary)]/15 text-[#7a5d00]'
+      }`}
+      aria-hidden="true"
+    >
+      <UserRound size={14} />
+    </span>
+    <span className="min-w-0 flex-1">
+      <span className={`block text-[12px] font-extrabold leading-tight ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+        {title}
+      </span>
+      <span className={`mt-0.5 block text-[11px] leading-snug ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
+        {body}
+      </span>
+    </span>
+    <span
+      aria-hidden="true"
+      className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-transform duration-200 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 ${
+        darkMode ? 'bg-[var(--primary)] text-[#0A0A0A]' : 'bg-[#0A0A0A] text-[var(--primary)]'
+      }`}
+    >
+      <ChevronRight size={14} strokeWidth={2.6} className="rtl:rotate-180" />
+    </span>
+  </button>
+);
+
+/** Neutral skeleton while the session/profile check is in flight. */
+const AccountSkeleton: React.FC<{ darkMode: boolean; label: string }> = ({ darkMode, label }) => (
+  <div
+    role="status"
+    className={`mt-3 flex items-center gap-2.5 rounded-xl border px-2.5 py-2.5 ${
+      darkMode ? 'border-white/10 bg-black/20' : 'border-black/[0.06] bg-white/60'
+    }`}
+  >
+    <span className="sr-only">{label}</span>
+    <span
+      aria-hidden="true"
+      className={`shrink-0 w-8 h-8 rounded-lg animate-pulse ${darkMode ? 'bg-white/10' : 'bg-black/[0.06]'}`}
+    />
+    <span aria-hidden="true" className="min-w-0 flex-1 space-y-1.5">
+      <span className={`block h-2.5 w-24 rounded-full animate-pulse ${darkMode ? 'bg-white/10' : 'bg-black/[0.06]'}`} />
+      <span className={`block h-2 w-40 max-w-full rounded-full animate-pulse ${darkMode ? 'bg-white/[0.07]' : 'bg-black/[0.045]'}`} />
+    </span>
+  </div>
+);
 
 /**
  * Checkout payment step — Cash on Delivery is the ONLY live method.
@@ -37,6 +108,8 @@ export const PaymentMethodSection: React.FC<PaymentMethodSectionProps> = ({
 }) => {
   const isAr = lang === 'ar';
   if (!codEnabled) return null;
+
+  const checkingLabel = isAr ? 'جارٍ التحقق من حسابك…' : 'Checking your account…';
 
   return (
     <section
@@ -75,11 +148,19 @@ export const PaymentMethodSection: React.FC<PaymentMethodSectionProps> = ({
         <div
           className={`relative overflow-hidden rounded-2xl border-2 p-4 transition-colors ${
             darkMode
-              ? 'border-[var(--primary)]/75 bg-[var(--primary)]/[0.06]'
-              : 'border-[var(--primary)] bg-amber-50/70'
+              ? 'border-[var(--primary)]/70 bg-[var(--primary)]/[0.06]'
+              : 'border-[var(--primary)] bg-gradient-to-br from-[var(--primary)]/[0.16] via-white to-white'
           }`}
         >
-          <input type="radio" checked disabled readOnly aria-checked="true" aria-label={isAr ? 'الدفع عند الاستلام' : 'Cash on Delivery'} className="sr-only" />
+          <input
+            type="radio"
+            checked
+            disabled
+            readOnly
+            aria-checked="true"
+            aria-label={isAr ? 'الدفع عند الاستلام' : 'Cash on Delivery'}
+            className="sr-only"
+          />
           <span aria-hidden="true" className="absolute inset-y-0 start-0 w-1 bg-[var(--primary)]" />
           <div className="flex items-start gap-3">
             <span
@@ -96,7 +177,9 @@ export const PaymentMethodSection: React.FC<PaymentMethodSectionProps> = ({
                 </span>
                 <span
                   className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
-                    darkMode ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-[var(--primary)]/20 text-[#7a5d00]'
+                    darkMode
+                      ? 'bg-[var(--primary)] text-[#0A0A0A]'
+                      : 'bg-[#0A0A0A] text-[var(--primary)]'
                   }`}
                 >
                   {isAr ? 'محددة' : 'Selected'}
@@ -113,92 +196,34 @@ export const PaymentMethodSection: React.FC<PaymentMethodSectionProps> = ({
               <Check size={14} strokeWidth={3.2} />
             </span>
           </div>
+
+          {/* Account requirement lives INSIDE the selected card — one compact
+              surface instead of a second amber panel stacked under it. */}
+          {accountLoading ? (
+            <AccountSkeleton darkMode={darkMode} label={checkingLabel} />
+          ) : profileIncomplete ? (
+            <AccountNotice
+              darkMode={darkMode}
+              title={isAr ? 'أكمل بياناتك' : 'Complete your profile'}
+              body={isAr ? 'أضف هاتفك وعنوانك للمتابعة.' : 'Add phone and address to continue.'}
+              onClick={onCompleteProfile}
+            />
+          ) : !isMember ? (
+            <AccountNotice
+              darkMode={darkMode}
+              title={isAr ? 'أنشئ حسابًا' : 'Create an account'}
+              body={isAr ? 'مطلوب لإتمام الطلب ومتابعته.' : 'Required to place & track this order.'}
+              onClick={onRequireAccount}
+            />
+          ) : null}
         </div>
       </div>
 
-      {isMember ? (
-        accountLoading ? (
-          <p className={`text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-            {isAr ? 'جارٍ التحقق من بيانات حسابك…' : 'Checking your account details…'}
-          </p>
-        ) : profileIncomplete ? (
-          <div
-            className={`rounded-xl border p-3 ${
-              darkMode ? 'border-[var(--primary)]/30 bg-[var(--primary)]/[0.06]' : 'border-amber-300 bg-amber-50'
-            }`}
-          >
-            <div className="flex items-start gap-2.5">
-              <span
-                className={`shrink-0 w-8 h-8 min-w-[32px] rounded-full flex items-center justify-center ${
-                  darkMode ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-amber-100 text-amber-700'
-                }`}
-              >
-                <UserRound size={15} aria-hidden="true" />
-              </span>
-              <div className="min-w-0">
-                <p className={`text-xs font-extrabold ${darkMode ? 'text-neutral-100' : 'text-neutral-800'}`}>
-                  {isAr ? 'أكمل بيانات حسابك أولًا' : 'Complete your profile first'}
-                </p>
-                <p className={`mt-0.5 text-[11px] leading-relaxed ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                  {isAr
-                    ? 'أضف رقم الهاتف والعنوان الافتراضي مع تثبيت الموقع على الخريطة لتتمكن من إرسال الطلب.'
-                    : 'Add your phone and default address — with a map pin — to place your order.'}
-                </p>
-                <button
-                  type="button"
-                  onClick={onCompleteProfile}
-                  className="btn-tactile mt-2.5 inline-flex h-10 min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-xs font-extrabold text-[#0A0A0A] shadow-sm hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-                >
-                  <UserRound size={14} aria-hidden="true" />
-                  {isAr ? 'أكمل البيانات' : 'Complete profile'}
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className={`flex items-center gap-1.5 text-[11px] font-bold ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
-            <ShieldCheck size={13} aria-hidden="true" />
-            {isAr ? 'طلبك مرتبط بحسابك تلقائيًا.' : 'Your order is linked to your account automatically.'}
-          </p>
-        )
-      ) : accountLoading ? (
-        <p className={`text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>
-          {isAr ? 'جارٍ التحقق من حسابك…' : 'Checking your account…'}
+      {isMember && !accountLoading && !profileIncomplete && (
+        <p className={`flex items-center gap-1.5 text-[11px] font-bold ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
+          <ShieldCheck size={13} aria-hidden="true" />
+          {isAr ? 'طلبك مرتبط بحسابك تلقائيًا.' : 'Your order is linked to your account automatically.'}
         </p>
-      ) : (
-        <div
-          className={`rounded-xl border p-3 ${
-            darkMode ? 'border-[var(--primary)]/30 bg-[var(--primary)]/[0.06]' : 'border-amber-300 bg-amber-50'
-          }`}
-        >
-          <div className="flex items-start gap-2.5">
-            <span
-              className={`shrink-0 w-8 h-8 min-w-[32px] rounded-full flex items-center justify-center ${
-                darkMode ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-amber-100 text-amber-700'
-              }`}
-            >
-              <UserRound size={15} aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className={`text-xs font-extrabold ${darkMode ? 'text-neutral-100' : 'text-neutral-800'}`}>
-                {isAr ? 'الدفع عند الاستلام يتطلب حسابًا' : 'Cash on delivery needs an account'}
-              </p>
-              <p className={`mt-0.5 text-[11px] leading-relaxed ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                {isAr
-                  ? 'أنشئ حسابًا سريعًا لإتمام الطلب ومتابعته بسهولة.'
-                  : 'Create a quick account to place and track this order.'}
-              </p>
-              <button
-                type="button"
-                onClick={onRequireAccount}
-                className="btn-tactile mt-2.5 inline-flex h-10 min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-xs font-extrabold text-[#0A0A0A] shadow-sm hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-              >
-                <UserRound size={14} aria-hidden="true" />
-                {isAr ? 'إنشاء حساب' : 'Create account'}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </section>
   );

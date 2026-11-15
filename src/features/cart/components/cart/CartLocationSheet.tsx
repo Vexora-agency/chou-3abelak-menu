@@ -24,7 +24,7 @@ export const CartLocationSheet: React.FC<CartLocationSheetProps> = ({
       {/* Animation on the wrapper, scrolling on the inner div — the body
           lock is held by the cart drawer underneath (shared counter). */}
       <div className={`anim-drawer-in relative w-full max-h-[92vh] max-h-[92dvh] flex flex-col rounded-t-[24px] shadow-2xl overflow-hidden ${darkMode ? 'bg-[#141414] text-white border-t-2 border-[var(--primary)]' : 'bg-white text-[#0A0A0A] border-t-2 border-[var(--primary)]'}`}>
-      <div className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 p-5 pb-7 overflow-x-clip">
+      <div data-lenis-prevent className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 p-5 pb-7 overflow-x-clip">
         <div className="w-11 h-1.5 rounded-full mx-auto mb-4 bg-neutral-400/50" />
         {/* Sticky header: X stays reachable while the map sheet scrolls. */}
         <div className={`sticky top-0 z-10 -mx-5 -mt-5 mb-4 px-5 pt-5 pb-3 border-b flex items-center justify-between gap-3 ${darkMode ? 'bg-[#141414] border-neutral-800' : 'bg-white border-neutral-200'}`}>

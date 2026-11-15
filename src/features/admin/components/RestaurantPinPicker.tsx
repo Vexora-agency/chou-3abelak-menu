@@ -98,7 +98,7 @@ export const RestaurantPinPicker: React.FC<RestaurantPinPickerProps> = ({
   return createPortal(
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto" role="dialog" aria-modal="true" aria-label={isAr ? 'تحديد موقع المطعم' : 'Pin restaurant location'}>
       <div className="fixed inset-0 bg-black/70" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-lg my-auto max-h-[92dvh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-[#141414] text-white border-2 border-[var(--primary)]">
+      <div data-lenis-prevent className="relative w-full max-w-lg my-auto max-h-[92dvh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-[#141414] text-white border-2 border-[var(--primary)]">
         <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800">
           <h3 className="text-sm font-black flex items-center gap-2">
             <MapPin size={16} className="text-[var(--primary)]" />

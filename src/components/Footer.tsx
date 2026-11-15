@@ -98,7 +98,7 @@ export const Footer: React.FC<FooterProps> = ({ menu, onOpenAdmin, lang }) => {
             <div className="w-48 max-w-[80%] mb-3">
               <img
                 src="/assets/logo-final.png"
-                srcSet="/assets/logo-final-480.webp 480w, /assets/logo-final-880.webp 880w"
+                srcSet="/assets/logo-final-480.webp 480w, /assets/logo-final-640.webp 640w, /assets/logo-final-880.webp 880w"
                 sizes="192px"
                 loading="lazy"
                 width={480}

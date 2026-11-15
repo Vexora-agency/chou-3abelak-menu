@@ -13,8 +13,6 @@ const SHEETS = [
   '/assets/intro-sheet-2.webp',
   '/assets/intro-sheet-3.webp',
 ];
-const CELL_W = 720;
-const CELL_H = 266;
 const COLS = 4;
 const FRAMES_PER_SHEET = 36;
 const FPS = 24;
@@ -35,23 +33,23 @@ export function useHeaderIntroEngine(
     const smokeCanvas = smokeCanvasRef.current;
     if (!canvas || !smokeCanvas) return;
 
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const sCtx = smokeCanvas.getContext('2d');
-    if (!ctx || !sCtx) return;
+    if (!sCtx) return;
 
     // The intro always plays for everyone (site owner decision): no reduced-motion
     // skip here. If the sheets fail to load, the fallbacks below still show
     // the final logo so the header never stays blank.
 
     // Enable high-definition image smoothing
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
     sCtx.imageSmoothingEnabled = true;
     sCtx.imageSmoothingQuality = 'high';
 
     let animId = 0;
     let isRunning = true;
     let finished = false;
+    // Frame currently painted as the canvas CSS background. Style writes happen
+    // only when the 24 fps frame changes, not on every 60 fps rAF tick.
+    let lastDrawnFrame = -1;
     // Sheets fill in as each downloads (sheet 0 starts the clock; 1-3 stream
     // in during playback — each is needed 1.5 s after the previous, so even
     // slow networks stay ahead). A null slot = still downloading.
@@ -95,7 +93,13 @@ export function useHeaderIntroEngine(
       const w = canvas.width;
       const h = canvas.height;
 
-      // 1. Process Sprite Frame with Crisp Subpixel Alpha Keying & Edge Luminosity Restoration
+      // 1. Draw the raw sprite frame. The canvas uses CSS mix-blend-mode:
+      // screen over the dark header, so the sheet's black background vanishes
+      // and the logo/glow add light — visually equivalent to the old per-pixel
+      // alpha keying WITHOUT a getImageData/putImageData readback every frame.
+      // That readback loop was the single biggest main-thread blocker during
+      // the 6 s intro (it delayed LCP to ~6.4 s on mobile). The smoke canvas
+      // already uses the same screen blend.
       const t = introTime();
       const frame = Math.min(Math.floor(Math.max(0, t) * FPS), TOTAL_FRAMES - 1);
       const si = Math.floor(frame / FRAMES_PER_SHEET);
@@ -106,50 +110,17 @@ export function useHeaderIntroEngine(
       const sheet = sheets[si];
       if (sheet && t >= 0 && !finished) {
         const local = frame % FRAMES_PER_SHEET;
-        const sx = (local % COLS) * CELL_W;
-        const sy = Math.floor(local / COLS) * CELL_H;
-        ctx.clearRect(0, 0, w, h);
-        ctx.drawImage(sheet, sx, sy, CELL_W, CELL_H, 0, 0, w, h);
-
-        try {
-          const frameData = ctx.getImageData(0, 0, w, h);
-          const data = frameData.data;
-          const len = data.length;
-
-          for (let i = 0; i < len; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const max = r > g ? (r > b ? r : b) : (g > b ? g : b);
-
-            if (max <= 12) {
-              // Complete transparent zero floor (cleans compression artifacts)
-              data[i + 3] = 0;
-            } else if (max < 52) {
-              // Smooth cubic Hermite anti-aliasing curve: eliminates jagged pixels
-              const tt = (max - 12) / 40;
-              const smooth = tt * tt * (3 - 2 * tt);
-              data[i + 3] = (smooth * 255) | 0;
-
-              // De-darken boundary pixels so edges stay vibrant & razor-sharp rather than dark/blurry
-              const factor = Math.min(2.4, 1 / (smooth * 0.75 + 0.25));
-              data[i] = Math.min(255, (r * factor) | 0);
-              data[i + 1] = Math.min(255, (g * factor) | 0);
-              data[i + 2] = Math.min(255, (b * factor) | 0);
-            } else {
-              // Fully solid letter stroke
-              data[i + 3] = 255;
-              // Clean pure luminous whites
-              if (r > 200 && g > 200 && b > 200) {
-                data[i] = 255;
-                data[i + 1] = 255;
-                data[i + 2] = 255;
-              }
-            }
-          }
-          ctx.putImageData(frameData, 0, 0);
-        } catch {
-          // Fallback if compositing is restricted
+        // Paint the cell as a CSS background with screen blending, not into
+        // the canvas bitmap. The sheet's black background disappears against
+        // the dark header (same additive look as the old alpha keying) and the
+        // main thread never runs a getImageData/putImageData readback.
+        if (frame !== lastDrawnFrame) {
+          lastDrawnFrame = frame;
+          canvas.style.backgroundImage = `url("${SHEETS[si]}")`;
+          canvas.style.backgroundSize = '400% 900%';
+          canvas.style.backgroundPosition =
+            `${(local % COLS) * (100 / (COLS - 1))}% ` +
+            `${Math.floor(local / COLS) * (100 / (Math.ceil(FRAMES_PER_SHEET / COLS) - 1))}%`;
         }
 
         if (t >= END_AT_S) {

@@ -6,6 +6,7 @@ import { pickLangText } from '@/src/utils/menuHelpers';
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
 import { SplitText } from '@/src/components/motion';
+import { scheduleIdle } from '@/src/utils/scheduleIdle';
 
 interface FeaturedCarouselProps {
   items: MenuItem[];
@@ -126,11 +127,15 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         measure();
       });
     };
-    measure();
+    // First measure on idle (settled tree, ~free reads): measuring in the
+    // dirty post-mount tree forced a full-page layout on slower devices.
+    // Autoplay (4 s+) and manual slides happen long after this.
+    const cancelIdle = scheduleIdle(measure, 1200);
     const ro = trackRef.current ? new ResizeObserver(requestMeasure) : null;
     if (trackRef.current && ro) ro.observe(trackRef.current);
     window.addEventListener('resize', requestMeasure);
     return () => {
+      cancelIdle();
       window.removeEventListener('resize', requestMeasure);
       ro?.disconnect();
     };

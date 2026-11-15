@@ -39,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
   orderingEnabled = true,
   festive = false,
 }) => {
-  const { parY, glowY, intro, rise } = useHeaderMotion();
+  const { glowY, intro, rise } = useHeaderMotion();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const smokeCanvasRef = useRef<HTMLCanvasElement>(null);
   const headerRef = useRef<HTMLElement>(null);
@@ -92,7 +92,6 @@ export const Header: React.FC<HeaderProps> = ({
       <HeaderBrandBlock
         menu={menu}
         lang={lang}
-        parY={parY}
         rise={rise}
         intro={intro}
         status={status}

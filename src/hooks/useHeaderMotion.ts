@@ -9,7 +9,6 @@ export function useHeaderMotion(introDelay = 1.5) {
   // layout, and the mapping below is pure arithmetic — this listener costs
   // ~zero however big the DOM gets. Frame-for-frame identical to the old
   // useTransform mapping (direct write, no smoothing either way).
-  const parY = useParallaxRef(46);
   const glowY = useParallaxRef(-30);
 
   // Entrance choreography: content rises in while the logo video draws itself
@@ -21,7 +20,7 @@ export function useHeaderMotion(introDelay = 1.5) {
     transition: { duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] as const },
   });
 
-  return { parY, glowY, intro, rise };
+  return { glowY, intro, rise };
 }
 
 /** Scroll-linked translateY with zero geometry reads (see above). */

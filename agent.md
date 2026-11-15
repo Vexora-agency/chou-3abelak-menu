@@ -28,6 +28,12 @@
 - Lenis smooths wheel only; touch stays native (iOS momentum + body-lock
   contract). Every sheet/admin modal scroller carries `data-lenis-prevent`.
   `useBodyScrollLock` pauses/resumes Lenis and re-seats it on the restored y.
+  NEVER set `autoToggle: true`: its `stop()` writes `overflow: clip` on
+  `<html>` and `start()` waits for a discrete transitionend that mobile
+  browsers can miss, leaving the whole page unscrollable. Manual
+  stop()/start() is symmetric only with autoToggle OFF, and the Lenis
+  `.lenis-stopped { overflow: clip }` rule must stay deleted. Boot also clears
+  any stale inline `html` overflow as a safety net.
 - GSAP is idle-loaded (LCP untouched) and powers parallax on header/footer
   grain + standalone-page auras. `refreshMotionRuntime()` runs on menu version.
 - Cart premium pass: neutral `Email updates` card (gold accent, no solid

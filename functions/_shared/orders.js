@@ -18,6 +18,7 @@ import {
 import { normalizeDeliveryZones } from './delivery-zones.js';
 import { haversineKm, parseMapUrlCoordsJs } from './eta.js';
 import { resolveDeliveryFeeJs } from './delivery-fees.js';
+import { dialCodeFromNumber } from './dial-codes.js';
 
 export function newOrderId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -76,6 +77,17 @@ export function validateOrderInput(body, menu) {
 
   const phoneDigits = westernDigits(typeof c.phone === 'string' ? c.phone : '').replace(/[^0-9]/g, '');
   if (phoneDigits.length < 6 || phoneDigits.length > 15) errors.push('invalid_phone');
+
+  // Same-country gate (server mirror of the checkout prefix): derive the
+  // restaurant's dial code from the admin WhatsApp picker and reject a long
+  // phone that clearly belongs to another country. Short national numbers are
+  // still accepted for older clients; the customer UI normalizes to full.
+  const restaurantDial = dialCodeFromNumber(
+    menu?.settings?.whatsapp || menu?.settings?.phone || '',
+  );
+  if (restaurantDial && phoneDigits.length >= 10 && !phoneDigits.startsWith(restaurantDial)) {
+    errors.push('unsupported_phone_country');
+  }
 
   // Customer email (opt-in, never blocks the order): trim + lowercase +
   // max 254 + simple shape check. Invalid or missing reads as ''.

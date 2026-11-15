@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { MenuSettings } from '@/src/types/menu';
 import { DIAL_CODES, OTHER_ISO, composeFull, splitDialCode } from '@/src/config/dialCodes';
+import { dialFromSettings } from '@/src/utils/phoneCountry';
 import { normalizeMapLocation, parseMapUrlCoords, looksLikeMapInput } from '@/src/utils/menuHelpers';
 import { CountryCodePicker } from './CountryCodePicker';
 import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
@@ -42,6 +43,7 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
     onUpdate((prev) => ({ ...prev, whatsapp: composeFull(entry ? entry.code : '', national) }));
   };
   const waComposed = (whatsapp || '').replace(/\D/g, '');
+  const customerDial = dialFromSettings({ whatsapp, phone });
   // Text address shown in the footer (Store Information). Resolvable from
   // the work location above: one on-demand lookup fills both languages.
   const addr = address || { en: '', ar: '' };
@@ -360,6 +362,13 @@ export const IdentitySection: React.FC<IdentitySectionProps> = ({
               ? <>Stored international: <b className="text-neutral-300 tabular-nums">+{waComposed}</b></>
               : (isAr ? 'اختر الدولة ثم اكتب الرقم المحلي.' : 'Pick the country, then type the local number.')}
           </p>
+          {customerDial.code && (
+            <p className="mt-0.5 text-[10px] font-bold text-[var(--primary)]/80" dir={isAr ? 'rtl' : 'ltr'}>
+              {isAr
+                ? `كل أرقام الطلبات ستُفحص مقابل +${customerDial.code} فقط.`
+                : `Customer phone numbers are checked against +${customerDial.code} only.`}
+            </p>
+          )}
         </div>
       </div>
 

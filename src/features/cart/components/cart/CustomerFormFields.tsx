@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
 import { CustomerDetails } from '@/src/types/menu';
-import { cleanPhoneInput } from '@/src/utils/digits';
-import { ChevronDown, Mail, MapPin, Navigation, X } from 'lucide-react';
+import { cleanPhoneInput, phoneDigitsOnly } from '@/src/utils/digits';
+import {
+  checkPhone,
+  composeNational,
+  isForeignNumber,
+  isInternationalInput,
+  nationalPart,
+  type DialCountry,
+} from '@/src/utils/phoneCountry';
+import { ChevronDown, Mail, MapPin, Navigation, Phone, X } from 'lucide-react';
 
 interface CustomerFormFieldsProps {
   customer: CustomerDetails;
@@ -17,6 +25,8 @@ interface CustomerFormFieldsProps {
   darkMode: boolean;
   /** Signed-in members already have their email on every linked order. */
   isMember?: boolean;
+  /** Restaurant country from the admin WhatsApp picker (phone gate). */
+  phoneDial?: DialCountry;
   onOpenLocSheet: () => void;
   onClearLocation: () => void;
 }
@@ -34,11 +44,55 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   lang,
   darkMode,
   isMember = false,
+  phoneDial,
   onOpenLocSheet,
   onClearLocation,
 }) => {
   const isAr = lang === 'ar';
   const [emailOpen, setEmailOpen] = useState(() => !!(customer.email && customer.email.trim()));
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const dial: DialCountry = phoneDial ?? { iso: '', code: '' };
+  const phoneForeign = isForeignNumber(customer.phone, dial.code);
+  const phoneDisplay = phoneForeign
+    ? customer.phone
+    : dial.code
+      ? nationalPart(customer.phone, dial.code)
+      : customer.phone;
+  const phoneErrorText = phoneError || (phoneForeign
+    ? (isMember
+      ? (isAr
+        ? `الرقم المحفوظ في حسابك ليس من +${dial.code}. حدّثه من الإعدادات.`
+        : `Your saved number isn’t a +${dial.code} number. Update it in Account → Settings.`)
+      : (isAr
+        ? `هذا الرقم غير مدعوم. امسح الحقل وأدخل رقمًا من +${dial.code}.`
+        : `This number isn’t supported. Clear the field and enter a +${dial.code} number.`))
+    : null);
+
+  const onPhoneChange = (raw: string) => {
+    if (!dial.code) {
+      setPhoneError(null);
+      setCustomer({ ...customer, phone: cleanPhoneInput(raw) });
+      return;
+    }
+    if (isInternationalInput(raw)) {
+      const check = checkPhone(raw, dial.code);
+      if (!check.ok) {
+        setPhoneError(check.reason === 'country'
+          ? (isAr
+            ? `الرقم غير مدعوم. نقبل أرقام +${dial.code} فقط.`
+            : `This number isn’t supported. Use a +${dial.code} number.`)
+          : (isAr
+            ? 'رقم الهاتف يجب أن يكون من 6 إلى 15 رقمًا'
+            : 'Phone must be 6–15 digits'));
+        return;
+      }
+      setPhoneError(null);
+      setCustomer({ ...customer, phone: check.normalized });
+      return;
+    }
+    setPhoneError(null);
+    setCustomer({ ...customer, phone: composeNational(phoneDigitsOnly(raw), dial.code) });
+  };
   return (
     <div className="space-y-3">
       <div>
@@ -72,25 +126,59 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         }`}>
           {isAr ? 'رقم الهاتف *' : 'Phone Number *'}
         </label>
-        <input
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          value={customer.phone} dir="ltr"
-          onChange={(e) => setCustomer({ ...customer, phone: cleanPhoneInput(e.target.value) })}
-          placeholder={isAr ? 'مثال: 70123456' : '+961 70 123 456'}
-          maxLength={20}
-          enterKeyHint="next"
-          readOnly={isMember}
-          aria-readonly={isMember || undefined}
-          className={`w-full h-11 px-3.5 rounded-xl border text-base tabular-nums ${isAr ? 'text-end' : 'text-start'} focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
-            isMember ? 'opacity-80 cursor-not-allowed' : ''
-          } ${
-            darkMode
-              ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-400'
-              : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-500 shadow-xs'
+        <div className="flex" dir="ltr">
+          {dial.code && !phoneForeign && (
+            <span
+              className={`inline-flex h-11 shrink-0 items-center gap-1.5 rounded-s-xl border border-e-0 px-3 text-sm font-extrabold tabular-nums ${
+                darkMode
+                  ? 'bg-[#181818] border-neutral-700 text-[var(--primary)]'
+                  : 'bg-neutral-50 border-neutral-300 text-[#7a5d00]'
+              }`}
+            >
+              <Phone size={13} className="opacity-70" aria-hidden="true" />
+              +{dial.code}
+            </span>
+          )}
+          <input
+            type="tel"
+            inputMode="tel"
+            autoComplete={dial.code ? 'tel-national' : 'tel'}
+            value={phoneDisplay}
+            onChange={(e) => onPhoneChange(e.target.value)}
+            placeholder={dial.code ? '70 123 456' : '+961 70 123 456'}
+            maxLength={20}
+            enterKeyHint="next"
+            readOnly={isMember}
+            aria-readonly={isMember || undefined}
+            aria-invalid={phoneErrorText ? true : undefined}
+            aria-describedby="cart-phone-note"
+            className={`min-w-0 flex-1 h-11 px-3.5 border text-base tabular-nums text-start focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
+              dial.code && !phoneForeign ? 'rounded-e-xl rounded-s-none' : 'rounded-xl'
+            } ${
+              isMember ? 'opacity-80 cursor-not-allowed' : ''
+            } ${
+              phoneErrorText ? 'border-red-500/60' : darkMode ? 'border-neutral-700' : 'border-neutral-300'
+            } ${
+              darkMode
+                ? 'bg-[#181818] text-white placeholder-neutral-400'
+                : 'bg-white text-[#0A0A0A] placeholder-neutral-500 shadow-xs'
+            }`}
+          />
+        </div>
+        <p
+          id="cart-phone-note"
+          className={`mt-1 text-[10.5px] font-semibold leading-relaxed ${
+            phoneErrorText
+              ? 'text-red-500'
+              : darkMode ? 'text-neutral-500' : 'text-neutral-400'
           }`}
-        />
+          role={phoneErrorText ? 'alert' : undefined}
+        >
+          {phoneErrorText
+            || (dial.code
+              ? (isAr ? `نقبل أرقام +${dial.code} فقط.` : `Only +${dial.code} numbers are accepted.`)
+              : (isAr ? 'أدخل رقم الهاتف مع رمز الدولة.' : 'Enter the phone number with its country code.'))}
+        </p>
       </div>
 
       <div>

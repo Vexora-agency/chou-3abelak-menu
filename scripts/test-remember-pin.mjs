@@ -28,6 +28,13 @@ import {
   shouldAutoLocateOnOpen,
   pinAddress,
 } from '../src/features/cart/hooks/useMidSplitLocationMap.ts';
+import {
+  checkPhone,
+  composeNational,
+  dialFromSettings,
+  nationalPart,
+} from '../src/utils/phoneCountry.ts';
+import { dialCodeFromNumber } from '../functions/_shared/dial-codes.js';
 
 const { ok, summary } = createAsserts();
 
@@ -146,6 +153,44 @@ ok(loadRememberedDetails() === null, 'unchecked forgets details');
   ok(pinAddress(33.9, 35.5, '   ') === '33.9, 35.5', 'blank geocode -> coords fallback');
   ok(pinAddress(33.9, 35.5, 'Hamra, Main Rd') === 'Hamra, Main Rd', 'geocoded pin address wins');
   ok(pinAddress(33.9, 35.5, 'My home floor 3').length <= 200, 'pin address capped at 200');
+}
+
+/* 5. Phone gate: the admin WhatsApp country controls accepted numbers. */
+{
+  const lb = dialFromSettings({ whatsapp: '96170123456' });
+  ok(lb.iso === 'LB' && lb.code === '961', 'admin WhatsApp -> Lebanon +961');
+  const eg = dialFromSettings({ whatsapp: '201001234567' });
+  ok(eg.iso === 'EG' && eg.code === '20', 'admin WhatsApp -> Egypt +20');
+  ok(dialFromSettings({ phone: '+961 70 123 456' }).code === '961', 'restaurant phone fallback');
+  ok(nationalPart('96170123456', '961') === '70123456', 'stored full -> national display');
+  ok(composeNational('70 123 456', '961') === '96170123456', 'national -> full compose');
+  const local = checkPhone('70 123 456', '961');
+  ok(local.ok && local.normalized === '96170123456', 'national number accepted + normalized');
+  const plus = checkPhone('+961 70 123 456', '961');
+  ok(plus.ok && plus.normalized === '96170123456', '+961 number accepted');
+  const zero = checkPhone('00961 70 123 456', '961');
+  ok(zero.ok && zero.normalized === '96170123456', '00-prefixed international accepted');
+  const foreign = checkPhone('+20 100 123 4567', '961');
+  ok(foreign.ok === false && foreign.reason === 'country', 'other dial code rejected');
+  const foreignStored = checkPhone('201001234567', '961');
+  ok(foreignStored.ok === false && foreignStored.reason === 'country', 'stored foreign full number rejected');
+  ok(checkPhone('', '961').reason === 'empty', 'empty phone rejected');
+  ok(checkPhone('123', '961').reason === 'too_short', 'short phone rejected');
+  ok(dialCodeFromNumber('96170123456') === '961', 'server derives Lebanon +961');
+  ok(dialCodeFromNumber('201001234567') === '20', 'server derives Egypt +20');
+  const foreignOrder = validateOrderInput(
+    { ...orderBody(), customer: { ...orderBody().customer, phone: '201001234567' } },
+    MENU,
+  );
+  ok(
+    foreignOrder.ok === false && foreignOrder.errors.includes('unsupported_phone_country'),
+    'server rejects a foreign full number',
+  );
+  const localOrder = validateOrderInput(
+    { ...orderBody(), customer: { ...orderBody().customer, phone: '96170123456' } },
+    MENU,
+  );
+  ok(localOrder.ok === true, 'server accepts the matching country full number');
 }
 
 delete globalThis.localStorage;

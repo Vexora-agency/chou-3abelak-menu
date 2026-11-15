@@ -274,7 +274,7 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
     <div dir={isAr ? 'rtl' : 'ltr'} className="relative isolate min-h-dvh overflow-x-clip bg-[#0A0A0A] text-white flex flex-col items-center px-5 pb-[max(2rem,env(safe-area-inset-bottom))]">
       {/* Premium depth aura behind the status card (GSAP parallax once the
           motion layer is idle; static and safe before that). */}
-      <div className="fx-aura z-0" data-gsap-parallax="0.1" aria-hidden="true" />
+      <div className="fx-aura z-0" aria-hidden="true" />
       <div className="relative z-10 w-full max-w-[520px]">
         {/* Sticky top bar: back-to-menu + language stay reachable no matter
             how far down the order details scroll (mobile-first fix).

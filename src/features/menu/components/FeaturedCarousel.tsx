@@ -88,6 +88,8 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   const [failedPhoto, setFailedPhoto] = useState<Record<string, boolean>>({});
   const indexRef = useRef(0);
   const pausedRef = useRef(false);
+  const inViewRef = useRef(true);
+  const sectionRef = useRef<HTMLDivElement | null>(null);
   const resumeTimer = useRef<number | null>(null);
   const touchX = useRef<number | null>(null);
   const count = items.length;
@@ -150,7 +152,9 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   useEffect(() => {
     if (!marqueeOn || count <= 1) return;
     const id = window.setInterval(() => {
-      if (document.hidden || pausedRef.current) return;
+      // Offscreen autoplay is invisible work: no state update, no track
+      // transition, no compositor pass while the customer scrolls the menu.
+      if (document.hidden || pausedRef.current || !inViewRef.current) return;
       const next = indexRef.current + 1;
       if (next > maxIndex) {
         // Instant wrap (no visible rewind), then re-enable animation
@@ -172,6 +176,20 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     return () => {
       if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
     };
+  }, []);
+
+  // Pause autoplay while the carousel is out of view.
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver !== 'function') return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        inViewRef.current = entries[0]?.isIntersecting ?? true;
+      },
+      { threshold: 0.01 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
   }, []);
 
   const pause = () => {
@@ -391,7 +409,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   };
 
   return (
-    <div data-motion-reveal="fade" className="mt-6 mb-4 px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
+    <div ref={sectionRef} data-motion-reveal="fade" className="mt-6 mb-4 px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
       {/* Section Title with Yellow Bar */}
       <div className="flex items-center gap-2.5 mb-3.5">
         <motion.span

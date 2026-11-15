@@ -136,9 +136,11 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       phone: accountProfile?.phone || '',
       address: accountProfile?.address || '',
       email: accountUser.email || '',
-      // The account already stores these details; member checkout does not
-      // use the guest "remember me" device blob.
-      remember: false,
+      // Members now get the same device opt-in as guests. Their identity
+      // still comes from the account; the flag persists device-side extras
+      // (e.g. special instructions) and the checkbox state. Address stays
+      // fresh every order by design.
+      remember: prev.remember || false,
     }));
     setLocation(saved ? { lat: saved.lat, lng: saved.lng, accuracy: saved.accuracy ?? 0 } : null);
   }, [
@@ -182,7 +184,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // Dismissing the sheet without confirming leaves the parent pair untouched:
   // the unconfirmed point lives only in picker state, so there is nothing to
   // wipe — wiping here used to destroy the saved pin on a mere view.
-  const closeLocSheet = (_keep: boolean) => { setLocSheetOpen(false); };
+  const closeLocSheet = (_keep: boolean) => { void _keep; setLocSheetOpen(false); };
   const handleMapPick = (lat: number, lng: number, accuracy: number, addressText: string | null) => {
     setLocation({ lat, lng, accuracy });
     const fill = addressText && addressText.trim() ? addressText.trim().slice(0, 200) : `${lat}, ${lng}`;
@@ -410,13 +412,12 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
           return rest;
         })();
 
-    // Save remember details (checked = persist, unchecked = erase). Members
-    // never use the guest device blob: their account already carries the
-    // identity, so a member submit clears any old guest record instead. The
-    // pin is deliberately NEVER persisted, and withoutAddress() drops the
-    // delivery address from guest records too.
+    // Save remember details (checked = persist, unchecked = erase). The
+    // device opt-in is available to guests AND signed-in members; the pin is
+    // never persisted, and withoutAddress() still drops the delivery address
+    // so a stale address from another visit can never ride along.
     saveRememberedDetails(
-      withoutAddress({ ...customerToSave, remember: accountUser ? false : customerToSave.remember })
+      withoutAddress({ ...customerToSave, remember: customerToSave.remember })
     );
 
     // Record the order on the server. Transport lives in

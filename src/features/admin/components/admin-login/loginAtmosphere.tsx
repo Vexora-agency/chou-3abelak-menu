@@ -28,7 +28,7 @@ export function LoginAtmosphere({ reduce }: LoginAtmosphereProps): React.JSX.Ele
         animate={{ opacity: 1 }}
         transition={{ duration: 1.4 }}
       >
-        <div className="header-spot" data-gsap-parallax="0.07" />
+        <div className="header-spot" />
       </motion.div>
       <div className="header-grain" aria-hidden="true" />
       <motion.img

@@ -115,7 +115,15 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
                 aria-hidden="true"
                 dir="ltr"
                 className="ann-track"
-                style={{ ['--ann-duration' as string]: `${Math.max(3, duration)}s`, animationName: ready ? 'annMarquee' : 'none' }}
+                style={{
+                  ['--ann-duration' as string]: `${Math.max(3, duration)}s`,
+                  animationName: ready ? 'annMarquee' : 'none',
+                  // The strip slides off-screen after 140px of scroll-down.
+                  // Pause its infinite compositor loop there instead of keeping
+                  // a hidden marquee running through the whole menu scroll.
+                  animationPlayState: scrollHidden ? 'paused' : undefined,
+                  willChange: scrollHidden ? 'auto' : undefined,
+                }}
               >
                 {Array.from({ length: half * 2 }, (_, i) =>
                   renderUnit(i, true)

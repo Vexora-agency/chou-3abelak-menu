@@ -45,6 +45,11 @@
   COD surface (replaces the amber-on-amber warning box). The member
   "name/phone/email come from your account" note was removed, and the
   remember-details checkbox now renders for members too.
+- Location pin/address pairing: `handleMapPick` ALWAYS rewrites the address
+  with `pinAddress(lat,lng,geocode)` (reverse geocode, or coords fallback).
+  Typing after a pin refines that same pin, but a new pin can never inherit
+  the previous pin's manual text — that created old-text + new-coords tickets.
+  Pure rule + tests in `scripts/test-remember-pin.mjs`.
 - Desktop performance pass (owner complaint: heavy scroll / slow start):
   - Lenis runs with `smoothWheel: false`: native wheel/trackpad, no added
     latency. Lenis remains for programmatic chip/back-to-top scrolls.

@@ -3,7 +3,8 @@
 // remembered, so no stale pin from another visit/city can ride along.
 //   - delivery without a pin -> allowed (address-only order, fallback link)
 //   - fresh-picked good coords -> exact pin link (same lat/lng as submitted)
-//   - hand-edited address keeps the pin -> best pair (precise + detailed)
+//   - a confirmed pin always replaces the address with the pin's own geocode
+//     (typed text from a previous location never sticks to new coords)
 //   - coarse fix (>250m) -> dropped before store, fallback (never fake "exact")
 //   - no saved pin -> picker auto-locates every time (fresh fix, never silent)
 // Run: node scripts/test-remember-pin.mjs
@@ -25,7 +26,7 @@ import {
 } from '../src/utils/customerOrders.ts';
 import {
   shouldAutoLocateOnOpen,
-  shouldOverwriteAddress,
+  pinAddress,
 } from '../src/features/cart/hooks/useMidSplitLocationMap.ts';
 
 const { ok, summary } = createAsserts();
@@ -134,17 +135,17 @@ ok(loadRememberedDetails() === null, 'unchecked forgets details');
   ok(!!rebuilt2 && rebuilt2.includes('Tripoli') && !rebuilt2.includes('الموقع الدقيق'), 'rebuild falls back when no coords stored');
 }
 
-/* 4. Picker re-arm: saved pin centers the map (no silent overwrite); address merge. */
+/* 4. Picker re-arm: saved pin centers the map; a confirmed pin owns the address. */
 {
   ok(shouldAutoLocateOnOpen(null) === true, 'no pin -> auto-locate');
   ok(shouldAutoLocateOnOpen(undefined) === true, 'undefined -> auto-locate');
   ok(shouldAutoLocateOnOpen({ lat: 33.9, lng: 35.5 }) === false, 'saved pin -> center, never auto-overwrite');
-  // Seeded remembered auto-fill overwrites on re-pin (stale street cannot stick).
-  ok(shouldOverwriteAddress('', null) === true, 'empty overwrites');
-  ok(shouldOverwriteAddress('33.90000, 35.50000', null) === true, 'coords fallback overwrites');
-  ok(shouldOverwriteAddress('Hamra, Main Rd', 'Hamra, Main Rd') === true, 'seeded remembered auto-fill overwrites on re-pin');
-  ok(shouldOverwriteAddress('My home floor 3', null) === false, 'genuinely typed text preserved');
-  ok(shouldOverwriteAddress('Hamra, Main Rd', null) === false, 'unseeded remembered text would wrongly stick (the bug)');
+  // A new pin always writes its own address. A manual address typed at the
+  // previous location must not survive a different pin.
+  ok(pinAddress(33.9, 35.5, null) === '33.9, 35.5', 'no geocode -> coords fallback');
+  ok(pinAddress(33.9, 35.5, '   ') === '33.9, 35.5', 'blank geocode -> coords fallback');
+  ok(pinAddress(33.9, 35.5, 'Hamra, Main Rd') === 'Hamra, Main Rd', 'geocoded pin address wins');
+  ok(pinAddress(33.9, 35.5, 'My home floor 3').length <= 200, 'pin address capped at 200');
 }
 
 delete globalThis.localStorage;

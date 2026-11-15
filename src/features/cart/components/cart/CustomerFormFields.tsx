@@ -84,6 +84,10 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           : (isAr
             ? 'رقم الهاتف يجب أن يكون من 6 إلى 15 رقمًا'
             : 'Phone must be 6–15 digits'));
+        // Clear the controlled field when a foreign paste is rejected: keeping
+        // an old valid number under a country error looked like the old number
+        // was the invalid one.
+        setCustomer({ ...customer, phone: '' });
         return;
       }
       setPhoneError(null);

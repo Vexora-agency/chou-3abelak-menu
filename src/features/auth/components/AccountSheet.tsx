@@ -306,6 +306,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
             ? `الرقم غير مدعوم. نقبل أرقام +${dial.code} فقط.`
             : `This number isn’t supported. Use a +${dial.code} number.`)
           : (isAr ? 'رقم الهاتف يجب أن يكون من 6 إلى 15 رقمًا' : 'Phone must be 6–15 digits'));
+        setPhone('');
         return;
       }
       setPhoneError('');

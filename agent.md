@@ -78,16 +78,25 @@
     no Skip button. It is the pre-existing 6 s canvas intro; the rest of the
     page does not wait on it.
 - Image/LCP/TBT pass:
-  - Intro logo: 4 alpha-keyed AVIF sheets (2880×2394) shown through ONE
-    `<canvas>` CSS background; a 36-step `background-position` keyframe walks
-    the 4×9 grid at 24 fps. No rAF, no per-frame JS, real alpha (no black frame,
-    no blend mode). The canvas is intentionally not an LCP image element; a
-    488-byte frame-0 poster paints the area immediately. Old WebP sheets removed.
+  - Intro logo: rendered OFF the main thread by `src/hooks/intro.worker.ts`
+    (OffscreenCanvas). The worker fetches/decodes 4 alpha AVIF sheets and draws
+    the 4×9 grid at 24 fps; the main thread only receives started/ended/done.
+    The CSS background walk is a fallback when OffscreenCanvas is unavailable.
+    A 488-byte frame-0 poster paints the logo area until the worker starts. The
+    canvas is intentionally not an LCP image element.
   - Intro hand-off: the static logo appears instantly UNDER the fading stage
-    (canvas fades out 700 ms). Do not cross-fade both layers — identical logos
+    (stage fades out 700 ms). Do not cross-fade both layers — identical logos
     at complementary opacity dip in brightness (the old "pulse").
   - Intro smoke/sparks are CSS transform/opacity puffs (12 + 8), compositor-
     only. No canvas particle loop.
+  - Menu sections mount progressively (one section, then one every 700 ms);
+    filters show all matching sections immediately. This keeps the 6 s intro
+    free of the 30-card mount long task.
+  - Click-driven sheets (item/cart/auth/account) are prefetched at idle after
+    8 s so their first open is instant; they mount only while open.
+  - Round menu cards must NOT use `content-visibility`/paint containment: their
+    SPICY/NEW/TOP badges intentionally protrude outside the card and get
+    clipped. They use `contain: layout style` only.
   - The customer entry MUST NOT import `motion/react`: header rise, card/
     carousel reveals, section bars, theme icon, announcement entrance and lang
     pill are CSS (`rise-in`, `[data-motion-reveal]`, `section-bar-in`,

@@ -183,6 +183,18 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     }, 2000);
   }, [showAdmin]);
 
+  // Warm the four click-driven sheets after the intro/LCP window. The first
+  // item tap / cart open / sign-in then has its chunk + motion runtime ready,
+  // so the sheet emerges immediately instead of stalling on a download.
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      void import('@/src/features/menu/components/ItemDetailsModal');
+      void import('@/src/features/cart/components/CartDrawer');
+      void import('@/src/features/auth/components/AuthSheet');
+      void import('@/src/features/auth/components/AccountSheet');
+    }, 8000);
+    return () => window.clearTimeout(id);
+  }, []);
   // Scroll-restoration hygiene (iOS jump-to-top fix): the track page sets
   // history.scrollRestoration='manual' while it is showing, but leaving it
   // is ALWAYS a full navigation (back button = location.href), so its React

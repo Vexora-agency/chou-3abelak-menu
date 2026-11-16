@@ -118,8 +118,23 @@
    cell of a CSS background and a step-held background-position animation
    walks the 36 frames at 24 fps. No rAF, no per-frame JavaScript: the block
    cannot starve LCP or the first scroll. */
+/* No paint/layout containment here: the video uses mix-blend-mode: screen and
+   must sample the header's backdrop. A containment/stacking context would
+   isolate it and bring the black film background back. */
 .intro-stage {
-  contain: layout paint;
+  background: transparent;
+}
+
+/* Video primary: hide the fallback sprite/particles. Sprite fallback: hide the
+   film. The stage itself is always the fading layer, so the hand-off to the
+   static logo is identical in both paths. */
+.intro-stage[data-mode='video'] .intro-sheet,
+.intro-stage[data-mode='video'] .intro-puff,
+.intro-stage[data-mode='video'] .intro-spark {
+  display: none;
+}
+.intro-stage[data-mode='sprite'] .intro-video {
+  display: none;
 }
 
 .intro-sheet {

@@ -12,7 +12,9 @@ interface HeaderBrandBlockProps {
   intro: number;
   status: { isOpen: boolean; label: { en: string; ar: string } };
   orderingState?: OrderingStatus | null;
-  introStageRef: RefObject<HTMLCanvasElement | null>;
+  introStageRef: RefObject<HTMLDivElement | null>;
+  introCanvasRef: RefObject<HTMLCanvasElement | null>;
+  introVideoRef: RefObject<HTMLVideoElement | null>;
   hasEnded: boolean;
   engineDone: boolean;
   /** Christmas theme: perches a small Santa hat on the logo corner. */
@@ -60,6 +62,8 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
   status,
   orderingState,
   introStageRef,
+  introCanvasRef,
+  introVideoRef,
   hasEnded,
   engineDone,
   festive = false,
@@ -108,7 +112,14 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
             background-position animation walks the 36 frames at 24 fps; zero
             JavaScript runs per frame. The sheets carry real alpha: no black
             box, no blend-mode approximation. */}
+        {/* Logo film: the original 1440×532 animation, hardware-decoded by a
+            visible <video> and screen-blended over the dark header (its
+            background is pure black, so screen keeps every spark/smoke pixel).
+            The canvas below is the alpha-sprite fallback when autoplay or the
+            codec is unavailable; the static logo is the last resort. */}
         <div
+          ref={introStageRef}
+          data-mode="video"
           className={`intro-stage absolute inset-0 overflow-hidden pointer-events-none transition-opacity duration-700 ${
             hasEnded ? 'opacity-0' : 'opacity-100'
           } ${engineDone ? 'hidden' : ''}`}
@@ -123,7 +134,7 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
             ))}
           </div>
           <canvas
-            ref={introStageRef}
+            ref={introCanvasRef}
             width={720}
             height={266}
             aria-hidden="true"
@@ -135,6 +146,31 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
               backgroundSize: '400% 900%',
             }}
           />
+          <video
+            ref={introVideoRef}
+            muted
+            playsInline
+            preload="none"
+            poster="/assets/intro-poster.webp"
+            width={1440}
+            height={532}
+            aria-hidden="true"
+            tabIndex={-1}
+            className="intro-video absolute inset-0 w-full h-full object-contain pointer-events-none"
+            style={{
+              mixBlendMode: 'screen',
+              backgroundColor: 'transparent',
+              // Chrome promotes <video> to a hardware overlay that ignores
+              // mix-blend-mode, leaving the film's black background visible.
+              // Forcing its own compositing layer keeps screen blending on the
+              // GPU and removes the black rectangle (verified on mobile).
+              transform: 'translateZ(0)',
+              willChange: 'transform',
+            }}
+          >
+            <source src="/assets/logo-intro.webm" type="video/webm" />
+            <source src="/assets/logo-intro.mp4" type="video/mp4" />
+          </video>
         </div>
 
       </div>

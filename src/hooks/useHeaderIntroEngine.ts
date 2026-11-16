@@ -2,18 +2,16 @@ import { useEffect } from 'react';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
 /**
- * Logo intro.
+ * Header intro — the original deployment's effect, rebuilt off the main thread.
  *
- * Primary: the original 1440×532 film (390 KB VP9 + 135 KB H.264 fallback) is
- * decoded by a hidden <video> and painted into a 720×266 canvas at 24 fps. The
- * canvas is screen-blended over the dark header, so the film's pure-black
- * background disappears and every spark/smoke pixel stays — without relying on
- * mix-blend-mode support for video overlays (Chrome ignores it and shows a
- * black rectangle). Only drawImage runs per frame, not per-pixel keying.
+ * The visible logo is the four alpha-keyed AVIF sheets (the same keying the old
+ * canvas engine applied per pixel), and the overlay is the old gold/gray steam
+ * and ember particle system. A worker owns BOTH OffscreenCanvases: logo at
+ * 24 fps, particles at 60 fps. React/LCP/decode cannot stutter it, and the
+ * screen-blended smoke canvas keeps the gold sparks the old version had.
  *
- * Fallback: the alpha AVIF sheets rendered by an OffscreenCanvas worker (or a
- * CSS background walk) when autoplay fails, the codec is unsupported or the
- * film stalls. The static final logo is the last resort.
+ * If OffscreenCanvas is unavailable, a CSS background-position walk plays the
+ * logo frames (no particles) as a final fallback; the static logo is last.
  */
 const SHEETS = [
   '/assets/intro-alpha-0.avif',
@@ -28,31 +26,28 @@ const DURATION_S = SHEETS.length * CHAPTER_S; // 6.0 s
 const END_AT_S = DURATION_S - 0.25; // start the fade just before the last frame
 const UNMOUNT_AFTER_S = 0.8; // let the 700 ms CSS fade finish
 
-/** Give the entry bundle + LCP image a head start before the film loads. */
-const VIDEO_START_DELAY_MS = 250;
-/** No `playing`/ready frame by then → use the sprite fallback. */
-const VIDEO_STALL_MS = 3000;
-
 type Setter = Dispatch<SetStateAction<boolean>>;
 
-type VideoFrameCallbackVideo = HTMLVideoElement & {
-  requestVideoFrameCallback?: (cb: () => void) => number;
-  cancelVideoFrameCallback?: (handle: number) => void;
-};
-
-/**
- * Fallback renderer: the alpha sprite sheets, in a worker when possible.
- * Returns a cleanup function; the visible canvas is the caller's element.
- */
-function startSpriteEngine(canvas: HTMLCanvasElement, setHasEnded: Setter, setEngineDone: Setter): () => void {
-  // Preferred sprite path: draw the frames in a worker on an OffscreenCanvas.
-  // The main thread never runs a frame loop, so React/LCP/image decode cannot
-  // stutter the fallback reveal.
-  if (typeof Worker !== 'undefined' && 'transferControlToOffscreen' in canvas) {
+function startSpriteEngine(
+  sprite: HTMLCanvasElement,
+  smoke: HTMLCanvasElement,
+  setHasEnded: Setter,
+  setEngineDone: Setter
+): () => void {
+  // Preferred path: logo + particles in one worker on two OffscreenCanvases.
+  // The main thread receives only started/ended/done.
+  if (
+    typeof Worker !== 'undefined' &&
+    'transferControlToOffscreen' in sprite &&
+    'transferControlToOffscreen' in smoke
+  ) {
     let worker: Worker | null = null;
     let safety = 0;
     try {
-      const offscreen = canvas.transferControlToOffscreen();
+      const logoOffscreen = sprite.transferControlToOffscreen();
+      const smokeOffscreen = smoke.transferControlToOffscreen();
+      const brandPrimary =
+        getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#FFC400';
       worker = new Worker(new URL('./intro.worker.ts', import.meta.url), { type: 'module' });
       safety = window.setTimeout(() => {
         setHasEnded(true);
@@ -63,7 +58,7 @@ function startSpriteEngine(canvas: HTMLCanvasElement, setHasEnded: Setter, setEn
         const type = event.data?.type;
         if (type === 'started') {
           // The worker has painted frame 0; the CSS poster is no longer needed.
-          canvas.style.backgroundImage = '';
+          sprite.style.backgroundImage = '';
         } else if (type === 'ended') {
           setHasEnded(true);
         } else if (type === 'done' || type === 'error') {
@@ -73,7 +68,16 @@ function startSpriteEngine(canvas: HTMLCanvasElement, setHasEnded: Setter, setEn
           worker?.terminate();
         }
       };
-      worker.postMessage({ type: 'start', canvas: offscreen, sheets: SHEETS }, [offscreen]);
+      worker.postMessage(
+        {
+          type: 'start',
+          canvas: logoOffscreen,
+          smokeCanvas: smokeOffscreen,
+          sheets: SHEETS,
+          brandPrimary,
+        },
+        [logoOffscreen, smokeOffscreen]
+      );
       return () => {
         window.clearTimeout(safety);
         try {
@@ -117,11 +121,11 @@ function startSpriteEngine(canvas: HTMLCanvasElement, setHasEnded: Setter, setEn
   };
 
   const playAnimation = (url: string, elapsed: number): void => {
-    canvas.classList.remove('intro-sheet-playing');
-    void canvas.offsetWidth;
-    canvas.style.backgroundImage = `url("${url}")`;
-    canvas.style.animationDelay = `${-Math.min(CHAPTER_S, Math.max(0, elapsed))}s`;
-    canvas.classList.add('intro-sheet-playing');
+    sprite.classList.remove('intro-sheet-playing');
+    void sprite.offsetWidth;
+    sprite.style.backgroundImage = `url("${url}")`;
+    sprite.style.animationDelay = `${-Math.min(CHAPTER_S, Math.max(0, elapsed))}s`;
+    sprite.classList.add('intro-sheet-playing');
   };
 
   const scheduleAdvance = (delayMs: number): void => {
@@ -198,194 +202,24 @@ function startSpriteEngine(canvas: HTMLCanvasElement, setHasEnded: Setter, setEn
   return () => {
     disposed = true;
     clearTimers();
-    canvas.classList.remove('intro-sheet-playing');
-    canvas.style.backgroundImage = '';
+    sprite.classList.remove('intro-sheet-playing');
+    sprite.style.backgroundImage = '';
     preloaders.length = 0;
   };
 }
 
 export function useHeaderIntroEngine(
   stageRef: RefObject<HTMLDivElement | null>,
-  filmCanvasRef: RefObject<HTMLCanvasElement | null>,
   spriteCanvasRef: RefObject<HTMLCanvasElement | null>,
-  videoRef: RefObject<HTMLVideoElement | null>,
+  smokeCanvasRef: RefObject<HTMLCanvasElement | null>,
   setHasEnded: Setter,
   setEngineDone: Setter
 ): void {
   useEffect(() => {
     const stage = stageRef.current;
-    const film = filmCanvasRef.current;
     const sprite = spriteCanvasRef.current;
-    const video = videoRef.current;
-    if (!stage || !film || !sprite || !video) return;
-
-    const fctx = film.getContext('2d', { alpha: true });
-    if (!fctx) return;
-    fctx.imageSmoothingEnabled = true;
-    fctx.imageSmoothingQuality = 'high';
-
-    let disposed = false;
-    let cleanupSprite: (() => void) | null = null;
-    let endedSent = false;
-    let doneTimer = 0;
-    let startTimer = 0;
-    let stallTimer = 0;
-    let watchdog = 0;
-    let rvfc = 0;
-    let raf = 0;
-    let framesStarted = false;
-    let lastTime = -1;
-    let stuckTicks = 0;
-
-    stage.dataset.mode = 'video';
-
-    const stopFrames = (): void => {
-      const v = video as VideoFrameCallbackVideo;
-      if (rvfc && typeof v.cancelVideoFrameCallback === 'function') v.cancelVideoFrameCallback(rvfc);
-      rvfc = 0;
-      if (raf) cancelAnimationFrame(raf);
-      raf = 0;
-      framesStarted = false;
-    };
-
-    const drawFilmFrame = (): void => {
-      if (disposed || !fctx) return;
-      if (video.readyState >= 2) {
-        fctx.clearRect(0, 0, film.width, film.height);
-        fctx.drawImage(video, 0, 0, film.width, film.height);
-      }
-    };
-
-    // Draw on every decoded video frame (24 fps source) via rVFC when present;
-    // rAF at 24 fps otherwise. This is one drawImage per frame, not keying.
-    const startFrames = (): void => {
-      if (framesStarted || disposed) return;
-      framesStarted = true;
-      const v = video as VideoFrameCallbackVideo;
-      if (typeof v.requestVideoFrameCallback === 'function') {
-        const onFrame = (): void => {
-          if (disposed) return;
-          drawFilmFrame();
-          rvfc = v.requestVideoFrameCallback?.(onFrame) ?? 0;
-        };
-        rvfc = v.requestVideoFrameCallback(onFrame);
-        return;
-      }
-      let last = 0;
-      const loop = (now: number): void => {
-        if (disposed) return;
-        if (now - last >= 1000 / FPS) {
-          last = now;
-          drawFilmFrame();
-        }
-        raf = requestAnimationFrame(loop);
-      };
-      raf = requestAnimationFrame(loop);
-    };
-
-    const markEnded = (): void => {
-      if (endedSent || disposed) return;
-      endedSent = true;
-      stopFrames();
-      setHasEnded(true);
-      doneTimer = window.setTimeout(() => {
-        if (!disposed) setEngineDone(true);
-      }, UNMOUNT_AFTER_S * 1000);
-    };
-
-    const stopVideo = (): void => {
-      stopFrames();
-      window.clearTimeout(stallTimer);
-      window.clearInterval(watchdog);
-      video.removeEventListener('timeupdate', onTime);
-      video.removeEventListener('ended', onEnded);
-      video.removeEventListener('error', onError);
-      video.removeEventListener('playing', onPlaying);
-      try {
-        video.pause();
-      } catch {}
-    };
-
-    const startSprite = (): void => {
-      if (disposed || cleanupSprite) return;
-      stopVideo();
-      fctx.clearRect(0, 0, film.width, film.height);
-      video.preload = 'none';
-      stage.dataset.mode = 'sprite';
-      // The film already reached its end: the static logo is showing, never
-      // restart a second intro behind the fade.
-      if (endedSent) {
-        setEngineDone(true);
-        return;
-      }
-      cleanupSprite = startSpriteEngine(sprite, setHasEnded, setEngineDone);
-    };
-
-    const onTime = (): void => {
-      if (disposed) return;
-      if (video.currentTime >= END_AT_S) markEnded();
-      // Watchdog: autoplay can silently stall on power-saving devices. If the
-      // clock does not advance for two 1 s ticks, use the sprite fallback.
-      if (!video.paused && video.currentTime > 0 && video.currentTime < DURATION_S) {
-        if (video.currentTime === lastTime) stuckTicks += 1;
-        else {
-          stuckTicks = 0;
-          lastTime = video.currentTime;
-        }
-        if (stuckTicks >= 2) startSprite();
-      }
-    };
-
-    const onEnded = (): void => {
-      markEnded();
-    };
-    const onError = (): void => {
-      startSprite();
-    };
-    const onPlaying = (): void => {
-      window.clearTimeout(stallTimer);
-      window.clearInterval(watchdog);
-      lastTime = video.currentTime;
-      stuckTicks = 0;
-      watchdog = window.setInterval(onTime, 1000);
-      startFrames();
-    };
-
-    const begin = (): void => {
-      if (disposed || endedSent) return;
-      stage.dataset.mode = 'video';
-      video.preload = 'auto';
-      try {
-        video.load();
-      } catch {}
-      const playPromise = video.play();
-      if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(() => startSprite());
-      }
-      stallTimer = window.setTimeout(() => {
-        if (disposed || endedSent || cleanupSprite) return;
-        if (video.paused || video.readyState < 2) startSprite();
-      }, VIDEO_STALL_MS);
-    };
-
-    video.addEventListener('timeupdate', onTime);
-    video.addEventListener('ended', onEnded);
-    video.addEventListener('error', onError);
-    video.addEventListener('playing', onPlaying);
-    // Let the entry bundle + LCP image start first; the poster covers the gap.
-    startTimer = window.setTimeout(begin, VIDEO_START_DELAY_MS);
-
-    return () => {
-      disposed = true;
-      window.clearTimeout(startTimer);
-      window.clearTimeout(stallTimer);
-      window.clearTimeout(doneTimer);
-      window.clearInterval(watchdog);
-      stopVideo();
-      cleanupSprite?.();
-      try {
-        video.pause();
-      } catch {}
-    };
-  }, [stageRef, filmCanvasRef, spriteCanvasRef, videoRef, setHasEnded, setEngineDone]);
+    const smoke = smokeCanvasRef.current;
+    if (!stage || !sprite || !smoke) return;
+    return startSpriteEngine(sprite, smoke, setHasEnded, setEngineDone);
+  }, [stageRef, spriteCanvasRef, smokeCanvasRef, setHasEnded, setEngineDone]);
 }

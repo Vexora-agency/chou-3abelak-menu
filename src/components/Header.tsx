@@ -40,9 +40,8 @@ export const Header: React.FC<HeaderProps> = ({
   festive = false,
 }) => {
   const introStageRef = useRef<HTMLDivElement>(null);
-  const introFilmRef = useRef<HTMLCanvasElement>(null);
   const introCanvasRef = useRef<HTMLCanvasElement>(null);
-  const introVideoRef = useRef<HTMLVideoElement>(null);
+  const introSmokeRef = useRef<HTMLCanvasElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const [hasEnded, setHasEnded] = useState(false);
   // True once the intro engine has fully stopped: the film/sprite stage is
@@ -60,9 +59,8 @@ export const Header: React.FC<HeaderProps> = ({
 
   useHeaderIntroEngine(
     introStageRef,
-    introFilmRef,
     introCanvasRef,
-    introVideoRef,
+    introSmokeRef,
     setHasEnded,
     setEngineDone
   );
@@ -107,9 +105,8 @@ export const Header: React.FC<HeaderProps> = ({
         status={status}
         orderingState={orderingState}
         introStageRef={introStageRef}
-        introFilmRef={introFilmRef}
         introCanvasRef={introCanvasRef}
-        introVideoRef={introVideoRef}
+        introSmokeRef={introSmokeRef}
         hasEnded={hasEnded}
         engineDone={engineDone}
         festive={festive}

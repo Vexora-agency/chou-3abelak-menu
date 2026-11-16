@@ -10,6 +10,11 @@ const MENU_KEY = 'menu';
 /** Coalescing window for focus/visibility/pageshow refreshes (see refreshGate). */
 const EVENT_WINDOW_MS = 15000;
 
+/** Inline boot script in index.html starts this promise before the bundle. */
+type MenuPrefetchWindow = Window & {
+  __MENU_PREFETCH__?: Promise<MenuData | null>;
+};
+
 /**
  * Start the first featured photo download the moment the menu JSON is parsed,
  * before React commits the cards. The HTML preload only covers warm cache
@@ -80,12 +85,21 @@ export function useMenuLoader() {
       if (cached) {
         const normalized = normalizeMenu(cached);
         setMenu(normalized);
+        preloadFirstFeatured(normalized);
         setLoading(false);
       }
 
       try {
-        // Try to fetch from /api/menu or fallback to /menu.seed.json (single api-client)
-        const data = await publicGet<MenuData>('/api/menu');
+        // The inline head script starts this exact request before the bundle
+        // parses. Reusing its promise removes a serialized API round-trip from
+        // the cold path (the featured image URL is only known from this JSON).
+        const prefetchWindow = window as MenuPrefetchWindow;
+        const prefetched = prefetchWindow.__MENU_PREFETCH__;
+        let data: MenuData | null = prefetched ? await prefetched : null;
+        try {
+          delete prefetchWindow.__MENU_PREFETCH__;
+        } catch {}
+        if (!data) data = await publicGet<MenuData>('/api/menu');
         if (data) {
           const normalized = normalizeMenu(data);
           preloadFirstFeatured(normalized);

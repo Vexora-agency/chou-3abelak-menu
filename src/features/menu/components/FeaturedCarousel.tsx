@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'motion/react';
 import { MenuData, MenuItem } from '@/src/types/menu';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { pickLangText } from '@/src/utils/menuHelpers';
@@ -156,7 +155,11 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   // always start at 0 — no reset effect needed.
   useEffect(() => {
     if (!marqueeOn || count <= 1) return;
+    // Hold the first slide change for 8 s: the 6 s intro + first paint own the
+    // LCP window, and moving the hero card out from under it only hurts.
+    const startedAt = performance.now();
     const id = window.setInterval(() => {
+      if (performance.now() - startedAt < 8000) return;
       // Offscreen autoplay is invisible work: no state update, no track
       // transition, no compositor pass while the customer scrolls the menu.
       if (document.hidden || pausedRef.current || !inViewRef.current) return;
@@ -244,8 +247,13 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
 
   if (items.length === 0) return null;
 
+  // The first item with a photo is the LCP candidate (a featured item is
+  // allowed to have no photo). Everything below keys off this, not idx 0.
+  const heroIdx = items.findIndex((item) => Boolean(item.imageUrl));
+
   const renderCard = (item: MenuItem, idx: number) => {
     const isYellowCard = idx % 2 === 1; // Alternating cards
+    const isHero = idx === heroIdx;
     const eff = effectiveBadges(menu, item);
     const badgeText = eff.includes('top')
       ? (isAr ? 'الأكثر طلبًا' : 'BEST SELLER')
@@ -256,7 +264,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     const cardLabel = `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency, menu)}`;
     const showPhoto = Boolean(item.imageUrl) && !failedPhoto[item.id];
     return (
-      <motion.div
+      <div
         key={item.id}
         onClick={() => interactive && onOpenItem(item)}
         onPointerDown={pause}
@@ -265,6 +273,16 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         aria-label={interactive ? cardLabel : undefined}
         data-testid={`featured-card-${item.id}`}
         data-item-id={item.id}
+        data-motion-reveal={isHero ? undefined : 'scale'}
+        data-motion-delay={isHero ? undefined : Math.min(idx, 5) * 60}
+        style={
+          isHero
+            ? undefined
+            : ({
+                '--fx-delay': `${Math.min(idx, 5) * 60}ms`,
+                '--fx-dur': '0.55s',
+              } as React.CSSProperties)
+        }
         onKeyDown={(e) => {
           if (!interactive) return;
           if (e.key === 'Enter' || e.key === ' ') {
@@ -272,10 +290,10 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             onOpenItem(item);
           }
         }}
-        initial={{ opacity: 0, y: 22 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '100px' }}
-        transition={{ duration: 0.55, delay: idx * 0.08, ease: [0.22, 1, 0.36, 1] }}
+        // The first card is the LCP candidate: render it visible immediately
+        // (no initial opacity 0 / whileInView gate). The rest keep the stagger.
+        // (Entrance is handled by the site-wide CSS reveal system.)
+
         onPointerMove={(e) => {
           if (e.pointerType !== 'mouse') return;
           const r = e.currentTarget.getBoundingClientRect();
@@ -299,8 +317,9 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
               item={item}
               name=""
               sizes="(max-width: 767px) 90vw, (max-width: 1279px) 31vw, 395px"
-              eager={idx === 0}
-              fetchPriorityHigh={idx === 0}
+              eager={isHero}
+              fetchPriorityHigh={isHero}
+              plain={isHero}
               draggable={false}
               onError={() =>
                 setFailedPhoto((prev) => (prev[item.id] ? prev : { ...prev, [item.id]: true }))
@@ -409,20 +428,16 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             {priceLabel(item, lang, currency, menu)}
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   };
 
   return (
-    <div ref={sectionRef} data-motion-reveal="fade" className="mt-6 mb-4 px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
+    <div ref={sectionRef} className="mt-6 mb-4 px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
       {/* Section Title with Yellow Bar */}
       <div className="flex items-center gap-2.5 mb-3.5">
-        <motion.span
-          className="w-1.5 h-6 bg-[var(--primary)] rounded-sm origin-center"
-          initial={{ scaleY: 0 }}
-          whileInView={{ scaleY: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        <span
+          className="w-1.5 h-6 bg-[var(--primary)] rounded-sm origin-center section-bar-in"
           aria-hidden="true"
         />
         <h2 className={`text-xl sm:text-2xl font-extrabold ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>

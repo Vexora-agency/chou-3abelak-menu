@@ -1,7 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { Bell, Moon, Settings, ShoppingBasket, Sun, UserRound } from 'lucide-react';
-import { motion } from 'motion/react';
-import type { useHeaderMotion } from '@/src/hooks/useHeaderMotion';
 import { useNow } from '@/src/hooks/useNow';
 import { isSoundOff, setSoundOff } from '@/src/utils/customerOrders';
 import { ALARM_INTERVAL_MS, ALARM_SESSION_MS } from '@/src/utils/bellPatterns';
@@ -15,7 +13,6 @@ interface HeaderTopBarProps {
   onOpenAdmin?: () => void;
   onOpenAuth?: () => void;
   onOpenAccount?: () => void;
-  rise: ReturnType<typeof useHeaderMotion>['rise'];
   /** Owner-picked customer chime (menu settings.sounds.customer). */
   bellSound: string;
 }
@@ -30,7 +27,6 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
   onOpenAdmin,
   onOpenAuth,
   onOpenAccount,
-  rise,
   bellSound,
 }) => {
   const isAr = lang === 'ar';
@@ -165,11 +161,19 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
       : (isAr ? 'تسجيل الدخول' : 'Sign in');
 
   return (
-    <motion.div
-      {...rise(0.1)}
-      className="relative z-10 flex justify-between items-center max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full"
+    <div
+      style={{ '--rise-delay': '0.1s' } as React.CSSProperties}
+      className="rise-in relative z-10 flex justify-between items-center max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full"
     >
-      <div className="glass-pill flex p-1 rounded-full">
+      <div className="glass-pill relative grid grid-cols-2 p-1 rounded-full">
+        {/* Single sliding indicator: layout animation without motion's layout
+            projection code, so the entry bundle never pays for it. */}
+        <span
+          aria-hidden="true"
+          className={`lang-pill pointer-events-none absolute top-1 bottom-1 start-1 w-[calc(50%-4px)] rounded-full bg-[var(--primary)] shadow-[0_4px_14px_-2px_color-mix(in_srgb,var(--primary)_60%,transparent)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            lang === 'ar' ? 'translate-x-full rtl:-translate-x-full' : 'translate-x-0'
+          }`}
+        />
         {(['en', 'ar'] as const).map((code) => {
           const active = lang === code;
           return (
@@ -177,19 +181,12 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
               key={code}
               type="button"
               onClick={active ? undefined : onToggleLang}
-              className={`relative min-w-[48px] h-11 min-h-[44px] px-3 rounded-full text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+              className={`relative z-10 min-w-[48px] h-11 min-h-[44px] px-3 rounded-full text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                 active ? 'text-[#0A0A0A]' : 'text-white/75 hover:text-white'
               }`}
               aria-label={code === 'en' ? 'Switch to English' : 'التبديل إلى العربية'}
               aria-pressed={active}
             >
-              {active && (
-                <motion.span
-                  layoutId="lang-pill"
-                  className="absolute inset-0 rounded-full bg-[var(--primary)] shadow-[0_4px_14px_-2px_color-mix(in_srgb,var(--primary)_60%,transparent)]"
-                  transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                />
-              )}
               <span className="relative z-10">{code === 'en' ? 'EN' : 'عربي'}</span>
             </button>
           );
@@ -204,15 +201,12 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
           aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           title={darkMode ? (isAr ? 'الوضع النهاري' : 'Light Mode') : (isAr ? 'الوضع الليلي' : 'Dark Mode')}
         >
-          <motion.span
+          <span
             key={darkMode ? 'sun' : 'moon'}
-            initial={{ rotate: -80, opacity: 0, scale: 0.6 }}
-            animate={{ rotate: 0, opacity: 1, scale: 1 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="flex"
+            className="theme-icon-in flex"
           >
             {darkMode ? <Sun size={19} /> : <Moon size={19} />}
-          </motion.span>
+          </span>
         </button>
 
         <button
@@ -269,6 +263,6 @@ export const HeaderTopBar: React.FC<HeaderTopBarProps> = ({
           </button>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };

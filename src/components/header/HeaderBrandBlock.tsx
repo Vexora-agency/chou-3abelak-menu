@@ -1,37 +1,65 @@
 import React from 'react';
 import type { RefObject } from 'react';
-import { motion } from 'motion/react';
 import type { MenuData } from '@/src/types/menu';
 import { pickLangText } from '@/src/utils/menuHelpers';
 import { taglineOrDefault } from '@/src/utils/settingsDefaults';
 import type { OrderingStatus } from '@/src/utils/status';
-import type { useHeaderMotion } from '@/src/hooks/useHeaderMotion';
 import { XmasLogoHat, XmasLogoMelt } from '@/src/features/seasonal/XmasHeader';
 
 interface HeaderBrandBlockProps {
   menu: MenuData;
   lang: 'en' | 'ar';
-  rise: ReturnType<typeof useHeaderMotion>['rise'];
   intro: number;
   status: { isOpen: boolean; label: { en: string; ar: string } };
   orderingState?: OrderingStatus | null;
-  canvasRef: RefObject<HTMLCanvasElement | null>;
-  smokeCanvasRef: RefObject<HTMLCanvasElement | null>;
+  introStageRef: RefObject<HTMLCanvasElement | null>;
   hasEnded: boolean;
   engineDone: boolean;
   /** Christmas theme: perches a small Santa hat on the logo corner. */
   festive?: boolean;
 }
 
+/** Inline custom properties are not in React.CSSProperties's type. */
+type IntroParticleStyle = React.CSSProperties & Record<`--${string}`, string>;
+
+/**
+ * CSS-only smoke/sparks: 12 soft puffs and 8 embers drift upward on the
+ * compositor (transform/opacity only). They replace the old per-frame canvas
+ * particle loop, so the 6 s intro costs zero main-thread frames.
+ */
+const INTRO_PUFFS: IntroParticleStyle[] = [
+  { left: '15%', top: '48%', '--w': '8%', '--dx': '2%', '--dur': '4.8s', '--delay': '0.35s' },
+  { left: '22%', top: '55%', '--w': '6.5%', '--dx': '-1%', '--dur': '5.2s', '--delay': '0.9s' },
+  { left: '30%', top: '50%', '--w': '9%', '--dx': '3%', '--dur': '4.4s', '--delay': '1.3s' },
+  { left: '38%', top: '56%', '--w': '7%', '--dx': '-2%', '--dur': '5s', '--delay': '0.5s' },
+  { left: '46%', top: '48%', '--w': '8.5%', '--dx': '1%', '--dur': '4.6s', '--delay': '1.8s' },
+  { left: '54%', top: '54%', '--w': '6.5%', '--dx': '2%', '--dur': '5.4s', '--delay': '1.1s' },
+  { left: '62%', top: '49%', '--w': '9.5%', '--dx': '-2%', '--dur': '4.9s', '--delay': '2.2s' },
+  { left: '70%', top: '55%', '--w': '7.5%', '--dx': '2%', '--dur': '5.1s', '--delay': '0.7s' },
+  { left: '78%', top: '50%', '--w': '8%', '--dx': '-1%', '--dur': '4.5s', '--delay': '1.6s' },
+  { left: '26%', top: '60%', '--w': '6%', '--dx': '1%', '--dur': '5.6s', '--delay': '2.6s' },
+  { left: '58%', top: '60%', '--w': '7%', '--dx': '-2%', '--dur': '5s', '--delay': '3s' },
+  { left: '44%', top: '58%', '--w': '7.5%', '--dx': '2%', '--dur': '4.7s', '--delay': '3.5s' },
+];
+
+const INTRO_SPARKS: IntroParticleStyle[] = [
+  { left: '30%', top: '54%', '--s': '2px', '--dx': '3px', '--dur': '1.6s', '--delay': '0.6s' },
+  { left: '37%', top: '50%', '--s': '2px', '--dx': '-2px', '--dur': '1.9s', '--delay': '1.2s' },
+  { left: '45%', top: '56%', '--s': '3px', '--dx': '2px', '--dur': '1.4s', '--delay': '0.9s' },
+  { left: '52%', top: '52%', '--s': '2px', '--dx': '-3px', '--dur': '1.8s', '--delay': '1.7s' },
+  { left: '60%', top: '55%', '--s': '2px', '--dx': '2px', '--dur': '1.5s', '--delay': '2.1s' },
+  { left: '67%', top: '50%', '--s': '3px', '--dx': '-1px', '--dur': '2s', '--delay': '1.4s' },
+  { left: '74%', top: '56%', '--s': '2px', '--dx': '3px', '--dur': '1.7s', '--delay': '2.6s' },
+  { left: '40%', top: '60%', '--s': '2px', '--dx': '-2px', '--dur': '1.6s', '--delay': '3.1s' },
+];
+
 export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
   menu,
   lang,
-  rise,
   intro,
   status,
   orderingState,
-  canvasRef,
-  smokeCanvasRef,
+  introStageRef,
   hasEnded,
   engineDone,
   festive = false,
@@ -66,7 +94,7 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
           fetchPriority="high"
           loading="eager"
           alt={pickLangText(menu.settings.name, lang)}
-          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-700 pointer-events-none ${
+          className={`absolute inset-0 w-full h-full object-contain pointer-events-none ${
             hasEnded ? 'opacity-100' : 'opacity-0'
           }`}
           style={{ backgroundColor: 'transparent' }}
@@ -75,33 +103,39 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
           decoding="async"
         />
 
-        {/* Sprite-driven intro frames are painted onto the canvas below by
-            the intro engine (forced playback: no autoplay policy applies).
-            The canvases hide once the intro completes. */}
-
-        {/* Screen-blended sprite canvas (720x266 buffer, CSS-upscaled). The
-            sheet is painted as a CSS background so the black frame disappears
-            over the dark header with zero per-pixel JavaScript. */}
-        <canvas
-          ref={canvasRef}
-          width={720}
-          height={266}
-          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-700 pointer-events-none ${
+        {/* Compositor-driven intro: a <canvas> (never an LCP candidate) carries
+            an alpha-keyed 4×9 sprite sheet as a CSS background. A step-held
+            background-position animation walks the 36 frames at 24 fps; zero
+            JavaScript runs per frame. The sheets carry real alpha: no black
+            box, no blend-mode approximation. */}
+        <div
+          className={`intro-stage absolute inset-0 overflow-hidden pointer-events-none transition-opacity duration-700 ${
             hasEnded ? 'opacity-0' : 'opacity-100'
           } ${engineDone ? 'hidden' : ''}`}
-          style={{ backgroundColor: 'transparent', mixBlendMode: 'screen', backgroundRepeat: 'no-repeat' }}
-        />
-
-        {/* Smoke & Sizzle Sparks Overlay Canvas (720x266 buffer) */}
-        <canvas
-          ref={smokeCanvasRef}
-          width={720}
-          height={266}
-          className={`absolute inset-0 w-full h-full object-contain pointer-events-none transition-opacity duration-1000 ${
-            hasEnded ? 'opacity-0' : 'opacity-100'
-          } ${engineDone ? 'hidden' : ''}`}
-          style={{ backgroundColor: 'transparent', mixBlendMode: 'screen' }}
-        />
+          aria-hidden="true"
+        >
+          <div className="absolute inset-0" aria-hidden="true">
+            {INTRO_PUFFS.map((style, i) => (
+              <span key={`puff-${i}`} className="intro-puff" style={style} />
+            ))}
+            {INTRO_SPARKS.map((style, i) => (
+              <span key={`spark-${i}`} className="intro-spark" style={style} />
+            ))}
+          </div>
+          <canvas
+            ref={introStageRef}
+            width={720}
+            height={266}
+            aria-hidden="true"
+            className="intro-sheet absolute inset-0 w-full h-full"
+            style={{
+              backgroundColor: 'transparent',
+              backgroundImage: 'url("/assets/intro-poster.webp")',
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: '400% 900%',
+            }}
+          />
+        </div>
 
       </div>
 
@@ -109,7 +143,10 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
       <h1 className="sr-only">{pickLangText(menu.settings.name, lang)}</h1>
 
       {/* Tagline flanked by hairlines */}
-      <motion.div {...rise(intro)} className="mt-2 flex items-center justify-center gap-3">
+      <div
+        className="rise-in mt-2 flex items-center justify-center gap-3"
+        style={{ '--rise-delay': `${intro}s` } as React.CSSProperties}
+      >
         <span className="h-px w-8 sm:w-12 bg-gradient-to-r from-transparent to-[var(--primary)]/70" aria-hidden="true" />
         <p
           className={`font-semibold text-[var(--primary)] ${
@@ -119,12 +156,12 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
           {taglineOrDefault(menu.settings.tagline, lang)}
         </p>
         <span className="h-px w-8 sm:w-12 bg-gradient-to-l from-transparent to-[var(--primary)]/70" aria-hidden="true" />
-      </motion.div>
+      </div>
 
       {/* Live Operational Status Pill */}
-      <motion.div
-        {...rise(intro + 0.2)}
-        className="glass-pill inline-flex items-center gap-2.5 mt-4 rounded-full py-1.5 px-4 text-xs font-medium text-white"
+      <div
+        className="rise-in glass-pill inline-flex items-center gap-2.5 mt-4 rounded-full py-1.5 px-4 text-xs font-medium text-white"
+        style={{ '--rise-delay': `${intro + 0.2}s` } as React.CSSProperties}
       >
         {(() => {
           // Every state gets its own truthful face: a disabled store must
@@ -176,7 +213,7 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
             </>
           );
         })()}
-      </motion.div>
+      </div>
     </div>
   );
 };

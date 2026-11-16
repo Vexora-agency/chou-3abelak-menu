@@ -82,7 +82,7 @@ export const SmartMenuImage: React.FC<SmartMenuImageProps> = ({
     srcSet = parts.join(', ');
   }
 
-  const motionClass = plain ? '' : loaded ? 'smart-img-loaded' : 'smart-img-loading';
+  const motionClass = plain || eager ? '' : loaded ? 'smart-img-loaded' : 'smart-img-loading';
 
   return (
     <img

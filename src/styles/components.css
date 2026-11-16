@@ -169,8 +169,10 @@
   contain-intrinsic-size: auto 340px;
 }
 .menu-cv-round {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 240px;
+  /* Round cards intentionally let the SPICY / NEW / TOP badge protrude
+     (-start-1 / -top-[7px]). content-visibility adds paint containment and
+     clips exactly that badge, so keep layout/style containment only. */
+  contain: layout style;
 }
 .menu-cv-grid {
   content-visibility: auto;

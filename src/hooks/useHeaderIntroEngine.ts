@@ -33,6 +33,50 @@ export function useHeaderIntroEngine(
     const stage = stageRef.current;
     if (!stage) return;
 
+    // Preferred path: draw the frames in a worker on an OffscreenCanvas. The
+    // main thread never runs a frame loop, so React/LCP/image decode cannot
+    // stutter the reveal. Falls back to the CSS background walk below when
+    // OffscreenCanvas is unavailable.
+    if (typeof Worker !== 'undefined' && 'transferControlToOffscreen' in stage) {
+      let worker: Worker | null = null;
+      let safety = 0;
+      try {
+        const offscreen = stage.transferControlToOffscreen();
+        worker = new Worker(new URL('./intro.worker.ts', import.meta.url), { type: 'module' });
+        safety = window.setTimeout(() => {
+          setHasEnded(true);
+          setEngineDone(true);
+          worker?.terminate();
+        }, 8000);
+        worker.onmessage = (event: MessageEvent<{ type?: string }>) => {
+          const type = event.data?.type;
+          if (type === 'started') {
+            // The worker has painted frame 0; the CSS poster is no longer needed.
+            stage.style.backgroundImage = '';
+          } else if (type === 'ended') {
+            setHasEnded(true);
+          } else if (type === 'done' || type === 'error') {
+            window.clearTimeout(safety);
+            setHasEnded(true);
+            setEngineDone(true);
+            worker?.terminate();
+          }
+        };
+        worker.postMessage({ type: 'start', canvas: offscreen, sheets: SHEETS }, [offscreen]);
+        return () => {
+          window.clearTimeout(safety);
+          try {
+            worker?.postMessage({ type: 'stop' });
+          } catch {}
+          worker?.terminate();
+        };
+      } catch {
+        window.clearTimeout(safety);
+        worker?.terminate();
+        // Fall through to the CSS fallback below.
+      }
+    }
+
     // The intro always plays (owner decision). If a sheet fails, the static
     // final logo is already underneath and the stage unmounts immediately.
     let disposed = false;

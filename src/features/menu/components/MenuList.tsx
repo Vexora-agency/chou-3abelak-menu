@@ -326,6 +326,14 @@ export const MenuList: React.FC<MenuListProps> = ({
   useEffect(() => () => window.clearTimeout(leaveTimer.current), []);
   const filteringRef = useRef(false);
   const filtering = searchQuery.trim() !== '' || selectedBadge !== null || selectedCategory !== 'all';
+  // First mount renders one section, then adds the rest in small slices. The
+  // 6 s intro is the cover window: mounting 30+ cards in one commit was the
+  // largest remaining long task and stuttered the reveal on phones. Filters
+  // always show every matching section immediately.
+  const [mountedCats, setMountedCats] = useState(1);
+  const progressiveStarted = useRef(false);
+  const progressiveCleanup = useRef<(() => void) | null>(null);
+  useEffect(() => () => progressiveCleanup.current?.(), []);
   const smRaw = (menu.settings as { showMore?: { initial?: unknown; batch?: unknown } }).showMore || {};
   const intOr = (v: unknown, fb: number) =>
     Number.isInteger(v) && (v as number) >= 4 && (v as number) <= 50 ? (v as number) : fb;
@@ -338,14 +346,33 @@ export const MenuList: React.FC<MenuListProps> = ({
   const photoCols = useGridCols('photos');
   const roundCols = useGridCols('round');
 
-  if (filteredItems.length === 0) {
-    return <MenuListEmptyState darkMode={darkMode} isAr={isAr} />;
-  }
   filteringRef.current = filtering;
 
   // Get visible categories that have items in filtered list
   const activeCategoryIds = Array.from(new Set(filteredItems.map((i) => i.categoryId)));
   const visibleCats = categories.filter((c) => c.visible && activeCategoryIds.includes(c.id));
+  const catCount = visibleCats.length;
+
+  useEffect(() => {
+    if (filtering || progressiveStarted.current || catCount <= 1) {
+      setMountedCats(catCount);
+      return;
+    }
+    progressiveStarted.current = true;
+    let n = 1;
+    setMountedCats(1);
+    const id = window.setInterval(() => {
+      n += 1;
+      setMountedCats(Math.min(n, catCount));
+      if (n >= catCount) window.clearInterval(id);
+    }, 700);
+    progressiveCleanup.current = () => window.clearInterval(id);
+    return () => window.clearInterval(id);
+  }, [filtering, catCount]);
+
+  if (filteredItems.length === 0) {
+    return <MenuListEmptyState darkMode={darkMode} isAr={isAr} />;
+  }
 
   // First visible photos/round section: only its first two cards may
   // eager-load. Deeper media sections stay lazy — native lazy fires the
@@ -359,7 +386,7 @@ export const MenuList: React.FC<MenuListProps> = ({
 
   return (
     <div className="pb-12 space-y-7 w-full">
-      {visibleCats.map((cat) => {
+      {visibleCats.slice(0, Math.max(1, mountedCats)).map((cat) => {
         const catItems = filteredItems.filter((i) => i.categoryId === cat.id);
         const layout = cat.layout || (cat.id === 'manakish' ? 'list' : 'cards');
         const isListSection = layout === 'list';

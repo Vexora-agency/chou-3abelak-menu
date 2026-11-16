@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
 import { Award, Flame, SlidersHorizontal, Sparkles, UtensilsCrossed } from 'lucide-react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import type { ResolvedMark } from '@/src/utils/cardMark';
@@ -88,13 +87,21 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
     : 'text-[#0A0A0A] opacity-20';
 
   return (
-    <motion.div
+    <div
       key={item.id}
-      initial={skipEntrance ? false : { opacity: 0, y: 22 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '100px' }}
-      transition={{ duration: 0.55, delay: Math.min(idx, 3) * 0.05, ease: [0.22, 1, 0.36, 1] }}
-      style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
+      data-motion-reveal={skipEntrance ? undefined : 'scale'}
+      data-motion-delay={skipEntrance ? undefined : Math.min(idx, 5) * 60}
+      style={
+        skipEntrance
+          ? leaveDelayMs != null
+            ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties)
+            : undefined
+          : ({
+              '--leave-d': leaveDelayMs != null ? `${leaveDelayMs}ms` : undefined,
+              '--fx-delay': `${Math.min(idx, 5) * 60}ms`,
+              '--fx-dur': '0.55s',
+            } as React.CSSProperties)
+      }
       onClick={() => interactive && onOpenItem(item)}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
@@ -108,7 +115,7 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
           onOpenItem(item);
         }
       }}
-      className={`photo-card group relative flex flex-col overflow-hidden rounded-2xl border-2 ${
+      className={`menu-cv-photo photo-card group relative flex flex-col overflow-hidden rounded-2xl border-2 ${
         darkMode ? 'bg-[#141414] border-[var(--primary)]' : 'bg-white border-[#0A0A0A] photo-card-soft'
       } ${interactive ? 'cursor-pointer photo-card-interactive' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${
         leaveDelayMs != null ? ' row-leaving' : ''
@@ -237,6 +244,6 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };

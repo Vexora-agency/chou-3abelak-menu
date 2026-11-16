@@ -12,10 +12,12 @@ import './index.css';
 // GSAP itself is deferred to idle inside the runtime.
 initMotionRuntime();
 
-// Error monitoring first (no-op without VITE_SENTRY_DSN in production).
-// initSentry loads the Sentry SDK in a background chunk only when PROD + DSN;
-// otherwise this whole path costs zero bytes in the main bundle.
-initSentry();
+// Error monitoring only where it earns its ~150 kB: the admin console.
+// The customer storefront has its own LocalErrorBoundary + crash card and
+// must never spend a long task downloading a monitoring SDK mid-LCP.
+if (/^\/admin(?:\/|$)/.test(window.location.pathname)) {
+  initSentry();
+}
 
 // White-label theme: push themeConfig onto :root before first render (no flash).
 applyTheme();

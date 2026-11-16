@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'motion/react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import { Flame, Sparkles, Award } from 'lucide-react';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
@@ -51,13 +50,21 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
   const interactive = orderingEnabled && !isSoldOut;
 
   return (
-    <motion.div
+    <div
       key={item.id}
-      initial={skipEntrance ? false : { opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '100px' }}
-      transition={{ duration: 0.5, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
-      style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
+      data-motion-reveal={skipEntrance ? undefined : 'scale'}
+      data-motion-delay={skipEntrance ? undefined : Math.min(idx, 5) * 60}
+      style={
+        skipEntrance
+          ? leaveDelayMs != null
+            ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties)
+            : undefined
+          : ({
+              '--leave-d': leaveDelayMs != null ? `${leaveDelayMs}ms` : undefined,
+              '--fx-delay': `${Math.min(idx, 5) * 60}ms`,
+              '--fx-dur': '0.55s',
+            } as React.CSSProperties)
+      }
       onClick={() => interactive && onOpenItem(item)}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
@@ -71,7 +78,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
           onOpenItem(item);
         }
       }}
-      className={`group relative pb-4 border-b transition-colors ${
+      className={`menu-cv-list group relative pb-4 border-b transition-colors ${
         darkMode ? 'border-neutral-800' : 'border-neutral-200'
       } ${interactive ? 'cursor-pointer' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${leaveDelayMs != null ? ' row-leaving' : ''}`}
     >
@@ -180,6 +187,6 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         )}
       </div>
       )}
-    </motion.div>
+    </div>
   );
 };

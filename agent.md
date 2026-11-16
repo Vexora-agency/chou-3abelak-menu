@@ -77,22 +77,36 @@
   - The logo reveal still plays on EVERY open/refresh (owner decision) and has
     no Skip button. It is the pre-existing 6 s canvas intro; the rest of the
     page does not wait on it.
-- Image/LCP pass:
-  - Intro logo is a CSS screen-blended sprite background (no per-frame
-    getImageData/putImageData); it looks like the old alpha-keyed frames and
-    frees the main thread for LCP.
-  - Intro smoke is stamped from ONE pre-rendered 128 px sprite instead of a
-    fresh radial gradient per particle per frame; passed chapters release their
-    decoded sheet (~27 MB each) and the rAF loop stops at 6 s, then unmounts
-    the canvases after the CSS fade. No visual change.
+- Image/LCP/TBT pass:
+  - Intro logo: 4 alpha-keyed AVIF sheets (2880×2394) shown through ONE
+    `<canvas>` CSS background; a 36-step `background-position` keyframe walks
+    the 4×9 grid at 24 fps. No rAF, no per-frame JS, real alpha (no black frame,
+    no blend mode). The canvas is intentionally not an LCP image element; a
+    488-byte frame-0 poster paints the area immediately. Old WebP sheets removed.
+  - Intro hand-off: the static logo appears instantly UNDER the fading stage
+    (canvas fades out 700 ms). Do not cross-fade both layers — identical logos
+    at complementary opacity dip in brightness (the old "pulse").
+  - Intro smoke/sparks are CSS transform/opacity puffs (12 + 8), compositor-
+    only. No canvas particle loop.
+  - The customer entry MUST NOT import `motion/react`: header rise, card/
+    carousel reveals, section bars, theme icon, announcement entrance and lang
+    pill are CSS (`rise-in`, `[data-motion-reveal]`, `section-bar-in`,
+    `ann-icon-in`, `ann-enter`). Motion is only in lazy admin/auth/cart chunks.
+  - `/api/menu` is fetched by an inline head script (`window.__MENU_PREFETCH__`)
+    before the bundle; `useMenuLoader` reuses that exact promise. The first
+    featured photo preloads from the parsed JSON; eager images skip the shimmer
+    fade. Carousel autoplay waits 8 s so it never moves the LCP card.
   - `logo-final-640.webp` added for DPR2 phones (29 KB vs 48 KB).
-  - First featured menu image is preloaded as soon as `/api/menu` JSON arrives
-    (`preloadFirstFeatured`), before React renders the cards.
   - Upload/recompress quality is now full 0.70 / variants 0.62; existing
     internal menu photos need ONE admin run of Settings → Recompress Old Photos
     to apply it (R2 objects are immutable; code cannot rewrite them).
   - Carousel first measure, Lenis init/resize and reveal rect reads are
     deferred off the commit frame to remove forced reflow.
+  - Sentry is admin-route only (`main.tsx`) and imports `@sentry/browser`; never
+    initialize it on the customer storefront.
+  - Cart/auth/account/item sheets mount only while open; menu cards use
+    `content-visibility: auto`; `features/orders` barrel must not be imported
+    by the storefront (it re-exports the admin dashboard + motion).
 
 ## Done: monthly reports (plan-gated: pro, 404-when-off)- `SITE_PLAN` env (`starter` default). All report routes + `run-reports`
   return 404 on starter.

@@ -39,13 +39,12 @@ export const Header: React.FC<HeaderProps> = ({
   orderingEnabled = true,
   festive = false,
 }) => {
-  const { glowY, intro, rise } = useHeaderMotion();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const smokeCanvasRef = useRef<HTMLCanvasElement>(null);
+  const { glowY, intro } = useHeaderMotion();
+  const introStageRef = useRef<HTMLCanvasElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const [hasEnded, setHasEnded] = useState(false);
-  // True once the intro engine has fully stopped: canvases are unmounted so
-  // they cost zero compositing / main-thread time during scroll.
+  // True once the intro engine has fully stopped: the sprite stage is unmounted
+  // so it costs zero compositing / memory during scroll.
   const [engineDone, setEngineDone] = useState(false);
 
   const status = isOpenNow(
@@ -54,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
     orderingState && typeof orderingState.reopensAt === 'string' ? orderingState.reopensAt : null,
   );
 
-  useHeaderIntroEngine(canvasRef, smokeCanvasRef, headerRef, setHasEnded, setEngineDone);
+  useHeaderIntroEngine(introStageRef, setHasEnded, setEngineDone);
 
   const phoneLink = `tel:${menu.settings.phone || '+96170123456'}`;
   const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
@@ -84,7 +83,6 @@ export const Header: React.FC<HeaderProps> = ({
         onOpenAdmin={onOpenAdmin}
         onOpenAuth={onOpenAuth}
         onOpenAccount={onOpenAccount}
-        rise={rise}
         bellSound={menu.settings.sounds?.customer || 'classic'}
       />
 
@@ -92,12 +90,10 @@ export const Header: React.FC<HeaderProps> = ({
       <HeaderBrandBlock
         menu={menu}
         lang={lang}
-        rise={rise}
         intro={intro}
         status={status}
         orderingState={orderingState}
-        canvasRef={canvasRef}
-        smokeCanvasRef={smokeCanvasRef}
+        introStageRef={introStageRef}
         hasEnded={hasEnded}
         engineDone={engineDone}
         festive={festive}
@@ -110,7 +106,6 @@ export const Header: React.FC<HeaderProps> = ({
         whatsappLink={whatsappLink}
         mapLink={mapLink}
         lang={lang}
-        rise={rise}
         intro={intro}
         orderingEnabled={orderingEnabled}
       />

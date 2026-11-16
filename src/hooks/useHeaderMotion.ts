@@ -11,16 +11,11 @@ export function useHeaderMotion(introDelay = 1.5) {
   // useTransform mapping (direct write, no smoothing either way).
   const glowY = useParallaxRef(-30);
 
-  // Entrance choreography: content rises in while the logo video draws itself
-  // (always on - site owner decision).
+  // Entrance choreography is CSS-only now (see .rise-in in components.css):
+  // the hook only exposes the shared delay and the glow parallax.
   const intro = introDelay;
-  const rise = (delay: number) => ({
-    initial: { opacity: 0, y: 14 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] as const },
-  });
 
-  return { glowY, intro, rise };
+  return { glowY, intro };
 }
 
 /** Scroll-linked translateY with zero geometry reads (see above). */

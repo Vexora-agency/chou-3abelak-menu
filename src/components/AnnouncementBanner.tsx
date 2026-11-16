@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import type { MenuSettings } from '@/src/types/menu';
 import { serverNow } from '@/src/utils/serverTime';
 import { annScroll, annSpeed, announcementStatus } from '@/src/utils/announcement';
@@ -12,9 +11,6 @@ interface AnnouncementBannerProps {
 
 export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings, lang }) => {
   const isAr = lang === 'ar';
-  // Owner decision: every animation runs for every visitor, even when the
-  // OS requests reduced motion or the device is in power saving.
-  const reduce = false;
   const [, setTick] = useState(0);
 
   // Re-evaluate every 60 s so the strip disappears by itself at expiry.
@@ -93,17 +89,14 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
   );
 
   return (
-    <AnimatePresence initial={false}>
-      {show && (
-        <motion.div
-          role="region"
-          aria-label={label}
-          initial={reduce ? false : { height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: scrollHidden ? 0 : 1, y: scrollHidden ? '-110%' : '0%', pointerEvents: scrollHidden ? 'none' : 'auto' }}
-          exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          className="overflow-hidden bg-[var(--primary)] text-[#0A0A0A] sticky top-0 z-50 shadow-[0_1px_0_rgba(0,0,0,0.12)] pt-[env(safe-area-inset-top)]"
-        >
+    show ? (
+      <div
+        role="region"
+        aria-label={label}
+        className={`ann-enter overflow-hidden bg-[var(--primary)] text-[#0A0A0A] sticky top-0 z-50 shadow-[0_1px_0_rgba(0,0,0,0.12)] pt-[env(safe-area-inset-top)] transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          scrollHidden ? '-translate-y-[110%] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+        }`}
+      >
           {marquee ? (
             <div
               ref={boxRef}
@@ -137,8 +130,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ settings
               </p>
             </div>
           )}
-        </motion.div>
-      )}
-    </AnimatePresence>
+      </div>
+    ) : null
   );
 };

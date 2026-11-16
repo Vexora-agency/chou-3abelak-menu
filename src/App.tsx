@@ -67,11 +67,13 @@ const OrdersBell = lazyWithReload(() =>
 );
 import { WifiOff } from 'lucide-react';
 import { useShopCartState } from '@/src/features/cart';
-import { useOrderingState } from '@/src/features/orders';
+// Storefront availability must not ride the orders barrel: that barrel also
+// exports the admin OrdersDashboard, which would drag the whole admin/motion
+// graph into the customer entry chunk. Deep import is intentional here.
+import { useOrderingState } from '@/src/features/orders/hooks/useOrderingState';
 import { useCustomerSession } from '@/src/features/auth';
 import { cancelWindowMsFromMenu } from '@/src/features/track/orderPhases';
 import { useAppPrefs } from '@/src/hooks/useAppPrefs';
-import { MotionConfig } from 'motion/react';
 
 /**
  * Static shell menu: brand identity from clientConfig + safe defaults for
@@ -555,7 +557,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
       : null;
 
   return (
-    <MotionConfig reducedMotion="never">
+    <>
     {/* Owner decision: every animation runs for every visitor, even when the
         OS requests reduced motion or the device is in power saving. */}
     <div
@@ -701,8 +703,9 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
         />
         )}
 
-        {/* Item Details Bottom Sheet Modal (ordering plans only) */}
-        {orderingOn && (
+        {/* Item Details Bottom Sheet Modal (ordering plans only). Mounted only
+            while an item is open so its lazy chunk never loads at boot. */}
+        {orderingOn && activeItem && (
         <Suspense fallback={null}>
         <ItemDetailsModal
           item={activeItem}
@@ -716,8 +719,10 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
         </Suspense>
         )}
 
-        {/* Full Cart Checkout Bottom Sheet (ordering plans only) */}
-        {orderingOn && (
+        {/* Full Cart Checkout Bottom Sheet (ordering plans only). Mounted once
+            the cart is opened or has lines, so an empty cold visit never fetches
+            the checkout chunk. */}
+        {orderingOn && (isCartOpen || totalCartCount > 0) && (
         <Suspense fallback={null}>
         <CartDrawer
           isOpen={isCartOpen}
@@ -741,7 +746,8 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
         </Suspense>
         )}
 
-        {/* Customer auth sheet (lazy chunk) */}
+        {/* Customer auth sheet (lazy chunk, mounted only while open) */}
+        {isAuthOpen && (
         <Suspense fallback={null}>
           <AuthSheet
             open={isAuthOpen}
@@ -767,8 +773,11 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
             googleCallback={authEntry === 'checkout' ? '/?checkout=1' : '/?account=1'}
           />
         </Suspense>
+        )}
 
-        {/* Customer account sheet: orders + saved details (lazy chunk) */}
+        {/* Customer account sheet: orders + saved details (lazy chunk, mounted
+            only while open) */}
+        {isAccountOpen && (
         <Suspense fallback={null}>
           <AccountSheet
             open={isAccountOpen}
@@ -786,8 +795,9 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
             initialTab={accountInitialTab}
           />
         </Suspense>
+        )}
       </div>
     </div>
-    </MotionConfig>
+    </>
   );
 }

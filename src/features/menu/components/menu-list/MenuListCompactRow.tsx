@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'motion/react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import { Flame, Sparkles, Award } from 'lucide-react';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
@@ -26,12 +25,8 @@ export const MenuListSectionHeader: React.FC<MenuListSectionHeaderProps> = ({
   return (
     <div className="flex items-center gap-2.5 mb-4">
       {festive ? (
-        <motion.span
-          className="xmas-stocking"
-          initial={{ scaleY: 0 }}
-          whileInView={{ scaleY: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        <span
+          className="xmas-stocking section-bar-in"
           aria-hidden="true"
         >
           <svg viewBox="0 0 26 36" fill="none" aria-hidden="true">
@@ -51,14 +46,10 @@ export const MenuListSectionHeader: React.FC<MenuListSectionHeaderProps> = ({
             <ellipse cx="9.5" cy="23.5" rx="3.4" ry="2.6" fill="#F7F3EA" transform="rotate(-18 9.5 23.5)" />
             <ellipse cx="19" cy="27.5" rx="3.6" ry="2.6" fill="#F7F3EA" transform="rotate(8 19 27.5)" />
           </svg>
-        </motion.span>
+        </span>
       ) : (
-      <motion.span
-        className="w-1.5 h-6 bg-[var(--primary)] rounded-sm origin-center"
-        initial={{ scaleY: 0 }}
-        whileInView={{ scaleY: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      <span
+        className="w-1.5 h-6 bg-[var(--primary)] rounded-sm origin-center section-bar-in"
         aria-hidden="true"
       />
       )}
@@ -117,17 +108,21 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
   const isSoldOut = !item.available;
   const interactive = orderingEnabled && !isSoldOut;
   return (
-    <motion.div
+    <div
       key={item.id}
-      // No `layout`: it re-measures on every render and animates phantom
-      // corrections (e.g. the one-frame rect shift when the details modal
-      // locks the body) — the list visibly jolts up and back on tap.
-      // Entrance stays on initial/whileInView below; nothing else needs FLIP.
-      initial={skipEntrance ? false : { opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '100px' }}
-      transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.05, ease: [0.22, 1, 0.36, 1] }}
-      style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
+      data-motion-reveal={skipEntrance ? undefined : 'scale'}
+      data-motion-delay={skipEntrance ? undefined : Math.min(idx, 5) * 60}
+      style={
+        skipEntrance
+          ? leaveDelayMs != null
+            ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties)
+            : undefined
+          : ({
+              '--leave-d': leaveDelayMs != null ? `${leaveDelayMs}ms` : undefined,
+              '--fx-delay': `${Math.min(idx, 5) * 60}ms`,
+              '--fx-dur': '0.55s',
+            } as React.CSSProperties)
+      }
       onClick={() => interactive && onOpenItem(item)}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
@@ -141,7 +136,7 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
           onOpenItem(item);
         }
       }}
-      className={`group relative flex items-center gap-3 py-3 px-2 -mx-2 rounded-xl border-b transition-colors ${
+      className={`menu-cv-row group relative flex items-center gap-3 py-3 px-2 -mx-2 rounded-xl border-b transition-colors ${
         darkMode ? 'border-neutral-800 hover:bg-white/[0.04]' : 'border-neutral-200 hover:bg-black/[0.04]'
       } ${interactive ? 'cursor-pointer' : isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}${leaveDelayMs != null ? ' row-leaving' : ''}`}
     >
@@ -188,6 +183,6 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
           <MenuListItemAction item={item} small qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} festive={festive} />
         </div>
       )}
-    </motion.div>
+    </div>
   );
 };

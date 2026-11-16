@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
 import { Flame } from 'lucide-react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import type { CardMarkStyleId, ResolvedMark } from '@/src/utils/cardMark';
@@ -77,13 +76,21 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
   const mark = sectionMark && !showPhoto ? sectionMark : null;
 
   return (
-    <motion.div
+    <div
       key={item.id}
-      initial={skipEntrance ? false : { opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '100px' }}
-      transition={{ duration: 0.5, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
-      style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
+      data-motion-reveal={skipEntrance ? undefined : 'scale'}
+      data-motion-delay={skipEntrance ? undefined : Math.min(idx, 5) * 60}
+      style={
+        skipEntrance
+          ? leaveDelayMs != null
+            ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties)
+            : undefined
+          : ({
+              '--leave-d': leaveDelayMs != null ? `${leaveDelayMs}ms` : undefined,
+              '--fx-delay': `${Math.min(idx, 5) * 60}ms`,
+              '--fx-dur': '0.55s',
+            } as React.CSSProperties)
+      }
       onClick={() => interactive && onOpenItem(item)}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
@@ -97,7 +104,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
           onOpenItem(item);
         }
       }}
-      className={`grid-card relative flex flex-col justify-between p-3.5 rounded-2xl border-2 ${mark ? 'overflow-hidden' : ''} ${
+      className={`menu-cv-grid grid-card relative flex flex-col justify-between p-3.5 rounded-2xl border-2 ${mark ? 'overflow-hidden' : ''} ${
         darkMode
           ? 'bg-[#141414] border-[var(--primary)] offset-shadow-dark'
           : 'bg-white border-[#0A0A0A] offset-shadow-yellow grid-card-soft'
@@ -216,6 +223,6 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };

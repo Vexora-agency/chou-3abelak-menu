@@ -1,12 +1,16 @@
 /**
  * Frontend Sentry initialization — error monitoring only.
  *
- * Lazy by design: `@sentry/react` is dynamically imported ONLY when the build
- * actually reports (PROD + VITE_SENTRY_DSN). Without a DSN (or in dev) this
- * module ships zero Sentry code in the main chunk — the SDK lives in its own
- * async chunk that the customer bundle never downloads. Every export below is
- * a no-op until the SDK chunk arrives, so behavior without a DSN is identical
- * to the old static path (nothing captured, nothing thrown).
+ * Lazy by design: `@sentry/browser` is dynamically imported ONLY when the
+ * build actually reports (PROD + VITE_SENTRY_DSN). Without a DSN (or in dev)
+ * this module ships zero Sentry code in the main chunk — the SDK lives in its
+ * own async chunk that the customer bundle never downloads. Every export below
+ * is a no-op until the SDK chunk arrives, so behavior without a DSN is
+ * identical to the old static path (nothing captured, nothing thrown).
+ *
+ * `@sentry/browser` (not `@sentry/react`) keeps Replay/rrweb out of the chunk:
+ * the app has its own React error boundary and never records sessions, so the
+ * React package's extra integrations were pure dead weight (~300 kB).
  *
  * Privacy rules (never relaxed):
  * - No secret token lives in the frontend: only the public DSN
@@ -18,7 +22,7 @@
  * - init never throws: a dead monitoring service must not break the menu.
  */
 
-type SentryModule = typeof import('@sentry/react');
+type SentryModule = typeof import('@sentry/browser');
 
 /** SDK module once its async chunk has loaded (null = not loaded / no DSN). */
 let sentryModule: SentryModule | null = null;
@@ -27,7 +31,7 @@ let loadPromise: Promise<SentryModule | null> | null = null;
 function loadSentry(): Promise<SentryModule | null> {
   if (sentryModule) return Promise.resolve(sentryModule);
   if (!loadPromise) {
-    loadPromise = import('@sentry/react').then(
+    loadPromise = import('@sentry/browser').then(
       (m) => (sentryModule = m),
       () => null,
     );
@@ -104,23 +108,24 @@ export function frontendSentryStatus(): { enabled: boolean; environment: string 
 let initialized = false;
 
 /** Run after the browser is idle (never on the LCP path). requestIdleCallback
- *  with a 3 s cap so slow devices still initialize Sentry shortly after load.
- *  Errors thrown before this runs are intentionally not captured — keeping
- *  ~1 s of SDK parse/eval off the critical path is worth more than them. */
+ *  with a 12 s cap: the 6 s logo intro + first paint finish first, so the SDK
+ *  never competes with the hero image, the intro sheets or the first scroll.
+ *  Errors thrown before this runs are intentionally not captured — keeping the
+ *  SDK parse/eval off the critical path is worth more than them. */
 function scheduleIdle(fn: () => void): void {
   try {
     const ric = (window as unknown as {
       requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
     }).requestIdleCallback;
     if (typeof ric === 'function') {
-      ric.call(window, fn, { timeout: 3000 });
+      ric.call(window, fn, { timeout: 12000 });
       return;
     }
   } catch {
     // Fall through to the timer below.
   }
   try {
-    window.setTimeout(fn, 2500);
+    window.setTimeout(fn, 12000);
   } catch {
     // Last resort: run now rather than never reporting.
     try {

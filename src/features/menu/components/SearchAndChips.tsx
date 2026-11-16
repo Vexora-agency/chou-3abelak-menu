@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'motion/react';
 import { Search, X, Sparkles, Flame, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Category } from '@/src/types/menu';
 import { scheduleIdle } from '@/src/utils/scheduleIdle';
@@ -195,20 +194,13 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
                     onClick={() => onSelectCategory(chip.id)}
                     className={`relative flex-shrink-0 h-11 px-5 rounded-full text-sm transition-colors btn-tactile border-[1.5px] ${
                       isSelected
-                        ? 'text-[#0A0A0A] font-bold border-[var(--primary)]'
+                        ? 'bg-[var(--primary)] text-[#0A0A0A] font-bold border-[var(--primary)]'
                         : darkMode
                         ? 'text-white/90 font-semibold border-white hover:border-[var(--primary)]'
                         : 'text-[#0A0A0A] font-semibold border-[#0A0A0A] hover:border-[var(--primary)]'
                     }`}
                     aria-pressed={isSelected}
                   >
-                    {isSelected && (
-                      <motion.span
-                        layoutId="chip-pill"
-                        className="absolute -inset-[1.5px] rounded-full bg-[var(--primary)]"
-                        transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                      />
-                    )}
                     <span className="relative z-10">{chip.label}</span>
                   </button>
                 );

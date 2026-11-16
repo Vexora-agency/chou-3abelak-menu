@@ -40,11 +40,13 @@ export const Header: React.FC<HeaderProps> = ({
   festive = false,
 }) => {
   const { glowY, intro } = useHeaderMotion();
-  const introStageRef = useRef<HTMLCanvasElement>(null);
+  const introStageRef = useRef<HTMLDivElement>(null);
+  const introCanvasRef = useRef<HTMLCanvasElement>(null);
+  const introVideoRef = useRef<HTMLVideoElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const [hasEnded, setHasEnded] = useState(false);
-  // True once the intro engine has fully stopped: the sprite stage is unmounted
-  // so it costs zero compositing / memory during scroll.
+  // True once the intro engine has fully stopped: the film/sprite stage is
+  // unmounted so it costs zero compositing / memory during scroll.
   const [engineDone, setEngineDone] = useState(false);
 
   const status = isOpenNow(
@@ -53,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
     orderingState && typeof orderingState.reopensAt === 'string' ? orderingState.reopensAt : null,
   );
 
-  useHeaderIntroEngine(introStageRef, setHasEnded, setEngineDone);
+  useHeaderIntroEngine(introStageRef, introCanvasRef, introVideoRef, setHasEnded, setEngineDone);
 
   const phoneLink = `tel:${menu.settings.phone || '+96170123456'}`;
   const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
@@ -94,6 +96,8 @@ export const Header: React.FC<HeaderProps> = ({
         status={status}
         orderingState={orderingState}
         introStageRef={introStageRef}
+        introCanvasRef={introCanvasRef}
+        introVideoRef={introVideoRef}
         hasEnded={hasEnded}
         engineDone={engineDone}
         festive={festive}

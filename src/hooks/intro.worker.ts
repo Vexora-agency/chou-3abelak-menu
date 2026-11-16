@@ -22,7 +22,7 @@ const TOTAL_FRAMES = 144;
 const END_AT_S = 5.75;
 const DURATION_S = 6.0;
 
-let timer: ReturnType<typeof setInterval> | null = null;
+let timer: ReturnType<typeof setTimeout> | null = null;
 let closed = false;
 
 self.onmessage = (event: MessageEvent<StartMessage>) => {
@@ -40,6 +40,7 @@ self.onmessage = (event: MessageEvent<StartMessage>) => {
   let started = false;
   let startTime = 0;
   let ended = false;
+  let nextFrameAt = 0;
 
   const draw = (): void => {
     if (closed || !started) return;
@@ -77,7 +78,7 @@ self.onmessage = (event: MessageEvent<StartMessage>) => {
       self.postMessage({ type: 'ended' });
     }
     if (t >= DURATION_S && timer !== null) {
-      clearInterval(timer);
+      clearTimeout(timer);
       timer = null;
       self.setTimeout(() => {
         if (!closed) self.postMessage({ type: 'done' });
@@ -85,15 +86,26 @@ self.onmessage = (event: MessageEvent<StartMessage>) => {
     }
   };
 
+  // Drift-corrected 24 fps loop. setInterval would accumulate the ~0.3 ms
+  // per-frame error and occasionally double a frame; a timeout anchored to
+  // the next 41.67 ms boundary keeps the reveal evenly paced.
+  const loop = (): void => {
+    if (closed) return;
+    draw();
+    if (closed || timer === null) return;
+    nextFrameAt += 1000 / FPS;
+    const now = performance.now();
+    if (nextFrameAt < now) nextFrameAt = now + 1000 / FPS; // dropped: resync
+    timer = setTimeout(loop, Math.max(0, nextFrameAt - now));
+  };
+
   const start = (): void => {
     if (started || closed) return;
     started = true;
     startTime = performance.now();
+    nextFrameAt = startTime;
     self.postMessage({ type: 'started' });
-    draw();
-    // 24 fps: the sprite itself has no more information; 60 Hz polling would
-    // only warm the worker for no visible gain.
-    timer = setInterval(draw, 1000 / FPS);
+    timer = setTimeout(loop, 0);
   };
 
   const loadSheet = async (index: number): Promise<void> => {
@@ -119,12 +131,10 @@ self.onmessage = (event: MessageEvent<StartMessage>) => {
     void loadSheet(index);
   });
 
-  // The worker is terminated by the main thread; this handler is only a
-  // courtesy for worker-side cleanup if a future caller posts 'stop'.
   self.addEventListener('message', (ev: MessageEvent<{ type?: string }>) => {
     if (ev.data?.type === 'stop') {
       closed = true;
-      if (timer !== null) clearInterval(timer);
+      if (timer !== null) clearTimeout(timer);
       timer = null;
       bitmaps.forEach((bitmap, i) => {
         bitmap?.close();

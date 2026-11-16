@@ -192,7 +192,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
       void import('@/src/features/cart/components/CartDrawer');
       void import('@/src/features/auth/components/AuthSheet');
       void import('@/src/features/auth/components/AccountSheet');
-    }, 8000);
+    }, 7000);
     return () => window.clearTimeout(id);
   }, []);
   // Scroll-restoration hygiene (iOS jump-to-top fix): the track page sets

@@ -4,14 +4,16 @@ import type { Dispatch, RefObject, SetStateAction } from 'react';
 /**
  * Logo intro.
  *
- * Primary: the original 1440×532 logo film, hardware-decoded by a visible
- * <video> and screen-blended over the dark header (the film has a pure-black
- * background, so screen removes it and keeps every spark/smoke pixel). 390 KB
- * VP9 + 135 KB H.264 fallback, no per-frame JavaScript.
+ * Primary: the original 1440×532 film (390 KB VP9 + 135 KB H.264 fallback) is
+ * decoded by a hidden <video> and painted into a 720×266 canvas at 24 fps. The
+ * canvas is screen-blended over the dark header, so the film's pure-black
+ * background disappears and every spark/smoke pixel stays — without relying on
+ * mix-blend-mode support for video overlays (Chrome ignores it and shows a
+ * black rectangle). Only drawImage runs per frame, not per-pixel keying.
  *
- * Fallback: 4 alpha-keyed AVIF sheets drawn by an OffscreenCanvas worker (or a
- * CSS background walk), used only when the video cannot autoplay (iOS Low Power
- * Mode, codec/network failure). The static final logo is the last resort.
+ * Fallback: the alpha AVIF sheets rendered by an OffscreenCanvas worker (or a
+ * CSS background walk) when autoplay fails, the codec is unsupported or the
+ * film stalls. The static final logo is the last resort.
  */
 const SHEETS = [
   '/assets/intro-alpha-0.avif',
@@ -32,6 +34,11 @@ const VIDEO_START_DELAY_MS = 250;
 const VIDEO_STALL_MS = 3000;
 
 type Setter = Dispatch<SetStateAction<boolean>>;
+
+type VideoFrameCallbackVideo = HTMLVideoElement & {
+  requestVideoFrameCallback?: (cb: () => void) => number;
+  cancelVideoFrameCallback?: (handle: number) => void;
+};
 
 /**
  * Fallback renderer: the alpha sprite sheets, in a worker when possible.
@@ -111,7 +118,6 @@ function startSpriteEngine(canvas: HTMLCanvasElement, setHasEnded: Setter, setEn
 
   const playAnimation = (url: string, elapsed: number): void => {
     canvas.classList.remove('intro-sheet-playing');
-    // Only four restarts per visit; the forced style flush is irrelevant.
     void canvas.offsetWidth;
     canvas.style.backgroundImage = `url("${url}")`;
     canvas.style.animationDelay = `${-Math.min(CHAPTER_S, Math.max(0, elapsed))}s`;
@@ -200,16 +206,23 @@ function startSpriteEngine(canvas: HTMLCanvasElement, setHasEnded: Setter, setEn
 
 export function useHeaderIntroEngine(
   stageRef: RefObject<HTMLDivElement | null>,
-  canvasRef: RefObject<HTMLCanvasElement | null>,
+  filmCanvasRef: RefObject<HTMLCanvasElement | null>,
+  spriteCanvasRef: RefObject<HTMLCanvasElement | null>,
   videoRef: RefObject<HTMLVideoElement | null>,
   setHasEnded: Setter,
   setEngineDone: Setter
 ): void {
   useEffect(() => {
     const stage = stageRef.current;
-    const canvas = canvasRef.current;
+    const film = filmCanvasRef.current;
+    const sprite = spriteCanvasRef.current;
     const video = videoRef.current;
-    if (!stage || !canvas || !video) return;
+    if (!stage || !film || !sprite || !video) return;
+
+    const fctx = film.getContext('2d', { alpha: true });
+    if (!fctx) return;
+    fctx.imageSmoothingEnabled = true;
+    fctx.imageSmoothingQuality = 'high';
 
     let disposed = false;
     let cleanupSprite: (() => void) | null = null;
@@ -218,14 +231,62 @@ export function useHeaderIntroEngine(
     let startTimer = 0;
     let stallTimer = 0;
     let watchdog = 0;
+    let rvfc = 0;
+    let raf = 0;
+    let framesStarted = false;
     let lastTime = -1;
     let stuckTicks = 0;
 
     stage.dataset.mode = 'video';
 
+    const stopFrames = (): void => {
+      const v = video as VideoFrameCallbackVideo;
+      if (rvfc && typeof v.cancelVideoFrameCallback === 'function') v.cancelVideoFrameCallback(rvfc);
+      rvfc = 0;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+      framesStarted = false;
+    };
+
+    const drawFilmFrame = (): void => {
+      if (disposed || !fctx) return;
+      if (video.readyState >= 2) {
+        fctx.clearRect(0, 0, film.width, film.height);
+        fctx.drawImage(video, 0, 0, film.width, film.height);
+      }
+    };
+
+    // Draw on every decoded video frame (24 fps source) via rVFC when present;
+    // rAF at 24 fps otherwise. This is one drawImage per frame, not keying.
+    const startFrames = (): void => {
+      if (framesStarted || disposed) return;
+      framesStarted = true;
+      const v = video as VideoFrameCallbackVideo;
+      if (typeof v.requestVideoFrameCallback === 'function') {
+        const onFrame = (): void => {
+          if (disposed) return;
+          drawFilmFrame();
+          rvfc = v.requestVideoFrameCallback?.(onFrame) ?? 0;
+        };
+        rvfc = v.requestVideoFrameCallback(onFrame);
+        return;
+      }
+      let last = 0;
+      const loop = (now: number): void => {
+        if (disposed) return;
+        if (now - last >= 1000 / FPS) {
+          last = now;
+          drawFilmFrame();
+        }
+        raf = requestAnimationFrame(loop);
+      };
+      raf = requestAnimationFrame(loop);
+    };
+
     const markEnded = (): void => {
       if (endedSent || disposed) return;
       endedSent = true;
+      stopFrames();
       setHasEnded(true);
       doneTimer = window.setTimeout(() => {
         if (!disposed) setEngineDone(true);
@@ -233,6 +294,7 @@ export function useHeaderIntroEngine(
     };
 
     const stopVideo = (): void => {
+      stopFrames();
       window.clearTimeout(stallTimer);
       window.clearInterval(watchdog);
       video.removeEventListener('timeupdate', onTime);
@@ -247,6 +309,7 @@ export function useHeaderIntroEngine(
     const startSprite = (): void => {
       if (disposed || cleanupSprite) return;
       stopVideo();
+      fctx.clearRect(0, 0, film.width, film.height);
       video.preload = 'none';
       stage.dataset.mode = 'sprite';
       // The film already reached its end: the static logo is showing, never
@@ -255,7 +318,7 @@ export function useHeaderIntroEngine(
         setEngineDone(true);
         return;
       }
-      cleanupSprite = startSpriteEngine(canvas, setHasEnded, setEngineDone);
+      cleanupSprite = startSpriteEngine(sprite, setHasEnded, setEngineDone);
     };
 
     const onTime = (): void => {
@@ -285,6 +348,7 @@ export function useHeaderIntroEngine(
       lastTime = video.currentTime;
       stuckTicks = 0;
       watchdog = window.setInterval(onTime, 1000);
+      startFrames();
     };
 
     const begin = (): void => {
@@ -323,5 +387,5 @@ export function useHeaderIntroEngine(
         video.pause();
       } catch {}
     };
-  }, [stageRef, canvasRef, videoRef, setHasEnded, setEngineDone]);
+  }, [stageRef, filmCanvasRef, spriteCanvasRef, videoRef, setHasEnded, setEngineDone]);
 }

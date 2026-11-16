@@ -39,8 +39,8 @@ export const Header: React.FC<HeaderProps> = ({
   orderingEnabled = true,
   festive = false,
 }) => {
-  const { glowY, intro } = useHeaderMotion();
   const introStageRef = useRef<HTMLDivElement>(null);
+  const introFilmRef = useRef<HTMLCanvasElement>(null);
   const introCanvasRef = useRef<HTMLCanvasElement>(null);
   const introVideoRef = useRef<HTMLVideoElement>(null);
   const headerRef = useRef<HTMLElement>(null);
@@ -48,6 +48,9 @@ export const Header: React.FC<HeaderProps> = ({
   // True once the intro engine has fully stopped: the film/sprite stage is
   // unmounted so it costs zero compositing / memory during scroll.
   const [engineDone, setEngineDone] = useState(false);
+  // The brand parallax only starts after engineDone: a transform on an ancestor
+  // would isolate the film canvas's screen blend during the intro.
+  const { brandY, glowY, intro } = useHeaderMotion(1.5, engineDone);
 
   const status = isOpenNow(
     menu.settings,
@@ -55,7 +58,14 @@ export const Header: React.FC<HeaderProps> = ({
     orderingState && typeof orderingState.reopensAt === 'string' ? orderingState.reopensAt : null,
   );
 
-  useHeaderIntroEngine(introStageRef, introCanvasRef, introVideoRef, setHasEnded, setEngineDone);
+  useHeaderIntroEngine(
+    introStageRef,
+    introFilmRef,
+    introCanvasRef,
+    introVideoRef,
+    setHasEnded,
+    setEngineDone
+  );
 
   const phoneLink = `tel:${menu.settings.phone || '+96170123456'}`;
   const whatsappNum = (menu.settings.whatsapp || '').replace(/[^0-9]/g, '');
@@ -92,10 +102,12 @@ export const Header: React.FC<HeaderProps> = ({
       <HeaderBrandBlock
         menu={menu}
         lang={lang}
+        brandY={brandY}
         intro={intro}
         status={status}
         orderingState={orderingState}
         introStageRef={introStageRef}
+        introFilmRef={introFilmRef}
         introCanvasRef={introCanvasRef}
         introVideoRef={introVideoRef}
         hasEnded={hasEnded}

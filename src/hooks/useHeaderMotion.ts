@@ -1,27 +1,31 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 
-export function useHeaderMotion(introDelay = 1.5) {
-  // Gentle depth on scroll: brand block drifts down a touch, the glow drifts
-  // up (always on - site owner decision). Hand-rolled on purpose: motion's
-  // useScroll measures document geometry on every scroll (forced reflow, the
-  // top flagged offender in traces). scrollY is a free read that never forces
-  // layout, and the mapping below is pure arithmetic — this listener costs
-  // ~zero however big the DOM gets. Frame-for-frame identical to the old
-  // useTransform mapping (direct write, no smoothing either way).
+export function useHeaderMotion(introDelay = 1.5, parallaxEnabled = true) {
+  // Gentle depth on scroll: the brand block drifts down, the glow drifts up.
+  // The brand transform is disabled until the intro engine has unmounted its
+  // stage: a transform on the brand block creates a stacking context, which
+  // would isolate the film canvas's screen blend and bring the black rectangle
+  // back. After engineDone the stage is display:none, so the transform is safe.
+  const brandY = useParallaxRef(46, parallaxEnabled);
   const glowY = useParallaxRef(-30);
 
   // Entrance choreography is CSS-only now (see .rise-in in components.css):
-  // the hook only exposes the shared delay and the glow parallax.
+  // the hook only exposes the shared delay and the parallax refs.
   const intro = introDelay;
 
-  return { glowY, intro };
+  return { brandY, glowY, intro };
 }
 
 /** Scroll-linked translateY with zero geometry reads (see above). */
-function useParallaxRef(maxY: number): RefObject<HTMLDivElement | null> {
+function useParallaxRef(maxY: number, enabled = true): RefObject<HTMLDivElement | null> {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (!enabled) {
+      // Never leave a transform on an ancestor of the screen-blended intro.
+      ref.current?.style.removeProperty('transform');
+      return;
+    }
     let ticking = false;
     // The mapping saturates at scrollY=320. Before this guard the handler kept
     // re-writing the same transform on every scroll frame for the whole menu,
@@ -43,7 +47,10 @@ function useParallaxRef(maxY: number): RefObject<HTMLDivElement | null> {
     };
     update();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [maxY]);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      ref.current?.style.removeProperty('transform');
+    };
+  }, [maxY, enabled]);
   return ref;
 }

@@ -4,15 +4,18 @@ import type { MenuData } from '@/src/types/menu';
 import { pickLangText } from '@/src/utils/menuHelpers';
 import { taglineOrDefault } from '@/src/utils/settingsDefaults';
 import type { OrderingStatus } from '@/src/utils/status';
+import type { useHeaderMotion } from '@/src/hooks/useHeaderMotion';
 import { XmasLogoHat, XmasLogoMelt } from '@/src/features/seasonal/XmasHeader';
 
 interface HeaderBrandBlockProps {
   menu: MenuData;
   lang: 'en' | 'ar';
+  brandY: ReturnType<typeof useHeaderMotion>['brandY'];
   intro: number;
   status: { isOpen: boolean; label: { en: string; ar: string } };
   orderingState?: OrderingStatus | null;
   introStageRef: RefObject<HTMLDivElement | null>;
+  introFilmRef: RefObject<HTMLCanvasElement | null>;
   introCanvasRef: RefObject<HTMLCanvasElement | null>;
   introVideoRef: RefObject<HTMLVideoElement | null>;
   hasEnded: boolean;
@@ -58,10 +61,12 @@ const INTRO_SPARKS: IntroParticleStyle[] = [
 export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
   menu,
   lang,
+  brandY,
   intro,
   status,
   orderingState,
   introStageRef,
+  introFilmRef,
   introCanvasRef,
   introVideoRef,
   hasEnded,
@@ -72,6 +77,7 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
 
   return (
     <div
+      ref={brandY}
       className="relative text-center mt-3 sm:mt-5 flex flex-col items-center max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full"
     >
       {/* Logo Container with Transparent Video & Atmospheric Sizzle Smoke */}
@@ -146,27 +152,35 @@ export const HeaderBrandBlock: React.FC<HeaderBrandBlockProps> = ({
               backgroundSize: '400% 900%',
             }}
           />
+          {/* Film output: the hidden video is painted here frame-by-frame.
+              A canvas is a normal layer (unlike Chrome's hardware video
+              overlay), so screen-blending it reliably removes the film's black
+              background on every browser and preserves the fire/smoke. */}
+          <canvas
+            ref={introFilmRef}
+            width={720}
+            height={266}
+            aria-hidden="true"
+            className="intro-film absolute inset-0 w-full h-full pointer-events-none"
+            style={{
+              backgroundColor: 'transparent',
+              backgroundImage: 'url("/assets/intro-poster.webp")',
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: '100% 100%',
+              mixBlendMode: 'screen',
+            }}
+          />
           <video
             ref={introVideoRef}
             muted
             playsInline
             preload="none"
-            poster="/assets/intro-poster.webp"
             width={1440}
             height={532}
             aria-hidden="true"
             tabIndex={-1}
-            className="intro-video absolute inset-0 w-full h-full object-contain pointer-events-none"
-            style={{
-              mixBlendMode: 'screen',
-              backgroundColor: 'transparent',
-              // Chrome promotes <video> to a hardware overlay that ignores
-              // mix-blend-mode, leaving the film's black background visible.
-              // Forcing its own compositing layer keeps screen blending on the
-              // GPU and removes the black rectangle (verified on mobile).
-              transform: 'translateZ(0)',
-              willChange: 'transform',
-            }}
+            className="intro-video-source absolute inset-0 w-full h-full pointer-events-none"
+            style={{ opacity: 0 }}
           >
             <source src="/assets/logo-intro.webm" type="video/webm" />
             <source src="/assets/logo-intro.mp4" type="video/mp4" />

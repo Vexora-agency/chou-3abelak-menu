@@ -78,21 +78,25 @@
     no Skip button. It is the pre-existing 6 s canvas intro; the rest of the
     page does not wait on it.
 - Image/LCP/TBT pass:
-  - Intro logo: the original 1440×532 film is back as a visible `<video>`
-    (VP9 WebM 390 KB, H.264 MP4 135 KB) with `mix-blend-mode: screen` over the
-    dark header — the film's background is pure black, so screen keeps every
-    fire/smoke/spark pixel. `transform: translateZ(0)` is REQUIRED: without its
-    own compositing layer Chrome promotes the video to a hardware overlay that
-    ignores the blend and shows a black rectangle. A 488-byte frame-0 poster
-    covers the load gap; the film starts 250 ms after mount so the entry bundle
-    and LCP image get a head start.
+  - Intro logo: the original 1440×532 film is back (VP9 WebM 390 KB,
+    H.264 MP4 135 KB) but decoded by a **hidden** `<video>` and painted into a
+    720×266 canvas at 24 fps (`requestVideoFrameCallback`/rAF). The canvas —
+    a normal layer, unlike Chrome's hardware video overlay — is
+    `mix-blend-mode: screen` over the dark header: black disappears and every
+    fire/smoke/spark pixel stays, on Chrome AND Safari. Only `drawImage` runs
+    per frame, never per-pixel keying. A 488-byte poster covers the load gap;
+    the film starts 250 ms after mount so the entry bundle + LCP image lead.
   - Fallback when autoplay is blocked (iOS Low Power Mode), the codec is
-    unsupported, or the film stalls: the alpha AVIF sheets rendered by
+    unsupported or the film stalls: the alpha AVIF sheets rendered by
     `src/hooks/intro.worker.ts` on an OffscreenCanvas. It is hidden while the
     film plays (`stage[data-mode]`). The static logo is the last resort.
   - Intro hand-off: the static logo appears instantly UNDER the fading stage
     (stage fades out 700 ms). Do not cross-fade both layers — identical logos
     at complementary opacity dip in brightness (the old "pulse").
+  - Header parallax: brand block drifts 46 px over the first 320 px of scroll,
+    but ONLY after `engineDone`. A transform on the brand block is a stacking
+    context and would isolate the film canvas's screen blend; the hook enables
+    it once the stage is `display:none`. The glow parallax is always on.
   - Intro smoke/sparks for the sprite fallback are CSS puffs; the film path
     hides them (the film already carries the real fire/smoke).
   - Menu sections mount progressively (one section, then one every 700 ms);

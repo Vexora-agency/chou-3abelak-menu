@@ -71,6 +71,17 @@ ok(
   profileRoute.includes("error: 'phone_required'") && profileRoute.includes("error: 'address_required'") && profileRoute.includes("error: 'address_pin_required'"),
   'profile PATCH rejects a missing phone, address or map pin'
 );
+const accountSheet = read('src/features/auth/components/AccountSheet.tsx');
+const addressInputAt = accountSheet.indexOf('id="account-address"');
+const addressInput = addressInputAt >= 0 ? accountSheet.slice(addressInputAt, addressInputAt + 900) : '';
+ok(
+  addressInput.includes('readOnly') && !addressInput.includes('onChange='),
+  'member settings default address is read-only: only the map pin can set it'
+);
+ok(
+  accountSheet.includes('setAddress(pinAddress(lat, lng, addressText))'),
+  'a new pin always rewrites the default address (never old pin + typed text)'
+);
 
 /* ---------- B. two-browser separation (simulation) ---------- */
 function makeStore() {

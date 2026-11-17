@@ -11,6 +11,8 @@ interface LocationPickerProps {
   fallback: { lat: number; lng: number };
   onPick: (lat: number, lng: number, accuracy: number, addressText: string | null) => void;
   onClose: () => void;
+  /** Override the bottom button label (defaults to "Enter address manually"). */
+  manualLabel?: string;
 }
 
 const STR = {
@@ -42,7 +44,7 @@ const STR = {
   },
 } as const;
 
-export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, initial, fallback, onPick, onClose }) => {
+export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, initial, fallback, onPick, onClose, manualLabel }) => {
   const t = STR[lang];
   const isAr = lang === 'ar';
   const mapRef = useRef<HTMLDivElement>(null);
@@ -377,7 +379,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         onClick={onClose}
         className={`w-full h-11 min-h-[44px] rounded-full text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}
       >
-        {t.manual}
+        {manualLabel ?? t.manual}
       </button>
       <style>{`.loc-div-icon{background:none;border:none;}.leaflet-container{font:inherit;background:${darkMode ? '#141414' : '#f0ede6'};}.leaflet-control-attribution{font-size:9px;}.leaflet-touch .leaflet-bar a{width:44px!important;height:44px!important;line-height:44px!important;font-size:22px;}.leaflet-touch .leaflet-control-zoom{margin-top:10px;margin-left:10px;}`}</style>
     </div>

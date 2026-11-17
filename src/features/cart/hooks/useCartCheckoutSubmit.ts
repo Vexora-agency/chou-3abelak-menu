@@ -204,8 +204,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // ceiling gets an honest warning instead of a made-up delivery time.
   const distanceWarning = location && restaurantCoords && Number.isFinite(distanceMeters) && distanceMeters > MAX_DELIVERY_DISTANCE_KM * 1000
     ? (isAr
-      ? `عنوانك على بعد ${formatDistance(distanceMeters, lang)} من المطعم — خارج نطاق التوصيل المعتاد. تواصل معنا قبل إتمام الطلب.`
-      : `Your address is ${formatDistance(distanceMeters, lang)} from the restaurant — outside the usual delivery zone. Call us before ordering.`)
+      ? `${formatDistance(distanceMeters, lang)} خارج نطاق التوصيل المعتاد — تواصل معنا قبل الطلب.`
+      : `${formatDistance(distanceMeters, lang)} — outside our usual delivery zone. Contact us first.`)
     : null;
 
   // Stable idempotency key for this drawer session: retries reuse it so
@@ -256,13 +256,14 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     : null;
   const feeQuote = resolveDeliveryFee(ordering, location ? distanceKm : null, subtotal);
   const deliveryFee = feeActive ? feeQuote.fee : 0;
+  // Free-delivery celebration only. The distance is stated once in the
+  // pinned-location card; repeating it under the fee line read as a second,
+  // redundant message (owner feedback).
   const feeDetail = !feeActive
     ? null
     : feeQuote.freeApplied
       ? (isAr ? `توصيل مجاني للطلبات التي تتجاوز ${formatPrice(ordering.freeDeliveryMin ?? 0, currency)}` : `Free delivery over ${formatPrice(ordering.freeDeliveryMin ?? 0, currency)}`)
-      : feeQuote.distanceKm !== null && ordering.deliveryFeeMode === 'distance'
-        ? (isAr ? `على بعد ${formatDistance(distanceMeters, lang)}` : `${formatDistance(distanceMeters, lang)} away`)
-        : null;
+      : null;
   const grandTotal = subtotal + deliveryFee;
   const isBelowMin = minActive && ordering.minOrder > 0 && subtotal < ordering.minOrder;
   const minOrder = ordering.minOrder;

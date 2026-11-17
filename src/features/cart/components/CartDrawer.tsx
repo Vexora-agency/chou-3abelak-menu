@@ -285,13 +285,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 location={location}
                 distanceText={distanceText}
                 distanceWarning={distanceWarning}
-                feeHint={feeDetail}
-                feeFreeApplied={feeFreeApplied}
                 lang={lang}
               darkMode={darkMode}
               onOpenLocSheet={() => setLocSheetOpen(true)}
               onClearLocation={clearLocation}
               isMember={!!account.user}
+              hasDefaultAddress={!account.loading && !!account.profile?.address}
               phoneDial={phoneDial}
             />
 

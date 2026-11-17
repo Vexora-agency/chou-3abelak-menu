@@ -805,17 +805,20 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                     id="account-address"
                     type="text"
                     value={address}
-                    readOnly
-                    autoComplete="off"
+                    onChange={(e) => {
+                      formTouchedRef.current = true;
+                      setAddress(e.target.value);
+                      setSaveError('');
+                    }}
+                    autoComplete="street-address"
+                    dir="auto"
                     maxLength={200}
-                    placeholder={
-                      location
-                        ? (isAr ? 'العنوان من الخريطة' : 'Address from the map')
-                        : (isAr ? 'ثبّت الموقع على الخريطة أولًا' : 'Pin the location on the map first')
-                    }
-                    className={`${inputClass} pe-12 cursor-default ${location ? '' : 'opacity-70'}`}
+                    disabled={!location}
+                    placeholder={!location
+                      ? (isAr ? 'ثبّت الموقع على الخريطة أولًا' : 'Pin the location on the map first')
+                      : (isAr ? 'اكتب تفاصيل العنوان' : 'Type the address details')}
+                    className={`${inputClass} pe-12 disabled:opacity-70 disabled:cursor-not-allowed`}
                     aria-describedby="account-address-note"
-                    aria-readonly="true"
                     aria-required="true"
                   />
                   <button

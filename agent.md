@@ -50,11 +50,12 @@
   Typing after a pin refines that same pin, but a new pin can never inherit
   the previous pin's manual text — that created old-text + new-coords tickets.
   Pure rule + tests in `scripts/test-remember-pin.mjs`.
-- Member settings (`Account → Settings`): the default address is READ-ONLY and
-  always derived from the pin (`pinAddress`); a re-pin rewrites it. Manual
-  typing there is blocked, so a saved profile can never hold an old pin + a
-  new typed address (the pin drives the zone/fee gate and the Telegram map
-  link). Checkout keeps its per-order text refinement above. Guarded by
+- Member settings (`Account → Settings`): the default address starts locked and
+  unlocks only after a map pin; a new pin always rewrites the text
+  (`pinAddress`). So the initial state can never hold an address without a
+  pin, and a fresh pin can never inherit old text. After the pin the customer
+  may edit the address details for that same point (the pin stays the delivery
+  point). Checkout keeps its per-order text refinement above. Guarded by
   `scripts/test-cart-isolation.mjs`.
 - Phone country gate: `src/utils/phoneCountry.ts` derives the restaurant dial
   code from the admin WhatsApp picker (fallback: restaurant phone). Cart and

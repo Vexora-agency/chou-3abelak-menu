@@ -73,7 +73,7 @@ ok(
 );
 const accountSheet = read('src/features/auth/components/AccountSheet.tsx');
 const addressInputAt = accountSheet.indexOf('id="account-address"');
-const addressInput = addressInputAt >= 0 ? accountSheet.slice(addressInputAt, addressInputAt + 900) : '';
+const addressInput = addressInputAt >= 0 ? accountSheet.slice(addressInputAt, addressInputAt + 2400) : '';
 ok(
   addressInput.includes('disabled={!location}') && addressInput.includes('onChange='),
   'member settings default address is editable only after a map pin exists'
@@ -81,6 +81,24 @@ ok(
 ok(
   accountSheet.includes('setAddress(pinAddress(lat, lng, addressText))'),
   'a new pin always rewrites the default address (never old pin + typed text)'
+);
+ok(
+  addressInput.includes('absolute right-0.5') && addressInput.includes('pr-12'),
+  'the settings map-pin button sits on the physical right (correct in Arabic RTL too)'
+);
+ok(
+  formFields.includes('absolute right-0.5') && formFields.includes('pr-12'),
+  'the cart map-pin button sits on the physical right (correct in Arabic RTL too)'
+);
+const cartDrawer = read('src/features/cart/components/CartDrawer.tsx');
+ok(
+  cartDrawer.includes('customer.address.trim() === account.profile.address.trim()'),
+  'the member default-address note shows only while the loaded default is still intact'
+);
+ok(
+  formFields.includes('عنوانك الافتراضي') && formFields.includes('الموقع مثبّت')
+    && !formFields.includes('bg-amber-50'),
+  'member default-address note is one compact line, not a second gold alert box'
 );
 
 /* ---------- B. two-browser separation (simulation) ---------- */

@@ -204,8 +204,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   // ceiling gets an honest warning instead of a made-up delivery time.
   const distanceWarning = location && restaurantCoords && Number.isFinite(distanceMeters) && distanceMeters > MAX_DELIVERY_DISTANCE_KM * 1000
     ? (isAr
-      ? `${formatDistance(distanceMeters, lang)} خارج نطاق التوصيل المعتاد — تواصل معنا قبل الطلب.`
-      : `${formatDistance(distanceMeters, lang)} — outside our usual delivery zone. Contact us first.`)
+      ? `على بعد ${formatDistance(distanceMeters, lang)} — خارج نطاق التوصيل المعتاد. تواصل معنا قبل الطلب.`
+      : `${formatDistance(distanceMeters, lang)} away — outside our usual delivery zone. Contact us first.`)
     : null;
 
   // Stable idempotency key for this drawer session: retries reuse it so

@@ -817,7 +817,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                     placeholder={!location
                       ? (isAr ? 'ثبّت الموقع على الخريطة أولًا' : 'Pin the location on the map first')
                       : (isAr ? 'اكتب تفاصيل العنوان' : 'Type the address details')}
-                    className={`${inputClass} pe-12 disabled:opacity-70 disabled:cursor-not-allowed`}
+                    className={`${inputClass} pr-12 disabled:opacity-70 disabled:cursor-not-allowed`}
                     aria-describedby="account-address-note"
                     aria-required="true"
                   />
@@ -826,7 +826,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                     onClick={() => setLocSheetOpen(true)}
                     aria-label={location ? t.changePin : t.pinAddress}
                     title={location ? t.changePin : t.pinAddress}
-                    className={`absolute end-0.5 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                    className={`absolute right-0.5 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                       darkMode
                         ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
                         : 'text-[#8a6d00] hover:bg-[var(--primary)]/15'

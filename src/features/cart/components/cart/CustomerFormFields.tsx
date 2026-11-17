@@ -205,7 +205,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             maxLength={200}
             autoComplete="street-address"
             enterKeyHint="next"
-            className={`w-full h-11 px-3.5 pe-12 rounded-xl border text-base focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
+            className={`w-full h-11 pl-3.5 pr-12 rounded-xl border text-base focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
               darkMode
                 ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-400'
                 : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-500 shadow-xs'
@@ -217,7 +217,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               onClick={onOpenLocSheet}
               title={isAr ? 'افتح الخريطة لتحديد موقعك (اختياري ويساعد السائق)' : 'Open the map to pin your location (optional, helps the driver)'}
               aria-label={isAr ? 'افتح الخريطة لتحديد موقعك (اختياري ويساعد السائق)' : 'Open the map to pin your location (optional, helps the driver)'}
-              className={`absolute end-0.5 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+              className={`absolute right-0.5 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                 darkMode
                   ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
                   : 'text-[#8a6d00] hover:bg-[var(--primary)]/15'
@@ -228,14 +228,14 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           )}
         </div>
         {isMember && hasDefaultAddress ? (
-          <div className={`mt-1.5 flex items-start gap-1.5 rounded-xl border px-2.5 py-2 text-[11px] font-semibold leading-relaxed ${darkMode ? 'border-[var(--primary)]/25 bg-[var(--primary)]/[0.06] text-[var(--primary)]' : 'border-amber-200 bg-amber-50 text-[#7a5d00]'}`}>
-            <BadgeCheck size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
-            <span dir="auto">
-              {isAr
-                ? 'تم التقاط عنوانك الافتراضي — يمكنك تعديله هنا في السلة.'
-                : 'Your default address is loaded — edit it here in the cart.'}
-            </span>
-          </div>
+          location ? null : (
+            <p className={`mt-1.5 flex items-start gap-1.5 text-[10.5px] font-semibold leading-relaxed ${darkMode ? 'text-emerald-400/90' : 'text-emerald-700'}`}>
+              <BadgeCheck size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+              <span dir="auto">
+                {isAr ? 'عنوانك الافتراضي · عدّله من هنا.' : 'Your default address · edit it here.'}
+              </span>
+            </p>
+          )
         ) : (
           <p className={`mt-1 text-[11px] ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>
             {location
@@ -246,23 +246,23 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         {location && (
           <div className={`mt-2 rounded-2xl border p-2.5 ${darkMode ? 'border-emerald-400/25 bg-emerald-400/[0.06]' : 'border-emerald-200 bg-emerald-50/80'}`}>
             <div className="flex items-start gap-2.5">
-              <span className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${darkMode ? 'bg-emerald-400/15 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
+              <span className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${darkMode ? 'bg-emerald-500 text-white shadow-sm' : 'bg-emerald-600 text-white shadow-sm'}`}>
                 <MapPin size={16} strokeWidth={2.4} aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1 pt-0.5">
-                <p className={`text-[12px] font-extrabold leading-snug ${darkMode ? 'text-emerald-200' : 'text-emerald-900'}`}>
+                <p className={`text-[12px] font-extrabold leading-snug ${darkMode ? 'text-emerald-100' : 'text-emerald-950'}`}>
                   {isAr ? 'الموقع مثبّت' : 'Location pinned'}
                   {distanceText && (
-                    <span className={`font-bold ${darkMode ? 'text-emerald-300/80' : 'text-emerald-700/80'}`}>
+                    <span className={`font-bold ${darkMode ? 'text-emerald-300/80' : 'text-emerald-700'}`}>
                       {' · '}
-                      {isAr ? `${distanceText} من المطعم` : `${distanceText} away`}
+                      {isAr ? `${distanceText} عن المطعم` : `${distanceText} away`}
                     </span>
                   )}
                 </p>
                 {location.accuracy > 500 && (
                   <p className={`mt-1 flex items-start gap-1 text-[10.5px] font-semibold leading-snug ${darkMode ? 'text-amber-300/90' : 'text-amber-700'}`}>
                     <AlertTriangle size={11} className="mt-0.5 shrink-0" aria-hidden="true" />
-                    <span>{isAr ? 'دبوس تقريبي — أضف تفاصيل العنوان' : 'Approximate pin — add address details'}</span>
+                    <span>{isAr ? 'الدبوس تقريبي — أضف تفاصيل العنوان' : 'Approximate pin — add address details'}</span>
                   </p>
                 )}
                 {distanceWarning && (
@@ -278,7 +278,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
                   onClick={onOpenLocSheet}
                   aria-label={isAr ? 'تعديل الموقع على الخريطة' : 'Edit location on the map'}
                   title={isAr ? 'تعديل الموقع على الخريطة' : 'Edit location on the map'}
-                  className={`inline-flex items-center justify-center gap-1.5 h-9 min-h-[44px] px-3 rounded-full border text-[11px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-emerald-400/30 text-emerald-200 hover:bg-emerald-400/10' : 'border-emerald-300 text-emerald-800 hover:bg-emerald-100'}`}
+                  className={`inline-flex items-center justify-center gap-1.5 h-9 min-h-[44px] px-3 rounded-full border text-[11px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-emerald-400/30 text-emerald-100 hover:bg-emerald-400/10' : 'border-emerald-300 bg-white/70 text-emerald-800 hover:bg-white'}`}
                 >
                   <Map size={13} strokeWidth={2.4} aria-hidden="true" />
                   <span className="hidden min-[360px]:inline">{isAr ? 'الخريطة' : 'Map'}</span>
@@ -288,12 +288,20 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
                   onClick={onClearLocation}
                   aria-label={isAr ? 'إزالة الموقع' : 'Remove location'}
                   title={isAr ? 'إزالة الموقع' : 'Remove location'}
-                  className={`w-9 h-9 min-w-[44px] min-h-[44px] rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${darkMode ? 'border-emerald-400/15 text-neutral-400 hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-400' : 'border-emerald-200 text-neutral-500 hover:border-red-300 hover:bg-red-50 hover:text-red-600'}`}
+                  className={`w-9 h-9 min-w-[44px] min-h-[44px] rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${darkMode ? 'border-white/10 bg-white/[0.02] text-neutral-300 hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-400' : 'border-neutral-200 bg-white/70 text-neutral-500 hover:border-red-300 hover:bg-red-50 hover:text-red-600'}`}
                 >
                   <X size={15} strokeWidth={2.6} aria-hidden="true" />
                 </button>
               </div>
             </div>
+            {isMember && hasDefaultAddress && (
+              <p className={`mt-1.5 ps-11 flex items-start gap-1 text-[10.5px] font-semibold leading-snug ${darkMode ? 'text-emerald-300/80' : 'text-emerald-700/90'}`}>
+                <BadgeCheck size={11} className="mt-0.5 shrink-0" aria-hidden="true" />
+                <span dir="auto">
+                  {isAr ? 'عنوانك الافتراضي · عدّله من هنا.' : 'Your default address · edit it here.'}
+                </span>
+              </p>
+            )}
           </div>
         )}
       </div>

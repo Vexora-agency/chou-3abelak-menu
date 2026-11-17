@@ -57,6 +57,12 @@
   may edit the address details for that same point (the pin stays the delivery
   point). Checkout keeps its per-order text refinement above. Guarded by
   `scripts/test-cart-isolation.mjs`.
+- Cart location card (one message, one accent): the member default-address
+  note is a compact line inside the green "Location pinned" card — not a
+  second gold alert box — and it hides once the address is edited. Distance is
+  stated once (the delivery-fee line never repeats it). Map-pin buttons in
+  both address fields are physically right (`right-0.5` + `pr-12`), so Arabic
+  RTL shows them on the right as the owner expects. Guarded by `test:cart`.
 - Phone country gate: `src/utils/phoneCountry.ts` derives the restaurant dial
   code from the admin WhatsApp picker (fallback: restaurant phone). Cart and
   Account Settings render a fixed `+code` prefix, normalize national numbers

@@ -14,10 +14,10 @@ import type { Dispatch, RefObject, SetStateAction } from 'react';
  * logo frames (no particles) as a final fallback; the static logo is last.
  */
 const SHEETS = [
-  '/assets/intro-alpha-0.avif',
-  '/assets/intro-alpha-1.avif',
-  '/assets/intro-alpha-2.avif',
-  '/assets/intro-alpha-3.avif',
+  '/assets/intro-alpha-v2-0.avif',
+  '/assets/intro-alpha-v2-1.avif',
+  '/assets/intro-alpha-v2-2.avif',
+  '/assets/intro-alpha-v2-3.avif',
 ];
 const FPS = 24;
 const FRAMES_PER_SHEET = 36;

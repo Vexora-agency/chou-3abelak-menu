@@ -27,6 +27,8 @@ interface CartDrawerProps {
   lang: 'en' | 'ar';
   darkMode: boolean;
   orderingState?: OrderingStatus | null;
+  /** Line key that just arrived from the menu: land the customer on it. */
+  justAddedKey?: string | null;
   /** Opens the auth sheet straight on Create account (COD requires one). */
   onRequireAccount?: () => void;
   /** Opens account settings over the cart (mandatory phone/address/pin). */
@@ -48,6 +50,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   orderingState,
   onRequireAccount,
   onRequireProfile,
+  justAddedKey,
 }) => {
   const isAr = lang === 'ar';
   const phoneDial = dialFromSettings(menu.settings);
@@ -107,6 +110,40 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   useEffect(() => {
     if (isOpen && orderPrepared) scrollerRef.current?.scrollTo(0, 0);
   }, [isOpen, orderPrepared]);
+
+  // Landing: the add that opened this sheet names its line. Let the entrance
+  // settle one beat, then reveal that row only when it is actually outside
+  // the comfortable viewport (sticky-header clearance kept in mind). Scrolls
+  // the sheet's own scroller — never the Lenis page behind the lock.
+  useEffect(() => {
+    if (!isOpen || !justAddedKey) return;
+    const root = scrollerRef.current;
+    if (!root) return;
+    let raf = 0;
+    const timer = window.setTimeout(() => {
+      raf = window.requestAnimationFrame(() => {
+        // dataset compare (not a selector): line keys contain | , :
+        const row = Array.from(root.querySelectorAll<HTMLElement>('[data-line-key]'))
+          .find((el) => el.dataset.lineKey === justAddedKey);
+        if (!row) return;
+        const rowRect = row.getBoundingClientRect();
+        const rootRect = root.getBoundingClientRect();
+        const headerGap = 76;
+        const bottomGap = 16;
+        if (rowRect.top >= rootRect.top + headerGap && rowRect.bottom <= rootRect.bottom - bottomGap) return;
+        const top = Math.max(0, root.scrollTop + rowRect.top - rootRect.top - headerGap);
+        try {
+          root.scrollTo({ top, behavior: 'smooth' });
+        } catch {
+          root.scrollTop = top;
+        }
+      });
+    }, 240);
+    return () => {
+      window.clearTimeout(timer);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+  }, [isOpen, justAddedKey, lines]);
   useEffect(() => {
     if (!isOpen) {
       idemKeyRef.current = null;
@@ -217,7 +254,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         {/* Order Prepared Confirmation Screen */}
         {orderPrepared ? (
           <div className="py-8 text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-green-500/10 text-green-600 flex items-center justify-center mx-auto">
+            <div className="w-16 h-16 rounded-full bg-green-500/10 text-green-600 flex items-center justify-center mx-auto anim-success-pop">
               <CheckCircle2 size={36} />
             </div>
             <h3 className={`text-xl font-black ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
@@ -274,6 +311,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               onUpdateLine={onUpdateLine}
               onRemoveLine={onRemoveLine}
               onRemoveAddon={onRemoveAddon}
+              highlightKey={justAddedKey}
             />
 
             {/* Customer Inputs Form */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { useGuardedText } from '@/src/hooks/useGuardedText';
 import { ShoppingBag, ArrowRight, ArrowLeft, Trash2, PauseCircle, MoonStar } from 'lucide-react';
@@ -26,6 +26,17 @@ export const CartBar: React.FC<CartBarProps> = ({
 }) => {
   const isAr = lang === 'ar';
   const totalRef = useGuardedText<HTMLDivElement>(formatPrice(totalPrice, currency));
+
+  // Latch the badge pop on a real count change only: the bar's own entrance
+  // already plays on mount, and a parent re-render must never pop a count
+  // that did not move.
+  const [badgePop, setBadgePop] = useState(false);
+  const prevCountRef = useRef(totalCount);
+  useEffect(() => {
+    const prev = prevCountRef.current;
+    prevCountRef.current = totalCount;
+    if (prev !== totalCount) setBadgePop(true);
+  }, [totalCount]);
 
   // Delete confirmation dialog (opens on trash tap)
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -94,7 +105,7 @@ export const CartBar: React.FC<CartBarProps> = ({
             <div className="w-7 h-7 min-[380px]:w-8 min-[380px]:h-8 rounded-full bg-[var(--primary)] text-[#0A0A0A] flex items-center justify-center font-black">
               <ShoppingBag size={15} className="stroke-[2.5] min-[380px]:w-[17px] min-[380px]:h-[17px]" />
             </div>
-            <span data-testid="cart-bar-count" className="absolute -top-1.5 -end-1.5 bg-red-500 text-white text-[11px] font-black min-w-5 h-5 px-1 rounded-full flex items-center justify-center border-2 border-[#0A0A0A] tabular-nums">
+            <span key={totalCount} data-testid="cart-bar-count" className={`absolute -top-1.5 -end-1.5 bg-red-500 text-white text-[11px] font-black min-w-5 h-5 px-1 rounded-full flex items-center justify-center border-2 border-[#0A0A0A] tabular-nums${badgePop ? ' anim-badge-pop' : ''}`}>
               {totalCount > 99 ? '99+' : totalCount}
             </span>
           </div>

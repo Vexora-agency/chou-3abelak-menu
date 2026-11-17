@@ -333,6 +333,13 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
 
   // Cart Drawer
   const [isCartOpen, setIsCartOpen] = useState(false);
+  // One-shot landing marker: every add opens the drawer, and the drawer
+  // reveals the exact row that grew (gold ring + scroll into view). The
+  // marker is named AFTER the cart commit (configured adds can merge and
+  // re-key), then clears itself so reopening the cart never replays it.
+  const [justAddedLine, setJustAddedLine] = useState<{ key: string; at: number } | null>(null);
+  const prevCartQtyRef = useRef<Record<string, number> | null>(null);
+  const addPendingRef = useRef(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authEntry, setAuthEntry] = useState<'account' | 'checkout'>('account');
   const [isAccountOpen, setIsAccountOpen] = useState(false);
@@ -384,7 +391,39 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
     // open the cart drawer on top.
     setActiveItem(null);
     setIsCartOpen(true);
+    addPendingRef.current = true;
   });
+
+  // Diff the committed cart against the previous snapshot to name the line
+  // that just grew. Gated on a real add, so boot, stored-cart cleanup and
+  // stepper taps INSIDE the drawer never fake a landing.
+  useEffect(() => {
+    const prev = prevCartQtyRef.current;
+    const next: Record<string, number> = {};
+    for (const [key, line] of Object.entries(cart)) next[key] = line.quantity;
+    prevCartQtyRef.current = next;
+    if (!addPendingRef.current) return;
+    addPendingRef.current = false;
+    if (!prev) return;
+    let landedKey = '';
+    let landedGrowth = 0;
+    for (const [key, qty] of Object.entries(next)) {
+      const growth = qty - (prev[key] ?? 0);
+      if (growth > landedGrowth) {
+        landedGrowth = growth;
+        landedKey = key;
+      }
+    }
+    if (landedKey) setJustAddedLine({ key: landedKey, at: Date.now() });
+  }, [cart]);
+
+  // The ring is a landing, not a badge: drop the marker once it has played
+  // (a later reopen must not replay it).
+  useEffect(() => {
+    if (!justAddedLine) return;
+    const timer = window.setTimeout(() => setJustAddedLine(null), 1500);
+    return () => window.clearTimeout(timer);
+  }, [justAddedLine]);
 
   // Online / Offline listener
   useEffect(() => {
@@ -749,6 +788,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
           lang={lang}
           darkMode={darkMode}
           orderingState={liveOrderingState}
+          justAddedKey={justAddedLine?.key ?? null}
           onRequireAccount={() => {
             setAuthEntry('checkout');
             setIsAuthOpen(true);

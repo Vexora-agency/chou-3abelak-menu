@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { pickLangText, isSpicyFeatureId } from '@/src/utils/menuHelpers';
 import { getVariant, featureName, unitPrice, formatPrice, normalizePricing, unitLabel } from '@/src/utils/pricing';
@@ -13,7 +13,33 @@ interface CartLinesListProps {
   onUpdateLine: (key: string, dir: 1 | -1) => void;
   onRemoveLine: (key: string) => void;
   onRemoveAddon: (lineKey: string, featureId: string) => void;
+  /** Line that just arrived from the menu: gets the one-shot gold landing. */
+  highlightKey?: string | null;
 }
+
+/**
+ * Quantity chip. The span is keyed by qty, so a real change remounts it and
+ * replays the one-shot pop; `popReady` latches after the first observed
+ * change so a boot/reopen never pops (a class appearing on an already
+ * mounted span would otherwise animate every row at once).
+ */
+const CartLineQty: React.FC<{ qty: number; landed: boolean }> = ({ qty, landed }) => {
+  const [popReady, setPopReady] = useState(false);
+  const prevQtyRef = useRef(qty);
+  useEffect(() => {
+    const prev = prevQtyRef.current;
+    prevQtyRef.current = qty;
+    if (prev !== qty) setPopReady(true);
+  }, [qty]);
+  return (
+    <span
+      key={qty}
+      className={`font-black text-sm px-1 min-w-[28px] text-center text-[#0A0A0A] tabular-nums${landed || popReady ? ' anim-qty-pop' : ''}`}
+    >
+      {qty}
+    </span>
+  );
+};
 
 export const CartLinesList: React.FC<CartLinesListProps> = ({
   menu,
@@ -23,12 +49,14 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
   onUpdateLine,
   onRemoveLine,
   onRemoveAddon,
+  highlightKey,
 }) => {
   const isAr = lang === 'ar';
   return (
     <div className="space-y-2.5">
       {lines.map((l) => {
         const variant = getVariant(l.item, l.variantId);
+        const justLanded = highlightKey === l.key;
         // Base (size or fixed price) — shown next to the name so the full
         // math reads: small pizza 450,000 + cheese 30,000.
         const baseUnit = unitPrice(l.item, l.variantId);
@@ -47,7 +75,7 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
               darkMode
                 ? 'bg-[#1c1c1c] border-neutral-800 text-white'
                 : 'bg-neutral-100 border-neutral-200 text-[#0A0A0A]'
-            }`}
+            }${justLanded ? ' cart-line-land' : ''}`}
           >
            <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
@@ -76,9 +104,7 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
                 >
                   <Minus size={18} className="stroke-[3]" />
                 </button>
-                <span className="font-black text-sm px-1 min-w-[28px] text-center text-[#0A0A0A] tabular-nums">
-                  {l.quantity}
-                </span>
+                <CartLineQty qty={l.quantity} landed={justLanded} />
                 <button
                   type="button"
                   onClick={() => onUpdateLine(l.key, 1)}

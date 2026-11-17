@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Minus } from 'lucide-react';
 import type { MenuItem } from '@/src/types/menu';
 import { cartLineKey, hasOptions } from '@/src/utils/pricing';
@@ -18,8 +18,11 @@ interface MenuListItemActionProps {
 
 // Dense rows keep their compact look: the visible buttons stay small but
 // an invisible hit-slop ring (::after) expands every tap area to 44px+.
-const renderStepper = (lineKey: string, qty: number, small: boolean, isAr: boolean, onUpdateLine: (key: string, dir: 1 | -1) => void) => (
-  <div className={`flex items-center ${small ? 'gap-1 p-0.5' : 'gap-1.5 p-1'} bg-[var(--primary)] text-[#0A0A0A] rounded-full ${small ? 'shadow-sm' : 'shadow-md'}`}>
+// `animate` is false on the component's first render: a stored cart restores
+// dozens of steppers at boot and they must not all pop. Every later qty
+// change remounts the keyed number span, which replays the one-shot pop.
+const renderStepper = (lineKey: string, qty: number, small: boolean, isAr: boolean, onUpdateLine: (key: string, dir: 1 | -1) => void, animate: boolean) => (
+  <div className={`flex items-center ${small ? 'gap-1 p-0.5' : 'gap-1.5 p-1'} bg-[var(--primary)] text-[#0A0A0A] rounded-full ${small ? 'shadow-sm' : 'shadow-md'}${animate ? ' anim-stepper-in' : ''}`}>
     <button
       type="button"
       onClick={() => onUpdateLine(lineKey, -1)}
@@ -28,7 +31,7 @@ const renderStepper = (lineKey: string, qty: number, small: boolean, isAr: boole
     >
       <Minus size={small ? 12 : 14} className="stroke-[3]" />
     </button>
-    <span className={`font-extrabold tabular-nums ${small ? 'text-xs px-1' : 'text-sm px-1.5'} min-w-[20px] text-center`}>
+    <span key={qty} className={`font-extrabold tabular-nums ${small ? 'text-xs px-1' : 'text-sm px-1.5'} min-w-[20px] text-center${animate ? ' anim-qty-pop' : ''}`}>
       {qty}
     </span>
     <button
@@ -55,6 +58,17 @@ export const MenuListItemAction: React.FC<MenuListItemActionProps> = ({
   festive = false,
 }) => {
   const options = hasOptions(item);
+  // Latch the one-shot pop only when the qty actually crosses 0 -> positive,
+  // so a boot-restored stepper stays still and a later parent re-render can
+  // never replay the entrance on steppers that were already on screen.
+  const [stepperAnimate, setStepperAnimate] = useState(false);
+  const prevQtyRef = useRef(qty);
+  useEffect(() => {
+    const prev = prevQtyRef.current;
+    prevQtyRef.current = qty;
+    if (prev === 0 && qty > 0) setStepperAnimate(true);
+  }, [qty]);
+  const animate = stepperAnimate;
   // Festive sparkles around the + button (CSS-only, aria-hidden).
   const sparks = festive && qty === 0 ? (
     <>
@@ -85,7 +99,7 @@ export const MenuListItemAction: React.FC<MenuListItemActionProps> = ({
         className={`rounded-full bg-[var(--primary)] text-[#0A0A0A] font-extrabold shadow-md hover:brightness-110 hover:scale-[1.04] hover:shadow-[0_0_18px_color-mix(in_srgb,var(--primary)_50%,transparent)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 transition-all duration-200 ${small ? 'h-11 min-h-[44px] px-4 text-xs' : 'h-11 min-h-[44px] px-5 text-sm'}`}
         aria-label={isAr ? `تعديل ${item.name.ar}` : `Customize ${item.name.en}`}
       >
-        <span className="tabular-nums">{qty}</span>
+        <span key={qty} className={`tabular-nums${animate ? ' anim-qty-pop' : ''}`}>{qty}</span>
       </button>
     );
   }
@@ -102,5 +116,5 @@ export const MenuListItemAction: React.FC<MenuListItemActionProps> = ({
       </button>
     );
   }
-  return renderStepper(cartLineKey(item.id), qty, small, isAr, onUpdateLine);
+  return renderStepper(cartLineKey(item.id), qty, small, isAr, onUpdateLine, animate);
 };

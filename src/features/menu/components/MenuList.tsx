@@ -42,7 +42,9 @@ interface MenuListProps {
  * Batched reveal: long sections show `initial` items, then `batch` more per
  * tap (both admin-tunable in Settings → Section Show-More, 4..50). The button
  * appears only when the rest is worth a tap (> MIN_REST): a "show more (2)"
- * button is sillier than just showing the two.
+ * button is sillier than just showing the two. The same rule applies after
+ * every expansion — a batch that would leave a 1..MIN_REST orphan folds that
+ * tail into the window instead of paging again.
  * While any filter is active everything shows — collapsing would hide matches.
  * Wide screens snap both numbers UP to full grid rows (12 initial on a 5-col
  * desktop grid would leave an orphan pair + 3 empty slots; 15 fills 3 rows),
@@ -82,7 +84,7 @@ function useGridCols(kind: 'list' | 'compact' | 'cards' | 'photos' | 'round'): n
 
 interface ShowMoreButtonProps {
   expanded: boolean;
-  /** Next-batch size (more) — unused for less. */
+  /** "more": items still hidden. "less": items this tap will hide. */
   count: number;
   isAr: boolean;
   onToggle: () => void;
@@ -99,7 +101,7 @@ const ShowMoreButton: React.FC<ShowMoreButtonProps> = ({ expanded, count, isAr, 
     >
       <span>
         {expanded
-          ? (isAr ? 'عرض أقل' : 'Show less')
+          ? isAr ? `عرض أقل (${count})` : `Show less (${count})`
           : isAr ? `عرض المزيد (${count})` : `Show more (${count})`}
       </span>
       <ChevronDown size={16} className={`transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
@@ -456,11 +458,22 @@ export const MenuList: React.FC<MenuListProps> = ({
         // animating container). Collapsing is phased (fade, then commit with
         // pixel-lock) so the viewport never jumps.
         const collapsible = !filtering && total > effInitial + MIN_REST;
-        const visible = collapsible ? Math.min(total, visibleCounts[cat.id] ?? effInitial) : total;
+        const storedVisible = collapsible
+          ? Math.min(total, Math.max(effInitial, visibleCounts[cat.id] ?? effInitial))
+          : total;
+        // Never strand a 1..MIN_REST tail behind a pager ("show more (2)" is
+        // sillier than just showing the two): fold it into the window. Also
+        // repairs a stored window left stale by a resize or a menu update.
+        const visible =
+          collapsible && storedVisible > effInitial && total - storedVisible <= MIN_REST
+            ? total
+            : storedVisible;
         const hasMore = collapsible && visible < total;
         // Stepped collapse: "less" goes back one batch per tap (never jumps
         // straight to the start), mirroring "more".
         const pastStart = collapsible && visible > effInitial;
+        // The pill shows the exact number of cards this tap hides.
+        const lessCount = visible - Math.max(effInitial, visible - effBatch);
         const more = () => {
           if (leaving) return;
           setSteppingBack((prev) => {
@@ -469,7 +482,12 @@ export const MenuList: React.FC<MenuListProps> = ({
             delete next[cat.id];
             return next;
           });
-          setVisibleCounts((prev) => ({ ...prev, [cat.id]: Math.min(total, (prev[cat.id] ?? effInitial) + effBatch) }));
+          setVisibleCounts((prev) => {
+            const current = Math.min(total, Math.max(effInitial, prev[cat.id] ?? effInitial));
+            const next = Math.min(total, current + effBatch);
+            // Last batch: take a small tail too, so no orphan pager remains.
+            return { ...prev, [cat.id]: total - next <= MIN_REST ? total : next };
+          });
         };
         // Phased "less": phase 1 fades the doomed range [target, visible) in
         // place — layout fully frozen, so the scroll position CANNOT jump.
@@ -526,8 +544,9 @@ export const MenuList: React.FC<MenuListProps> = ({
         };
         // One morphing button: "more" (remaining count) until the end, then
         // ONLY "less" — which keeps stepping back through every stage (the
-        // button never morphs mid-way back). Buttons stay mounted mid-fade
-        // (taps guarded) so the pixel-lock anchor is always measurable.
+        // button never morphs mid-way back) and shows how many it will hide.
+        // Buttons stay mounted mid-fade (taps guarded) so the pixel-lock
+        // anchor is always measurable.
         const pagerButton = collapsible ? (
           hasMore && !steppingBack[cat.id] ? (
             <ShowMoreButton
@@ -538,7 +557,7 @@ export const MenuList: React.FC<MenuListProps> = ({
               onToggle={more}
             />
           ) : pastStart ? (
-            <ShowMoreButton expanded isAr={isAr} count={0} onToggle={less} />
+            <ShowMoreButton expanded isAr={isAr} count={lessCount} onToggle={less} />
           ) : null
         ) : null;
         const visibleItems = catItems.slice(0, visible);

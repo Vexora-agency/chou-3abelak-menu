@@ -8,6 +8,9 @@ interface CartLocationSheetProps {
   darkMode: boolean;
   onCloseSheet: (keep: boolean) => void;
   onPick: (lat: number, lng: number, accuracy: number, addressText: string | null) => void;
+  /** Bottom close-button label. Checkout keeps the "type it manually" wording;
+   *  member settings uses "close" because its address is pin-owned. */
+  manualLabel?: string;
 }
 
 export const CartLocationSheet: React.FC<CartLocationSheetProps> = ({
@@ -16,6 +19,7 @@ export const CartLocationSheet: React.FC<CartLocationSheetProps> = ({
   darkMode,
   onCloseSheet,
   onPick,
+  manualLabel,
 }) => {
   const isAr = lang === 'ar';
   return (
@@ -46,6 +50,7 @@ export const CartLocationSheet: React.FC<CartLocationSheetProps> = ({
           darkMode={darkMode}
           initial={location}
           fallback={{ lat: 33.87476, lng: 35.545704 }}
+          manualLabel={manualLabel}
           onPick={(lat, lng, accuracy, addressText) => onPick(lat, lng, accuracy, addressText)}
           onClose={() => onCloseSheet(!!location)}
         />

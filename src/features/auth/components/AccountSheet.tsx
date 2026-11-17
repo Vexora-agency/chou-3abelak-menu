@@ -36,6 +36,7 @@ import { formatPrice } from '@/src/utils/pricing';
 import { isSoundOff, setSoundOff } from '@/src/utils/customerOrders';
 import { CustomerAvatar } from './CustomerAvatar';
 import { CartLocationSheet } from '@/src/features/cart/components/cart/CartLocationSheet';
+import { pinAddress } from '@/src/features/cart/hooks/useMidSplitLocationMap';
 import { CancelOrderButton } from '@/src/features/track/components/CancelOrderButton';
 import { ReceivedButton } from '@/src/features/track/components/ReceivedButton';
 import { useCustomerSession } from '../hooks/useCustomerSession';
@@ -271,6 +272,10 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   // Auto-selecting Settings runs once per opening: the customer can still
   // browse My orders afterwards without being pulled back on every refetch.
   const autoTabDoneRef = useRef(false);
+  // A late profile fetch must never overwrite what the customer already
+  // changed in this opening (a freshly picked pin/address would silently
+  // snap back). Set by every form edit; reset when the sheet closes.
+  const formTouchedRef = useRef(false);
   const [openOrder, setOpenOrder] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -293,6 +298,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
       : phone;
 
   const onPhoneChange = (raw: string) => {
+    formTouchedRef.current = true;
     if (!dial.code) {
       setPhoneError('');
       setPhone(cleanPhoneInput(raw));
@@ -343,13 +349,21 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     if (open) scrollRef.current?.scrollTo(0, 0);
   }, [tab, open]);
 
+  // A late profile fetch must never overwrite what the customer already
+  // changed in this opening: a freshly picked pin (and its derived address)
+  // would silently snap back to the previous profile pin. Hydrate once per
+  // opening, and only while the form is untouched.
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      formTouchedRef.current = false;
+      return;
+    }
+    if (formTouchedRef.current || profileState.loading || !profileState.profile) return;
     setName(session.user?.name || '');
-    setPhone(profileState.profile?.phone || '');
-    setAddress(profileState.profile?.address || '');
-    setLocation(profileState.profile?.location ?? null);
-  }, [open, session.user?.id, profileState.profile?.phone, profileState.profile?.address, profileState.profile?.location]);
+    setPhone(profileState.profile.phone || '');
+    setAddress(profileState.profile.address || '');
+    setLocation(profileState.profile.location ?? null);
+  }, [open, profileState.loading, profileState.profile, session.user?.id]);
 
   // The mute control is shared with the guest bell: a new order re-arms it.
   useEffect(() => {
@@ -702,7 +716,10 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                   id="account-name"
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    formTouchedRef.current = true;
+                    setName(e.target.value);
+                  }}
                   autoComplete="name"
                   maxLength={80}
                   className={inputClass}
@@ -788,22 +805,24 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                     id="account-address"
                     type="text"
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
+                    readOnly
                     autoComplete="street-address"
                     maxLength={200}
-                    disabled={!location}
-                    placeholder={!location
-                      ? (isAr ? 'ثبّت الموقع على الخريطة أولًا' : 'Pin the location on the map first')
-                      : (isAr ? 'اكتب عنوانك هنا' : 'Type your address here')}
-                    className={`${inputClass} pe-12 disabled:opacity-70 disabled:cursor-not-allowed`}
+                    placeholder={
+                      location
+                        ? (isAr ? 'العنوان من الخريطة' : 'Address from the map')
+                        : (isAr ? 'ثبّت الموقع على الخريطة أولًا' : 'Pin the location on the map first')
+                    }
+                    className={`${inputClass} pe-12 cursor-default ${location ? '' : 'opacity-70'}`}
                     aria-describedby="account-address-note"
+                    aria-readonly="true"
                     aria-required="true"
                   />
                   <button
                     type="button"
                     onClick={() => setLocSheetOpen(true)}
-                    aria-label={t.pinAddress}
-                    title={t.pinAddress}
+                    aria-label={location ? t.changePin : t.pinAddress}
+                    title={location ? t.changePin : t.pinAddress}
                     className={`absolute end-0.5 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                       darkMode
                         ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
@@ -862,16 +881,17 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
             location={location}
             lang={lang}
             darkMode={darkMode}
+            manualLabel={isAr ? 'إغلاق بدون تغيير' : 'Close without changes'}
             onCloseSheet={() => setLocSheetOpen(false)}
             onPick={(lat, lng, accuracy, addressText) => {
+              formTouchedRef.current = true;
               setLocation({ lat, lng, accuracy });
+              // The pin owns the address, ALWAYS. A new pin can never inherit
+              // text typed for a different point (old-text + new-coords), and
+              // a typed address can never sit on an old pin (old-pin +
+              // new-text). This is the same rule the checkout uses.
+              setAddress(pinAddress(lat, lng, addressText));
               setSaveError('');
-              if (!address.trim()) {
-                const fill = addressText && addressText.trim()
-                  ? addressText.trim()
-                  : `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-                setAddress(fill.slice(0, 200));
-              }
               setLocSheetOpen(false);
             }}
           />

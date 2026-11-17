@@ -252,13 +252,12 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               <div className="min-w-0 flex-1 pt-0.5">
                 <p className={`text-[12px] font-extrabold leading-snug ${darkMode ? 'text-emerald-100' : 'text-emerald-950'}`}>
                   {isAr ? 'الموقع مثبّت' : 'Location pinned'}
-                  {distanceText && (
-                    <span className={`font-bold ${darkMode ? 'text-emerald-300/80' : 'text-emerald-700'}`}>
-                      {' · '}
-                      {isAr ? `${distanceText} عن المطعم` : `${distanceText} away`}
-                    </span>
-                  )}
                 </p>
+                {distanceText && (
+                  <p className={`mt-0.5 text-[11px] font-bold leading-snug ${darkMode ? 'text-emerald-300/80' : 'text-emerald-700'}`}>
+                    {isAr ? `${distanceText} عن المطعم` : `${distanceText} away`}
+                  </p>
+                )}
                 {location.accuracy > 500 && (
                   <p className={`mt-1 flex items-start gap-1 text-[10.5px] font-semibold leading-snug ${darkMode ? 'text-amber-300/90' : 'text-amber-700'}`}>
                     <AlertTriangle size={11} className="mt-0.5 shrink-0" aria-hidden="true" />

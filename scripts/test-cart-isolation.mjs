@@ -75,8 +75,8 @@ const accountSheet = read('src/features/auth/components/AccountSheet.tsx');
 const addressInputAt = accountSheet.indexOf('id="account-address"');
 const addressInput = addressInputAt >= 0 ? accountSheet.slice(addressInputAt, addressInputAt + 900) : '';
 ok(
-  addressInput.includes('readOnly') && !addressInput.includes('onChange='),
-  'member settings default address is read-only: only the map pin can set it'
+  addressInput.includes('disabled={!location}') && addressInput.includes('onChange='),
+  'member settings default address is editable only after a map pin exists'
 );
 ok(
   accountSheet.includes('setAddress(pinAddress(lat, lng, addressText))'),

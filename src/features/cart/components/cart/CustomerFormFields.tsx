@@ -9,7 +9,7 @@ import {
   nationalPart,
   type DialCountry,
 } from '@/src/utils/phoneCountry';
-import { ChevronDown, Mail, MapPin, Navigation, Phone, X } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, ChevronDown, Mail, Map, MapPin, Phone, X } from 'lucide-react';
 
 interface CustomerFormFieldsProps {
   customer: CustomerDetails;
@@ -19,12 +19,12 @@ interface CustomerFormFieldsProps {
   location: { lat: number; lng: number; accuracy: number } | null;
   distanceText: string | null;
   distanceWarning: string | null;
-  feeHint?: string | null;
-  feeFreeApplied?: boolean;
   lang: 'en' | 'ar';
   darkMode: boolean;
   /** Signed-in members already have their email on every linked order. */
   isMember?: boolean;
+  /** Member has a saved default address loaded into this order. */
+  hasDefaultAddress?: boolean;
   /** Restaurant country from the admin WhatsApp picker (phone gate). */
   phoneDial?: DialCountry;
   onOpenLocSheet: () => void;
@@ -39,11 +39,10 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   location,
   distanceText,
   distanceWarning,
-  feeHint,
-  feeFreeApplied,
   lang,
   darkMode,
   isMember = false,
+  hasDefaultAddress = false,
   phoneDial,
   onOpenLocSheet,
   onClearLocation,
@@ -194,7 +193,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         <div className="relative">
           <input
             type="text"
-            value={customer.address} dir={isAr ? 'rtl' : 'ltr'}
+            value={customer.address} dir="auto"
             onChange={(e) => {
               // Typing refines the address but keeps the pin: a picked point
               // plus a detailed address (building, floor, landmark) is the
@@ -228,58 +227,73 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             </button>
           )}
         </div>
-        <p className={`mt-1 text-[11px] ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>
-          {location
-            ? (isAr ? 'يُكتب مع كل طلب ولا يُحفظ على هذا الجهاز.' : 'Entered fresh each order — never saved on this device.')
-            : (isAr ? 'اضغط على أيقونة الموقع لتحديد عنوانك بدقة وسهولة — أو اكتبه يدويًا.' : 'Tap the location icon to pin your address quickly and accurately — or type it manually.')}
-        </p>
+        {isMember && hasDefaultAddress ? (
+          <div className={`mt-1.5 flex items-start gap-1.5 rounded-xl border px-2.5 py-2 text-[11px] font-semibold leading-relaxed ${darkMode ? 'border-[var(--primary)]/25 bg-[var(--primary)]/[0.06] text-[var(--primary)]' : 'border-amber-200 bg-amber-50 text-[#7a5d00]'}`}>
+            <BadgeCheck size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span dir="auto">
+              {isAr
+                ? 'تم التقاط عنوانك الافتراضي — يمكنك تعديله هنا في السلة.'
+                : 'Your default address is loaded — edit it here in the cart.'}
+            </span>
+          </div>
+        ) : (
+          <p className={`mt-1 text-[11px] ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>
+            {location
+              ? (isAr ? 'يُكتب مع كل طلب ولا يُحفظ على هذا الجهاز.' : 'Entered fresh each order — never saved on this device.')
+              : (isAr ? 'اضغط على أيقونة الموقع لتحديد عنوانك بدقة وسهولة — أو اكتبه يدويًا.' : 'Tap the location icon to pin your address quickly and accurately — or type it manually.')}
+          </p>
+        )}
         {location && (
-          <div className={`mt-1.5 flex items-center flex-wrap gap-x-2 gap-y-1 text-xs font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-            <MapPin size={13} className="shrink-0" />
-            <span className="flex-1 min-w-0 basis-0 truncate" dir="auto">
-                {isAr
-                  ? `تم تحديد الموقع${distanceText ? ` · على بعد ${distanceText} من المطعم` : ''}${feeHint && !feeFreeApplied ? ` · ${feeHint}` : ''}`
-                  : `Location pinned${distanceText ? ` · ${distanceText} from our location` : ''}${feeHint && !feeFreeApplied ? ` · ${feeHint}` : ''}`}
-            </span>
-            {feeFreeApplied && feeHint && (
-              <span className="shrink-0 basis-full text-green-500 font-black" dir="auto">🎉 {feeHint}</span>
-            )}
-            <a
-              href={`https://www.google.com/maps?q=${location.lat},${location.lng}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 underline underline-offset-4 hover:text-[var(--primary)] inline-flex items-center min-h-[44px] px-1"
-            >
-              {isAr ? 'الخريطة' : 'Maps'}
-            </a>
-            {location.accuracy > 500 && (
-              <span className="shrink-0 text-amber-500">
-                {isAr ? 'تقريبي — اكتب العنوان أيضًا' : 'Rough — also write the address'}
+          <div className={`mt-2 rounded-2xl border p-2.5 ${darkMode ? 'border-emerald-400/25 bg-emerald-400/[0.06]' : 'border-emerald-200 bg-emerald-50/80'}`}>
+            <div className="flex items-start gap-2.5">
+              <span className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${darkMode ? 'bg-emerald-400/15 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
+                <MapPin size={16} strokeWidth={2.4} aria-hidden="true" />
               </span>
-            )}
-            {distanceWarning && (
-              <span className="shrink-0 basis-full text-amber-500" dir="auto">{distanceWarning}</span>
-            )}
-            <span className="flex gap-2 shrink-0 ms-auto">
-              <button
-                type="button"
-                onClick={onOpenLocSheet}
-                aria-label={isAr ? 'إعادة تحديد الموقع' : 'Re-pin location'}
-                title={isAr ? 'إعادة تحديد الموقع' : 'Re-pin location'}
-                className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 text-neutral-300' : 'border-neutral-300 text-neutral-600'}`}
-              >
-                <Navigation size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={onClearLocation}
-                aria-label={isAr ? 'إزالة الموقع' : 'Remove location'}
-                title={isAr ? 'إزالة الموقع' : 'Remove location'}
-                className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${darkMode ? 'text-neutral-400 hover:text-red-400' : 'text-neutral-500 hover:text-red-600'}`}
-              >
-                <X size={16} />
-              </button>
-            </span>
+              <div className="min-w-0 flex-1 pt-0.5">
+                <p className={`text-[12px] font-extrabold leading-snug ${darkMode ? 'text-emerald-200' : 'text-emerald-900'}`}>
+                  {isAr ? 'الموقع مثبّت' : 'Location pinned'}
+                  {distanceText && (
+                    <span className={`font-bold ${darkMode ? 'text-emerald-300/80' : 'text-emerald-700/80'}`}>
+                      {' · '}
+                      {isAr ? `${distanceText} من المطعم` : `${distanceText} away`}
+                    </span>
+                  )}
+                </p>
+                {location.accuracy > 500 && (
+                  <p className={`mt-1 flex items-start gap-1 text-[10.5px] font-semibold leading-snug ${darkMode ? 'text-amber-300/90' : 'text-amber-700'}`}>
+                    <AlertTriangle size={11} className="mt-0.5 shrink-0" aria-hidden="true" />
+                    <span>{isAr ? 'دبوس تقريبي — أضف تفاصيل العنوان' : 'Approximate pin — add address details'}</span>
+                  </p>
+                )}
+                {distanceWarning && (
+                  <p className={`mt-1 flex items-start gap-1 text-[10.5px] font-semibold leading-snug ${darkMode ? 'text-amber-300' : 'text-amber-700'}`}>
+                    <AlertTriangle size={11} className="mt-0.5 shrink-0" aria-hidden="true" />
+                    <span dir="auto">{distanceWarning}</span>
+                  </p>
+                )}
+              </div>
+              <div className="shrink-0 flex items-center gap-1 self-center">
+                <button
+                  type="button"
+                  onClick={onOpenLocSheet}
+                  aria-label={isAr ? 'تعديل الموقع على الخريطة' : 'Edit location on the map'}
+                  title={isAr ? 'تعديل الموقع على الخريطة' : 'Edit location on the map'}
+                  className={`inline-flex items-center justify-center gap-1.5 h-9 min-h-[44px] px-3 rounded-full border text-[11px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-emerald-400/30 text-emerald-200 hover:bg-emerald-400/10' : 'border-emerald-300 text-emerald-800 hover:bg-emerald-100'}`}
+                >
+                  <Map size={13} strokeWidth={2.4} aria-hidden="true" />
+                  <span className="hidden min-[360px]:inline">{isAr ? 'الخريطة' : 'Map'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onClearLocation}
+                  aria-label={isAr ? 'إزالة الموقع' : 'Remove location'}
+                  title={isAr ? 'إزالة الموقع' : 'Remove location'}
+                  className={`w-9 h-9 min-w-[44px] min-h-[44px] rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${darkMode ? 'border-emerald-400/15 text-neutral-400 hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-400' : 'border-emerald-200 text-neutral-500 hover:border-red-300 hover:bg-red-50 hover:text-red-600'}`}
+                >
+                  <X size={15} strokeWidth={2.6} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

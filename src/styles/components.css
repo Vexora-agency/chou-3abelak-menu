@@ -113,28 +113,13 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* ---------- Intro: compositor-only sprite + particles ----------
-   One <img> holds a 4×9 alpha-keyed sheet; the stage clips a single 720×266
-   cell of a CSS background and a step-held background-position animation
-   walks the 36 frames at 24 fps. No rAF, no per-frame JavaScript: the block
-   cannot starve LCP or the first scroll. */
-/* No paint/layout containment here: the video uses mix-blend-mode: screen and
-   must sample the header's backdrop. A containment/stacking context would
-   isolate it and bring the black film background back. */
+/* ---------- Intro: keyed logo + gold steam/embers ----------
+   Both canvases are owned by `intro.worker.ts`: the logo walks the 4×9 alpha
+   AVIF sheets at 24 fps, the smoke canvas draws the old gold/gray particle
+   system at 60 fps and is screen-blended. No per-frame work on the main
+   thread; no containment here so the smoke can sample the header backdrop. */
 .intro-stage {
   background: transparent;
-}
-
-/* Video primary: hide the fallback sprite/particles. Sprite fallback: hide the
-   film. The stage itself is always the fading layer, so the hand-off to the
-   static logo is identical in both paths. */
-.intro-stage[data-mode='video'] .intro-sheet,
-.intro-stage[data-mode='video'] .intro-puff,
-.intro-stage[data-mode='video'] .intro-spark {
-  display: none;
-}
-.intro-stage[data-mode='sprite'] .intro-film {
-  display: none;
 }
 
 .intro-sheet {
@@ -143,37 +128,6 @@
 
 .intro-sheet.intro-sheet-playing {
   animation: intro-bg-play 1.5s step-end 1 both;
-}
-
-.intro-puff {
-  position: absolute;
-  width: var(--w, 10%);
-  aspect-ratio: 1;
-  border-radius: 9999px;
-  pointer-events: none;
-  opacity: 0;
-  background: radial-gradient(
-    circle,
-    rgba(255, 235, 190, 0.34) 0%,
-    rgba(220, 220, 220, 0.16) 38%,
-    rgba(180, 180, 180, 0.04) 70%,
-    rgba(0, 0, 0, 0) 100%
-  );
-  animation: intro-puff-rise var(--dur, 5s) ease-out var(--delay, 0s) 1 both;
-  will-change: transform, opacity;
-}
-
-.intro-spark {
-  position: absolute;
-  width: var(--s, 2px);
-  aspect-ratio: 1;
-  border-radius: 9999px;
-  pointer-events: none;
-  opacity: 0;
-  background: var(--primary);
-  box-shadow: 0 0 8px 2px rgba(255, 196, 0, 0.55);
-  animation: intro-spark-rise var(--dur, 1.8s) linear var(--delay, 0s) 1 both;
-  will-change: transform, opacity;
 }
 
 /* Offscreen menu cards skip style/layout/paint until they approach the
@@ -239,37 +193,6 @@
 @keyframes ann-enter {
   from { clip-path: inset(0 0 100% 0); }
   to { clip-path: inset(0 0 0 0); }
-}
-
-@keyframes intro-puff-rise {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 12%, 0) scale(0.55);
-  }
-  12% {
-    opacity: 0.34;
-  }
-  55% {
-    opacity: 0.14;
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(var(--dx, 0), -55%, 0) scale(1.6);
-  }
-}
-
-@keyframes intro-spark-rise {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 8%, 0) scale(0.6);
-  }
-  20% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(var(--dx, 0), -30%, 0) scale(0.8);
-  }
 }
 
 @keyframes intro-bg-play {

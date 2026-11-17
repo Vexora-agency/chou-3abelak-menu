@@ -806,7 +806,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                     type="text"
                     value={address}
                     readOnly
-                    autoComplete="street-address"
+                    autoComplete="off"
                     maxLength={200}
                     placeholder={
                       location

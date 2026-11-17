@@ -44,7 +44,9 @@ interface MenuListProps {
  * appears only when the rest is worth a tap (> MIN_REST): a "show more (2)"
  * button is sillier than just showing the two. The same rule applies after
  * every expansion — a batch that would leave a 1..MIN_REST orphan folds that
- * tail into the window instead of paging again.
+ * tail into the window instead of paging again — and "show less" folds a tiny
+ * step above the initial window into the landing, so neither direction ever
+ * asks for a tap that moves one lone card.
  * While any filter is active everything shows — collapsing would hide matches.
  * Wide screens snap both numbers UP to full grid rows (12 initial on a 5-col
  * desktop grid would leave an orphan pair + 3 empty slots; 15 fills 3 rows),
@@ -473,7 +475,14 @@ export const MenuList: React.FC<MenuListProps> = ({
         // straight to the start), mirroring "more".
         const pastStart = collapsible && visible > effInitial;
         // The pill shows the exact number of cards this tap hides.
-        const lessCount = visible - Math.max(effInitial, visible - effBatch);
+        // A step that would leave 1..MIN_REST cards above the initial window
+        // is folded into the landing: one tap hides them instead of asking
+        // for a second tap to hide one lone card.
+        const lessTarget = (from: number) => {
+          const step = Math.max(effInitial, from - effBatch);
+          return step - effInitial <= MIN_REST ? effInitial : step;
+        };
+        const lessCount = visible - lessTarget(visible);
         const more = () => {
           if (leaving) return;
           setSteppingBack((prev) => {
@@ -496,7 +505,7 @@ export const MenuList: React.FC<MenuListProps> = ({
         // are ignored (one collapse at a time).
         const less = () => {
           if (leaving) return;
-          const target = Math.max(effInitial, visible - effBatch);
+          const target = lessTarget(visible);
           const landing = target <= effInitial;
           setLeaving({ id: cat.id, from: target });
           window.clearTimeout(leaveTimer.current);

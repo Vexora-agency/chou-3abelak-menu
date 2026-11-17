@@ -245,3 +245,91 @@
 .anim-split-in {
   animation: splitRise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* ==========================================================================
+   ADD-TO-CART LANDING — one-shot, compositor-only
+   --------------------------------------------------------------------------
+   Every add opens the cart drawer (App.tsx onAdded), so the "flight" is the
+   drawer's own spring entrance. These pieces make it LAND on the row: the
+   newest row gets a gold ring + tint that fade out, and each quantity chip /
+   count badge pops once when its number changes.
+   Contract: one-shot only (no infinite loops), opacity/transform only, and
+   no retained end state (`both`/`forwards` would keep a compositor layer),
+   so nothing animates after the landing settles.
+   ========================================================================== */
+
+/* Quantity chip: remounted with key={qty}, so the pop replays on change. */
+@keyframes qtyPop {
+  0% { transform: scale(1); }
+  38% { transform: scale(1.3); }
+  70% { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+.anim-qty-pop {
+  animation: qtyPop 0.42s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+/* The + button becomes a stepper: the stepper pops in where it landed. */
+@keyframes stepperIn {
+  from { opacity: 0; transform: scale(0.78) translateY(3px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.anim-stepper-in {
+  animation: stepperIn 0.34s cubic-bezier(0.22, 1.2, 0.36, 1) backwards;
+}
+
+/* Cart-bar count badge: remounted with key={totalCount}. */
+@keyframes badgePop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.28); }
+  68% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+.anim-badge-pop {
+  animation: badgePop 0.5s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+/* The row that just landed: gold tint + ring, both fading out. Base opacity
+   is 0 and no fill mode is used, so the pseudo-elements end invisible. */
+.cart-line-land {
+  position: relative;
+}
+.cart-line-land::before,
+.cart-line-land::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+}
+.cart-line-land::before {
+  inset: 0;
+  background: color-mix(in srgb, var(--primary) 11%, transparent);
+  animation: cartLandTint 1.2s ease-out;
+}
+.cart-line-land::after {
+  inset: -1px;
+  border: 1.5px solid color-mix(in srgb, var(--primary) 92%, transparent);
+  animation: cartLandRing 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes cartLandTint {
+  0% { opacity: 1; }
+  55% { opacity: 0.45; }
+  100% { opacity: 0; }
+}
+@keyframes cartLandRing {
+  0% { opacity: 0; transform: scale(1.035); }
+  20% { opacity: 1; transform: scale(1); }
+  65% { opacity: 0.85; }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+/* Order confirmed: the check disc lands with the same spring feel. */
+@keyframes successPop {
+  0% { opacity: 0; transform: scale(0.6); }
+  55% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.anim-success-pop {
+  animation: successPop 0.55s cubic-bezier(0.22, 1.2, 0.36, 1) backwards;
+}

@@ -63,6 +63,15 @@
   stated once (the delivery-fee line never repeats it). Map-pin buttons in
   both address fields are physically right (`right-0.5` + `pr-12`), so Arabic
   RTL shows them on the right as the owner expects. Guarded by `test:cart`.
+- Add-to-cart landing (one-shot, `agent.md` motion contract): every add still
+  opens the cart drawer immediately, so the "jump" is the drawer's spring
+  entrance. `App.tsx` then names the exact row that grew (diff gated on a real
+  add — boot, stored-cart cleanup and in-drawer stepper taps never fake it),
+  `CartDrawer` scrolls that row into view inside its own scroller, and
+  `CartLinesList` plays a gold ring/tint on it. The qty chip, cart-bar badge
+  and +→stepper transitions each pop once via keyed remounts. CSS only
+  (opacity/transform, no library, no infinite loops, no retained fill layers).
+  Guarded by `test:cart`.
 - Phone country gate: `src/utils/phoneCountry.ts` derives the restaurant dial
   code from the admin WhatsApp picker (fallback: restaurant phone). Cart and
   Account Settings render a fixed `+code` prefix, normalize national numbers

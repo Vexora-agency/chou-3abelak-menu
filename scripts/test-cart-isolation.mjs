@@ -179,4 +179,41 @@ fresh.setItem('cart_v1', JSON.stringify({ 'burger||': { id: 'burger', quantity: 
 fresh.setItem('cart_timestamp_v1', String(Date.now() - 6 * DAY)); // 6 days ago
 ok(Object.keys(loadWithExpiry(fresh, Date.now())).length === 1, '6-day-old cart survives (inside 7-day window)');
 
+/* ---------- F. add-to-cart landing (one-shot motion) ---------- */
+const app = read('src/App.tsx');
+const cartBar = read('src/features/cart/components/CartBar.tsx');
+const menuAction = read('src/features/menu/components/menu-list/MenuListItemAction.tsx');
+const cartLines = read('src/features/cart/components/cart/CartLinesList.tsx');
+const animations = read('src/styles/animations.css');
+ok(
+  app.includes('addPendingRef.current = true') &&
+  app.includes('qty - (prev[key] ?? 0)') &&
+  app.includes('setJustAddedLine'),
+  'App names the line that just grew, gated on a real add (not boot/cleanup/in-drawer steps)'
+);
+ok(
+  app.includes('justAddedKey={justAddedLine?.key ?? null}') &&
+  cartDrawer.includes("querySelectorAll<HTMLElement>('[data-line-key]')") &&
+  cartDrawer.includes('behavior: \'smooth\''),
+  'the drawer scrolls the just-added row into view (its own scroller, never Lenis)'
+);
+ok(
+  cartLines.includes('CartLineQty') && cartLines.includes('key={qty}') && cartLines.includes('cart-line-land'),
+  'the landed row gets the one-shot gold ring and its own keyed qty pop'
+);
+ok(
+  cartBar.includes('key={totalCount}') && cartBar.includes('anim-badge-pop'),
+  'the cart-bar count badge pops when the count changes'
+);
+ok(
+  menuAction.includes('anim-stepper-in') && menuAction.includes('anim-qty-pop') && menuAction.includes('stepperAnimate'),
+  '+ becomes a stepper with a one-shot entrance + keyed qty pop (no replay on re-render)'
+);
+const animationsNoComments = animations.replace(/\/\*[\s\S]*?\*\//g, '');
+const landingCss = animationsNoComments.slice(animationsNoComments.indexOf('.anim-qty-pop'));
+ok(
+  landingCss.length > 0 && !landingCss.includes('infinite') && !landingCss.includes('forwards') && !landingCss.includes('prefers-reduced-motion'),
+  'landing animations are one-shot (no loops/retained layers) and run for every visitor (owner policy)'
+);
+
 summary();

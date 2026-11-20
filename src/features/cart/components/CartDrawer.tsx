@@ -327,6 +327,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               darkMode={darkMode}
               onOpenLocSheet={() => setLocSheetOpen(true)}
               onClearLocation={clearLocation}
+              onOpenSettings={onRequireProfile}
               isMember={!!account.user}
               hasDefaultAddress={!account.loading && !!account.profile?.address && customer.address.trim() === account.profile.address.trim()}
               phoneDial={phoneDial}

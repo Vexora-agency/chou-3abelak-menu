@@ -760,6 +760,10 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                       +{dial.code}
                     </span>
                   )}
+                  {/* A changed number is the account's login/contact identity.
+                      When WhatsApp Cloud API OTP ships, saving a DIFFERENT
+                      number must be gated on a code sent to that new number
+                      (the cart only points here — it never edits the phone). */}
                   <input
                     id="account-phone"
                     type="tel"

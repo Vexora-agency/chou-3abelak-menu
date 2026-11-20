@@ -100,6 +100,37 @@ ok(
     && !formFields.includes('bg-amber-50'),
   'member default-address note is one compact line, not a second gold alert box'
 );
+ok(
+  formFields.includes('phoneLinked')
+    && formFields.includes('رقمك محفوظ في حسابك ولا يُعدّل من هنا.')
+    && formFields.includes('عدّله من إعدادات الحساب')
+    && formFields.includes('onOpenSettings'),
+  'member phone is account-owned: a note + settings shortcut, never an inline edit'
+);
+ok(
+  cartDrawer.includes('onOpenSettings={onRequireProfile}'),
+  'the cart phone note opens Account → Settings over the cart'
+);
+const paymentSection = read('src/features/cart/components/cart/PaymentMethodSection.tsx');
+ok(
+  !paymentSection.includes('طلبك مرتبط') && !paymentSection.includes('linked to your account automatically'),
+  'the redundant “order linked to your account” line stays removed'
+);
+ok(
+  route.includes("if (!c.address && typeof memberProfile.address === 'string'")
+    && route.includes('c.address = memberProfile.address.trim()'),
+  'a manually written cart address wins; the saved default only fills a blank one'
+);
+ok(
+  formFields.includes('النص المكتوب هو ما يصل للمطبخ')
+    && formFields.includes('The written text is what the kitchen reads'),
+  'pinned-address note says the written text reaches the kitchen and the pin marks drop-off'
+);
+ok(
+  accountSheet.includes('WhatsApp Cloud API OTP')
+    && accountSheet.includes('saving a DIFFERENT'),
+  'settings phone field carries the future OTP gate (WhatsApp Cloud API) for a new number'
+);
 
 /* ---------- B. two-browser separation (simulation) ---------- */
 function makeStore() {

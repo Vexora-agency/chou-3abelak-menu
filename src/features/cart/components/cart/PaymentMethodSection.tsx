@@ -218,13 +218,6 @@ export const PaymentMethodSection: React.FC<PaymentMethodSectionProps> = ({
           ) : null}
         </div>
       </div>
-
-      {isMember && !accountLoading && !profileIncomplete && (
-        <p className={`flex items-center gap-1.5 text-[11px] font-bold ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
-          <ShieldCheck size={13} aria-hidden="true" />
-          {isAr ? 'طلبك مرتبط بحسابك تلقائيًا.' : 'Your order is linked to your account automatically.'}
-        </p>
-      )}
     </section>
   );
 };

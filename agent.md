@@ -63,6 +63,25 @@
   stated once (the delivery-fee line never repeats it). Map-pin buttons in
   both address fields are physically right (`right-0.5` + `pr-12`), so Arabic
   RTL shows them on the right as the owner expects. Guarded by `test:cart`.
+- Cart phone is account-owned: a member with a saved number gets a short note
+  ("رقمك محفوظ في حسابك ولا يُعدّل من هنا.") plus an underlined "عدّله من
+  إعدادات الحساب" shortcut that opens `Account → Settings` over the cart
+  (`onRequireProfile`); the field itself stays read-only. Do not add an inline
+  phone edit. OTP is NOT built yet: when WhatsApp Cloud API lands, saving a
+  DIFFERENT number in settings must be confirmed by a code sent to the new
+  number (see the comment above `id="account-phone"` in `AccountSheet.tsx`).
+  The old "طلبك مرتبط بحسابك تلقائيًا." line in the COD card is removed on
+  purpose — do not re-add it. Guarded by `test:cart`.
+- Address precedence (cart → kitchen): the manually written cart address is
+  what the kitchen receives. `functions/api/orders.js` overrides member
+  name/phone/email from the profile but only backfills `address` when the
+  submitted address is empty, so a refined per-order address always wins over
+  the saved default. The pin is the map point (`location_lat/lng`) and can be
+  older than edited text; `functions/_shared/telegram.js` prints the exact pin
+  only at `accuracy <= 250 m`, otherwise searches the written address. The
+  pinned-address note states this ("النص المكتوب هو ما يصل للمطبخ — والدبوس
+  يحدد نقطة الوصول."). No new geocoder library: Nominatim reverse-geocode +
+  BigDataCloud zone check already cover the need. Guarded by `test:cart`.
 - Add-to-cart landing (one-shot, `agent.md` motion contract): every add still
   opens the cart drawer immediately, so the "jump" is the drawer's spring
   entrance. `App.tsx` then names the exact row that grew (diff gated on a real

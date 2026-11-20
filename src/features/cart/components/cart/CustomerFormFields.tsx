@@ -27,6 +27,8 @@ interface CustomerFormFieldsProps {
   hasDefaultAddress?: boolean;
   /** Restaurant country from the admin WhatsApp picker (phone gate). */
   phoneDial?: DialCountry;
+  /** Opens Account → Settings over the cart (member phone is account-owned). */
+  onOpenSettings?: () => void;
   onOpenLocSheet: () => void;
   onClearLocation: () => void;
 }
@@ -44,6 +46,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   isMember = false,
   hasDefaultAddress = false,
   phoneDial,
+  onOpenSettings,
   onOpenLocSheet,
   onClearLocation,
 }) => {
@@ -57,6 +60,9 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
     : dial.code
       ? nationalPart(customer.phone, dial.code)
       : customer.phone;
+  // A member's number is account-owned (the server also stamps the account
+  // phone on every order). Only route a "change it" CTA when a number exists.
+  const phoneLinked = isMember && customer.phone.trim().length > 0;
   const phoneErrorText = phoneError || (phoneForeign
     ? (isMember
       ? (isAr
@@ -178,10 +184,25 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           role={phoneErrorText ? 'alert' : undefined}
         >
           {phoneErrorText
-            || (dial.code
-              ? (isAr ? `نقبل أرقام +${dial.code} فقط.` : `Only +${dial.code} numbers are accepted.`)
-              : (isAr ? 'أدخل رقم الهاتف مع رمز الدولة.' : 'Enter the phone number with its country code.'))}
+            || (phoneLinked
+              ? (isAr ? 'رقمك محفوظ في حسابك ولا يُعدّل من هنا.' : 'Your number is saved to your account and can’t be changed here.')
+              : dial.code
+                ? (isAr ? `نقبل أرقام +${dial.code} فقط.` : `Only +${dial.code} numbers are accepted.`)
+                : (isAr ? 'أدخل رقم الهاتف مع رمز الدولة.' : 'Enter the phone number with its country code.'))}
         </p>
+        {phoneLinked && onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className={`mt-1 inline-flex items-center gap-1 min-h-[32px] rounded-md text-[11px] font-extrabold underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+              darkMode
+                ? 'text-[var(--primary)] decoration-[var(--primary)]/40 hover:decoration-[var(--primary)]'
+                : 'text-[#7a5d00] decoration-[#7a5d00]/40 hover:decoration-[#7a5d00]'
+            }`}
+          >
+            {isAr ? 'عدّله من إعدادات الحساب' : 'Change it in Account settings'}
+          </button>
+        )}
       </div>
 
       <div>
@@ -239,7 +260,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         ) : (
           <p className={`mt-1 text-[11px] ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>
             {location
-              ? (isAr ? 'يُكتب مع كل طلب ولا يُحفظ على هذا الجهاز.' : 'Entered fresh each order — never saved on this device.')
+              ? (isAr ? 'النص المكتوب هو ما يصل للمطبخ — والدبوس يحدد نقطة الوصول.' : 'The written text is what the kitchen reads — the pin marks the exact drop-off.')
               : (isAr ? 'اضغط على أيقونة الموقع لتحديد عنوانك بدقة وسهولة — أو اكتبه يدويًا.' : 'Tap the location icon to pin your address quickly and accurately — or type it manually.')}
           </p>
         )}

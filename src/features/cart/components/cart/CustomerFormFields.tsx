@@ -4,12 +4,13 @@ import { cleanPhoneInput, phoneDigitsOnly } from '@/src/utils/digits';
 import {
   checkPhone,
   composeNational,
+  isDifferentAccountPhone,
   isForeignNumber,
   isInternationalInput,
   nationalPart,
   type DialCountry,
 } from '@/src/utils/phoneCountry';
-import { AlertTriangle, BadgeCheck, ChevronDown, Mail, Map, MapPin, Phone, X } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, ChevronDown, Mail, Map, MapPin, Phone, ShieldCheck, X } from 'lucide-react';
 
 interface CustomerFormFieldsProps {
   customer: CustomerDetails;
@@ -27,6 +28,8 @@ interface CustomerFormFieldsProps {
   hasDefaultAddress?: boolean;
   /** Restaurant country from the admin WhatsApp picker (phone gate). */
   phoneDial?: DialCountry;
+  /** Member's saved account number (the OTP baseline in the cart). */
+  accountPhone?: string | null;
   onOpenLocSheet: () => void;
   onClearLocation: () => void;
 }
@@ -44,6 +47,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   isMember = false,
   hasDefaultAddress = false,
   phoneDial,
+  accountPhone,
   onOpenLocSheet,
   onClearLocation,
 }) => {
@@ -57,11 +61,12 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
     : dial.code
       ? nationalPart(customer.phone, dial.code)
       : customer.phone;
-  // A member's number is account-owned (the server also stamps the account
-  // phone on every order). The field stays read-only and carries NO note or
-  // shortcut underneath: a different number will be typed only through the
-  // future WhatsApp OTP confirmation, so there is nothing to explain here.
+  // A member's number is editable, but the account's saved number stays the
+  // baseline: a different valid number shows the OTP requirement and checkout
+  // blocks it until WhatsApp OTP exists. The name stays read-only.
   const phoneLinked = isMember && customer.phone.trim().length > 0;
+  const phoneChanged = isMember
+    && isDifferentAccountPhone(customer.phone, accountPhone, dial.code);
   const phoneErrorText = phoneError || (phoneForeign
     ? (isMember
       ? (isAr
@@ -71,8 +76,17 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         ? `هذا الرقم غير مدعوم. امسح الحقل وأدخل رقمًا من +${dial.code}.`
         : `This number isn’t supported. Clear the field and enter a +${dial.code} number.`))
     : null);
-  // A member with a saved number gets no note at all (and no settings link).
-  const phoneNoteVisible = !!phoneErrorText || !phoneLinked;
+  const phoneNoteText = phoneErrorText
+    || (phoneChanged
+      ? (isAr
+        ? 'رقم جديد — لازم تأكيد OTP قبل إرسال الطلب.'
+        : 'New number — OTP verification is required before ordering.')
+      : phoneLinked
+        ? null
+        : dial.code
+          ? (isAr ? `نقبل أرقام +${dial.code} فقط.` : `Only +${dial.code} numbers are accepted.`)
+          : (isAr ? 'أدخل رقم الهاتف مع رمز الدولة.' : 'Enter the phone number with its country code.'));
+  const phoneNoteVisible = !!phoneNoteText;
 
   const onPhoneChange = (raw: string) => {
     if (!dial.code) {
@@ -158,14 +172,10 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             placeholder={dial.code ? '70 123 456' : '+961 70 123 456'}
             maxLength={20}
             enterKeyHint="next"
-            readOnly={isMember}
-            aria-readonly={isMember || undefined}
             aria-invalid={phoneErrorText ? true : undefined}
             aria-describedby={phoneNoteVisible ? 'cart-phone-note' : undefined}
             className={`min-w-0 flex-1 h-11 px-3.5 border text-base tabular-nums text-start focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
               dial.code && !phoneForeign ? 'rounded-e-xl rounded-s-none' : 'rounded-xl'
-            } ${
-              isMember ? 'opacity-80 cursor-not-allowed' : ''
             } ${
               phoneErrorText ? 'border-red-500/60' : darkMode ? 'border-neutral-700' : 'border-neutral-300'
             } ${
@@ -181,14 +191,25 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             className={`mt-1 text-[10.5px] font-semibold leading-relaxed ${
               phoneErrorText
                 ? 'text-red-500'
-                : darkMode ? 'text-neutral-500' : 'text-neutral-400'
+                : phoneChanged
+                  ? darkMode ? 'text-amber-300' : 'text-amber-700'
+                  : darkMode ? 'text-neutral-500' : 'text-neutral-400'
             }`}
             role={phoneErrorText ? 'alert' : undefined}
           >
-            {phoneErrorText
-              || (dial.code
-                ? (isAr ? `نقبل أرقام +${dial.code} فقط.` : `Only +${dial.code} numbers are accepted.`)
-                : (isAr ? 'أدخل رقم الهاتف مع رمز الدولة.' : 'Enter the phone number with its country code.'))}
+            {phoneChanged && !phoneErrorText && (
+              <ShieldCheck size={12} className="me-1 -mt-0.5 inline-block align-middle" aria-hidden="true" />
+            )}
+            {phoneNoteText}
+            {phoneChanged && accountPhone && (
+              <button
+                type="button"
+                onClick={() => setCustomer({ ...customer, phone: accountPhone })}
+                className="ms-1.5 underline underline-offset-2 font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded-sm"
+              >
+                {isAr ? 'استخدم رقم حسابي' : 'Use my account number'}
+              </button>
+            )}
           </p>
         )}
       </div>

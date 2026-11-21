@@ -4,6 +4,7 @@
  * items phase uses for legacy migration. Single consumer: validateSettings.
  */
 import { validateBilingual, stripControls, ID_REGEX } from './validate-core.js';
+import { normalizeFeatureColor } from './feature-colors.js';
 
 /**
  * Parses settings.featureGroups + settings.featureDefs.
@@ -55,6 +56,10 @@ export function buildFeatureLibrary(s, errors) {
             grp.prompt = cleanPrompt(g.prompt);
           }
         }
+        // Optional admin-only section color. Unknown values are ignored
+        // (forward-compatible: a future color never blocks a save).
+        const color = normalizeFeatureColor(g.color);
+        if (color) grp.color = color;
         featureGroups.push(grp);
         groupById.set(gid, grp);
       }

@@ -204,14 +204,14 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
           aria-pressed={selectedId !== null}
           className={`${chipBase} ${
             selectedId !== null
-              ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
+              ? 'bg-red-600/10 text-red-600 border-red-600/25 dark:bg-red-500/10 dark:text-red-400 dark:border-red-400/30'
               : darkMode
-                ? 'border-neutral-700 text-neutral-200 hover:border-[var(--primary)]'
-                : 'border-neutral-300 text-neutral-800 hover:border-[#0A0A0A]'
+                ? 'border-neutral-700 text-neutral-200 hover:border-red-400'
+                : 'border-neutral-300 text-neutral-800 hover:border-red-500'
           }`}
         >
           {selectedId !== null && <Check size={13} strokeWidth={3} />}
-          <Flame size={13} className={selectedId !== null ? '' : 'text-red-500'} aria-hidden="true" />
+          <Flame size={13} className="text-red-500" aria-hidden="true" />
           <span dir="auto">{spicyLabel(lang)}</span>
         </button>
       </div>

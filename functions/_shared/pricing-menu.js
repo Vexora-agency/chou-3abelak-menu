@@ -6,6 +6,7 @@
  */
 import { normalizeDeliveryZones } from './delivery-zones.js';
 import { normalizeDeliveryFeeTiersJs } from './delivery-fees.js';
+import { normalizeFeatureColor } from './feature-colors.js';
 
 export const UNITS = ['pc', 'portion', 'dozen', 'box', 'bottle', 'glass', 'kg'];
 
@@ -86,7 +87,7 @@ export function normalizeMenu(menu) {
   const settingsFirst = menu.settings && typeof menu.settings === 'object' ? menu.settings : {};
   const groups = [];
   const groupById = new Map();
-  const ensureGroup = (id, name, selection, prompt, hasPrompt) => {
+  const ensureGroup = (id, name, selection, prompt, hasPrompt, color) => {
     if (typeof id !== 'string' || !id || groupById.has(id)) return groupById.get(id) || null;
     const nm = name && typeof name === 'object'
       ? { en: typeof name.en === 'string' ? name.en : '', ar: typeof name.ar === 'string' ? name.ar : '' }
@@ -103,6 +104,9 @@ export function normalizeMenu(menu) {
         ar: typeof prompt.ar === 'string' ? prompt.ar : '',
       };
     }
+    // Optional admin-only section color (customer ignores it).
+    const colorId = normalizeFeatureColor(color);
+    if (colorId) g.color = colorId;
     groups.push(g);
     groupById.set(id, g);
     return g;
@@ -110,7 +114,7 @@ export function normalizeMenu(menu) {
   for (const g of Array.isArray(settingsFirst.featureGroups) ? settingsFirst.featureGroups : []) {
     if (g && typeof g === 'object') {
       const hasPrompt = Object.prototype.hasOwnProperty.call(g, 'prompt');
-      ensureGroup(g.id, g.name, g.selection, g.prompt, hasPrompt);
+      ensureGroup(g.id, g.name, g.selection, g.prompt, hasPrompt, g.color);
     }
   }
   const defaultGroupFor = (kind) => {

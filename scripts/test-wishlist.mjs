@@ -205,8 +205,9 @@ check(
     && !listCard.includes('أضف للسلة')
 );
 check(
-  'the list card reserves a description slot and uses the brand price pill',
-  has(listCard, 'min-h-[2.6em]', 'bg-[var(--primary)] px-2 py-0.5', 'rounded-full')
+  'the list card reserves a description slot and gives the price a gold accent',
+  has(listCard, 'min-h-[2.6em]', 'flex-col items-start gap-1', 'h-[3px] w-8 rounded-full bg-[var(--primary)]')
+    && !listCard.includes('bg-[var(--primary)] px-2 py-0.5')
 );
 check(
   'the list badge hangs on the card edge like the round style',

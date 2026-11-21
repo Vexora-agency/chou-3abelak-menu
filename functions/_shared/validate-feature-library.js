@@ -102,6 +102,10 @@ export function buildFeatureLibrary(s, errors) {
         }
         // A legacy kind on the feature is ignored (kind now lives per item row)
         const def = { id: fid, groupId: fgid, name: validateBilingual(errors, f.name, `feature[${fid}].name`, 80) };
+        // Optional admin-only option color. Unknown values are ignored
+        // (forward-compatible: a future color never blocks a save).
+        const fcolor = normalizeFeatureColor(f.color);
+        if (fcolor) def.color = fcolor;
         featureDefs.push(def);
         featureById.set(fid, def);
       }

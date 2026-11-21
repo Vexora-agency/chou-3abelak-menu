@@ -126,7 +126,7 @@ export function normalizeMenu(menu) {
   };
   const defs = [];
   const defById = new Map();
-  const ensureDef = (id, name, groupId, fallbackKind) => {
+  const ensureDef = (id, name, groupId, fallbackKind, color) => {
     if (typeof id !== 'string' || !id || defById.has(id)) return;
     const nm = name && typeof name === 'object'
       ? { en: typeof name.en === 'string' ? name.en : '', ar: typeof name.ar === 'string' ? name.ar : '' }
@@ -135,6 +135,9 @@ export function normalizeMenu(menu) {
       ? groupById.get(groupId)
       : defaultGroupFor(fallbackKind === 'addon' ? 'addon' : 'size');
     const def = { id, groupId: g ? g.id : 'sizes', name: nm };
+    // Optional admin-only feature color (customer ignores it).
+    const colorId = normalizeFeatureColor(color);
+    if (colorId) def.color = colorId;
     defs.push(def);
     defById.set(id, def);
   };
@@ -144,15 +147,15 @@ export function normalizeMenu(menu) {
     const legacyKind = (d.kind === 'size' || d.kind === 'addon') ? d.kind : null;
     if (!gid && !legacyKind) {
       // Unplaceable legacy row without any hint — keep it under sizes
-      ensureDef(d.id, d.name, null, 'size');
+      ensureDef(d.id, d.name, null, 'size', d.color);
       continue;
     }
     if (!gid && legacyKind) {
       // Old kind-carrying feature without a section → default bucket of its kind
-      ensureDef(d.id, d.name, null, legacyKind);
+      ensureDef(d.id, d.name, null, legacyKind, d.color);
       continue;
     }
-    ensureDef(d.id, d.name, gid);
+    ensureDef(d.id, d.name, gid, undefined, d.color);
   }
 
   if (Array.isArray(menu.items)) {

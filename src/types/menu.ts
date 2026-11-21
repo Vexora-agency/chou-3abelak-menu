@@ -13,8 +13,8 @@ export interface ItemPricing {
   showUnit: boolean;
 }
 
-/** Optional admin color for a feature-library section. Purely cosmetic:
- *  the admin Libraries tab uses it to tell sections apart. The customer
+/** Optional admin color for the feature library. Purely cosmetic: the admin
+ *  Libraries tab uses it to tell sections/options apart. The customer
  *  storefront keeps one unified brand color (heat stays red). */
 export type FeatureColorId =
   | 'gold'
@@ -24,19 +24,7 @@ export type FeatureColorId =
   | 'rose'
   | 'violet'
   | 'sky'
-  | 'emerald'
-  | 'vegetables'
-  | 'cheese'
-  | 'meat'
-  | 'chicken'
-  | 'seafood'
-  | 'sauce'
-  | 'bread'
-  | 'drinks'
-  | 'dessert'
-  | 'vegan'
-  | 'mushroom'
-  | 'olive';
+  | 'emerald';
 
 /** A section in the Features library (e.g. Sizes, Add-ons).
  *  Sections are pure folders — whether a feature is used as a size or an
@@ -64,6 +52,9 @@ export interface FeatureDef {
   /** Section this feature lives in. */
   groupId: string;
   name: { en: string; ar: string };
+  /** Optional admin-only color for this individual option (see
+   *  FeatureColorId). The customer storefront ignores it. */
+  color?: FeatureColorId;
 }
 
 /** A size enabled on one item (name from the library, price here). First = default. */

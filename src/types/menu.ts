@@ -13,6 +13,19 @@ export interface ItemPricing {
   showUnit: boolean;
 }
 
+/** Optional admin color for a feature-library section. Purely cosmetic:
+ *  the admin Libraries tab uses it to tell sections apart. The customer
+ *  storefront keeps one unified brand color (heat stays red). */
+export type FeatureColorId =
+  | 'gold'
+  | 'amber'
+  | 'orange'
+  | 'red'
+  | 'rose'
+  | 'violet'
+  | 'sky'
+  | 'emerald';
+
 /** A section in the Features library (e.g. Sizes, Add-ons).
  *  Sections are pure folders — whether a feature is used as a size or an
  *  add-on is decided per item in the item editor.
@@ -26,6 +39,8 @@ export interface FeatureGroup {
   name: { en: string; ar: string };
   selection?: 'single' | 'multi';
   prompt?: { en: string; ar: string };
+  /** Optional admin-only section color (see FeatureColorId). */
+  color?: FeatureColorId;
 }
 
 /**

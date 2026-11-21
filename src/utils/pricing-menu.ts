@@ -11,6 +11,7 @@ import {
 } from '@/src/utils/menuHelpers';
 import { normalizeDeliveryZones } from '@/src/utils/deliveryZones';
 import { normalizeDeliveryFeeTiers } from '@/src/utils/deliveryFees';
+import { isFeatureColorId } from '@/src/utils/featureColors';
 import {
   autoplayIntervalOrDefault,
   bilingualBlock,
@@ -116,7 +117,7 @@ export function normalizeMenu<T>(menu: T): T {
     : {}) as Record<string, unknown>;
   const groups: Record<string, unknown>[] = [];
   const groupById = new Map<string, Record<string, unknown>>();
-  const ensureGroup = (id: unknown, name: unknown, selection?: unknown, prompt?: unknown, hasPrompt?: boolean) => {
+  const ensureGroup = (id: unknown, name: unknown, selection?: unknown, prompt?: unknown, hasPrompt?: boolean, color?: unknown) => {
     if (typeof id !== 'string' || !id || groupById.has(id)) return (groupById.get(id as string) || null);
     const nm = name && typeof name === 'object'
       ? {
@@ -137,6 +138,8 @@ export function normalizeMenu<T>(menu: T): T {
         ar: typeof pp.ar === 'string' ? (pp.ar as string) : '',
       };
     }
+    // Optional admin-only section color (customer ignores it).
+    if (isFeatureColorId(color)) g.color = color;
     groups.push(g);
     groupById.set(id, g);
     return g;
@@ -145,7 +148,7 @@ export function normalizeMenu<T>(menu: T): T {
     if (g && typeof g === 'object') {
       const gg = g as Record<string, unknown>;
       const hasPrompt = Object.prototype.hasOwnProperty.call(gg, 'prompt');
-      ensureGroup(gg.id, gg.name, gg.selection, gg.prompt, hasPrompt);
+      ensureGroup(gg.id, gg.name, gg.selection, gg.prompt, hasPrompt, gg.color);
     }
   }
   // Default buckets (by id convention) for migrating kind-carrying old data

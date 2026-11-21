@@ -2,6 +2,7 @@ import React from 'react';
 import { Check, Minus, Plus } from 'lucide-react';
 import type { ItemAddon, MenuData, MenuItem } from '@/src/types/menu';
 import { featureName, formatPrice } from '@/src/utils/pricing';
+import { UNIFIED_FEATURE_CHIP_ACTIVE, UNIFIED_FEATURE_CHIP_IDLE } from '@/src/utils/featureColors';
 import { SPICY_GROUP_ID, isSpicyFeatureId } from '@/src/utils/menuHelpers';
 import { addonBlocks } from '@/src/utils/splitPicks';
 import { SpicySlider } from './SpicySlider';
@@ -218,11 +219,7 @@ export const AddonPicker: React.FC<AddonPickerProps> = ({
                       onClick={() => (radio ? onSelectRadio(b.groupId ?? '', a.featureId) : onToggleMulti(a.featureId))}
                       {...(radio ? { role: 'radio' as const, 'aria-checked': active } : { 'aria-pressed': active })}
                       className={`${chipBase} ${
-                        active
-                          ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
-                          : darkMode
-                          ? 'border-neutral-700 text-neutral-200 hover:border-[var(--primary)]'
-                          : 'border-neutral-300 text-neutral-800 hover:border-[#0A0A0A]'
+                        active ? UNIFIED_FEATURE_CHIP_ACTIVE : UNIFIED_FEATURE_CHIP_IDLE
                       }`}
                     >
                       {active && <Check size={13} strokeWidth={3} />}

@@ -13,13 +13,15 @@ import {
   type ResponsiveImageSet,
 } from '@/src/lib/image-upload';
 import type { CropRect } from '@/src/lib/crop-math';
-import { CROP_MIN_ZOOM, zoomedCropRect } from '@/src/lib/crop-math';
+import { CROP_ASPECT, CROP_MIN_ZOOM, zoomedCropRect } from '@/src/lib/crop-math';
 import { ImageCropEditor } from './ImageCropEditor';
 
 interface ItemImageFieldProps {
   item: MenuItem;
   lang: 'en' | 'ar';
   onChange: (item: MenuItem) => void;
+  /** Round category: square crop + circular preview instead of 16:10. */
+  roundCrop?: boolean;
 }
 
 /** Accepts absolute http(s) URLs or root-relative paths, the only forms the
@@ -108,8 +110,9 @@ function codeOf(error: unknown): string {
 /** Item photo: upload from the phone (primary) or paste a URL (advanced).
  *  Uploads go through the 16:10 crop editor first, so the admin frames
  *  exactly what customers see in the Photos layout / card backgrounds. */
-export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onChange }) => {
+export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onChange, roundCrop = false }) => {
   const isAr = lang === 'ar';
+  const cropAspect = roundCrop ? 1 : CROP_ASPECT;
   const value = item.imageUrl ?? '';
   const trimmed = value.trim();
   const valid = isValidImageUrl(trimmed);
@@ -278,7 +281,7 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
       pickedRef.current = file;
       pendingRef.current = file;
       setCanRecrop(true);
-      const rect = zoomedCropRect(decoded.width, decoded.height, decoded.width / 2, decoded.height / 2, CROP_MIN_ZOOM);
+      const rect = zoomedCropRect(decoded.width, decoded.height, decoded.width / 2, decoded.height / 2, CROP_MIN_ZOOM, cropAspect);
       latestRectRef.current = rect;
       setCropSrc(decoded);
       setStatus('idle');
@@ -432,6 +435,11 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
         <span className="flex items-center gap-1.5 text-xs text-neutral-400">
           <ImageIcon size={13} className="text-[var(--primary)]" aria-hidden="true" />
           {isAr ? 'صورة الصنف (اختياري)' : 'Item photo (optional)'}
+          {roundCrop && (
+            <span className="rounded-full bg-[var(--primary)]/15 px-1.5 py-0.5 text-[9px] font-extrabold text-[var(--primary)]">
+              {isAr ? 'قص دائري' : 'Round crop'}
+            </span>
+          )}
         </span>
         {trimmed !== '' && valid && !busy && failedUrl !== trimmed && (
           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400">
@@ -465,9 +473,10 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
           onFlip={(axis) => void handleFlip(axis)}
           onClose={closeEditor}
           saveState={saveState}
+          round={roundCrop}
         />
       ) : (
-        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg border border-neutral-800 bg-black">
+        <div className={`relative ${roundCrop ? 'aspect-square' : 'aspect-[16/10]'} w-full overflow-hidden rounded-lg border border-neutral-800 bg-black`}>
           {previewSrc ? (
             <img
               src={previewSrc}
@@ -475,7 +484,7 @@ export const ItemImageField: React.FC<ItemImageFieldProps> = ({ item, lang, onCh
               onError={() => {
                 if (!showLocal) setFailedUrl(trimmed);
               }}
-              className="absolute inset-0 h-full w-full object-cover"
+              className={`absolute inset-0 h-full w-full object-cover ${roundCrop ? 'rounded-full ring-1 ring-white/15' : ''}`}
             />
           ) : (
             <button

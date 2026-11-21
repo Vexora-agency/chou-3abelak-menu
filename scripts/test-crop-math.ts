@@ -1,4 +1,4 @@
-// Unit tests for src/lib/crop-math.ts (admin 16:10 crop editor math).
+// Unit tests for src/lib/crop-math.ts (admin photo crop editor math).
 // Run: npx tsx scripts/test-crop-math.ts
 import {
   CROP_ASPECT,
@@ -43,6 +43,25 @@ const approx = (a: number, b: number, eps = 1e-6): boolean => Math.abs(a - b) < 
   ok(r.w === 0 && r.h === 0, 'degenerate source yields empty rect');
 }
 ok(CROP_ASPECT === 1.6, 'aspect is 16:10');
+
+// --- round layout: square crop --------------------------------------------
+{
+  const r = baseCropRect(2000, 1000, 1);
+  ok(r.w === 1000 && r.h === 1000 && approx(r.x, 500) && r.y === 0, 'square crop from a wide source, centered');
+}
+{
+  const r = baseCropRect(1000, 2000, 1);
+  ok(r.w === 1000 && r.h === 1000 && r.x === 0 && approx(r.y, 500), 'square crop from a portrait source, centered');
+}
+{
+  const r = zoomedCropRect(1000, 1000, 500, 500, 2, 1);
+  ok(approx(r.w, 500) && approx(r.h, 500) && approx(r.x, 250) && approx(r.y, 250), 'square crop stays square when zoomed');
+}
+{
+  const c = panCropCenter(1000, 1000, 500, 500, 1, 100, 0, 500, 1);
+  const r = zoomedCropRect(1000, 1000, c.cx, c.cy, 1, 1);
+  ok(r.w === 1000 && r.h === 1000 && r.x === 0 && r.y === 0, 'square pan never leaves the source');
+}
 
 // --- zoom ------------------------------------------------------------------
 ok(clampZoom(0.5) === CROP_MIN_ZOOM, 'zoom below 1 clamps to 1');

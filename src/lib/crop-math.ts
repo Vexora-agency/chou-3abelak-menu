@@ -1,14 +1,15 @@
 /**
- * Pure crop math for the admin 16:10 photo crop editor. No DOM anywhere in
+ * Pure crop math for the admin photo crop editor. No DOM anywhere in
  * this file, so it runs in node (scripts/test-crop-math.ts) as well as the
  * browser. The editor (ImageCropEditor.tsx) and the exporter
  * (exportCrop in image-upload.ts) both build on these three functions.
  *
- * Model: the source photo is srcW × srcH px. The viewport always shows a
- * 16:10 rect of it. zoom = 1 shows the largest fitting rect (exactly what
- * `object-fit: cover` would show); zoom > 1 narrows the rect around the
- * center (cx, cy). Pan moves the center; it is clamped so the rect never
- * leaves the photo (no letterboxing, no matte in the export).
+ * Model: the source photo is srcW × srcH px. The viewport shows a rect with
+ * the requested aspect (16:10 by default, 1:1 for round cards). zoom = 1 shows
+ * the largest fitting rect (exactly what `object-fit: cover` would show);
+ * zoom > 1 narrows the rect around the center (cx, cy). Pan moves the center;
+ * it is clamped so the rect never leaves the photo (no letterboxing, no matte
+ * in the export).
  */
 
 export const CROP_ASPECT = 16 / 10;
@@ -32,17 +33,18 @@ export function clampZoom(zoom: number): number {
   return Math.min(CROP_MAX_ZOOM, Math.max(CROP_MIN_ZOOM, zoom));
 }
 
-/** Largest 16:10 rect that fits inside the source (the zoom-1 view). */
-export function baseCropRect(srcW: number, srcH: number): CropRect {
+/** Largest 16:10 (or custom-aspect) rect that fits inside the source. */
+export function baseCropRect(srcW: number, srcH: number, aspect: number = CROP_ASPECT): CropRect {
   if (!(srcW > 0) || !(srcH > 0)) return { x: 0, y: 0, w: 0, h: 0 };
+  const a = Number.isFinite(aspect) && aspect > 0 ? aspect : CROP_ASPECT;
   let w: number;
   let h: number;
-  if (srcW / srcH >= CROP_ASPECT) {
+  if (srcW / srcH >= a) {
     h = srcH;
-    w = srcH * CROP_ASPECT;
+    w = srcH * a;
   } else {
     w = srcW;
-    h = srcW / CROP_ASPECT;
+    h = srcW / a;
   }
   return { x: (srcW - w) / 2, y: (srcH - h) / 2, w, h };
 }
@@ -73,8 +75,9 @@ export function zoomedCropRect(
   cx: number,
   cy: number,
   zoom: number,
+  aspect: number = CROP_ASPECT,
 ): CropRect {
-  const base = baseCropRect(srcW, srcH);
+  const base = baseCropRect(srcW, srcH, aspect);
   const z = clampZoom(zoom);
   const w = base.w / z;
   const h = base.h / z;
@@ -96,9 +99,10 @@ export function panCropCenter(
   dxPx: number,
   dyPx: number,
   viewportW: number,
+  aspect: number = CROP_ASPECT,
 ): CropCenter {
   if (!(viewportW > 0)) return clampCropCenter(srcW, srcH, 0, 0, cx, cy);
-  const rect = zoomedCropRect(srcW, srcH, cx, cy, zoom);
+  const rect = zoomedCropRect(srcW, srcH, cx, cy, zoom, aspect);
   const scale = rect.w / viewportW;
   return clampCropCenter(srcW, srcH, rect.w, rect.h, cx - dxPx * scale, cy - dyPx * scale);
 }

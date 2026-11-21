@@ -229,6 +229,14 @@ check(
   'the admin shows the photo field for list items',
   has(itemEdit, "catLayout === 'list'", 'photoRelevant')
 );
+const cropEditor = read('src/features/admin/components/item-editor/ImageCropEditor.tsx');
+const imageField = read('src/features/admin/components/item-editor/ItemImageField.tsx');
+check(
+  'round categories get a square crop with a circular guide and preview',
+  has(cropEditor, 'round?: boolean', 'aspect-square', 'rounded-full border-2 border-white/85')
+    && has(imageField, 'roundCrop?: boolean', 'aspect-square', 'rounded-full ring-1 ring-white/15')
+    && has(itemEdit, "roundCrop={catLayout === 'round'}")
+);
 const categoriesTab = read('src/features/admin/components/CategoriesTab.tsx');
 check(
   'the admin style hints are short and cover every layout',

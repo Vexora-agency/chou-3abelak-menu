@@ -16,8 +16,8 @@
 import { getSessionSecret, safeCompareStrings } from './session.js';
 import { normalizePhoneDigits } from './validate-auth.js';
 
-/** Code lives in the WhatsApp message for 10 minutes. */
-export const VERIFICATION_CODE_TTL_MS = 10 * 60 * 1000;
+/** Code lives in the WhatsApp message for 5 minutes. */
+export const VERIFICATION_CODE_TTL_MS = 5 * 60 * 1000;
 /** An approved number stays verified for a year. */
 export const VERIFICATION_VALIDITY_MS = 365 * 24 * 60 * 60 * 1000;
 /** One new code per member+number per minute. */

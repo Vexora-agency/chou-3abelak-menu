@@ -263,14 +263,14 @@ export const PHONE_VERIFY_STR = {
   en: {
     title: 'Verify your phone number',
     subtitle:
-      'One WhatsApp message confirms this number. No password and no code to type here — we approve the message from your number.',
+      'One WhatsApp message confirms this number. No password and no code to type here — send the message and it is confirmed automatically.',
     numberLabel: 'Number to verify',
     codeLabel: 'Your verification code',
     copy: 'Copy code',
     copied: 'Copied',
     sendWhatsApp: 'Send on WhatsApp',
     sendHint: 'The message is ready — just press send in WhatsApp.',
-    waiting: 'Waiting for the restaurant to confirm…',
+    waiting: 'Confirming your number automatically…',
     expiresIn: 'Code expires in',
     expired: 'This code expired.',
     getCode: 'Get my code',
@@ -296,19 +296,19 @@ export const PHONE_VERIFY_STR = {
     verifiedUntil: (date: string) => `Verified until ${date}`,
     stepSend: '1. We create a code',
     stepWhatsApp: '2. You send it on WhatsApp',
-    stepApprove: '3. We confirm your number',
+    stepApprove: '3. Confirmed automatically',
   },
   ar: {
     title: 'تأكيد رقم الهاتف',
     subtitle:
-      'رسالة واتساب واحدة تؤكد هذا الرقم. لا كلمة مرور ولا رمز يُكتب هنا — نعتمد الرسالة الواردة من رقمك.',
+      'رسالة واتساب واحدة تؤكد هذا الرقم. لا كلمة مرور ولا رمز يُكتب هنا — أرسل الرسالة ويتم التأكيد تلقائيًا.',
     numberLabel: 'الرقم المطلوب تأكيده',
     codeLabel: 'رمز التحقق الخاص بك',
     copy: 'نسخ الرمز',
     copied: 'تم النسخ',
     sendWhatsApp: 'أرسل عبر واتساب',
     sendHint: 'الرسالة جاهزة — اضغط إرسال داخل واتساب فقط.',
-    waiting: 'بانتظار تأكيد المطعم…',
+    waiting: 'جارٍ تأكيد رقمك تلقائيًا…',
     expiresIn: 'ينتهي بعد',
     expired: 'انتهت صلاحية هذا الرمز.',
     getCode: 'أرسل لي رمزًا',
@@ -333,7 +333,7 @@ export const PHONE_VERIFY_STR = {
     verifiedUntil: (date: string) => `مؤكد حتى ${date}`,
     stepSend: '١. ننشئ رمزًا',
     stepWhatsApp: '٢. ترسله عبر واتساب',
-    stepApprove: '٣. نؤكد رقمك',
+    stepApprove: '٣. يتم التأكيد تلقائيًا',
   },
 } as const;
 

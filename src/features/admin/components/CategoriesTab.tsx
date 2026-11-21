@@ -178,6 +178,16 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
               </span>
             </p>
           )}
+          {activeLayout === 'list' && (
+            <p className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-neutral-500">
+              <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
+              <span>
+                {isAr
+                  ? 'صورة الطبق بجانب الاسم والسعر في بطاقة أفقية مدمجة، وبدون صورة يظهر شعار القسم.'
+                  : 'The dish photo sits beside the name and price in a compact horizontal card; without one, the category mark is used.'}
+              </span>
+            </p>
+          )}
           {activeLayout === 'round' && (
             <p className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-neutral-500">
               <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />

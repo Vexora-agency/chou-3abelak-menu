@@ -11,6 +11,7 @@ import {
   type DialCountry,
 } from '@/src/utils/phoneCountry';
 import { AlertTriangle, BadgeCheck, ChevronDown, Mail, Map, MapPin, Phone, ShieldCheck, X } from 'lucide-react';
+import { PHONE_VERIFY_STR } from '@/src/features/auth';
 
 interface CustomerFormFieldsProps {
   customer: CustomerDetails;
@@ -28,8 +29,14 @@ interface CustomerFormFieldsProps {
   hasDefaultAddress?: boolean;
   /** Restaurant country from the admin WhatsApp picker (phone gate). */
   phoneDial?: DialCountry;
-  /** Member's saved account number (the OTP baseline in the cart). */
+  /** Member's saved account number (reset baseline in the cart). */
   accountPhone?: string | null;
+  /** True only when the number currently typed is verified. */
+  phoneVerified?: boolean;
+  /** Reverse-WhatsApp state for the typed number (members only). */
+  phoneVerificationPhase?: 'idle' | 'checking' | 'unverified' | 'pending' | 'verified' | 'error';
+  /** Opens the code sheet for the typed number. */
+  onVerifyPhone?: () => void;
   onOpenLocSheet: () => void;
   onClearLocation: () => void;
 }
@@ -48,10 +55,14 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   hasDefaultAddress = false,
   phoneDial,
   accountPhone,
+  phoneVerified = false,
+  phoneVerificationPhase,
+  onVerifyPhone,
   onOpenLocSheet,
   onClearLocation,
 }) => {
   const isAr = lang === 'ar';
+  const pv = PHONE_VERIFY_STR[lang];
   const [emailOpen, setEmailOpen] = useState(() => !!(customer.email && customer.email.trim()));
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const dial: DialCountry = phoneDial ?? { iso: '', code: '' };
@@ -61,12 +72,18 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
     : dial.code
       ? nationalPart(customer.phone, dial.code)
       : customer.phone;
-  // A member's number is editable, but the account's saved number stays the
-  // baseline: a different valid number shows the OTP requirement and checkout
-  // blocks it until WhatsApp OTP exists. The name stays read-only.
+  // A member's number is editable. EVERY number — the saved one, a changed
+  // one, or the first one — must be confirmed through reverse WhatsApp
+  // verification. The name stays read-only.
   const phoneLinked = isMember && customer.phone.trim().length > 0;
   const phoneChanged = isMember
     && isDifferentAccountPhone(customer.phone, accountPhone, dial.code);
+  const phoneCheck = checkPhone(customer.phone, dial.code);
+  const phoneValid = phoneCheck.ok;
+  const showVerified = !!(isMember && phoneValid && !phoneForeign && phoneVerified);
+  const verifyPending = phoneVerificationPhase === 'pending';
+  const showVerify = !!(isMember && phoneValid && !phoneForeign && !showVerified
+    && phoneVerificationPhase !== 'checking' && onVerifyPhone);
   const phoneErrorText = phoneError || (phoneForeign
     ? (isMember
       ? (isAr
@@ -77,16 +94,27 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         : `This number isn’t supported. Clear the field and enter a +${dial.code} number.`))
     : null);
   const phoneNoteText = phoneErrorText
-    || (phoneChanged
-      ? (isAr
-        ? 'رقم جديد — لازم تأكيد OTP قبل إرسال الطلب.'
-        : 'New number — OTP verification is required before ordering.')
-      : phoneLinked
-        ? null
-        : dial.code
-          ? (isAr ? `نقبل أرقام +${dial.code} فقط.` : `Only +${dial.code} numbers are accepted.`)
-          : (isAr ? 'أدخل رقم الهاتف مع رمز الدولة.' : 'Enter the phone number with its country code.'));
+    || (showVerified
+      ? (isAr ? 'تم تأكيد هذا الرقم عبر واتساب.' : 'This number is verified on WhatsApp.')
+      : null)
+    || (showVerify
+      ? (verifyPending
+        ? (isAr ? 'الرمز جاهز — بانتظار تأكيد المطعم.' : 'Code ready — waiting for the restaurant to confirm.')
+        : (isAr ? 'أكّد هذا الرقم عبر واتساب قبل إرسال الطلب.' : 'Verify this number on WhatsApp before ordering.'))
+      : null)
+    || (phoneLinked
+      ? null
+      : dial.code
+        ? (isAr ? `نقبل أرقام +${dial.code} فقط.` : `Only +${dial.code} numbers are accepted.`)
+        : (isAr ? 'أدخل رقم الهاتف مع رمز الدولة.' : 'Enter the phone number with its country code.'));
   const phoneNoteVisible = !!phoneNoteText;
+  const phoneNoteTone = phoneErrorText
+    ? 'text-red-500'
+    : showVerified
+      ? (darkMode ? 'text-emerald-400' : 'text-emerald-700')
+      : showVerify
+        ? (darkMode ? 'text-amber-300' : 'text-amber-700')
+        : darkMode ? 'text-neutral-500' : 'text-neutral-400';
 
   const onPhoneChange = (raw: string) => {
     if (!dial.code) {
@@ -188,19 +216,24 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         {phoneNoteVisible && (
           <p
             id="cart-phone-note"
-            className={`mt-1 text-[10.5px] font-semibold leading-relaxed ${
-              phoneErrorText
-                ? 'text-red-500'
-                : phoneChanged
-                  ? darkMode ? 'text-amber-300' : 'text-amber-700'
-                  : darkMode ? 'text-neutral-500' : 'text-neutral-400'
-            }`}
+            className={`mt-1 text-[10.5px] font-semibold leading-relaxed ${phoneNoteTone}`}
             role={phoneErrorText ? 'alert' : undefined}
           >
-            {phoneChanged && !phoneErrorText && (
+            {showVerified ? (
+              <BadgeCheck size={12} className="me-1 -mt-0.5 inline-block align-middle" aria-hidden="true" />
+            ) : showVerify || phoneChanged ? (
               <ShieldCheck size={12} className="me-1 -mt-0.5 inline-block align-middle" aria-hidden="true" />
-            )}
+            ) : null}
             {phoneNoteText}
+            {showVerify && onVerifyPhone && (
+              <button
+                type="button"
+                onClick={onVerifyPhone}
+                className="ms-1.5 underline underline-offset-2 font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded-sm"
+              >
+                {verifyPending ? pv.viewCode : pv.verifyNow}
+              </button>
+            )}
             {phoneChanged && accountPhone && (
               <button
                 type="button"

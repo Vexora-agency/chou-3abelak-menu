@@ -10,6 +10,8 @@ export interface AdminCustomer {
   emailVerified: boolean;
   image: string | null;
   phone: string | null;
+  /** Saved number has a live reverse-WhatsApp approval. */
+  phoneVerified?: boolean;
   address: string | null;
   /** Default-address pin is present (profile is order-ready). */
   hasLocation: boolean;

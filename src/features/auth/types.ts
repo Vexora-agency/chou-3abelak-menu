@@ -12,6 +12,9 @@ export interface CustomerUser {
 
 export interface CustomerProfile {
   phone: string | null;
+  /** True when the saved number has an approved, unexpired verification. */
+  phoneVerified?: boolean;
+  phoneVerifiedUntil?: string | null;
   address: string | null;
   /** Pinned point for the default address (required when address is set). */
   location?: { lat: number; lng: number; accuracy: number } | null;

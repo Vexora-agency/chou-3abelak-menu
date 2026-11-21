@@ -1,13 +1,18 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { MenuData, ResolvedCartLine } from '@/src/types/menu';
 import { type OrderingStatus } from '@/src/utils/status';
 import { X, CheckCircle2 } from 'lucide-react';
-import { isProfileComplete, useCustomerProfile } from '@/src/features/auth';
+import {
+  isProfileComplete,
+  PhoneVerificationSheet,
+  useCustomerProfile,
+  usePhoneVerification,
+} from '@/src/features/auth';
 import { useCartCheckoutSubmit } from '../hooks/useCartCheckoutSubmit';
 import { CartLinesList } from './cart/CartLinesList';
 import { CustomerFormFields } from './cart/CustomerFormFields';
-import { dialFromSettings } from '@/src/utils/phoneCountry';
+import { checkPhone, dialFromSettings } from '@/src/utils/phoneCountry';
 import { OrderSummaryLines } from './cart/OrderSummaryLines';
 import { PaymentMethodSection } from './cart/PaymentMethodSection';
 import { CartCheckoutFooter } from './cart/CartCheckoutFooter';
@@ -55,6 +60,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const isAr = lang === 'ar';
   const phoneDial = dialFromSettings(menu.settings);
   const account = useCustomerProfile(isOpen);
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const phoneVerifiedRef = useRef(false);
   // New members (including Google sign-ups) must add a phone and default
   // address before any order; the map pin is optional. While the profile is
   // still loading, stay neutral instead of flashing the incomplete banner.
@@ -94,7 +101,37 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     handleSendOrder,
     zoneBlocked,
     zonePlaceName,
-  } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart, accountUser: account.user, accountProfile: account.profile, accountLoading: account.loading, onRequireAccount, onRequireProfile });
+  } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart, accountUser: account.user, accountProfile: account.profile, accountLoading: account.loading, onRequireAccount, onRequireProfile, isPhoneVerified: () => phoneVerifiedRef.current, onRequirePhoneVerification: () => setVerifyOpen(true) });
+
+  // Reverse WhatsApp verification for the exact number typed in the cart.
+  // Enabled only while the drawer is open for a signed-in member, so guests
+  // make no request and a closed drawer costs nothing.
+  const enteredPhoneCheck = checkPhone(customer.phone, phoneDial.code);
+  const verificationPhone = enteredPhoneCheck.ok ? enteredPhoneCheck.normalized : null;
+  const phoneVerification = usePhoneVerification(
+    verificationPhone,
+    isOpen && !!account.user && !account.loading,
+  );
+  const savedPhoneCheck = account.profile?.phone
+    ? checkPhone(account.profile.phone, phoneDial.code)
+    : null;
+  const sameAsSavedPhone = !!(
+    verificationPhone &&
+    savedPhoneCheck?.ok &&
+    savedPhoneCheck.normalized === verificationPhone
+  );
+  // The profile flag is an instant answer for the saved number while the
+  // status request is still in flight; the live hook wins for any other one.
+  const phoneVerified = !!(
+    verificationPhone &&
+    ((sameAsSavedPhone && account.profile?.phoneVerified) || phoneVerification.phase === 'verified')
+  );
+  useEffect(() => {
+    phoneVerifiedRef.current = phoneVerified;
+  }, [phoneVerified]);
+  useEffect(() => {
+    if (!isOpen) setVerifyOpen(false);
+  }, [isOpen]);
 
   // Radical phone-scroll fix: shared counter lock (iOS-safe, nested-sheet
   // aware) instead of a bare overflow flag that iOS Safari ignores.
@@ -331,6 +368,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               accountPhone={account.profile?.phone ?? null}
               hasDefaultAddress={!account.loading && !!account.profile?.address && customer.address.trim() === account.profile.address.trim()}
               phoneDial={phoneDial}
+              phoneVerified={phoneVerified}
+              phoneVerificationPhase={phoneVerification.phase}
+              onVerifyPhone={verificationPhone ? () => setVerifyOpen(true) : undefined}
             />
 
             {/* Payment method (COD preselected + locked; future gateways
@@ -423,6 +463,24 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           darkMode={darkMode}
           onCloseSheet={closeLocSheet}
           onPick={handleMapPick}
+        />
+      )}
+
+      {/* Reverse WhatsApp verification: the code + pre-filled send button. */}
+      {!!account.user && (
+        <PhoneVerificationSheet
+          open={verifyOpen}
+          onClose={() => setVerifyOpen(false)}
+          phone={verificationPhone}
+          lang={lang}
+          darkMode={darkMode}
+          verification={phoneVerification}
+          whatsappNumber={menu.settings.whatsapp || ''}
+          storeName={menu.settings.name?.[lang] || ''}
+          onVerified={() => {
+            setErrorMsg('');
+            account.refetch();
+          }}
         />
       )}
     </div>

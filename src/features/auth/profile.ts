@@ -3,6 +3,9 @@ import type { CustomerProfile } from './types';
 /** Window event fired after the signed-in customer saves their profile. */
 export const MEMBER_PROFILE_CHANGED = 'member-profile-changed';
 
+/** Window event fired the moment a phone number is approved/verified. */
+export const PHONE_VERIFIED_EVENT = 'member-phone-verified';
+
 /**
  * A customer account is ready to place orders when the phone and the default
  * address are present. The map pin is OPTIONAL: the written address is the

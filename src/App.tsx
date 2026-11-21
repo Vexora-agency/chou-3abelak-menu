@@ -844,6 +844,8 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
             currency={currency}
             cancelWindowMs={cancelWindowMsFromMenu(displayMenu)}
             phoneDial={dialFromSettings(displayMenu.settings)}
+            whatsappNumber={displayMenu.settings.whatsapp || ''}
+            storeName={displayMenu.settings.name?.[lang] || ''}
             initialTab={accountInitialTab}
           />
         </Suspense>

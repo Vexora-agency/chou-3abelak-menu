@@ -5,7 +5,7 @@ import { useWishlist } from '../context/WishlistContext';
 import { WISHLIST_STR } from '../strings';
 import '../wishlist.css';
 
-type WishlistButtonVariant = 'icon' | 'pill' | 'bare';
+type WishlistButtonVariant = 'icon' | 'bare';
 type WishlistButtonTone = 'overlay' | 'surface';
 
 interface WishlistButtonProps {
@@ -14,13 +14,13 @@ interface WishlistButtonProps {
   itemName: string;
   lang: 'en' | 'ar';
   darkMode: boolean;
-  /** `icon` for cards/rows, `pill` for unavailable dishes, `bare` for the
-      item sheet header (a heart with no surrounding chrome). */
+  /** `icon` for cards/rows, `bare` for the item sheet header (a heart with
+      no surrounding chrome). */
   variant?: WishlistButtonVariant;
   /** `overlay` sits on a photo or a dark/gold card; `surface` on a page card. */
   tone?: WishlistButtonTone;
   /** `sm` keeps tight card headers balanced; `md` is the standard 44px target. */
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md';
   className?: string;
 }
 
@@ -110,25 +110,18 @@ export const WishlistButton: React.FC<WishlistButtonProps> = ({
     });
   };
 
-  const iconSize =
-    variant === 'pill'
-      ? 15
-      : variant === 'bare'
-        ? size === 'lg' ? 24 : 22
-        : size === 'sm' ? 17 : size === 'lg' ? 21 : 19;
   const isBare = variant === 'bare';
+  const iconSize = isBare ? (size === 'sm' ? 20 : 22) : size === 'sm' ? 17 : 19;
 
   const sizeShape =
     size === 'sm'
       ? "w-9 h-9 min-w-[36px] min-h-[36px] rounded-full after:absolute after:-inset-1 after:content-['']"
-      : size === 'lg'
-        ? 'w-12 h-12 min-w-[48px] min-h-[48px] rounded-full'
-        : 'w-11 h-11 min-w-[44px] min-h-[44px] rounded-full';
+      : 'w-11 h-11 min-w-[44px] min-h-[44px] rounded-full';
 
   const inactiveTone = isBare
     ? darkMode
       ? 'border-transparent bg-transparent text-neutral-400 hover:bg-white/[0.06]'
-      : 'border-transparent bg-transparent text-[#8a6d00] hover:bg-black/[0.05]'
+      : 'border-transparent bg-transparent text-[#0A0A0A] hover:bg-black/[0.05]'
     : tone === 'overlay'
       ? 'border-white/25 bg-black/40 text-white backdrop-blur-md hover:border-white/45 hover:bg-black/55'
       : darkMode
@@ -136,13 +129,10 @@ export const WishlistButton: React.FC<WishlistButtonProps> = ({
         : 'border-[#d9bc45]/70 bg-[#fff8dc] text-[#8a6d00] hover:border-[#c2a400] hover:bg-[#ffefb0]';
 
   const activeTone = isBare
-    ? `border-transparent bg-transparent ${darkMode ? 'text-[var(--primary)] wishlist-bare-saved' : 'text-[#8a6d00]'}`
+    ? `border-transparent bg-transparent ${darkMode ? 'text-[var(--primary)] wishlist-bare-saved' : 'text-[#0A0A0A]'}`
     : 'border-[var(--primary)] bg-[var(--primary)] text-[#0A0A0A] wishlist-heart-glow';
 
-  const shape =
-    variant === 'pill'
-      ? "h-9 min-h-[36px] px-3 gap-1.5 rounded-full text-[11px] font-extrabold after:absolute after:-inset-y-1 after:inset-x-0 after:content-['']"
-      : sizeShape;
+  const shape = sizeShape;
 
   return (
     <button
@@ -159,8 +149,6 @@ export const WishlistButton: React.FC<WishlistButtonProps> = ({
         saved ? activeTone : inactiveTone
       }${shake ? ' wishlist-shake' : ''} ${className}`.trim()}
     >
-      {variant === 'pill' && <span className="whitespace-nowrap">{saved ? t.shortSaved : t.shortSave}</span>}
-
       <motion.span
         key={pressKey}
         initial={{ scale: 1, rotate: 0 }}
@@ -176,7 +164,8 @@ export const WishlistButton: React.FC<WishlistButtonProps> = ({
           size={iconSize}
           strokeWidth={2.4}
           aria-hidden="true"
-          fill={saved ? 'currentColor' : 'none'}
+          fill={saved ? (isBare && !darkMode ? 'var(--primary)' : 'currentColor') : 'none'}
+          stroke={isBare && !darkMode ? '#0A0A0A' : 'currentColor'}
           className={saved && !isBare ? 'drop-shadow-[0_0_4px_rgba(0,0,0,0.25)]' : ''}
         />
       </motion.span>

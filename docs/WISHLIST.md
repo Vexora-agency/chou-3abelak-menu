@@ -57,7 +57,13 @@ SQL lives in `functions/_shared/repositories/wishlist.repo.js`:
 - `MenuListPhotoCard` — photo cards: heart at the photo's bottom-end, opposite
   the badge and clear of the price tag.
 - `MenuListGridCard` — text/photo grid: heart in the badge row.
-- `MenuListListRow` / `MenuListCompactRow` — beside the cart action.
+- `MenuListListRow` — the `list` layout is now a compact horizontal product
+  card: a real photo (branded category placeholder on error/missing), name,
+  description and gold price, with a narrow action column holding the bare
+  wishlist heart on top and an **icon-only** gold add/stepper at the bottom.
+  The list section renders as one centered column (`max-w-3xl`) on every
+  breakpoint, matching the owner's compact reference.
+- `MenuListCompactRow` — beside the cart action.
 - `MenuListRoundCard` — top-end corner, opposite the badge.
 - `FeaturedCarousel` — beside the quick-add button.
 - `ItemDetailsModal` — a **bare heart in the sticky header beside Close** (no
@@ -66,12 +72,12 @@ SQL lives in `functions/_shared/repositories/wishlist.repo.js`:
   heart and close.
 
 `WishlistButton` (`src/features/wishlist/components/WishlistButton.tsx`) has
-three shapes: the 44px circular surface/overlay heart on cards, the 48px
-secondary action, and a chrome-free `bare` heart for the item header. Compact
-cards use 36×36 with a 44px hit ring. It uses a spring scale + gold fill +
-eight-particle radial burst on save, and a quick collapse on remove. Every
-animation runs for every visitor by owner decision (no reduced-motion opt-out),
-matching the rest of the storefront.
+two shapes: the 44px circular surface/overlay heart on cards and the
+chrome-free `bare` heart for the item header. Compact cards use 36×36 with a
+44px hit ring. It uses a spring scale + gold fill + eight-particle radial burst
+on save, and a quick collapse on remove. Every animation runs for every visitor
+by owner decision (no reduced-motion opt-out), matching the rest of the
+storefront.
 
 Accessibility and direction:
 

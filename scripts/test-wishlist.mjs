@@ -152,6 +152,10 @@ check(
   'the heart uses theme gold, not a hard-coded brand hex',
   has(button, 'var(--primary)', 'wishlist-heart-glow') && !button.includes('#FFC400')
 );
+check(
+  'the bare header heart uses the black/gold brand in light mode',
+  has(button, "text-[#0A0A0A] hover:bg-black/[0.05]", "fill={saved ? (isBare && !darkMode ? 'var(--primary)'", "stroke={isBare && !darkMode ? '#0A0A0A'")
+);
 
 /* ---------- every menu surface ---------- */
 
@@ -186,6 +190,24 @@ check(
 check(
   'the round card heart sits opposite the badge in logical end space',
   has(read('src/features/menu/components/menu-list/MenuListRoundCard.tsx'), 'absolute -top-1 end-0', 'WishlistButton')
+);
+
+/* ---------- compact list layout (photo cards) ---------- */
+
+const listCard = read('src/features/menu/components/menu-list/MenuListListRow.tsx');
+check(
+  'the list layout supports dish photos with a branded fallback',
+  has(listCard, 'SmartMenuImage', 'photo-placeholder', 'sectionMark', 'failedSrc')
+);
+check(
+  'the list card actions are icon-only: bare heart + vertical add/stepper',
+  has(listCard, 'variant="bare"', 'layout="vertical"', 'w-12 sm:w-[54px]', 'justify-between')
+    && !listCard.includes('أضف للسلة')
+);
+const menuListSource = read('src/features/menu/components/MenuList.tsx');
+check(
+  'the list section is a single, centered compact column',
+  has(menuListSource, "if (kind === 'list') return 1;", "kind === 'list'", 'max-w-3xl')
 );
 
 /* ---------- account sheet ---------- */
@@ -230,8 +252,8 @@ check(
 );
 const wishlistStrings = read('src/features/wishlist/strings.ts');
 check(
-  'the heart label and save pill are bilingual',
-  has(wishlistStrings, 'Save ${name} to wishlist', 'احفظ ${name} في المفضلة', "shortSaved: 'Saved'", "shortSaved: 'محفوظ'")
+  'the heart labels are bilingual',
+  has(wishlistStrings, 'Save ${name} to wishlist', 'احفظ ${name} في المفضلة', 'Remove ${name} from wishlist', 'أزل ${name} من المفضلة')
 );
 
 /* ---------- result ---------- */

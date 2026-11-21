@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, ChevronUp, Eye, EyeOff, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
+import { AlignJustify, ChevronDown, ChevronUp, Eye, EyeOff, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
 import type { MenuData } from '@/src/types/menu';
 import { Pager } from './Pager';
 
@@ -54,6 +54,16 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
               {shown.map((cat) => {
                 const idx = categories.findIndex((c) => c.id === cat.id);
                 const activeLayout = cat.layout || (cat.id === 'manakish' ? 'list' : 'cards');
+                const layoutHint =
+                  activeLayout === 'photos'
+                    ? (isAr ? 'بطاقات بصور كبيرة أولًا.' : 'Large photo-first cards.')
+                    : activeLayout === 'cards'
+                      ? (isAr ? 'صورة خلفية مع تعتيم مريح.' : 'Photo background with a readable scrim.')
+                      : activeLayout === 'list'
+                        ? (isAr ? 'صورة بجانب الاسم والسعر.' : 'Photo beside the name and price.')
+                        : activeLayout === 'compact'
+                          ? (isAr ? 'صفوف نصية مدمجة.' : 'Dense text-only rows.')
+                          : (isAr ? 'صورة دائرية بإطار ذهبي.' : 'Round photo in a gold ring.');
                 return (
           <div
             key={cat.id}
@@ -158,46 +168,14 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
               })}
             </div>
           </div>
-          {activeLayout === 'photos' && (
-            <p className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-neutral-500">
+          <p className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-neutral-500">
+            {activeLayout === 'compact' ? (
+              <AlignJustify size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
+            ) : (
               <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
-              <span>
-                {isAr
-                  ? 'أضف صورة لكل صنف من تبويب الأصناف (حقل الصورة: رفع ثم قص الإطار). الأصناف بدون صورة تظهر بشعار القسم.'
-                  : 'Add a photo to each item from the Items tab (photo field: upload, then frame the crop). Items without one show the category mark.'}
-              </span>
-            </p>
-          )}
-          {activeLayout === 'cards' && (
-            <p className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-neutral-500">
-              <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
-              <span>
-                {isAr
-                  ? 'الصنف الذي له صورة تظهر خلفية للبطاقة مع تعتيم مريح للقراءة. الأصناف بدون صورة تبقى بطاقات نصية.'
-                  : 'Items with a photo show it as the card background behind a readable scrim. Items without one stay text cards.'}
-              </span>
-            </p>
-          )}
-          {activeLayout === 'list' && (
-            <p className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-neutral-500">
-              <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
-              <span>
-                {isAr
-                  ? 'صورة الطبق بجانب الاسم والسعر في بطاقة أفقية مدمجة، وبدون صورة يظهر شعار القسم.'
-                  : 'The dish photo sits beside the name and price in a compact horizontal card; without one, the category mark is used.'}
-              </span>
-            </p>
-          )}
-          {activeLayout === 'round' && (
-            <p className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-neutral-500">
-              <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
-              <span>
-                {isAr
-                  ? 'صورة دائرية بإطار دوّار — أضف صورة لكل صنف من تبويب الأصناف. الأصناف بدون صورة تظهر بشعار القسم.'
-                  : 'Round photo in a spinning ring — add a photo to each item from the Items tab. Items without one show the category mark.'}
-              </span>
-            </p>
-          )}
+            )}
+            <span>{layoutHint}</span>
+          </p>
           </div>
                 );
               })}

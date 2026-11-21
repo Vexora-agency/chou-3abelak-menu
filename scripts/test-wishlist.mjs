@@ -205,13 +205,13 @@ check(
     && !listCard.includes('أضف للسلة')
 );
 check(
-  'the list card reserves a description slot and gives the price a gold accent',
-  has(listCard, 'min-h-[2.6em]', 'flex-col items-start gap-1', 'h-[3px] w-8 rounded-full bg-[var(--primary)]')
-    && !listCard.includes('bg-[var(--primary)] px-2 py-0.5')
+  'the list card keeps a small text-to-price gap and shrinks long copy',
+  has(listCard, 'name.length > 38', 'priceText.length > 13', 'mt-1.5 font-black', 'text-[#0A0A0A]')
+    && !listCard.includes('min-h-[2.6em]')
 );
 check(
-  'the list badge hangs on the card edge like the round style',
-  has(listCard, 'absolute -top-[7px] -start-1', 'z-20')
+  'the list badge sits inside the card edge (never clipped)',
+  has(listCard, 'absolute top-1 start-2', 'z-20')
 );
 const listAction = read('src/features/menu/components/menu-list/MenuListItemAction.tsx');
 check(
@@ -231,8 +231,8 @@ check(
 );
 const categoriesTab = read('src/features/admin/components/CategoriesTab.tsx');
 check(
-  'the admin list style explains its photo behavior',
-  has(categoriesTab, "activeLayout === 'list'", 'بطاقة أفقية مدمجة', 'compact horizontal card')
+  'the admin style hints are short and cover every layout',
+  has(categoriesTab, 'Large photo-first cards', 'Photo background with a readable scrim', 'Photo beside the name and price', 'Dense text-only rows', 'Round photo in a gold ring', 'AlignJustify')
 );
 
 /* ---------- account sheet ---------- */

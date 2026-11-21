@@ -63,8 +63,12 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
   const interactive = orderingEnabled && !isSoldOut;
   const name = pickLangText(item.name, lang);
   const description = pickLangText(item.description, lang).trim();
+  const priceText = priceLabel(item, lang, currency, menu);
   const badges = effectiveBadges(menu, item);
   const topBadge = badges[0];
+  // Long names/prices shrink one step so they keep the compact card shape.
+  const nameScale = name.length > 38 ? 'long' : name.length > 24 ? 'medium' : 'short';
+  const priceCompact = priceText.length > 13;
 
   // Broken/removed photo: fall back to the branded category mark exactly like
   // the photo cards. `failedSrc` records WHICH url broke, so a changed url
@@ -166,7 +170,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
 
       {topBadge && (
         <span
-          className={`absolute -top-[7px] -start-1 z-20 inline-flex -rotate-3 items-center gap-1 rounded-full border-[1.5px] border-[var(--primary)] bg-[#0A0A0A] px-2.5 py-1 text-[10px] font-extrabold text-[var(--primary)] shadow-lg rtl:rotate-3${festive ? ' xmas-badge' : ''}`}
+          className={`absolute top-1 start-2 z-20 inline-flex -rotate-3 items-center gap-1 rounded-full border-[1.5px] border-[var(--primary)] bg-[#0A0A0A] px-2.5 py-1 text-[10px] font-extrabold text-[var(--primary)] shadow-lg rtl:rotate-3${festive ? ' xmas-badge' : ''}`}
         >
           {topBadge === 'spicy' && <Flame size={10} className="fill-[var(--primary)]" aria-hidden="true" />}
           {topBadge === 'top' && <Award size={10} className="fill-[var(--primary)]" aria-hidden="true" />}
@@ -175,36 +179,41 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         </span>
       )}
 
-      {/* Name / reserved description slot / brand price. The description
-          always reserves two lines so cards with and without copy align. */}
+      {/* Name / description (only when present) / larger price. No reserved
+          empty slot: the price sits a small step below the text. */}
       <div className="flex min-w-0 flex-1 flex-col justify-center px-2.5 sm:px-3.5">
         <h3
           dir="auto"
-          className={`line-clamp-2 text-[14px] min-[380px]:text-[15px] sm:text-[17px] font-extrabold leading-[1.25] transition-transform duration-300 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 ${
-            darkMode ? 'text-white' : 'text-[#0A0A0A]'
-          }`}
+          className={`line-clamp-2 font-extrabold leading-[1.25] transition-transform duration-300 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 ${
+            nameScale === 'long'
+              ? 'text-[12px] min-[380px]:text-[13px] sm:text-[15px]'
+              : nameScale === 'medium'
+                ? 'text-[13px] min-[380px]:text-[14px] sm:text-[16px]'
+                : 'text-[14px] min-[380px]:text-[15px] sm:text-[17px]'
+          } ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}
         >
           {name}
         </h3>
-        <p
-          dir="auto"
-          title={description || undefined}
-          aria-hidden={description ? undefined : true}
-          className={`mt-0.5 line-clamp-2 min-h-[2.6em] text-[10.5px] min-[380px]:text-[11px] sm:text-[11.5px] leading-[1.35] ${
-            darkMode ? 'text-neutral-400' : 'text-neutral-500'
-          }`}
-        >
-          {description || '\u00A0'}
-        </p>
-        <span className="mt-1 inline-flex w-fit flex-col items-start gap-1" dir="auto">
-          <span
-            className={`text-[14px] min-[380px]:text-[15px] sm:text-[17px] font-black leading-none tabular-nums ${
-              darkMode ? 'text-[var(--primary)]' : 'text-[#8a6d00]'
+        {description && (
+          <p
+            dir="auto"
+            title={description}
+            className={`mt-0.5 line-clamp-2 text-[10.5px] min-[380px]:text-[11px] sm:text-[11.5px] leading-[1.35] ${
+              darkMode ? 'text-neutral-400' : 'text-neutral-500'
             }`}
           >
-            {priceLabel(item, lang, currency, menu)}
-          </span>
-          <span aria-hidden="true" className="h-[3px] w-8 rounded-full bg-[var(--primary)]" />
+            {description}
+          </p>
+        )}
+        <span
+          dir="auto"
+          className={`mt-1.5 font-black leading-none tabular-nums ${
+            priceCompact
+              ? 'text-[13px] min-[380px]:text-[14px] sm:text-[16px]'
+              : 'text-[15px] min-[380px]:text-[16px] sm:text-[18px]'
+          } ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`}
+        >
+          {priceText}
         </span>
       </div>
 

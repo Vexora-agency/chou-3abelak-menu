@@ -31,7 +31,7 @@ interface CartDrawerProps {
   justAddedKey?: string | null;
   /** Opens the auth sheet straight on Create account (COD requires one). */
   onRequireAccount?: () => void;
-  /** Opens account settings over the cart (mandatory phone/address/pin). */
+  /** Opens account settings over the cart (phone/address profile). */
   onRequireProfile?: () => void;
 }
 
@@ -55,9 +55,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const isAr = lang === 'ar';
   const phoneDial = dialFromSettings(menu.settings);
   const account = useCustomerProfile(isOpen);
-  // New members (including Google sign-ups) must add a phone, default address
-  // and map pin before any order. While the profile is still loading, stay
-  // neutral instead of flashing the incomplete banner.
+  // New members (including Google sign-ups) must add a phone and default
+  // address before any order; the map pin is optional. While the profile is
+  // still loading, stay neutral instead of flashing the incomplete banner.
   const profileIncomplete = !!account.user && !account.loading && (!account.profile || !isProfileComplete(account.profile));
   const {
     customer,

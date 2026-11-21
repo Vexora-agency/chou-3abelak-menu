@@ -46,8 +46,9 @@ ok(/randomUUID|Math\.random/.test(checkout), 'idempotency key is random per draw
 ok(route.includes('CF-Connecting-IP') && route.includes('RATE_KEY_PREFIX') && route.includes('checkAndReserveOrderBudget'), 'server rate limit is per-IP abuse cap, not per-user identity');
 ok(route.includes('account_required') && route.includes("REQUIRE_ACCOUNT_FOR_COD !== '0'"), 'COD order gate requires a signed-in account (local tests opt out explicitly)');
 ok(
-  route.includes('profile_incomplete') && route.includes('getCustomerProfile') && route.includes('isProfileComplete'),
-  'orders route requires a complete phone + address + pin profile before budgets/insert'
+  route.includes('profile_incomplete') && route.includes('getCustomerProfile') && route.includes('isProfileComplete')
+    && !route.includes('with a map pin'),
+  'orders route requires a complete phone + address profile; the map pin is optional'
 );
 ok(
   checkout.includes('isProfileComplete(accountProfile)') && checkout.includes('onRequireProfile'),
@@ -68,15 +69,16 @@ ok(
 );
 const profileRoute = read('functions/api/account/profile.js');
 ok(
-  profileRoute.includes("error: 'phone_required'") && profileRoute.includes("error: 'address_required'") && profileRoute.includes("error: 'address_pin_required'"),
-  'profile PATCH rejects a missing phone, address or map pin'
+  profileRoute.includes("error: 'phone_required'") && profileRoute.includes("error: 'address_required'")
+    && !profileRoute.includes('address_pin_required'),
+  'profile PATCH requires phone + address and accepts an address without a map pin'
 );
 const accountSheet = read('src/features/auth/components/AccountSheet.tsx');
 const addressInputAt = accountSheet.indexOf('id="account-address"');
 const addressInput = addressInputAt >= 0 ? accountSheet.slice(addressInputAt, addressInputAt + 2400) : '';
 ok(
-  addressInput.includes('disabled={!location}') && addressInput.includes('onChange='),
-  'member settings default address is editable only after a map pin exists'
+  !addressInput.includes('disabled={!location}') && addressInput.includes('onChange=') && addressInput.includes('placeholder='),
+  'member settings address is editable without a map pin (pin optional)'
 );
 ok(
   accountSheet.includes('setAddress(pinAddress(lat, lng, addressText))'),
@@ -122,9 +124,27 @@ ok(
   'a manually written cart address wins; the saved default only fills a blank one'
 );
 ok(
-  formFields.includes('النص المكتوب هو ما يصل للمطبخ')
-    && formFields.includes('The written text is what the kitchen reads'),
-  'pinned-address note says the written text reaches the kitchen and the pin marks drop-off'
+  !formFields.includes('النص المكتوب هو ما يصل للمطبخ')
+    && !formFields.includes('The written text is what the kitchen reads')
+    && !formFields.includes('اضغط على أيقونة الموقع'),
+  'cart shows no pin-vs-text helper message under the address'
+);
+ok(
+  checkout.includes('Pin is OPTIONAL') && !checkout.includes('if (!location)'),
+  'checkout accepts a written address with no map pin'
+);
+const profilePolicy = read('src/features/auth/profile.ts');
+ok(
+  profilePolicy.includes('profile.phone.trim()') && profilePolicy.includes('profile.address.trim()')
+    && !profilePolicy.includes('profile.location'),
+  'the client order gate treats the map pin as optional'
+);
+const authPolicy = read('functions/_shared/validate-auth.js');
+const completeFnAt = authPolicy.indexOf('export function isProfileComplete');
+const completeFn = completeFnAt >= 0 ? authPolicy.slice(completeFnAt, completeFnAt + 320) : '';
+ok(
+  completeFn.includes('phone && address') && !completeFn.includes('location'),
+  'the server order gate treats the map pin as optional'
 );
 ok(
   accountSheet.includes('WhatsApp Cloud API OTP')

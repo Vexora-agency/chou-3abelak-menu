@@ -50,13 +50,14 @@
   Typing after a pin refines that same pin, but a new pin can never inherit
   the previous pin's manual text — that created old-text + new-coords tickets.
   Pure rule + tests in `scripts/test-remember-pin.mjs`.
-- Member settings (`Account → Settings`): the default address starts locked and
-  unlocks only after a map pin; a new pin always rewrites the text
-  (`pinAddress`). So the initial state can never hold an address without a
-  pin, and a fresh pin can never inherit old text. After the pin the customer
-  may edit the address details for that same point (the pin stays the delivery
-  point). Checkout keeps its per-order text refinement above. Guarded by
-  `scripts/test-cart-isolation.mjs`.
+- Member settings (`Account → Settings`): the default address is editable on its
+  own; the map pin is OPTIONAL and only sharpens the kitchen ticket. A new pin
+  always rewrites the text (`pinAddress`), so a fresh pin never inherits old
+  text. The profile gate (client `isProfileComplete` + server
+  `validate-auth.js` + `/api/orders`) requires phone + address only — never a
+  pin — so a member can order from outside or from a one-off place by typing
+  the address in the cart. Guarded by `scripts/test-cart-isolation.mjs` and
+  `test-auth-profile-policy`.
 - Cart location card (one message, one accent): the member default-address
   note is a compact line inside the green "Location pinned" card — not a
   second gold alert box — and it hides once the address is edited. Distance is
@@ -76,12 +77,14 @@
   what the kitchen receives. `functions/api/orders.js` overrides member
   name/phone/email from the profile but only backfills `address` when the
   submitted address is empty, so a refined per-order address always wins over
-  the saved default. The pin is the map point (`location_lat/lng`) and can be
-  older than edited text; `functions/_shared/telegram.js` prints the exact pin
-  only at `accuracy <= 250 m`, otherwise searches the written address. The
-  pinned-address note states this ("النص المكتوب هو ما يصل للمطبخ — والدبوس
-  يحدد نقطة الوصول."). No new geocoder library: Nominatim reverse-geocode +
-  BigDataCloud zone check already cover the need. Guarded by `test:cart`.
+  the saved default. The pin is OPTIONAL and is only the map point
+  (`location_lat/lng`): a text-only order is valid, and the kitchen then
+  searches the written address. `functions/_shared/telegram.js` prints the
+  exact pin only at `accuracy <= 250 m`; without a pin it falls back to the
+  address text. Do NOT add a customer-facing "text vs pin" helper under the
+  address field — the owner asked for no message there. No new geocoder
+  library: Nominatim reverse-geocode + BigDataCloud zone check cover the need.
+  Guarded by `test:cart`.
 - Add-to-cart landing (one-shot, `agent.md` motion contract): every add still
   opens the cart drawer immediately, so the "jump" is the drawer's spring
   entrance. `App.tsx` then names the exact row that grew (diff gated on a real

@@ -4,9 +4,10 @@ import type { CustomerProfile } from './types';
 export const MEMBER_PROFILE_CHANGED = 'member-profile-changed';
 
 /**
- * A customer account is ready to place orders only when the phone, the
- * default address, and the address pin are all present. The same rule is
- * enforced by /api/account/profile and /api/orders.
+ * A customer account is ready to place orders when the phone and the default
+ * address are present. The map pin is OPTIONAL: the written address is the
+ * source of truth for delivery, and a pin only sharpens the kitchen ticket.
+ * The same rule is enforced by /api/account/profile and /api/orders.
  */
 export function isProfileComplete(profile: CustomerProfile | null | undefined): boolean {
   return !!(
@@ -14,9 +15,6 @@ export function isProfileComplete(profile: CustomerProfile | null | undefined): 
     typeof profile.phone === 'string' &&
     profile.phone.trim() &&
     typeof profile.address === 'string' &&
-    profile.address.trim() &&
-    profile.location &&
-    Number.isFinite(profile.location.lat) &&
-    Number.isFinite(profile.location.lng)
+    profile.address.trim()
   );
 }

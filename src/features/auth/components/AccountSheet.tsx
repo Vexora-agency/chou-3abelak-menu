@@ -378,9 +378,10 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   const profileReady = !profileState.loading && !!profile;
   const profileIncomplete = profileReady && !isProfileComplete(profile);
 
-  // New accounts (password or Google) land here with no phone/address/pin.
-  // Open Settings for them once the profile fetch settles, so completion is
-  // the first thing they see instead of an empty order list.
+  // New accounts (password or Google) land here with no phone/address. Open
+  // Settings for them once the profile fetch settles, so completion is the
+  // first thing they see instead of an empty order list. A map pin is
+  // optional and never part of this gate.
   useEffect(() => {
     if (!open || !profileReady || autoTabDoneRef.current) return;
     autoTabDoneRef.current = true;
@@ -438,10 +439,11 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
       setSaveError(t.errorName);
       return;
     }
-    // Phone + default address + pin are mandatory for every account (Google
-    // included), matching the profile API and the order API. Validate here
-    // first so the customer gets a specific field-level message, not a
-    // generic server failure.
+    // Phone and default address are mandatory for every account (Google
+    // included), matching the profile API and the order API. The map pin is
+    // OPTIONAL: a written address is enough to order. Validate here first so
+    // the customer gets a specific field-level message, not a generic server
+    // failure.
     if (!phone.trim()) {
       setSaveError(t.phoneRequired);
       return;
@@ -458,10 +460,6 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     const trimmedAddress = address.trim();
     if (!trimmedAddress) {
       setSaveError(t.addressRequired);
-      return;
-    }
-    if (!location) {
-      setSaveError(t.pinRequired);
       return;
     }
     setSaving(true);
@@ -817,11 +815,8 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                     autoComplete="street-address"
                     dir="auto"
                     maxLength={200}
-                    disabled={!location}
-                    placeholder={!location
-                      ? (isAr ? 'ثبّت الموقع على الخريطة أولًا' : 'Pin the location on the map first')
-                      : (isAr ? 'اكتب تفاصيل العنوان' : 'Type the address details')}
-                    className={`${inputClass} pr-12 disabled:opacity-70 disabled:cursor-not-allowed`}
+                    placeholder={isAr ? 'اكتب تفاصيل العنوان' : 'Type the address details'}
+                    className={`${inputClass} pr-12`}
                     aria-describedby="account-address-note"
                     aria-required="true"
                   />
@@ -840,17 +835,12 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                   </button>
                 </div>
                 <p id="account-address-note" className={`mt-1 text-[10px] ${mutedClass}`}>{t.addressHint}</p>
-                {location ? (
+                {location && (
                   <p className={`mt-1.5 flex items-start gap-1.5 text-[11px] font-bold ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
                     <MapPin size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
                     <span>{t.pinSet}</span>
                   </p>
-                ) : saveError !== t.pinRequired ? (
-                  <p className={`mt-1.5 flex items-start gap-1.5 text-[11px] font-bold ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>
-                    <MapPin size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
-                    <span>{t.pinRequired}</span>
-                  </p>
-                ) : null}
+                )}
               </div>
 
               {saveError && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs font-bold text-red-600 dark:text-red-300">{saveError}</p>}

@@ -288,8 +288,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       return;
     }
 
-    // Mandatory member profile (owner rule, server-enforced): phone, default
-    // address and its map pin must exist before any order. Google accounts
+    // Mandatory member profile (server-enforced): phone + default address
+    // must exist before any order; the map pin is optional. Google accounts
     // go through the same gate. Opening Settings over the cart keeps the
     // basket intact.
     if (accountLoading) {

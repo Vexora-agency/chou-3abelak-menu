@@ -188,11 +188,12 @@ export async function onRequest(context) {
   }
   c.customerUserId = customerUserId;
 
-  // Mandatory member profile (owner rule): phone + default address + pin are
-  // required before an order. This runs before the blocklist/rate budgets so
-  // an incomplete account consumes no order budget. Fail OPEN on infra errors
-  // (the account/profile read is already best-effort and a DB blip must not
-  // eat real dinner orders); the client mirrors this gate for a clear UX.
+  // Mandatory member profile: phone + default address are required before an
+  // order. The map pin is OPTIONAL (the written address is authoritative).
+  // This runs before the blocklist/rate budgets so an incomplete account
+  // consumes no order budget. Fail OPEN on infra errors (the account/profile
+  // read is already best-effort and a DB blip must not eat real dinner
+  // orders); the client mirrors this gate for a clear UX.
   let memberProfile = null;
   if (customerUserId && (c.paymentMethod || 'cod') === 'cod') {
     try {
@@ -201,8 +202,8 @@ export async function onRequest(context) {
         return jsonNoStore({
           error: 'profile_incomplete',
           message: {
-            en: 'Complete your profile — phone and default address with a map pin — before placing an order.',
-            ar: 'أكمل بيانات حسابك — رقم الهاتف والعنوان الافتراضي مع تثبيت الموقع — قبل إرسال الطلب.',
+            en: 'Complete your profile — phone and default address — before placing an order.',
+            ar: 'أكمل بيانات حسابك — رقم الهاتف والعنوان الافتراضي — قبل إرسال الطلب.',
           },
         }, 403);
       }

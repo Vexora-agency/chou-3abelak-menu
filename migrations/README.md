@@ -30,6 +30,7 @@ Apply remote: `npx wrangler d1 migrations apply ORDERS_DB --remote` (needs the r
 | `0034_orders_customer_link.sql` | `orders.customer_user_id` TEXT nullable + `(customer_user_id, created_at DESC)` index. Guest/legacy rows stay NULL; written only from the server-side session. |
 | `0035_customer_profiles.sql` | `customer_profiles` (user_id PK → user cascade, phone, address, updated_at) + phone index. Name/email stay in Better Auth's `user`. |
 | `0036_customer_default_location.sql` | Optional default-address pin (`customer_profiles.location_lat/lng/accuracy`, nullable — typed addresses still order). |
-| `0037_phone_verifications.sql` | Reverse WhatsApp phone verification: `phone_verifications` (row id, user, normalized phone, short reference UNIQUE, keyed code hash, status, 10-min expiry, decision stamp) + one-live-pending index. **Apply this BEFORE deploying the code that reads it**, otherwise profile/order reads 503/fail open. |
+| `0037_phone_verifications.sql` | Reverse WhatsApp phone verification: `phone_verifications` (row id, user, normalized phone, short reference UNIQUE, keyed code hash, status, 10-min expiry, decision stamp) + one-live-pending index. **Apply this BEFORE deploying the code that reads it**, otherwise profile/order reads 503/fail open. TTL is 5 minutes in current code. |
+| `0038_whatsapp_webhook.sql` | WhatsApp Cloud API inbound ledger: `whatsapp_webhook_events` (Meta message id PK for exactly-once processing, sender phone, outcome, received_at) + indexes for the reply cost guard. Needed by the auto-verification webhook. |
 
 Rules: additive only, never edit an applied migration — add a new `00NN_*.sql` with the next free number (see `docs/ADD_NEW_FEATURE.md` step 1).

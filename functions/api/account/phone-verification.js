@@ -5,8 +5,9 @@
  *
  * POST { phone } mints a 6-digit code for that exact number and returns it
  * ONCE (only a keyed hash is stored). The member sends the code from their
- * WhatsApp to the restaurant; the owner approves the matching pending row in
- * the dashboard. GET ?phone= reports the current state for the checkout UI.
+ * WhatsApp to the restaurant; the Cloud API webhook approves it automatically,
+ * and the dashboard approval stays as a manual fallback. GET ?phone= reports
+ * the current state for the checkout UI.
  *
  * Every request is session-gated and CSRF-gated. The user id always comes
  * from the session; a member can only see or create their own requests.
@@ -38,9 +39,6 @@ import {
   findValidVerification,
   insertVerification,
 } from '../../_shared/repositories/phone-verifications.repo.js';
-import { readTelegramLink, callTelegramApi, escapeHtml } from '../../_shared/telegram.js';
-
-const TELEGRAM_TIMEOUT_MS = 4000;
 
 function publicPending(row) {
   if (!row) return null;
@@ -52,45 +50,22 @@ function publicPending(row) {
   };
 }
 
-/** Store WhatsApp number + display name, best effort (never blocks a code). */
-async function readStoreContact(env) {
+/** Store WhatsApp number, best effort (never blocks a code). */
+async function readStoreWhatsApp(env) {
+  // A dedicated Cloud API verification number may differ from the public
+  // restaurant WhatsApp. When set, the member messages the API number so the
+  // webhook can auto-approve and reply from it.
+  const override = env && typeof env.WHATSAPP_VERIFICATION_NUMBER === 'string'
+    ? env.WHATSAPP_VERIFICATION_NUMBER.trim()
+    : '';
+  if (override) return override;
   try {
     const menu = await env.MENU_KV.get('menu', { type: 'json' });
     const settings = menu && menu.settings ? menu.settings : {};
-    return {
-      whatsapp: typeof settings.whatsapp === 'string' ? settings.whatsapp : '',
-      name: settings.name && typeof settings.name === 'object'
-        ? String(settings.name.ar || settings.name.en || '').slice(0, 80)
-        : '',
-    };
+    return typeof settings.whatsapp === 'string' ? settings.whatsapp : '';
   } catch {
-    return { whatsapp: '', name: '' };
+    return '';
   }
-}
-
-/**
- * Owner ping on every new request. Approval is manual, so a silent request
- * would leave the member waiting. Best effort: a Telegram failure must not
- * lose the code the member is about to send.
- */
-async function notifyOwner(env, { phone, reference, name, expiresAt }) {
-  try {
-    const token = env.TELEGRAM_BOT_TOKEN || null;
-    if (!token) return;
-    const link = await readTelegramLink(env.ORDERS_DB);
-    if (!link) return;
-    const member = typeof name === 'string' && name.trim() ? escapeHtml(name.trim().slice(0, 80)) : '—';
-    const text = [
-      '🔐 <b>Phone verification request</b>',
-      `Number: <code>+${escapeHtml(phone)}</code>`,
-      `Ref: <code>${escapeHtml(reference)}</code>`,
-      `Member: ${member}`,
-      `Expires: ${escapeHtml(expiresAt)}`,
-      '',
-      'Match the Ref in the WhatsApp message, then approve in Dashboard → Customers → Accounts.',
-    ].join('\n');
-    await callTelegramApi(token, 'sendMessage', { chat_id: link.chatId, text, parse_mode: 'HTML' }, TELEGRAM_TIMEOUT_MS);
-  } catch {}
 }
 
 export async function onRequest(context) {
@@ -214,17 +189,9 @@ export async function onRequest(context) {
       return jsonNoStore({ error: 'pending_exists', pending: publicPending(live) }, 409);
     }
 
-    const store = await readStoreContact(env);
+    const storeWhatsApp = await readStoreWhatsApp(env);
     const message = buildVerificationMessage({ code, reference, lang });
-    const whatsappUrl = buildVerificationWhatsAppUrl(store.whatsapp, message);
-
-    const ping = notifyOwner(env, {
-      phone,
-      reference,
-      name: auth.user && auth.user.name,
-      expiresAt,
-    });
-    if (typeof context.waitUntil === 'function') context.waitUntil(ping);
+    const whatsappUrl = buildVerificationWhatsAppUrl(storeWhatsApp, message);
 
     return jsonNoStore({
       ok: true,

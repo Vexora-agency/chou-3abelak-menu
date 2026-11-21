@@ -17,6 +17,7 @@ import {
   decideVerification,
   expireStalePending,
   listVerifications,
+  pruneWhatsAppEvents,
 } from '../../_shared/repositories/phone-verifications.repo.js';
 
 const MAX_BODY_BYTES = 4 * 1024;
@@ -55,6 +56,8 @@ export async function onRequest(context) {
   if (request.method === 'GET') {
     try {
       await expireStalePending(db, nowIso);
+      // Keep the webhook audit table bounded; 90 days is plenty for support.
+      await pruneWhatsAppEvents(db, new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
       const url = new URL(request.url);
       const status = url.searchParams.get('status') === 'all' ? 'all' : 'pending';
       const limitRaw = Number.parseInt(url.searchParams.get('limit') || '50', 10);

@@ -34,7 +34,7 @@ interface PendingRow {
 const STR = {
   en: {
     title: 'WhatsApp phone verification',
-    subtitle: 'Members waiting for a number approval. Match the WhatsApp sender number + Ref, then approve.',
+    subtitle: 'Automatic WhatsApp verification is on. Rows here need a manual fallback decision — match the sender number + Ref, then approve.',
     pending: 'pending',
     refLabel: 'Ref',
     empty: 'No pending verification requests.',
@@ -54,7 +54,7 @@ const STR = {
   },
   ar: {
     title: 'تأكيد أرقام واتساب',
-    subtitle: 'أعضاء بانتظار تأكيد أرقامهم. طابق رقم المرسل في واتساب والمرجع (Ref) ثم اضغط اعتماد.',
+    subtitle: 'التأكيد التلقائي عبر واتساب مفعّل. الطلبات الظاهرة هنا تحتاج قرارًا يدويًا احتياطيًا — طابق رقم المرسل والمرجع ثم اعتمد.',
     pending: 'بالانتظار',
     refLabel: 'المرجع',
     empty: 'لا توجد طلبات تأكيد بالانتظار.',

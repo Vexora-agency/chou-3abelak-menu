@@ -195,7 +195,9 @@ Test matrix:
 
 Set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET` (mark all as **Secrets**), keep the existing `MENU_KV` binding and `ALLOW_LOCAL_DEV` **unset** (or `0`).
 
-Phone verification needs no new variable: code hashes use `PHONE_VERIFICATION_SECRET` when set, otherwise the existing `SESSION_SECRET`. Before deploying a release that reads `phone_verifications` (migration `0037`), apply it remotely:
+Phone verification uses `PHONE_VERIFICATION_SECRET` when set, otherwise the existing `SESSION_SECRET` for code hashes. **Automatic** WhatsApp approval needs `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`, and `WHATSAPP_PHONE_NUMBER_ID` (optionally `WHATSAPP_VERIFICATION_NUMBER`, `WHATSAPP_GRAPH_VERSION`, `WHATSAPP_REPLY_MONTHLY_CAP`). Webhook URL: `https://chou3abelak.site/api/whatsapp/webhook`, subscribe to **messages**. The manual dashboard approval keeps working without these. Full setup, pricing, and the 1,000-free-service-messages/month rule: [`docs/WHATSAPP_VERIFICATION.md`](docs/WHATSAPP_VERIFICATION.md).
+
+Apply migrations before deploying code that reads them:
 
 ```bash
 npx wrangler d1 migrations apply ORDERS_DB --remote

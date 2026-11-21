@@ -235,3 +235,101 @@ export async function decideVerification(db, id, { status, decidedBy, nowIso }) 
   if ((Number(res?.meta?.changes) || 0) === 0) return null;
   return getVerificationById(db, id);
 }
+
+/**
+ * Webhook matcher: every live pending row for a number (usually one, but two
+ * members can legitimately verify the same family number). The code hash is
+ * checked per row, so the message can only approve the row it was minted for.
+ */
+export async function listPendingVerificationsByPhone(db, phone, nowIso) {
+  const digits = phoneOrNull(phone);
+  if (!db || !digits) return [];
+  const stamp = typeof nowIso === 'string' ? nowIso : new Date().toISOString();
+  const res = await db
+    .prepare(
+      `SELECT id, user_id, phone, reference, code_hash, status, created_at, expires_at
+         FROM phone_verifications
+        WHERE phone = ?1 AND status = 'pending' AND expires_at > ?2
+        ORDER BY created_at DESC
+        LIMIT 10`
+    )
+    .bind(digits, stamp)
+    .all();
+  return res && Array.isArray(res.results) ? res.results : [];
+}
+
+/** Latest approved row for a number, still inside its 365-day window. */
+export async function findValidVerificationByPhone(db, phone, nowMs = Date.now()) {
+  const digits = phoneOrNull(phone);
+  if (!db || !digits) return null;
+  const cutoffIso = new Date(nowMs - VERIFICATION_VALIDITY_MS).toISOString();
+  return db
+    .prepare(
+      `SELECT id, user_id, phone, reference, status, created_at, expires_at, decided_at, decided_by
+         FROM phone_verifications
+        WHERE phone = ?1 AND status = 'approved' AND decided_at >= ?2
+        ORDER BY decided_at DESC
+        LIMIT 1`
+    )
+    .bind(digits, cutoffIso)
+    .first();
+}
+
+/* ---------- WhatsApp webhook idempotency + cost guard ---------- */
+
+/**
+ * Claim a Meta message id before doing any work. The PK makes retries (and
+ * duplicate webhook deliveries) a no-op. A stuck 'processing' row means the
+ * worker died mid-flight; the member can request a fresh code.
+ */
+export async function claimWhatsAppEvent(db, { messageId, phone, nowIso }) {
+  if (!db || typeof messageId !== 'string' || !messageId) return false;
+  const stamp = typeof nowIso === 'string' ? nowIso : new Date().toISOString();
+  const res = await db
+    .prepare(
+      `INSERT OR IGNORE INTO whatsapp_webhook_events (message_id, phone, outcome, received_at)
+       VALUES (?1, ?2, 'processing', ?3)`
+    )
+    .bind(messageId, phoneOrNull(phone), stamp)
+    .run();
+  return (Number(res?.meta?.changes) || 0) > 0;
+}
+
+/** Stamp the final outcome on a claimed message. Best effort. */
+export async function finishWhatsAppEvent(db, messageId, outcome) {
+  if (!db || typeof messageId !== 'string' || !messageId) return false;
+  const res = await db
+    .prepare('UPDATE whatsapp_webhook_events SET outcome = ?2 WHERE message_id = ?1')
+    .bind(messageId, typeof outcome === 'string' ? outcome.slice(0, 40) : 'unknown')
+    .run();
+  return (Number(res?.meta?.changes) || 0) > 0;
+}
+
+/** Events since an ISO cutoff, optionally for one sender number. */
+export async function countWhatsAppEventsSince(db, sinceIso, phone = null) {
+  if (!db || typeof sinceIso !== 'string' || !sinceIso) return 0;
+  const digits = phoneOrNull(phone);
+  const row = digits
+    ? await db
+        .prepare(
+          `SELECT COUNT(*) AS n FROM whatsapp_webhook_events
+            WHERE received_at >= ?1 AND phone = ?2`
+        )
+        .bind(sinceIso, digits)
+        .first()
+    : await db
+        .prepare('SELECT COUNT(*) AS n FROM whatsapp_webhook_events WHERE received_at >= ?1')
+        .bind(sinceIso)
+        .first();
+  return Number(row?.n) || 0;
+}
+
+/** Retention sweep for the webhook audit table (90 days is plenty). */
+export async function pruneWhatsAppEvents(db, beforeIso) {
+  if (!db || typeof beforeIso !== 'string' || !beforeIso) return 0;
+  const res = await db
+    .prepare('DELETE FROM whatsapp_webhook_events WHERE received_at < ?1')
+    .bind(beforeIso)
+    .run();
+  return Number(res?.meta?.changes) || 0;
+}

@@ -109,9 +109,9 @@ const url = buildVerificationWhatsAppUrl('+961 70 123 456', 'Code: 123456\nRef: 
 check('whatsapp url uses digits only', url.startsWith('https://wa.me/96170123456?text='));
 check('whatsapp url encodes the message', url === `https://wa.me/96170123456?text=${encodeURIComponent('Code: 123456\nRef: ABC123')}`);
 check('whatsapp url is null without a store number', buildVerificationWhatsAppUrl('', 'x') === null);
-check('code TTL is ten minutes', VERIFICATION_CODE_TTL_MS === 10 * 60 * 1000);
+check('code TTL is five minutes', VERIFICATION_CODE_TTL_MS === 5 * 60 * 1000);
 check(
-  'code expiry is created_at + 10 minutes',
+  'code expiry is created_at + 5 minutes',
   Date.parse(codeExpiresAt(0)) === VERIFICATION_CODE_TTL_MS
 );
 
@@ -146,7 +146,7 @@ check('customer route returns the plaintext code once', customerRoute.includes('
 check('customer route enforces a cooldown', customerRoute.includes('VERIFICATION_COOLDOWN_SEC'));
 check('customer route enforces hourly + daily caps', customerRoute.includes('VERIFICATION_HOURLY_MAX') && customerRoute.includes('VERIFICATION_DAILY_MAX'));
 check('customer route rescinds an old pending code on resend', customerRoute.includes('expireVerificationById'));
-check('customer route pings the owner on Telegram', customerRoute.includes('notifyOwner') && customerRoute.includes('TELEGRAM_BOT_TOKEN'));
+check('customer route has no Telegram notification', !/telegram/i.test(customerRoute));
 check('customer route never reads a code from the client', !customerRoute.includes('body.code') && !customerRoute.includes('body && body.code'));
 
 /* ---------- admin route ---------- */

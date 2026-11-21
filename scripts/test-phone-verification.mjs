@@ -167,9 +167,9 @@ check('order route no longer overwrites the entered phone with the saved one', !
 check('order route still takes name/email from the account', orderRoute.includes('c.name = profileName') && orderRoute.includes('c.email = accountEmail'));
 
 const profileRoute = read('functions/api/account/profile.js');
-check('profile route requires verification for a changed phone', profileRoute.includes("error: 'phone_verification_required'") && profileRoute.includes('nextPhone !== currentPhone'));
+check('profile route saves a changed phone without verification', !profileRoute.includes("error: 'phone_verification_required'") && !profileRoute.includes('nextPhone') && profileRoute.includes('Saving a changed number is intentionally NOT gated'));
 check('profile route exposes the verified state', profileRoute.includes('phoneVerified:') && profileRoute.includes('phoneVerifiedUntil:'));
-check('profile route still allows an unchanged phone to save the address', profileRoute.includes('An unchanged number keeps its existing state'));
+check('order route remains the verification gate', orderRoute.includes("error: 'phone_verification_required'") && orderRoute.includes('findValidVerification(db, customerUserId, c.phoneNorm'));
 
 /* ---------- customers repo ---------- */
 
@@ -198,7 +198,7 @@ check('cart passes the verified gate to checkout', cartDrawer.includes('isPhoneV
 check('cart opens the sheet on demand', cartDrawer.includes('onRequirePhoneVerification') && cartDrawer.includes('<PhoneVerificationSheet'));
 
 const accountSheet = read('src/features/auth/components/AccountSheet.tsx');
-check('settings verification sheet resumes the save', accountSheet.includes('verifiedPhoneRef.current = verifyPhone') && accountSheet.includes('void save();'));
+check('settings verifying saves the current form', accountSheet.includes('void save();') && accountSheet.includes('setVerifyOpen(false);'));
 
 const adminPanel = read('src/features/admin/components/admin/AdminPhoneVerifications.tsx');
 check('admin panel approves and rejects', adminPanel.includes("decide(row.id, 'approve')") && adminPanel.includes("decide(row.id, 'reject')"));

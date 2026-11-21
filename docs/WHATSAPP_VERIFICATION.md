@@ -32,7 +32,9 @@ webhook is not configured or a reply fails.
 Only the Meta message id, sender number, outcome, and timestamp are stored in
 `whatsapp_webhook_events`; the message body and the code are never persisted.
 Approvals last **365 days**. The order route checks the exact number being
-ordered; the profile API requires an approval only when the number **changes**.
+ordered. The profile API **saves a changed number without gating it**; the order
+route is the single verification gate and requires an approved number before an
+order is placed.
 
 For the full Arabic Meta/Cloudflare walkthrough, see
 [`WHATSAPP_CLOUD_API_SETUP_AR.md`](WHATSAPP_CLOUD_API_SETUP_AR.md).

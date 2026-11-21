@@ -44,6 +44,8 @@ export async function fetchMyOrder(number: number): Promise<AccountOrder> {
 export interface PendingPhoneVerification {
   phone: string;
   reference: string;
+  /** Which channel produced this request. */
+  method?: 'whatsapp' | 'sms';
   createdAt: string;
   expiresAt: string;
 }
@@ -65,10 +67,15 @@ export interface RequestedPhoneVerification {
   ok: true;
   verified: boolean;
   verifiedUntil?: string | null;
+  /** Top-level channel for the request. */
+  method?: 'whatsapp' | 'sms';
+  /** SMS fallback returns the pending row without a code. */
+  pending?: PendingPhoneVerification;
   verification?: {
     phone: string;
     reference: string;
     code: string;
+    method?: 'whatsapp';
     createdAt: string;
     expiresAt: string;
     message: string;
@@ -79,10 +86,23 @@ export interface RequestedPhoneVerification {
 export async function requestPhoneVerification(
   phone: string,
   lang: 'en' | 'ar',
+  method: 'whatsapp' | 'sms' = 'whatsapp',
 ): Promise<RequestedPhoneVerification> {
   return apiFetch<RequestedPhoneVerification>('/api/account/phone-verification', {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, lang }),
+    body: JSON.stringify({ phone, lang, method }),
+  });
+}
+
+/** Submit the code the member received by SMS (UniMTX fallback). */
+export async function verifyPhoneSms(
+  phone: string,
+  code: string,
+): Promise<{ ok: true; verified: boolean; verifiedUntil?: string | null }> {
+  return apiFetch('/api/account/phone-verification', {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'verify', phone, code }),
   });
 }

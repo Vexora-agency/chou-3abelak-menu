@@ -29,6 +29,7 @@ function publicRow(row) {
     phone: row.phone,
     reference: row.reference,
     status: row.status,
+    method: row.method === 'sms' ? 'sms' : 'whatsapp',
     createdAt: row.created_at,
     expiresAt: row.expires_at,
     decidedAt: row.decided_at || null,

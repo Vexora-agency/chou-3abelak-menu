@@ -37,6 +37,19 @@ ordered; the profile API requires an approval only when the number **changes**.
 For the full Arabic Meta/Cloudflare walkthrough, see
 [`WHATSAPP_CLOUD_API_SETUP_AR.md`](WHATSAPP_CLOUD_API_SETUP_AR.md).
 
+## No WhatsApp? SMS fallback
+
+A member without WhatsApp can tap **Need help?** under the WhatsApp button (the
+panel also reveals itself after 60 seconds) and choose **Send SMS code**. The
+server sends the OTP through **UniMTX** (`otp.send`, SMS channel), the member
+types the 6-digit code on the sheet, and the server verifies it with
+`otp.verify` (`decided_by='sms'`). No owner call is involved.
+
+There is no reliable official way to detect WhatsApp before sending; the
+fallback is behaviour-based so members who have WhatsApp never trigger an SMS
+charge. Setup, costs, and troubleshooting:
+[`SMS_VERIFICATION_UNIMTX.md`](SMS_VERIFICATION_UNIMTX.md).
+
 ## Cloud API setup
 
 The number must be registered on the **WhatsApp Business Platform (Cloud API)**.

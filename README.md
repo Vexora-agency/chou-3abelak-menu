@@ -195,7 +195,7 @@ Test matrix:
 
 Set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET` (mark all as **Secrets**), keep the existing `MENU_KV` binding and `ALLOW_LOCAL_DEV` **unset** (or `0`).
 
-Phone verification uses `PHONE_VERIFICATION_SECRET` when set, otherwise the existing `SESSION_SECRET` for code hashes. **Automatic** WhatsApp approval needs `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`, and `WHATSAPP_PHONE_NUMBER_ID` (optionally `WHATSAPP_VERIFICATION_NUMBER`, `WHATSAPP_GRAPH_VERSION`, `WHATSAPP_REPLY_MONTHLY_CAP`). Webhook URL: `https://chou3abelak.site/api/whatsapp/webhook`, subscribe to **messages**. The manual dashboard approval keeps working without these. Full setup, pricing, and the 1,000-free-service-messages/month rule: [`docs/WHATSAPP_VERIFICATION.md`](docs/WHATSAPP_VERIFICATION.md).
+Phone verification uses `PHONE_VERIFICATION_SECRET` when set, otherwise the existing `SESSION_SECRET` for code hashes. **Automatic** WhatsApp approval needs `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`, and `WHATSAPP_PHONE_NUMBER_ID` (optionally `WHATSAPP_VERIFICATION_NUMBER`, `WHATSAPP_GRAPH_VERSION`, `WHATSAPP_REPLY_MONTHLY_CAP`). Webhook URL: `https://chou3abelak.site/api/whatsapp/webhook`, subscribe to **messages**. The no-WhatsApp SMS fallback uses `UNIMTX_ACCESS_KEY_ID` (and optionally `UNIMTX_ACCESS_KEY_SECRET` for HMAC, `UNIMTX_SMS_DAILY_MAX`). The manual dashboard approval keeps working without these. Full setup, pricing, and the 1,000-free-service-messages/month rule: [`docs/WHATSAPP_VERIFICATION.md`](docs/WHATSAPP_VERIFICATION.md) and [`docs/SMS_VERIFICATION_UNIMTX.md`](docs/SMS_VERIFICATION_UNIMTX.md).
 
 Apply migrations before deploying code that reads them:
 

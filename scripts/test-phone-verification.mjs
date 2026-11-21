@@ -147,7 +147,7 @@ check('customer route enforces a cooldown', customerRoute.includes('VERIFICATION
 check('customer route enforces hourly + daily caps', customerRoute.includes('VERIFICATION_HOURLY_MAX') && customerRoute.includes('VERIFICATION_DAILY_MAX'));
 check('customer route rescinds an old pending code on resend', customerRoute.includes('expireVerificationById'));
 check('customer route has no Telegram notification', !/telegram/i.test(customerRoute));
-check('customer route never reads a code from the client', !customerRoute.includes('body.code') && !customerRoute.includes('body && body.code'));
+check('customer route generates the WhatsApp code server-side', customerRoute.includes('generateVerificationCode()') && customerRoute.includes("body.action === 'verify'") && customerRoute.includes('body.code'));
 
 /* ---------- admin route ---------- */
 

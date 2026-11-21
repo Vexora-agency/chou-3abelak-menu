@@ -129,6 +129,18 @@ or a Facebook Page CTA is a separate 72-hour billing exception; the site's
 
 ## Troubleshooting
 
+- **Meta says “Forbidden” on webhook verification**:
+  - The bare URL `https://chou3abelak.site/api/whatsapp/webhook` **always**
+    returns 403 in a browser; it is an API endpoint, not a page. Test with:
+    `…?hub.mode=subscribe&hub.verify_token=YOUR_TOKEN&hub.challenge=12345`
+    and expect the raw `12345`.
+  - Cloudflare Pages injects secrets at **deploy time**. Adding or editing
+    `WHATSAPP_VERIFY_TOKEN` does not update the running deployment — click
+    **Deployments → Retry deployment** (or push a commit) afterwards.
+  - In Meta, the **Callback URL** is the bare URL but the **Verify token** field
+    must contain the exact same token, with no quotes or spaces.
+  - If the response is a Cloudflare Access page instead of `Forbidden`, exclude
+    `/api/whatsapp/webhook` from Access.
 - **No auto-approval**: check the Meta webhook delivery log; `GET` challenge
   should return the raw challenge, `POST` should be 200. Confirm the app secret
   and that the number in the site is the Cloud API number.

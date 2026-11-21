@@ -1,10 +1,10 @@
 /**
- * Feature-section colors — contract checks.
+ * Feature-library colors — contract checks.
  * Run: node scripts/test-feature-colors.mjs
  *
- * Colors are OPTIONAL admin metadata on a feature-library section. They show
- * in the admin Libraries tab; the customer keeps one unified brand color and
- * the heat section stays red.
+ * Colors are OPTIONAL admin metadata on a library section and on each
+ * individual feature (size/add-on). They show in the admin Libraries tab;
+ * the customer keeps one unified brand color and heat stays red.
  */
 
 import { readFileSync } from 'node:fs';
@@ -28,42 +28,19 @@ const check = (name, cond) => {
   }
 };
 
-const KEYS = [
-  'gold',
-  'amber',
-  'orange',
-  'red',
-  'rose',
-  'violet',
-  'sky',
-  'emerald',
-  'vegetables',
-  'cheese',
-  'meat',
-  'chicken',
-  'seafood',
-  'sauce',
-  'bread',
-  'drinks',
-  'dessert',
-  'vegan',
-  'mushroom',
-  'olive',
-];
-/** Semantic food shortcuts — the part the admin asked for: vegetables green,
- *  cheese yellow, meat/chicken/seafood/sauce/bread/drinks/dessert/vegan/
- *  mushroom/olive. They stay optional and admin-only. */
-const FOOD_KEYS = KEYS.slice(8);
+/** One clean, de-duplicated palette — no Food colors row. */
+const KEYS = ['gold', 'amber', 'orange', 'red', 'rose', 'violet', 'sky', 'emerald'];
 
 /* ---------- server allowlist + normalizer ---------- */
 
 check(
-  'the server allows exactly the curated section colors',
+  'the server allows exactly the curated general colors',
   KEYS.every((key) => FEATURE_COLOR_IDS.has(key)) && FEATURE_COLOR_IDS.size === KEYS.length
 );
 check(
   'valid colors pass and anything else is dropped',
   KEYS.every((key) => normalizeFeatureColor(key) === key)
+    && normalizeFeatureColor('vegetables') === undefined
     && normalizeFeatureColor('blue') === undefined
     && normalizeFeatureColor('') === undefined
     && normalizeFeatureColor(null) === undefined
@@ -71,21 +48,33 @@ check(
 
 const serverValidate = read('functions/_shared/validate-feature-library.js');
 check(
-  'menu validation keeps a valid section color',
+  'menu validation keeps valid section and feature colors',
   has(serverValidate, 'normalizeFeatureColor(g.color)', 'if (color) grp.color = color')
+    && has(serverValidate, 'normalizeFeatureColor(f.color)', 'if (fcolor) def.color = fcolor')
 );
 const serverPricing = read('functions/_shared/pricing-menu.js');
 check(
-  'server menu normalization keeps a valid section color',
+  'server menu normalization keeps section and feature colors',
   has(serverPricing, 'normalizeFeatureColor(color)', 'if (colorId) g.color = colorId')
+    && has(serverPricing, 'normalizeFeatureColor(color)', 'if (colorId) def.color = colorId')
+    && has(serverPricing, 'ensureDef(d.id, d.name, gid, undefined, d.color)')
 );
 
 /* ---------- type + client palette + normalization ---------- */
 
 const types = read('src/types/menu.ts');
+const featureDefBlock = types.slice(
+  types.indexOf('export interface FeatureDef'),
+  types.indexOf('export interface ItemVariant'),
+);
 check(
-  'FeatureGroup carries an optional FeatureColorId',
+  'FeatureGroup and FeatureDef carry an optional FeatureColorId',
   has(types, 'FeatureColorId =', 'color?: FeatureColorId')
+    && featureDefBlock.includes('color?: FeatureColorId')
+);
+check(
+  'the palette has no semantic food colors',
+  !types.includes("'vegetables'") && !types.includes("'cheese'")
 );
 const colors = read('src/utils/featureColors.ts');
 check(
@@ -93,27 +82,9 @@ check(
   KEYS.every((key) => colors.includes(`id: '${key}'`))
 );
 check(
-  'the palette is split into General and Food groups',
-  has(colors, "id: 'general'", "id: 'food'", 'featureColorsInGroup')
-    && KEYS.every((key) => colors.includes(`id: '${key}'`))
-    && colors.includes(`group: 'general'`)
-    && colors.includes(`group: 'food'`)
-);
-check(
-  'famous add-ons have professional semantic colors',
-  FOOD_KEYS.every((key) => colors.includes(`id: '${key}'`))
-    && has(colors, "id: 'vegetables'", "swatch: 'bg-green-600'")
-    && has(colors, "id: 'cheese'", "swatch: 'bg-yellow-400'")
-    && has(colors, "id: 'meat'", "swatch: 'bg-red-700'")
-    && has(colors, "id: 'chicken'", "swatch: 'bg-orange-400'")
-    && has(colors, "id: 'seafood'", "swatch: 'bg-cyan-500'")
-    && has(colors, "id: 'sauce'", "swatch: 'bg-rose-600'")
-    && has(colors, "id: 'bread'", "swatch: 'bg-amber-700'")
-    && has(colors, "id: 'drinks'", "swatch: 'bg-blue-500'")
-    && has(colors, "id: 'dessert'", "swatch: 'bg-pink-400'")
-    && has(colors, "id: 'vegan'", "swatch: 'bg-lime-500'")
-    && has(colors, "id: 'mushroom'", "swatch: 'bg-stone-500'")
-    && has(colors, "id: 'olive'", "swatch: 'bg-lime-700'")
+  'the palette is one general list with no names or groups',
+  !colors.includes("group:") && !colors.includes('label:')
+    && !colors.includes('Food colors') && !colors.includes('vegetables')
 );
 check(
   'customer chips share one unified brand treatment',
@@ -121,32 +92,52 @@ check(
 );
 const clientPricing = read('src/utils/pricing-menu.ts');
 check(
-  'client menu normalization keeps a valid section color',
+  'client menu normalization keeps section and feature colors',
   has(clientPricing, 'isFeatureColorId(color)', 'g.color = color')
+    && has(clientPricing, 'isFeatureColorId(color)', 'def.color = color')
+    && has(clientPricing, 'ensureDef(dd.id, dd.name, gid, undefined, dd.color)')
 );
 
 /* ---------- admin UI ---------- */
 
 const admin = read('src/features/admin/components/FeaturesSection.tsx');
+const swatches = read('src/features/admin/components/features/FeatureColorSwatches.tsx');
+const featureRow = read('src/features/admin/components/features/FeatureRow.tsx');
 check(
   'the admin has an optional section color picker with a None choice',
-  has(admin, 'SectionColorPicker', "isAr ? 'لون القسم (اختياري)' : 'Section color (optional)'", 'setColor(undefined)')
+  has(admin, 'SectionColorPicker', "isAr ? 'لون القسم (اختياري)' : 'Section color (optional)'", 'onChange={setColor}')
+    && has(swatches, "isAr ? 'بدون' : 'None'")
 );
 check(
-  'the picker shows General and Food color rows',
-  has(admin, 'FEATURE_COLOR_GROUPS.map', 'featureColorsInGroup(groupDef.id)', 'groupDef.label')
+  'the picker shows only the General colors row',
+  has(admin, 'General colors', 'FeatureColorSwatches')
+    && !admin.includes('Food colors')
+    && !admin.includes('FEATURE_COLOR_GROUPS')
 );
 check(
-  'the chosen color paints the section header and feature-list edge',
-  has(admin, 'colorDef.pill', 'borderInlineStartColor: colorDef.hex', '<Tag', '<Flame')
+  'swatches carry no color names or tooltips',
+  has(swatches, 'Color ${index + 1}', 'aria-label={label}')
+    && !swatches.includes('title=')
+    && !swatches.includes('color.label')
 );
 check(
-  'the heat section is locked red and has no color picker',
-  has(admin, "isAr ? 'قسم الحار ثابت باللون الأحمر — لا يتغيّر.' : 'The heat section is fixed red — it cannot change.'", 'if (isSpicy)')
+  'every feature row can set its own optional color',
+  has(featureRow, "isAr ? 'لون الميزة (اختياري)' : 'Feature color (optional)'", 'FeatureColorSwatches', 'setColor', 'featureDefs:')
+);
+check(
+  'the chosen section color paints the header and feature-list edge',
+  has(admin, 'colorDef.pill', 'borderInlineStartColor: colorDef.hex', '<Tag')
+);
+check(
+  'the heat section is not locked and its old message is gone',
+  !admin.includes('The heat section is fixed red — it cannot change.')
+    && !admin.includes('قسم الحار ثابت باللون الأحمر — لا يتغيّر.')
+    && !admin.includes('isSpicy={isSpicy}')
+    && !admin.includes("featureColorDef('red')")
 );
 check(
   'the picker explains that the customer menu stays unified',
-  has(admin, 'Admin organization only', 'the customer menu stays one unified color, and heat stays red')
+  has(admin, 'Admin organization only', 'the customer menu stays one unified color')
 );
 
 /* ---------- customer storefront ---------- */
@@ -171,7 +162,7 @@ check(
     && has(addonPill, 'bg-[var(--primary)]/10', 'text-[#8a6d00]', 'Check')
 );
 check(
-  'no custom section color is read by the customer pickers',
+  'no admin color is read by the customer storefront',
   !variant.includes('featureColorDef') && !addon.includes('featureColorDef')
     && !addonPill.includes('featureColorDef') && !itemModal.includes('featureColorDef')
 );
@@ -182,4 +173,4 @@ if (fails > 0) {
   console.error(`\nFAIL — ${fails} assertion(s) failed`);
   process.exit(1);
 }
-console.log('\nPASS — feature section colors contract holds');
+console.log('\nPASS — feature library colors contract holds');

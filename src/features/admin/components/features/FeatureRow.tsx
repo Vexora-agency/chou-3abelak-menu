@@ -1,8 +1,10 @@
 import React from 'react';
 import { Flame, Lock, Trash2 } from 'lucide-react';
-import type { FeatureDef, MenuData, MenuSettings } from '@/src/types/menu';
+import type { FeatureColorId, FeatureDef, MenuData, MenuSettings } from '@/src/types/menu';
 import { normalizePricing } from '@/src/utils/pricing';
 import { isProtectedFeatureId, isSpicyFeatureId } from '@/src/utils/menuHelpers';
+import { featureColorDef } from '@/src/utils/featureColors';
+import { FeatureColorSwatches } from './FeatureColorSwatches';
 
 type LibraryValues = Pick<MenuSettings, 'featureGroups' | 'featureDefs'>;
 
@@ -35,6 +37,14 @@ export const FeatureRow: React.FC<FeatureRowProps> = ({
       (it.variants || []).some((v) => v.featureId === f.id) ||
       (it.addons || []).some((a) => a.featureId === f.id)
   ).length;
+  const colorDef = featureColorDef(f.color);
+  const setColor = (color?: FeatureColorId) =>
+    onUpdate((prev) => ({
+      ...prev,
+      featureDefs: (prev.featureDefs || []).map((x) =>
+        x.id === f.id ? { ...x, color } : x
+      ),
+    }));
   return (
     <div key={f.id} className="p-3 space-y-3">
       <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
@@ -72,8 +82,20 @@ export const FeatureRow: React.FC<FeatureRowProps> = ({
           />
         </div>
       </div>
+      <div className="space-y-1.5">
+        <span className="block text-[11px] text-neutral-400">
+          {isAr ? 'لون الميزة (اختياري)' : 'Feature color (optional)'}
+        </span>
+        <FeatureColorSwatches value={f.color} onChange={setColor} isAr={isAr} size="sm" />
+      </div>
       <div className="flex items-center justify-between gap-3">
         <span className="text-[11px] text-neutral-500 flex items-center gap-1.5">
+          {colorDef && (
+            <span
+              aria-hidden="true"
+              className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${colorDef.swatch}`}
+            />
+          )}
           {isSpicyFeatureId(f.id) && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-red-500/10 border border-red-500/40 text-red-400">
               <Flame size={11} />

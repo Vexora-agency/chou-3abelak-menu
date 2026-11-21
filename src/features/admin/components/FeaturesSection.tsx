@@ -1,10 +1,11 @@
 import React from 'react';
-import { Check, ChevronDown, Flame, Lock, Plus, Tag, Trash2 } from 'lucide-react';
+import { ChevronDown, Flame, Lock, Plus, Tag, Trash2 } from 'lucide-react';
 import type { FeatureColorId, MenuData, MenuSettings } from '@/src/types/menu';
 import { featuresByGroup, normalizePricing } from '@/src/utils/pricing';
 import { isProtectedGroupId } from '@/src/utils/menuHelpers';
-import { FEATURE_COLOR_GROUPS, featureColorDef, featureColorsInGroup } from '@/src/utils/featureColors';
+import { featureColorDef } from '@/src/utils/featureColors';
 import { FeatureRow } from './features/FeatureRow';
+import { FeatureColorSwatches } from './features/FeatureColorSwatches';
 import { FeatureSectionFooter } from './features/FeatureSectionFooter';
 
 type LibraryValues = Pick<MenuSettings, 'featureGroups' | 'featureDefs'>;
@@ -172,31 +173,20 @@ const GroupChoiceMode: React.FC<GroupChoiceModeProps> = ({
 interface SectionColorPickerProps {
   group: { id: string; color?: FeatureColorId };
   isAr: boolean;
-  isSpicy: boolean;
   onUpdate: (updater: (prev: LibraryValues) => LibraryValues) => void;
 }
 
 /**
  * Optional, admin-only section color. The storefront deliberately ignores
  * this value (one unified brand color; heat stays red), so the hint says so.
+ * The heat section is not special-cased here — its admin color is purely
+ * organizational and the customer heat UI stays red regardless.
  */
 const SectionColorPicker: React.FC<SectionColorPickerProps> = ({
   group,
   isAr,
-  isSpicy,
   onUpdate,
 }) => {
-  if (isSpicy) {
-    return (
-      <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-600/10 px-3 py-2.5">
-        <Flame size={14} className="shrink-0 text-red-500" aria-hidden="true" />
-        <span className="text-[11px] font-bold text-red-600 dark:text-red-300">
-          {isAr ? 'قسم الحار ثابت باللون الأحمر — لا يتغيّر.' : 'The heat section is fixed red — it cannot change.'}
-        </span>
-      </div>
-    );
-  }
-  const current = featureColorDef(group.color);
   const setColor = (color?: FeatureColorId) =>
     onUpdate((prev) => ({
       ...prev,
@@ -206,64 +196,17 @@ const SectionColorPicker: React.FC<SectionColorPickerProps> = ({
     }));
   return (
     <div className="rounded-xl border border-neutral-800 bg-black/30 px-3 py-2.5 space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs text-neutral-400">
-          {isAr ? 'لون القسم (اختياري)' : 'Section color (optional)'}
-        </span>
-        {current && (
-          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-extrabold ${current.pill}`}>
-            {current.label[isAr ? 'ar' : 'en']}
-          </span>
-        )}
-      </div>
-      <div className="space-y-2.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            aria-pressed={!current}
-            onClick={() => setColor(undefined)}
-            className={`h-8 rounded-full border px-2.5 text-[10px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
-              !current
-                ? 'border-white/70 text-white'
-                : 'border-neutral-700 text-neutral-400 hover:border-neutral-500 hover:text-white'
-            }`}
-          >
-            {isAr ? 'بدون' : 'None'}
-          </button>
-        </div>
-        {FEATURE_COLOR_GROUPS.map((groupDef) => (
-          <div key={groupDef.id} className="space-y-1.5">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              {groupDef.label[isAr ? 'ar' : 'en']}
-            </span>
-            <div className="flex flex-wrap items-center gap-2">
-              {featureColorsInGroup(groupDef.id).map((color) => {
-                const selected = group.color === color.id;
-                const label = color.label[isAr ? 'ar' : 'en'];
-                return (
-                  <button
-                    key={color.id}
-                    type="button"
-                    aria-label={label}
-                    aria-pressed={selected}
-                    title={label}
-                    onClick={() => setColor(color.id)}
-                    className={`relative inline-flex h-8 w-8 items-center justify-center rounded-full transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] after:absolute after:-inset-1.5 after:content-[''] ${color.swatch} ${
-                      selected ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-900' : 'ring-1 ring-black/20'
-                    }`}
-                  >
-                    {selected && <Check size={14} strokeWidth={3} className={color.check} aria-hidden="true" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
+      <span className="block text-xs text-neutral-400">
+        {isAr ? 'لون القسم (اختياري)' : 'Section color (optional)'}
+      </span>
+      <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+        {isAr ? 'ألوان عامة' : 'General colors'}
+      </span>
+      <FeatureColorSwatches value={group.color} onChange={setColor} isAr={isAr} />
       <p className="text-[10px] leading-relaxed text-neutral-500">
         {isAr
-          ? 'للتنظيم في الأدمن فقط — قائمة العميل تبقى بلون موحد، والحار يبقى أحمر.'
-          : 'Admin organization only — the customer menu stays one unified color, and heat stays red.'}
+          ? 'للتنظيم في الأدمن فقط — قائمة العميل تبقى بلون موحد.'
+          : 'Admin organization only — the customer menu stays one unified color.'}
       </p>
     </div>
   );
@@ -297,7 +240,7 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
 
       {featuresByGroup(menu).map(({ group, features }) => {
         const isSpicy = isProtectedGroupId(group.id);
-        const colorDef = isSpicy ? featureColorDef('red') : featureColorDef(group.color);
+        const colorDef = featureColorDef(group.color);
         const groupName = group.id
           ? (isAr ? group.name.ar : group.name.en) || group.id
           : (isAr ? 'أخرى' : 'Other');
@@ -447,7 +390,6 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                 <SectionColorPicker
                   group={group}
                   isAr={isAr}
-                  isSpicy={isSpicy}
                   onUpdate={onUpdate}
                 />
               ) : null}

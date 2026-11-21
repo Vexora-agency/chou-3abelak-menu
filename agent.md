@@ -86,14 +86,14 @@
   shows the photo field for list items, and every category style now has a
   one-line hint (no long instructions). Round categories use a square crop with
   a circular guide/preview; the stored image stays square and the card clips it.
-  Feature-library sections can carry an optional **admin-only** color
-  (`FeatureGroup.color`, curated General + Food palette — vegetables green,
-  cheese yellow, meat, chicken, seafood, sauce, bread, drinks, dessert, vegan,
-  mushroom, olive; heat locked red). The customer sees
-  one unified brand-gold option pill; custom section colors never reach the
-  storefront. Selected add-ons also show beside the dish name as compact
-  `AddonPill`s (same shape as `HeatPill`, unified gold; heat stays red).
-  Guarded by `test:colors`; see `docs/FEATURE_COLORS.md`.
+  Feature-library sections and individual options can carry an optional
+  **admin-only** color (`FeatureGroup.color` / `FeatureDef.color`, one clean
+  8-color General palette, swatches without names). Every section — including
+  heat — has the same optional picker; every feature row has its own. The
+  customer sees one unified brand-gold option pill; admin colors never reach
+  the storefront, and customer heat stays red. Selected add-ons also show
+  beside the dish name as compact `AddonPill`s (same shape as `HeatPill`,
+  unified gold). Guarded by `test:colors`; see `docs/FEATURE_COLORS.md`.
   `AccountSheet` tabs
   are now **My orders · Wishlist · Settings** (`grid-cols-3`); saved rows show
   photo/name/price/options and open the dish after closing the sheet. Guests

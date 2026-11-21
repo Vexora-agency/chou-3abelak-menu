@@ -161,7 +161,7 @@ export function normalizeMenu<T>(menu: T): T {
   };
   const defs: Record<string, unknown>[] = [];
   const defById = new Map<string, Record<string, unknown>>();
-  const ensureDef = (id: unknown, name: unknown, groupId?: unknown, fallbackKind?: string) => {
+  const ensureDef = (id: unknown, name: unknown, groupId?: unknown, fallbackKind?: string, color?: unknown) => {
     if (typeof id !== 'string' || !id || defById.has(id)) return;
     const nm = name && typeof name === 'object'
       ? {
@@ -172,7 +172,9 @@ export function normalizeMenu<T>(menu: T): T {
     const g = (typeof groupId === 'string' && groupById.has(groupId))
       ? groupById.get(groupId)
       : defaultGroupFor(fallbackKind === 'addon' ? 'addon' : 'size');
-    const def = { id, groupId: g ? (g.id as string) : 'sizes', name: nm };
+    const def: Record<string, unknown> = { id, groupId: g ? (g.id as string) : 'sizes', name: nm };
+    // Optional admin-only feature color (customer ignores it).
+    if (isFeatureColorId(color)) def.color = color;
     defs.push(def);
     defById.set(id, def);
   };
@@ -184,15 +186,15 @@ export function normalizeMenu<T>(menu: T): T {
     const legacyKind = (dd.kind === 'size' || dd.kind === 'addon') ? (dd.kind as string) : null;
     if (!gid && !legacyKind) {
       // Unplaceable legacy row without any hint — keep it under sizes
-      ensureDef(dd.id, dd.name, null, 'size');
+      ensureDef(dd.id, dd.name, null, 'size', dd.color);
       continue;
     }
     if (!gid && legacyKind) {
       // Old kind-carrying feature without a section → default bucket of its kind
-      ensureDef(dd.id, dd.name, null, legacyKind);
+      ensureDef(dd.id, dd.name, null, legacyKind, dd.color);
       continue;
     }
-    ensureDef(dd.id, dd.name, gid);
+    ensureDef(dd.id, dd.name, gid, undefined, dd.color);
   }
   if (Array.isArray(m.items)) {
     out.items = (m.items as unknown[]).map((item) => {

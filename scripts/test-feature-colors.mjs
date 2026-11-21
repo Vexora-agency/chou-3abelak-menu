@@ -28,7 +28,32 @@ const check = (name, cond) => {
   }
 };
 
-const KEYS = ['gold', 'amber', 'orange', 'red', 'rose', 'violet', 'sky', 'emerald'];
+const KEYS = [
+  'gold',
+  'amber',
+  'orange',
+  'red',
+  'rose',
+  'violet',
+  'sky',
+  'emerald',
+  'vegetables',
+  'cheese',
+  'meat',
+  'chicken',
+  'seafood',
+  'sauce',
+  'bread',
+  'drinks',
+  'dessert',
+  'vegan',
+  'mushroom',
+  'olive',
+];
+/** Semantic food shortcuts — the part the admin asked for: vegetables green,
+ *  cheese yellow, meat/chicken/seafood/sauce/bread/drinks/dessert/vegan/
+ *  mushroom/olive. They stay optional and admin-only. */
+const FOOD_KEYS = KEYS.slice(8);
 
 /* ---------- server allowlist + normalizer ---------- */
 
@@ -68,6 +93,29 @@ check(
   KEYS.every((key) => colors.includes(`id: '${key}'`))
 );
 check(
+  'the palette is split into General and Food groups',
+  has(colors, "id: 'general'", "id: 'food'", 'featureColorsInGroup')
+    && KEYS.every((key) => colors.includes(`id: '${key}'`))
+    && colors.includes(`group: 'general'`)
+    && colors.includes(`group: 'food'`)
+);
+check(
+  'famous add-ons have professional semantic colors',
+  FOOD_KEYS.every((key) => colors.includes(`id: '${key}'`))
+    && has(colors, "id: 'vegetables'", "swatch: 'bg-green-600'")
+    && has(colors, "id: 'cheese'", "swatch: 'bg-yellow-400'")
+    && has(colors, "id: 'meat'", "swatch: 'bg-red-700'")
+    && has(colors, "id: 'chicken'", "swatch: 'bg-orange-400'")
+    && has(colors, "id: 'seafood'", "swatch: 'bg-cyan-500'")
+    && has(colors, "id: 'sauce'", "swatch: 'bg-rose-600'")
+    && has(colors, "id: 'bread'", "swatch: 'bg-amber-700'")
+    && has(colors, "id: 'drinks'", "swatch: 'bg-blue-500'")
+    && has(colors, "id: 'dessert'", "swatch: 'bg-pink-400'")
+    && has(colors, "id: 'vegan'", "swatch: 'bg-lime-500'")
+    && has(colors, "id: 'mushroom'", "swatch: 'bg-stone-500'")
+    && has(colors, "id: 'olive'", "swatch: 'bg-lime-700'")
+);
+check(
   'customer chips share one unified brand treatment',
   has(colors, 'UNIFIED_FEATURE_CHIP_ACTIVE', 'UNIFIED_FEATURE_CHIP_IDLE', 'bg-[var(--primary)] text-[#0A0A0A]', 'bg-[var(--primary)]/10')
 );
@@ -82,7 +130,11 @@ check(
 const admin = read('src/features/admin/components/FeaturesSection.tsx');
 check(
   'the admin has an optional section color picker with a None choice',
-  has(admin, 'SectionColorPicker', "isAr ? 'لون القسم (اختياري)' : 'Section color (optional)'", 'FEATURE_COLORS.map', 'setColor(undefined)')
+  has(admin, 'SectionColorPicker', "isAr ? 'لون القسم (اختياري)' : 'Section color (optional)'", 'setColor(undefined)')
+);
+check(
+  'the picker shows General and Food color rows',
+  has(admin, 'FEATURE_COLOR_GROUPS.map', 'featureColorsInGroup(groupDef.id)', 'groupDef.label')
 );
 check(
   'the chosen color paints the section header and feature-list edge',

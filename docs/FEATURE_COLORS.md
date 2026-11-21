@@ -8,9 +8,11 @@ customer storefront deliberately stays on one unified brand color.
 
 - **Optional.** New sections start with no color. The picker has a **None**
   option; nothing is mandatory.
-- **Curated palette.** Gold, amber, orange, red, rose, violet, sky, emerald —
-  chosen from swatches, not a free color input, so light/dark contrast stays
-  predictable.
+- **Curated palette, two rows.** **General colors** (Gold, Amber, Orange, Red,
+  Rose, Violet, Sky, Emerald) and **Food colors** — semantic shortcuts for
+  famous add-ons: Vegetables (green), Cheese (yellow), Meat, Chicken, Seafood,
+  Sauce, Bread, Drinks, Dessert, Vegan, Mushroom, Olive. Chosen from swatches,
+  not a free color input, so light/dark contrast stays predictable.
 - **Admin only.** The color paints the section name pill and the feature-list
   start edge in the Libraries tab. The customer item sheet does **not** read
   it: sizes and add-ons use one unified brand-gold pill, and the heat section
@@ -24,8 +26,8 @@ customer storefront deliberately stays on one unified brand color.
 ## Files
 
 - `src/types/menu.ts` — `FeatureColorId` + `FeatureGroup.color`.
-- `src/utils/featureColors.ts` — palette, pill/swatch classes and the unified
-  customer chip classes.
+- `src/utils/featureColors.ts` — palette (General + Food groups), pill/swatch
+  classes and the unified customer chip classes.
 - `functions/_shared/feature-colors.js` — server allowlist + normalizer.
 - `functions/_shared/validate-feature-library.js` and
   `functions/_shared/pricing-menu.js` — preserve valid colors.

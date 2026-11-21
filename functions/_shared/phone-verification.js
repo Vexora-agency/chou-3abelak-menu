@@ -18,6 +18,8 @@ import { normalizePhoneDigits } from './validate-auth.js';
 
 /** Code lives in the WhatsApp message for 5 minutes. */
 export const VERIFICATION_CODE_TTL_MS = 5 * 60 * 1000;
+/** A "call me" request stays on the dashboard for 15 minutes. */
+export const VERIFICATION_CALLBACK_TTL_MS = 15 * 60 * 1000;
 /** An approved number stays verified for a year. */
 export const VERIFICATION_VALIDITY_MS = 365 * 24 * 60 * 60 * 1000;
 /** One new code per member+number per minute. */
@@ -155,4 +157,9 @@ export function buildVerificationWhatsAppUrl(storeNumber, message) {
 /** ISO expiry for a code created at `createdMs`. */
 export function codeExpiresAt(createdMs) {
   return new Date(createdMs + VERIFICATION_CODE_TTL_MS).toISOString();
+}
+
+/** ISO expiry for a callback request created at `createdMs`. */
+export function callbackExpiresAt(createdMs) {
+  return new Date(createdMs + VERIFICATION_CALLBACK_TTL_MS).toISOString();
 }

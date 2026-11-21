@@ -25,6 +25,7 @@ interface PendingRow {
   id: string;
   phone: string;
   reference: string;
+  method: 'whatsapp' | 'sms';
   createdAt: string;
   expiresAt: string;
   memberName: string;
@@ -37,6 +38,8 @@ const STR = {
     subtitle: 'Automatic WhatsApp verification is on. Rows here need a manual fallback decision — match the sender number + Ref, then approve.',
     pending: 'pending',
     refLabel: 'Ref',
+    smsBadge: 'SMS',
+    smsHint: 'Auto — no action needed unless it stays pending.',
     empty: 'No pending verification requests.',
     emptyHint: 'New requests appear here instantly; the owner also gets a Telegram ping.',
     refresh: 'Refresh',
@@ -57,6 +60,8 @@ const STR = {
     subtitle: 'التأكيد التلقائي عبر واتساب مفعّل. الطلبات الظاهرة هنا تحتاج قرارًا يدويًا احتياطيًا — طابق رقم المرسل والمرجع ثم اعتمد.',
     pending: 'بالانتظار',
     refLabel: 'المرجع',
+    smsBadge: 'SMS',
+    smsHint: 'تلقائي — لا يحتاج تدخلًا إلا إذا بقي معلقًا.',
     empty: 'لا توجد طلبات تأكيد بالانتظار.',
     emptyHint: 'تظهر الطلبات الجديدة هنا فورًا، ويصلك تنبيه تيليجرام أيضًا.',
     refresh: 'تحديث',
@@ -110,6 +115,7 @@ export function AdminPhoneVerifications({ lang, adminFetch }: AdminPhoneVerifica
             id: String(row.id || ''),
             phone: String(row.phone || ''),
             reference: String(row.reference || ''),
+            method: row.method === 'sms' ? ('sms' as const) : ('whatsapp' as const),
             createdAt: String(row.createdAt || ''),
             expiresAt: String(row.expiresAt || ''),
             memberName: String(row.memberName || ''),
@@ -247,17 +253,25 @@ export function AdminPhoneVerifications({ lang, adminFetch }: AdminPhoneVerifica
                       <span className="rounded-md border border-[var(--primary)]/30 bg-[var(--primary)]/10 px-1.5 py-0.5 text-[10px] font-black tracking-wider text-[var(--primary)]" dir="ltr">
                         {t.refLabel} {row.reference}
                       </span>
+                      {row.method === 'sms' && (
+                        <span className="rounded-md border border-sky-400/40 bg-sky-400/10 px-1.5 py-0.5 text-[10px] font-black tracking-wider text-sky-300">
+                          {t.smsBadge}
+                        </span>
+                      )}
                     </div>
                     <p className="mt-0.5 truncate text-[11px] font-semibold text-neutral-300">
                       {row.memberName || row.memberEmail || '—'}
                     </p>
+                    {row.method === 'sms' && (
+                      <p className="mt-0.5 text-[10px] font-semibold text-sky-400/80">{t.smsHint}</p>
+                    )}
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-semibold text-neutral-500">
                       <span className="inline-flex items-center gap-1">
                         <Clock size={11} aria-hidden="true" />
                         {leftMs > 0 ? `${t.expiresIn} ${formatMMSS(leftMs)}` : t.expired}
                       </span>
                       <span>{t.requested} {timeLabel(row.createdAt, isAr)}</span>
-                      {waDigits && (
+                      {row.method !== 'sms' && waDigits && (
                         <a
                           href={`https://wa.me/${waDigits}`}
                           target="_blank"

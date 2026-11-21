@@ -8,6 +8,7 @@ import {
   Copy,
   Loader2,
   MessageCircle,
+  MessageSquare,
   RefreshCw,
   ShieldCheck,
   X,
@@ -74,6 +75,8 @@ export function PhoneVerificationSheet({
   const t = PHONE_VERIFY_STR[lang];
   const isAr = lang === 'ar';
   const [copied, setCopied] = useState(false);
+  const [showSmsPanel, setShowSmsPanel] = useState(false);
+  const [smsCode, setSmsCode] = useState('');
   const panelRef = useRef<HTMLDivElement>(null);
   const autoRef = useRef<string | null>(null);
   const onVerifiedRef = useRef(onVerified);
@@ -123,6 +126,19 @@ export function PhoneVerificationSheet({
     return () => window.clearTimeout(id);
   }, [open, verification.phase]);
 
+  // A new code/number starts with the WhatsApp path; the SMS fallback is
+  // revealed manually (Need help?) or after 60 seconds without completing.
+  useEffect(() => {
+    setShowSmsPanel(false);
+    setSmsCode('');
+  }, [active?.reference, phone, open]);
+
+  useEffect(() => {
+    if (!open || verification.phase !== 'pending' || active?.method === 'sms') return;
+    const id = window.setTimeout(() => setShowSmsPanel(true), 60_000);
+    return () => window.clearTimeout(id);
+  }, [open, verification.phase, active?.reference, active?.method]);
+
   const onCopy = () => {
     if (!code) return;
     void copyText(code).then((ok) => {
@@ -141,12 +157,29 @@ export function PhoneVerificationSheet({
   const errorText = verification.error === 'rate_limited'
     ? t.errorRate
     : verification.error === 'cooldown'
-      ? t.errorCooldown
+      ? (active?.method === 'sms' ? t.smsCooldown : t.errorCooldown)
       : verification.error === 'phone_invalid'
         ? t.errorPhone
-        : verification.error
-          ? t.errorUnavailable
-          : '';
+        : verification.error === 'sms_failed'
+          ? t.smsErrorFailed
+          : verification.error === 'sms_unavailable'
+            ? t.smsErrorUnavailable
+            : verification.error === 'sms_rate_limited'
+              ? t.smsErrorTooMany
+              : verification.error
+                ? t.errorUnavailable
+                : '';
+  const smsErrorMessage = verification.smsError === 'code_invalid'
+    ? t.smsErrorInvalid
+    : verification.smsError === 'too_many_attempts'
+      ? t.smsErrorTooMany
+      : verification.smsError === 'no_pending' || verification.smsError === 'expired'
+        ? t.smsErrorExpired
+        : verification.smsError === 'sms_unavailable'
+          ? t.smsErrorUnavailable
+          : verification.smsError === 'sms_verify_failed'
+            ? t.smsErrorFailed
+            : '';
 
   const panelClass = darkMode
     ? 'bg-[#101010] border-neutral-800 text-white'
@@ -157,6 +190,112 @@ export function PhoneVerificationSheet({
     : 'bg-neutral-50 border-neutral-200';
   const primaryBtn =
     'btn-tactile inline-flex w-full min-h-[52px] items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--primary)]';
+
+  const smsFallback = active?.method === 'sms' ? null : (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setShowSmsPanel((visible) => !visible)}
+        className={`mx-auto flex min-h-[36px] items-center gap-1.5 rounded-full px-3 text-[10.5px] font-extrabold underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+          darkMode ? 'text-neutral-400 hover:text-neutral-200' : 'text-neutral-500 hover:text-neutral-800'
+        }`}
+      >
+        <MessageSquare size={12} aria-hidden="true" />
+        {t.needHelp}
+      </button>
+      {showSmsPanel && (
+        <div className={`rounded-2xl border p-4 ${subtleCard}`}>
+          <p className="text-[11px] font-extrabold">{t.smsTitle}</p>
+          <p className={`mt-1 text-[10.5px] leading-relaxed ${muted}`}>{t.smsBody}</p>
+          <button
+            type="button"
+            onClick={() => void verification.request(lang, 'sms')}
+            disabled={verification.requesting}
+            className={`${primaryBtn} mt-3 bg-[var(--primary)] text-black hover:brightness-95 disabled:opacity-60`}
+          >
+            {verification.requesting ? (
+              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <MessageSquare size={16} aria-hidden="true" />
+            )}
+            {verification.requesting ? t.sendingSms : t.sendSms}
+          </button>
+          <p className={`mt-2 text-center text-[9.5px] leading-relaxed ${muted}`}>{t.smsHint}</p>
+        </div>
+      )}
+    </div>
+  );
+
+  const smsActivePanel = active?.method === 'sms' ? (
+    <div className={`rounded-2xl border p-4 ${subtleCard}`}>
+      <div className="flex items-center justify-between gap-3">
+        <span className={`text-[10px] font-extrabold uppercase tracking-[0.15em] ${muted}`}>
+          {t.smsSent}
+        </span>
+        <b className="text-sm font-black tabular-nums" dir="ltr">+{active.phone}</b>
+      </div>
+
+      <label htmlFor="sms-code" className={`mt-3 block text-[10.5px] font-bold ${muted}`}>
+        {t.smsCodeLabel}
+      </label>
+      <div className="mt-1 flex gap-2">
+        <input
+          id="sms-code"
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={8}
+          value={smsCode}
+          onChange={(event) => setSmsCode(event.target.value.replace(/[^0-9]/g, '').slice(0, 8))}
+          dir="ltr"
+          placeholder="••••••"
+          className={`min-w-0 flex-1 h-12 rounded-xl border text-center text-lg font-black tracking-[0.28em] tabular-nums focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${
+            darkMode
+              ? 'bg-[#101010] border-neutral-700 text-white placeholder-neutral-500'
+              : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400'
+          }`}
+        />
+        <button
+          type="button"
+          onClick={() => void verification.verifySms(smsCode)}
+          disabled={verification.verifying || smsCode.length < 4}
+          className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[var(--primary)] px-3 text-[11px] font-extrabold text-black transition-opacity hover:brightness-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+        >
+          {verification.verifying ? (
+            <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+          ) : (
+            <Check size={14} aria-hidden="true" />
+          )}
+          {verification.verifying ? t.verifyingCode : t.verifyCode}
+        </button>
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <span className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${leftMs <= 0 ? 'text-red-500' : muted}`}>
+          <Clock size={12} aria-hidden="true" />
+          {leftMs <= 0 ? t.expired : `${t.smsExpires} ${formatMMSS(leftMs)}`}
+        </span>
+        <button
+          type="button"
+          onClick={() => void verification.request(lang, 'sms')}
+          disabled={verification.requesting}
+          className={`inline-flex min-h-[32px] items-center gap-1 text-[10.5px] font-extrabold underline underline-offset-2 disabled:opacity-60 ${
+            darkMode ? 'text-neutral-300' : 'text-neutral-600'
+          }`}
+        >
+          <RefreshCw size={11} className={verification.requesting ? 'animate-spin' : ''} aria-hidden="true" />
+          {verification.requesting ? t.sendingSms : t.smsResend}
+        </button>
+      </div>
+
+      {smsErrorMessage && (
+        <p role="alert" className="mt-2 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-[10.5px] font-bold text-red-500">
+          {smsErrorMessage}
+        </p>
+      )}
+      <p className={`mt-2 text-center text-[9.5px] leading-relaxed ${muted}`}>{t.smsHint}</p>
+    </div>
+  ) : null;
 
   return (
     <AnimatePresence>
@@ -260,7 +399,9 @@ export function PhoneVerificationSheet({
                     </p>
                   )}
 
-                  {code && active ? (
+                  {active?.method === 'sms' ? (
+                    smsActivePanel
+                  ) : code && active ? (
                     <>
                       <div className={`rounded-2xl border-2 border-dashed p-4 text-center ${
                         darkMode ? 'border-[var(--primary)]/40 bg-[var(--primary)]/5' : 'border-[#c9a800]/50 bg-[#fffbea]'
@@ -313,6 +454,8 @@ export function PhoneVerificationSheet({
                       )}
                       <p className={`text-center text-[10.5px] leading-relaxed ${muted}`}>{t.sendHint}</p>
 
+                      {smsFallback}
+
                       {verification.phase === 'pending' && (
                         <div className="space-y-2">
                           <p className={`flex items-center justify-center gap-2 text-[11px] font-bold ${muted}`} role="status">
@@ -337,6 +480,7 @@ export function PhoneVerificationSheet({
                     <div className={`rounded-2xl border px-4 py-6 text-center ${subtleCard}`}>
                       <Loader2 size={24} className={`mx-auto animate-spin ${muted}`} aria-hidden="true" />
                       <p className={`mt-2 text-[11px] font-bold ${muted}`}>{t.checking}</p>
+                      {smsFallback}
                     </div>
                   ) : (
                     <div className={`rounded-2xl border px-4 py-5 text-center ${subtleCard}`}>
@@ -366,6 +510,7 @@ export function PhoneVerificationSheet({
                         )}
                         {verification.requesting ? t.gettingCode : active ? t.resend : t.getCode}
                       </button>
+                      {smsFallback}
                     </div>
                   )}
 

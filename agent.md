@@ -100,10 +100,16 @@
   service messages per business number per month (post-Oct-2026 pricing);
   approvals never depend on the reply cap. Client: `usePhoneVerification` +
   `PhoneVerificationSheet` (large code, copy, live countdown, pre-filled
-  `wa.me`, 4 s polling). Setup/pricing: `docs/WHATSAPP_VERIFICATION.md` and the
+  `wa.me`, 4 s polling). No WhatsApp? The sheet reveals **Need help? → Send SMS
+  code** (or after 60 s); UniMTX sends the OTP, the member types it, and the
+  server verifies it (`decided_by='sms'`, migration `0040`, env
+  `UNIMTX_ACCESS_KEY_ID`/`UNIMTX_ACCESS_KEY_SECRET`). There is **no reliable
+  WhatsApp pre-check**; behaviour-based routing keeps SMS charges for
+  non-WhatsApp members only. Setup/pricing:
+  `docs/WHATSAPP_VERIFICATION.md`, `docs/SMS_VERIFICATION_UNIMTX.md`, and the
   Arabic walkthrough `docs/WHATSAPP_CLOUD_API_SETUP_AR.md`. **Apply
-  0037/0038/0039 remotely BEFORE the reading code deploys.** Tests: `test:phone`
-  + `test:whatsapp`.
+  0037/0038/0039/0040 remotely BEFORE the reading code deploys.** Tests:
+  `test:phone` + `test:whatsapp` + `test:sms`.
 - Address precedence (cart → kitchen): the manually written cart address is
   what the kitchen receives. `functions/api/orders.js` overrides member
   name/email from the account and keeps the ENTERED verified phone (it no

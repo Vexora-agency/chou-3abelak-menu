@@ -3,6 +3,7 @@ import { ApiError } from '@/src/lib/api-client';
 import {
   fetchPhoneVerification,
   requestPhoneVerification,
+  verifyPhoneSms,
   type PendingPhoneVerification,
 } from '../services/account.api';
 import { PHONE_VERIFIED_EVENT } from '../profile';
@@ -26,7 +27,7 @@ export type PhoneVerificationPhase =
   | 'error';
 
 export interface ActivePhoneCode extends PendingPhoneVerification {
-  /** Missing when this device never saw the generated code (other device). */
+  /** Missing for SMS requests (the code arrives by SMS). */
   code: string | null;
   message?: string;
   whatsappUrl?: string | null;
@@ -38,11 +39,16 @@ export interface PhoneVerificationState {
   verifiedUntil: string | null;
   /** i18n key-ish error code: cooldown | rate_limited | phone_invalid | unavailable */
   error: string | null;
+  /** SMS send/verify error: code_invalid | too_many_attempts | sms_unavailable | ... */
+  smsError: string | null;
   retryAfter: number;
   requesting: boolean;
-  request: (lang?: 'en' | 'ar') => Promise<void>;
+  verifying: boolean;
+  request: (lang?: 'en' | 'ar', method?: 'whatsapp' | 'sms') => Promise<void>;
+  verifySms: (code: string) => Promise<void>;
   refresh: () => Promise<void>;
   clearError: () => void;
+  clearSmsError: () => void;
 }
 
 const CACHE_PREFIX = 'phone_verify_v2:';
@@ -65,6 +71,7 @@ function readCache(userId: string | null): ActivePhoneCode | null {
     return {
       phone: parsed.phone,
       reference: parsed.reference,
+      method: parsed.method === 'sms' ? 'sms' : 'whatsapp',
       createdAt: typeof parsed.createdAt === 'string' ? parsed.createdAt : '',
       expiresAt: parsed.expiresAt,
       code: typeof parsed.code === 'string' ? parsed.code : null,
@@ -93,6 +100,7 @@ function mergePending(
   return {
     phone: pending.phone,
     reference: pending.reference,
+    method: pending.method === 'sms' ? 'sms' : 'whatsapp',
     createdAt: pending.createdAt,
     expiresAt: pending.expiresAt,
     code: same ? cached.code : null,
@@ -120,6 +128,7 @@ function errorCode(err: unknown): { code: string; retryAfter: number; pending?: 
         pending = {
           phone: p.phone,
           reference: p.reference,
+          method: p.method === 'sms' ? 'sms' : 'whatsapp',
           createdAt: typeof p.createdAt === 'string' ? p.createdAt : '',
           expiresAt: p.expiresAt,
         };
@@ -142,9 +151,12 @@ export function usePhoneVerification(
   const [active, setActive] = useState<ActivePhoneCode | null>(null);
   const [verifiedUntil, setVerifiedUntil] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [smsError, setSmsError] = useState<string | null>(null);
   const [retryAfter, setRetryAfter] = useState(0);
   const [requesting, setRequesting] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const requestingRef = useRef(false);
+  const verifyingRef = useRef(false);
 
   const phoneRef = useRef<string | null>(normalized);
   const phaseRef = useRef<PhoneVerificationPhase>('idle');
@@ -157,11 +169,14 @@ export function usePhoneVerification(
     setRetryAfter(0);
   }, []);
 
+  const clearSmsError = useCallback(() => setSmsError(null), []);
+
   const applyVerified = useCallback((until: string | null) => {
     setVerifiedUntil(until);
     setActive(null);
     setPhase('verified');
     setError(null);
+    setSmsError(null);
     setRetryAfter(0);
     writeCache(userId, null);
     if (typeof window !== 'undefined') {
@@ -212,19 +227,40 @@ export function usePhoneVerification(
     }
   }, [applyVerified, enabled, userId]);
 
-  const request = useCallback(async (lang: 'en' | 'ar' = 'en') => {
+  const request = useCallback(async (lang: 'en' | 'ar' = 'en', method: 'whatsapp' | 'sms' = 'whatsapp') => {
     const target = phoneRef.current;
     if (!enabled || !userId || !target || requestingRef.current) return;
     requestSeqRef.current += 1;
     requestingRef.current = true;
     setRequesting(true);
     clearError();
+    setSmsError(null);
     setPhase((p) => (p === 'pending' ? p : 'checking'));
     try {
-      const result = await requestPhoneVerification(target, lang);
+      const result = await requestPhoneVerification(target, lang, method);
       if (phoneRef.current !== target) return;
       if (result.verified) {
         applyVerified(result.verifiedUntil ?? null);
+        return;
+      }
+      const pending = result.pending;
+      if (result.method === 'sms' || pending?.method === 'sms') {
+        if (!pending) {
+          await refresh();
+          return;
+        }
+        const next: ActivePhoneCode = {
+          phone: pending.phone,
+          reference: pending.reference,
+          method: 'sms',
+          createdAt: pending.createdAt,
+          expiresAt: pending.expiresAt,
+          code: null,
+          whatsappUrl: null,
+        };
+        setActive(next);
+        writeCache(userId, next);
+        setPhase('pending');
         return;
       }
       const v = result.verification;
@@ -232,6 +268,7 @@ export function usePhoneVerification(
         const next: ActivePhoneCode = {
           phone: v.phone,
           reference: v.reference,
+          method: 'whatsapp',
           createdAt: v.createdAt,
           expiresAt: v.expiresAt,
           code: v.code,
@@ -262,10 +299,42 @@ export function usePhoneVerification(
     }
   }, [applyVerified, clearError, enabled, refresh, userId]);
 
+  /** Submit the 6-digit code received by SMS. */
+  const verifySms = useCallback(async (code: string) => {
+    const target = phoneRef.current;
+    if (!enabled || !userId || !target || verifyingRef.current) return;
+    if (!active || active.method !== 'sms') return;
+    const digits = String(code || '').replace(/[^0-9]/g, '');
+    if (digits.length < 4 || digits.length > 8) {
+      setSmsError('code_invalid');
+      return;
+    }
+    verifyingRef.current = true;
+    setVerifying(true);
+    setSmsError(null);
+    try {
+      const result = await verifyPhoneSms(target, digits);
+      if (phoneRef.current !== target) return;
+      if (result.verified) {
+        applyVerified(result.verifiedUntil ?? null);
+      } else {
+        setSmsError('code_invalid');
+      }
+    } catch (err) {
+      const parsed = errorCode(err);
+      if (phoneRef.current !== target) return;
+      setSmsError(parsed.code);
+    } finally {
+      verifyingRef.current = false;
+      setVerifying(false);
+    }
+  }, [active, applyVerified, enabled, userId]);
+
   // Reset + status read whenever the watched number changes.
   useEffect(() => {
     requestSeqRef.current += 1;
     setError(null);
+    setSmsError(null);
     setRetryAfter(0);
     setActive(null);
     setVerifiedUntil(null);
@@ -343,10 +412,14 @@ export function usePhoneVerification(
     active,
     verifiedUntil,
     error,
+    smsError,
     retryAfter,
     requesting,
+    verifying,
     request,
+    verifySms,
     refresh,
     clearError,
+    clearSmsError,
   };
 }

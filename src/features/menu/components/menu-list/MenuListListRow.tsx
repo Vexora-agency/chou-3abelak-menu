@@ -114,7 +114,7 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         leaveDelayMs != null ? ' row-leaving' : ''
       }`}
     >
-      {/* Photo (or branded stand-in), with the automatic badge overlaid. */}
+      {/* Photo (or branded stand-in). */}
       <div
         className={`relative w-[38%] sm:w-[36%] shrink-0 self-stretch overflow-hidden rounded-xl border ${
           darkMode ? 'border-white/10' : 'border-black/5'
@@ -155,21 +155,6 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
           className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10"
         />
 
-        {topBadge && (
-          <span
-            className={`absolute start-2 top-2 z-10 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-black shadow-sm ${
-              topBadge === 'spicy'
-                ? 'border-red-500/40 bg-red-600/85 text-white'
-                : 'border-[var(--primary)] bg-[#0A0A0A] text-[var(--primary)]'
-            }${festive ? ' xmas-badge' : ''}`}
-          >
-            {topBadge === 'spicy' && <Flame size={9} className="fill-white/30" aria-hidden="true" />}
-            {topBadge === 'top' && <Award size={9} className="fill-[var(--primary)]" aria-hidden="true" />}
-            {topBadge === 'new' && <Sparkles size={9} aria-hidden="true" />}
-            {badgeLabel(topBadge, lang)}
-          </span>
-        )}
-
         {isSoldOut && (
           <div className="absolute inset-0 z-[5] flex items-center justify-center bg-black/55">
             <span className="rounded-full border border-white/70 px-2 py-0.5 text-[9px] font-black text-white">
@@ -179,7 +164,19 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         )}
       </div>
 
-      {/* Name / description / price. */}
+      {topBadge && (
+        <span
+          className={`absolute -top-[7px] -start-1 z-20 inline-flex -rotate-3 items-center gap-1 rounded-full border-[1.5px] border-[var(--primary)] bg-[#0A0A0A] px-2.5 py-1 text-[10px] font-extrabold text-[var(--primary)] shadow-lg rtl:rotate-3${festive ? ' xmas-badge' : ''}`}
+        >
+          {topBadge === 'spicy' && <Flame size={10} className="fill-[var(--primary)]" aria-hidden="true" />}
+          {topBadge === 'top' && <Award size={10} className="fill-[var(--primary)]" aria-hidden="true" />}
+          {topBadge === 'new' && <Sparkles size={10} aria-hidden="true" />}
+          {badgeLabel(topBadge, lang)}
+        </span>
+      )}
+
+      {/* Name / reserved description slot / brand price. The description
+          always reserves two lines so cards with and without copy align. */}
       <div className="flex min-w-0 flex-1 flex-col justify-center px-2.5 sm:px-3.5">
         <h3
           dir="auto"
@@ -189,29 +186,27 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         >
           {name}
         </h3>
-        {description && (
-          <p
-            dir="auto"
-            title={description}
-            className={`mt-0.5 line-clamp-2 text-[10.5px] min-[380px]:text-[11px] sm:text-[11.5px] leading-[1.35] ${
-              darkMode ? 'text-neutral-400' : 'text-neutral-500'
-            }`}
-          >
-            {description}
-          </p>
-        )}
+        <p
+          dir="auto"
+          title={description || undefined}
+          aria-hidden={description ? undefined : true}
+          className={`mt-0.5 line-clamp-2 min-h-[2.6em] text-[10.5px] min-[380px]:text-[11px] sm:text-[11.5px] leading-[1.35] ${
+            darkMode ? 'text-neutral-400' : 'text-neutral-500'
+          }`}
+        >
+          {description || '\u00A0'}
+        </p>
         <span
           dir="auto"
-          className={`mt-1 text-[14px] min-[380px]:text-[15px] sm:text-[17px] font-black leading-none tabular-nums ${
-            darkMode ? 'text-[var(--primary)]' : 'text-[#8a6d00]'
-          }`}
+          className="mt-1 inline-flex w-fit items-center rounded-full bg-[var(--primary)] px-2 py-0.5 text-[12px] min-[380px]:text-[13px] sm:text-[15px] font-black leading-none text-[#0A0A0A] tabular-nums shadow-sm"
         >
           {priceLabel(item, lang, currency, menu)}
         </span>
       </div>
 
-      {/* Action column: bare heart on top, icon-only add/stepper at the
-          bottom — the reference's layout, kept to the site's black/gold UI. */}
+      {/* Action column: glassy wishlist heart on top, icon-only add/stepper
+          at the bottom — the reference's layout, kept to the site's black/gold
+          UI and the same heart treatment as the other card styles. */}
       <div
         className="flex w-12 sm:w-[54px] shrink-0 flex-col items-center justify-between"
         onClick={(e) => e.stopPropagation()}
@@ -224,7 +219,8 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
             itemName={name}
             lang={lang}
             darkMode={darkMode}
-            variant="bare"
+            variant="icon"
+            tone="overlay"
             size="sm"
           />
         </div>

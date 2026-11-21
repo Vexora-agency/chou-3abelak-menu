@@ -200,14 +200,38 @@ check(
   has(listCard, 'SmartMenuImage', 'photo-placeholder', 'sectionMark', 'failedSrc')
 );
 check(
-  'the list card actions are icon-only: bare heart + vertical add/stepper',
-  has(listCard, 'variant="bare"', 'layout="vertical"', 'w-12 sm:w-[54px]', 'justify-between')
+  'the list card actions are icon-only: glassy heart + vertical add/stepper',
+  has(listCard, 'variant="icon"', 'tone="overlay"', 'layout="vertical"', 'w-12 sm:w-[54px]', 'justify-between')
     && !listCard.includes('أضف للسلة')
+);
+check(
+  'the list card reserves a description slot and uses the brand price pill',
+  has(listCard, 'min-h-[2.6em]', 'bg-[var(--primary)] px-2 py-0.5', 'rounded-full')
+);
+check(
+  'the list badge hangs on the card edge like the round style',
+  has(listCard, 'absolute -top-[7px] -start-1', 'z-20')
+);
+const listAction = read('src/features/menu/components/menu-list/MenuListItemAction.tsx');
+check(
+  'the list add control is icon-only with a vertical stepper',
+  has(listAction, "layout?: 'horizontal' | 'vertical'", 'renderVerticalStepper', 'w-12 h-12 rounded-2xl', 'addIcon = vertical ? 20')
+    && !listAction.includes('أضف للسلة')
 );
 const menuListSource = read('src/features/menu/components/MenuList.tsx');
 check(
   'the list section is a single, centered compact column',
   has(menuListSource, "if (kind === 'list') return 1;", "kind === 'list'", 'max-w-3xl')
+);
+const itemEdit = read('src/features/admin/components/ItemEditModal.tsx');
+check(
+  'the admin shows the photo field for list items',
+  has(itemEdit, "catLayout === 'list'", 'photoRelevant')
+);
+const categoriesTab = read('src/features/admin/components/CategoriesTab.tsx');
+check(
+  'the admin list style explains its photo behavior',
+  has(categoriesTab, "activeLayout === 'list'", 'بطاقة أفقية مدمجة', 'compact horizontal card')
 );
 
 /* ---------- account sheet ---------- */

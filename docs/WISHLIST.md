@@ -59,10 +59,11 @@ SQL lives in `functions/_shared/repositories/wishlist.repo.js`:
 - `MenuListGridCard` — text/photo grid: heart in the badge row.
 - `MenuListListRow` — the `list` layout is now a compact horizontal product
   card: a real photo (branded category placeholder on error/missing), name,
-  description and gold price, with a narrow action column holding the bare
-  wishlist heart on top and an **icon-only** gold add/stepper at the bottom.
-  The list section renders as one centered column (`max-w-3xl`) on every
-  breakpoint, matching the owner's compact reference.
+  a reserved description slot, and a brand-gold price pill, with a narrow
+  action column holding the glassy wishlist heart on top and an **icon-only**
+  gold add/stepper at the bottom. The list section renders as one centered
+  column (`max-w-3xl`) on every breakpoint, matching the owner's compact
+  reference. The admin item editor shows the photo field for list items too.
 - `MenuListCompactRow` — beside the cart action.
 - `MenuListRoundCard` — top-end corner, opposite the badge.
 - `FeaturedCarousel` — beside the quick-add button.

@@ -163,9 +163,17 @@ check(
   'the heat chip and slider stay red',
   has(spicy, 'bg-red-600/10 text-red-600 border-red-600/25', 'text-red-500', 'bg-red-500')
 );
+const addonPill = read('src/components/AddonPill.tsx');
+const itemModal = read('src/features/menu/components/ItemDetailsModal.tsx');
+check(
+  'selected add-ons appear as unified pills in the item header',
+  has(itemModal, 'AddonPill', '!isSpicyFeatureId')
+    && has(addonPill, 'bg-[var(--primary)]/10', 'text-[#8a6d00]', 'Check')
+);
 check(
   'no custom section color is read by the customer pickers',
   !variant.includes('featureColorDef') && !addon.includes('featureColorDef')
+    && !addonPill.includes('featureColorDef') && !itemModal.includes('featureColorDef')
 );
 
 /* ---------- result ---------- */

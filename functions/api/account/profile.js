@@ -81,11 +81,9 @@ export async function onRequest(context) {
   if (!location.ok) {
     return jsonNoStore({ error: location.code, message: authErrorMessage(location.code) }, 400);
   }
-  // The default address is only useful when its point is known: require the
-  // pin whenever an address is saved. Clearing the address clears the pin.
-  if (address.address && !location.location) {
-    return jsonNoStore({ error: 'address_pin_required', message: authErrorMessage('address_pin_required') }, 400);
-  }
+  // The map pin is OPTIONAL. The written default address is enough; a pin
+  // only sharpens the kitchen ticket. Keep the stored point in sync with the
+  // submitted one (null clears it), never inventing a point for the text.
 
   try {
     const saved = await upsertCustomerProfile(

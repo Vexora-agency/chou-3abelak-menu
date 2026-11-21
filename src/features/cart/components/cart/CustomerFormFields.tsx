@@ -248,20 +248,12 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             </button>
           )}
         </div>
-        {isMember && hasDefaultAddress ? (
-          location ? null : (
-            <p className={`mt-1.5 flex items-start gap-1.5 text-[10.5px] font-semibold leading-relaxed ${darkMode ? 'text-emerald-400/90' : 'text-emerald-700'}`}>
-              <BadgeCheck size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
-              <span dir="auto">
-                {isAr ? 'عنوانك الافتراضي · عدّله من هنا.' : 'Your default address · edit it here.'}
-              </span>
-            </p>
-          )
-        ) : (
-          <p className={`mt-1 text-[11px] ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>
-            {location
-              ? (isAr ? 'النص المكتوب هو ما يصل للمطبخ — والدبوس يحدد نقطة الوصول.' : 'The written text is what the kitchen reads — the pin marks the exact drop-off.')
-              : (isAr ? 'اضغط على أيقونة الموقع لتحديد عنوانك بدقة وسهولة — أو اكتبه يدويًا.' : 'Tap the location icon to pin your address quickly and accurately — or type it manually.')}
+        {isMember && hasDefaultAddress && !location && (
+          <p className={`mt-1.5 flex items-start gap-1.5 text-[10.5px] font-semibold leading-relaxed ${darkMode ? 'text-emerald-400/90' : 'text-emerald-700'}`}>
+            <BadgeCheck size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span dir="auto">
+              {isAr ? 'عنوانك الافتراضي · عدّله من هنا.' : 'Your default address · edit it here.'}
+            </span>
           </p>
         )}
         {location && (

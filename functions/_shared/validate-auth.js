@@ -42,7 +42,6 @@ export const AUTH_ERROR_MESSAGES = Object.freeze({
   phone_required: 'Please enter your phone number.',
   address_invalid: 'Address must be 200 characters or fewer.',
   address_required: 'Please enter your default address.',
-  address_pin_required: 'Pin the default address on the map.',
   location_invalid: 'The pinned location is invalid.',
 });
 
@@ -170,27 +169,17 @@ export function validateProfileAddress(value) {
 }
 
 /**
- * A customer account is order-ready only when phone, default address and the
- * address pin are all present. One predicate shared by the profile route, the
- * order route and the policy tests.
+ * A customer account is order-ready when phone and default address are
+ * present. The map pin is OPTIONAL: the written address is the source of
+ * truth, and a pin only sharpens the kitchen ticket. One predicate shared by
+ * the profile route, the order route and the policy tests.
  * @param {{ phone?: unknown, address?: unknown, location?: unknown } | null | undefined} profile
  */
 export function isProfileComplete(profile) {
   if (!profile || typeof profile !== 'object') return false;
   const phone = typeof profile.phone === 'string' ? profile.phone.trim() : '';
   const address = typeof profile.address === 'string' ? profile.address.trim() : '';
-  const location = profile.location;
-  return !!(
-    phone &&
-    address &&
-    location &&
-    location.lat !== null &&
-    location.lat !== undefined &&
-    location.lng !== null &&
-    location.lng !== undefined &&
-    Number.isFinite(Number(location.lat)) &&
-    Number.isFinite(Number(location.lng))
-  );
+  return !!(phone && address);
 }
 
 /**

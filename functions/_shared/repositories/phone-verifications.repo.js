@@ -66,7 +66,7 @@ export async function findPendingVerification(db, userId, phone, nowIso) {
   const stamp = typeof nowIso === 'string' ? nowIso : new Date().toISOString();
   return db
     .prepare(
-      `SELECT id, user_id, phone, reference, code_hash, status, created_at, expires_at, decided_at, decided_by
+      `SELECT id, user_id, phone, reference, code_hash, status, lang, created_at, expires_at, decided_at, decided_by
          FROM phone_verifications
         WHERE user_id = ?1 AND phone = ?2 AND status = 'pending' AND expires_at > ?3
         ORDER BY created_at DESC
@@ -113,8 +113,8 @@ export async function insertVerification(db, row) {
   const res = await db
     .prepare(
       `INSERT OR IGNORE INTO phone_verifications
-         (id, user_id, phone, reference, code_hash, status, created_at, expires_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, 'pending', ?6, ?7)`
+         (id, user_id, phone, reference, code_hash, status, lang, created_at, expires_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, 'pending', ?6, ?7, ?8)`
     )
     .bind(
       row.id,
@@ -122,6 +122,7 @@ export async function insertVerification(db, row) {
       digits,
       row.reference,
       row.codeHash,
+      row.lang === 'ar' ? 'ar' : 'en',
       row.createdAt,
       row.expiresAt
     )
@@ -136,7 +137,7 @@ export async function findValidVerification(db, userId, phone, nowMs = Date.now(
   const cutoffIso = new Date(nowMs - VERIFICATION_VALIDITY_MS).toISOString();
   return db
     .prepare(
-      `SELECT id, user_id, phone, reference, status, created_at, expires_at, decided_at, decided_by
+      `SELECT id, user_id, phone, reference, status, lang, created_at, expires_at, decided_at, decided_by
          FROM phone_verifications
         WHERE user_id = ?1 AND phone = ?2 AND status = 'approved' AND decided_at >= ?3
         ORDER BY decided_at DESC
@@ -152,7 +153,7 @@ export async function getVerificationById(db, id, userId = null) {
   if (userId) {
     return db
       .prepare(
-        `SELECT id, user_id, phone, reference, code_hash, status, created_at, expires_at, decided_at, decided_by
+        `SELECT id, user_id, phone, reference, code_hash, status, lang, created_at, expires_at, decided_at, decided_by
            FROM phone_verifications WHERE id = ?1 AND user_id = ?2`
       )
       .bind(id, userId)
@@ -160,7 +161,7 @@ export async function getVerificationById(db, id, userId = null) {
   }
   return db
     .prepare(
-      `SELECT id, user_id, phone, reference, code_hash, status, created_at, expires_at, decided_at, decided_by
+      `SELECT id, user_id, phone, reference, code_hash, status, lang, created_at, expires_at, decided_at, decided_by
          FROM phone_verifications WHERE id = ?1`
     )
     .bind(id)
@@ -177,7 +178,7 @@ export async function listVerifications(db, { status = 'pending', limit = 50, no
   if (status === 'pending') {
     const res = await db
       .prepare(
-        `SELECT v.id, v.user_id, v.phone, v.reference, v.status,
+        `SELECT v.id, v.user_id, v.phone, v.reference, v.status, v.lang,
                 v.created_at, v.expires_at, v.decided_at,
                 u.name AS user_name, u.email AS user_email
            FROM phone_verifications v
@@ -192,7 +193,7 @@ export async function listVerifications(db, { status = 'pending', limit = 50, no
   }
   const res = await db
     .prepare(
-      `SELECT v.id, v.user_id, v.phone, v.reference, v.status,
+      `SELECT v.id, v.user_id, v.phone, v.reference, v.status, v.lang,
               v.created_at, v.expires_at, v.decided_at,
               u.name AS user_name, u.email AS user_email
          FROM phone_verifications v
@@ -247,7 +248,7 @@ export async function listPendingVerificationsByPhone(db, phone, nowIso) {
   const stamp = typeof nowIso === 'string' ? nowIso : new Date().toISOString();
   const res = await db
     .prepare(
-      `SELECT id, user_id, phone, reference, code_hash, status, created_at, expires_at
+      `SELECT id, user_id, phone, reference, code_hash, status, lang, created_at, expires_at
          FROM phone_verifications
         WHERE phone = ?1 AND status = 'pending' AND expires_at > ?2
         ORDER BY created_at DESC
@@ -265,7 +266,7 @@ export async function findValidVerificationByPhone(db, phone, nowMs = Date.now()
   const cutoffIso = new Date(nowMs - VERIFICATION_VALIDITY_MS).toISOString();
   return db
     .prepare(
-      `SELECT id, user_id, phone, reference, status, created_at, expires_at, decided_at, decided_by
+      `SELECT id, user_id, phone, reference, status, lang, created_at, expires_at, decided_at, decided_by
          FROM phone_verifications
         WHERE phone = ?1 AND status = 'approved' AND decided_at >= ?2
         ORDER BY decided_at DESC

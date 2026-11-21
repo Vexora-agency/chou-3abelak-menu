@@ -73,17 +73,20 @@
   The old "طلبك مرتبط بحسابك تلقائيًا." line in the COD card is removed on
   purpose — do not re-add it. Guarded by `test:cart` + `test:phone`.
 - Reverse WhatsApp phone verification (migrations `0037_phone_verifications`,
-  `0038_whatsapp_webhook`): the site mints a 6-digit code bound to member +
-  normalized number (5-minute TTL; only a keyed hash is stored; a short `Ref` is
-  shown for matching), the member sends the pre-filled message FROM that number
-  to the business WhatsApp, and the **Cloud API webhook auto-approves it**:
-  `POST /api/whatsapp/webhook` verifies `X-Hub-Signature-256` over the raw body,
-  claims the Meta message id once, matches the code against the live pending row
-  for the sender, approves it (`decided_by='whatsapp'`), and replies with a
-  free-form service message — success `✅ تم تأكيد رقمك` or `❌ كود خاطئ، أعد
-  المحاولة`. **No Telegram notification for verification** (owner asked); the
-  manual pending list in `Admin → Customers → Accounts` stays as the fallback.
-  An approval lasts 365 days. Routes: `/api/account/phone-verification` (POST
+  `0038_whatsapp_webhook`, `0039_phone_verification_lang`): the site mints a
+  6-digit code bound to member + normalized number (5-minute TTL; only a keyed
+  hash is stored; a short `Ref` is shown for matching), the member sends the
+  pre-filled message FROM that number to the business WhatsApp, and the **Cloud
+  API webhook auto-approves it**: `POST /api/whatsapp/webhook` verifies
+  `X-Hub-Signature-256` over the raw body, claims the Meta message id once,
+  matches the code against the live pending row for the sender, approves it
+  (`decided_by='whatsapp'`), and replies with a free-form service message in the
+  member's site language (`phone_verifications.lang`): success `✅ تم تأكيد رقمك
+  بنجاح…` or `❌ كود خاطئ…`. The success copy is deliberately generic (no
+  "continue your order") because verification can happen in Account Settings.
+  **No Telegram notification for verification** (owner asked); the manual
+  pending list in `Admin → Customers → Accounts` stays as the fallback. An
+  approval lasts 365 days. Routes: `/api/account/phone-verification` (POST
   request/GET status, session + customer-CSRF, 60 s cooldown, 5/hour + 15/day
   caps), `/api/admin/phone-verifications` (pending list + approve/reject; the
   code is never returned to admin), `/api/whatsapp/webhook` (GET challenge +
@@ -97,9 +100,10 @@
   service messages per business number per month (post-Oct-2026 pricing);
   approvals never depend on the reply cap. Client: `usePhoneVerification` +
   `PhoneVerificationSheet` (large code, copy, live countdown, pre-filled
-  `wa.me`, 4 s polling). Setup/pricing: `docs/WHATSAPP_VERIFICATION.md`. **Apply
-  0037/0038 remotely BEFORE the reading code deploys.** Tests: `test:phone` +
-  `test:whatsapp`.
+  `wa.me`, 4 s polling). Setup/pricing: `docs/WHATSAPP_VERIFICATION.md` and the
+  Arabic walkthrough `docs/WHATSAPP_CLOUD_API_SETUP_AR.md`. **Apply
+  0037/0038/0039 remotely BEFORE the reading code deploys.** Tests: `test:phone`
+  + `test:whatsapp`.
 - Address precedence (cart → kitchen): the manually written cart address is
   what the kitchen receives. `functions/api/orders.js` overrides member
   name/email from the account and keeps the ENTERED verified phone (it no

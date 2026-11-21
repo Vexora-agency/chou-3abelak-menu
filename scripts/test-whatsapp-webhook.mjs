@@ -20,13 +20,14 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  WHATSAPP_REPLIES,
   extractVerificationCode,
   looksLikeVerificationMessage,
   normalizeWhatsAppPhone,
+  pickReplyLanguage,
   readWhatsAppMessages,
   sendWhatsAppText,
   verifyWebhookSignature,
+  whatsappReply,
 } from '../functions/_shared/whatsapp.js';
 import { VERIFICATION_CODE_TTL_MS } from '../functions/_shared/phone-verification.js';
 
@@ -114,15 +115,23 @@ check('missing signature rejected', !(await verifyWebhookSignature(raw, null, ap
 check('malformed signature rejected', !(await verifyWebhookSignature(raw, 'sha256=nothex', appSecret)));
 check('missing app secret rejected', !(await verifyWebhookSignature(raw, goodSig, '')));
 
-/* ---------- reply copy ---------- */
+/* ---------- reply copy + language ---------- */
 
-check('success says the number is confirmed (AR)', WHATSAPP_REPLIES.success.includes('تم تأكيد رقمك'));
-check('success says verified (EN)', /verified/i.test(WHATSAPP_REPLIES.success));
-check('wrong says the code is wrong (AR)', WHATSAPP_REPLIES.wrong.includes('خاطئ'));
-check('wrong asks to retry (AR)', WHATSAPP_REPLIES.wrong.includes('إعادة المحاولة'));
-check('wrong asks to retry (EN)', /try again/i.test(WHATSAPP_REPLIES.wrong));
-check('expired asks for a new code (AR)', WHATSAPP_REPLIES.expired.includes('رمزًا جديدًا'));
-check('missing asks for the 6-digit code', WHATSAPP_REPLIES.missing.includes('6'));
+const successAr = whatsappReply('success', 'ar');
+const successEn = whatsappReply('success', 'en');
+check('success says the number is confirmed (AR)', successAr.includes('تم تأكيد رقمك'));
+check('success says verified (EN)', /verified/i.test(successEn));
+check('success does not mention an order', !/order|طلب/i.test(successAr) && !/order/i.test(successEn));
+check('wrong says the code is wrong (AR)', whatsappReply('wrong', 'ar').includes('خاطئ'));
+check('wrong asks to retry (AR)', whatsappReply('wrong', 'ar').includes('إعادة المحاولة'));
+check('wrong asks to retry (EN)', /try again/i.test(whatsappReply('wrong', 'en')));
+check('expired asks for a new code (AR)', whatsappReply('expired', 'ar').includes('رمزًا جديدًا'));
+check('missing asks for the 6-digit code', whatsappReply('missing', 'ar').includes('6'));
+check('stored Arabic wins over English text', pickReplyLanguage('ar', 'Hello') === 'ar');
+check('stored English wins over Arabic text', pickReplyLanguage('en', 'مرحبا') === 'en');
+check('detects Arabic when the row has no language', pickReplyLanguage(null, 'مرحبًا! يرجى تأكيد رقمي') === 'ar');
+check('detects English when the row has no language', pickReplyLanguage(null, 'Hello! Please verify my number') === 'en');
+check('bare code falls back to Arabic', pickReplyLanguage(null, '123456') === 'ar');
 
 /* ---------- Graph send ---------- */
 
@@ -167,6 +176,8 @@ const migration = read('migrations/0038_whatsapp_webhook.sql');
 check('migration creates the webhook ledger', migration.includes('CREATE TABLE IF NOT EXISTS whatsapp_webhook_events'));
 check('migration makes the message id unique', migration.includes('message_id TEXT PRIMARY KEY'));
 check('migration indexes the sender for reply caps', migration.includes('idx_whatsapp_events_phone'));
+const langMigration = read('migrations/0039_phone_verification_lang.sql');
+check('migration remembers the site language', langMigration.includes('ADD COLUMN lang') && langMigration.includes("DEFAULT 'en'"));
 
 const route = read('functions/api/whatsapp/webhook.js');
 check('webhook verifies the GET challenge', route.includes("hub.mode") && route.includes("hub.verify_token") && route.includes('hub.challenge'));
@@ -175,16 +186,18 @@ check('webhook requires an app secret', route.includes('WHATSAPP_APP_SECRET') &&
 check('webhook claims each message once', route.includes('claimWhatsAppEvent') && route.includes('finishWhatsAppEvent'));
 check('webhook matches the code against the pending row', route.includes('verificationCodeMatches') && route.includes('listPendingVerificationsByPhone'));
 check('webhook auto-approves as whatsapp', route.includes("decidedBy: 'whatsapp'") && route.includes('decideVerification'));
-check('webhook replies success + wrong + expired', route.includes('WHATSAPP_REPLIES.success') && route.includes('WHATSAPP_REPLIES.wrong') && route.includes('WHATSAPP_REPLIES.expired'));
+check('webhook replies in the row language', route.includes("whatsappReply('success'") && route.includes('pickReplyLanguage'));
 check('webhook caps replies per phone + month', route.includes('REPLY_HOURLY_PER_PHONE') && route.includes('REPLY_DAILY_PER_PHONE') && route.includes('WHATSAPP_REPLY_MONTHLY_CAP'));
 check('webhook ignores ordinary messages without a reply', route.includes('looksLikeVerificationMessage(msg.text)') && route.includes('return'));
 
 const customerRoute = read('functions/api/account/phone-verification.js');
 check('customer route has no Telegram notification', !/telegram/i.test(customerRoute));
+check('customer route stores the site language', customerRoute.includes('lang,') && customerRoute.includes('insertVerification'));
 check('code TTL is five minutes', VERIFICATION_CODE_TTL_MS === 5 * 60 * 1000);
 
 const sheet = read('src/features/auth/strings.ts');
 check('sheet says automatic confirmation', sheet.includes('Confirmed automatically'));
+check('sheet success copy does not mention an order', !sheet.includes('You can place your order now.') && !sheet.includes('يمكنك إرسال طلبك الآن.'));
 
 const admin = read('src/features/admin/components/admin/AdminPhoneVerifications.tsx');
 check('admin panel describes the manual fallback', /Automatic WhatsApp verification is on/i.test(admin) && admin.includes('fallback'));

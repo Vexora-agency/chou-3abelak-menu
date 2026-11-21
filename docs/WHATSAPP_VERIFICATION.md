@@ -11,8 +11,9 @@ webhook is not configured or a reply fails.
 ## Flow
 
 1. Member enters a phone number in the cart or Account Settings.
-2. The site creates a pending row (member + normalized number), returns the code
-   once, and stores only a keyed hash + a short `Ref`.
+2. The site creates a pending row (member + normalized number + the site
+   language), returns the code once, and stores only a keyed hash + a short
+   `Ref`.
 3. Member taps **Send on WhatsApp**; the message is pre-filled with the code and
    `Ref`.
 4. Meta delivers the inbound message to `POST /api/whatsapp/webhook`.
@@ -20,16 +21,21 @@ webhook is not configured or a reply fails.
    - validates the `X-Hub-Signature-256` HMAC over the raw body;
    - finds the live pending row for the sender number;
    - checks the 6-digit code against the row hash;
-   - **correct** → approves the row (`decided_by='whatsapp'`) and replies
-     `✅ تم تأكيد رقمك بنجاح / Your phone number is verified`;
-   - **wrong** → keeps the row pending and replies
-     `❌ لقد كتبت كودًا خاطئًا… / Wrong code — try again`.
+   - **correct** → approves the row (`decided_by='whatsapp'`) and replies in the
+     member's site language, e.g. `✅ تم تأكيد رقمك بنجاح. يمكنك العودة إلى
+     الموقع الآن.` / `✅ Your phone number is verified. You can return to the
+     site now.`;
+   - **wrong** → keeps the row pending and replies `❌ لقد كتبت كودًا خاطئًا…` /
+     `❌ The code you entered is incorrect…`.
 6. The member's sheet polls and switches to the success state.
 
 Only the Meta message id, sender number, outcome, and timestamp are stored in
 `whatsapp_webhook_events`; the message body and the code are never persisted.
 Approvals last **365 days**. The order route checks the exact number being
 ordered; the profile API requires an approval only when the number **changes**.
+
+For the full Arabic Meta/Cloudflare walkthrough, see
+[`WHATSAPP_CLOUD_API_SETUP_AR.md`](WHATSAPP_CLOUD_API_SETUP_AR.md).
 
 ## Cloud API setup
 

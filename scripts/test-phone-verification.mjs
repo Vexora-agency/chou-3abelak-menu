@@ -202,7 +202,7 @@ check('settings verification sheet resumes the save', accountSheet.includes('ver
 
 const adminPanel = read('src/features/admin/components/admin/AdminPhoneVerifications.tsx');
 check('admin panel approves and rejects', adminPanel.includes("decide(row.id, 'approve')") && adminPanel.includes("decide(row.id, 'reject')"));
-check('admin panel shows the reference, not the code', adminPanel.includes('Ref {row.reference}') && !adminPanel.includes('row.code'));
+check('admin panel shows the reference, not the code', adminPanel.includes('{t.refLabel} {row.reference}') && !adminPanel.includes('row.code'));
 
 if (fails) {
   console.error(`\nFAIL — ${fails} assertion(s) failed`);

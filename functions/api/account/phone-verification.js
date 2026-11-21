@@ -181,6 +181,7 @@ export async function onRequest(context) {
       phone,
       reference,
       codeHash,
+      lang,
       createdAt: nowIso,
       expiresAt,
     });

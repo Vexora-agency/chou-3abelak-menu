@@ -17,12 +17,13 @@
 import { jsonNoStore, safeCompareStrings } from '../../_shared/session.js';
 import { captureBackendException } from '../../_shared/sentry.js';
 import {
-  WHATSAPP_REPLIES,
+  pickReplyLanguage,
   extractVerificationCode,
   looksLikeVerificationMessage,
   readWhatsAppMessages,
   sendWhatsAppText,
   verifyWebhookSignature,
+  whatsappReply,
 } from '../../_shared/whatsapp.js';
 import { getVerificationSecret, verificationCodeMatches } from '../../_shared/phone-verification.js';
 import {
@@ -107,6 +108,7 @@ async function handleMessage(context, env, db, msg) {
   try {
     const pendingRows = await listPendingVerificationsByPhone(db, msg.from, nowIso);
     const code = extractVerificationCode(msg.text);
+    const rowLang = pendingRows[0]?.lang;
 
     if (pendingRows.length === 0) {
       const approved = await findValidVerificationByPhone(db, msg.from, nowMs);
@@ -117,13 +119,27 @@ async function handleMessage(context, env, db, msg) {
         return;
       }
       outcome = 'no_request';
-      await maybeReply(env, db, msg, WHATSAPP_REPLIES.expired, nowMs, outcome);
+      await maybeReply(
+        env,
+        db,
+        msg,
+        whatsappReply('expired', pickReplyLanguage(null, msg.text)),
+        nowMs,
+        outcome
+      );
       return;
     }
 
     if (!code) {
       outcome = 'missing_code';
-      await maybeReply(env, db, msg, WHATSAPP_REPLIES.missing, nowMs, outcome);
+      await maybeReply(
+        env,
+        db,
+        msg,
+        whatsappReply('missing', pickReplyLanguage(rowLang, msg.text)),
+        nowMs,
+        outcome
+      );
       return;
     }
 
@@ -143,7 +159,14 @@ async function handleMessage(context, env, db, msg) {
 
     if (!matched) {
       outcome = 'wrong_code';
-      await maybeReply(env, db, msg, WHATSAPP_REPLIES.wrong, nowMs, outcome);
+      await maybeReply(
+        env,
+        db,
+        msg,
+        whatsappReply('wrong', pickReplyLanguage(rowLang, msg.text)),
+        nowMs,
+        outcome
+      );
       return;
     }
 
@@ -156,18 +179,26 @@ async function handleMessage(context, env, db, msg) {
       // A race with the manual dashboard button can lose the UPDATE even
       // though the row is now approved. Treat that as success, not expiry.
       const current = await getVerificationById(db, matched.id);
+      const lang = pickReplyLanguage(matched.lang, msg.text);
       if (current && current.status === 'approved') {
         outcome = 'verified';
-        await maybeReply(env, db, msg, WHATSAPP_REPLIES.success, nowMs, outcome);
+        await maybeReply(env, db, msg, whatsappReply('success', lang), nowMs, outcome);
       } else {
         outcome = 'expired';
-        await maybeReply(env, db, msg, WHATSAPP_REPLIES.expired, nowMs, outcome);
+        await maybeReply(env, db, msg, whatsappReply('expired', lang), nowMs, outcome);
       }
       return;
     }
 
     outcome = 'verified';
-    await maybeReply(env, db, msg, WHATSAPP_REPLIES.success, nowMs, outcome);
+    await maybeReply(
+      env,
+      db,
+      msg,
+      whatsappReply('success', pickReplyLanguage(matched.lang, msg.text)),
+      nowMs,
+      outcome
+    );
   } catch (err) {
     outcome = 'error';
     captureBackendException(context, err, { binding: 'd1', code: 'whatsapp_webhook' });

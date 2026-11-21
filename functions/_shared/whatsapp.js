@@ -16,17 +16,43 @@ import { normalizePhoneDigits } from './validate-auth.js';
 /** Current supported Graph version fallback; override with env if needed. */
 export const DEFAULT_GRAPH_VERSION = 'v24.0';
 
-/** Verification reply copy (Arabic first, English second). */
+/** Verification reply copy, in the member's site language. */
 export const WHATSAPP_REPLIES = Object.freeze({
-  success:
-    '✅ تم تأكيد رقمك بنجاح.\nYour phone number is verified — you can return to the site and continue your order.',
-  wrong:
-    '❌ لقد كتبت كودًا خاطئًا لتأكيد هاتفك.\nيرجى إعادة المحاولة بالرمز الصحيح، أو اطلب رمزًا جديدًا من الموقع.\nWrong code — check the 6-digit code and try again, or request a new one on the site.',
-  expired:
-    '⌛ انتهت صلاحية رمز التحقق أو لم يعد الطلب فعالًا.\nاطلب رمزًا جديدًا من الموقع ثم أرسله هنا.\nThis code expired or the request is no longer active. Request a new code on the site.',
-  missing:
-    '✍️ أرسل رمز التحقق المكوّن من 6 أرقام كما يظهر في الموقع.\nSend the 6-digit verification code shown on the site.',
+  en: {
+    success: '✅ Your phone number is verified. You can return to the site now.',
+    wrong:
+      '❌ The code you entered is incorrect. Please try again with the correct code, or request a new one on the site.',
+    expired:
+      '⌛ This code expired or the request is no longer active. Request a new code on the site, then send it here.',
+    missing: '✍️ Send the 6-digit verification code shown on the site.',
+  },
+  ar: {
+    success: '✅ تم تأكيد رقمك بنجاح. يمكنك العودة إلى الموقع الآن.',
+    wrong:
+      '❌ لقد كتبت كودًا خاطئًا لتأكيد هاتفك. يرجى إعادة المحاولة بالرمز الصحيح، أو اطلب رمزًا جديدًا من الموقع.',
+    expired:
+      '⌛ انتهت صلاحية رمز التحقق أو لم يعد الطلب فعالًا. اطلب رمزًا جديدًا من الموقع ثم أرسله هنا.',
+    missing: '✍️ أرسل رمز التحقق المكوّن من 6 أرقام كما يظهر في الموقع.',
+  },
 });
+
+/** Pick a reply by kind + language. Unknown kinds fall back to the wrong text. */
+export function whatsappReply(kind, lang) {
+  const set = WHATSAPP_REPLIES[lang === 'ar' ? 'ar' : 'en'];
+  return set[kind] || set.wrong;
+}
+
+/**
+ * The stored row language wins (the site knows what the member chose). Legacy
+ * rows before migration 0039 default to English, so a bare code with no text
+ * falls back to Arabic (the restaurant's primary language).
+ */
+export function pickReplyLanguage(rowLang, text, fallback = 'ar') {
+  if (rowLang === 'ar' || rowLang === 'en') return rowLang;
+  if (/[\u0600-\u06FF]/.test(String(text || ''))) return 'ar';
+  if (/[A-Za-z]/.test(String(text || ''))) return 'en';
+  return fallback;
+}
 
 /** Digits only; Meta sends `from` in international format without a plus. */
 export function normalizeWhatsAppPhone(value) {

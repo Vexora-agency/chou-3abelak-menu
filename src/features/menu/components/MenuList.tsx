@@ -68,7 +68,7 @@ function useGridCols(kind: 'list' | 'compact' | 'cards' | 'photos' | 'round'): n
     // the viewport width professionally.
     if (kind === 'round') return mq(1280) ? 8 : mq(1024) ? 6 : mq(640) ? 4 : 2;
     if (kind === 'photos') return mq(1280) ? 4 : mq(1024) ? 3 : 2;
-    if (kind === 'list') return mq(1280) ? 3 : mq(768) ? 2 : 1;
+    if (kind === 'list') return 1;
     return mq(768) ? 2 : 1; // compact
   };
   const [cols, setCols] = useState(get);
@@ -210,6 +210,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         darkMode={darkMode}
         isAr={isAr}
         qty={qty}
+        sectionMark={sectionMark}
         onAddItem={onAddItem}
         onUpdateLine={onUpdateLine}
         onOpenItem={onOpenItem}
@@ -409,7 +410,7 @@ export const MenuList: React.FC<MenuListProps> = ({
           kind === 'compact'
             ? 'grid grid-cols-1 md:grid-cols-2 gap-x-10 menu-section-grid'
             : kind === 'list'
-              ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-4 menu-section-grid'
+              ? 'grid grid-cols-1 gap-3 sm:gap-3.5 menu-section-grid'
               : kind === 'photos'
                 // Photo cards pair up from the smallest phones, exactly like
                 // the text cards: narrow screens get the compact card (no
@@ -601,7 +602,9 @@ export const MenuList: React.FC<MenuListProps> = ({
         // The band's vertical padding reveals its backdrop above/below.
         const sectionWrapClass = kind === 'round'
           ? `w-full py-8 sm:py-10 ${darkMode ? 'round-band' : 'round-band-light'}`
-          : 'px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full';
+          : kind === 'list'
+            ? 'px-5 sm:px-8 max-w-3xl mx-auto w-full'
+            : 'px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full';
         const sectionInnerClass = kind === 'round'
           ? 'px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full'
           : undefined;

@@ -47,6 +47,9 @@ number for verification.
    - Callback URL: `https://chou3abelak.site/api/whatsapp/webhook`
    - Verify token: the same random string you put in `WHATSAPP_VERIFY_TOKEN`
    - Subscribe to the **messages** field.
+   - Cloudflare Access must **not** cover `/api/whatsapp/webhook` (Meta has no
+     Access JWT). The HMAC signature is the gate. The same applies to any WAF
+     rule that challenges non-browser POSTs.
 6. Ensure the site's WhatsApp number is the Cloud API number. If the public
    restaurant number is different, set `WHATSAPP_VERIFICATION_NUMBER` to the
    Cloud API number; the verification button then messages that number while the
@@ -109,6 +112,8 @@ The code caps automatic replies at **900/month** by default, so the default
 setup stays inside the free tier. Approvals are never blocked by the cap — only
 the WhatsApp confirmation reply is skipped. Per sender the cap is 10 replies/hour
 and 20/day, which stops someone from burning the allowance with wrong codes.
+Raise `WHATSAPP_REPLY_MONTHLY_CAP` above 1,000 only if you accept the per-message
+charge for the extra replies.
 
 The old "1,000 free service conversations" model ended; the window is about
 **permission** to send a free-form reply, while the free allowance is a **monthly

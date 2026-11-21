@@ -55,7 +55,7 @@ async function replyAllowed(db, env, phone, nowMs) {
   const dayAgo = new Date(nowMs - 24 * 60 * 60 * 1000).toISOString();
   const monthlyCapRaw = Number(env.WHATSAPP_REPLY_MONTHLY_CAP);
   const monthlyCap = Number.isFinite(monthlyCapRaw) && monthlyCapRaw > 0
-    ? Math.min(1000, Math.floor(monthlyCapRaw))
+    ? Math.min(10000, Math.floor(monthlyCapRaw))
     : DEFAULT_MONTHLY_REPLIES;
   const [hourCount, dayCount, monthCount] = await Promise.all([
     countWhatsAppEventsSince(db, hourAgo, phone),

@@ -196,11 +196,15 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         >
           {description || '\u00A0'}
         </p>
-        <span
-          dir="auto"
-          className="mt-1 inline-flex w-fit items-center rounded-full bg-[var(--primary)] px-2 py-0.5 text-[12px] min-[380px]:text-[13px] sm:text-[15px] font-black leading-none text-[#0A0A0A] tabular-nums shadow-sm"
-        >
-          {priceLabel(item, lang, currency, menu)}
+        <span className="mt-1 inline-flex w-fit flex-col items-start gap-1" dir="auto">
+          <span
+            className={`text-[14px] min-[380px]:text-[15px] sm:text-[17px] font-black leading-none tabular-nums ${
+              darkMode ? 'text-[var(--primary)]' : 'text-[#8a6d00]'
+            }`}
+          >
+            {priceLabel(item, lang, currency, menu)}
+          </span>
+          <span aria-hidden="true" className="h-[3px] w-8 rounded-full bg-[var(--primary)]" />
         </span>
       </div>
 

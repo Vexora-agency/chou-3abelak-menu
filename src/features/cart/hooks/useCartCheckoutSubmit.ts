@@ -5,7 +5,7 @@ import { resolveDeliveryFee } from '@/src/utils/deliveryFees';
 import { formatPrice } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
-import { checkPhone, dialFromSettings } from '@/src/utils/phoneCountry';
+import { checkPhone, dialFromSettings, isDifferentAccountPhone } from '@/src/utils/phoneCountry';
 import { loadRememberedDetails, loadSavedEmail, saveCustomerOrder, saveEmailAddress, saveRememberedDetails, withoutAddress } from '@/src/utils/customerOrders';
 import { pinAddress } from './useMidSplitLocationMap';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
@@ -360,6 +360,16 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
             ? 'رقم الهاتف يجب أن يكون من 6 إلى 15 رقمًا (أرقام فقط)'
             : 'Phone must be 6–15 digits (numbers only)')
       );
+      return;
+    }
+    // The member phone is editable, but the account number stays the order
+    // identity until the new one is OTP-verified. OTP (WhatsApp Cloud API) is
+    // not built yet, and the server stamps the profile phone on the order, so
+    // accepting a changed number here would show one number and call another.
+    if (accountUser && isDifferentAccountPhone(customer.phone, accountProfile?.phone, phoneDial.code)) {
+      setErrorMsg(isAr
+        ? 'الرقم الجديد لازم تأكيد OTP قبل إرسال الطلب. استخدم رقم حسابك المحفوظ لإتمام الطلب الآن.'
+        : 'The new number needs OTP verification before the order can be sent. Use your saved account number to order now.');
       return;
     }
     if (!customer.address.trim()) {

@@ -118,3 +118,20 @@ export function isForeignNumber(raw: string, dialCode: string): boolean {
   const check = checkPhone(raw, dialCode);
   return !check.ok && check.reason === 'country';
 }
+
+/**
+ * True when the cart's entered number differs from the account's saved number
+ * for the same dial code. Used to show the OTP requirement and to block an
+ * unverified member phone change. Empty values never count as a change.
+ */
+export function isDifferentAccountPhone(
+  entered: string,
+  saved: string | null | undefined,
+  dialCode: string,
+): boolean {
+  if (!saved) return false;
+  const savedNational = nationalPart(saved, dialCode);
+  const enteredNational = nationalPart(entered, dialCode);
+  if (!savedNational || !enteredNational) return false;
+  return enteredNational !== savedNational;
+}

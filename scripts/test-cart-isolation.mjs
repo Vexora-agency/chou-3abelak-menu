@@ -103,14 +103,27 @@ ok(
   'member default-address note is one compact line, not a second gold alert box'
 );
 ok(
-  formFields.includes('phoneLinked')
-    && formFields.includes('readOnly={isMember}')
+  formFields.includes('phoneChanged')
+    && formFields.includes('isDifferentAccountPhone')
+    && formFields.includes('لازم تأكيد OTP')
+    && formFields.includes('OTP verification is required')
+    && formFields.includes('استخدم رقم حسابي')
     && !formFields.includes('رقمك محفوظ في حسابك')
-    && !formFields.includes('Your number is saved to your account')
-    && !formFields.includes('عدّله من إعدادات الحساب')
     && !formFields.includes('Change it in Account settings')
     && !formFields.includes('onOpenSettings'),
-  'member phone stays read-only with no saved-number note or settings shortcut'
+  'member phone is editable: a different number surfaces the OTP requirement and a reset to the saved number'
+);
+ok(
+  (formFields.match(/readOnly=\{isMember\}/g) || []).length === 1,
+  'only the member name stays read-only; the phone field is editable'
+);
+ok(
+  checkout.includes('isDifferentAccountPhone') && checkout.includes('لازم تأكيد OTP'),
+  'checkout blocks an unverified new member phone until OTP confirmation exists'
+);
+ok(
+  cartDrawer.includes('accountPhone={account.profile?.phone'),
+  'the cart passes the saved account number as the OTP baseline'
 );
 ok(
   !cartDrawer.includes('onOpenSettings'),

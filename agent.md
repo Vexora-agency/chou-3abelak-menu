@@ -64,13 +64,15 @@
   stated once (the delivery-fee line never repeats it). Map-pin buttons in
   both address fields are physically right (`right-0.5` + `pr-12`), so Arabic
   RTL shows them on the right as the owner expects. Guarded by `test:cart`.
-- Cart phone is account-owned: a member with a saved number gets a read-only
-  field and NO note or shortcut underneath (no "saved to your account" line,
-  no "عدّله من إعدادات الحساب" link). Do not add an inline phone edit, a note
-  or a settings link here. OTP is NOT built yet: when WhatsApp Cloud API lands,
-  typing a DIFFERENT number in the cart or in settings must be confirmed by a
-  code sent to the new number (see the comment above `id="account-phone"` in
-  `AccountSheet.tsx`). The old "طلبك مرتبط بحسابك تلقائيًا." line in the COD
+- Cart phone is editable for members: tapping the field lets them type a
+  different number, and a compact amber note appears with the OTP requirement
+  ("رقم جديد — لازم تأكيد OTP قبل إرسال الطلب.") plus a "استخدم رقم حسابي"
+  reset. Checkout blocks the changed number until OTP exists, because the
+  server still stamps the account phone on the order — showing one number and
+  delivering another is forbidden. The member NAME stays read-only. OTP is NOT
+  built yet: when WhatsApp Cloud API lands, a different number must be
+  confirmed by a code sent to it (see the comment above `id="account-phone"`
+  in `AccountSheet.tsx`). The old "طلبك مرتبط بحسابك تلقائيًا." line in the COD
   card is removed on purpose — do not re-add it. Guarded by `test:cart`.
 - Address precedence (cart → kitchen): the manually written cart address is
   what the kitchen receives. `functions/api/orders.js` overrides member

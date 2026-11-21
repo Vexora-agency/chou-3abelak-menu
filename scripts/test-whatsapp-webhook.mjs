@@ -203,6 +203,10 @@ check(
   'sheet prefers the server verification URL over the menu number',
   sheetComponent.includes('active?.whatsappUrl || buildPhoneVerificationWhatsAppUrl')
 );
+check(
+  'sheet shows the destination number before sending',
+  sheetComponent.includes('destinationNumber') && sheetComponent.includes('t.sendingTo')
+);
 
 const admin = read('src/features/admin/components/admin/AdminPhoneVerifications.tsx');
 check('admin panel describes the manual fallback', /Automatic WhatsApp verification is on/i.test(admin) && admin.includes('fallback'));

@@ -45,7 +45,7 @@ export interface PhoneVerificationState {
   clearError: () => void;
 }
 
-const CACHE_PREFIX = 'phone_verify_v1:';
+const CACHE_PREFIX = 'phone_verify_v2:';
 const POLL_MS = 4000;
 
 function readCache(userId: string | null): ActivePhoneCode | null {

@@ -97,6 +97,9 @@ export function PhoneVerificationSheet({
   const whatsappUrl = message
     ? active?.whatsappUrl || buildPhoneVerificationWhatsAppUrl(whatsappNumber, message)
     : null;
+  const destinationNumber = whatsappUrl
+    ? (whatsappUrl.match(/wa\.me\/(\d+)/) || [])[1] || null
+    : null;
 
   // One automatic request per open + number. A phase that falls back to
   // 'unverified' after a 10-minute expiry must NOT mint codes in a loop.
@@ -249,6 +252,13 @@ export function PhoneVerificationSheet({
                       +{phone || '—'}
                     </b>
                   </div>
+
+                  {destinationNumber && (
+                    <p className={`text-center text-[10.5px] font-bold ${muted}`}>
+                      {t.sendingTo}{' '}
+                      <b className="tabular-nums" dir="ltr">+{destinationNumber}</b>
+                    </p>
+                  )}
 
                   {code && active ? (
                     <>

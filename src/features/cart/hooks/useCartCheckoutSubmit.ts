@@ -5,7 +5,7 @@ import { resolveDeliveryFee } from '@/src/utils/deliveryFees';
 import { formatPrice } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
-import { checkPhone, dialFromSettings, isDifferentAccountPhone } from '@/src/utils/phoneCountry';
+import { checkPhone, dialFromSettings } from '@/src/utils/phoneCountry';
 import { loadRememberedDetails, loadSavedEmail, saveCustomerOrder, saveEmailAddress, saveRememberedDetails, withoutAddress } from '@/src/utils/customerOrders';
 import { pinAddress } from './useMidSplitLocationMap';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
@@ -34,9 +34,13 @@ interface UseCartCheckoutSubmitArgs {
   onRequireAccount?: () => void;
   /** Opens account settings when the mandatory profile is incomplete. */
   onRequireProfile?: () => void;
+  /** True only when the number entered for THIS order is verified. */
+  isPhoneVerified?: () => boolean;
+  /** Opens the reverse-WhatsApp verification sheet over the cart. */
+  onRequirePhoneVerification?: () => void;
 }
 
-export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess, accountUser, accountProfile, accountLoading = false, onRequireAccount, onRequireProfile }: UseCartCheckoutSubmitArgs) {
+export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess, accountUser, accountProfile, accountLoading = false, onRequireAccount, onRequireProfile, isPhoneVerified, onRequirePhoneVerification }: UseCartCheckoutSubmitArgs) {
   const isAr = lang === 'ar';
   const ordering = menu.settings.ordering;
   const phoneDial = dialFromSettings(menu.settings);
@@ -362,14 +366,16 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       );
       return;
     }
-    // The member phone is editable, but the account number stays the order
-    // identity until the new one is OTP-verified. OTP (WhatsApp Cloud API) is
-    // not built yet, and the server stamps the profile phone on the order, so
-    // accepting a changed number here would show one number and call another.
-    if (accountUser && isDifferentAccountPhone(customer.phone, accountProfile?.phone, phoneDial.code)) {
+    // Phone ownership gate: EVERY entered number must be confirmed through
+    // reverse WhatsApp verification — the saved number, a changed number, and
+    // the first number alike. The server enforces the same rule on the exact
+    // number being ordered; this branch opens the code sheet before a wasted
+    // round-trip.
+    if (accountUser && isPhoneVerified && !isPhoneVerified()) {
       setErrorMsg(isAr
-        ? 'الرقم الجديد لازم تأكيد OTP قبل إرسال الطلب. استخدم رقم حسابك المحفوظ لإتمام الطلب الآن.'
-        : 'The new number needs OTP verification before the order can be sent. Use your saved account number to order now.');
+        ? 'أكّد رقم الهاتف عبر واتساب قبل إرسال الطلب.'
+        : 'Verify your phone number on WhatsApp before placing the order.');
+      onRequirePhoneVerification?.();
       return;
     }
     if (!customer.address.trim()) {
@@ -478,6 +484,16 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         // stale complete profile. Show why and open Settings over the cart.
         setErrorMsg(result.blockedMessage || AUTH_STR[lang].profileIncompleteOrder);
         onRequireProfile?.();
+        return;
+      }
+      if (result.failure === 'phone') {
+        // Server-side ownership gate (defense in depth): the client state was
+        // stale or the number changed mid-flight. Show why and open the code
+        // sheet; the cart stays intact.
+        setErrorMsg(result.blockedMessage || (isAr
+          ? 'أكّد رقم الهاتف عبر واتساب قبل إرسال الطلب.'
+          : 'Verify your phone number on WhatsApp before placing the order.'));
+        onRequirePhoneVerification?.();
         return;
       }
       if (result.failure === 'blocked') {

@@ -121,17 +121,18 @@ export function isForeignNumber(raw: string, dialCode: string): boolean {
 
 /**
  * True when the cart's entered number differs from the account's saved number
- * for the same dial code. Used to show the OTP requirement and to block an
- * unverified member phone change. Empty values never count as a change.
+ * for the same dial code. An EMPTY saved number counts as a change: the first
+ * number a member enters must be verified too. Empty/invalid entered values
+ * never count as a change.
  */
 export function isDifferentAccountPhone(
   entered: string,
   saved: string | null | undefined,
   dialCode: string,
 ): boolean {
-  if (!saved) return false;
-  const savedNational = nationalPart(saved, dialCode);
-  const enteredNational = nationalPart(entered, dialCode);
-  if (!savedNational || !enteredNational) return false;
-  return enteredNational !== savedNational;
+  const enteredCheck = checkPhone(entered, dialCode);
+  if (!enteredCheck.ok) return false;
+  const savedCheck = saved ? checkPhone(saved, dialCode) : null;
+  if (!savedCheck || !savedCheck.ok) return true;
+  return enteredCheck.normalized !== savedCheck.normalized;
 }

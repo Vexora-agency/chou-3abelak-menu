@@ -6,6 +6,12 @@
  * the public profile columns and maintains `customer_profiles`.
  */
 
+import { VERIFICATION_VALIDITY_MS } from '../phone-verification.js';
+
+function verificationCutoffIso(nowMs = Date.now()) {
+  return new Date(nowMs - VERIFICATION_VALIDITY_MS).toISOString();
+}
+
 /** One registered user with their optional profile fields. */
 export async function getCustomerProfile(db, userId) {
   if (!db || typeof userId !== 'string' || !userId) return null;
@@ -15,16 +21,22 @@ export async function getCustomerProfile(db, userId) {
               u."createdAt" AS createdAt, u."updatedAt" AS updatedAt,
               p.phone, p.address,
               p.location_lat, p.location_lng, p.location_accuracy,
-              p.updated_at AS profileUpdatedAt
+              p.updated_at AS profileUpdatedAt,
+              (SELECT v.decided_at FROM phone_verifications v
+                WHERE v.user_id = u.id AND v.phone = p.phone
+                  AND v.status = 'approved' AND v.decided_at >= ?2
+                ORDER BY v.decided_at DESC LIMIT 1) AS phone_verified_at
        FROM "user" u
        LEFT JOIN customer_profiles p ON p.user_id = u.id
        WHERE u.id = ?1`
     )
-    .bind(userId)
+    .bind(userId, verificationCutoffIso())
     .first();
   if (!row) return null;
   const lat = Number.isFinite(row.location_lat) ? Number(row.location_lat) : null;
   const lng = Number.isFinite(row.location_lng) ? Number(row.location_lng) : null;
+  const verifiedAt = typeof row.phone_verified_at === 'string' ? Date.parse(row.phone_verified_at) : NaN;
+  const phoneVerified = Number.isFinite(verifiedAt) && verifiedAt + VERIFICATION_VALIDITY_MS > Date.now();
   return {
     id: row.id,
     name: typeof row.name === 'string' ? row.name : '',
@@ -42,6 +54,10 @@ export async function getCustomerProfile(db, userId) {
         }
       : null,
     profileUpdatedAt: row.profileUpdatedAt || null,
+    phoneVerified,
+    phoneVerifiedUntil: phoneVerified
+      ? new Date(verifiedAt + VERIFICATION_VALIDITY_MS).toISOString()
+      : null,
   };
 }
 
@@ -98,11 +114,15 @@ export async function listRegisteredCustomers(db, query, limit = 200) {
   const digits = phoneSearchDigits(q);
   const phoneLike = digits.length >= 3 && !/[a-z@]/i.test(q) ? `%${digits}%` : '';
   const max = Math.min(200, Math.max(1, Number.isInteger(limit) ? limit : 200));
+  const cutoff = verificationCutoffIso();
   const res = await db
     .prepare(
       `SELECT u.id, u.name, u.email, u.emailVerified, u.image,
               u."createdAt" AS joinedAt,
               p.phone, p.address, p.location_lat, p.location_lng,
+              EXISTS(SELECT 1 FROM phone_verifications v
+                      WHERE v.user_id = u.id AND v.phone = p.phone
+                        AND v.status = 'approved' AND v.decided_at >= ?5) AS phoneVerified,
               (SELECT COUNT(*) FROM orders o WHERE o.customer_user_id = u.id) AS ordersCount,
               (SELECT COALESCE(SUM(o.total), 0) FROM orders o
                  WHERE o.customer_user_id = u.id AND o.status <> 'cancelled') AS totalSpent,
@@ -125,7 +145,7 @@ export async function listRegisteredCustomers(db, query, limit = 200) {
        ORDER BY u."createdAt" DESC
        LIMIT ?4`
     )
-    .bind(q, like, phoneLike, max)
+    .bind(q, like, phoneLike, max, cutoff)
     .all();
   const rows = res && Array.isArray(res.results) ? res.results : [];
   return rows.map((row) => ({
@@ -135,6 +155,7 @@ export async function listRegisteredCustomers(db, query, limit = 200) {
     emailVerified: !!row.emailVerified,
     image: typeof row.image === 'string' && row.image ? row.image : null,
     phone: typeof row.phone === 'string' && row.phone ? row.phone : null,
+    phoneVerified: !!row.phoneVerified,
     address: typeof row.address === 'string' && row.address ? row.address : null,
     hasLocation: Number.isFinite(row.location_lat) && Number.isFinite(row.location_lng),
     joinedAt: row.joinedAt || null,

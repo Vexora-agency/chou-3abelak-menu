@@ -64,8 +64,10 @@ ok(
   'member name/phone are account-owned and the guest remember-me checkbox is hidden'
 );
 ok(
-  route.includes('memberProfile') && route.includes('c.phoneNorm = profilePhone') && route.includes('c.email = accountEmail'),
-  'orders use the account name/phone/email for every member order'
+  route.includes('memberProfile') && route.includes('phone_verification_required')
+    && route.includes('findValidVerification') && !route.includes('c.phoneNorm = profilePhone')
+    && route.includes('c.name = profileName') && route.includes('c.email = accountEmail'),
+  'orders use the account name/email and the verified entered phone for every member order'
 );
 const profileRoute = read('functions/api/account/profile.js');
 ok(
@@ -105,25 +107,28 @@ ok(
 ok(
   formFields.includes('phoneChanged')
     && formFields.includes('isDifferentAccountPhone')
-    && formFields.includes('لازم تأكيد OTP')
-    && formFields.includes('OTP verification is required')
+    && formFields.includes('phoneVerificationPhase')
+    && formFields.includes('onVerifyPhone')
+    && formFields.includes('Verify this number on WhatsApp before ordering.')
+    && formFields.includes('This number is verified on WhatsApp.')
     && formFields.includes('استخدم رقم حسابي')
-    && !formFields.includes('رقمك محفوظ في حسابك')
-    && !formFields.includes('Change it in Account settings')
+    && !formFields.includes('OTP')
     && !formFields.includes('onOpenSettings'),
-  'member phone is editable: a different number surfaces the OTP requirement and a reset to the saved number'
+  'member phone is editable: every number shows its WhatsApp verification state and a reset to the saved number'
 );
 ok(
   (formFields.match(/readOnly=\{isMember\}/g) || []).length === 1,
   'only the member name stays read-only; the phone field is editable'
 );
 ok(
-  checkout.includes('isDifferentAccountPhone') && checkout.includes('لازم تأكيد OTP'),
-  'checkout blocks an unverified new member phone until OTP confirmation exists'
+  checkout.includes('isPhoneVerified')
+    && checkout.includes('onRequirePhoneVerification')
+    && checkout.includes('Verify your phone number on WhatsApp before placing the order.'),
+  'checkout blocks an unverified member number and opens the WhatsApp verification sheet'
 );
 ok(
   cartDrawer.includes('accountPhone={account.profile?.phone'),
-  'the cart passes the saved account number as the OTP baseline'
+  'the cart passes the saved account number as the reset baseline'
 );
 ok(
   !cartDrawer.includes('onOpenSettings'),
@@ -163,9 +168,10 @@ ok(
   'the server order gate treats the map pin as optional'
 );
 ok(
-  accountSheet.includes('WhatsApp Cloud API OTP')
-    && accountSheet.includes('saving a DIFFERENT'),
-  'settings phone field carries the future OTP gate (WhatsApp Cloud API) for a new number'
+  accountSheet.includes('phoneIsChanging')
+    && accountSheet.includes('verifiedPhoneRef')
+    && accountSheet.includes('PhoneVerificationSheet'),
+  'settings gates a NEW/changed number on reverse WhatsApp verification before saving'
 );
 
 /* ---------- B. two-browser separation (simulation) ---------- */

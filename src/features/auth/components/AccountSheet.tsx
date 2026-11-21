@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FC } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   AlertCircle,
+  BadgeCheck,
   Bell,
   Check,
   ChevronDown,
@@ -45,7 +46,9 @@ import { useCustomerOrders } from '../hooks/useCustomerOrders';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { isProfileComplete, MEMBER_PROFILE_CHANGED } from '../profile';
 import { updateMyProfile } from '../services/account.api';
-import { AUTH_STR } from '../strings';
+import { usePhoneVerification } from '../hooks/usePhoneVerification';
+import { PhoneVerificationSheet } from './PhoneVerificationSheet';
+import { AUTH_STR, PHONE_VERIFY_STR } from '../strings';
 import type { AccountOrder, AccountStatus } from '../types';
 
 interface AccountSheetProps {
@@ -59,6 +62,10 @@ interface AccountSheetProps {
   cancelWindowMs: number;
   /** Restaurant country/dial code (admin WhatsApp picker) for phone safety. */
   phoneDial?: DialCountry;
+  /** Restaurant WhatsApp number (verification message destination). */
+  whatsappNumber?: string;
+  /** Restaurant display name for the verification sheet header. */
+  storeName?: string;
   /** Open directly on Settings (checkout's "complete profile" CTA). */
   initialTab?: 'orders' | 'settings';
 }
@@ -259,8 +266,9 @@ const OrderCard: FC<{
   );
 };
 
-export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency, cancelWindowMs, phoneDial, initialTab = 'orders' }: AccountSheetProps) {
+export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency, cancelWindowMs, phoneDial, whatsappNumber, storeName, initialTab = 'orders' }: AccountSheetProps) {
   const t = AUTH_STR[lang];
+  const pv = PHONE_VERIFY_STR[lang];
   const isAr = lang === 'ar';
   const sheetRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -288,6 +296,10 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   const [saveOk, setSaveOk] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState('');
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [verifyPhone, setVerifyPhone] = useState<string | null>(null);
+  const verifiedPhoneRef = useRef<string | null>(null);
+  const verification = usePhoneVerification(verifyPhone, verifyOpen);
   const [soundOff, setSoundOffState] = useState(() => isSoundOff());
   const dial: DialCountry = phoneDial ?? { iso: '', code: '' };
   const phoneForeign = isForeignNumber(phone, dial.code);
@@ -377,6 +389,18 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   const profile = profileState.profile;
   const profileReady = !profileState.loading && !!profile;
   const profileIncomplete = profileReady && !isProfileComplete(profile);
+  const enteredPhoneCheck = checkPhone(phone, dial.code);
+  const savedPhoneCheck = profile?.phone ? checkPhone(profile.phone, dial.code) : null;
+  const phoneMatchesSaved = !!(
+    enteredPhoneCheck.ok &&
+    savedPhoneCheck?.ok &&
+    enteredPhoneCheck.normalized === savedPhoneCheck.normalized
+  );
+  const enteredPhoneVerified = !!(
+    enteredPhoneCheck.ok &&
+    ((phoneMatchesSaved && profile?.phoneVerified) ||
+      (verification.phase === 'verified' && verifyPhone === enteredPhoneCheck.normalized))
+  );
 
   // New accounts (password or Google) land here with no phone/address. Open
   // Settings for them once the profile fetch settles, so completion is the
@@ -460,6 +484,17 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     const trimmedAddress = address.trim();
     if (!trimmedAddress) {
       setSaveError(t.addressRequired);
+      return;
+    }
+    // A NEW number must be proven on WhatsApp before it can replace the
+    // account number. An unchanged number keeps its current state (the order
+    // gate still refuses an unverified number, but address edits are free).
+    const savedCheck = profile?.phone ? checkPhone(profile.phone, dial.code) : null;
+    const phoneIsChanging = !savedCheck?.ok || savedCheck.normalized !== phoneCheck.normalized;
+    if (phoneIsChanging && verifiedPhoneRef.current !== phoneCheck.normalized) {
+      setSaveError('');
+      setVerifyPhone(phoneCheck.normalized);
+      setVerifyOpen(true);
       return;
     }
     setSaving(true);
@@ -796,6 +831,28 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                         ? (isAr ? `نقبل أرقام +${dial.code} فقط.` : `Only +${dial.code} numbers are accepted.`)
                         : t.phoneHint)}
                 </p>
+                {enteredPhoneCheck.ok && !phoneForeign && (
+                  <div className="mt-1.5 text-[10.5px] font-bold">
+                    {enteredPhoneVerified ? (
+                      <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                        <BadgeCheck size={12} aria-hidden="true" />
+                        {pv.verifiedBadge}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVerifyPhone(enteredPhoneCheck.normalized);
+                          setVerifyOpen(true);
+                        }}
+                        className="inline-flex min-h-[30px] items-center gap-1 rounded-sm text-amber-600 underline underline-offset-2 transition-colors hover:text-amber-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] dark:text-amber-300"
+                      >
+                        <BadgeCheck size={12} aria-hidden="true" />
+                        {pv.notVerifiedBadge} · {pv.verifyNow}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -893,6 +950,24 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
             }}
           />
         )}
+
+        {/* Reverse WhatsApp verification for a new/changed account number.
+            On success the interrupted save resumes with the verified number. */}
+        <PhoneVerificationSheet
+          open={verifyOpen}
+          onClose={() => setVerifyOpen(false)}
+          phone={verifyPhone}
+          lang={lang}
+          darkMode={darkMode}
+          verification={verification}
+          whatsappNumber={whatsappNumber || ''}
+          storeName={storeName || ''}
+          onVerified={() => {
+            verifiedPhoneRef.current = verifyPhone;
+            setVerifyOpen(false);
+            void save();
+          }}
+        />
       </div>
     </div>
   );

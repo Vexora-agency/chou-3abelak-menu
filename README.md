@@ -195,6 +195,12 @@ Test matrix:
 
 Set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET` (mark all as **Secrets**), keep the existing `MENU_KV` binding and `ALLOW_LOCAL_DEV` **unset** (or `0`).
 
+Phone verification needs no new variable: code hashes use `PHONE_VERIFICATION_SECRET` when set, otherwise the existing `SESSION_SECRET`. Before deploying a release that reads `phone_verifications` (migration `0037`), apply it remotely:
+
+```bash
+npx wrangler d1 migrations apply ORDERS_DB --remote
+```
+
 ### 4. Cloudflare Access changes
 
 - The Access application **must no longer** cover `/api/auth/*` — the login screen calls these endpoints **before** any login exists, so an Access wall there would lock everyone out (including you).

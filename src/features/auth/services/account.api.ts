@@ -38,3 +38,51 @@ export async function fetchMyOrder(number: number): Promise<AccountOrder> {
   const data = await apiFetch<{ order: AccountOrder }>(`/api/account/orders/${number}`, { headers });
   return data.order;
 }
+
+/* ---------- reverse WhatsApp phone verification ---------- */
+
+export interface PendingPhoneVerification {
+  phone: string;
+  reference: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface PhoneVerificationStatus {
+  verified: boolean;
+  verifiedUntil: string | null;
+  pending: PendingPhoneVerification | null;
+}
+
+export async function fetchPhoneVerification(phone: string): Promise<PhoneVerificationStatus> {
+  return apiFetch<PhoneVerificationStatus>(
+    `/api/account/phone-verification?phone=${encodeURIComponent(phone)}`,
+    { headers },
+  );
+}
+
+export interface RequestedPhoneVerification {
+  ok: true;
+  verified: boolean;
+  verifiedUntil?: string | null;
+  verification?: {
+    phone: string;
+    reference: string;
+    code: string;
+    createdAt: string;
+    expiresAt: string;
+    message: string;
+    whatsappUrl: string | null;
+  };
+}
+
+export async function requestPhoneVerification(
+  phone: string,
+  lang: 'en' | 'ar',
+): Promise<RequestedPhoneVerification> {
+  return apiFetch<RequestedPhoneVerification>('/api/account/phone-verification', {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone, lang }),
+  });
+}

@@ -11,7 +11,9 @@
 import { jsonNoStore, readJsonBody } from '../../_shared/session.js';
 import { checkCustomerApiHeaders, requireCustomer } from '../../_shared/auth-session.js';
 import { getCustomerProfile, upsertCustomerProfile } from '../../_shared/repositories/customers.repo.js';
-import { authErrorMessage, validateProfileAddress, validateProfileLocation, validateProfilePhone } from '../../_shared/validate-auth.js';
+import { findValidVerification } from '../../_shared/repositories/phone-verifications.repo.js';
+import { verificationValidUntil } from '../../_shared/phone-verification.js';
+import { authErrorMessage, normalizePhoneDigits, validateProfileAddress, validateProfileLocation, validateProfilePhone } from '../../_shared/validate-auth.js';
 
 function publicUser(user) {
   return {
@@ -46,6 +48,8 @@ export async function onRequest(context) {
         user: publicUser(auth.user),
         profile: {
           phone: row && row.phone ? row.phone : null,
+          phoneVerified: !!(row && row.phoneVerified),
+          phoneVerifiedUntil: (row && row.phoneVerifiedUntil) || null,
           address: row && row.address ? row.address : null,
           location: row && row.location ? row.location : null,
           updatedAt: row && row.profileUpdatedAt ? row.profileUpdatedAt : null,
@@ -86,6 +90,28 @@ export async function onRequest(context) {
   // submitted one (null clears it), never inventing a point for the text.
 
   try {
+    const current = await getCustomerProfile(db, auth.user.id);
+    const currentPhone = current && typeof current.phone === 'string'
+      ? normalizePhoneDigits(current.phone)
+      : '';
+    const nextPhone = normalizePhoneDigits(phone.phone);
+    // A NEW number must be proven first (reverse WhatsApp verification).
+    // An unchanged number keeps its existing state: the order gate still
+    // refuses an unverified number, but saving the address is not blocked.
+    if (nextPhone && nextPhone !== currentPhone) {
+      const approved = await findValidVerification(db, auth.user.id, nextPhone, Date.now());
+      if (!approved) {
+        return jsonNoStore({
+          error: 'phone_verification_required',
+          phone: nextPhone,
+          message: {
+            en: 'Verify this phone number on WhatsApp before saving it.',
+            ar: 'أكّد رقم الهاتف هذا عبر واتساب قبل حفظه.',
+          },
+        }, 403);
+      }
+    }
+
     const saved = await upsertCustomerProfile(
       db,
       auth.user.id,
@@ -96,7 +122,15 @@ export async function onRequest(context) {
       },
       new Date().toISOString()
     );
-    return jsonNoStore({ ok: true, profile: saved });
+    const approved = await findValidVerification(db, auth.user.id, saved.phone, Date.now());
+    return jsonNoStore({
+      ok: true,
+      profile: {
+        ...saved,
+        phoneVerified: !!approved,
+        phoneVerifiedUntil: approved ? verificationValidUntil(approved) : null,
+      },
+    });
   } catch {
     return jsonNoStore({ error: 'unavailable' }, 503);
   }

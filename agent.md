@@ -64,19 +64,35 @@
   stated once (the delivery-fee line never repeats it). Map-pin buttons in
   both address fields are physically right (`right-0.5` + `pr-12`), so Arabic
   RTL shows them on the right as the owner expects. Guarded by `test:cart`.
-- Cart phone is editable for members: tapping the field lets them type a
-  different number, and a compact amber note appears with the OTP requirement
-  ("رقم جديد — لازم تأكيد OTP قبل إرسال الطلب.") plus a "استخدم رقم حسابي"
-  reset. Checkout blocks the changed number until OTP exists, because the
-  server still stamps the account phone on the order — showing one number and
-  delivering another is forbidden. The member NAME stays read-only. OTP is NOT
-  built yet: when WhatsApp Cloud API lands, a different number must be
-  confirmed by a code sent to it (see the comment above `id="account-phone"`
-  in `AccountSheet.tsx`). The old "طلبك مرتبط بحسابك تلقائيًا." line in the COD
-  card is removed on purpose — do not re-add it. Guarded by `test:cart`.
+- Cart phone is editable for members and EVERY number must be verified before
+  ordering — the saved number, a changed number, and the first one. A compact
+  note under the field shows `Verified` / `Not verified` and opens the reverse
+  WhatsApp sheet; "استخدم رقم حسابي" resets to the saved number. The member
+  NAME stays read-only. The server refuses the order on the exact entered
+  number (`phone_verification_required`), never on the saved profile number.
+  The old "طلبك مرتبط بحسابك تلقائيًا." line in the COD card is removed on
+  purpose — do not re-add it. Guarded by `test:cart` + `test:phone`.
+- Reverse WhatsApp phone verification (migration `0037_phone_verifications`):
+  the site mints a 6-digit code bound to member + normalized number (10-minute
+  TTL; only a keyed hash is stored; a short `Ref` is shown for matching), the
+  member sends the pre-filled message FROM that number to the restaurant's
+  WhatsApp, and the owner approves the live pending row in
+  `Admin → Customers → Accounts` (Telegram ping on every request). An approval
+  lasts 365 days. Routes: `/api/account/phone-verification` (POST request/GET
+  status, session + customer-CSRF, 60 s cooldown, 5/hour + 15/day caps) and
+  `/api/admin/phone-verifications` (pending list + approve/reject; the code is
+  never returned to admin). Order + profile gates: `orders.js` verifies
+  `c.phoneNorm`; `profile.js` demands an approval only when the number CHANGES
+  (an unchanged unverified number can still save its address). Secret:
+  `PHONE_VERIFICATION_SECRET` if set, else `SESSION_SECRET`. Client:
+  `usePhoneVerification` + `PhoneVerificationSheet` (large code, copy, live
+  countdown, pre-filled `wa.me`, 4 s polling). **Apply 0037 remotely BEFORE the
+  reading code deploys** or profile/order reads lose the table. Test:
+  `test:phone`.
 - Address precedence (cart → kitchen): the manually written cart address is
   what the kitchen receives. `functions/api/orders.js` overrides member
-  name/phone/email from the profile but only backfills `address` when the
+  name/email from the account and keeps the ENTERED verified phone (it no
+  longer stamps the profile phone), only backfilling `address` when the
   submitted address is empty, so a refined per-order address always wins over
   the saved default. The pin is OPTIONAL and is only the map point
   (`location_lat/lng`): a text-only order is valid, and the kitchen then

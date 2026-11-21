@@ -13,6 +13,7 @@ import { assessOrderRisk } from '../_shared/order-risk.js';
 import { newTrackToken } from '../_shared/push.js';
 import { LINK_WINDOW_MS, checkAndReserveOrderBudget, countActiveOrdersByPhone, findLinkCandidate, findOrderById, findOrderByIdemKey, insertOrderWithNumber, isPhoneBlocked, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
 import { getCustomerProfile } from '../_shared/repositories/customers.repo.js';
+import { findValidVerification } from '../_shared/repositories/phone-verifications.repo.js';
 import { getOrderingState } from '../_shared/status.js';
 import { isProfileComplete } from '../_shared/validate-auth.js';
 
@@ -212,21 +213,40 @@ export async function onRequest(context) {
     }
   }
 
+  // Phone ownership gate: the number that will receive the delivery call must
+  // have been proven through reverse WhatsApp verification. This covers EVERY
+  // entered number, including the first one and a changed cart number — the
+  // account's saved phone earns no free pass. Fails OPEN only on a DB error
+  // (the insert below would 503 anyway); a missing verification is a hard 403.
+  if (customerUserId && (c.paymentMethod || 'cod') === 'cod') {
+    let verified = false;
+    try {
+      verified = !!(await findValidVerification(db, customerUserId, c.phoneNorm, Date.now()));
+    } catch (err) {
+      captureBackendException(context, err, { binding: 'd1', code: 'order_phone_verification_read' });
+      verified = true;
+    }
+    if (!verified) {
+      return jsonNoStore({
+        error: 'phone_verification_required',
+        phone: c.phoneNorm,
+        message: {
+          en: 'Verify this phone number on WhatsApp before placing the order.',
+          ar: 'أكّد رقم الهاتف هذا عبر واتساب قبل إرسال الطلب.',
+        },
+      }, 403);
+    }
+  }
+
   // A member's identity comes from the account, not from the checkout payload:
-  // every linked order therefore carries the saved name, phone and email even
-  // if the device has stale guest data. The delivery address stays per-order
-  // (the client starts from the saved default and lets the customer refine
-  // it); the phone budget/blocklist below use the account phone.
+  // every linked order therefore carries the saved name and email even if the
+  // device has stale guest data. The PHONE stays the verified number entered
+  // for this order (it may differ from the profile default); the delivery
+  // address stays per-order (the client starts from the saved default and lets
+  // the customer refine it).
   if (memberProfile) {
     const profileName = typeof memberProfile.name === 'string' ? memberProfile.name.trim().slice(0, 60) : '';
     if (profileName) c.name = profileName;
-    const profilePhone = typeof memberProfile.phone === 'string'
-      ? memberProfile.phone.replace(/[^0-9]/g, '')
-      : '';
-    if (profilePhone.length >= 6 && profilePhone.length <= 15) {
-      c.phone = profilePhone;
-      c.phoneNorm = profilePhone;
-    }
     if (!c.address && typeof memberProfile.address === 'string' && memberProfile.address) {
       c.address = memberProfile.address.trim().slice(0, 200);
     }

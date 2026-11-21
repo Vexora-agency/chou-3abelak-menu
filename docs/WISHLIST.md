@@ -66,6 +66,11 @@ SQL lives in `functions/_shared/repositories/wishlist.repo.js`:
   clipped. The list section renders as one centered column (`max-w-3xl`) on
   every breakpoint, matching the owner's compact reference. The admin item
   editor shows the photo field for list items too.
+
+For **Round** categories the admin photo editor switches to a **1:1 square
+crop** with a **circular guide** and a circular preview. The stored photo stays
+square (the round card clips it), so the same image still works in the featured
+carousel and other surfaces without transparent corners.
 - `MenuListCompactRow` — beside the cart action.
 - `MenuListRoundCard` — top-end corner, opposite the badge.
 - `FeaturedCarousel` — beside the quick-add button.

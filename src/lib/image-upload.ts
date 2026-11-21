@@ -236,7 +236,8 @@ export async function exportCrop(
   rect: CropRect,
 ): Promise<PreparedImage> {
   const outW = Math.min(1280, Math.max(320, Math.round(rect.w)));
-  const outH = Math.max(1, Math.round(outW / CROP_ASPECT));
+  const aspect = rect.w > 0 && rect.h > 0 ? rect.w / rect.h : CROP_ASPECT;
+  const outH = Math.max(1, Math.round(outW / aspect));
 
   const canvas = document.createElement('canvas');
   canvas.width = outW;
@@ -279,7 +280,8 @@ export async function exportCropVariant(
   targetW: number,
 ): Promise<PreparedImage> {
   const outW = Math.max(1, Math.round(Math.min(targetW, rect.w)));
-  const outH = Math.max(1, Math.round(outW / CROP_ASPECT));
+  const aspect = rect.w > 0 && rect.h > 0 ? rect.w / rect.h : CROP_ASPECT;
+  const outH = Math.max(1, Math.round(outW / aspect));
 
   const canvas = document.createElement('canvas');
   canvas.width = outW;
@@ -321,7 +323,8 @@ async function encodeDirectVariant(
   targetW: number,
 ): Promise<PreparedImage> {
   const outW = Math.max(1, Math.round(Math.min(targetW, srcW)));
-  const outH = Math.max(1, Math.round(outW / CROP_ASPECT));
+  const aspect = srcW > 0 && srcH > 0 ? srcW / srcH : CROP_ASPECT;
+  const outH = Math.max(1, Math.round(outW / aspect));
 
   const canvas = document.createElement('canvas');
   canvas.width = outW;

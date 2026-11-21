@@ -90,7 +90,7 @@ export const ItemEditModal: React.FC<ItemEditModalProps> = ({
 
     <ItemBasicFields item={item} menu={menu} lang={lang} onChange={onChange} />
 
-    {photoRelevant && <ItemImageField item={item} lang={lang} onChange={onChange} />}
+    {photoRelevant && <ItemImageField item={item} lang={lang} onChange={onChange} roundCrop={catLayout === 'round'} />}
 
     <ItemPricingFields item={item} lang={lang} onChange={onChange} />
 

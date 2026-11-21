@@ -333,17 +333,27 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             solid bar, not under text. The bg stays solid in both modes; with
             a hero photo the photo's top edge is the separator, so the rule
             hides to avoid a double line. */}
-        <div className={`sticky top-0 z-10 -mx-6 sm:-mx-8 px-6 sm:px-8 pt-4 sm:pt-6 pb-3 flex justify-between items-start gap-2 sm:gap-3 border-b ${
+        <div className={`sticky top-0 z-10 -mx-6 sm:-mx-8 px-6 sm:px-8 pt-4 sm:pt-6 pb-3 flex items-start gap-2 sm:gap-3 border-b ${
           darkMode ? 'bg-[#141414]' : 'bg-white'
         } ${
           showPhoto ? 'border-transparent' : darkMode ? 'border-neutral-800' : 'border-neutral-200'
         }`}>
           <div className="min-w-0 flex-1">
-            <h3 dir="auto" className={`text-base min-[380px]:text-xl sm:text-2xl font-black leading-tight break-words ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+            <h3 dir="auto" className={`text-[15px] min-[380px]:text-lg sm:text-xl font-black leading-tight break-words ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
               {headerTitle}
             </h3>
-            {/* Badges */}
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+
+            {/* Price + badges sit under the smaller title, leaving the top
+                row for the two header actions: wishlist heart + close. */}
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <div
+                ref={headerPriceRef}
+                className="inline-flex items-center rounded-full px-2.5 py-0.5 min-[380px]:px-3 min-[380px]:py-1 text-[12.5px] min-[380px]:text-sm font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap tabular-nums"
+                dir="auto"
+              >
+                {headerPriceText}
+              </div>
+
               {item.badges.map((b) => (
                 <span
                   key={b}
@@ -369,32 +379,27 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   {isAr ? 'نفدت الكمية' : 'Sold out'}
                 </span>
               )}
-
-              {/* Member wishlist action: labelled (not a bare icon) so it is
-                  discoverable in the sheet, and it sits with the badges —
-                  the natural "about this dish" row. */}
-              <WishlistButton
-                itemId={item.id}
-                itemName={itemName}
-                lang={lang}
-                darkMode={darkMode}
-                variant="pill"
-                tone="surface"
-                className="ms-auto"
-              />
             </div>
           </div>
 
-      <div ref={headerPriceRef} className="flex-shrink-0 px-2.5 py-1 min-[380px]:px-3 min-[380px]:py-1 rounded-full text-sm min-[380px]:text-base font-black bg-[var(--primary)] text-[#0A0A0A] shadow-sm whitespace-nowrap tabular-nums" dir="auto">
-        {headerPriceText}
-      </div>
+          {/* Bare member heart: no circle, no border — one quiet top action
+              beside Close, filled gold only when saved. */}
+          <WishlistButton
+            itemId={item.id}
+            itemName={itemName}
+            lang={lang}
+            darkMode={darkMode}
+            variant="bare"
+            size="md"
+            className="mt-0.5"
+          />
 
           {/* In-flow close: always in the sticky bar (never scrolled away,
               never overlapped — no absolute corner to reserve for). */}
           <button
             type="button"
             onClick={onClose}
-            className={`shrink-0 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+            className={`shrink-0 mt-0.5 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
               darkMode
                 ? 'bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700'
                 : 'bg-neutral-100 text-neutral-700 hover:text-black hover:bg-neutral-200'
@@ -514,21 +519,23 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   </div>
                 </div>
 
-                {/* Add button with live total — merges into the matching
-                    cart line (same config), so re-adding just tops up.
-                    Badged-spicy lines additionally require full heat
-                    coverage (the slider is mandatory for them). */}
+                {/* Primary order action — full width. Save lives in the
+                    sticky header as a bare heart, so it stays visible while
+                    the options scroll. */}
                 <button
                   type="button"
                   disabled={liveTotal === null || !picksValid || !heatOk}
                   data-testid="item-modal-add"
                   onClick={() => onAddConfigured(item, variantId, addonIds, qty, effAddonQty)}
-                  className="btn-tactile w-full h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-extrabold text-base flex items-center justify-center gap-2 shadow-lg hover:brightness-110 disabled:opacity-50"
+                  className="btn-tactile w-full h-12 rounded-full bg-[var(--primary)] text-[#0A0A0A] font-extrabold text-[13px] min-[380px]:text-base flex items-center justify-center gap-1.5 px-2.5 min-[380px]:px-3 shadow-lg hover:brightness-110 disabled:opacity-50"
                 >
-                  <Plus size={20} className="stroke-[3]" />
-                  <span>{isAr ? 'إضافة إلى الطلب' : 'Add to Order'}</span>
+                  <Plus size={20} className="shrink-0 stroke-[3]" />
+                  <span className="truncate">
+                    <span className="min-[360px]:hidden">{isAr ? 'أضف' : 'Add'}</span>
+                    <span className="hidden min-[360px]:inline">{isAr ? 'إضافة إلى الطلب' : 'Add to Order'}</span>
+                  </span>
                   {liveTotal !== null && (
-                    <span ref={addTotalRef} className="tabular-nums" dir="auto">{addTotalText}</span>
+                    <span ref={addTotalRef} className="shrink-0 tabular-nums" dir="auto">{addTotalText}</span>
                   )}
                 </button>
               </>

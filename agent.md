@@ -79,7 +79,8 @@
   signed-in user and toggles optimistically; `WishlistButton` renders only for
   members, with a gold spring + particle burst, `aria-pressed` and a
   dish-specific label. Hearts ride all five menu layouts, the featured
-  carousel and the item sheet (labelled Save/Saved pill). `AccountSheet` tabs
+  carousel and the item sheet (a bare heart in the sticky header beside Close,
+  with the item title compact and the price under it). `AccountSheet` tabs
   are now **My orders · Wishlist · Settings** (`grid-cols-3`); saved rows show
   photo/name/price/options and open the dish after closing the sheet. Guests
   and admin previews (no provider) see no hearts. API:

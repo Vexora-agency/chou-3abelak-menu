@@ -168,9 +168,20 @@ for (const path of surfaces) {
   const source = read(path);
   check(`${path.split('/').pop()} renders the member heart`, has(source, 'WishlistButton', 'itemId={item.id}'));
 }
+const itemModal = read('src/features/menu/components/ItemDetailsModal.tsx');
 check(
-  'the item sheet offers a labelled save pill (not a bare icon)',
-  has(read('src/features/menu/components/ItemDetailsModal.tsx'), 'variant="pill"', 'ms-auto')
+  'the item sheet puts a bare heart at the top beside Close',
+  has(itemModal, 'variant="bare"', 'size="md"', 'aria-label={isAr ? \'إغلاق\' : \'Close modal\'}')
+    && !itemModal.includes('ms-auto')
+    && !itemModal.includes('size="lg"')
+);
+check(
+  'the item title is compact and the price sits under it',
+  has(itemModal, 'text-[15px] min-[380px]:text-lg sm:text-xl', 'ref={headerPriceRef}', 'mt-1.5 flex flex-wrap items-center gap-1.5')
+);
+check(
+  'the item sheet has no bottom save pill (save lives in the header)',
+  !itemModal.includes('variant="pill"')
 );
 check(
   'the round card heart sits opposite the badge in logical end space',

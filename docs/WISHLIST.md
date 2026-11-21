@@ -60,13 +60,18 @@ SQL lives in `functions/_shared/repositories/wishlist.repo.js`:
 - `MenuListListRow` / `MenuListCompactRow` — beside the cart action.
 - `MenuListRoundCard` — top-end corner, opposite the badge.
 - `FeaturedCarousel` — beside the quick-add button.
-- `ItemDetailsModal` — a labelled **Save / Saved** pill in the badge row.
+- `ItemDetailsModal` — a **bare heart in the sticky header beside Close** (no
+  border, circle or background), so it stays visible while options scroll. The
+  title is compact and the price moved under it, leaving the top row for the
+  heart and close.
 
-`WishlistButton` (`src/features/wishlist/components/WishlistButton.tsx`) is
-44×44 on the standard size and 36×36 with a 44px hit ring on compact cards. It
-uses a spring scale + gold fill + eight-particle radial burst on save, and a
-quick collapse on remove. Every animation runs for every visitor by owner
-decision (no reduced-motion opt-out), matching the rest of the storefront.
+`WishlistButton` (`src/features/wishlist/components/WishlistButton.tsx`) has
+three shapes: the 44px circular surface/overlay heart on cards, the 48px
+secondary action, and a chrome-free `bare` heart for the item header. Compact
+cards use 36×36 with a 44px hit ring. It uses a spring scale + gold fill +
+eight-particle radial burst on save, and a quick collapse on remove. Every
+animation runs for every visitor by owner decision (no reduced-motion opt-out),
+matching the rest of the storefront.
 
 Accessibility and direction:
 

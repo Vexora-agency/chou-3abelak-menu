@@ -95,7 +95,7 @@ export function PhoneVerificationSheet({
     ? active.message || buildPhoneVerificationMessage({ code, reference: active.reference, lang })
     : '';
   const whatsappUrl = message
-    ? buildPhoneVerificationWhatsAppUrl(whatsappNumber, message) || active?.whatsappUrl || null
+    ? active?.whatsappUrl || buildPhoneVerificationWhatsAppUrl(whatsappNumber, message)
     : null;
 
   // One automatic request per open + number. A phase that falls back to

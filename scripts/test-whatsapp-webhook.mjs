@@ -198,6 +198,11 @@ check('code TTL is five minutes', VERIFICATION_CODE_TTL_MS === 5 * 60 * 1000);
 const sheet = read('src/features/auth/strings.ts');
 check('sheet says automatic confirmation', sheet.includes('Confirmed automatically'));
 check('sheet success copy does not mention an order', !sheet.includes('You can place your order now.') && !sheet.includes('يمكنك إرسال طلبك الآن.'));
+const sheetComponent = read('src/features/auth/components/PhoneVerificationSheet.tsx');
+check(
+  'sheet prefers the server verification URL over the menu number',
+  sheetComponent.includes('active?.whatsappUrl || buildPhoneVerificationWhatsAppUrl')
+);
 
 const admin = read('src/features/admin/components/admin/AdminPhoneVerifications.tsx');
 check('admin panel describes the manual fallback', /Automatic WhatsApp verification is on/i.test(admin) && admin.includes('fallback'));

@@ -87,7 +87,9 @@
   one-line hint (no long instructions). Round categories use a square crop with
   a circular guide/preview; the stored image stays square and the card clips it.
   Feature-library sections can carry an optional **admin-only** color
-  (`FeatureGroup.color`, curated palette; heat locked red). The customer sees
+  (`FeatureGroup.color`, curated General + Food palette — vegetables green,
+  cheese yellow, meat, chicken, seafood, sauce, bread, drinks, dessert, vegan,
+  mushroom, olive; heat locked red). The customer sees
   one unified brand-gold option pill; custom section colors never reach the
   storefront. Guarded by `test:colors`; see `docs/FEATURE_COLORS.md`.
   `AccountSheet` tabs

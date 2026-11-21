@@ -14,6 +14,19 @@ export const FEATURE_COLOR_IDS = new Set([
   'violet',
   'sky',
   'emerald',
+  // Food-semantic colors for famous add-ons.
+  'vegetables',
+  'cheese',
+  'meat',
+  'chicken',
+  'seafood',
+  'sauce',
+  'bread',
+  'drinks',
+  'dessert',
+  'vegan',
+  'mushroom',
+  'olive',
 ]);
 
 /** Trim/validate a section color. Invalid/absent -> undefined (optional). */

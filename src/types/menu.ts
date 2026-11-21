@@ -24,7 +24,19 @@ export type FeatureColorId =
   | 'rose'
   | 'violet'
   | 'sky'
-  | 'emerald';
+  | 'emerald'
+  | 'vegetables'
+  | 'cheese'
+  | 'meat'
+  | 'chicken'
+  | 'seafood'
+  | 'sauce'
+  | 'bread'
+  | 'drinks'
+  | 'dessert'
+  | 'vegan'
+  | 'mushroom'
+  | 'olive';
 
 /** A section in the Features library (e.g. Sizes, Add-ons).
  *  Sections are pure folders — whether a feature is used as a size or an

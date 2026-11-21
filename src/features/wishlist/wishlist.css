@@ -18,3 +18,8 @@
 .wishlist-shake {
   animation: wishlist-shake 0.38s ease-in-out;
 }
+
+/* Bare header heart: no circle, no border — only the saved heart glows. */
+.wishlist-bare-saved {
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--primary) 60%, transparent));
+}

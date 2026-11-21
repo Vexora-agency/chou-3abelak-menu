@@ -298,7 +298,6 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   const [signOutError, setSignOutError] = useState('');
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [verifyPhone, setVerifyPhone] = useState<string | null>(null);
-  const verifiedPhoneRef = useRef<string | null>(null);
   const verification = usePhoneVerification(verifyPhone, verifyOpen);
   const [soundOff, setSoundOffState] = useState(() => isSoundOff());
   const dial: DialCountry = phoneDial ?? { iso: '', code: '' };
@@ -486,17 +485,9 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
       setSaveError(t.addressRequired);
       return;
     }
-    // A NEW number must be proven on WhatsApp before it can replace the
-    // account number. An unchanged number keeps its current state (the order
-    // gate still refuses an unverified number, but address edits are free).
-    const savedCheck = profile?.phone ? checkPhone(profile.phone, dial.code) : null;
-    const phoneIsChanging = !savedCheck?.ok || savedCheck.normalized !== phoneCheck.normalized;
-    if (phoneIsChanging && verifiedPhoneRef.current !== phoneCheck.normalized) {
-      setSaveError('');
-      setVerifyPhone(phoneCheck.normalized);
-      setVerifyOpen(true);
-      return;
-    }
+    // Saving is intentionally NOT gated by verification: the member can
+    // update the saved number immediately, but checkout/order still refuses
+    // an unverified number until they confirm it.
     setSaving(true);
     setSaveError('');
     setSaveOk(false);
@@ -951,8 +942,8 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
           />
         )}
 
-        {/* Reverse WhatsApp verification for a new/changed account number.
-            On success the interrupted save resumes with the verified number. */}
+        {/* Reverse WhatsApp verification for the saved/edited number.
+            Verifying also saves the current form (phone + address). */}
         <PhoneVerificationSheet
           open={verifyOpen}
           onClose={() => setVerifyOpen(false)}
@@ -963,7 +954,6 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
           whatsappNumber={whatsappNumber || ''}
           storeName={storeName || ''}
           onVerified={() => {
-            verifiedPhoneRef.current = verifyPhone;
             setVerifyOpen(false);
             void save();
           }}

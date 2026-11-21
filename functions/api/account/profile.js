@@ -13,7 +13,7 @@ import { checkCustomerApiHeaders, requireCustomer } from '../../_shared/auth-ses
 import { getCustomerProfile, upsertCustomerProfile } from '../../_shared/repositories/customers.repo.js';
 import { findValidVerification } from '../../_shared/repositories/phone-verifications.repo.js';
 import { verificationValidUntil } from '../../_shared/phone-verification.js';
-import { authErrorMessage, normalizePhoneDigits, validateProfileAddress, validateProfileLocation, validateProfilePhone } from '../../_shared/validate-auth.js';
+import { authErrorMessage, validateProfileAddress, validateProfileLocation, validateProfilePhone } from '../../_shared/validate-auth.js';
 
 function publicUser(user) {
   return {
@@ -90,28 +90,10 @@ export async function onRequest(context) {
   // submitted one (null clears it), never inventing a point for the text.
 
   try {
-    const current = await getCustomerProfile(db, auth.user.id);
-    const currentPhone = current && typeof current.phone === 'string'
-      ? normalizePhoneDigits(current.phone)
-      : '';
-    const nextPhone = normalizePhoneDigits(phone.phone);
-    // A NEW number must be proven first (reverse WhatsApp verification).
-    // An unchanged number keeps its existing state: the order gate still
-    // refuses an unverified number, but saving the address is not blocked.
-    if (nextPhone && nextPhone !== currentPhone) {
-      const approved = await findValidVerification(db, auth.user.id, nextPhone, Date.now());
-      if (!approved) {
-        return jsonNoStore({
-          error: 'phone_verification_required',
-          phone: nextPhone,
-          message: {
-            en: 'Verify this phone number on WhatsApp before saving it.',
-            ar: 'أكّد رقم الهاتف هذا عبر واتساب قبل حفظه.',
-          },
-        }, 403);
-      }
-    }
-
+    // Saving a changed number is intentionally NOT gated by verification:
+    // the member can keep their profile current, and the order route still
+    // refuses to place an order on an unverified number. This keeps "Save
+    // changes" fast while the ownership gate stays at checkout.
     const saved = await upsertCustomerProfile(
       db,
       auth.user.id,

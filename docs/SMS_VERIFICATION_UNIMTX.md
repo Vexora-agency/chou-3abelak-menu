@@ -69,8 +69,10 @@ npx wrangler pages secret put UNIMTX_ACCESS_KEY_SECRET --project-name chou-3abel
 6. Valid → row approved (`decided_by='sms'`), sheet shows **Number verified**.
    Invalid → `code_invalid` and the row stays pending (max 5 attempts).
 
-The order/profile gates are unchanged: an approved row is required before an
-order. The owner does not call anyone and does not approve SMS rows manually.
+The **order** gate requires an approved row. The profile PATCH can save a
+changed number immediately (even unverified); checkout then asks for
+verification before the order. The owner does not call anyone and does not
+approve SMS rows manually.
 
 ## Cost control
 

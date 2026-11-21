@@ -168,10 +168,11 @@ ok(
   'the server order gate treats the map pin as optional'
 );
 ok(
-  accountSheet.includes('phoneIsChanging')
-    && accountSheet.includes('verifiedPhoneRef')
-    && accountSheet.includes('PhoneVerificationSheet'),
-  'settings gates a NEW/changed number on reverse WhatsApp verification before saving'
+  accountSheet.includes('Saving is intentionally NOT gated')
+    && accountSheet.includes('PhoneVerificationSheet')
+    && checkout.includes('isPhoneVerified')
+    && route.includes('phone_verification_required'),
+  'settings saves a changed number immediately; checkout remains the verification gate'
 );
 
 /* ---------- B. two-browser separation (simulation) ---------- */

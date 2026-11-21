@@ -91,7 +91,8 @@
   caps), `/api/admin/phone-verifications` (pending list + approve/reject; the
   code is never returned to admin), `/api/whatsapp/webhook` (GET challenge +
   signed POST). Order + profile gates: `orders.js` verifies `c.phoneNorm`;
-  `profile.js` demands an approval only when the number CHANGES. Secret:
+  `profile.js` saves a changed number **without gating** it, so the order route
+  is the single verification gate (saving is fast; ordering requires approval). Secret:
   `PHONE_VERIFICATION_SECRET` if set, else `SESSION_SECRET`. WhatsApp env:
   `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`,
   `WHATSAPP_PHONE_NUMBER_ID` (optional `WHATSAPP_VERIFICATION_NUMBER` for a

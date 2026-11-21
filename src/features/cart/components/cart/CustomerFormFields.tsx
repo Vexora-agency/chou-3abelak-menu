@@ -25,8 +25,6 @@ interface CustomerFormFieldsProps {
   darkMode: boolean;
   /** Signed-in members already have their email on every linked order. */
   isMember?: boolean;
-  /** Member has a saved default address loaded into this order. */
-  hasDefaultAddress?: boolean;
   /** Restaurant country from the admin WhatsApp picker (phone gate). */
   phoneDial?: DialCountry;
   /** Member's saved account number (reset baseline in the cart). */
@@ -52,7 +50,6 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   lang,
   darkMode,
   isMember = false,
-  hasDefaultAddress = false,
   phoneDial,
   accountPhone,
   phoneVerified = false,
@@ -290,14 +287,6 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             </button>
           )}
         </div>
-        {isMember && hasDefaultAddress && !location && (
-          <p className={`mt-1.5 flex items-start gap-1.5 text-[10.5px] font-semibold leading-relaxed ${darkMode ? 'text-emerald-400/90' : 'text-emerald-700'}`}>
-            <BadgeCheck size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
-            <span dir="auto">
-              {isAr ? 'عنوانك الافتراضي · عدّله من هنا.' : 'Your default address · edit it here.'}
-            </span>
-          </p>
-        )}
         {location && (
           <div className={`mt-2 rounded-2xl border p-2.5 ${darkMode ? 'border-emerald-400/25 bg-emerald-400/[0.06]' : 'border-emerald-200 bg-emerald-50/80'}`}>
             <div className="flex items-start gap-2.5">
@@ -305,11 +294,8 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
                 <MapPin size={16} strokeWidth={2.4} aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1 pt-0.5">
-                <p className={`text-[12px] font-extrabold leading-snug ${darkMode ? 'text-emerald-100' : 'text-emerald-950'}`}>
-                  {isAr ? 'الموقع مثبّت' : 'Location pinned'}
-                </p>
                 {distanceText && (
-                  <p className={`mt-0.5 text-[11px] font-bold leading-snug ${darkMode ? 'text-emerald-300/80' : 'text-emerald-700'}`}>
+                  <p className={`text-[11px] font-bold leading-snug ${darkMode ? 'text-emerald-300/80' : 'text-emerald-700'}`}>
                     {isAr ? `${distanceText} عن المطعم` : `${distanceText} away`}
                   </p>
                 )}
@@ -348,14 +334,6 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
                 </button>
               </div>
             </div>
-            {isMember && hasDefaultAddress && (
-              <p className={`mt-1.5 ps-11 flex items-start gap-1 text-[10.5px] font-semibold leading-snug ${darkMode ? 'text-emerald-300/80' : 'text-emerald-700/90'}`}>
-                <BadgeCheck size={11} className="mt-0.5 shrink-0" aria-hidden="true" />
-                <span dir="auto">
-                  {isAr ? 'عنوانك الافتراضي · عدّله من هنا.' : 'Your default address · edit it here.'}
-                </span>
-              </p>
-            )}
           </div>
         )}
       </div>

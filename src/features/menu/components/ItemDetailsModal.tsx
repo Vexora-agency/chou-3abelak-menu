@@ -14,6 +14,7 @@ import { VariantPicker } from './item-view/VariantPicker';
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { AddonPicker } from './item-view/AddonPicker';
 import { HeatPill } from '@/src/components/HeatPill';
+import { WishlistButton } from '@/src/features/wishlist';
 
 interface ItemDetailsModalProps {
   item: MenuItem | null;
@@ -342,7 +343,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
               {headerTitle}
             </h3>
             {/* Badges */}
-            <div className="flex items-center gap-1.5 mt-2">
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {item.badges.map((b) => (
                 <span
                   key={b}
@@ -368,6 +369,19 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   {isAr ? 'نفدت الكمية' : 'Sold out'}
                 </span>
               )}
+
+              {/* Member wishlist action: labelled (not a bare icon) so it is
+                  discoverable in the sheet, and it sits with the badges —
+                  the natural "about this dish" row. */}
+              <WishlistButton
+                itemId={item.id}
+                itemName={itemName}
+                lang={lang}
+                darkMode={darkMode}
+                variant="pill"
+                tone="surface"
+                className="ms-auto"
+              />
             </div>
           </div>
 

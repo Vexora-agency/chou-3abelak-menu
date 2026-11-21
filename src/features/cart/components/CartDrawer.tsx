@@ -370,7 +370,6 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               onClearLocation={clearLocation}
               isMember={!!account.user}
               accountPhone={account.profile?.phone ?? null}
-              hasDefaultAddress={!account.loading && !!account.profile?.address && customer.address.trim() === account.profile.address.trim()}
               phoneDial={phoneDial}
               phoneVerified={phoneVerified}
               phoneVerificationPhase={phoneVerification.phase}

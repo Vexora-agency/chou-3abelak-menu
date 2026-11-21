@@ -5,6 +5,7 @@ import type { ResolvedMark } from '@/src/utils/cardMark';
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges, hasOptions } from '@/src/utils/pricing';
+import { WishlistButton } from '@/src/features/wishlist';
 import { MenuListItemAction } from './MenuListItemAction';
 import '@/src/features/seasonal/xmas-accents.css';
 
@@ -175,6 +176,19 @@ export const MenuListPhotoCard: React.FC<MenuListPhotoCardProps> = ({
               {badgeLabel(badge, lang)}
             </span>
           )}
+
+          {/* Member wishlist heart: bottom-end, diametrically opposite the
+              badge and clear of the price tag on the photo's lower edge. */}
+          <div className="absolute bottom-3 end-3 z-20">
+            <WishlistButton
+              itemId={item.id}
+              itemName={name}
+              lang={lang}
+              darkMode={darkMode}
+              tone="overlay"
+              size="sm"
+            />
+          </div>
 
           {isSoldOut && (
             <div className="absolute inset-0 z-[15] flex items-center justify-center bg-black/55">

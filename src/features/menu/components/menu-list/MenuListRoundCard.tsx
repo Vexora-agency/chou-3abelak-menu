@@ -5,6 +5,7 @@ import type { ResolvedMark } from '@/src/utils/cardMark';
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
+import { WishlistButton } from '@/src/features/wishlist';
 import { MenuListItemAction } from './MenuListItemAction';
 import '@/src/features/seasonal/xmas-accents.css';
 
@@ -38,10 +39,10 @@ interface MenuListRoundCardProps {
  * Fifth display layout: round dish photo in a branded gold ring.
  *
  * Compact centered card (black/gold rotated badge, framed conic ring photo,
- * name, description, price + real cart action — no wishlist heart by owner
- * call). The layered elevation, ring frame, entrance pop and hover lift/zoom
- * all live in components.css next to the photo-card language this card reuses
- * (hover lift, image zoom, shine).
+ * name, description, price + real cart action, and a member-only wishlist
+ * heart in the opposite corner). The layered elevation, ring frame, entrance
+ * pop and hover lift/zoom all live in components.css next to the photo-card
+ * language this card reuses (hover lift, image zoom, shine).
  */
 export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
   item,
@@ -126,6 +127,17 @@ export const MenuListRoundCard: React.FC<MenuListRoundCardProps> = ({
           {badgeLabel(badges[0], lang)}
         </span>
       )}
+
+      <div className="absolute -top-1 end-0 z-20">
+        <WishlistButton
+          itemId={item.id}
+          itemName={name}
+          lang={lang}
+          darkMode={darkMode}
+          tone="overlay"
+          size="sm"
+        />
+      </div>
 
       <div className="round-ring relative mb-3 mt-px h-[116px] w-[116px] shrink-0 rounded-full p-1">
         <span className="round-photo relative block h-full w-full overflow-hidden rounded-full">

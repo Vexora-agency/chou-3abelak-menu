@@ -91,18 +91,27 @@ ok(
   'the settings map-pin button sits on the physical right (correct in Arabic RTL too)'
 );
 ok(
+  !accountSheet.includes('pinSet') && !accountSheet.includes('الموقع مثبّت')
+    && accountSheet.includes('t.changePin'),
+  'the settings map pin is silent: the change-pin control remains, the green note is gone'
+);
+ok(
   formFields.includes('absolute right-0.5') && formFields.includes('pr-12'),
   'the cart map-pin button sits on the physical right (correct in Arabic RTL too)'
 );
 const cartDrawer = read('src/features/cart/components/CartDrawer.tsx');
 ok(
-  cartDrawer.includes('customer.address.trim() === account.profile.address.trim()'),
-  'the member default-address note shows only while the loaded default is still intact'
+  !cartDrawer.includes('hasDefaultAddress'),
+  'the cart no longer computes a default-address badge for members'
 );
 ok(
-  formFields.includes('عنوانك الافتراضي') && formFields.includes('الموقع مثبّت')
-    && !formFields.includes('bg-amber-50'),
-  'member default-address note is one compact line, not a second gold alert box'
+  !formFields.includes('عنوانك الافتراضي')
+    && !formFields.includes('الموقع مثبّت')
+    && !formFields.includes('Your default address · edit it here.')
+    && !formFields.includes('Location pinned')
+    && formFields.includes('onOpenLocSheet')
+    && formFields.includes('MapPin'),
+  'the cart keeps the optional map pin but prints no default-address or pinned-location note'
 );
 ok(
   formFields.includes('phoneChanged')

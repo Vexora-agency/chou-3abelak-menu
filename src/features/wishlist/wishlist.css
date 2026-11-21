@@ -1,0 +1,20 @@
+/* Wishlist micro-interaction: the gold glow is theme-driven, so a re-skin
+   does not leave a stale yellow halo behind. */
+.wishlist-heart-glow {
+  box-shadow:
+    0 0 0 1px var(--primary),
+    0 0 16px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+/* Failed save (server unreachable / wishlist full): one short shake. */
+@keyframes wishlist-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+.wishlist-shake {
+  animation: wishlist-shake 0.38s ease-in-out;
+}

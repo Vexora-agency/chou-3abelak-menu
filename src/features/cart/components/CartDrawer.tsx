@@ -187,12 +187,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     }
   }, [isOpen, idemKeyRef]);
 
-  // Escape closes the topmost layer first (location sheet, then the
-  // drawer) — same keyboard contract as the item details sheet.
+  // Escape closes the topmost layer first (verification sheet, location
+  // sheet, then the drawer) — same keyboard contract as the item sheet.
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      // The verification sheet owns Escape while it is open (its focus trap
+      // closes it); closing the whole cart in the same keystroke would be a
+      // surprising double-dismiss.
+      if (verifyOpen) return;
       // Same as the sheet's own X / backdrop: dismiss discards the
       // unconfirmed pick instead of keeping a half-chosen point.
       if (locSheetOpen) closeLocSheet(false);
@@ -200,7 +204,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, locSheetOpen, closeLocSheet, onClose]);
+  }, [isOpen, verifyOpen, locSheetOpen, closeLocSheet, onClose]);
 
   // Reset transient checkout state whenever the drawer closes.
   // Render-phase adjustment (blessed pattern): guarded so it converges

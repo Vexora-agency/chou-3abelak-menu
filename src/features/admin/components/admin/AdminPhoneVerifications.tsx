@@ -36,6 +36,7 @@ const STR = {
     title: 'WhatsApp phone verification',
     subtitle: 'Members waiting for a number approval. Match the WhatsApp sender number + Ref, then approve.',
     pending: 'pending',
+    refLabel: 'Ref',
     empty: 'No pending verification requests.',
     emptyHint: 'New requests appear here instantly; the owner also gets a Telegram ping.',
     refresh: 'Refresh',
@@ -55,6 +56,7 @@ const STR = {
     title: 'تأكيد أرقام واتساب',
     subtitle: 'أعضاء بانتظار تأكيد أرقامهم. طابق رقم المرسل في واتساب والمرجع (Ref) ثم اضغط اعتماد.',
     pending: 'بالانتظار',
+    refLabel: 'المرجع',
     empty: 'لا توجد طلبات تأكيد بالانتظار.',
     emptyHint: 'تظهر الطلبات الجديدة هنا فورًا، ويصلك تنبيه تيليجرام أيضًا.',
     refresh: 'تحديث',
@@ -243,7 +245,7 @@ export function AdminPhoneVerifications({ lang, adminFetch }: AdminPhoneVerifica
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <b className="text-sm font-black tabular-nums text-white" dir="ltr">+{row.phone}</b>
                       <span className="rounded-md border border-[var(--primary)]/30 bg-[var(--primary)]/10 px-1.5 py-0.5 text-[10px] font-black tracking-wider text-[var(--primary)]" dir="ltr">
-                        Ref {row.reference}
+                        {t.refLabel} {row.reference}
                       </span>
                     </div>
                     <p className="mt-0.5 truncate text-[11px] font-semibold text-neutral-300">

@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useNow } from '@/src/hooks/useNow';
 import { formatMMSS } from '@/src/utils/countdown';
 import {
@@ -73,7 +74,7 @@ export function PhoneVerificationSheet({
   const t = PHONE_VERIFY_STR[lang];
   const isAr = lang === 'ar';
   const [copied, setCopied] = useState(false);
-  const closeRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const autoRef = useRef<string | null>(null);
   const onVerifiedRef = useRef(onVerified);
   const onCloseRef = useRef(onClose);
@@ -81,6 +82,7 @@ export function PhoneVerificationSheet({
   onCloseRef.current = onClose;
 
   useBodyScrollLock(open, 'phone-verification');
+  useFocusTrap(open, panelRef, onClose);
   const now = useNow(open && verification.phase === 'pending', 1000);
 
   const active = verification.active;
@@ -95,20 +97,6 @@ export function PhoneVerificationSheet({
   const whatsappUrl = message
     ? buildPhoneVerificationWhatsAppUrl(whatsappNumber, message) || active?.whatsappUrl || null
     : null;
-
-  // Close + focus contract while open.
-  useEffect(() => {
-    if (!open) return;
-    const id = window.setTimeout(() => closeRef.current?.focus(), 60);
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseRef.current();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.clearTimeout(id);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
 
   // One automatic request per open + number. A phase that falls back to
   // 'unverified' after a 10-minute expiry must NOT mint codes in a loop.
@@ -180,6 +168,7 @@ export function PhoneVerificationSheet({
             onClick={onClose}
           />
           <motion.div
+            ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="phone-verify-title"
@@ -205,7 +194,6 @@ export function PhoneVerificationSheet({
                 </div>
               </div>
               <button
-                ref={closeRef}
                 type="button"
                 onClick={onClose}
                 aria-label={t.close}
@@ -219,7 +207,7 @@ export function PhoneVerificationSheet({
 
             <div className="space-y-4 px-5 py-5">
               {verified ? (
-                <div className="py-4 text-center">
+                <div className="py-4 text-center" role="status" aria-live="polite">
                   <motion.span
                     initial={{ scale: 0.7, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
@@ -317,7 +305,7 @@ export function PhoneVerificationSheet({
 
                       {verification.phase === 'pending' && (
                         <div className="space-y-2">
-                          <p className={`flex items-center justify-center gap-2 text-[11px] font-bold ${muted}`}>
+                          <p className={`flex items-center justify-center gap-2 text-[11px] font-bold ${muted}`} role="status">
                             <Loader2 size={13} className="animate-spin" aria-hidden="true" />
                             {t.waiting}
                           </p>

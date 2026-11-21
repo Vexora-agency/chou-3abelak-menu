@@ -336,7 +336,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   };
 
   useBodyScrollLock(open, 'account-sheet');
-  useFocusTrap(open, sheetRef, onClose);
+  useFocusTrap(open && !verifyOpen, sheetRef, onClose);
 
   useEffect(() => {
     if (!open) {

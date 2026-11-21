@@ -16,7 +16,9 @@ customer storefront deliberately stays on one unified brand color.
 - **Admin only.** The color paints the section name pill and the feature-list
   start edge in the Libraries tab. The customer item sheet does **not** read
   it: sizes and add-ons use one unified brand-gold pill, and the heat section
-  stays red (the `HeatPill` style).
+  stays red (the `HeatPill` style). Selected add-ons also appear beside the
+  dish name as compact unified-gold pills (`AddonPill`, same shape as
+  `HeatPill`) — never in the admin's section color.
 - **Heat is fixed.** The protected `spicy` section ignores the picker and is
   always red; the admin shows a locked note instead of swatches.
 - **Stored optionally.** `FeatureGroup.color?: FeatureColorId` is preserved by
@@ -35,6 +37,9 @@ customer storefront deliberately stays on one unified brand color.
 - `src/features/admin/components/FeaturesSection.tsx` — picker + colored header.
 - `src/features/menu/components/item-view/VariantPicker.tsx`,
   `AddonPicker.tsx` — unified gold option pills.
+- `src/components/AddonPill.tsx`, `src/features/menu/components/ItemDetailsModal.tsx`
+  — selected add-ons appear beside the dish name as compact unified-gold
+  pills (same shape as `HeatPill`; heat stays red).
 - `src/features/menu/components/item-view/SpicySlider.tsx` — heat stays red.
 
 ## Test

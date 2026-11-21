@@ -14,6 +14,7 @@ import { VariantPicker } from './item-view/VariantPicker';
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { AddonPicker } from './item-view/AddonPicker';
 import { HeatPill } from '@/src/components/HeatPill';
+import { AddonPill } from '@/src/components/AddonPill';
 import { WishlistButton } from '@/src/features/wishlist';
 
 interface ItemDetailsModalProps {
@@ -374,6 +375,15 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                 if (!pick) return null;
                 return <HeatPill featureId={pick} lang={lang} size="sm" />;
               })()}
+              {/* Live add-on confirmations: every selected non-heat option
+                  appears beside the name as a compact pill — same shape as
+                  the heat pill, but in the single unified brand-gold
+                  treatment. Admin section colors never reach the customer. */}
+              {item.available && addonIds
+                .filter((id) => !isSpicyFeatureId(id) && (item.addons || []).some((a) => a && a.featureId === id))
+                .map((id) => (
+                  <AddonPill key={id} name={featureName(menu, id, lang)} />
+                ))}
               {!item.available && (
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-neutral-600 text-white">
                   {isAr ? 'نفدت الكمية' : 'Sold out'}

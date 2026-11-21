@@ -91,7 +91,9 @@
   cheese yellow, meat, chicken, seafood, sauce, bread, drinks, dessert, vegan,
   mushroom, olive; heat locked red). The customer sees
   one unified brand-gold option pill; custom section colors never reach the
-  storefront. Guarded by `test:colors`; see `docs/FEATURE_COLORS.md`.
+  storefront. Selected add-ons also show beside the dish name as compact
+  `AddonPill`s (same shape as `HeatPill`, unified gold; heat stays red).
+  Guarded by `test:colors`; see `docs/FEATURE_COLORS.md`.
   `AccountSheet` tabs
   are now **My orders · Wishlist · Settings** (`grid-cols-3`); saved rows show
   photo/name/price/options and open the dish after closing the sheet. Guests

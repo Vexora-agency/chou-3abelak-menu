@@ -6,6 +6,7 @@ import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { CardMarkView } from '../CardMark';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
+import { WishlistButton } from '@/src/features/wishlist';
 import { MenuListItemAction } from './MenuListItemAction';
 import '@/src/features/seasonal/xmas-accents.css';
 
@@ -153,7 +154,7 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
       <div className="relative flex-1 flex flex-col">
         {/* Badges: top corner, mirrored per direction (left in EN, right in AR)
             so it always balances diagonally against the + button. Tilted. */}
-        <div className={`relative flex items-center gap-2 mb-2 h-[18px] ${mark ? 'justify-between' : 'justify-end'}`}>
+        <div className={`relative flex items-center gap-2 mb-1.5 min-h-[36px] ${mark ? 'justify-between' : 'justify-end'}`}>
           {badges.length > 0 && (
             <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold border-[1.5px] shadow-lg -rotate-3 ${isAr ? '' : 'tracking-wide'} ${mark ? '' : 'absolute -top-[7px] -start-1 z-10'}${festive ? ' xmas-badge' : ''} ${
               badges[0] === 'spicy'
@@ -170,6 +171,18 @@ export const MenuListGridCard: React.FC<MenuListGridCardProps> = ({
               {isAr ? 'نفدت' : 'Sold out'}
             </span>
           )}
+
+          {/* The heart rides the badge row: enough height for a 44px target
+              without squeezing the price + cart action on narrow 2-up cards. */}
+          <WishlistButton
+            itemId={item.id}
+            itemName={pickLangText(item.name, lang)}
+            lang={lang}
+            darkMode={darkMode}
+            tone={showPhoto ? 'overlay' : 'surface'}
+            size="sm"
+            className="ms-auto"
+          />
         </div>
 
         {descText ? (

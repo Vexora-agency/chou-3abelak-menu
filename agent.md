@@ -58,12 +58,13 @@
   pin — so a member can order from outside or from a one-off place by typing
   the address in the cart. Guarded by `scripts/test-cart-isolation.mjs` and
   `test-auth-profile-policy`.
-- Cart location card (one message, one accent): the member default-address
-  note is a compact line inside the green "Location pinned" card — not a
-  second gold alert box — and it hides once the address is edited. Distance is
-  stated once (the delivery-fee line never repeats it). Map-pin buttons in
-  both address fields are physically right (`right-0.5` + `pr-12`), so Arabic
-  RTL shows them on the right as the owner expects. Guarded by `test:cart`.
+- Cart location card: the map pin is optional and **silent** — by owner request
+  the green default-address note and the "Location pinned" title were removed,
+  including the `hasDefaultAddress` prop; the Settings pin note was removed too
+  (the Change-pin button remains). The pin button and the distance line remain.
+  Map-pin buttons in both address fields are physically right (`right-0.5` +
+  `pr-12`), so Arabic RTL shows them on the right as the owner expects. Guarded
+  by `test:cart`.
 - Cart phone is editable for members and EVERY number must be verified before
   ordering — the saved number, a changed number, and the first one. A compact
   note under the field shows `Verified` / `Not verified` and opens the reverse
@@ -72,6 +73,19 @@
   number (`phone_verification_required`), never on the saved profile number.
   The old "طلبك مرتبط بحسابك تلقائيًا." line in the COD card is removed on
   purpose — do not re-add it. Guarded by `test:cart` + `test:phone`.
+- Member wishlist (migration `0041_customer_wishlist`): one membership-scoped
+  set of saved dishes, item-level (`user_id + item_id` PK, cascade on account
+  delete, 200-item cap). `WishlistProvider` (storefront root) fetches once per
+  signed-in user and toggles optimistically; `WishlistButton` renders only for
+  members, with a gold spring + particle burst, `aria-pressed` and a
+  dish-specific label. Hearts ride all five menu layouts, the featured
+  carousel and the item sheet (labelled Save/Saved pill). `AccountSheet` tabs
+  are now **My orders · Wishlist · Settings** (`grid-cols-3`); saved rows show
+  photo/name/price/options and open the dish after closing the sheet. Guests
+  and admin previews (no provider) see no hearts. API:
+  `GET/POST/DELETE /api/account/wishlist` (session + customer CSRF, user id
+  never client-supplied). Guarded by `test:wishlist`; full notes in
+  `docs/WISHLIST.md`.
 - Reverse WhatsApp phone verification (migrations `0037_phone_verifications`,
   `0038_whatsapp_webhook`, `0039_phone_verification_lang`): the site mints a
   6-digit code bound to member + normalized number (5-minute TTL; only a keyed

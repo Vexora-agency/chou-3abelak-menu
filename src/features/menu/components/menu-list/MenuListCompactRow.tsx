@@ -3,6 +3,7 @@ import type { MenuData, MenuItem } from '@/src/types/menu';
 import { Flame, Sparkles, Award } from 'lucide-react';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
+import { WishlistButton } from '@/src/features/wishlist';
 import { MenuListItemAction } from './MenuListItemAction';
 import { SplitText } from '@/src/components/motion';
 import '@/src/features/seasonal/xmas-accents.css';
@@ -175,6 +176,14 @@ export const MenuListCompactRow: React.FC<MenuListRowProps> = ({
       <span className={`shrink-0 text-sm font-extrabold tabular-nums ${darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'}`} dir="auto">
         {priceLabel(item, lang, currency, menu)}
       </span>
+      <WishlistButton
+        itemId={item.id}
+        itemName={pickLangText(item.name, lang)}
+        lang={lang}
+        darkMode={darkMode}
+        tone="surface"
+        size="sm"
+      />
       {!isSoldOut && orderingEnabled && (
         <div
           onClick={(e) => e.stopPropagation()}

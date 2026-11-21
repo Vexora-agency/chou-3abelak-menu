@@ -3,6 +3,7 @@ import type { MenuData, MenuItem } from '@/src/types/menu';
 import { Flame, Sparkles, Award } from 'lucide-react';
 import { pickLangText, badgeLabel } from '@/src/utils/menuHelpers';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
+import { WishlistButton } from '@/src/features/wishlist';
 import { MenuListItemAction } from './MenuListItemAction';
 import '@/src/features/seasonal/xmas-accents.css';
 
@@ -131,15 +132,25 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
           {pickLangText(item.description, lang)}
         </p>
 
-        {/* Action Control: Add Button or Stepper */}
-        {!isSoldOut && orderingEnabled && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="flex-shrink-0"
-          >
-            <MenuListItemAction item={item} small={false} qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} festive={festive} />
-          </div>
-        )}
+        {/* Action Control: wishlist + Add Button/Stepper */}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <WishlistButton
+            itemId={item.id}
+            itemName={pickLangText(item.name, lang)}
+            lang={lang}
+            darkMode={darkMode}
+            tone="surface"
+            size="sm"
+          />
+          {!isSoldOut && orderingEnabled && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="flex-shrink-0"
+            >
+              <MenuListItemAction item={item} small={false} qty={qty} isAr={isAr} onAddItem={onAddItem} onUpdateLine={onUpdateLine} onOpenItem={onOpenItem} festive={festive} />
+            </div>
+          )}
+        </div>
       </div>
       </>
       ) : (
@@ -176,6 +187,15 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
         <span className="ms-auto px-3 py-1 rounded-full text-sm font-extrabold bg-[var(--primary)] text-[#0A0A0A] shadow-sm flex-shrink-0 tabular-nums transition-transform group-hover:scale-105" dir="auto">
           {priceLabel(item, lang, currency, menu)}
         </span>
+
+        <WishlistButton
+          itemId={item.id}
+          itemName={pickLangText(item.name, lang)}
+          lang={lang}
+          darkMode={darkMode}
+          tone="surface"
+          size="sm"
+        />
 
         {!isSoldOut && orderingEnabled && (
           <div

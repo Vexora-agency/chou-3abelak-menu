@@ -72,6 +72,7 @@ import { useShopCartState } from '@/src/features/cart';
 // graph into the customer entry chunk. Deep import is intentional here.
 import { useOrderingState } from '@/src/features/orders/hooks/useOrderingState';
 import { useCustomerSession } from '@/src/features/auth';
+import { WishlistProvider } from '@/src/features/wishlist';
 import { cancelWindowMsFromMenu } from '@/src/features/track/orderPhases';
 import { useAppPrefs } from '@/src/hooks/useAppPrefs';
 
@@ -343,10 +344,10 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authEntry, setAuthEntry] = useState<'account' | 'checkout'>('account');
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [accountInitialTab, setAccountInitialTab] = useState<'orders' | 'settings'>('orders');
+  const [accountInitialTab, setAccountInitialTab] = useState<'orders' | 'wishlist' | 'settings'>('orders');
   const [resetToken, setResetToken] = useState<string | null>(null);
 
-  const openAccount = (tab: 'orders' | 'settings' = 'orders') => {
+  const openAccount = (tab: 'orders' | 'wishlist' | 'settings' = 'orders') => {
     setAccountInitialTab(tab);
     setIsAccountOpen(true);
   };
@@ -608,6 +609,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
       : null;
 
   return (
+    <WishlistProvider>
     <>
     {/* Owner decision: every animation runs for every visitor, even when the
         OS requests reduced motion or the device is in power saving. */}
@@ -846,6 +848,8 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
             phoneDial={dialFromSettings(displayMenu.settings)}
             whatsappNumber={displayMenu.settings.whatsapp || ''}
             storeName={displayMenu.settings.name?.[lang] || ''}
+            menu={displayMenu}
+            onOpenItem={setActiveItem}
             initialTab={accountInitialTab}
           />
         </Suspense>
@@ -853,5 +857,6 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
       </div>
     </div>
     </>
+    </WishlistProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FC } from 'react';
+import { useEffect, useMemo, useRef, useState, type FC } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   AlertCircle,
@@ -7,6 +7,7 @@ import {
   Check,
   ChevronDown,
   ExternalLink,
+  Heart,
   Loader2,
   LockKeyhole,
   LogOut,
@@ -16,6 +17,7 @@ import {
   RefreshCw,
   ShoppingBag,
   UserRound,
+  UtensilsCrossed,
   Volume2,
   VolumeX,
   X,
@@ -24,6 +26,11 @@ import { authClient } from '@/src/lib/auth-client';
 import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { useNow } from '@/src/hooks/useNow';
 import { cleanPhoneInput, phoneDigitsOnly } from '@/src/utils/digits';
+import type { MenuData, MenuItem } from '@/src/types/menu';
+import { pickLangText } from '@/src/utils/menuHelpers';
+import { hasOptions, priceLabel } from '@/src/utils/pricing';
+import { SmartMenuImage } from '@/src/components/SmartMenuImage';
+import { WishlistButton, useWishlist } from '@/src/features/wishlist';
 import {
   checkPhone,
   composeNational,
@@ -66,11 +73,15 @@ interface AccountSheetProps {
   whatsappNumber?: string;
   /** Restaurant display name for the verification sheet header. */
   storeName?: string;
+  /** Live menu document: needed to render saved wishlist dishes. */
+  menu?: MenuData;
+  /** Open a saved dish in the item sheet (the account sheet closes first). */
+  onOpenItem?: (item: MenuItem) => void;
   /** Open directly on Settings (checkout's "complete profile" CTA). */
-  initialTab?: 'orders' | 'settings';
+  initialTab?: 'orders' | 'wishlist' | 'settings';
 }
 
-type Tab = 'orders' | 'settings';
+type Tab = 'orders' | 'wishlist' | 'settings';
 
 const STATUS_STYLE: Record<AccountStatus, string> = {
   new: 'border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[#8a6d00] dark:text-[var(--primary)]',
@@ -266,7 +277,100 @@ const OrderCard: FC<{
   );
 };
 
-export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency, cancelWindowMs, phoneDial, whatsappNumber, storeName, initialTab = 'orders' }: AccountSheetProps) {
+const WishlistRow: FC<{
+  item: MenuItem;
+  categoryName: string;
+  menu: MenuData;
+  lang: 'en' | 'ar';
+  darkMode: boolean;
+  currency: string;
+  onOpen: () => void;
+}> = ({ item, categoryName, menu, lang, darkMode, currency, onOpen }) => {
+  const isAr = lang === 'ar';
+  const title = pickLangText(item.name, lang);
+  const description = pickLangText(item.description, lang).trim();
+  const meta = description || categoryName;
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(item.imageUrl) && !imageFailed;
+
+  return (
+    <div
+      className={`group flex items-center gap-3 rounded-2xl border p-2.5 transition-colors ${
+        darkMode
+          ? 'border-neutral-800 bg-neutral-900 hover:border-[var(--primary)]/40'
+          : 'border-neutral-200 bg-[#fafafa] hover:border-[var(--primary)]/60'
+      }`}
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+      >
+        <span
+          className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border ${
+            darkMode ? 'border-neutral-700 bg-black/40' : 'border-neutral-200 bg-white'
+          }`}
+        >
+          {showImage ? (
+            <SmartMenuImage
+              item={item}
+              name={title}
+              sizes="64px"
+              width={64}
+              height={64}
+              onError={() => setImageFailed(true)}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <span className={`flex h-full w-full items-center justify-center ${darkMode ? 'text-[var(--primary)]/50' : 'text-[#8a6d00]/50'}`}>
+              <UtensilsCrossed size={22} strokeWidth={1.5} aria-hidden="true" />
+            </span>
+          )}
+        </span>
+
+        <span className="min-w-0 flex-1">
+          <span dir="auto" className={`block truncate text-sm font-extrabold ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
+            {title}
+          </span>
+          {meta && (
+            <span
+              dir="auto"
+              className={`mt-0.5 block truncate text-[11px] ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}
+            >
+              {meta}
+            </span>
+          )}
+          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className={`text-xs font-extrabold tabular-nums ${darkMode ? 'text-[var(--primary)]' : 'text-[#7a5d00]'}`} dir="auto">
+              {priceLabel(item, lang, currency, menu)}
+            </span>
+            {hasOptions(item) && (
+              <span className={`text-[10px] font-bold ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
+                {isAr ? 'خيارات' : 'Options'}
+              </span>
+            )}
+            {!item.available && (
+              <span className="rounded-full border border-red-500/30 bg-red-500/10 px-1.5 py-px text-[9px] font-extrabold text-red-600 dark:text-red-300">
+                {isAr ? 'غير متوفر' : 'Unavailable'}
+              </span>
+            )}
+          </span>
+        </span>
+      </button>
+
+      <WishlistButton
+        itemId={item.id}
+        itemName={title}
+        lang={lang}
+        darkMode={darkMode}
+        tone="surface"
+        size="md"
+      />
+    </div>
+  );
+};
+
+export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency, cancelWindowMs, phoneDial, whatsappNumber, storeName, menu, onOpenItem, initialTab = 'orders' }: AccountSheetProps) {
   const t = AUTH_STR[lang];
   const pv = PHONE_VERIFY_STR[lang];
   const isAr = lang === 'ar';
@@ -275,6 +379,21 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   const session = useCustomerSession();
   const profileState = useCustomerProfile(open);
   const ordersState = useCustomerOrders(open);
+  const wishlist = useWishlist();
+
+  // Resolve saved ids against the live menu: a removed/renamed item simply
+  // drops out of the list instead of rendering a broken row or a dead link.
+  const wishlistItems = useMemo(() => {
+    if (!menu) return [];
+    const byId = new Map(menu.items.map((menuItem) => [menuItem.id, menuItem]));
+    return wishlist.entries
+      .map((entry) => byId.get(entry.itemId))
+      .filter((menuItem): menuItem is MenuItem => !!menuItem);
+  }, [menu, wishlist.entries]);
+  const categoryById = useMemo(
+    () => new Map((menu?.categories || []).map((category) => [category.id, category])),
+    [menu],
+  );
 
   const [tab, setTab] = useState<Tab>(initialTab);
   // Auto-selecting Settings runs once per opening: the customer can still
@@ -578,9 +697,10 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
               </button>
             </div>
 
-            <div className={`mt-3 grid grid-cols-2 gap-1 p-1 rounded-full border ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-100 border-neutral-200'}`} role="tablist">
-              {(['orders', 'settings'] as const).map((value) => {
+            <div className={`mt-3 grid grid-cols-3 gap-1 p-1 rounded-full border ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-100 border-neutral-200'}`} role="tablist">
+              {(['orders', 'wishlist', 'settings'] as const).map((value) => {
                 const active = tab === value;
+                const label = value === 'orders' ? t.orderHistory : value === 'wishlist' ? t.wishlist : t.settings;
                 return (
                   <button
                     key={value}
@@ -599,7 +719,22 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                         transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                       />
                     )}
-                    <span className="relative z-10">{value === 'orders' ? t.orderHistory : t.settings}</span>
+                    <span className="relative z-10 inline-flex items-center justify-center gap-1">
+                      {label}
+                      {value === 'wishlist' && wishlistItems.length > 0 && (
+                        <span
+                          className={`inline-flex min-w-[18px] items-center justify-center rounded-full px-1 py-px text-[9px] font-black tabular-nums ${
+                            active
+                              ? 'bg-black/15 text-[#0A0A0A]'
+                              : darkMode
+                                ? 'bg-[var(--primary)]/15 text-[var(--primary)]'
+                                : 'bg-[#8a6d00]/10 text-[#7a5d00]'
+                          }`}
+                        >
+                          {wishlistItems.length > 99 ? '99+' : wishlistItems.length}
+                        </span>
+                      )}
+                    </span>
                   </button>
                 );
               })}
@@ -722,6 +857,87 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                       }}
                     />
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'wishlist' && (
+            <div className="pt-1 anim-fade-in">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-extrabold">{t.wishlistTitle}</h3>
+                  <p className={`mt-0.5 text-[11px] leading-relaxed ${mutedClass}`}>{t.wishlistSubtitle}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => wishlist.refresh()}
+                  aria-label={t.refresh}
+                  title={t.refresh}
+                  className={`w-11 h-11 min-w-[44px] shrink-0 rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 text-neutral-300 hover:text-white' : 'border-neutral-300 text-neutral-600 hover:text-black'}`}
+                >
+                  <RefreshCw size={16} className={wishlist.loading ? 'animate-spin' : ''} aria-hidden="true" />
+                </button>
+              </div>
+
+              {wishlistItems.length > 0 && (
+                <p className={`mt-2 inline-flex items-center gap-1.5 text-[10.5px] font-bold ${mutedClass}`}>
+                  <Heart size={11} className="text-[var(--primary)]" aria-hidden="true" />
+                  {t.wishlistCount(wishlistItems.length)}
+                </p>
+              )}
+
+              {wishlist.loading && wishlistItems.length === 0 && (
+                <div className="mt-3 space-y-2.5" aria-busy="true" aria-label={t.loading}>
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className={`h-[86px] rounded-2xl border animate-pulse ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-100 border-neutral-200'}`} />
+                  ))}
+                </div>
+              )}
+
+              {!wishlist.loading && wishlist.error && wishlistItems.length === 0 && (
+                <div role="alert" className="mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center">
+                  <AlertCircle size={24} className="mx-auto text-red-500" aria-hidden="true" />
+                  <p className="mt-2 text-xs font-bold text-red-600 dark:text-red-300">{t.wishlistLoadError}</p>
+                  <button type="button" onClick={() => wishlist.refresh()} className="mt-3 h-11 px-5 rounded-full bg-red-500/15 text-red-700 dark:text-red-300 text-xs font-extrabold">
+                    {t.retry}
+                  </button>
+                </div>
+              )}
+
+              {!wishlist.loading && !wishlist.error && wishlistItems.length === 0 && (
+                <div className={`mt-3 rounded-2xl border p-6 text-center ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-50 border-neutral-200'}`}>
+                  <span className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full border ${darkMode ? 'border-[var(--primary)]/30 bg-[var(--primary)]/10' : 'border-[#d9bc45]/60 bg-[#fff8dc]'}`}>
+                    <Heart size={26} className={darkMode ? 'text-[var(--primary)]' : 'text-[#8a6d00]'} aria-hidden="true" />
+                  </span>
+                  <p className="mt-3 text-sm font-extrabold">{t.wishlistEmpty}</p>
+                  <p className={`mt-1 text-xs leading-relaxed ${mutedClass}`}>{t.wishlistEmptyDesc}</p>
+                  <button type="button" onClick={onClose} className="btn-tactile mt-4 h-11 px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold">
+                    {t.browseMenu}
+                  </button>
+                </div>
+              )}
+
+              {wishlistItems.length > 0 && menu && (
+                <div className="mt-3 space-y-2.5 pb-2">
+                  {wishlistItems.map((menuItem) => {
+                    const category = categoryById.get(menuItem.categoryId);
+                    return (
+                      <WishlistRow
+                        key={menuItem.id}
+                        item={menuItem}
+                        categoryName={category ? (isAr ? category.name.ar : category.name.en) : ''}
+                        menu={menu}
+                        lang={lang}
+                        darkMode={darkMode}
+                        currency={currency}
+                        onOpen={() => {
+                          onClose();
+                          onOpenItem?.(menuItem);
+                        }}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -883,12 +1099,6 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                   </button>
                 </div>
                 <p id="account-address-note" className={`mt-1 text-[10px] ${mutedClass}`}>{t.addressHint}</p>
-                {location && (
-                  <p className={`mt-1.5 flex items-start gap-1.5 text-[11px] font-bold ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
-                    <MapPin size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
-                    <span>{t.pinSet}</span>
-                  </p>
-                )}
               </div>
 
               {saveError && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs font-bold text-red-600 dark:text-red-300">{saveError}</p>}

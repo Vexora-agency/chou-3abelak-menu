@@ -4,6 +4,7 @@ import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { pickLangText } from '@/src/utils/menuHelpers';
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
+import { WishlistButton } from '@/src/features/wishlist';
 import { SplitText } from '@/src/components/motion';
 import { scheduleIdle } from '@/src/utils/scheduleIdle';
 
@@ -379,24 +380,34 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
             {badgeText}
           </span>
 
-          {interactive && (
-          <button
-            type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddToCart(item);
-          }}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90 shadow-sm ${
-              isYellowCard
-                ? 'bg-[#0A0A0A] text-[var(--primary)] hover:bg-black/80'
-                : 'bg-[var(--primary)] text-[#0A0A0A] hover:brightness-110'
-            }`}
-            aria-label={isAr ? `أضف ${item.name.ar} إلى السلة` : `Add ${item.name.en} to cart`}
-            title={isAr ? 'أضف إلى الطلب' : 'Add to cart'}
-          >
-            <Plus size={16} className="stroke-[3]" />
-          </button>
-          )}
+          <div className="flex items-center gap-1.5">
+            <WishlistButton
+              itemId={item.id}
+              itemName={pickLangText(item.name, lang)}
+              lang={lang}
+              darkMode={darkMode}
+              tone="overlay"
+              size="sm"
+            />
+            {interactive && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddToCart(item);
+                }}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90 shadow-sm ${
+                  isYellowCard
+                    ? 'bg-[#0A0A0A] text-[var(--primary)] hover:bg-black/80'
+                    : 'bg-[var(--primary)] text-[#0A0A0A] hover:brightness-110'
+                }`}
+                aria-label={isAr ? `أضف ${item.name.ar} إلى السلة` : `Add ${item.name.en} to cart`}
+                title={isAr ? 'أضف إلى الطلب' : 'Add to cart'}
+              >
+                <Plus size={16} className="stroke-[3]" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Bottom Info: Name & Price */}

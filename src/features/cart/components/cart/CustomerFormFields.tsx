@@ -27,8 +27,6 @@ interface CustomerFormFieldsProps {
   hasDefaultAddress?: boolean;
   /** Restaurant country from the admin WhatsApp picker (phone gate). */
   phoneDial?: DialCountry;
-  /** Opens Account → Settings over the cart (member phone is account-owned). */
-  onOpenSettings?: () => void;
   onOpenLocSheet: () => void;
   onClearLocation: () => void;
 }
@@ -46,7 +44,6 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   isMember = false,
   hasDefaultAddress = false,
   phoneDial,
-  onOpenSettings,
   onOpenLocSheet,
   onClearLocation,
 }) => {
@@ -61,7 +58,9 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
       ? nationalPart(customer.phone, dial.code)
       : customer.phone;
   // A member's number is account-owned (the server also stamps the account
-  // phone on every order). Only route a "change it" CTA when a number exists.
+  // phone on every order). The field stays read-only and carries NO note or
+  // shortcut underneath: a different number will be typed only through the
+  // future WhatsApp OTP confirmation, so there is nothing to explain here.
   const phoneLinked = isMember && customer.phone.trim().length > 0;
   const phoneErrorText = phoneError || (phoneForeign
     ? (isMember
@@ -72,6 +71,8 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         ? `هذا الرقم غير مدعوم. امسح الحقل وأدخل رقمًا من +${dial.code}.`
         : `This number isn’t supported. Clear the field and enter a +${dial.code} number.`))
     : null);
+  // A member with a saved number gets no note at all (and no settings link).
+  const phoneNoteVisible = !!phoneErrorText || !phoneLinked;
 
   const onPhoneChange = (raw: string) => {
     if (!dial.code) {
@@ -160,7 +161,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             readOnly={isMember}
             aria-readonly={isMember || undefined}
             aria-invalid={phoneErrorText ? true : undefined}
-            aria-describedby="cart-phone-note"
+            aria-describedby={phoneNoteVisible ? 'cart-phone-note' : undefined}
             className={`min-w-0 flex-1 h-11 px-3.5 border text-base tabular-nums text-start focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
               dial.code && !phoneForeign ? 'rounded-e-xl rounded-s-none' : 'rounded-xl'
             } ${
@@ -174,34 +175,21 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             }`}
           />
         </div>
-        <p
-          id="cart-phone-note"
-          className={`mt-1 text-[10.5px] font-semibold leading-relaxed ${
-            phoneErrorText
-              ? 'text-red-500'
-              : darkMode ? 'text-neutral-500' : 'text-neutral-400'
-          }`}
-          role={phoneErrorText ? 'alert' : undefined}
-        >
-          {phoneErrorText
-            || (phoneLinked
-              ? (isAr ? 'رقمك محفوظ في حسابك ولا يُعدّل من هنا.' : 'Your number is saved to your account and can’t be changed here.')
-              : dial.code
+        {phoneNoteVisible && (
+          <p
+            id="cart-phone-note"
+            className={`mt-1 text-[10.5px] font-semibold leading-relaxed ${
+              phoneErrorText
+                ? 'text-red-500'
+                : darkMode ? 'text-neutral-500' : 'text-neutral-400'
+            }`}
+            role={phoneErrorText ? 'alert' : undefined}
+          >
+            {phoneErrorText
+              || (dial.code
                 ? (isAr ? `نقبل أرقام +${dial.code} فقط.` : `Only +${dial.code} numbers are accepted.`)
                 : (isAr ? 'أدخل رقم الهاتف مع رمز الدولة.' : 'Enter the phone number with its country code.'))}
-        </p>
-        {phoneLinked && onOpenSettings && (
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className={`mt-1 inline-flex items-center gap-1 min-h-[32px] rounded-md text-[11px] font-extrabold underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
-              darkMode
-                ? 'text-[var(--primary)] decoration-[var(--primary)]/40 hover:decoration-[var(--primary)]'
-                : 'text-[#7a5d00] decoration-[#7a5d00]/40 hover:decoration-[#7a5d00]'
-            }`}
-          >
-            {isAr ? 'عدّله من إعدادات الحساب' : 'Change it in Account settings'}
-          </button>
+          </p>
         )}
       </div>
 

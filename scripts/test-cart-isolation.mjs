@@ -104,14 +104,17 @@ ok(
 );
 ok(
   formFields.includes('phoneLinked')
-    && formFields.includes('رقمك محفوظ في حسابك ولا يُعدّل من هنا.')
-    && formFields.includes('عدّله من إعدادات الحساب')
-    && formFields.includes('onOpenSettings'),
-  'member phone is account-owned: a note + settings shortcut, never an inline edit'
+    && formFields.includes('readOnly={isMember}')
+    && !formFields.includes('رقمك محفوظ في حسابك')
+    && !formFields.includes('Your number is saved to your account')
+    && !formFields.includes('عدّله من إعدادات الحساب')
+    && !formFields.includes('Change it in Account settings')
+    && !formFields.includes('onOpenSettings'),
+  'member phone stays read-only with no saved-number note or settings shortcut'
 );
 ok(
-  cartDrawer.includes('onOpenSettings={onRequireProfile}'),
-  'the cart phone note opens Account → Settings over the cart'
+  !cartDrawer.includes('onOpenSettings'),
+  'the cart no longer routes the phone note to Account → Settings'
 );
 const paymentSection = read('src/features/cart/components/cart/PaymentMethodSection.tsx');
 ok(

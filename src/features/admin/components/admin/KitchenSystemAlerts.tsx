@@ -162,7 +162,7 @@ export const KitchenSystemAlerts: React.FC<KitchenSystemAlertsProps> = ({ lang }
       {/* Bell-vs-push contrast: why both exist. */}
       <p className="text-[11px] leading-relaxed text-neutral-500 rounded-xl border border-neutral-800 bg-black/40 p-2.5">
         {isAr
-          ? 'الجرس الداخلي يحتاج تبويبًا مفتوحًا ولمسة أولى (قيد المتصفح) — أما تنبيه النظام فيصلك والهاتف مقفل.'
+          ? 'الجرس الداخلي يحتاج تبويبًا مفتوحًا ونقرة أولى (قيد المتصفح) — بينما يصلك تنبيه النظام والهاتف مغلق.'
           : 'The in-page bell needs an open tab and a first tap (a browser limit) — the system alert reaches you with the phone locked.'}
       </p>
       {(state === 'ios' || (needsInstall && state === 'idle')) && (

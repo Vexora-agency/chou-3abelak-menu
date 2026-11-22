@@ -14,7 +14,7 @@ import { normalizePhoneDigits } from './validate-auth.js';
 
 const DEFAULT_API_BASE = 'https://api.unimtx.com';
 const DEFAULT_INTENT = 'phone_verification';
-const DEFAULT_TTL_SEC = 120;
+const DEFAULT_TTL_SEC = 300;
 const REQUEST_TIMEOUT_MS = 10000;
 
 function trimEnv(env, key) {

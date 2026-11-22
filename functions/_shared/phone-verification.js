@@ -16,14 +16,14 @@
 import { getSessionSecret, safeCompareStrings } from './session.js';
 import { normalizePhoneDigits } from './validate-auth.js';
 
-/** Code lives in the message for 2 minutes. */
-export const VERIFICATION_CODE_TTL_MS = 2 * 60 * 1000;
+/** Code lives in the message for 5 minutes. */
+export const VERIFICATION_CODE_TTL_MS = 5 * 60 * 1000;
 /** A "call me" request stays on the dashboard for 15 minutes. */
 export const VERIFICATION_CALLBACK_TTL_MS = 15 * 60 * 1000;
 /** An approved number stays verified for a year. */
 export const VERIFICATION_VALIDITY_MS = 365 * 24 * 60 * 60 * 1000;
-/** One new code per member+number per two minutes (the code's own lifetime). */
-export const VERIFICATION_COOLDOWN_SEC = 120;
+/** One new code per member+number per five minutes (the code's own lifetime). */
+export const VERIFICATION_COOLDOWN_SEC = 300;
 /** Per member+number hourly / daily caps (manual approval is owner work). */
 export const VERIFICATION_HOURLY_MAX = 5;
 export const VERIFICATION_DAILY_MAX = 15;

@@ -87,7 +87,7 @@ check('send body is E.164', body.to === '+96170123456');
 check('send body is SMS', body.channel === 'sms');
 check('send body uses 6 digits', body.digits === 6);
 check('send body intent is phone_verification', body.intent === 'phone_verification');
-check('send body TTL is 2 minutes', body.ttl === 120);
+check('send body TTL is 5 minutes', body.ttl === 300);
 
 /* ---------- custom branded template ---------- */
 
@@ -247,7 +247,7 @@ check(
 );
 check('sheet has the SMS code input', sheet.includes('smsCode') && sheet.includes('verification.verifySms(smsCode)') && sheet.includes('t.smsCodeLabel'));
 check(
-  'resend stays hidden until the two-minute code expires',
+  'resend stays hidden until the five-minute code expires',
   sheet.includes('leftMs <= 0 &&') && sheet.includes('t.resend') && sheet.includes('t.smsResend')
 );
 check(

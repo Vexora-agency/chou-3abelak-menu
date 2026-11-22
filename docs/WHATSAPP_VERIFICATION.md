@@ -2,7 +2,7 @@
 
 Reverse verification: the **member messages the business first**, so no outbound
 template and no Authentication-template eligibility is involved. The site mints
-a 6-digit code (2-minute TTL), the member sends it from their own WhatsApp, and
+a 6-digit code (5-minute TTL), the member sends it from their own WhatsApp, and
 the Cloud API webhook approves the pending request automatically and replies.
 
 Manual approval in **Admin → Customers → Accounts** stays as a fallback when the

@@ -1,5 +1,7 @@
-# CI — safety net. PR + push. No deploy steps (deploys happen only via the
-# Cloudflare Pages dashboard git integration, reviewed by the owner).
+# CI — manual safety net. Automated PR/push gating now runs inside the
+# Cloudflare Pages build (`npm run verify`), which uses included Pages builds
+# instead of GitHub Actions minutes. Keep this workflow for an on-demand run
+# (including gitleaks secret scanning) when needed.
 # Pinned actions (SHAs verified 2026-11-01 via api.github.com, all commits
 # PGP-verified by GitHub):
 #   actions/checkout@v4        11d5960a326750d5838078e36cf38b85af677262 (2026-07-16)
@@ -8,9 +10,7 @@
 name: ci
 
 on:
-  pull_request:
-  push:
-    branches: [main, maintenance]
+  workflow_dispatch:
 
 permissions:
   contents: read

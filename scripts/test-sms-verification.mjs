@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import {
   buildUnimtxQuery,
   getUnimtxTemplateId,
+  getUnimtxTemplateVar,
   isUnimtxConfigured,
   sendUnimtxOtp,
   sendUnimtxTemplateSms,
@@ -91,10 +92,29 @@ check('send body TTL is 5 minutes', body.ttl === 300);
 /* ---------- custom branded template ---------- */
 
 check(
-  'template id comes from UNIMTX_SMS_TEMPLATE_ID',
-  getUnimtxTemplateId({ UNIMTX_SMS_TEMPLATE_ID: 'chou3abelak_verify' }) === 'chou3abelak_verify'
+  'Arabic template id comes from UNIMTX_SMS_TEMPLATE_ID_AR',
+  getUnimtxTemplateId({ UNIMTX_SMS_TEMPLATE_ID_AR: 'pub_otp_ar' }, 'ar') === 'pub_otp_ar'
 );
-check('template id is empty when unset', getUnimtxTemplateId({}) === '');
+check(
+  'English template id comes from UNIMTX_SMS_TEMPLATE_ID_EN',
+  getUnimtxTemplateId({ UNIMTX_SMS_TEMPLATE_ID_EN: 'pub_otp_en_basic2' }, 'en') === 'pub_otp_en_basic2'
+);
+check(
+  'shared template id remains a fallback for both languages',
+  getUnimtxTemplateId({ UNIMTX_SMS_TEMPLATE_ID: 'shared_tpl' }, 'ar') === 'shared_tpl'
+    && getUnimtxTemplateId({ UNIMTX_SMS_TEMPLATE_ID: 'shared_tpl' }, 'en') === 'shared_tpl'
+);
+check(
+  'a missing language template falls through (no cross-language send)',
+  getUnimtxTemplateId({ UNIMTX_SMS_TEMPLATE_ID_EN: 'pub_otp_en_basic2' }, 'ar') === ''
+);
+check('template id is empty when unset', getUnimtxTemplateId({}, 'ar') === '' && getUnimtxTemplateId({}, 'en') === '');
+check('template variable defaults to code', getUnimtxTemplateVar({}) === 'code');
+check(
+  'template variable can be overridden safely',
+  getUnimtxTemplateVar({ UNIMTX_SMS_TEMPLATE_VAR: 'otp' }) === 'otp'
+    && getUnimtxTemplateVar({ UNIMTX_SMS_TEMPLATE_VAR: 'bad name!' }) === 'code'
+);
 let templateCaptured = null;
 const templateFetch = async (url, init) => {
   templateCaptured = { url, body: JSON.parse(init.body) };
@@ -164,10 +184,15 @@ check('route enforces the SMS daily cap', route.includes('UNIMTX_SMS_DAILY_MAX')
 check('route locks after 5 SMS attempts', route.includes('SMS_MAX_ATTEMPTS'));
 check('route approves SMS as decided_by sms', route.includes("decidedBy: 'sms'"));
 check(
-  'route supports a custom branded SMS template',
-  route.includes('getUnimtxTemplateId')
+  'route supports language-specific SMS templates',
+  route.includes('getUnimtxTemplateId(env, lang)')
     && route.includes('sendUnimtxTemplateSms')
-    && route.includes('templateData: { code: smsCode }')
+    && route.includes('getUnimtxTemplateVar')
+    && route.includes('templateData: { [templateVar]: smsCode }')
+);
+check(
+  'route falls back to the built-in OTP when a template fails',
+  route.includes("if (codeHash === 'unimtx')") && route.includes('sendUnimtxOtp')
 );
 check(
   'route verifies a custom template code against our local hash',

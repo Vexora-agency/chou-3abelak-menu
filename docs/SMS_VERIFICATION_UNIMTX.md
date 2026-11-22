@@ -34,15 +34,40 @@ The reliable, cost-safe design is **behaviour-based routing**:
 5. The Send OTP API uses UniMTX's built-in OTP template; no per-request sender
    name is required. If the console asks for a default sender/template, use the
    OTP defaults.
-6. The built-in OTP text **cannot be customised**. For a branded Arabic/English
-   message, create a normal SMS template (next section) and set
-   `UNIMTX_SMS_TEMPLATE_ID`.
+6. The built-in OTP text **cannot be customised**. Use UniMTX's public OTP
+   templates (next section, no review) or create a branded template.
 
-## Custom branded SMS template (optional, recommended)
+## Public OTP templates (no review, recommended)
 
-The OTP API always sends UniMTX's own wording. A normal SMS template lets the
-message say **Chou 3abelak** and read naturally. In the console, open
-**SMS → Templates → Create template** and use:
+UniMTX's public templates start with `pub_` and are already available: they can
+be used directly as `templateId` without creating a template or waiting for
+review. Set one per language:
+
+```bash
+npx wrangler pages secret put UNIMTX_SMS_TEMPLATE_ID_AR --project-name chou-3abelak-menu
+# value: pub_otp_ar
+npx wrangler pages secret put UNIMTX_SMS_TEMPLATE_ID_EN --project-name chou-3abelak-menu
+# value: pub_otp_en_basic2
+```
+
+Then **Retry deployment**. The server chooses:
+
+- Arabic sheet/UI → `UNIMTX_SMS_TEMPLATE_ID_AR` (`pub_otp_ar`)
+- English sheet/UI → `UNIMTX_SMS_TEMPLATE_ID_EN` (`pub_otp_en_basic2`)
+
+A missing language template does **not** silently send the other language; it
+falls back to the built-in OTP text. If a template call fails (wrong code,
+missing variable data, route restriction), the server also falls back to the
+built-in OTP so the member still receives a code.
+
+The public templates use a `{code}` variable. `UNIMTX_SMS_TEMPLATE_VAR`
+defaults to `code`; change it only if the template you use names the variable
+differently (for example `otp`).
+
+## Custom branded SMS template (optional)
+
+A custom template lets the message say **Chou 3abelak** and read naturally. In
+the console, open **SMS → Templates → Create template** and use:
 
 | Field | Value |
 |---|---|
@@ -55,15 +80,19 @@ message say **Chou 3abelak** and read naturally. In the console, open
 The template may contain only simple text and `{code}`. Do **not** add symbols
 such as `【】★※→●`; the console rejects them. Keep it under 460 characters.
 
-Wait until UniMTX **approves** the template, then add the custom code as an
+Wait until UniMTX **approves** the template, then add its custom code as an
 environment variable in Cloudflare Pages (**Production** and **Preview**):
 
 ```bash
+# Preferred: one template per language
+npx wrangler pages secret put UNIMTX_SMS_TEMPLATE_ID_AR --project-name chou-3abelak-menu
+npx wrangler pages secret put UNIMTX_SMS_TEMPLATE_ID_EN --project-name chou-3abelak-menu
+# Or one shared template for both languages:
 npx wrangler pages secret put UNIMTX_SMS_TEMPLATE_ID --project-name chou-3abelak-menu
-# value: chou3abelak_verify
+# value in all cases: chou3abelak_verify
 ```
 
-Then **Retry deployment**. With the variable set:
+Then **Retry deployment**. With a template set:
 
 - the server generates the 6-digit code itself;
 - only a keyed hash is stored in `phone_verifications.code_hash`;
@@ -71,8 +100,8 @@ Then **Retry deployment**. With the variable set:
 - the member's code is checked against our hash locally (no second provider
   call).
 
-If the variable is unset, the old built-in `otp.send` / `otp.verify` flow stays
-active, so this is safe to roll out gradually.
+If no template variable is set, the old built-in `otp.send` / `otp.verify`
+flow stays active, so this is safe to roll out gradually.
 
 ## Environment variables (Cloudflare Pages)
 
@@ -84,7 +113,10 @@ Add in **Production** and **Preview**, then **Retry deployment**:
 | `UNIMTX_ACCESS_KEY_SECRET` | only for HMAC mode | AccessKey Secret. Without it the request uses simple mode. |
 | `UNIMTX_API_BASE` | optional | Defaults to `https://api.unimtx.com`. |
 | `UNIMTX_SMS_DAILY_MAX` | optional | Global SMS send cap/day, default `100` (max 1000). |
-| `UNIMTX_SMS_TEMPLATE_ID` | optional | Custom template code (e.g. `chou3abelak_verify`). Enables the branded template flow. |
+| `UNIMTX_SMS_TEMPLATE_ID` | optional | Shared template code, used when no language-specific template is set (e.g. `chou3abelak_verify`). |
+| `UNIMTX_SMS_TEMPLATE_ID_AR` | optional | Arabic template code (e.g. public `pub_otp_ar`). |
+| `UNIMTX_SMS_TEMPLATE_ID_EN` | optional | English template code (e.g. public `pub_otp_en_basic2`). |
+| `UNIMTX_SMS_TEMPLATE_VAR` | optional | Template variable name, default `code`. |
 | `UNIMTX_SMS_SIGNATURE` | optional | Pre-registered SMS sender name (2–16 chars). Only needed when the UniMTX route requires one. |
 
 Do not paste the secret into chat. Add it in the Cloudflare dashboard or with:
@@ -100,11 +132,12 @@ npx wrangler pages secret put UNIMTX_ACCESS_KEY_SECRET --project-name chou-3abel
    after 60 s).
 2. **Send SMS code** → `POST /api/account/phone-verification` with
    `{ phone, method: 'sms', lang }`.
-3. The server calls UniMTX. With `UNIMTX_SMS_TEMPLATE_ID` set it generates the
-   code and calls `sms.message.send` (`templateId`, `templateData: { code }`);
-   otherwise it calls `otp.send` (`channel: sms`, `digits: 6`,
-   `intent: phone_verification`, `ttl: 300`). Either way it stores a pending row
-   with `method='sms'` and the UniMTX message id.
+3. The server calls UniMTX. With a language template set it generates the code
+   and calls `sms.message.send` (`templateId` chosen by `lang`,
+   `templateData: { [UNIMTX_SMS_TEMPLATE_VAR]: code }`); otherwise it calls
+   `otp.send` (`channel: sms`, `digits: 6`, `intent: phone_verification`,
+   `ttl: 300`). Either way it stores a pending row with `method='sms'` and the
+   UniMTX message id.
 4. The member receives the SMS, types the 6-digit code on the sheet, and taps
    **Confirm code**.
 5. `POST /api/account/phone-verification` with

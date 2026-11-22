@@ -27,13 +27,25 @@ export function isUnimtxConfigured(env) {
 }
 
 /**
- * Optional pre-approved SMS template code (the "Custom code" from the
- * UniMTX console). When set, the SMS fallback sends OUR hashed 6-digit code
- * through `sms.message.send` instead of the built-in OTP text, so the message
- * is branded and readable.
+ * Language-specific SMS template. Arabic UI → `_AR`, everything else → `_EN`,
+ * then the shared `UNIMTX_SMS_TEMPLATE_ID` for older single-template setups.
+ * Public `pub_*` templates can be used directly (no review).
  */
-export function getUnimtxTemplateId(env) {
-  return trimEnv(env, 'UNIMTX_SMS_TEMPLATE_ID');
+export function getUnimtxTemplateId(env, lang = 'en') {
+  const shared = trimEnv(env, 'UNIMTX_SMS_TEMPLATE_ID');
+  const ar = trimEnv(env, 'UNIMTX_SMS_TEMPLATE_ID_AR');
+  const en = trimEnv(env, 'UNIMTX_SMS_TEMPLATE_ID_EN');
+  return lang === 'ar' ? ar || shared : en || shared;
+}
+
+/**
+ * Template variable that receives the code. `{code}` is the public-template
+ * convention; override with `UNIMTX_SMS_TEMPLATE_VAR` if a custom template
+ * uses a different simple name.
+ */
+export function getUnimtxTemplateVar(env) {
+  const raw = trimEnv(env, 'UNIMTX_SMS_TEMPLATE_VAR');
+  return /^[A-Za-z0-9_]{1,24}$/.test(raw) ? raw : 'code';
 }
 
 /** Digits → E.164. Returns null for a number outside 8–15 digits. */

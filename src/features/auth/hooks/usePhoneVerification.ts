@@ -368,15 +368,45 @@ export function usePhoneVerification(
       if (typeof document === 'undefined' || document.visibilityState === 'visible') void refresh();
     };
     const id = window.setInterval(tick, POLL_MS);
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') void refresh();
-    };
-    document.addEventListener('visibilitychange', onVisible);
     return () => {
       window.clearInterval(id);
-      document.removeEventListener('visibilitychange', onVisible);
     };
   }, [enabled, phase, refresh]);
+
+  // Returning from WhatsApp (tab switch, bfcache restore, app resume) must
+  // ALWAYS re-read the status — even if the sheet was left in 'checking'.
+  // Otherwise the old "Checking this number…" spinner can survive forever
+  // after the message was already approved server-side.
+  useEffect(() => {
+    if (!enabled || !userId || !normalized) return;
+    const recheck = () => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        void refresh();
+      }
+    };
+    const onPageShow = () => void refresh();
+    document.addEventListener('visibilitychange', recheck);
+    window.addEventListener('pageshow', onPageShow);
+    window.addEventListener('focus', recheck);
+    return () => {
+      document.removeEventListener('visibilitychange', recheck);
+      window.removeEventListener('pageshow', onPageShow);
+      window.removeEventListener('focus', recheck);
+    };
+  }, [enabled, userId, normalized, refresh]);
+
+  // Safety valve: a stalled status/POST request must never leave the sheet
+  // spinning at "Checking this number…". After 15s, surface the retry state.
+  useEffect(() => {
+    if (phase !== 'checking') return;
+    const id = window.setTimeout(() => {
+      if (phaseRef.current !== 'checking') return;
+      requestSeqRef.current += 1;
+      setPhase('error');
+      setError('unavailable');
+    }, 15_000);
+    return () => window.clearTimeout(id);
+  }, [phase]);
 
   // Another surface (settings vs cart) approved this number: adopt it.
   useEffect(() => {

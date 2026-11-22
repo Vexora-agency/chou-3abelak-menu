@@ -8,8 +8,8 @@
  *  - send/verify parsing and error handling;
  *  - the route stores method='sms', enforces the daily cap, and verifies the
  *    code server-side (no owner call);
- *  - the sheet hides the SMS option behind Need help?/60 s and shows the code
- *    input only after an SMS request.
+ *  - the sheet always offers a direct "I don't have WhatsApp — send SMS"
+ *    button plus the code input after an SMS request.
  */
 
 import { createHmac } from 'node:crypto';
@@ -132,12 +132,19 @@ const hook = read('src/features/auth/hooks/usePhoneVerification.ts');
 check('hook can request SMS', hook.includes("'whatsapp' | 'sms'") && hook.includes('verifyPhoneSms'));
 check('hook exposes verifySms', hook.includes('const verifySms') && hook.includes('setSmsError'));
 check('hook caches the SMS method', hook.includes("parsed.method === 'sms'") && hook.includes("method: pending.method === 'sms' ? 'sms' : 'whatsapp'"));
+check(
+  'hook rechecks after returning to the page and cannot spin forever',
+  hook.includes("addEventListener('visibilitychange'") && hook.includes("addEventListener('pageshow'") && hook.includes('15_000')
+);
 
 const sheet = read('src/features/auth/components/PhoneVerificationSheet.tsx');
 check('sheet has Need help?', sheet.includes('t.needHelp'));
-check('sheet has the SMS request panel', sheet.includes('t.smsTitle') && sheet.includes('t.sendSms'));
+check(
+  'sheet always offers the no-WhatsApp SMS button',
+  sheet.includes('t.noWhatsAppSms') && sheet.includes("verification.request(lang, 'sms')")
+);
 check('sheet has the SMS code input', sheet.includes('smsCode') && sheet.includes('verification.verifySms(smsCode)') && sheet.includes('t.smsCodeLabel'));
-check('sheet reveals the fallback after 60s', sheet.includes('60_000'));
+check('sheet reveals the SMS help copy after 60s', sheet.includes('60_000'));
 check('sheet shows SMS only for the SMS method', sheet.includes("active?.method === 'sms'"));
 
 const admin = read('src/features/admin/components/admin/AdminPhoneVerifications.tsx');

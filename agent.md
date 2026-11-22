@@ -137,8 +137,10 @@
   service messages per business number per month (post-Oct-2026 pricing);
   approvals never depend on the reply cap. Client: `usePhoneVerification` +
   `PhoneVerificationSheet` (large code, copy, live countdown, pre-filled
-  `wa.me`, 4 s polling). No WhatsApp? The sheet reveals **Need help? → Send SMS
-  code** (or after 60 s); UniMTX sends the OTP, the member types it, and the
+  `wa.me`, 4 s polling; visibility/pageshow/focus recheck + a 15 s retry guard
+  so "Checking this number…" can never spin forever). No WhatsApp? An
+  always-visible **I don't have WhatsApp — send SMS** button sends the UniMTX
+  OTP; the member types it, and the
   server verifies it (`decided_by='sms'`, migration `0040`, env
   `UNIMTX_ACCESS_KEY_ID`/`UNIMTX_ACCESS_KEY_SECRET`). There is **no reliable
   WhatsApp pre-check**; behaviour-based routing keeps SMS charges for
@@ -147,6 +149,17 @@
   Arabic walkthrough `docs/WHATSAPP_CLOUD_API_SETUP_AR.md`. **Apply
   0037/0038/0039/0040 remotely BEFORE the reading code deploys.** Tests:
   `test:phone` + `test:whatsapp` + `test:sms`.
+- Owner kitchen push: the dashboard shows **New order alerts** again. An
+  existing browser subscription is re-registered with
+  `POST /api/admin/push-subscriptions` on mount (a stale local subscription
+  with a missing server row used to look "on" but receive nothing); new
+  devices enable from the card. Telegram stays the backup channel. Production
+  had **0 admin push subscriptions**, which is why only Telegram arrived —
+  the owner must open the dashboard and enable notifications on each phone
+  (iOS: install to Home Screen first).
+- Track page header: Menu / centered **Order tracking + store name** /
+  language pill, with a hairline bottom edge; the order number is the hero
+  below it. Replaced the loose store-name line that sat under the bar.
 - Address precedence (cart → kitchen): the manually written cart address is
   what the kitchen receives. `functions/api/orders.js` overrides member
   name/email from the account and keeps the ENTERED verified phone (it no

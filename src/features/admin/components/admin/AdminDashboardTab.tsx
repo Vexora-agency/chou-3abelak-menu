@@ -286,6 +286,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
       {dashView === 'overview' && showOrders && (
       <OrdersDashboard
         lang={lang}
+        menu={menu}
         orders={orders}
         currency={menu.settings.currency[lang] || menu.settings.currency.en}
         loading={ordersLoading}

@@ -9,7 +9,7 @@ import { OrdersDashList } from './orders/OrdersDashList';
 export type { Order, OrderItem, OrderStatus, OrderType, Period, CronHealth };
 
 /* ---------- Main component ---------- */
-const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loading, onStatusChange, onRefresh, kitchenSound, onConfirm, kitchen }) => {  const isAr = lang === 'ar';
+const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, menu, orders, currency, loading, onStatusChange, onRefresh, kitchenSound, onConfirm, kitchen }) => {  const isAr = lang === 'ar';
   // Owner decision: dashboard animations always play for every visitor.
   const reduce = false;
   const { now } = useOrdersDashClock();
@@ -130,6 +130,7 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, orders, currency, loa
       )}
       <OrdersDashList
         lang={lang}
+        menu={menu}
         currency={currency}
         loading={loading}
         totalCount={sorted.length}

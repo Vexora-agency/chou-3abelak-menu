@@ -56,6 +56,7 @@ export const OrdersDashPeriodBar: React.FC<OrdersDashPeriodBarProps> = ({ lang, 
         </button>
         <button type="button" aria-label={soundOn ? t.soundOn : t.soundOff} title={soundOn ? t.soundOn : t.soundOff}
           aria-pressed={soundOn}
+          data-sound-toggle="1"
           onClick={onToggleSound}
           className={`btn-tactile w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${soundOn ? 'bg-neutral-900 border-[var(--primary)]/60 text-[var(--primary)]' : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:text-neutral-300'}`}>
           {soundOn ? <Bell size={15} /> : <BellOff size={15} />}

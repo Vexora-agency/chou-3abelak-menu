@@ -21,7 +21,6 @@ import type { AdminFetch } from '@/src/lib/api-client';
 import { readJson, isRecord } from '@/src/utils/safeJson';
 import { formatPrice } from '@/src/utils/pricing';
 import { CustomerAvatar } from '@/src/features/auth';
-import { AdminPhoneVerifications } from './AdminPhoneVerifications';
 
 import {
   sortCustomers,
@@ -222,7 +221,6 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
 
   return (
     <div className="space-y-4" dir={isAr ? 'rtl' : 'ltr'}>
-      <AdminPhoneVerifications lang={lang} adminFetch={adminFetch} />
       <motion.div {...rise(0)} className={card}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

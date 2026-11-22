@@ -151,8 +151,11 @@ check('sheet has the SMS code input', sheet.includes('smsCode') && sheet.include
 check('sheet reveals the SMS help copy after 60s', sheet.includes('60_000'));
 check('sheet shows SMS only for the SMS method', sheet.includes("active?.method === 'sms'"));
 
-const admin = read('src/features/admin/components/admin/AdminPhoneVerifications.tsx');
-check('admin shows the SMS badge + auto hint', admin.includes('t.smsBadge') && admin.includes('t.smsHint'));
+const accountsTab = read('src/features/admin/components/admin/AdminCustomersTab.tsx');
+check(
+  'automatic verification panel is not rendered in Accounts',
+  !accountsTab.includes('AdminPhoneVerifications')
+);
 
 if (fails) {
   console.error(`\nFAIL — ${fails} assertion(s) failed`);

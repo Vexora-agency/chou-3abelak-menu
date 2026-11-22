@@ -58,7 +58,7 @@ export const OrderAddonPills: React.FC<OrderAddonPillsProps> = ({
   if (pills.length === 0) return null;
 
   return (
-    <span className="inline-flex flex-wrap items-center gap-1 ms-1.5 align-middle">
+    <>
       {pills.map((p) => (
         <span
           key={p.key}
@@ -73,6 +73,6 @@ export const OrderAddonPills: React.FC<OrderAddonPillsProps> = ({
           </bdi>
         </span>
       ))}
-    </span>
+    </>
   );
 };

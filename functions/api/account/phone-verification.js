@@ -51,6 +51,7 @@ import {
 } from '../../_shared/repositories/phone-verifications.repo.js';
 import {
   getUnimtxTemplateId,
+  getUnimtxTemplateVar,
   isUnimtxConfigured,
   sendUnimtxOtp,
   sendUnimtxTemplateSms,
@@ -371,42 +372,39 @@ export async function onRequest(context) {
         }, 429);
       }
 
-      const templateId = getUnimtxTemplateId(env);
+      const templateId = getUnimtxTemplateId(env, lang);
       let codeHash = 'unimtx';
       let providerId = null;
 
       if (templateId) {
-        // Custom, pre-approved template: WE generate the code, store only its
-        // keyed hash, and pass it to the template as {code}. The member's SMS
-        // then carries the restaurant's own wording instead of the provider's
-        // built-in OTP copy.
+        // Language-specific template (public `pub_*` or approved custom).
+        // WE generate the code, store only its keyed hash, and pass it to the
+        // template variable. If the template is misconfigured or the route
+        // rejects it, fall through to the built-in OTP so the member still
+        // receives a code.
         const templateSecret = getVerificationSecret(env);
-        if (!templateSecret) {
-          return jsonNoStore({ error: 'unavailable' }, 503);
+        if (templateSecret) {
+          const smsCode = generateVerificationCode();
+          const candidateHash = await hashVerificationCode(templateSecret, { id, phone, code: smsCode });
+          const templateVar = getUnimtxTemplateVar(env);
+          const signature = typeof env.UNIMTX_SMS_SIGNATURE === 'string'
+            ? env.UNIMTX_SMS_SIGNATURE.trim()
+            : '';
+          const sent = await sendUnimtxTemplateSms(env, {
+            to: phone,
+            templateId,
+            templateData: { [templateVar]: smsCode },
+            signature,
+          });
+          if (sent.ok) {
+            codeHash = candidateHash;
+            providerId = sent.providerId || null;
+          }
         }
-        const smsCode = generateVerificationCode();
-        codeHash = await hashVerificationCode(templateSecret, { id, phone, code: smsCode });
-        const signature = typeof env.UNIMTX_SMS_SIGNATURE === 'string'
-          ? env.UNIMTX_SMS_SIGNATURE.trim()
-          : '';
-        const sent = await sendUnimtxTemplateSms(env, {
-          to: phone,
-          templateId,
-          templateData: { code: smsCode },
-          signature,
-        });
-        if (!sent.ok) {
-          return jsonNoStore({
-            error: 'sms_failed',
-            message: {
-              en: 'Could not send the SMS code. Check the number or use WhatsApp.',
-              ar: 'تعذّر إرسال كود SMS. تحقق من الرقم أو استخدم واتساب.',
-            },
-          }, 502);
-        }
-        providerId = sent.providerId || null;
-      } else {
-        // Built-in UniMTX OTP text (kept as the zero-config fallback).
+      }
+
+      if (codeHash === 'unimtx') {
+        // Built-in UniMTX OTP text (zero-config fallback).
         const sent = await sendUnimtxOtp(env, {
           to: phone,
           channel: 'sms',

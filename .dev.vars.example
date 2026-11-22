@@ -61,8 +61,12 @@ GOOGLE_CLIENT_SECRET=
 UNIMTX_ACCESS_KEY_ID=
 UNIMTX_ACCESS_KEY_SECRET=
 UNIMTX_SMS_DAILY_MAX=100
-# Optional pre-approved template custom code (e.g. chou3abelak_verify).
-# Leave blank to use UniMTX's built-in OTP text.
+# Optional SMS templates. Public UniMTX templates need no review:
+#   Arabic: pub_otp_ar | English: pub_otp_en_basic2
 UNIMTX_SMS_TEMPLATE_ID=
+UNIMTX_SMS_TEMPLATE_ID_AR=
+UNIMTX_SMS_TEMPLATE_ID_EN=
+# Template variable name that receives the code (default: code).
+UNIMTX_SMS_TEMPLATE_VAR=code
 # Optional pre-registered sender name, only if the route requires one.
 UNIMTX_SMS_SIGNATURE=

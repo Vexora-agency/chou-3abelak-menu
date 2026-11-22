@@ -229,8 +229,18 @@ export async function onRequest(context) {
 
   // SMS code entry: the member types the code received by SMS.
   if (body && body.action === 'verify') {
-    const result = await verifySmsCode(db, env, auth.user.id, phone, body.code);
-    return jsonNoStore(result.body, result.status);
+    try {
+      const result = await verifySmsCode(db, env, auth.user.id, phone, body.code);
+      return jsonNoStore(result.body, result.status);
+    } catch (err) {
+      const message = err && typeof err.message === 'string' ? err.message : '';
+      // The unique owner index can win a race between the pre-check and the
+      // approval. Surface the same friendly conflict instead of a 500.
+      if (/UNIQUE constraint failed:\s*phone_verifications\.phone/i.test(message)) {
+        return phoneLinkedResponse();
+      }
+      return jsonNoStore({ error: 'unavailable' }, 503);
+    }
   }
 
   const method = body && body.method === 'sms' ? 'sms' : 'whatsapp';

@@ -192,40 +192,41 @@ export function PhoneVerificationSheet({
     'btn-tactile inline-flex w-full min-h-[52px] items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--primary)]';
 
   const smsFallback = active?.method === 'sms' ? null : (
-    <div className="space-y-2">
-      <button
-        type="button"
-        onClick={() => setShowSmsPanel((visible) => !visible)}
-        className={`mx-auto flex min-h-[36px] items-center gap-1.5 rounded-full px-3 text-[10.5px] font-extrabold underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
-          darkMode ? 'text-neutral-400 hover:text-neutral-200' : 'text-neutral-500 hover:text-neutral-800'
-        }`}
-      >
-        <MessageSquare size={12} aria-hidden="true" />
-        {t.needHelp}
-      </button>
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+        <button
+          type="button"
+          onClick={() => setShowSmsPanel((visible) => !visible)}
+          className={`inline-flex min-h-[30px] items-center gap-1 text-[10.5px] font-extrabold underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+            darkMode ? 'text-neutral-400 hover:text-neutral-200' : 'text-neutral-500 hover:text-neutral-800'
+          }`}
+        >
+          <MessageSquare size={11} aria-hidden="true" />
+          {t.needHelp}
+        </button>
+        <button
+          type="button"
+          onClick={() => void verification.request(lang, 'sms')}
+          disabled={verification.requesting}
+          className={`btn-tactile inline-flex min-h-[32px] items-center gap-1 rounded-full border px-2.5 text-[10.5px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60 ${
+            darkMode
+              ? 'border-neutral-700 text-neutral-200 hover:border-[var(--primary)]/60 hover:bg-white/5'
+              : 'border-neutral-300 text-neutral-700 hover:border-[#0A0A0A] hover:bg-black/5'
+          }`}
+        >
+          {verification.requesting ? (
+            <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+          ) : (
+            <MessageSquare size={12} aria-hidden="true" />
+          )}
+          {verification.requesting ? t.sendingSms : t.noWhatsAppSms}
+        </button>
+      </div>
       {showSmsPanel && (
-        <p className={`mx-auto max-w-[36ch] text-center text-[10.5px] leading-relaxed ${muted}`}>
+        <p className={`mx-auto max-w-[36ch] text-center text-[10px] leading-relaxed ${muted}`}>
           {t.smsBody}
         </p>
       )}
-      {/* Always-visible no-WhatsApp path: one tap sends the SMS OTP. */}
-      <button
-        type="button"
-        onClick={() => void verification.request(lang, 'sms')}
-        disabled={verification.requesting}
-        className={`btn-tactile inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-2xl border px-4 text-xs font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60 ${
-          darkMode
-            ? 'border-neutral-700 text-neutral-200 hover:border-[var(--primary)]/60 hover:bg-white/5'
-            : 'border-neutral-300 text-neutral-700 hover:border-[#0A0A0A] hover:bg-black/5'
-        }`}
-      >
-        {verification.requesting ? (
-          <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-        ) : (
-          <MessageSquare size={16} aria-hidden="true" />
-        )}
-        {verification.requesting ? t.sendingSms : t.noWhatsAppSms}
-      </button>
       <p className={`text-center text-[9.5px] leading-relaxed ${muted}`}>{t.smsHint}</p>
     </div>
   );
@@ -300,6 +301,14 @@ export function PhoneVerificationSheet({
       <p className={`mt-2 text-center text-[9.5px] leading-relaxed ${muted}`}>{t.smsHint}</p>
     </div>
   ) : null;
+
+  const stepLabels = active?.method === 'sms'
+    ? [t.stepSendSms, t.stepSms, t.stepApprove]
+    : [t.stepSend, t.stepWhatsApp, t.stepApprove];
+  const stepStateFor = (index: number): 'done' | 'current' | 'pending' => {
+    if (active) return index === 0 ? 'done' : index === 1 ? 'current' : 'pending';
+    return index === 0 ? 'current' : 'pending';
+  };
 
   return (
     <AnimatePresence>
@@ -377,16 +386,26 @@ export function PhoneVerificationSheet({
                   <p className={`text-sm leading-relaxed ${muted}`}>{t.subtitle}</p>
 
                   <div className="grid grid-cols-3 gap-2">
-                    {[t.stepSend, t.stepWhatsApp, t.stepApprove].map((step, index) => (
-                      <div
-                        key={step}
-                        className={`rounded-xl border px-2 py-2 text-center text-[9.5px] font-bold leading-snug ${subtleCard} ${
-                          index === 1 && code ? 'border-[#25D366]/50 text-[#1f9e51]' : muted
-                        }`}
-                      >
-                        {step}
-                      </div>
-                    ))}
+                    {stepLabels.map((step, index) => {
+                      const state = stepStateFor(index);
+                      const stateClass = state === 'done'
+                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500'
+                        : state === 'current'
+                          ? 'border-[var(--primary)]/60 bg-[var(--primary)]/10 text-[var(--primary)]'
+                          : `${subtleCard} ${muted}`;
+                      return (
+                        <div
+                          key={step}
+                          aria-current={state === 'current' ? 'step' : undefined}
+                          className={`rounded-xl border px-2 py-2 text-center text-[9.5px] font-bold leading-snug ${stateClass}`}
+                        >
+                          <span className="inline-flex items-center justify-center gap-1">
+                            {state === 'done' && <Check size={10} strokeWidth={3} aria-hidden="true" />}
+                            {step}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <div className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${subtleCard}`}>
@@ -402,6 +421,11 @@ export function PhoneVerificationSheet({
                       <b className="tabular-nums" dir="ltr">+{destinationNumber}</b>
                     </p>
                   )}
+
+                  {/* No-WhatsApp path stays high in the sheet (above the
+                      code/WhatsApp action) so it is visible without scrolling
+                      on short phones. */}
+                  {smsFallback}
 
                   {active?.method === 'sms' ? (
                     smsActivePanel
@@ -458,8 +482,6 @@ export function PhoneVerificationSheet({
                       )}
                       <p className={`text-center text-[10.5px] leading-relaxed ${muted}`}>{t.sendHint}</p>
 
-                      {smsFallback}
-
                       {verification.phase === 'pending' && (
                         <div className="space-y-2">
                           <p className={`flex items-center justify-center gap-2 text-[11px] font-bold ${muted}`} role="status">
@@ -509,7 +531,6 @@ export function PhoneVerificationSheet({
                         <RefreshCw size={12} className={verification.requesting ? 'animate-spin' : ''} aria-hidden="true" />
                         {t.checkAgain}
                       </button>
-                      {smsFallback}
                     </div>
                   ) : (
                     <div className={`rounded-2xl border px-4 py-5 text-center ${subtleCard}`}>
@@ -539,7 +560,6 @@ export function PhoneVerificationSheet({
                         )}
                         {verification.requesting ? t.gettingCode : active ? t.resend : t.getCode}
                       </button>
-                      {smsFallback}
                     </div>
                   )}
 

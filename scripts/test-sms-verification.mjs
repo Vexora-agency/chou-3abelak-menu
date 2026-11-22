@@ -147,6 +147,15 @@ check(
   'sheet always offers the no-WhatsApp SMS button',
   sheet.includes('t.noWhatsAppSms') && sheet.includes("verification.request(lang, 'sms')")
 );
+check(
+  'no-WhatsApp option sits above the code/WhatsApp action',
+  sheet.indexOf('{smsFallback}') > -1
+    && sheet.indexOf('{smsFallback}') < sheet.indexOf("{active?.method === 'sms'")
+);
+check(
+  'verification steps mark step 1 done and step 2 current once a code exists',
+  sheet.includes('stepStateFor') && sheet.includes("index === 0 ? 'done'") && sheet.includes('aria-current')
+);
 check('sheet has the SMS code input', sheet.includes('smsCode') && sheet.includes('verification.verifySms(smsCode)') && sheet.includes('t.smsCodeLabel'));
 check('sheet reveals the SMS help copy after 60s', sheet.includes('60_000'));
 check('sheet shows SMS only for the SMS method', sheet.includes("active?.method === 'sms'"));

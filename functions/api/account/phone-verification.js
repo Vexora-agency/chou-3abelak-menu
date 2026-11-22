@@ -141,7 +141,7 @@ async function verifySmsCode(db, env, userId, phone, rawCode) {
       to: phone,
       code,
       intent: 'phone_verification',
-      ttl: 300,
+      ttl: 120,
     });
     if (!result.ok) {
       return { status: 502, body: { error: 'sms_verify_failed' } };
@@ -409,7 +409,7 @@ export async function onRequest(context) {
           to: phone,
           channel: 'sms',
           intent: 'phone_verification',
-          ttl: 300,
+          ttl: 120,
           digits: 6,
         });
         if (!sent.ok) {

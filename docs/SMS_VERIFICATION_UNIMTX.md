@@ -72,8 +72,8 @@ the console, open **SMS → Templates → Create template** and use:
 | Field | Value |
 |---|---|
 | **Scene** | Identity verification |
-| **Content (Arabic)** | `كود التحقق الخاص بك في شو عبالك هو {code}. صالح لمدة 5 دقائق. لا تشاركه مع أحد.` |
-| **Content (English)** | `Your Chou 3abelak verification code is {code}. Valid for 5 minutes. Never share it.` |
+| **Content (Arabic)** | `كود التحقق الخاص بك في شو عبالك هو {code}. صالح لمدة دقيقتين. لا تشاركه مع أحد.` |
+| **Content (English)** | `Your Chou 3abelak verification code is {code}. Valid for 2 minutes. Never share it.` |
 | **Custom code** | `chou3abelak_verify` |
 | **Remarks** | `Phone verification on chou3abelak.site` |
 
@@ -136,7 +136,7 @@ npx wrangler pages secret put UNIMTX_ACCESS_KEY_SECRET --project-name chou-3abel
    and calls `sms.message.send` (`templateId` chosen by `lang`,
    `templateData: { [UNIMTX_SMS_TEMPLATE_VAR]: code }`); otherwise it calls
    `otp.send` (`channel: sms`, `digits: 6`, `intent: phone_verification`,
-   `ttl: 300`). Either way it stores a pending row with `method='sms'` and the
+   `ttl: 120`). Either way it stores a pending row with `method='sms'` and the
    UniMTX message id.
 4. The member receives the SMS, types the 6-digit code on the sheet, and taps
    **Confirm code**.

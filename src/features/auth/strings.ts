@@ -281,7 +281,7 @@ export const PHONE_VERIFY_STR = {
     subtitle:
       'One WhatsApp message confirms this number. Send it and we’ll confirm it automatically.',
     subtitleSms:
-      'Enter the 6-digit code we sent to this number. It expires in 5 minutes.',
+      'Enter the 6-digit code we sent to this number. It expires in 2 minutes.',
     startHint:
       'We’ll create a 6-digit code for this number. Choose WhatsApp or SMS below.',
     numberLabel: 'Number to verify',
@@ -351,7 +351,7 @@ export const PHONE_VERIFY_STR = {
     subtitle:
       'رسالة واتساب واحدة تؤكد الرقم. أرسلها وسيتم التأكيد تلقائيًا.',
     subtitleSms:
-      'اكتب كود الـ6 أرقام اللي وصل على الرقم ده. صلاحيته 5 دقائق.',
+      'اكتب كود الـ6 أرقام اللي وصل على الرقم ده. صلاحيته دقيقتين.',
     startHint:
       'هننشئ كود من 6 أرقام للرقم ده. اختر واتساب أو SMS من تحت.',
     numberLabel: 'الرقم المطلوب تأكيده',

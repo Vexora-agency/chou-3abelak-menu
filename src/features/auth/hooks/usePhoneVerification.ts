@@ -14,7 +14,7 @@ import { useCustomerSession } from './useCustomerSession';
  *
  * The code is generated server-side and returned exactly once. The browser
  * caches it per member (localStorage) so closing the sheet or reloading the
- * page inside the 10-minute window does not force a new code. Only a hash is
+ * page inside the 2-minute window does not force a new code. Only a hash is
  * stored on the server.
  */
 

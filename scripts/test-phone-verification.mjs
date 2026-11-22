@@ -18,6 +18,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   VERIFICATION_CODE_TTL_MS,
+  VERIFICATION_COOLDOWN_SEC,
   VERIFICATION_VALIDITY_MS,
   buildVerificationMessage,
   buildVerificationWhatsAppUrl,
@@ -109,9 +110,10 @@ const url = buildVerificationWhatsAppUrl('+961 70 123 456', 'Code: 123456\nRef: 
 check('whatsapp url uses digits only', url.startsWith('https://wa.me/96170123456?text='));
 check('whatsapp url encodes the message', url === `https://wa.me/96170123456?text=${encodeURIComponent('Code: 123456\nRef: ABC123')}`);
 check('whatsapp url is null without a store number', buildVerificationWhatsAppUrl('', 'x') === null);
-check('code TTL is five minutes', VERIFICATION_CODE_TTL_MS === 5 * 60 * 1000);
+check('code TTL is two minutes', VERIFICATION_CODE_TTL_MS === 2 * 60 * 1000);
+check('same-channel resend cooldown is two minutes', VERIFICATION_COOLDOWN_SEC === 120);
 check(
-  'code expiry is created_at + 5 minutes',
+  'code expiry is created_at + 2 minutes',
   Date.parse(codeExpiresAt(0)) === VERIFICATION_CODE_TTL_MS
 );
 

@@ -123,6 +123,10 @@ check('route stores method sms', route.includes("method: 'sms'"));
 check('route enforces the SMS daily cap', route.includes('UNIMTX_SMS_DAILY_MAX') && route.includes('countSmsRequestsSince'));
 check('route locks after 5 SMS attempts', route.includes('SMS_MAX_ATTEMPTS'));
 check('route approves SMS as decided_by sms', route.includes("decidedBy: 'sms'"));
+check(
+  'route lets an explicit SMS request replace a pending WhatsApp code',
+  route.includes('pendingMethod !== method') && route.includes('expireVerificationById(db, pending.id, nowIso)')
+);
 
 const repo = read('functions/_shared/repositories/phone-verifications.repo.js');
 check('webhook sees WhatsApp rows only', repo.includes("method = 'whatsapp'") && repo.includes("row.method === 'sms' ? 'sms' : 'whatsapp'"));

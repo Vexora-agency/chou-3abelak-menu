@@ -221,18 +221,26 @@ export async function onRequest(context) {
     await expireStalePending(db, nowIso, { userId: auth.user.id, phone });
     const pending = await findPendingVerification(db, auth.user.id, phone, nowIso);
     if (pending) {
-      const createdMs = Date.parse(pending.created_at || '');
-      const elapsedSec = Number.isFinite(createdMs) ? Math.floor((nowMs - createdMs) / 1000) : 0;
-      if (elapsedSec < VERIFICATION_COOLDOWN_SEC) {
-        return jsonNoStore({
-          error: 'cooldown',
-          retryAfter: Math.max(1, VERIFICATION_COOLDOWN_SEC - elapsedSec),
-          pending: publicPending(pending),
-        }, 429);
+      const pendingMethod = pending.method === 'sms' ? 'sms' : 'whatsapp';
+      if (pendingMethod !== method) {
+        // The member explicitly switched channels (e.g. "I don't have
+        // WhatsApp — send SMS"). Retire the old code immediately so the new
+        // channel is not blocked by the WhatsApp cooldown.
+        await expireVerificationById(db, pending.id, nowIso);
+      } else {
+        const createdMs = Date.parse(pending.created_at || '');
+        const elapsedSec = Number.isFinite(createdMs) ? Math.floor((nowMs - createdMs) / 1000) : 0;
+        if (elapsedSec < VERIFICATION_COOLDOWN_SEC) {
+          return jsonNoStore({
+            error: 'cooldown',
+            retryAfter: Math.max(1, VERIFICATION_COOLDOWN_SEC - elapsedSec),
+            pending: publicPending(pending),
+          }, 429);
+        }
+        // Past the cooldown: the member asked for a fresh code. Retire the old
+        // row so the one-pending slot is free; its message stops matching.
+        await expireVerificationById(db, pending.id, nowIso);
       }
-      // Past the cooldown: the member asked for a fresh code. Retire the old
-      // row so the one-pending slot is free; its message stops matching.
-      await expireVerificationById(db, pending.id, nowIso);
     }
 
     const hourAgo = new Date(nowMs - 60 * 60 * 1000).toISOString();

@@ -104,7 +104,7 @@ export function PhoneVerificationSheet({
     : null;
 
   // One automatic request per open + number. A phase that falls back to
-  // 'unverified' after a 2-minute expiry must NOT mint codes in a loop.
+  // 'unverified' after a 5-minute expiry must NOT mint codes in a loop.
   useEffect(() => {
     if (!open) {
       autoRef.current = null;

@@ -386,10 +386,14 @@ export async function onRequest(context) {
         }
         const smsCode = generateVerificationCode();
         codeHash = await hashVerificationCode(templateSecret, { id, phone, code: smsCode });
+        const signature = typeof env.UNIMTX_SMS_SIGNATURE === 'string'
+          ? env.UNIMTX_SMS_SIGNATURE.trim()
+          : '';
         const sent = await sendUnimtxTemplateSms(env, {
           to: phone,
           templateId,
           templateData: { code: smsCode },
+          signature,
         });
         if (!sent.ok) {
           return jsonNoStore({

@@ -85,6 +85,7 @@ Add in **Production** and **Preview**, then **Retry deployment**:
 | `UNIMTX_API_BASE` | optional | Defaults to `https://api.unimtx.com`. |
 | `UNIMTX_SMS_DAILY_MAX` | optional | Global SMS send cap/day, default `100` (max 1000). |
 | `UNIMTX_SMS_TEMPLATE_ID` | optional | Custom template code (e.g. `chou3abelak_verify`). Enables the branded template flow. |
+| `UNIMTX_SMS_SIGNATURE` | optional | Pre-registered SMS sender name (2–16 chars). Only needed when the UniMTX route requires one. |
 
 Do not paste the secret into chat. Add it in the Cloudflare dashboard or with:
 

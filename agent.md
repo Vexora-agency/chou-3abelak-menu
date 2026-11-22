@@ -13,6 +13,11 @@
 - Local dev: `serve-local.bat` → `http://localhost:3000` (site + API, one
   port). Admin at `/#admin` (cookie session login; test login lives in
   untracked `.dev.vars`).
+- Verification/deploy gate: `npm run verify` (tsc, depcruise circular +
+  feature isolation, `test:all`, Vite build, bundle safety). It runs inside
+  the **Cloudflare Pages build**, so a failed check blocks the deploy without
+  spending GitHub Actions minutes. GitHub Actions is manual-only
+  (`workflow_dispatch`) for gitleaks. See `docs/CI.md`.
 - Owner's domains: `vexora.agency` (Resend sending domain, **verified**),
   Zoho for receiving (`info@vexora.agency`).
 

@@ -154,13 +154,16 @@ export function PhoneVerificationSheet({
   };
 
   const verified = verification.phase === 'verified';
+  const phoneTaken = verification.error === 'phone_linked_other_account';
   const errorText = verification.error === 'rate_limited'
     ? t.errorRate
     : verification.error === 'cooldown'
       ? (active?.method === 'sms' ? t.smsCooldown : t.errorCooldown)
       : verification.error === 'phone_invalid'
         ? t.errorPhone
-        : verification.error === 'sms_failed'
+        : verification.error === 'phone_linked_other_account'
+          ? t.errorPhoneLinked
+          : verification.error === 'sms_failed'
           ? t.smsErrorFailed
           : verification.error === 'sms_unavailable'
             ? t.smsErrorUnavailable
@@ -383,30 +386,34 @@ export function PhoneVerificationSheet({
                 </div>
               ) : (
                 <>
-                  <p className={`text-sm leading-relaxed ${muted}`}>{t.subtitle}</p>
+                  {!phoneTaken && (
+                    <>
+                      <p className={`text-sm leading-relaxed ${muted}`}>{t.subtitle}</p>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    {stepLabels.map((step, index) => {
-                      const state = stepStateFor(index);
-                      const stateClass = state === 'done'
-                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500'
-                        : state === 'current'
-                          ? 'border-[var(--primary)]/60 bg-[var(--primary)]/10 text-[var(--primary)]'
-                          : `${subtleCard} ${muted}`;
-                      return (
-                        <div
-                          key={step}
-                          aria-current={state === 'current' ? 'step' : undefined}
-                          className={`rounded-xl border px-2 py-2 text-center text-[9.5px] font-bold leading-snug ${stateClass}`}
-                        >
-                          <span className="inline-flex items-center justify-center gap-1">
-                            {state === 'done' && <Check size={10} strokeWidth={3} aria-hidden="true" />}
-                            {step}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {stepLabels.map((step, index) => {
+                          const state = stepStateFor(index);
+                          const stateClass = state === 'done'
+                            ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500'
+                            : state === 'current'
+                              ? 'border-[var(--primary)]/60 bg-[var(--primary)]/10 text-[var(--primary)]'
+                              : `${subtleCard} ${muted}`;
+                          return (
+                            <div
+                              key={step}
+                              aria-current={state === 'current' ? 'step' : undefined}
+                              className={`rounded-xl border px-2 py-2 text-center text-[9.5px] font-bold leading-snug ${stateClass}`}
+                            >
+                              <span className="inline-flex items-center justify-center gap-1">
+                                {state === 'done' && <Check size={10} strokeWidth={3} aria-hidden="true" />}
+                                {step}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
 
                   <div className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${subtleCard}`}>
                     <span className={`text-[11px] font-bold ${muted}`}>{t.numberLabel}</span>
@@ -415,7 +422,7 @@ export function PhoneVerificationSheet({
                     </b>
                   </div>
 
-                  {destinationNumber && (
+                  {!phoneTaken && destinationNumber && (
                     <p className={`text-center text-[10.5px] font-bold ${muted}`}>
                       {t.sendingTo}{' '}
                       <b className="tabular-nums" dir="ltr">+{destinationNumber}</b>
@@ -425,7 +432,7 @@ export function PhoneVerificationSheet({
                   {/* No-WhatsApp path stays high in the sheet (above the
                       code/WhatsApp action) so it is visible without scrolling
                       on short phones. */}
-                  {smsFallback}
+                  {!phoneTaken && smsFallback}
 
                   {active?.method === 'sms' ? (
                     smsActivePanel
@@ -532,6 +539,15 @@ export function PhoneVerificationSheet({
                         {t.checkAgain}
                       </button>
                     </div>
+                  ) : phoneTaken ? (
+                    // A taken number has no action to offer: proving the phone
+                    // cannot help, so no "Get my code" button and no retry.
+                    <div className={`rounded-2xl border px-4 py-5 text-center ${subtleCard}`}>
+                      <ShieldCheck size={24} className={`mx-auto ${muted}`} aria-hidden="true" />
+                      <p role="alert" className={`mt-2 text-[11px] font-bold leading-relaxed ${muted}`}>
+                        {t.errorPhoneLinked}
+                      </p>
+                    </div>
                   ) : (
                     <div className={`rounded-2xl border px-4 py-5 text-center ${subtleCard}`}>
                       {active ? (
@@ -563,7 +579,7 @@ export function PhoneVerificationSheet({
                     </div>
                   )}
 
-                  {errorText && (
+                  {errorText && !phoneTaken && (
                     <p
                       role="alert"
                       className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-[11px] font-bold leading-relaxed text-red-500"
@@ -573,7 +589,7 @@ export function PhoneVerificationSheet({
                     </p>
                   )}
 
-                  {verification.phase === 'error' && !active && (
+                  {verification.phase === 'error' && !active && !phoneTaken && (
                     <button
                       type="button"
                       onClick={retry}

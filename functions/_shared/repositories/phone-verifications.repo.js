@@ -133,6 +133,89 @@ export async function insertVerification(db, row) {
   return (Number(res?.meta?.changes) || 0) > 0;
 }
 
+/**
+ * Flip APPROVED rows past the 365-day window to 'expired'. The partial unique
+ * index allows one approved owner per phone, so stale approvals must be
+ * retired before a number can be claimed again.
+ */
+export async function expireStaleApproved(db, nowMs = Date.now(), phone = null) {
+  if (!db) return 0;
+  const cutoffIso = new Date(nowMs - VERIFICATION_VALIDITY_MS).toISOString();
+  const hasPhone = phone !== null && phone !== undefined && phone !== '';
+  const digits = hasPhone ? phoneOrNull(phone) : null;
+  if (hasPhone && !digits) return 0;
+  const res = digits
+    ? await db
+        .prepare(
+          `UPDATE phone_verifications
+              SET status = 'expired'
+            WHERE phone = ?2 AND status = 'approved'
+              AND (decided_at IS NULL OR decided_at < ?1)`
+        )
+        .bind(cutoffIso, digits)
+        .run()
+    : await db
+        .prepare(
+          `UPDATE phone_verifications
+              SET status = 'expired'
+            WHERE status = 'approved'
+              AND (decided_at IS NULL OR decided_at < ?1)`
+        )
+        .bind(cutoffIso)
+        .run();
+  return Number(res?.meta?.changes) || 0;
+}
+
+/**
+ * The single live owner of a number, or null. A phone belongs to ONE member
+ * account at a time; the first live approval wins and the partial unique
+ * index backstops the rule at the database level.
+ */
+export async function findVerifiedPhoneOwner(db, phone, nowMs = Date.now()) {
+  const digits = phoneOrNull(phone);
+  if (!db || !digits) return null;
+  const cutoffIso = new Date(nowMs - VERIFICATION_VALIDITY_MS).toISOString();
+  return db
+    .prepare(
+      `SELECT id, user_id, phone, status, decided_at, decided_by
+         FROM phone_verifications
+        WHERE phone = ?1 AND status = 'approved' AND decided_at >= ?2
+        ORDER BY decided_at ASC, id ASC
+        LIMIT 1`
+    )
+    .bind(digits, cutoffIso)
+    .first();
+}
+
+/** The live owner row when the number belongs to a DIFFERENT member. */
+export async function phoneOwnedByAnotherUser(db, phone, userId, nowMs = Date.now()) {
+  if (!db || !userId) return null;
+  const owner = await findVerifiedPhoneOwner(db, phone, nowMs);
+  return owner && owner.user_id !== userId ? owner : null;
+}
+
+/**
+ * Drop every live approval/pending row for a member. Called when the saved
+ * profile phone changes: moving away from a number — even temporarily — means
+ * the old proof is gone, and moving back requires a fresh verification.
+ */
+export async function revokeUserVerifications(db, userId, nowIso, reason = 'profile_phone_changed') {
+  if (!db || !userId) return 0;
+  const stamp = typeof nowIso === 'string' ? nowIso : new Date().toISOString();
+  const why = typeof reason === 'string' && reason ? reason.slice(0, 40) : 'profile_phone_changed';
+  const res = await db
+    .prepare(
+      `UPDATE phone_verifications
+          SET status = 'revoked',
+              decided_at = CASE WHEN status = 'pending' THEN ?1 ELSE decided_at END,
+              decided_by = ?2
+        WHERE user_id = ?3 AND status IN ('pending', 'approved')`
+    )
+    .bind(stamp, why, userId)
+    .run();
+  return Number(res?.meta?.changes) || 0;
+}
+
 /** Latest approved row that is still inside its 365-day validity window. */
 export async function findValidVerification(db, userId, phone, nowMs = Date.now()) {
   const digits = phoneOrNull(phone);
@@ -243,9 +326,11 @@ export async function decideVerification(db, id, { status, decidedBy, nowIso }) 
 }
 
 /**
- * Webhook matcher: every live pending row for a number (usually one, but two
- * members can legitimately verify the same family number). The code hash is
- * checked per row, so the message can only approve the row it was minted for.
+ * Webhook matcher: every live pending row for a number. A number has one
+ * owner, but legacy rows (and two requests racing before the first approval)
+ * may coexist; the code hash is checked per row, so a message can only
+ * approve the row it was minted for. The webhook re-checks ownership before
+ * the decision.
  */
 export async function listPendingVerificationsByPhone(db, phone, nowIso) {
   const digits = phoneOrNull(phone);

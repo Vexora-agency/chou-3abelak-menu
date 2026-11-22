@@ -115,6 +115,8 @@ export const AUTH_STR = {
     saving: 'Saving…',
     saved: 'Saved.',
     saveError: 'Could not save. Please try again.',
+    phoneLinkedOtherAccount:
+      'This number is linked to another member account. Use your own number or contact us.',
     sessionExpired: 'Your session expired. Please sign in again.',
     signInAgain: 'Sign in again',
     emailLocked: 'Your email is linked to the account and cannot be changed here.',
@@ -250,6 +252,8 @@ export const AUTH_STR = {
     saving: 'جارٍ الحفظ…',
     saved: 'تم الحفظ.',
     saveError: 'تعذّر الحفظ. حاول مجددًا.',
+    phoneLinkedOtherAccount:
+      'هذا الرقم مرتبط بحساب عضو آخر. استخدم رقمك أو تواصل معنا.',
     sessionExpired: 'انتهت جلستك. سجّل الدخول مرة أخرى.',
     signInAgain: 'تسجيل الدخول',
     emailLocked: 'البريد الإلكتروني مرتبط بالحساب ولا يمكن تغييره من هنا.',
@@ -320,6 +324,8 @@ export const PHONE_VERIFY_STR = {
     errorRate: 'Too many attempts. Wait a little, then try again.',
     errorCooldown: 'A code was just created — use the one shown above.',
     errorPhone: 'Enter a valid phone number first.',
+    errorPhoneLinked:
+      'This number is linked to another member account. Use your own number or contact us.',
     noWhatsApp: 'The restaurant has no WhatsApp number configured. Please contact us.',
     waitingNoCode:
       'A code was already created for this number. Get a new one to see it on this device.',
@@ -382,6 +388,8 @@ export const PHONE_VERIFY_STR = {
     errorRate: 'محاولات كثيرة. انتظر قليلًا ثم حاول مجددًا.',
     errorCooldown: 'تم إنشاء رمز للتو — استخدم الرمز الظاهر أعلاه.',
     errorPhone: 'أدخل رقم هاتف صحيحًا أولًا.',
+    errorPhoneLinked:
+      'هذا الرقم مرتبط بحساب عضو آخر. استخدم رقمك أو تواصل معنا.',
     noWhatsApp: 'لا يوجد رقم واتساب للمطعم. يرجى التواصل معنا.',
     waitingNoCode: 'يوجد رمز سابق لهذا الرقم. اطلب رمزًا جديدًا لعرضه على هذا الجهاز.',
     verifiedBadge: 'مؤكد',

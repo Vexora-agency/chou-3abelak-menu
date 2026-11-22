@@ -136,6 +136,22 @@ check('migration has a unique live row per member+number', migration.includes('i
 check('migration enforces one row per reference', migration.includes('reference TEXT NOT NULL UNIQUE'));
 check('migration cascades with the account', migration.includes('ON DELETE CASCADE'));
 
+const ownershipMigration = read('migrations/0042_phone_ownership.sql');
+check(
+  'ownership migration retires elapsed approvals',
+  ownershipMigration.includes("SET status = 'expired'") && ownershipMigration.includes("julianday('now', '-365 days')")
+);
+check(
+  'ownership migration keeps the first live approval and revokes duplicates',
+  ownershipMigration.includes("SET status = 'revoked'") && ownershipMigration.includes('ownership_duplicate')
+);
+check(
+  'ownership migration enforces one approved owner per phone',
+  ownershipMigration.includes('idx_phone_verifications_one_owner')
+    && ownershipMigration.includes('ON phone_verifications(phone)')
+    && ownershipMigration.includes("WHERE status = 'approved'")
+);
+
 /* ---------- customer route ---------- */
 
 const customerRoute = read('functions/api/account/phone-verification.js');
@@ -146,6 +162,16 @@ check('customer route returns the plaintext code once', customerRoute.includes('
 check('customer route enforces a cooldown', customerRoute.includes('VERIFICATION_COOLDOWN_SEC'));
 check('customer route enforces hourly + daily caps', customerRoute.includes('VERIFICATION_HOURLY_MAX') && customerRoute.includes('VERIFICATION_DAILY_MAX'));
 check('customer route rescinds an old pending code on resend', customerRoute.includes('expireVerificationById'));
+check(
+  'customer route refuses a number owned by another member',
+  customerRoute.includes('phoneOwnedByAnotherUser')
+    && customerRoute.includes('phoneLinkedResponse')
+    && customerRoute.includes('PHONE_LINKED_ERROR')
+);
+check(
+  'customer status marks a number owned by another member',
+  customerRoute.includes('linkedToOtherAccount')
+);
 check('customer route has no Telegram notification', !/telegram/i.test(customerRoute));
 check('customer route generates the WhatsApp code server-side', customerRoute.includes('generateVerificationCode()') && customerRoute.includes("body.action === 'verify'") && customerRoute.includes('body.code'));
 
@@ -157,6 +183,16 @@ check('admin route approves and rejects', adminRoute.includes("action !== 'appro
 check('admin route is single-use', adminRoute.includes('decideVerification') && adminRoute.includes("status: action === 'approve' ? 'approved' : 'rejected'"));
 check('admin route never returns the code hash', !adminRoute.includes('code_hash') && !adminRoute.includes('codeHash'));
 check('admin list is live-pending only by default', adminRoute.includes("=== 'all' ? 'all' : 'pending'"));
+check(
+  'admin approval re-checks one-owner-per-phone',
+  adminRoute.includes('phoneOwnedByAnotherUser') && adminRoute.includes('expireStaleApproved')
+);
+
+const webhookRoute = read('functions/api/whatsapp/webhook.js');
+check(
+  'whatsapp webhook re-checks ownership before approving',
+  webhookRoute.includes('phoneOwnedByAnotherUser') && webhookRoute.includes("decidedBy: 'ownership_conflict'")
+);
 
 /* ---------- order + profile gates ---------- */
 
@@ -168,8 +204,20 @@ check('order route still takes name/email from the account', orderRoute.includes
 
 const profileRoute = read('functions/api/account/profile.js');
 check('profile route saves a changed phone without verification', !profileRoute.includes("error: 'phone_verification_required'") && !profileRoute.includes('nextPhone') && profileRoute.includes('Saving a changed number is intentionally NOT gated'));
+check(
+  'profile route refuses a number owned by another member',
+  profileRoute.includes('phoneOwnedByAnotherUser') && profileRoute.includes('PHONE_LINKED_ERROR')
+);
+check(
+  'changing the saved phone revokes every old proof',
+  profileRoute.includes('revokeUserVerifications') && profileRoute.includes('phoneChanged')
+);
 check('profile route exposes the verified state', profileRoute.includes('phoneVerified:') && profileRoute.includes('phoneVerifiedUntil:'));
 check('order route remains the verification gate', orderRoute.includes("error: 'phone_verification_required'") && orderRoute.includes('findValidVerification(db, customerUserId, c.phoneNorm'));
+check(
+  'order route refuses a number owned by another member',
+  orderRoute.includes('phoneOwnedByAnotherUser') && orderRoute.includes('PHONE_LINKED_ERROR')
+);
 
 /* ---------- customers repo ---------- */
 
@@ -186,11 +234,37 @@ check('sheet has a live countdown', sheet.includes('useNow(') && sheet.includes(
 check('sheet opens WhatsApp with the pre-filled message', sheet.includes('buildPhoneVerificationWhatsAppUrl') && sheet.includes('wa.me') === false);
 check('sheet auto-requests once per open+number', sheet.includes('autoRef.current === phone'));
 check('sheet shows waiting + success states', sheet.includes('t.waiting') && sheet.includes('t.verifiedTitle'));
+check(
+  'sheet shows the linked-account reason instead of a generic error',
+  sheet.includes('phone_linked_other_account') && sheet.includes('t.errorPhoneLinked')
+);
+check(
+  'linked number offers no pointless retry/get-code action',
+  sheet.includes('const phoneTaken') && sheet.includes('!phoneTaken')
+);
 
 const hook = read('src/features/auth/hooks/usePhoneVerification.ts');
 check('hook polls while pending', hook.includes('POLL_MS') && hook.includes("phase !== 'pending'"));
 check('hook caches the one-time code per member', hook.includes('CACHE_PREFIX') && hook.includes('window.localStorage'));
 check('hook dispatches the verified event', hook.includes('PHONE_VERIFIED_EVENT'));
+check(
+  'hook stops on a number owned by another member',
+  hook.includes('state.linkedToOtherAccount') && hook.includes("setError('phone_linked_other_account')")
+);
+
+const sharedPhone = read('functions/_shared/phone-verification.js');
+check(
+  'shared copy states the number is linked to another member',
+  sharedPhone.includes('PHONE_LINKED_ERROR') && sharedPhone.includes('linked to another member account')
+);
+const phoneRepo = read('functions/_shared/repositories/phone-verifications.repo.js');
+check(
+  'repo exposes ownership + revocation helpers',
+  phoneRepo.includes('findVerifiedPhoneOwner')
+    && phoneRepo.includes('phoneOwnedByAnotherUser')
+    && phoneRepo.includes('revokeUserVerifications')
+    && phoneRepo.includes('expireStaleApproved')
+);
 
 const cartDrawer = read('src/features/cart/components/CartDrawer.tsx');
 check('cart watches the entered number', cartDrawer.includes('usePhoneVerification(') && cartDrawer.includes('verificationPhone'));
@@ -199,6 +273,21 @@ check('cart opens the sheet on demand', cartDrawer.includes('onRequirePhoneVerif
 
 const accountSheet = read('src/features/auth/components/AccountSheet.tsx');
 check('settings verifying saves the current form', accountSheet.includes('void save();') && accountSheet.includes('setVerifyOpen(false);'));
+check(
+  'account save shows the linked-account reason instead of a generic failure',
+  accountSheet.includes('phone_linked_other_account') && accountSheet.includes('phoneLinkedOtherAccount')
+);
+
+const cartApi = read('src/features/cart/services/cart.api.ts');
+check(
+  'checkout maps the linked-account rejection',
+  cartApi.includes('phone_linked_other_account') && cartApi.includes("failure: 'phone_taken'")
+);
+const checkoutHook = read('src/features/cart/hooks/useCartCheckoutSubmit.ts');
+check(
+  'checkout shows the linked-account reason without opening verification',
+  checkoutHook.includes("result.failure === 'phone_taken'") && checkoutHook.includes('isPhoneTaken')
+);
 
 const adminPanel = read('src/features/admin/components/admin/AdminPhoneVerifications.tsx');
 check('admin panel approves and rejects', adminPanel.includes("decide(row.id, 'approve')") && adminPanel.includes("decide(row.id, 'reject')"));

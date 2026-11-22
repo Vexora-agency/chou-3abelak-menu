@@ -202,6 +202,16 @@ export function usePhoneVerification(
         applyVerified(state.verifiedUntil);
         return;
       }
+      if (state.linkedToOtherAccount) {
+        // The number belongs to another member: there is nothing to wait for.
+        // Keep the sheet in a clear error state; the auto-request effect only
+        // runs from 'unverified', so no code is minted for a taken number.
+        setActive(null);
+        setVerifiedUntil(null);
+        setPhase('error');
+        setError('phone_linked_other_account');
+        return;
+      }
       if (state.pending) {
         const cached = readCache(userId);
         const merged = mergePending(state.pending, cached);

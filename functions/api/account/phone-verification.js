@@ -25,6 +25,8 @@ import {
   hashVerificationCode,
   newVerificationId,
   normalizeVerificationPhone,
+  PHONE_LINKED_ERROR,
+  PHONE_LINKED_MESSAGE,
   VERIFICATION_COOLDOWN_SEC,
   VERIFICATION_DAILY_MAX,
   VERIFICATION_HOURLY_MAX,
@@ -36,16 +38,22 @@ import {
   countSmsRequestsSince,
   countUserRequestsSince,
   decideVerification,
+  expireStaleApproved,
   expireStalePending,
   expireVerificationById,
   findPendingVerification,
   findValidVerification,
   incrementVerificationAttempts,
   insertVerification,
+  phoneOwnedByAnotherUser,
 } from '../../_shared/repositories/phone-verifications.repo.js';
 import { isUnimtxConfigured, sendUnimtxOtp, verifyUnimtxOtp } from '../../_shared/unimtx.js';
 
 const SMS_MAX_ATTEMPTS = 5;
+
+function phoneLinkedResponse() {
+  return jsonNoStore({ error: PHONE_LINKED_ERROR, message: PHONE_LINKED_MESSAGE }, 409);
+}
 
 function publicPending(row) {
   if (!row) return null;
@@ -113,6 +121,19 @@ async function verifySmsCode(db, env, userId, phone, rawCode) {
     return { status: 400, body: { error: 'code_invalid' } };
   }
 
+  // Ownership is re-checked immediately before approval: another member may
+  // have claimed the number after this row was minted (or a legacy duplicate
+  // may exist). The code proves the phone, not the account.
+  await expireStaleApproved(db, nowMs, phone);
+  if (await phoneOwnedByAnotherUser(db, phone, userId, nowMs)) {
+    await decideVerification(db, pending.id, {
+      status: 'rejected',
+      decidedBy: 'ownership_conflict',
+      nowIso,
+    });
+    return { status: 409, body: { error: PHONE_LINKED_ERROR, message: PHONE_LINKED_MESSAGE } };
+  }
+
   const decided = await decideVerification(db, pending.id, {
     status: 'approved',
     decidedBy: 'sms',
@@ -154,12 +175,21 @@ export async function onRequest(context) {
     try {
       const nowMs = Date.now();
       const nowIso = new Date(nowMs).toISOString();
+      await expireStaleApproved(db, nowMs, phone);
       const approved = await findValidVerification(db, auth.user.id, phone, nowMs);
       if (approved) {
         return jsonNoStore({
           verified: true,
           verifiedUntil: verificationValidUntil(approved),
           pending: null,
+        });
+      }
+      if (await phoneOwnedByAnotherUser(db, phone, auth.user.id, nowMs)) {
+        return jsonNoStore({
+          verified: false,
+          verifiedUntil: null,
+          pending: null,
+          linkedToOtherAccount: true,
         });
       }
       const pending = await findPendingVerification(db, auth.user.id, phone, nowIso);
@@ -183,6 +213,21 @@ export async function onRequest(context) {
   const phone = normalizeVerificationPhone(body && body.phone);
   if (!phone) return jsonNoStore({ error: 'phone_invalid' }, 400);
 
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
+
+  // One phone = one member account. Refuse before minting a code (or spending
+  // an SMS) when another member already owns this number. The approval paths
+  // repeat this check to close the request/approval race.
+  try {
+    await expireStaleApproved(db, nowMs, phone);
+    if (await phoneOwnedByAnotherUser(db, phone, auth.user.id, nowMs)) {
+      return phoneLinkedResponse();
+    }
+  } catch {
+    return jsonNoStore({ error: 'unavailable' }, 503);
+  }
+
   // SMS code entry: the member types the code received by SMS.
   if (body && body.action === 'verify') {
     const result = await verifySmsCode(db, env, auth.user.id, phone, body.code);
@@ -205,8 +250,6 @@ export async function onRequest(context) {
   }
 
   const lang = body && body.lang === 'ar' ? 'ar' : 'en';
-  const nowMs = Date.now();
-  const nowIso = new Date(nowMs).toISOString();
 
   try {
     const approved = await findValidVerification(db, auth.user.id, phone, nowMs);

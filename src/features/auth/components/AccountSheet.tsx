@@ -23,6 +23,7 @@ import {
   X,
 } from 'lucide-react';
 import { authClient } from '@/src/lib/auth-client';
+import { ApiError } from '@/src/lib/api-client';
 import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { useNow } from '@/src/hooks/useNow';
 import { cleanPhoneInput, phoneDigitsOnly } from '@/src/utils/digits';
@@ -624,8 +625,11 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
       window.dispatchEvent(new Event(MEMBER_PROFILE_CHANGED));
       setSaveOk(true);
       window.setTimeout(() => setSaveOk(false), 2500);
-    } catch {
-      setSaveError(t.saveError);
+    } catch (err) {
+      const code = err instanceof ApiError && err.body && typeof err.body === 'object'
+        ? String((err.body as { error?: unknown }).error || '')
+        : '';
+      setSaveError(code === 'phone_linked_other_account' ? t.phoneLinkedOtherAccount : t.saveError);
     } finally {
       setSaving(false);
     }

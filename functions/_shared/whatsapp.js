@@ -25,6 +25,8 @@ export const WHATSAPP_REPLIES = Object.freeze({
     expired:
       '⌛ This code expired or the request is no longer active. Request a new code on the site, then send it here.',
     missing: '✍️ Send the 6-digit verification code shown on the site.',
+    conflict:
+      'This number is linked to another member account. Use your own number or contact us.',
   },
   ar: {
     success: '✅ تم تأكيد رقمك بنجاح. يمكنك العودة إلى الموقع الآن.',
@@ -33,6 +35,7 @@ export const WHATSAPP_REPLIES = Object.freeze({
     expired:
       '⌛ انتهت صلاحية رمز التحقق أو لم يعد الطلب فعالًا. اطلب رمزًا جديدًا من الموقع ثم أرسله هنا.',
     missing: '✍️ أرسل رمز التحقق المكوّن من 6 أرقام كما يظهر في الموقع.',
+    conflict: 'هذا الرقم مرتبط بحساب عضو آخر. استخدم رقمك أو تواصل معنا.',
   },
 });
 

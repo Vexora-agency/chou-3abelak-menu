@@ -30,10 +30,12 @@ import {
   claimWhatsAppEvent,
   countWhatsAppEventsSince,
   decideVerification,
+  expireStaleApproved,
   findValidVerificationByPhone,
   finishWhatsAppEvent,
   getVerificationById,
   listPendingVerificationsByPhone,
+  phoneOwnedByAnotherUser,
 } from '../../_shared/repositories/phone-verifications.repo.js';
 
 const MAX_BODY_BYTES = 64 * 1024;
@@ -164,6 +166,28 @@ async function handleMessage(context, env, db, msg) {
         db,
         msg,
         whatsappReply('wrong', pickReplyLanguage(rowLang, msg.text)),
+        nowMs,
+        outcome
+      );
+      return;
+    }
+
+    // Re-check ownership immediately before approving: another member may
+    // have claimed this number while the code was waiting. The code proves
+    // the phone, not the account, so the second account must be refused.
+    await expireStaleApproved(db, nowMs, matched.phone);
+    if (await phoneOwnedByAnotherUser(db, matched.phone, matched.user_id, nowMs)) {
+      await decideVerification(db, matched.id, {
+        status: 'rejected',
+        decidedBy: 'ownership_conflict',
+        nowIso,
+      });
+      outcome = 'phone_linked_other_account';
+      await maybeReply(
+        env,
+        db,
+        msg,
+        whatsappReply('conflict', pickReplyLanguage(matched.lang, msg.text)),
         nowMs,
         outcome
       );

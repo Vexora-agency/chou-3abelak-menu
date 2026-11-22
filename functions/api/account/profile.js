@@ -11,8 +11,13 @@
 import { jsonNoStore, readJsonBody } from '../../_shared/session.js';
 import { checkCustomerApiHeaders, requireCustomer } from '../../_shared/auth-session.js';
 import { getCustomerProfile, upsertCustomerProfile } from '../../_shared/repositories/customers.repo.js';
-import { findValidVerification } from '../../_shared/repositories/phone-verifications.repo.js';
-import { verificationValidUntil } from '../../_shared/phone-verification.js';
+import {
+  expireStaleApproved,
+  findValidVerification,
+  phoneOwnedByAnotherUser,
+  revokeUserVerifications,
+} from '../../_shared/repositories/phone-verifications.repo.js';
+import { PHONE_LINKED_ERROR, PHONE_LINKED_MESSAGE, verificationValidUntil } from '../../_shared/phone-verification.js';
 import { authErrorMessage, validateProfileAddress, validateProfileLocation, validateProfilePhone } from '../../_shared/validate-auth.js';
 
 function publicUser(user) {
@@ -94,6 +99,28 @@ export async function onRequest(context) {
     // the member can keep their profile current, and the order route still
     // refuses to place an order on an unverified number. This keeps "Save
     // changes" fast while the ownership gate stays at checkout.
+    //
+    // Two security rules sit beside that choice:
+    //  1. a number already verified by ANOTHER member is refused here too, so
+    //     the member gets the reason immediately (and the order gate repeats
+    //     it);
+    //  2. changing the saved number revokes every live proof for this member.
+    //     Moving to a sibling's number and back therefore requires a fresh
+    //     verification of the original number.
+    const nowMs = Date.now();
+    const nowIso = new Date(nowMs).toISOString();
+    const previous = await getCustomerProfile(db, auth.user.id);
+    const previousPhone = previous && previous.phone ? previous.phone : null;
+    const phoneChanged = previousPhone !== phone.phone;
+
+    await expireStaleApproved(db, nowMs, phone.phone);
+    if (await phoneOwnedByAnotherUser(db, phone.phone, auth.user.id, nowMs)) {
+      return jsonNoStore({ error: PHONE_LINKED_ERROR, message: PHONE_LINKED_MESSAGE }, 409);
+    }
+    if (phoneChanged) {
+      await revokeUserVerifications(db, auth.user.id, nowIso, 'profile_phone_changed');
+    }
+
     const saved = await upsertCustomerProfile(
       db,
       auth.user.id,
@@ -102,7 +129,7 @@ export async function onRequest(context) {
         address: address.address,
         location: address.address ? location.location : null,
       },
-      new Date().toISOString()
+      nowIso
     );
     const approved = await findValidVerification(db, auth.user.id, saved.phone, Date.now());
     return jsonNoStore({

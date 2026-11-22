@@ -36,11 +36,13 @@ interface UseCartCheckoutSubmitArgs {
   onRequireProfile?: () => void;
   /** True only when the number entered for THIS order is verified. */
   isPhoneVerified?: () => boolean;
+  /** True when the entered number already belongs to another member. */
+  isPhoneTaken?: () => boolean;
   /** Opens the reverse-WhatsApp verification sheet over the cart. */
   onRequirePhoneVerification?: () => void;
 }
 
-export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess, accountUser, accountProfile, accountLoading = false, onRequireAccount, onRequireProfile, isPhoneVerified, onRequirePhoneVerification }: UseCartCheckoutSubmitArgs) {
+export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess, accountUser, accountProfile, accountLoading = false, onRequireAccount, onRequireProfile, isPhoneVerified, isPhoneTaken, onRequirePhoneVerification }: UseCartCheckoutSubmitArgs) {
   const isAr = lang === 'ar';
   const ordering = menu.settings.ordering;
   const phoneDial = dialFromSettings(menu.settings);
@@ -366,6 +368,15 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       );
       return;
     }
+    // A number already verified by another member can never be used, even
+    // here in the cart. The status hook flags it before checkout; the server
+    // repeats the check on the order itself.
+    if (accountUser && isPhoneTaken && isPhoneTaken()) {
+      setErrorMsg(isAr
+        ? 'هذا الرقم مرتبط بحساب عضو آخر. استخدم رقمك أو تواصل معنا.'
+        : 'This number is linked to another member account. Use your own number or contact us.');
+      return;
+    }
     // Phone ownership gate: EVERY entered number must be confirmed through
     // reverse WhatsApp verification — the saved number, a changed number, and
     // the first number alike. The server enforces the same rule on the exact
@@ -484,6 +495,15 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         // stale complete profile. Show why and open Settings over the cart.
         setErrorMsg(result.blockedMessage || AUTH_STR[lang].profileIncompleteOrder);
         onRequireProfile?.();
+        return;
+      }
+      if (result.failure === 'phone_taken') {
+        // Deliberately NOT opening the verification sheet: proving the phone
+        // cannot help because the number belongs to another member. Show the
+        // exact reason and leave the cart intact.
+        setErrorMsg(result.blockedMessage || (isAr
+          ? 'هذا الرقم مرتبط بحساب عضو آخر. استخدم رقمك أو تواصل معنا.'
+          : 'This number is linked to another member account. Use your own number or contact us.'));
         return;
       }
       if (result.failure === 'phone') {

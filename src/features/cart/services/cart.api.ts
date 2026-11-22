@@ -28,7 +28,7 @@ export interface SubmitOrderResult {
   trackToken: string | null;
   blockedMessage: string | null;
   /** Machine cause for UI + remote diagnosis (null = recorded OK). */
-  failure: null | 'timeout' | 'rate' | 'blocked' | 'invalid' | 'profile' | 'phone';
+  failure: null | 'timeout' | 'rate' | 'blocked' | 'invalid' | 'profile' | 'phone' | 'phone_taken';
 }
 
 export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'): Promise<SubmitOrderResult> {
@@ -95,6 +95,17 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
             ? 'أنشئ حسابًا لإتمام طلب الدفع عند الاستلام.'
             : 'Create an account to place a cash-on-delivery order.'),
           failure: 'blocked',
+        };
+      }
+      if (res.status === 403 && isRecord(data) && data.error === 'phone_linked_other_account') {
+        const msg = isRecord(data.message) ? str(lang === 'ar' ? data.message.ar : data.message.en) : '';
+        return {
+          orderNumber: null,
+          trackToken: null,
+          blockedMessage: msg || (lang === 'ar'
+            ? 'هذا الرقم مرتبط بحساب عضو آخر. استخدم رقمك أو تواصل معنا.'
+            : 'This number is linked to another member account. Use your own number or contact us.'),
+          failure: 'phone_taken',
         };
       }
       if (res.status === 403 && isRecord(data) && data.error === 'phone_verification_required') {

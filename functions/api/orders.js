@@ -13,7 +13,8 @@ import { assessOrderRisk } from '../_shared/order-risk.js';
 import { newTrackToken } from '../_shared/push.js';
 import { LINK_WINDOW_MS, checkAndReserveOrderBudget, countActiveOrdersByPhone, findLinkCandidate, findOrderById, findOrderByIdemKey, insertOrderWithNumber, isPhoneBlocked, nextOrderNumber } from '../_shared/repositories/orders.repo.js';
 import { getCustomerProfile } from '../_shared/repositories/customers.repo.js';
-import { findValidVerification } from '../_shared/repositories/phone-verifications.repo.js';
+import { findValidVerification, phoneOwnedByAnotherUser } from '../_shared/repositories/phone-verifications.repo.js';
+import { PHONE_LINKED_ERROR, PHONE_LINKED_MESSAGE } from '../_shared/phone-verification.js';
 import { getOrderingState } from '../_shared/status.js';
 import { isProfileComplete } from '../_shared/validate-auth.js';
 
@@ -219,6 +220,22 @@ export async function onRequest(context) {
   // account's saved phone earns no free pass. Fails OPEN only on a DB error
   // (the insert below would 503 anyway); a missing verification is a hard 403.
   if (customerUserId && (c.paymentMethod || 'cod') === 'cod') {
+    // A number already verified by ANOTHER member can never be used here,
+    // even if this account kept an old duplicate approval or the number was
+    // typed into the cart without being saved. Repeating the ownership check
+    // at the order boundary is the last line of defense.
+    try {
+      if (await phoneOwnedByAnotherUser(db, c.phoneNorm, customerUserId, Date.now())) {
+        return jsonNoStore({
+          error: PHONE_LINKED_ERROR,
+          phone: c.phoneNorm,
+          message: PHONE_LINKED_MESSAGE,
+        }, 403);
+      }
+    } catch (err) {
+      captureBackendException(context, err, { binding: 'd1', code: 'order_phone_owner_read' });
+    }
+
     let verified = false;
     try {
       verified = !!(await findValidVerification(db, customerUserId, c.phoneNorm, Date.now()));

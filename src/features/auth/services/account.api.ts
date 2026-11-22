@@ -54,6 +54,8 @@ export interface PhoneVerificationStatus {
   verified: boolean;
   verifiedUntil: string | null;
   pending: PendingPhoneVerification | null;
+  /** True when another member already owns this number. */
+  linkedToOtherAccount?: boolean;
 }
 
 export async function fetchPhoneVerification(phone: string): Promise<PhoneVerificationStatus> {

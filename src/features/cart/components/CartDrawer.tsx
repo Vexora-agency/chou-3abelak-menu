@@ -62,6 +62,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const account = useCustomerProfile(isOpen);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const phoneVerifiedRef = useRef(false);
+  const phoneTakenRef = useRef(false);
   // New members (including Google sign-ups) must add a phone and default
   // address before any order; the map pin is optional. While the profile is
   // still loading, stay neutral instead of flashing the incomplete banner.
@@ -101,7 +102,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     handleSendOrder,
     zoneBlocked,
     zonePlaceName,
-  } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart, accountUser: account.user, accountProfile: account.profile, accountLoading: account.loading, onRequireAccount, onRequireProfile, isPhoneVerified: () => phoneVerifiedRef.current, onRequirePhoneVerification: () => setVerifyOpen(true) });
+  } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart, accountUser: account.user, accountProfile: account.profile, accountLoading: account.loading, onRequireAccount, onRequireProfile, isPhoneVerified: () => phoneVerifiedRef.current, isPhoneTaken: () => phoneTakenRef.current, onRequirePhoneVerification: () => setVerifyOpen(true) });
 
   // Reverse WhatsApp verification for the exact number typed in the cart.
   // Enabled only while the drawer is open for a signed-in member, so guests
@@ -126,9 +127,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     verificationPhone &&
     ((sameAsSavedPhone && account.profile?.phoneVerified) || phoneVerification.phase === 'verified')
   );
+  const phoneTaken = phoneVerification.error === 'phone_linked_other_account';
   useEffect(() => {
     phoneVerifiedRef.current = phoneVerified;
   }, [phoneVerified]);
+  useEffect(() => {
+    phoneTakenRef.current = phoneTaken;
+  }, [phoneTaken]);
   useEffect(() => {
     if (!isOpen) setVerifyOpen(false);
   }, [isOpen]);

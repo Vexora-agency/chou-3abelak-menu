@@ -124,6 +124,10 @@ check('route enforces the SMS daily cap', route.includes('UNIMTX_SMS_DAILY_MAX')
 check('route locks after 5 SMS attempts', route.includes('SMS_MAX_ATTEMPTS'));
 check('route approves SMS as decided_by sms', route.includes("decidedBy: 'sms'"));
 check(
+  'route re-checks ownership before an SMS approval',
+  route.includes('phoneOwnedByAnotherUser') && route.includes("decidedBy: 'ownership_conflict'")
+);
+check(
   'route lets an explicit SMS request replace a pending WhatsApp code',
   route.includes('pendingMethod !== method') && route.includes('expireVerificationById(db, pending.id, nowIso)')
 );
@@ -149,8 +153,8 @@ check(
 );
 check(
   'no-WhatsApp option sits above the code/WhatsApp action',
-  sheet.indexOf('{smsFallback}') > -1
-    && sheet.indexOf('{smsFallback}') < sheet.indexOf("{active?.method === 'sms'")
+  sheet.indexOf('{!phoneTaken && smsFallback}') > -1
+    && sheet.indexOf('{!phoneTaken && smsFallback}') < sheet.indexOf("{active?.method === 'sms'")
 );
 check(
   'verification steps mark step 1 done and step 2 current once a code exists',

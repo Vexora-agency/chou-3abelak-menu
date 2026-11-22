@@ -127,6 +127,14 @@ check('wrong asks to retry (AR)', whatsappReply('wrong', 'ar').includes('إعا�
 check('wrong asks to retry (EN)', /try again/i.test(whatsappReply('wrong', 'en')));
 check('expired asks for a new code (AR)', whatsappReply('expired', 'ar').includes('رمزًا جديدًا'));
 check('missing asks for the 6-digit code', whatsappReply('missing', 'ar').includes('6'));
+check(
+  'conflict says the number is linked to another member (AR)',
+  whatsappReply('conflict', 'ar').includes('حساب عضو آخر')
+);
+check(
+  'conflict says the number is linked to another member (EN)',
+  /linked to another member account/i.test(whatsappReply('conflict', 'en'))
+);
 check('stored Arabic wins over English text', pickReplyLanguage('ar', 'Hello') === 'ar');
 check('stored English wins over Arabic text', pickReplyLanguage('en', 'مرحبا') === 'en');
 check('detects Arabic when the row has no language', pickReplyLanguage(null, 'مرحبًا! يرجى تأكيد رقمي') === 'ar');
@@ -186,6 +194,10 @@ check('webhook requires an app secret', route.includes('WHATSAPP_APP_SECRET') &&
 check('webhook claims each message once', route.includes('claimWhatsAppEvent') && route.includes('finishWhatsAppEvent'));
 check('webhook matches the code against the pending row', route.includes('verificationCodeMatches') && route.includes('listPendingVerificationsByPhone'));
 check('webhook auto-approves as whatsapp', route.includes("decidedBy: 'whatsapp'") && route.includes('decideVerification'));
+check(
+  'webhook refuses a number claimed by another member',
+  route.includes('phoneOwnedByAnotherUser') && route.includes("decidedBy: 'ownership_conflict'")
+);
 check('webhook replies in the row language', route.includes("whatsappReply('success'") && route.includes('pickReplyLanguage'));
 check('webhook caps replies per phone + month', route.includes('REPLY_HOURLY_PER_PHONE') && route.includes('REPLY_DAILY_PER_PHONE') && route.includes('WHATSAPP_REPLY_MONTHLY_CAP'));
 check('webhook ignores ordinary messages without a reply', route.includes('looksLikeVerificationMessage(msg.text)') && route.includes('return'));

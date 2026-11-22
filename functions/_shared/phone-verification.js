@@ -31,6 +31,17 @@ export const VERIFICATION_DAILY_MAX = 15;
 export const VERIFICATION_REFERENCE_LENGTH = 8;
 
 /**
+ * One verified phone belongs to ONE member account. Every write surface
+ * (profile save, code request, code approval, order gate) uses this same
+ * error code + bilingual copy so the customer sees one clear reason.
+ */
+export const PHONE_LINKED_ERROR = 'phone_linked_other_account';
+export const PHONE_LINKED_MESSAGE = Object.freeze({
+  en: 'This number is linked to another member account. Use your own number or contact us.',
+  ar: 'هذا الرقم مرتبط بحساب عضو آخر. استخدم رقمك أو تواصل معنا.',
+});
+
+/**
  * Signing key for code hashes. A dedicated secret wins; otherwise the admin
  * session secret (already required in production) is reused. Returns null
  * when neither is configured so the route can fail closed.

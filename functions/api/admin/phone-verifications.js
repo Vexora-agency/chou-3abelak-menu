@@ -15,10 +15,14 @@ import { getRequestRole } from '../../_shared/kitchen-gate.js';
 import {
   countPendingVerifications,
   decideVerification,
+  expireStaleApproved,
   expireStalePending,
+  getVerificationById,
   listVerifications,
+  phoneOwnedByAnotherUser,
   pruneWhatsAppEvents,
 } from '../../_shared/repositories/phone-verifications.repo.js';
+import { PHONE_LINKED_ERROR, PHONE_LINKED_MESSAGE } from '../../_shared/phone-verification.js';
 
 const MAX_BODY_BYTES = 4 * 1024;
 
@@ -89,6 +93,21 @@ export async function onRequest(context) {
   try {
     await expireStalePending(db, nowIso);
     const role = await getRequestRole(request, env);
+    if (action === 'approve') {
+      const pending = await getVerificationById(db, id);
+      if (!pending) {
+        return jsonNoStore({ error: 'not_pending', message: 'This request was already decided or expired.' }, 409);
+      }
+      await expireStaleApproved(db, Date.now(), pending.phone);
+      if (await phoneOwnedByAnotherUser(db, pending.phone, pending.user_id, Date.now())) {
+        await decideVerification(db, id, {
+          status: 'rejected',
+          decidedBy: 'ownership_conflict',
+          nowIso,
+        });
+        return jsonNoStore({ error: PHONE_LINKED_ERROR, message: PHONE_LINKED_MESSAGE }, 409);
+      }
+    }
     const row = await decideVerification(db, id, {
       status: action === 'approve' ? 'approved' : 'rejected',
       decidedBy: role || 'dashboard',

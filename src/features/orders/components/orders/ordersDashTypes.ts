@@ -1,4 +1,6 @@
 /* ---------- Types (the API should return exactly this shape) ---------- */
+import type { MenuData } from '@/src/types/menu';
+
 export type OrderStatus = 'new' | 'confirmed' | 'ready' | 'completed' | 'cancelled';
 export type OrderType = 'delivery' | 'pickup' | 'dinein';
 
@@ -73,6 +75,7 @@ export interface CronHealth {
 
 export interface OrdersDashboardProps {
   lang: 'en' | 'ar';
+  menu: MenuData;
   orders: Order[];
   currency: string;
   loading?: boolean;

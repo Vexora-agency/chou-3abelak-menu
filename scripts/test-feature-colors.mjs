@@ -87,6 +87,10 @@ check(
     && !colors.includes('Food colors') && !colors.includes('vegetables')
 );
 check(
+  'every palette color has a dark-safe admin pill class',
+  (colors.match(/adminPill: '/g) || []).length === KEYS.length
+);
+check(
   'customer option pills: gold selected, plain white at rest',
   has(colors, 'UNIFIED_FEATURE_CHIP_ACTIVE', 'UNIFIED_FEATURE_CHIP_IDLE', 'bg-[var(--primary)] text-[#0A0A0A]', 'bg-white text-neutral-800')
 );
@@ -138,6 +142,17 @@ check(
 check(
   'the picker explains that the customer menu stays unified',
   has(admin, 'Admin organization only', 'the customer menu stays one unified color')
+);
+const orderPills = read('src/features/orders/components/orders/OrderAddonPills.tsx');
+const ordersDash = read('src/features/orders/components/orders/OrdersDashList.tsx');
+const ordersDashboard = read('src/features/orders/components/OrdersDashboard.tsx');
+const orderTypes = read('src/features/orders/components/orders/ordersDashTypes.ts');
+check(
+  'admin order lines show each add-on as a colored dot pill',
+  has(orderPills, 'featureColorDef', 'adminPill', 'isSpicyAddon', 'rounded-full')
+    && has(ordersDash, '<OrderAddonPills', 'menu={menu}')
+    && has(ordersDashboard, 'menu', 'menu={menu}')
+    && has(orderTypes, 'menu: MenuData')
 );
 
 /* ---------- customer storefront ---------- */

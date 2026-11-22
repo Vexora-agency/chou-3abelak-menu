@@ -3,14 +3,17 @@ import { AnimatePresence, motion } from 'motion/react';
 import { BellRing, BadgeCheck, Check, ChevronDown, Inbox, Link2, Loader2, MapPin, MessageCircle, Phone, Store, X } from 'lucide-react';
 import { STR } from './ordersDashTypes';
 import type { Order, OrderStatus } from './ordersDashTypes';
+import type { MenuData } from '@/src/types/menu';
 import { OrderReviewBadge } from './OrderReviewBadge';
-import { STATUS_STYLE, TYPE_ICON, digits, fmt, itemTitle, itemBaseTitle, itemAddonsSuffix, lineIsSpicy, lineSpicyId, loc, relTime } from './ordersDashUtils';
+import { STATUS_STYLE, TYPE_ICON, digits, fmt, itemTitle, itemBaseTitle, lineIsSpicy, lineSpicyId, loc, relTime } from './ordersDashUtils';
+import { OrderAddonPills } from './OrderAddonPills';
 import { unitLabel } from '@/src/utils/pricing';
 import { HeatPill } from '@/src/components/HeatPill';
 import { card } from './OrdersDashBits';
 
 interface OrdersDashListProps {
   lang: 'en' | 'ar';
+  menu: MenuData;
   currency: string;
   loading?: boolean;
   totalCount: number;
@@ -36,6 +39,7 @@ interface OrdersDashListProps {
 
 interface OrderRowProps {
   o: Order;
+  menu: MenuData;
   open: boolean;
   onToggleOpen: (id: string | null) => void;
   t: (typeof STR)[keyof typeof STR];
@@ -54,7 +58,7 @@ function shortCustomerName(name: string): string {
 }
 
 /** Single order card (row + expandable detail). Pure presentational. */
-const OrderRow: FC<OrderRowProps> = ({ o, open, onToggleOpen, t, isAr, currency, now, flashId, onStatusChange, onConfirm }) => {
+const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, currency, now, flashId, onStatusChange, onConfirm }) => {
   const TypeIcon = TYPE_ICON[o.type] ?? Store;
   // Smart ETA: absolute 12h time while on-time, mins-late once passed.
   const etaMs = typeof o.etaAt === 'string' && o.etaAt ? Date.parse(o.etaAt) : NaN;
@@ -129,7 +133,7 @@ const OrderRow: FC<OrderRowProps> = ({ o, open, onToggleOpen, t, isAr, currency,
                 <p className={`text-[11px] font-bold text-neutral-500 ${isAr ? '' : 'uppercase tracking-wide'}`}>{t.itemsLabel}</p>
                 {o.items.map((it, idx) => (
                   <div key={`${it.id}-${idx}`} className="flex justify-between gap-3">
-                    <span className="min-w-0 flex-1 break-words"><bdi dir="ltr" className="tabular-nums">{it.qty}</bdi><span dir="ltr">×</span> {typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, isAr ? 'ar' : 'en')} ` : ''}<span dir="auto">{itemBaseTitle(it, isAr ? 'ar' : 'en')}</span>{lineIsSpicy(it) && <HeatPill featureId={lineSpicyId(it) ?? undefined} lang={isAr ? 'ar' : 'en'} size="sm" className="ms-1.5 me-0.5 align-middle" />}<span dir="auto">{itemAddonsSuffix(it, isAr ? 'ar' : 'en')}</span></span>
+                    <span className="min-w-0 flex-1 break-words"><bdi dir="ltr" className="tabular-nums">{it.qty}</bdi><span dir="ltr">×</span> {typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, isAr ? 'ar' : 'en')} ` : ''}<span dir="auto">{itemBaseTitle(it, isAr ? 'ar' : 'en')}</span>{lineIsSpicy(it) && <HeatPill featureId={lineSpicyId(it) ?? undefined} lang={isAr ? 'ar' : 'en'} size="sm" className="ms-1.5 me-0.5 align-middle" />}<OrderAddonPills it={it} menu={menu} lang={isAr ? 'ar' : 'en'} /></span>
                     <span className="text-neutral-400 tabular-nums whitespace-nowrap shrink-0"><bdi dir="ltr" className="tabular-nums">{fmt(it.qty)}</bdi><span dir="ltr"> × </span><bdi dir="ltr" className="tabular-nums">{fmt(it.unitPrice)}</bdi><span dir="ltr"> = </span><bdi dir="ltr" className="tabular-nums">{fmt(it.qty * it.unitPrice)}</bdi></span>
                   </div>
                 ))}
@@ -213,7 +217,7 @@ interface GroupCardProps extends Omit<OrderRowProps, 'o' | 'open'> {
  * pair forward together (ack all -> complete all). Cancel stays per-order
  * (cancelling one must never silently kill the other).
  */
-const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, t, isAr, currency, now, flashId, onStatusChange, onConfirm }) => {
+const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t, isAr, currency, now, flashId, onStatusChange, onConfirm }) => {
   const [busy, setBusy] = useState(false);
   const active = members.filter((m) => m.status === 'new' || m.status === 'confirmed' || m.status === 'ready');
   const allNew = active.length > 0 && active.every((m) => m.status === 'new');
@@ -261,6 +265,7 @@ const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, t, isAr,
           <OrderRow
             key={m.id}
             o={m}
+            menu={menu}
             open={openId === m.id}
             onToggleOpen={onToggleOpen}
             t={t}
@@ -286,7 +291,7 @@ const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, t, isAr,
 };
 
 export const OrdersDashList: FC<OrdersDashListProps> = ({
-  lang, currency, loading, totalCount, list, counts, filter, onFilterChange,
+  lang, menu, currency, loading, totalCount, list, counts, filter, onFilterChange,
   limit, onShowMore, openId, onToggleOpen, flashId, now, onStatusChange, onConfirm, kitchen,
 }) => {
   const t = STR[lang];
@@ -392,6 +397,7 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
               <OrderRow
                 key={entry.order.id}
                 o={entry.order}
+                menu={menu}
                 open={openId === entry.order.id}
                 onToggleOpen={onToggleOpen}
                 t={t}
@@ -407,6 +413,7 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                 key={entry.key}
                 members={entry.members}
                 openId={openId}
+                menu={menu}
                 onToggleOpen={onToggleOpen}
                 t={t}
                 isAr={isAr}

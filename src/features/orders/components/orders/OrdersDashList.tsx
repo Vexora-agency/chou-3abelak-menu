@@ -1,6 +1,6 @@
 import { useMemo, useState, type FC } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { BellRing, BadgeCheck, Check, ChevronDown, Inbox, Link2, Loader2, MapPin, MessageCircle, Phone, Store, X } from 'lucide-react';
+import { BellRing, BadgeCheck, Check, ChevronDown, Inbox, Link2, Loader2, MapPin, MessageCircle, Phone, StickyNote, Store, X } from 'lucide-react';
 import { STR } from './ordersDashTypes';
 import type { Order, OrderStatus } from './ordersDashTypes';
 import type { MenuData } from '@/src/types/menu';
@@ -152,6 +152,18 @@ const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, cur
                     </span>
                   </div>
                 ))}
+                {o.notes && (
+                  <div
+                    role="note"
+                    className="flex items-start gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs leading-relaxed text-amber-100"
+                  >
+                    <StickyNote size={14} className="mt-0.5 shrink-0 text-amber-300" aria-hidden="true" />
+                    <p className="min-w-0 break-words">
+                      <b className="text-amber-300">{t.notes}: </b>
+                      <span dir="auto">{o.notes}</span>
+                    </p>
+                  </div>
+                )}
                 <div className="pt-1.5 border-t border-neutral-800 space-y-1 text-xs text-neutral-400">
                   <div className="flex justify-between"><span>{t.subtotal}</span><span className="tabular-nums" dir="ltr">{fmt(o.subtotal)}</span></div>
                   {o.deliveryFee > 0 && <div className="flex justify-between"><span>{t.fee}</span><span className="tabular-nums" dir="ltr">{fmt(o.deliveryFee)}</span></div>}
@@ -185,7 +197,6 @@ const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, cur
                   </a>
                 )}
               </div>
-              {o.notes && <p className="text-xs text-neutral-300 bg-black/50 rounded-xl border border-neutral-800 px-3 py-2"><b className="text-neutral-500">{t.notes}: </b>{o.notes}</p>}
 
               <div className="flex flex-wrap gap-2 pt-1">
                 {/* Kitchen flow (simplified: new = acknowledge (start preparing),

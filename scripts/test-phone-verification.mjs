@@ -212,6 +212,10 @@ check(
   'changing the saved phone revokes every old proof',
   profileRoute.includes('revokeUserVerifications') && profileRoute.includes('phoneChanged')
 );
+check(
+  'saving the number currently being verified keeps its fresh pending code',
+  profileRoute.includes("'profile_phone_changed'") && profileRoute.includes('phone.phone')
+);
 check('profile route exposes the verified state', profileRoute.includes('phoneVerified:') && profileRoute.includes('phoneVerifiedUntil:'));
 check('order route remains the verification gate', orderRoute.includes("error: 'phone_verification_required'") && orderRoute.includes('findValidVerification(db, customerUserId, c.phoneNorm'));
 check(
@@ -264,6 +268,10 @@ check(
     && phoneRepo.includes('phoneOwnedByAnotherUser')
     && phoneRepo.includes('revokeUserVerifications')
     && phoneRepo.includes('expireStaleApproved')
+);
+check(
+  'revocation keeps a pending code for the number being saved',
+  phoneRepo.includes('exceptPendingPhone') && phoneRepo.includes('keepPendingPhone')
 );
 
 const cartDrawer = read('src/features/cart/components/CartDrawer.tsx');

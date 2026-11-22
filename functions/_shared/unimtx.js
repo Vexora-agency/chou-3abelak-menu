@@ -26,6 +26,16 @@ export function isUnimtxConfigured(env) {
   return !!trimEnv(env, 'UNIMTX_ACCESS_KEY_ID');
 }
 
+/**
+ * Optional pre-approved SMS template code (the "Custom code" from the
+ * UniMTX console). When set, the SMS fallback sends OUR hashed 6-digit code
+ * through `sms.message.send` instead of the built-in OTP text, so the message
+ * is branded and readable.
+ */
+export function getUnimtxTemplateId(env) {
+  return trimEnv(env, 'UNIMTX_SMS_TEMPLATE_ID');
+}
+
 /** Digits → E.164. Returns null for a number outside 8–15 digits. */
 export function toUnimtxPhone(value) {
   const digits = normalizePhoneDigits(String(value || ''));
@@ -130,6 +140,41 @@ export async function sendUnimtxOtp(env, { to, channel = 'sms', intent = DEFAULT
     channel,
     ttl: Math.max(60, Math.min(1800, Number(ttl) || DEFAULT_TTL_SEC)),
   }, fetchFn);
+}
+
+/**
+ * Send OUR generated code through a pre-approved UniMTX SMS template.
+ *
+ * The template is created in the UniMTX console and referenced by its custom
+ * code (e.g. `chou3abelak_verify`). It must contain a `{code}` variable; we
+ * pass `templateData: { code }` and nothing else. The message text, brand and
+ * wording live in the approved template — no built-in OTP copy is used.
+ *
+ * Returns `providerId` (the UniMTX message id) for the pending row.
+ */
+export async function sendUnimtxTemplateSms(
+  env,
+  { to, templateId, templateData, signature },
+  fetchFn = fetch
+) {
+  const recipient = toUnimtxPhone(to);
+  if (!recipient) return { ok: false, error: 'phone_invalid', status: 0 };
+  const id = typeof templateId === 'string' ? templateId.trim().slice(0, 64) : '';
+  if (!id) return { ok: false, error: 'template_missing', status: 0 };
+  const data = templateData && typeof templateData === 'object' ? templateData : {};
+  const body = {
+    to: recipient,
+    templateId: id,
+    templateData: data,
+  };
+  const sig = typeof signature === 'string' ? signature.trim().slice(0, 16) : '';
+  if (sig) body.signature = sig;
+
+  const result = await postUnimtx(env, 'sms.message.send', body, fetchFn);
+  if (!result.ok) return result;
+  const messages = result.data && Array.isArray(result.data.messages) ? result.data.messages : [];
+  const providerId = messages[0] && typeof messages[0].id === 'string' ? messages[0].id : null;
+  return { ...result, providerId };
 }
 
 /** Verify a user-entered OTP with the same `to` + `intent`. */

@@ -18,8 +18,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   buildUnimtxQuery,
+  getUnimtxTemplateId,
   isUnimtxConfigured,
   sendUnimtxOtp,
+  sendUnimtxTemplateSms,
   toUnimtxPhone,
   verifyUnimtxOtp,
 } from '../functions/_shared/unimtx.js';
@@ -86,6 +88,44 @@ check('send body uses 6 digits', body.digits === 6);
 check('send body intent is phone_verification', body.intent === 'phone_verification');
 check('send body TTL is 5 minutes', body.ttl === 300);
 
+/* ---------- custom branded template ---------- */
+
+check(
+  'template id comes from UNIMTX_SMS_TEMPLATE_ID',
+  getUnimtxTemplateId({ UNIMTX_SMS_TEMPLATE_ID: 'chou3abelak_verify' }) === 'chou3abelak_verify'
+);
+check('template id is empty when unset', getUnimtxTemplateId({}) === '');
+let templateCaptured = null;
+const templateFetch = async (url, init) => {
+  templateCaptured = { url, body: JSON.parse(init.body) };
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({
+      code: '0',
+      message: 'Success',
+      data: { messages: [{ id: 'tpl-msg-1', to: '+201205560001', parts: 1 }] },
+    }),
+  };
+};
+const templateSent = await sendUnimtxTemplateSms(
+  env,
+  {
+    to: '201205560001',
+    templateId: 'chou3abelak_verify',
+    templateData: { code: '123456' },
+  },
+  templateFetch
+);
+check('template send succeeds', templateSent.ok && templateSent.providerId === 'tpl-msg-1');
+check('template action is sms.message.send', templateCaptured.url.includes('action=sms.message.send'));
+check('template body is E.164', templateCaptured.body.to === '+201205560001');
+check('template body carries the custom template code', templateCaptured.body.templateId === 'chou3abelak_verify');
+check('template body carries only the code variable', templateCaptured.body.templateData.code === '123456');
+check('template body does not fall back to text/content', !templateCaptured.body.text && !templateCaptured.body.content);
+const missingTemplate = await sendUnimtxTemplateSms(env, { to: '201205560001', templateId: '' }, templateFetch);
+check('missing template id is refused', !missingTemplate.ok && missingTemplate.error === 'template_missing');
+
 const badChannel = await sendUnimtxOtp(env, { to: '96170123456', channel: 'whatsapp' }, fakeFetch);
 check('whatsapp channel is refused (our Cloud API is primary)', !badChannel.ok && badChannel.error === 'bad_channel');
 
@@ -124,6 +164,20 @@ check('route enforces the SMS daily cap', route.includes('UNIMTX_SMS_DAILY_MAX')
 check('route locks after 5 SMS attempts', route.includes('SMS_MAX_ATTEMPTS'));
 check('route approves SMS as decided_by sms', route.includes("decidedBy: 'sms'"));
 check(
+  'route supports a custom branded SMS template',
+  route.includes('getUnimtxTemplateId')
+    && route.includes('sendUnimtxTemplateSms')
+    && route.includes('templateData: { code: smsCode }')
+);
+check(
+  'route verifies a custom template code against our local hash',
+  route.includes("pending.code_hash === 'unimtx'") && route.includes('verificationCodeMatches')
+);
+check(
+  'route explains a code cancelled by a saved-phone change',
+  route.includes('findPhoneChangeRevocation') && route.includes("PHONE_CHANGED_ERROR")
+);
+check(
   'route re-checks ownership before an SMS approval',
   route.includes('phoneOwnedByAnotherUser') && route.includes("decidedBy: 'ownership_conflict'")
 );
@@ -161,6 +215,10 @@ check(
   sheet.includes('stepStateFor') && sheet.includes("index === 0 ? 'done'") && sheet.includes('aria-current')
 );
 check('sheet has the SMS code input', sheet.includes('smsCode') && sheet.includes('verification.verifySms(smsCode)') && sheet.includes('t.smsCodeLabel'));
+check(
+  'sheet shows the cancelled-after-phone-change reason',
+  sheet.includes("verification.smsError === 'phone_changed'") && sheet.includes('t.smsErrorPhoneChanged')
+);
 check('sheet reveals the SMS help copy after 60s', sheet.includes('60_000'));
 check('sheet shows SMS only for the SMS method', sheet.includes("active?.method === 'sms'"));
 

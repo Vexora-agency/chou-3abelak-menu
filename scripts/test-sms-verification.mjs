@@ -225,15 +225,21 @@ check(
 );
 
 const sheet = read('src/features/auth/components/PhoneVerificationSheet.tsx');
-check('sheet has Need help?', sheet.includes('t.needHelp'));
+check(
+  'sheet keeps the SMS action in the fixed footer',
+  sheet.includes('footerSecondary') && sheet.includes('t.noWhatsAppSms')
+);
 check(
   'sheet always offers the no-WhatsApp SMS button',
   sheet.includes('t.noWhatsAppSms') && sheet.includes("verification.request(lang, 'sms')")
 );
 check(
-  'no-WhatsApp option sits above the code/WhatsApp action',
-  sheet.indexOf('{!phoneTaken && smsFallback}') > -1
-    && sheet.indexOf('{!phoneTaken && smsFallback}') < sheet.indexOf("{active?.method === 'sms'")
+  'SMS action is always visible (no 60s reveal timer)',
+  !sheet.includes('60_000') && sheet.indexOf('t.noWhatsAppSms') > sheet.indexOf('footerSecondary')
+);
+check(
+  'sheet footer has safe-area bottom padding',
+  sheet.includes('pb-[max(1rem,env(safe-area-inset-bottom))]')
 );
 check(
   'verification steps mark step 1 done and step 2 current once a code exists',
@@ -244,7 +250,6 @@ check(
   'sheet shows the cancelled-after-phone-change reason',
   sheet.includes("verification.smsError === 'phone_changed'") && sheet.includes('t.smsErrorPhoneChanged')
 );
-check('sheet reveals the SMS help copy after 60s', sheet.includes('60_000'));
 check('sheet shows SMS only for the SMS method', sheet.includes("active?.method === 'sms'"));
 
 const accountsTab = read('src/features/admin/components/admin/AdminCustomersTab.tsx');

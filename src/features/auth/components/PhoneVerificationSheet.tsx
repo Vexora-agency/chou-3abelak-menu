@@ -75,7 +75,6 @@ export function PhoneVerificationSheet({
   const t = PHONE_VERIFY_STR[lang];
   const isAr = lang === 'ar';
   const [copied, setCopied] = useState(false);
-  const [showSmsPanel, setShowSmsPanel] = useState(false);
   const [smsCode, setSmsCode] = useState('');
   const panelRef = useRef<HTMLDivElement>(null);
   const autoRef = useRef<string | null>(null);
@@ -122,22 +121,15 @@ export function PhoneVerificationSheet({
   useEffect(() => {
     if (!open || verification.phase !== 'verified') return;
     onVerifiedRef.current?.();
-    const id = window.setTimeout(() => onCloseRef.current(), 1500);
+    const id = window.setTimeout(() => onCloseRef.current(), 2000);
     return () => window.clearTimeout(id);
   }, [open, verification.phase]);
 
-  // A new code/number starts with the WhatsApp path; the SMS fallback is
-  // revealed manually (Need help?) or after 60 seconds without completing.
+  // A new code/number starts with the WhatsApp path; the fixed footer keeps
+  // the SMS option visible without a timer.
   useEffect(() => {
-    setShowSmsPanel(false);
     setSmsCode('');
   }, [active?.reference, phone, open]);
-
-  useEffect(() => {
-    if (!open || verification.phase !== 'pending' || active?.method === 'sms') return;
-    const id = window.setTimeout(() => setShowSmsPanel(true), 60_000);
-    return () => window.clearTimeout(id);
-  }, [open, verification.phase, active?.reference, active?.method]);
 
   const onCopy = () => {
     if (!code) return;
@@ -149,8 +141,10 @@ export function PhoneVerificationSheet({
   };
 
   const retry = () => {
-    if (verification.phase === 'unverified') void verification.request(lang);
-    else void verification.refresh();
+    // A status read is the only thing worth repeating while checking; every
+    // other no-code state asks the server for a fresh code.
+    if (verification.phase === 'checking') void verification.refresh();
+    else void verification.request(lang);
   };
 
   const verified = verification.phase === 'verified';
@@ -193,94 +187,45 @@ export function PhoneVerificationSheet({
   const subtleCard = darkMode
     ? 'bg-[#181818] border-neutral-800'
     : 'bg-neutral-50 border-neutral-200';
-  const primaryBtn =
-    'btn-tactile inline-flex w-full min-h-[52px] items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--primary)]';
+  const footerPrimary =
+    'btn-tactile inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--primary)] disabled:opacity-55';
+  const footerSecondary =
+    'btn-tactile mt-2 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border px-4 text-[11.5px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-55';
+  const secondaryTone = darkMode
+    ? 'border-neutral-700 text-neutral-200 hover:border-[var(--primary)]/50 hover:bg-white/5'
+    : 'border-neutral-300 text-neutral-700 hover:border-[#0A0A0A] hover:bg-black/5';
+  const inputTone = darkMode
+    ? 'bg-[#101010] border-neutral-700 text-white placeholder-neutral-500'
+    : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400';
 
-  const smsFallback = active?.method === 'sms' ? null : (
-    <div className="space-y-1.5">
-      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-        <button
-          type="button"
-          onClick={() => setShowSmsPanel((visible) => !visible)}
-          className={`inline-flex min-h-[30px] items-center gap-1 text-[10.5px] font-extrabold underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
-            darkMode ? 'text-neutral-400 hover:text-neutral-200' : 'text-neutral-500 hover:text-neutral-800'
-          }`}
-        >
-          <MessageSquare size={11} aria-hidden="true" />
-          {t.needHelp}
-        </button>
-        <button
-          type="button"
-          onClick={() => void verification.request(lang, 'sms')}
-          disabled={verification.requesting}
-          className={`btn-tactile inline-flex min-h-[32px] items-center gap-1 rounded-full border px-2.5 text-[10.5px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60 ${
-            darkMode
-              ? 'border-neutral-700 text-neutral-200 hover:border-[var(--primary)]/60 hover:bg-white/5'
-              : 'border-neutral-300 text-neutral-700 hover:border-[#0A0A0A] hover:bg-black/5'
-          }`}
-        >
-          {verification.requesting ? (
-            <Loader2 size={12} className="animate-spin" aria-hidden="true" />
-          ) : (
-            <MessageSquare size={12} aria-hidden="true" />
-          )}
-          {verification.requesting ? t.sendingSms : t.noWhatsAppSms}
-        </button>
-      </div>
-      {showSmsPanel && (
-        <p className={`mx-auto max-w-[36ch] text-center text-[10px] leading-relaxed ${muted}`}>
-          {t.smsBody}
-        </p>
-      )}
-      <p className={`text-center text-[9.5px] leading-relaxed ${muted}`}>{t.smsHint}</p>
-    </div>
-  );
-
-  const smsActivePanel = active?.method === 'sms' ? (
+  const smsPanel = active?.method === 'sms' ? (
     <div className={`rounded-2xl border p-4 ${subtleCard}`}>
       <div className="flex items-center justify-between gap-3">
-        <span className={`text-[10px] font-extrabold uppercase tracking-[0.15em] ${muted}`}>
+        <span className={`text-[9px] font-extrabold uppercase tracking-[0.18em] ${muted}`}>
           {t.smsSent}
         </span>
-        <b className="text-sm font-black tabular-nums" dir="ltr">+{active.phone}</b>
+        <b className="text-[12px] font-black tabular-nums" dir="ltr">+{active.phone}</b>
       </div>
 
       <label htmlFor="sms-code" className={`mt-3 block text-[10.5px] font-bold ${muted}`}>
         {t.smsCodeLabel}
       </label>
-      <div className="mt-1 flex gap-2">
-        <input
-          id="sms-code"
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={8}
-          value={smsCode}
-          onChange={(event) => setSmsCode(event.target.value.replace(/[^0-9]/g, '').slice(0, 8))}
-          dir="ltr"
-          placeholder="••••••"
-          className={`min-w-0 flex-1 h-12 rounded-xl border text-center text-lg font-black tracking-[0.28em] tabular-nums focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${
-            darkMode
-              ? 'bg-[#101010] border-neutral-700 text-white placeholder-neutral-500'
-              : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-400'
-          }`}
-        />
-        <button
-          type="button"
-          onClick={() => void verification.verifySms(smsCode)}
-          disabled={verification.verifying || smsCode.length < 4}
-          className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[var(--primary)] px-3 text-[11px] font-extrabold text-black transition-opacity hover:brightness-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
-        >
-          {verification.verifying ? (
-            <Loader2 size={14} className="animate-spin" aria-hidden="true" />
-          ) : (
-            <Check size={14} aria-hidden="true" />
-          )}
-          {verification.verifying ? t.verifyingCode : t.verifyCode}
-        </button>
-      </div>
+      <input
+        id="sms-code"
+        type="text"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        maxLength={8}
+        value={smsCode}
+        onChange={(event) => setSmsCode(event.target.value.replace(/[^0-9]/g, '').slice(0, 8))}
+        dir="ltr"
+        placeholder="••••••"
+        aria-invalid={smsErrorMessage ? true : undefined}
+        aria-describedby={smsErrorMessage ? 'sms-code-error' : undefined}
+        className={`mt-1.5 h-12 w-full rounded-xl border text-center text-lg font-black tracking-[0.3em] tabular-nums focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${inputTone}`}
+      />
 
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <span className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${leftMs <= 0 ? 'text-red-500' : muted}`}>
           <Clock size={12} aria-hidden="true" />
           {leftMs <= 0 ? t.expired : `${t.smsExpires} ${formatMMSS(leftMs)}`}
@@ -289,7 +234,7 @@ export function PhoneVerificationSheet({
           type="button"
           onClick={() => void verification.request(lang, 'sms')}
           disabled={verification.requesting}
-          className={`inline-flex min-h-[32px] items-center gap-1 text-[10.5px] font-extrabold underline underline-offset-2 disabled:opacity-60 ${
+          className={`inline-flex min-h-[30px] items-center gap-1 text-[10.5px] font-extrabold underline underline-offset-2 disabled:opacity-60 ${
             darkMode ? 'text-neutral-300' : 'text-neutral-600'
           }`}
         >
@@ -299,11 +244,10 @@ export function PhoneVerificationSheet({
       </div>
 
       {smsErrorMessage && (
-        <p role="alert" className="mt-2 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-[10.5px] font-bold text-red-500">
+        <p id="sms-code-error" role="alert" className="mt-2 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-[10.5px] font-bold text-red-500">
           {smsErrorMessage}
         </p>
       )}
-      <p className={`mt-2 text-center text-[9.5px] leading-relaxed ${muted}`}>{t.smsHint}</p>
     </div>
   ) : null;
 
@@ -332,24 +276,31 @@ export function PhoneVerificationSheet({
             role="dialog"
             aria-modal="true"
             aria-labelledby="phone-verify-title"
+            aria-describedby={verified || phoneTaken ? undefined : 'phone-verify-subtitle'}
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 28 }}
             transition={{ type: 'spring', stiffness: 360, damping: 34 }}
-            className={`relative w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-t-3xl border md:rounded-3xl shadow-2xl ${panelClass}`}
+            className={`relative flex max-h-[92dvh] w-full max-w-[430px] flex-col overflow-hidden rounded-t-[28px] border border-t-[3px] border-t-[var(--primary)] shadow-2xl md:max-h-[min(88dvh,760px)] md:rounded-[28px] ${
+              darkMode ? 'border-neutral-800 bg-[#101010] text-white' : 'border-neutral-200 bg-white text-[#0A0A0A]'
+            }`}
             dir={isAr ? 'rtl' : 'ltr'}
           >
-            <div className={`sticky top-0 z-10 flex items-start justify-between gap-3 border-b px-5 py-4 backdrop-blur-md ${darkMode ? 'border-neutral-800 bg-[#101010]/95' : 'border-neutral-200 bg-white/95'}`}>
+            <div className="flex shrink-0 justify-center pt-2.5 md:hidden" aria-hidden="true">
+              <span className={`h-1.5 w-11 rounded-full ${darkMode ? 'bg-neutral-700' : 'bg-neutral-300'}`} />
+            </div>
+
+            <div className={`flex shrink-0 items-start justify-between gap-3 border-b px-5 pb-3 pt-2 md:pt-4 ${darkMode ? 'border-neutral-800' : 'border-neutral-200'}`}>
               <div className="flex min-w-0 items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--primary)]/15 text-[var(--primary)]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)]/15 text-[var(--primary)]">
                   <ShieldCheck size={20} aria-hidden="true" />
                 </span>
                 <div className="min-w-0">
-                  <h2 id="phone-verify-title" className="text-base font-extrabold leading-tight">
+                  <h2 id="phone-verify-title" className="text-[15px] font-extrabold leading-tight">
                     {t.title}
                   </h2>
                   {storeName ? (
-                    <p className={`mt-0.5 truncate text-[11px] font-semibold ${muted}`}>{storeName}</p>
+                    <p className={`mt-0.5 truncate text-[10.5px] font-semibold ${muted}`}>{storeName}</p>
                   ) : null}
                 </div>
               </div>
@@ -365,9 +316,9 @@ export function PhoneVerificationSheet({
               </button>
             </div>
 
-            <div className="space-y-4 px-5 py-5">
+            <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4 pt-3.5">
               {verified ? (
-                <div className="py-4 text-center" role="status" aria-live="polite">
+                <div className="py-6 text-center" role="status" aria-live="polite">
                   <motion.span
                     initial={{ scale: 0.7, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
@@ -377,150 +328,153 @@ export function PhoneVerificationSheet({
                     <BadgeCheck size={34} aria-hidden="true" />
                   </motion.span>
                   <h3 className="mt-4 text-lg font-black">{t.verifiedTitle}</h3>
-                  <p className={`mt-1 text-sm ${muted}`}>{t.verifiedBody}</p>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className={`${primaryBtn} mt-5 bg-[var(--primary)] text-black hover:brightness-95`}
-                  >
-                    {t.done}
-                  </button>
+                  <p className={`mx-auto mt-1 max-w-[30ch] text-sm leading-relaxed ${muted}`}>{t.verifiedBody}</p>
+                </div>
+              ) : phoneTaken ? (
+                <div className="space-y-4">
+                  <div className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-2.5 ${subtleCard}`}>
+                    <span className={`text-[10.5px] font-bold ${muted}`}>{t.numberLabel}</span>
+                    <b className="text-[13px] font-black tabular-nums" dir="ltr">+{phone || '—'}</b>
+                  </div>
+                  <div className={`rounded-2xl border px-4 py-5 text-center ${subtleCard}`}>
+                    <ShieldCheck size={24} className={`mx-auto ${muted}`} aria-hidden="true" />
+                    <p role="alert" className={`mt-2 text-[11px] font-bold leading-relaxed ${muted}`}>
+                      {t.errorPhoneLinked}
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <>
-                  {!phoneTaken && (
-                    <>
-                      <p className={`text-sm leading-relaxed ${muted}`}>{t.subtitle}</p>
+                <div className="space-y-3">
+                  <p id="phone-verify-subtitle" className={`text-[12.5px] leading-relaxed ${muted}`}>
+                    {active?.method === 'sms' ? t.subtitleSms : t.subtitle}
+                  </p>
 
-                      <div className="grid grid-cols-3 gap-2">
-                        {stepLabels.map((step, index) => {
-                          const state = stepStateFor(index);
-                          const stateClass = state === 'done'
-                            ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500'
-                            : state === 'current'
-                              ? 'border-[var(--primary)]/60 bg-[var(--primary)]/10 text-[var(--primary)]'
-                              : `${subtleCard} ${muted}`;
-                          return (
-                            <div
-                              key={step}
-                              aria-current={state === 'current' ? 'step' : undefined}
-                              className={`rounded-xl border px-2 py-2 text-center text-[9.5px] font-bold leading-snug ${stateClass}`}
+                  <div className="space-y-2">
+                    <div className="flex gap-1.5" aria-hidden="true">
+                      {stepLabels.map((step, index) => {
+                        const state = stepStateFor(index);
+                        return (
+                          <span
+                            key={`bar-${step}`}
+                            className={`h-1 flex-1 rounded-full ${
+                              state === 'done'
+                                ? 'bg-emerald-500'
+                                : state === 'current'
+                                  ? 'bg-[var(--primary)]'
+                                  : darkMode ? 'bg-neutral-800' : 'bg-neutral-200'
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {stepLabels.map((step, index) => {
+                        const state = stepStateFor(index);
+                        const tone = state === 'done'
+                          ? 'text-emerald-500'
+                          : state === 'current'
+                            ? 'text-[var(--primary)]'
+                            : muted;
+                        return (
+                          <div
+                            key={step}
+                            aria-current={state === 'current' ? 'step' : undefined}
+                            className="flex flex-col items-center gap-1 text-center"
+                          >
+                            <span
+                              className={`flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-black ${
+                                state === 'done'
+                                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500'
+                                  : state === 'current'
+                                    ? 'border-[var(--primary)]/60 bg-[var(--primary)]/10 text-[var(--primary)]'
+                                    : `${subtleCard} ${muted}`
+                              }`}
                             >
-                              <span className="inline-flex items-center justify-center gap-1">
-                                {state === 'done' && <Check size={10} strokeWidth={3} aria-hidden="true" />}
-                                {step}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-
-                  <div className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${subtleCard}`}>
-                    <span className={`text-[11px] font-bold ${muted}`}>{t.numberLabel}</span>
-                    <b className="text-sm font-black tabular-nums" dir="ltr">
-                      +{phone || '—'}
-                    </b>
+                              {state === 'done' ? <Check size={10} strokeWidth={3} aria-hidden="true" /> : index + 1}
+                            </span>
+                            <span className={`text-[9px] font-bold leading-tight ${tone}`}>{step}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  {!phoneTaken && destinationNumber && (
-                    <p className={`text-center text-[10.5px] font-bold ${muted}`}>
-                      {t.sendingTo}{' '}
-                      <b className="tabular-nums" dir="ltr">+{destinationNumber}</b>
-                    </p>
-                  )}
-
-                  {/* No-WhatsApp path stays high in the sheet (above the
-                      code/WhatsApp action) so it is visible without scrolling
-                      on short phones. */}
-                  {!phoneTaken && smsFallback}
+                  <div className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-2.5 ${subtleCard}`}>
+                    <span className={`text-[10.5px] font-bold ${muted}`}>{t.numberLabel}</span>
+                    <b className="text-[13px] font-black tabular-nums" dir="ltr">+{phone || '—'}</b>
+                  </div>
 
                   {active?.method === 'sms' ? (
-                    smsActivePanel
+                    smsPanel
                   ) : code && active ? (
                     <>
-                      <div className={`rounded-2xl border-2 border-dashed p-4 text-center ${
-                        darkMode ? 'border-[var(--primary)]/40 bg-[var(--primary)]/5' : 'border-[#c9a800]/50 bg-[#fffbea]'
+                      <div className={`relative overflow-hidden rounded-2xl border p-3.5 text-center ${
+                        darkMode
+                          ? 'border-[var(--primary)]/35 bg-[var(--primary)]/[0.06]'
+                          : 'border-[#c9a800]/45 bg-[#fffbea]'
                       }`}>
-                        <p className={`text-[10px] font-extrabold uppercase tracking-[0.2em] ${muted}`}>
-                          {t.codeLabel}
-                        </p>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`text-[9px] font-extrabold uppercase tracking-[0.22em] ${muted}`}>
+                            {t.codeLabel}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={onCopy}
+                            className={`inline-flex min-h-[30px] items-center gap-1 rounded-full border px-2.5 text-[9.5px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                              copied
+                                ? 'border-emerald-500/50 text-emerald-500'
+                                : darkMode
+                                  ? 'border-neutral-700 text-neutral-200 hover:bg-white/5'
+                                  : 'border-neutral-300 text-neutral-700 hover:bg-black/5'
+                            }`}
+                          >
+                            {copied ? <Check size={11} aria-hidden="true" /> : <Copy size={11} aria-hidden="true" />}
+                            {copied ? t.copied : t.copy}
+                          </button>
+                        </div>
                         <p
-                          className="mt-2 select-all text-[2.35rem] font-black leading-none tracking-[0.28em] tabular-nums"
+                          className="mt-1.5 select-all text-[2.35rem] font-black leading-none tracking-[0.28em] tabular-nums"
                           dir="ltr"
                           aria-label={code.split('').join(' ')}
                         >
                           {code}
                         </p>
-                        <button
-                          type="button"
-                          onClick={onCopy}
-                          className={`mt-3 inline-flex min-h-[40px] items-center gap-1.5 rounded-full border px-3.5 text-[11px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
-                            copied
-                              ? 'border-emerald-500/50 text-emerald-500'
-                              : darkMode
-                                ? 'border-neutral-700 text-neutral-200 hover:bg-white/5'
-                                : 'border-neutral-300 text-neutral-700 hover:bg-black/5'
-                          }`}
-                        >
-                          {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
-                          {copied ? t.copied : t.copy}
-                        </button>
-                      </div>
-
-                      <div className={`flex items-center justify-center gap-1.5 text-[11px] font-bold ${leftMs <= 0 ? 'text-red-500' : muted}`}>
-                        <Clock size={13} aria-hidden="true" />
-                        <span>{leftMs <= 0 ? t.expired : `${t.expiresIn} ${formatMMSS(leftMs)}`}</span>
-                      </div>
-
-                      {whatsappUrl ? (
-                        <a
-                          href={whatsappUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`${primaryBtn} bg-[#25D366] text-[#04240f] hover:brightness-95 focus-visible:ring-[#25D366]`}
-                        >
-                          <MessageCircle size={19} aria-hidden="true" />
-                          {t.sendWhatsApp}
-                        </a>
-                      ) : (
-                        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-center text-[11px] font-bold text-amber-600 dark:text-amber-300">
-                          {t.noWhatsApp}
+                        <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                              leftMs <= 0 ? 'border-red-500/30 bg-red-500/10 text-red-500' : `${subtleCard} ${muted}`
+                            }`}
+                          >
+                            <Clock size={11} aria-hidden="true" />
+                            {leftMs <= 0 ? t.expired : `${t.expiresIn} ${formatMMSS(leftMs)}`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => void verification.refresh()}
+                            disabled={verification.requesting}
+                            className={`inline-flex min-h-[30px] items-center gap-1 text-[10px] font-extrabold underline underline-offset-2 disabled:opacity-60 ${muted}`}
+                          >
+                            <RefreshCw size={11} aria-hidden="true" />
+                            {t.checkAgain}
+                          </button>
                         </div>
-                      )}
-                      <p className={`text-center text-[10.5px] leading-relaxed ${muted}`}>{t.sendHint}</p>
+                      </div>
 
                       {verification.phase === 'pending' && (
-                        <div className="space-y-2">
-                          <p className={`flex items-center justify-center gap-2 text-[11px] font-bold ${muted}`} role="status">
-                            <Loader2 size={13} className="animate-spin" aria-hidden="true" />
+                        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+                          <p className={`inline-flex items-center gap-1.5 text-[10.5px] font-bold ${muted}`} role="status">
+                            <Loader2 size={12} className="animate-spin" aria-hidden="true" />
                             {t.waiting}
                           </p>
-                          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-                            <button
-                              type="button"
-                              onClick={() => void verification.refresh()}
-                              disabled={verification.requesting}
-                              className={`flex min-h-[38px] items-center gap-1.5 rounded-full px-3 text-[11px] font-extrabold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60 ${
-                                darkMode ? 'text-neutral-300' : 'text-neutral-600'
-                              }`}
-                            >
-                              <RefreshCw size={12} aria-hidden="true" />
-                              {t.checkAgain}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void verification.request(lang)}
-                              disabled={verification.requesting}
-                              className={`flex min-h-[38px] items-center gap-1.5 rounded-full px-3 text-[11px] font-extrabold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60 ${
-                                darkMode ? 'text-neutral-300' : 'text-neutral-600'
-                              }`}
-                            >
-                              <RefreshCw size={12} className={verification.requesting ? 'animate-spin' : ''} aria-hidden="true" />
-                              {t.resend}
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void verification.request(lang)}
+                            disabled={verification.requesting}
+                            className={`inline-flex min-h-[30px] items-center gap-1 text-[10.5px] font-extrabold underline underline-offset-2 disabled:opacity-60 ${muted}`}
+                          >
+                            <RefreshCw size={11} className={verification.requesting ? 'animate-spin' : ''} aria-hidden="true" />
+                            {t.resend}
+                          </button>
                         </div>
                       )}
                     </>
@@ -529,55 +483,19 @@ export function PhoneVerificationSheet({
                       <Loader2 size={24} className={`mx-auto animate-spin ${muted}`} aria-hidden="true" />
                       <p className={`mt-2 text-[11px] font-bold ${muted}`}>{t.checking}</p>
                       <p className={`mt-1 text-[10px] leading-relaxed ${muted}`}>{t.checkingHint}</p>
-                      <button
-                        type="button"
-                        onClick={() => void verification.refresh()}
-                        disabled={verification.requesting}
-                        className={`mx-auto mt-2 flex min-h-[38px] items-center gap-1.5 rounded-full px-3 text-[11px] font-extrabold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60 ${
-                          darkMode ? 'text-neutral-300' : 'text-neutral-600'
-                        }`}
-                      >
-                        <RefreshCw size={12} className={verification.requesting ? 'animate-spin' : ''} aria-hidden="true" />
-                        {t.checkAgain}
-                      </button>
                     </div>
-                  ) : phoneTaken ? (
-                    // A taken number has no action to offer: proving the phone
-                    // cannot help, so no "Get my code" button and no retry.
-                    <div className={`rounded-2xl border px-4 py-5 text-center ${subtleCard}`}>
-                      <ShieldCheck size={24} className={`mx-auto ${muted}`} aria-hidden="true" />
-                      <p role="alert" className={`mt-2 text-[11px] font-bold leading-relaxed ${muted}`}>
-                        {t.errorPhoneLinked}
+                  ) : active ? (
+                    <div className={`rounded-2xl border px-4 py-4 text-center ${subtleCard}`}>
+                      <Clock size={22} className={`mx-auto ${muted}`} aria-hidden="true" />
+                      <p className={`mt-2 text-[11px] font-semibold leading-relaxed ${muted}`}>{t.waitingNoCode}</p>
+                      <p className={`mt-1.5 text-[10px] font-bold ${muted}`}>
+                        {leftMs > 0 ? `${t.expiresIn} ${formatMMSS(leftMs)}` : t.expired}
                       </p>
                     </div>
                   ) : (
-                    <div className={`rounded-2xl border px-4 py-5 text-center ${subtleCard}`}>
-                      {active ? (
-                        <>
-                          <Clock size={22} className={`mx-auto ${muted}`} aria-hidden="true" />
-                          <p className={`mt-2 text-[11px] font-semibold leading-relaxed ${muted}`}>
-                            {t.waitingNoCode}
-                          </p>
-                          <p className={`mt-2 text-[10px] font-bold ${muted}`}>
-                            {leftMs > 0 ? `${t.expiresIn} ${formatMMSS(leftMs)}` : t.expired}
-                          </p>
-                        </>
-                      ) : (
-                        <ShieldCheck size={24} className={`mx-auto ${muted}`} aria-hidden="true" />
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => void verification.request(lang)}
-                        disabled={verification.requesting || !phone}
-                        className={`${primaryBtn} mt-3 bg-[var(--primary)] text-black hover:brightness-95 disabled:opacity-60`}
-                      >
-                        {verification.requesting ? (
-                          <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-                        ) : (
-                          <MessageCircle size={16} aria-hidden="true" />
-                        )}
-                        {verification.requesting ? t.gettingCode : active ? t.resend : t.getCode}
-                      </button>
+                    <div className={`rounded-2xl border px-4 py-4 text-center ${subtleCard}`}>
+                      <ShieldCheck size={22} className={`mx-auto ${muted}`} aria-hidden="true" />
+                      <p className={`mt-2 text-[11px] font-semibold leading-relaxed ${muted}`}>{t.startHint}</p>
                     </div>
                   )}
 
@@ -590,17 +508,113 @@ export function PhoneVerificationSheet({
                       <span>{errorText}</span>
                     </p>
                   )}
+                </div>
+              )}
+            </div>
 
-                  {verification.phase === 'error' && !active && !phoneTaken && (
-                    <button
-                      type="button"
-                      onClick={retry}
-                      className={`${primaryBtn} border ${darkMode ? 'border-neutral-700 text-neutral-200 hover:bg-white/5' : 'border-neutral-300 text-neutral-700 hover:bg-black/5'}`}
+            <div className={`relative z-10 shrink-0 border-t px-5 pt-2.5 pb-[max(1rem,env(safe-area-inset-bottom))] ${darkMode ? 'border-neutral-800 bg-[#101010]' : 'border-neutral-200 bg-white'}`}>
+              {verified ? (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className={`${footerPrimary} bg-[var(--primary)] text-black hover:brightness-95`}
+                >
+                  {t.done}
+                </button>
+              ) : phoneTaken ? (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className={`${footerPrimary} border ${secondaryTone}`}
+                >
+                  {t.close}
+                </button>
+              ) : active?.method === 'sms' ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void verification.verifySms(smsCode)}
+                    disabled={verification.verifying || smsCode.length < 4}
+                    className={`${footerPrimary} bg-[var(--primary)] text-black hover:brightness-95`}
+                  >
+                    {verification.verifying ? (
+                      <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Check size={16} aria-hidden="true" />
+                    )}
+                    {verification.verifying ? t.verifyingCode : t.verifyCode}
+                  </button>
+                  <p className={`mt-1.5 text-center text-[9.5px] leading-relaxed ${muted}`}>{t.smsHint}</p>
+                </>
+              ) : code && active ? (
+                <>
+                  {whatsappUrl ? (
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`${footerPrimary} bg-[#25D366] text-[#04240f] hover:brightness-95 focus-visible:ring-[#25D366]`}
                     >
-                      <RefreshCw size={15} aria-hidden="true" />
-                      {t.getCode}
-                    </button>
+                      <MessageCircle size={19} aria-hidden="true" />
+                      {t.sendWhatsApp}
+                    </a>
+                  ) : (
+                    <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-center text-[11px] font-bold text-amber-600 dark:text-amber-300">
+                      {t.noWhatsApp}
+                    </div>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => void verification.request(lang, 'sms')}
+                    disabled={verification.requesting}
+                    className={`${footerSecondary} ${secondaryTone}`}
+                  >
+                    {verification.requesting ? (
+                      <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <MessageSquare size={14} aria-hidden="true" />
+                    )}
+                    {verification.requesting ? t.sendingSms : t.noWhatsAppSms}
+                  </button>
+                  <p className={`mt-1.5 text-center text-[9.5px] leading-relaxed ${muted}`}>
+                    {destinationNumber ? `${t.sendingTo} +${destinationNumber} · ${t.sendHint}` : t.sendHint}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={retry}
+                    disabled={verification.requesting || !phone}
+                    className={`${footerPrimary} bg-[var(--primary)] text-black hover:brightness-95`}
+                  >
+                    {verification.requesting ? (
+                      <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <RefreshCw size={16} aria-hidden="true" />
+                    )}
+                    {verification.requesting
+                      ? t.gettingCode
+                      : active
+                        ? t.resend
+                        : verification.phase === 'checking'
+                          ? t.checkAgain
+                          : t.getCode}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void verification.request(lang, 'sms')}
+                    disabled={verification.requesting}
+                    className={`${footerSecondary} ${secondaryTone}`}
+                  >
+                    {verification.requesting ? (
+                      <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <MessageSquare size={14} aria-hidden="true" />
+                    )}
+                    {verification.requesting ? t.sendingSms : t.noWhatsAppSms}
+                  </button>
+                  <p className={`mt-1.5 text-center text-[9.5px] leading-relaxed ${muted}`}>{t.smsHint}</p>
                 </>
               )}
             </div>

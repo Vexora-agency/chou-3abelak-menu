@@ -80,14 +80,16 @@ export const CartLinesList: React.FC<CartLinesListProps> = ({
            <div className="flex items-start justify-between gap-2 sm:gap-3">
             <div className="flex-1 min-w-0">
               <h4 className={`font-bold text-sm ${isAr ? 'leading-relaxed' : ''} ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-                <span dir="auto">{pickLangText(l.item.name, lang)}</span>
+                <span dir="auto" title={pickLangText(l.item.name, lang)} className="block truncate">
+                  {pickLangText(l.item.name, lang)}
+                </span>
                 {variant ? (
-                  <span className={`font-semibold tabular-nums ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>
-                    {' '}(<span dir="auto">{featureName(menu, l.variantId as string, lang)}</span>{baseUnit !== 0 && (<> · <span dir="ltr">{formatPrice(baseUnit)}</span></>)})
+                  <span className={`mt-0.5 block text-xs font-semibold tabular-nums ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>
+                    (<span dir="auto">{featureName(menu, l.variantId as string, lang)}</span>{baseUnit !== 0 && (<> · <span dir="ltr">{formatPrice(baseUnit)}</span></>)})
                   </span>
                 ) : l.addonIds.length > 0 ? (
-                  <span className={`font-semibold tabular-nums ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>
-                    {baseUnit !== 0 && (<>{' '}· <span dir="ltr">{formatPrice(baseUnit)}</span></>)}
+                  <span className={`mt-0.5 block text-xs font-semibold tabular-nums ${darkMode ? 'text-neutral-300' : 'text-neutral-600'}`}>
+                    {baseUnit !== 0 && (<span dir="ltr">{formatPrice(baseUnit)}</span>)}
                   </span>
                 ) : null}
               </h4>

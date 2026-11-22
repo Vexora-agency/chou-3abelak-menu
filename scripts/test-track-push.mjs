@@ -131,19 +131,29 @@ function fakeDb() {
 // ---- kitchen push UI wiring ----
 {
   const dashboard = readFileSync(new URL('../src/features/orders/components/OrdersDashboard.tsx', import.meta.url), 'utf8');
-  const card = readFileSync(new URL('../src/features/orders/components/KitchenPushCard.tsx', import.meta.url), 'utf8');
+  const push = readFileSync(new URL('../src/features/orders/hooks/useKitchenPush.ts', import.meta.url), 'utf8');
+  const panels = readFileSync(new URL('../src/features/orders/components/orders/OrdersDashPanels.tsx', import.meta.url), 'utf8');
   const track = readFileSync(new URL('../src/features/track/TrackView.tsx', import.meta.url), 'utf8');
   const orders = readFileSync(new URL('../src/features/orders/components/orders/OrdersDashList.tsx', import.meta.url), 'utf8');
   check(
-    'admin dashboard shows the new-order notification card',
-    dashboard.includes("import { KitchenPushCard }") && dashboard.includes('<KitchenPushCard lang={lang} />')
+    'admin dashboard hides the push setup card',
+    !dashboard.includes('KitchenPushCard')
   );
   check(
-    'an existing browser subscription is re-registered on mount',
-    card.includes('getExistingSub()')
-      && card.includes('postJson(')
-      && card.includes("'/api/admin/push-subscriptions'")
-      && card.includes('saved.ok')
+    'the bell drives push and the short off notice',
+    dashboard.includes('useKitchenPush')
+      && dashboard.includes('enablePush(false)')
+      && dashboard.includes('enablePush(true)')
+      && dashboard.includes('disablePush()')
+      && dashboard.includes('setPushNotice(t.notificationsOff)')
+      && panels.includes('data-sound-toggle="1"')
+  );
+  check(
+    'an existing browser subscription is re-registered from the bell hook',
+    push.includes('getExistingSub()')
+      && push.includes('postJson(')
+      && push.includes("'/api/admin/push-subscriptions'")
+      && push.includes('unsubscribeLocal')
   );
   check(
     'track page header carries a centered page title + store name',

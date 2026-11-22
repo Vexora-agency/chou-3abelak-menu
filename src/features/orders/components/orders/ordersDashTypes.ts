@@ -94,7 +94,12 @@ export type Period = 'today' | '7d' | 'month' | 'lastMonth';
 
 export const STR = {
   en: {
-    today: 'Today', d7: '7 days', thisMonth: 'This month', lastMonth: 'Last month', refresh: 'Refresh', live: 'Live', liveTip: 'Auto-refresh on: new orders appear here by themselves', soundOn: 'New-order sound on', soundOff: 'New-order sound off',
+    today: 'Today', d7: '7 days', thisMonth: 'This month', lastMonth: 'Last month', refresh: 'Refresh', live: 'Live', liveTip: 'Auto-refresh on: new orders appear here by themselves', soundOn: 'New-order alerts on', soundOff: 'New-order alerts off',
+    notificationsOff: "Notifications are off — you won't receive new-order alerts.",
+    notificationsBlocked: 'Notifications are blocked in browser settings — allow them to receive alerts.',
+    notificationsIos: 'On iPhone, add the admin panel to your Home Screen first to receive alerts.',
+    notificationsUnsupported: "This browser can't send background alerts.",
+    notificationsError: "Couldn't enable notifications — try again.",
     orders: 'Orders', revenue: 'Revenue', avg: 'Avg. order', pending: 'Awaiting you',
     vsPrev: 'vs previous', over: 'Orders over time', peak: 'Peak', ordersWord: 'orders',
     top: 'Top sellers', sold: 'sold',
@@ -117,7 +122,12 @@ export const STR = {
     by: (n: string) => `by ${n}`,
   },
   ar: {
-    today: 'اليوم', d7: '7 أيام', thisMonth: 'هذا الشهر', lastMonth: 'الشهر الماضي', refresh: 'تحديث', live: 'مباشر', liveTip: 'التحديث التلقائي يعمل: الطلبات الجديدة تظهر هنا وحدها', soundOn: 'صوت الطلبات الجديدة يعمل', soundOff: 'صوت الطلبات الجديدة متوقف',
+    today: 'اليوم', d7: '7 أيام', thisMonth: 'هذا الشهر', lastMonth: 'الشهر الماضي', refresh: 'تحديث', live: 'مباشر', liveTip: 'التحديث التلقائي يعمل: الطلبات الجديدة تظهر هنا وحدها', soundOn: 'تنبيهات الطلبات الجديدة مفعّلة', soundOff: 'تنبيهات الطلبات الجديدة متوقفة',
+    notificationsOff: 'الإشعارات متوقفة — مش هيوصلك تنبيه عند وصول طلب جديد.',
+    notificationsBlocked: 'الإشعارات محظورة من إعدادات المتصفح — اسمح بها لتصلك التنبيهات.',
+    notificationsIos: 'على الآيفون، أضف لوحة الإدارة للشاشة الرئيسية أولًا لتصلك التنبيهات.',
+    notificationsUnsupported: 'المتصفح ده مش بيدعم تنبيهات الخلفية.',
+    notificationsError: 'تعذّر تفعيل الإشعارات — حاول تاني.',
     orders: 'الطلبات', revenue: 'الإيرادات', avg: 'متوسط الطلب', pending: 'بانتظارك',
     vsPrev: 'عن السابقة', over: 'الطلبات عبر الوقت', peak: 'الذروة', ordersWord: 'طلب',
     top: 'الأكثر مبيعاً', sold: 'مباع',

@@ -120,8 +120,10 @@
   member's site language (`phone_verifications.lang`): success `✅ تم تأكيد رقمك
   بنجاح…` or `❌ كود خاطئ…`. The success copy is deliberately generic (no
   "continue your order") because verification can happen in Account Settings.
-  **No Telegram notification for verification** (owner asked); the manual
-  pending list in `Admin → Customers → Accounts` stays as the fallback. An
+  **No Telegram notification for verification** (owner asked). The manual
+  pending panel was **removed from `Admin → Customers → Accounts`** (owner
+  asked — verification is automatic); the admin API remains for diagnostics
+  but no UI is rendered. An
   approval lasts 365 days. Routes: `/api/account/phone-verification` (POST
   request/GET status, session + customer-CSRF, 60 s cooldown, 5/hour + 15/day
   caps), `/api/admin/phone-verifications` (pending list + approve/reject; the
@@ -149,14 +151,18 @@
   Arabic walkthrough `docs/WHATSAPP_CLOUD_API_SETUP_AR.md`. **Apply
   0037/0038/0039/0040 remotely BEFORE the reading code deploys.** Tests:
   `test:phone` + `test:whatsapp` + `test:sms`.
-- Owner kitchen push: the dashboard shows **New order alerts** again. An
-  existing browser subscription is re-registered with
-  `POST /api/admin/push-subscriptions` on mount (a stale local subscription
-  with a missing server row used to look "on" but receive nothing); new
-  devices enable from the card. Telegram stays the backup channel. Production
-  had **0 admin push subscriptions**, which is why only Telegram arrived —
-  the owner must open the dashboard and enable notifications on each phone
-  (iOS: install to Home Screen first).
+- Owner kitchen push: **no setup card** (owner asked). Alerts default to ON
+  and are controlled by the existing bell toggle in the dashboard period bar.
+  On mount an existing browser subscription is re-registered with
+  `POST /api/admin/push-subscriptions` (or subscribed when permission is
+  already granted); if permission is still `default`, the first dashboard
+  interaction asks once (the bell itself is excluded). Turning the bell OFF
+  removes both the server row and the local subscription and flashes a short
+  "Notifications are off — you won't receive new-order alerts." notice.
+  Turning it ON re-subscribes (with the permission prompt if needed).
+  Telegram stays the backup channel. Production had **0 admin push
+  subscriptions**, which is why only Telegram arrived (iOS: install to Home
+  Screen first).
 - Track page header: Menu / centered **Order tracking + store name** /
   language pill, with a hairline bottom edge; the order number is the hero
   below it. Replaced the loose store-name line that sat under the bar.

@@ -12,7 +12,7 @@
  *  - the route auto-approves with decidedBy='whatsapp', claims each message id
  *    once, and caps replies to protect the free monthly service allowance;
  *  - the customer request route has no Telegram notification;
- *  - the code TTL is 5 minutes.
+ *  - the code TTL is 2 minutes.
  */
 
 import { createHmac } from 'node:crypto';
@@ -205,7 +205,7 @@ check('webhook ignores ordinary messages without a reply', route.includes('looks
 const customerRoute = read('functions/api/account/phone-verification.js');
 check('customer route has no Telegram notification', !/telegram/i.test(customerRoute));
 check('customer route stores the site language', customerRoute.includes('lang,') && customerRoute.includes('insertVerification'));
-check('code TTL is five minutes', VERIFICATION_CODE_TTL_MS === 5 * 60 * 1000);
+check('code TTL is two minutes', VERIFICATION_CODE_TTL_MS === 2 * 60 * 1000);
 
 const sheet = read('src/features/auth/strings.ts');
 check('sheet says automatic confirmation', sheet.includes('Confirmed automatically'));

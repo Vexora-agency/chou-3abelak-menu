@@ -104,7 +104,7 @@ export function PhoneVerificationSheet({
     : null;
 
   // One automatic request per open + number. A phase that falls back to
-  // 'unverified' after a 10-minute expiry must NOT mint codes in a loop.
+  // 'unverified' after a 2-minute expiry must NOT mint codes in a loop.
   useEffect(() => {
     if (!open) {
       autoRef.current = null;
@@ -230,17 +230,19 @@ export function PhoneVerificationSheet({
           <Clock size={12} aria-hidden="true" />
           {leftMs <= 0 ? t.expired : `${t.smsExpires} ${formatMMSS(leftMs)}`}
         </span>
-        <button
-          type="button"
-          onClick={() => void verification.request(lang, 'sms')}
-          disabled={verification.requesting}
-          className={`inline-flex min-h-[30px] items-center gap-1 text-[10.5px] font-extrabold underline underline-offset-2 disabled:opacity-60 ${
-            darkMode ? 'text-neutral-300' : 'text-neutral-600'
-          }`}
-        >
-          <RefreshCw size={11} className={verification.requesting ? 'animate-spin' : ''} aria-hidden="true" />
-          {verification.requesting ? t.sendingSms : t.smsResend}
-        </button>
+        {leftMs <= 0 && (
+          <button
+            type="button"
+            onClick={() => void verification.request(lang, 'sms')}
+            disabled={verification.requesting}
+            className={`inline-flex min-h-[30px] items-center gap-1 text-[10.5px] font-extrabold underline underline-offset-2 disabled:opacity-60 ${
+              darkMode ? 'text-neutral-300' : 'text-neutral-600'
+            }`}
+          >
+            <RefreshCw size={11} className={verification.requesting ? 'animate-spin' : ''} aria-hidden="true" />
+            {verification.requesting ? t.sendingSms : t.smsResend}
+          </button>
+        )}
       </div>
 
       {smsErrorMessage && (
@@ -466,15 +468,17 @@ export function PhoneVerificationSheet({
                             <Loader2 size={12} className="animate-spin" aria-hidden="true" />
                             {t.waiting}
                           </p>
-                          <button
-                            type="button"
-                            onClick={() => void verification.request(lang)}
-                            disabled={verification.requesting}
-                            className={`inline-flex min-h-[30px] items-center gap-1 text-[10.5px] font-extrabold underline underline-offset-2 disabled:opacity-60 ${muted}`}
-                          >
-                            <RefreshCw size={11} className={verification.requesting ? 'animate-spin' : ''} aria-hidden="true" />
-                            {t.resend}
-                          </button>
+                          {leftMs <= 0 && (
+                            <button
+                              type="button"
+                              onClick={() => void verification.request(lang)}
+                              disabled={verification.requesting}
+                              className={`inline-flex min-h-[30px] items-center gap-1 text-[10.5px] font-extrabold underline underline-offset-2 disabled:opacity-60 ${muted}`}
+                            >
+                              <RefreshCw size={11} className={verification.requesting ? 'animate-spin' : ''} aria-hidden="true" />
+                              {t.resend}
+                            </button>
+                          )}
                         </div>
                       )}
                     </>
@@ -582,25 +586,27 @@ export function PhoneVerificationSheet({
                 </>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    onClick={retry}
-                    disabled={verification.requesting || !phone}
-                    className={`${footerPrimary} bg-[var(--primary)] text-black hover:brightness-95`}
-                  >
-                    {verification.requesting ? (
-                      <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-                    ) : (
-                      <RefreshCw size={16} aria-hidden="true" />
-                    )}
-                    {verification.requesting
-                      ? t.gettingCode
-                      : active
-                        ? t.resend
-                        : verification.phase === 'checking'
-                          ? t.checkAgain
-                          : t.getCode}
-                  </button>
+                  {(!active || leftMs <= 0) && (
+                    <button
+                      type="button"
+                      onClick={active ? () => void verification.request(lang) : retry}
+                      disabled={verification.requesting || !phone}
+                      className={`${footerPrimary} bg-[var(--primary)] text-black hover:brightness-95`}
+                    >
+                      {verification.requesting ? (
+                        <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                      ) : (
+                        <RefreshCw size={16} aria-hidden="true" />
+                      )}
+                      {verification.requesting
+                        ? t.gettingCode
+                        : active
+                          ? t.resend
+                          : verification.phase === 'checking'
+                            ? t.checkAgain
+                            : t.getCode}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => void verification.request(lang, 'sms')}

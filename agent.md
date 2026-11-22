@@ -81,8 +81,9 @@
   dish-specific label. Hearts ride all five menu layouts, the featured
   carousel and the item sheet (a bare heart in the sticky header beside Close,
   with the item title compact and the price under it). The `list` layout is a
-  compact photo card (single centered column) with a glassy heart and an
-  icon-only gold add/stepper in a narrow action column. The admin item editor
+  compact photo card: one column on phones, two on tablets, three on wide
+  desktop screens, with a glassy heart and an icon-only gold add/stepper in a
+  narrow action column. The admin item editor
   shows the photo field for list items, and every category style now has a
   one-line hint (no long instructions). Round categories use a square crop with
   a circular guide/preview; the stored image stays square and the card clips it.
@@ -90,7 +91,8 @@
   **admin-only** color (`FeatureGroup.color` / `FeatureDef.color`, one clean
   8-color General palette, swatches without names). Every section — including
   heat — has the same optional picker; every feature row has its own. The
-  customer sees one unified brand-gold option pill; admin colors never reach
+  customer sees white option pills at rest and solid brand gold when selected;
+  admin colors never reach
   the storefront, and customer heat stays red. Selected add-ons also show
   beside the dish name as compact `AddonPill`s (same shape as `HeatPill`,
   unified gold). Guarded by `test:colors`; see `docs/FEATURE_COLORS.md`.
@@ -161,6 +163,9 @@
   `CartLinesList` plays a gold ring/tint on it. The qty chip, cart-bar badge
   and +→stepper transitions each pop once via keyed remounts. CSS only
   (opacity/transform, no library, no infinite loops, no retained fill layers).
+  Cart add-on chips are HeatPill-sized and share one wrapping row with the
+  heat pill; the qty stepper is 36px on phones and 44px from sm up (expanded
+  hit areas), so long item text keeps room and never stacks awkwardly.
   Guarded by `test:cart`.
 - Phone country gate: `src/utils/phoneCountry.ts` derives the restaurant dial
   code from the admin WhatsApp picker (fallback: restaurant phone). Cart and

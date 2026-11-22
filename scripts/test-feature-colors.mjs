@@ -87,8 +87,8 @@ check(
     && !colors.includes('Food colors') && !colors.includes('vegetables')
 );
 check(
-  'customer chips share one unified brand treatment',
-  has(colors, 'UNIFIED_FEATURE_CHIP_ACTIVE', 'UNIFIED_FEATURE_CHIP_IDLE', 'bg-[var(--primary)] text-[#0A0A0A]', 'bg-[var(--primary)]/10')
+  'customer option pills: gold selected, plain white at rest',
+  has(colors, 'UNIFIED_FEATURE_CHIP_ACTIVE', 'UNIFIED_FEATURE_CHIP_IDLE', 'bg-[var(--primary)] text-[#0A0A0A]', 'bg-white text-neutral-800')
 );
 const clientPricing = read('src/utils/pricing-menu.ts');
 check(
@@ -145,7 +145,7 @@ check(
 const variant = read('src/features/menu/components/item-view/VariantPicker.tsx');
 const addon = read('src/features/menu/components/item-view/AddonPicker.tsx');
 check(
-  'customer size/add-on pills use the unified gold treatment',
+  'customer size/add-on pills use gold only when selected',
   has(variant, 'UNIFIED_FEATURE_CHIP_ACTIVE', 'UNIFIED_FEATURE_CHIP_IDLE')
     && has(addon, 'UNIFIED_FEATURE_CHIP_ACTIVE', 'UNIFIED_FEATURE_CHIP_IDLE')
 );

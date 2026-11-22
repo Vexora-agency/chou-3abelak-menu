@@ -501,30 +501,31 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   />
                 )}
 
-                {/* Quantity stepper */}
-                <div className="flex items-center justify-between gap-4">
+                {/* Quantity stepper — compact on phones so the label and
+                    controls stay on one tidy line instead of stacking. */}
+                <div className="flex items-center justify-between gap-3">
                   <span className={`font-bold text-sm ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
                     {isAr ? 'الكمية:' : 'Quantity:'}
                   </span>
-                  <div className="flex items-center gap-1.5 bg-[var(--primary)] text-[#0A0A0A] rounded-full p-1 shadow-sm">
+                  <div className="flex items-center gap-1 sm:gap-1.5 bg-[var(--primary)] text-[#0A0A0A] rounded-full p-1 sm:p-1.5 shadow-sm">
                     <button
                       type="button"
                       onClick={() => stepQty(-1)}
-                      className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-black/10 hover:bg-black/20 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] flex items-center justify-center font-bold text-[#0A0A0A]"
+                      className="relative w-9 h-9 min-w-[36px] min-h-[36px] sm:w-11 sm:h-11 sm:min-w-[44px] sm:min-h-[44px] rounded-full bg-black/10 hover:bg-black/20 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] flex items-center justify-center font-bold text-[#0A0A0A] after:absolute after:-inset-1 after:content-['']"
                       aria-label={isAr ? 'إنقاص' : 'Decrease'}
                     >
-                      <Minus size={18} className="stroke-[3]" />
+                      <Minus size={16} className="stroke-[3] sm:h-[18px] sm:w-[18px]" />
                     </button>
-                    <span className="font-black text-base px-2 min-w-[28px] text-center text-[#0A0A0A] tabular-nums" dir="ltr">
+                    <span className="font-black text-sm sm:text-base px-1 sm:px-2 min-w-[24px] sm:min-w-[28px] text-center text-[#0A0A0A] tabular-nums" dir="ltr">
                       {qty}
                     </span>
                     <button
                       type="button"
                       onClick={() => stepQty(1)}
-                      className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-black/10 hover:bg-black/20 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] flex items-center justify-center font-bold text-[#0A0A0A]"
+                      className="relative w-9 h-9 min-w-[36px] min-h-[36px] sm:w-11 sm:h-11 sm:min-w-[44px] sm:min-h-[44px] rounded-full bg-black/10 hover:bg-black/20 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A0A0A] flex items-center justify-center font-bold text-[#0A0A0A] after:absolute after:-inset-1 after:content-['']"
                       aria-label={isAr ? 'زيادة' : 'Increase'}
                     >
-                      <Plus size={18} className="stroke-[3]" />
+                      <Plus size={16} className="stroke-[3] sm:h-[18px] sm:w-[18px]" />
                     </button>
                   </div>
                 </div>

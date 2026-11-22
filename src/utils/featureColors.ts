@@ -93,10 +93,10 @@ export function isFeatureColorId(value: unknown): value is FeatureColorId {
   return typeof value === 'string' && FEATURE_COLOR_BY_ID.has(value);
 }
 
-/** Unified customer option pill: active = solid brand gold. */
+/** Customer option pill: active = solid brand gold. */
 export const UNIFIED_FEATURE_CHIP_ACTIVE =
   'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)] shadow-sm';
 
-/** Unified customer option pill: resting = soft brand-gold tint. */
+/** Customer option pill: resting = plain white (light) / neutral (dark). */
 export const UNIFIED_FEATURE_CHIP_IDLE =
-  'bg-[var(--primary)]/10 text-[#8a6d00] border-[var(--primary)]/30 hover:border-[var(--primary)]/60 hover:bg-[var(--primary)]/15 dark:bg-[var(--primary)]/10 dark:text-[var(--primary)] dark:border-[var(--primary)]/30 dark:hover:border-[var(--primary)]/60';
+  'bg-white text-neutral-800 border-neutral-300 hover:border-[#0A0A0A] hover:bg-neutral-50 dark:bg-transparent dark:text-neutral-200 dark:border-neutral-700 dark:hover:border-[var(--primary)] dark:hover:bg-white/5';

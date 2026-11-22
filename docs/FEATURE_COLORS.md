@@ -19,9 +19,10 @@ stays on one unified brand color.
   own picker and a small color dot beside its usage count, so an Add-ons
   section can color cheese, vegetables, etc. independently.
 - **Admin only.** The customer item sheet does **not** read section or option
-  colors: sizes and add-ons use one unified brand-gold pill, and the heat
+  colors: sizes and add-ons use white/neutral option pills at rest and the
+  single brand gold when selected, and the heat
   section stays red (the `HeatPill` style). Selected add-ons also appear beside
-  the dish name as compact unified-gold pills (`AddonPill`, same shape as
+  the dish name as compact brand-gold pills (`AddonPill`, same shape as
   `HeatPill`) — never in an admin color.
 - **Heat is not locked in admin.** The heat section gets the same optional
   color picker as every other section; its admin color is purely
@@ -47,7 +48,7 @@ stays on one unified brand color.
   colored header.
 - `src/features/admin/components/features/FeatureRow.tsx` — per-option picker.
 - `src/features/menu/components/item-view/VariantPicker.tsx`,
-  `AddonPicker.tsx` — unified gold option pills.
+  `AddonPicker.tsx` — white/neutral option pills at rest, solid gold selected.
 - `src/components/AddonPill.tsx`, `src/features/menu/components/ItemDetailsModal.tsx`
   — selected add-ons appear beside the dish name as compact unified-gold
   pills (same shape as `HeatPill`; heat stays red).

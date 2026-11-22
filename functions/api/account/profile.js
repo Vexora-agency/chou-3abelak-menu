@@ -118,7 +118,13 @@ export async function onRequest(context) {
       return jsonNoStore({ error: PHONE_LINKED_ERROR, message: PHONE_LINKED_MESSAGE }, 409);
     }
     if (phoneChanged) {
-      await revokeUserVerifications(db, auth.user.id, nowIso, 'profile_phone_changed');
+      await revokeUserVerifications(
+        db,
+        auth.user.id,
+        nowIso,
+        'profile_phone_changed',
+        phone.phone
+      );
     }
 
     const saved = await upsertCustomerProfile(

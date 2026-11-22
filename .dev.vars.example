@@ -56,3 +56,13 @@ AUTH_REQUIRE_EMAIL_VERIFICATION=0
 # Phase 4 only (leave blank until Google OAuth is configured):
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+
+# --- SMS fallback (UniMTX) ---
+UNIMTX_ACCESS_KEY_ID=
+UNIMTX_ACCESS_KEY_SECRET=
+UNIMTX_SMS_DAILY_MAX=100
+# Optional pre-approved template custom code (e.g. chou3abelak_verify).
+# Leave blank to use UniMTX's built-in OTP text.
+UNIMTX_SMS_TEMPLATE_ID=
+# Optional pre-registered sender name, only if the route requires one.
+UNIMTX_SMS_SIGNATURE=

@@ -178,7 +178,9 @@ export function PhoneVerificationSheet({
       ? t.smsErrorTooMany
       : verification.smsError === 'no_pending' || verification.smsError === 'expired'
         ? t.smsErrorExpired
-        : verification.smsError === 'sms_unavailable'
+        : verification.smsError === 'phone_changed'
+          ? t.smsErrorPhoneChanged
+          : verification.smsError === 'sms_unavailable'
           ? t.smsErrorUnavailable
           : verification.smsError === 'sms_verify_failed'
             ? t.smsErrorFailed

@@ -305,6 +305,8 @@ export const PHONE_VERIFY_STR = {
     smsErrorInvalid: 'The code is incorrect. Try again.',
     smsErrorTooMany: 'Too many attempts. Request a new code.',
     smsErrorExpired: 'The code expired. Request a new SMS.',
+    smsErrorPhoneChanged:
+      'Your saved number changed, so this code was cancelled. Request a new SMS for the current number.',
     smsErrorUnavailable: 'SMS is unavailable right now. Use WhatsApp or contact us.',
     smsErrorFailed: 'Could not send the SMS. Check the number or use WhatsApp.',
     smsCooldown: 'Please wait a moment before requesting another SMS.',
@@ -369,6 +371,8 @@ export const PHONE_VERIFY_STR = {
     smsErrorInvalid: 'الكود غلط. حاول تاني.',
     smsErrorTooMany: 'محاولات كثيرة. اطلب كود جديد.',
     smsErrorExpired: 'انتهى الكود. اطلب SMS جديد.',
+    smsErrorPhoneChanged:
+      'تم تغيير رقم حسابك، لذا أُلغي هذا الكود. اطلب كود SMS جديدًا للرقم الحالي.',
     smsErrorUnavailable: 'SMS غير متاح حاليًا. استخدم واتساب أو تواصل معنا.',
     smsErrorFailed: 'تعذّر إرسال SMS. تحقق من الرقم أو استخدم واتساب.',
     smsCooldown: 'انتظر لحظة قبل طلب SMS جديد.',

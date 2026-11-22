@@ -30,6 +30,7 @@ import {
   VERIFICATION_COOLDOWN_SEC,
   VERIFICATION_DAILY_MAX,
   VERIFICATION_HOURLY_MAX,
+  verificationCodeMatches,
   verificationReference,
   verificationValidUntil,
 } from '../../_shared/phone-verification.js';
@@ -42,17 +43,33 @@ import {
   expireStalePending,
   expireVerificationById,
   findPendingVerification,
+  findPhoneChangeRevocation,
   findValidVerification,
   incrementVerificationAttempts,
   insertVerification,
   phoneOwnedByAnotherUser,
 } from '../../_shared/repositories/phone-verifications.repo.js';
-import { isUnimtxConfigured, sendUnimtxOtp, verifyUnimtxOtp } from '../../_shared/unimtx.js';
+import {
+  getUnimtxTemplateId,
+  isUnimtxConfigured,
+  sendUnimtxOtp,
+  sendUnimtxTemplateSms,
+  verifyUnimtxOtp,
+} from '../../_shared/unimtx.js';
 
 const SMS_MAX_ATTEMPTS = 5;
+const PHONE_CHANGED_ERROR = 'phone_changed';
+const PHONE_CHANGED_MESSAGE = {
+  en: 'Your saved number changed, so this code was cancelled. Request a new SMS for the current number.',
+  ar: 'تم تغيير رقم حسابك، لذا أُلغي هذا الكود. اطلب كود SMS جديدًا للرقم الحالي.',
+};
 
 function phoneLinkedResponse() {
   return jsonNoStore({ error: PHONE_LINKED_ERROR, message: PHONE_LINKED_MESSAGE }, 409);
+}
+
+function phoneChangedResponse() {
+  return jsonNoStore({ error: PHONE_CHANGED_ERROR, message: PHONE_CHANGED_MESSAGE }, 409);
 }
 
 function publicPending(row) {
@@ -101,22 +118,44 @@ async function verifySmsCode(db, env, userId, phone, rawCode) {
   const nowIso = new Date(nowMs).toISOString();
   const pending = await findPendingVerification(db, userId, phone, nowIso);
   if (!pending || pending.method !== 'sms') {
+    // A pending SMS is retired when the member changes their saved phone.
+    // Explain that instead of the generic "expired" message.
+    const revoked = await findPhoneChangeRevocation(
+      db,
+      userId,
+      phone,
+      new Date(nowMs - 60 * 60 * 1000).toISOString()
+    );
+    if (revoked) return { status: 409, body: { error: PHONE_CHANGED_ERROR, message: PHONE_CHANGED_MESSAGE } };
     return { status: 409, body: { error: 'no_pending' } };
   }
   if (Number(pending.attempts) >= SMS_MAX_ATTEMPTS) {
     return { status: 429, body: { error: 'too_many_attempts' } };
   }
 
-  const result = await verifyUnimtxOtp(env, {
-    to: phone,
-    code,
-    intent: 'phone_verification',
-    ttl: 300,
-  });
-  if (!result.ok) {
-    return { status: 502, body: { error: 'sms_verify_failed' } };
+  let valid = false;
+  if (pending.code_hash === 'unimtx') {
+    // Built-in UniMTX OTP: the provider stores and verifies the code.
+    const result = await verifyUnimtxOtp(env, {
+      to: phone,
+      code,
+      intent: 'phone_verification',
+      ttl: 300,
+    });
+    if (!result.ok) {
+      return { status: 502, body: { error: 'sms_verify_failed' } };
+    }
+    valid = result.valid;
+  } else {
+    // Custom template: the code is ours and only its keyed hash is stored.
+    const secret = getVerificationSecret(env);
+    if (!secret) {
+      return { status: 503, body: { error: 'sms_unavailable' } };
+    }
+    valid = await verificationCodeMatches(secret, pending, code);
   }
-  if (!result.valid) {
+
+  if (!valid) {
     await incrementVerificationAttempts(db, pending.id);
     return { status: 400, body: { error: 'code_invalid' } };
   }
@@ -332,30 +371,67 @@ export async function onRequest(context) {
         }, 429);
       }
 
-      const sent = await sendUnimtxOtp(env, {
-        to: phone,
-        channel: 'sms',
-        intent: 'phone_verification',
-        ttl: 300,
-        digits: 6,
-      });
-      if (!sent.ok) {
-        return jsonNoStore({
-          error: 'sms_failed',
-          message: {
-            en: 'Could not send the SMS code. Check the number or use WhatsApp.',
-            ar: 'تعذّر إرسال كود SMS. تحقق من الرقم أو استخدم واتساب.',
-          },
-        }, 502);
+      const templateId = getUnimtxTemplateId(env);
+      let codeHash = 'unimtx';
+      let providerId = null;
+
+      if (templateId) {
+        // Custom, pre-approved template: WE generate the code, store only its
+        // keyed hash, and pass it to the template as {code}. The member's SMS
+        // then carries the restaurant's own wording instead of the provider's
+        // built-in OTP copy.
+        const templateSecret = getVerificationSecret(env);
+        if (!templateSecret) {
+          return jsonNoStore({ error: 'unavailable' }, 503);
+        }
+        const smsCode = generateVerificationCode();
+        codeHash = await hashVerificationCode(templateSecret, { id, phone, code: smsCode });
+        const signature = typeof env.UNIMTX_SMS_SIGNATURE === 'string'
+          ? env.UNIMTX_SMS_SIGNATURE.trim()
+          : '';
+        const sent = await sendUnimtxTemplateSms(env, {
+          to: phone,
+          templateId,
+          templateData: { code: smsCode },
+          signature,
+        });
+        if (!sent.ok) {
+          return jsonNoStore({
+            error: 'sms_failed',
+            message: {
+              en: 'Could not send the SMS code. Check the number or use WhatsApp.',
+              ar: 'تعذّر إرسال كود SMS. تحقق من الرقم أو استخدم واتساب.',
+            },
+          }, 502);
+        }
+        providerId = sent.providerId || null;
+      } else {
+        // Built-in UniMTX OTP text (kept as the zero-config fallback).
+        const sent = await sendUnimtxOtp(env, {
+          to: phone,
+          channel: 'sms',
+          intent: 'phone_verification',
+          ttl: 300,
+          digits: 6,
+        });
+        if (!sent.ok) {
+          return jsonNoStore({
+            error: 'sms_failed',
+            message: {
+              en: 'Could not send the SMS code. Check the number or use WhatsApp.',
+              ar: 'تعذّر إرسال كود SMS. تحقق من الرقم أو استخدم واتساب.',
+            },
+          }, 502);
+        }
+        providerId = sent.data && typeof sent.data.id === 'string' ? sent.data.id : null;
       }
 
-      const providerId = sent.data && typeof sent.data.id === 'string' ? sent.data.id : null;
       const inserted = await insertVerification(db, {
         id,
         userId: auth.user.id,
         phone,
         reference,
-        codeHash: 'unimtx',
+        codeHash,
         method: 'sms',
         providerId,
         lang,

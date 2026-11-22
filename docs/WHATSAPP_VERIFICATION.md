@@ -43,9 +43,12 @@ For the full Arabic Meta/Cloudflare walkthrough, see
 
 A member without WhatsApp can tap **Need help?** under the WhatsApp button (the
 panel also reveals itself after 60 seconds) and choose **Send SMS code**. The
-server sends the OTP through **UniMTX** (`otp.send`, SMS channel), the member
-types the 6-digit code on the sheet, and the server verifies it with
-`otp.verify` (`decided_by='sms'`). No owner call is involved.
+server sends the code through **UniMTX**. With `UNIMTX_SMS_TEMPLATE_ID` set, the
+server generates the code and sends it through a pre-approved branded template
+(`sms.message.send`); otherwise it uses UniMTX's built-in `otp.send`. The member
+types the 6-digit code on the sheet; the server checks its stored keyed hash in
+template mode or calls `otp.verify` in built-in mode (`decided_by='sms'`). No
+owner call is involved.
 
 There is no reliable official way to detect WhatsApp before sending; the
 fallback is behaviour-based so members who have WhatsApp never trigger an SMS

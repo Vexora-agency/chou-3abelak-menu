@@ -198,22 +198,58 @@ export async function phoneOwnedByAnotherUser(db, phone, userId, nowMs = Date.no
  * Drop every live approval/pending row for a member. Called when the saved
  * profile phone changes: moving away from a number — even temporarily — means
  * the old proof is gone, and moving back requires a fresh verification.
+ *
+ * `exceptPendingPhone` keeps a pending request for the number currently being
+ * saved. That is the active re-verification attempt (for example: request the
+ * SMS for X, then save X while the code is still in flight); old approvals for
+ * X are still revoked, so a previous proof never survives the change.
  */
-export async function revokeUserVerifications(db, userId, nowIso, reason = 'profile_phone_changed') {
+export async function revokeUserVerifications(
+  db,
+  userId,
+  nowIso,
+  reason = 'profile_phone_changed',
+  exceptPendingPhone = null
+) {
   if (!db || !userId) return 0;
   const stamp = typeof nowIso === 'string' ? nowIso : new Date().toISOString();
   const why = typeof reason === 'string' && reason ? reason.slice(0, 40) : 'profile_phone_changed';
+  const keepPendingPhone = phoneOrNull(exceptPendingPhone) || null;
   const res = await db
     .prepare(
       `UPDATE phone_verifications
           SET status = 'revoked',
               decided_at = CASE WHEN status = 'pending' THEN ?1 ELSE decided_at END,
               decided_by = ?2
-        WHERE user_id = ?3 AND status IN ('pending', 'approved')`
+        WHERE user_id = ?3 AND (
+          status = 'approved'
+          OR (status = 'pending' AND (?4 IS NULL OR phone <> ?4))
+        )`
     )
-    .bind(stamp, why, userId)
+    .bind(stamp, why, userId, keepPendingPhone)
     .run();
   return Number(res?.meta?.changes) || 0;
+}
+
+/**
+ * Most recent proof revoked because the member changed their saved phone.
+ * Used to explain "this code was cancelled" instead of a generic expiry when
+ * a pending SMS no longer exists.
+ */
+export async function findPhoneChangeRevocation(db, userId, phone, sinceIso) {
+  const digits = phoneOrNull(phone);
+  if (!db || !userId || !digits || typeof sinceIso !== 'string' || !sinceIso) return null;
+  return db
+    .prepare(
+      `SELECT id, user_id, phone, status, decided_at, decided_by
+         FROM phone_verifications
+        WHERE user_id = ?1 AND phone = ?2 AND status = 'revoked'
+          AND decided_by = 'profile_phone_changed' AND decided_at >= ?3
+        ORDER BY decided_at DESC
+        LIMIT 1`
+    )
+    .bind(userId, digits, sinceIso)
+    .first();
 }
 
 /** Latest approved row that is still inside its 365-day validity window. */

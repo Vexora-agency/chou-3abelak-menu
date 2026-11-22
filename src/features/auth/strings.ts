@@ -329,7 +329,9 @@ export const PHONE_VERIFY_STR = {
     viewCode: 'View code',
     verifiedUntil: (date: string) => `Verified until ${date}`,
     stepSend: '1. We create a code',
-    stepWhatsApp: '2. You send it on WhatsApp',
+    stepSendSms: '1. We send an SMS code',
+    stepWhatsApp: '2. Send it on WhatsApp',
+    stepSms: '2. Enter the SMS code',
     stepApprove: '3. Confirmed automatically',
   },
   ar: {
@@ -388,7 +390,9 @@ export const PHONE_VERIFY_STR = {
     viewCode: 'عرض الرمز',
     verifiedUntil: (date: string) => `مؤكد حتى ${date}`,
     stepSend: '١. ننشئ رمزًا',
-    stepWhatsApp: '٢. ترسله عبر واتساب',
+    stepSendSms: '١. نرسل كود SMS',
+    stepWhatsApp: '٢. أرسله عبر واتساب',
+    stepSms: '٢. اكتب كود SMS',
     stepApprove: '٣. يتم التأكيد تلقائيًا',
   },
 } as const;

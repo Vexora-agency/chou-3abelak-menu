@@ -132,9 +132,24 @@ const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, cur
               <div className="space-y-1.5">
                 <p className={`text-[11px] font-bold text-neutral-500 ${isAr ? '' : 'uppercase tracking-wide'}`}>{t.itemsLabel}</p>
                 {o.items.map((it, idx) => (
-                  <div key={`${it.id}-${idx}`} className="flex justify-between gap-3">
-                    <span className="min-w-0 flex-1 break-words"><bdi dir="ltr" className="tabular-nums">{it.qty}</bdi><span dir="ltr">×</span> {typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, isAr ? 'ar' : 'en')} ` : ''}<span dir="auto">{itemBaseTitle(it, isAr ? 'ar' : 'en')}</span>{lineIsSpicy(it) && <HeatPill featureId={lineSpicyId(it) ?? undefined} lang={isAr ? 'ar' : 'en'} size="sm" className="ms-1.5 me-0.5 align-middle" />}<OrderAddonPills it={it} menu={menu} lang={isAr ? 'ar' : 'en'} /></span>
-                    <span className="text-neutral-400 tabular-nums whitespace-nowrap shrink-0"><bdi dir="ltr" className="tabular-nums">{fmt(it.qty)}</bdi><span dir="ltr"> × </span><bdi dir="ltr" className="tabular-nums">{fmt(it.unitPrice)}</bdi><span dir="ltr"> = </span><bdi dir="ltr" className="tabular-nums">{fmt(it.qty * it.unitPrice)}</bdi></span>
+                  <div key={`${it.id}-${idx}`} className="py-1.5">
+                    <span className="block min-w-0 break-words">
+                      <bdi dir="ltr" className="tabular-nums">{it.qty}</bdi>
+                      <span dir="ltr">×</span>{' '}
+                      {typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, isAr ? 'ar' : 'en')} ` : ''}
+                      <span dir="auto">{itemBaseTitle(it, isAr ? 'ar' : 'en')}</span>
+                    </span>
+                    {(lineIsSpicy(it) || (Array.isArray(it.addonNames) && it.addonNames.length > 0)) && (
+                      <span className="mt-1 flex flex-wrap items-center gap-1">
+                        {lineIsSpicy(it) && (
+                          <HeatPill featureId={lineSpicyId(it) ?? undefined} lang={isAr ? 'ar' : 'en'} size="sm" />
+                        )}
+                        <OrderAddonPills it={it} menu={menu} lang={isAr ? 'ar' : 'en'} />
+                      </span>
+                    )}
+                    <span className="mt-1 block text-[11px] text-neutral-500 tabular-nums" dir="ltr">
+                      {fmt(it.qty)} × {fmt(it.unitPrice)} = {fmt(it.qty * it.unitPrice)}
+                    </span>
                   </div>
                 ))}
                 <div className="pt-1.5 border-t border-neutral-800 space-y-1 text-xs text-neutral-400">

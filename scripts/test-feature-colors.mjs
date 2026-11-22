@@ -148,9 +148,9 @@ const ordersDash = read('src/features/orders/components/orders/OrdersDashList.ts
 const ordersDashboard = read('src/features/orders/components/OrdersDashboard.tsx');
 const orderTypes = read('src/features/orders/components/orders/ordersDashTypes.ts');
 check(
-  'admin order lines show each add-on as a colored dot pill',
+  'admin order add-ons share one flex row with the heat pill',
   has(orderPills, 'featureColorDef', 'adminPill', 'isSpicyAddon', 'rounded-full')
-    && has(ordersDash, '<OrderAddonPills', 'menu={menu}')
+    && has(ordersDash, '<OrderAddonPills', 'menu={menu}', 'mt-1 flex flex-wrap items-center gap-1', '<HeatPill')
     && has(ordersDashboard, 'menu', 'menu={menu}')
     && has(orderTypes, 'menu: MenuData')
 );

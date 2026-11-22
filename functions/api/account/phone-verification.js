@@ -175,7 +175,6 @@ export async function onRequest(context) {
     try {
       const nowMs = Date.now();
       const nowIso = new Date(nowMs).toISOString();
-      await expireStaleApproved(db, nowMs, phone);
       const approved = await findValidVerification(db, auth.user.id, phone, nowMs);
       if (approved) {
         return jsonNoStore({

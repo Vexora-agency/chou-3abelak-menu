@@ -133,6 +133,7 @@ function fakeDb() {
   const dashboard = readFileSync(new URL('../src/features/orders/components/OrdersDashboard.tsx', import.meta.url), 'utf8');
   const card = readFileSync(new URL('../src/features/orders/components/KitchenPushCard.tsx', import.meta.url), 'utf8');
   const track = readFileSync(new URL('../src/features/track/TrackView.tsx', import.meta.url), 'utf8');
+  const orders = readFileSync(new URL('../src/features/orders/components/orders/OrdersDashList.tsx', import.meta.url), 'utf8');
   check(
     'admin dashboard shows the new-order notification card',
     dashboard.includes("import { KitchenPushCard }") && dashboard.includes('<KitchenPushCard lang={lang} />')
@@ -147,6 +148,12 @@ function fakeDb() {
   check(
     'track page header carries a centered page title + store name',
     track.includes("'Order tracking'") && track.includes("'تتبع الطلب'") && track.includes('border-b border-white/5')
+  );
+  const notesAt = orders.indexOf('{o.notes &&');
+  const totalsAt = orders.indexOf('pt-1.5 border-t border-neutral-800 space-y-1 text-xs text-neutral-400');
+  check(
+    'order notes render with the items, above the money block',
+    notesAt > -1 && totalsAt > -1 && notesAt < totalsAt && orders.includes('StickyNote') && orders.includes('role="note"')
   );
 }
 

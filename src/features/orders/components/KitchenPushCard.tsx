@@ -41,7 +41,9 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
     } catch {}
   };
 
-  // Bound already (previous visit)? Show on — tapping re-binds anyway.
+  // Bound already (previous visit)? Re-register it with the server on mount:
+  // a local subscription with a missing server row would otherwise show "on"
+  // and receive nothing (DB reset / session re-login / origin change).
   useEffect(() => {
     let stop = false;
     (async () => {
@@ -49,12 +51,26 @@ export const KitchenPushCard: React.FC<KitchenPushCardProps> = ({ lang }) => {
       try {
         if (!isPushCapable()) return;
         const sub = await getExistingSub();
-        if (!stop && sub) setState('on');
+        if (stop || !sub) return;
+        const saved = await postJson(
+          '/api/admin/push-subscriptions',
+          { ...sub, label: deviceLabel() },
+          true
+        );
+        if (stop) return;
+        if (saved.ok) {
+          setState('on');
+          void refreshCount();
+        } else {
+          // Keep the button available; the next tap shows the exact reason.
+          setState('idle');
+        }
       } catch {}
     })();
     return () => {
       stop = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only bind
   }, []);
 
   const deviceLabel = () => {

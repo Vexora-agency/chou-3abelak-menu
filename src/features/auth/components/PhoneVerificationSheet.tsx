@@ -204,25 +204,29 @@ export function PhoneVerificationSheet({
         {t.needHelp}
       </button>
       {showSmsPanel && (
-        <div className={`rounded-2xl border p-4 ${subtleCard}`}>
-          <p className="text-[11px] font-extrabold">{t.smsTitle}</p>
-          <p className={`mt-1 text-[10.5px] leading-relaxed ${muted}`}>{t.smsBody}</p>
-          <button
-            type="button"
-            onClick={() => void verification.request(lang, 'sms')}
-            disabled={verification.requesting}
-            className={`${primaryBtn} mt-3 bg-[var(--primary)] text-black hover:brightness-95 disabled:opacity-60`}
-          >
-            {verification.requesting ? (
-              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-            ) : (
-              <MessageSquare size={16} aria-hidden="true" />
-            )}
-            {verification.requesting ? t.sendingSms : t.sendSms}
-          </button>
-          <p className={`mt-2 text-center text-[9.5px] leading-relaxed ${muted}`}>{t.smsHint}</p>
-        </div>
+        <p className={`mx-auto max-w-[36ch] text-center text-[10.5px] leading-relaxed ${muted}`}>
+          {t.smsBody}
+        </p>
       )}
+      {/* Always-visible no-WhatsApp path: one tap sends the SMS OTP. */}
+      <button
+        type="button"
+        onClick={() => void verification.request(lang, 'sms')}
+        disabled={verification.requesting}
+        className={`btn-tactile inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-2xl border px-4 text-xs font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60 ${
+          darkMode
+            ? 'border-neutral-700 text-neutral-200 hover:border-[var(--primary)]/60 hover:bg-white/5'
+            : 'border-neutral-300 text-neutral-700 hover:border-[#0A0A0A] hover:bg-black/5'
+        }`}
+      >
+        {verification.requesting ? (
+          <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+        ) : (
+          <MessageSquare size={16} aria-hidden="true" />
+        )}
+        {verification.requesting ? t.sendingSms : t.noWhatsAppSms}
+      </button>
+      <p className={`text-center text-[9.5px] leading-relaxed ${muted}`}>{t.smsHint}</p>
     </div>
   );
 
@@ -462,24 +466,49 @@ export function PhoneVerificationSheet({
                             <Loader2 size={13} className="animate-spin" aria-hidden="true" />
                             {t.waiting}
                           </p>
-                          <button
-                            type="button"
-                            onClick={() => void verification.request(lang)}
-                            disabled={verification.requesting}
-                            className={`mx-auto flex min-h-[38px] items-center gap-1.5 rounded-full px-3 text-[11px] font-extrabold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60 ${
-                              darkMode ? 'text-neutral-300' : 'text-neutral-600'
-                            }`}
-                          >
-                            <RefreshCw size={12} className={verification.requesting ? 'animate-spin' : ''} aria-hidden="true" />
-                            {t.resend}
-                          </button>
+                          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+                            <button
+                              type="button"
+                              onClick={() => void verification.refresh()}
+                              disabled={verification.requesting}
+                              className={`flex min-h-[38px] items-center gap-1.5 rounded-full px-3 text-[11px] font-extrabold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60 ${
+                                darkMode ? 'text-neutral-300' : 'text-neutral-600'
+                              }`}
+                            >
+                              <RefreshCw size={12} aria-hidden="true" />
+                              {t.checkAgain}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void verification.request(lang)}
+                              disabled={verification.requesting}
+                              className={`flex min-h-[38px] items-center gap-1.5 rounded-full px-3 text-[11px] font-extrabold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60 ${
+                                darkMode ? 'text-neutral-300' : 'text-neutral-600'
+                              }`}
+                            >
+                              <RefreshCw size={12} className={verification.requesting ? 'animate-spin' : ''} aria-hidden="true" />
+                              {t.resend}
+                            </button>
+                          </div>
                         </div>
                       )}
                     </>
                   ) : verification.phase === 'checking' && !active ? (
-                    <div className={`rounded-2xl border px-4 py-6 text-center ${subtleCard}`}>
+                    <div className={`rounded-2xl border px-4 py-5 text-center ${subtleCard}`}>
                       <Loader2 size={24} className={`mx-auto animate-spin ${muted}`} aria-hidden="true" />
                       <p className={`mt-2 text-[11px] font-bold ${muted}`}>{t.checking}</p>
+                      <p className={`mt-1 text-[10px] leading-relaxed ${muted}`}>{t.checkingHint}</p>
+                      <button
+                        type="button"
+                        onClick={() => void verification.refresh()}
+                        disabled={verification.requesting}
+                        className={`mx-auto mt-2 flex min-h-[38px] items-center gap-1.5 rounded-full px-3 text-[11px] font-extrabold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:opacity-60 ${
+                          darkMode ? 'text-neutral-300' : 'text-neutral-600'
+                        }`}
+                      >
+                        <RefreshCw size={12} className={verification.requesting ? 'animate-spin' : ''} aria-hidden="true" />
+                        {t.checkAgain}
+                      </button>
                       {smsFallback}
                     </div>
                   ) : (

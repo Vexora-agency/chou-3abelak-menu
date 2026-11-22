@@ -4,7 +4,7 @@ import { formatPrice, unitLabel } from '@/src/utils/pricing';
 import { formatMMSS } from '@/src/utils/countdown';
 import { useNow } from '@/src/hooks/useNow';
 import { etaRange, formatEtaRangeWithDay } from '@/src/utils/etaFormat';
-import { CountUp, SplitText } from '@/src/components/motion';
+import { CountUp } from '@/src/components/motion';
 import { scrollPageToTop } from '@/src/lib/motion/smoothScroll';
 import { ReceivedButton } from './components/ReceivedButton';
 import { CancelOrderButton } from './components/CancelOrderButton';
@@ -281,26 +281,34 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
             Solid background on purpose: backdrop-blur on a sticky bar is a
             known iOS compositor glitch source (flicker / stuck scrolling),
             and over this black page a solid bar looks identical. */}
-        <div className="sticky top-0 z-20 -mx-5 px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-[#0A0A0A]">
-          <div className="flex items-center justify-between">
+        <div className="sticky top-0 z-20 -mx-5 px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-[#0A0A0A] border-b border-white/5 shadow-[0_12px_34px_-24px_rgba(0,0,0,0.9)]">
+          <div className="flex items-center justify-between gap-2">
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex items-center gap-1.5 h-11 px-3 -ms-3 rounded-xl text-xs font-bold text-neutral-300 hover:text-[var(--primary)] active:text-[var(--primary)]"
+              className="inline-flex shrink-0 items-center gap-1.5 h-11 px-3 -ms-3 rounded-xl text-xs font-bold text-neutral-300 hover:text-[var(--primary)] active:text-[var(--primary)]"
             >
               <ArrowLeft size={16} className={isAr ? 'rotate-180' : ''} />
               {isAr ? 'القائمة' : 'Menu'}
             </button>
+            <div className="min-w-0 flex-1 text-center">
+              <p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-neutral-500">
+                {isAr ? 'تتبع الطلب' : 'Order tracking'}
+              </p>
+              <p className="truncate text-xs font-black text-white">
+                {storeName || (isAr ? 'تتبع الطلب' : 'Order tracking')}
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => setLang(isAr ? 'en' : 'ar')}
-              className="h-11 px-5 rounded-full border border-neutral-700 text-xs font-bold text-neutral-300 hover:border-[var(--primary)] hover:text-[var(--primary)] active:border-[var(--primary)]"
+              className="inline-flex shrink-0 items-center justify-center h-11 px-5 rounded-full border border-neutral-700 text-xs font-bold text-neutral-300 hover:border-[var(--primary)] hover:text-[var(--primary)] active:border-[var(--primary)]"
             >
               {isAr ? 'EN' : 'عربي'}
             </button>
           </div>
         </div>
-        <div className="pt-3">
+        <div className="pt-4">
 
         {missing ? (
           <div className="text-center py-16">
@@ -316,9 +324,6 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
           </div>
         ) : (
           <>
-            <p className="text-center text-xs font-bold text-neutral-400">
-              <SplitText text={storeName || (isAr ? 'تتبع الطلب' : 'Order tracking')} stagger={45} />
-            </p>
             <h1 className="text-center text-2xl sm:text-3xl font-black mt-1 tabular-nums" dir="ltr">
               <CountUp value={data.number} duration={1.05} format={(n) => `#${Math.round(n)}`} />
             </h1>

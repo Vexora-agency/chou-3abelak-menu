@@ -1,5 +1,6 @@
 // Tracking tokens + VAPID lazy-gen + notify guards (no infra).
 // Usage: node scripts/test-track-push.mjs
+import { readFileSync } from 'node:fs';
 import { newTrackToken, getVapidSettings, notifyOrderStatus, notifyNewOrder, nagUnackedOrders, resolveStatusCopy, validatePushSub } from '../functions/_shared/push.js';
 
 let fails = 0;
@@ -125,6 +126,28 @@ function fakeDb() {
   const { api } = fakeDb();
   const out = await nagUnackedOrders(api, { storeName: 'T', currency: 'LBP', adminUrl: 'https://x/admin' });
   check('nag empty no-op', out.nagged === 0);
+}
+
+// ---- kitchen push UI wiring ----
+{
+  const dashboard = readFileSync(new URL('../src/features/orders/components/OrdersDashboard.tsx', import.meta.url), 'utf8');
+  const card = readFileSync(new URL('../src/features/orders/components/KitchenPushCard.tsx', import.meta.url), 'utf8');
+  const track = readFileSync(new URL('../src/features/track/TrackView.tsx', import.meta.url), 'utf8');
+  check(
+    'admin dashboard shows the new-order notification card',
+    dashboard.includes("import { KitchenPushCard }") && dashboard.includes('<KitchenPushCard lang={lang} />')
+  );
+  check(
+    'an existing browser subscription is re-registered on mount',
+    card.includes('getExistingSub()')
+      && card.includes('postJson(')
+      && card.includes("'/api/admin/push-subscriptions'")
+      && card.includes('saved.ok')
+  );
+  check(
+    'track page header carries a centered page title + store name',
+    track.includes("'Order tracking'") && track.includes("'تتبع الطلب'") && track.includes('border-b border-white/5')
+  );
 }
 
 console.log(fails ? `\n${fails} FAILED` : '\nall green');

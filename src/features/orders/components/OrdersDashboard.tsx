@@ -5,6 +5,7 @@ import { useOrdersDashStats } from '../hooks/useOrdersDashStats';
 import { isFreshOrder, playNewOrderBeep, unlockOrderSound, useNewOrderAlarm, useNewOrderSound } from '../hooks/useNewOrderSound';
 import { OrdersDashChart, OrdersDashKpis, OrdersDashPeriodBar, OrdersDashTopItems } from './orders/OrdersDashPanels';
 import { OrdersDashList } from './orders/OrdersDashList';
+import { KitchenPushCard } from './KitchenPushCard';
 
 export type { Order, OrderItem, OrderStatus, OrderType, Period, CronHealth };
 
@@ -96,10 +97,10 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, menu, orders, currenc
 
   return (
     <div className="space-y-4" dir={isAr ? 'rtl' : 'ltr'}>
-      {/* Kitchen push card hidden by owner decision (Telegram is the alert
-          channel now). The component + backend stay intact for already-
-          subscribed devices — re-add <KitchenPushCard lang={lang} /> here
-          to bring the UI back. */}
+      {/* Owner device alerts: visible so a fresh phone can subscribe and an
+          existing browser subscription is re-registered on mount. Telegram
+          remains the backup channel. */}
+      <KitchenPushCard lang={lang} />
       <OrdersDashPeriodBar
         lang={lang}
         period={period}

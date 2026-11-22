@@ -186,10 +186,10 @@ export const MenuListListRow: React.FC<MenuListListRowProps> = ({
           dir="auto"
           className={`line-clamp-2 font-extrabold leading-[1.25] transition-transform duration-300 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 ${
             nameScale === 'long'
-              ? 'text-[12px] min-[380px]:text-[13px] sm:text-[15px]'
+              ? 'text-[12px] min-[380px]:text-[13px] sm:text-[14px]'
               : nameScale === 'medium'
-                ? 'text-[13px] min-[380px]:text-[14px] sm:text-[16px]'
-                : 'text-[14px] min-[380px]:text-[15px] sm:text-[17px]'
+                ? 'text-[13px] min-[380px]:text-[14px] sm:text-[15px]'
+                : 'text-[14px] min-[380px]:text-[15px] sm:text-[16px]'
           } ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}
         >
           {name}

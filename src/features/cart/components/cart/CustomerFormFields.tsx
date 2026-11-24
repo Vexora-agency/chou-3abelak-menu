@@ -92,7 +92,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
     : null);
   const phoneNoteText = phoneErrorText
     || (showVerified
-      ? (isAr ? 'تم تأكيد هذا الرقم عبر واتساب.' : 'This number is verified on WhatsApp.')
+      ? (isAr ? 'تم تأكيد الرقم.' : 'Number verified.')
       : null)
     || (showVerify
       ? (verifyPending

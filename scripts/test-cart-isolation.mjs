@@ -122,7 +122,7 @@ ok(
     && formFields.includes('phoneVerificationPhase')
     && formFields.includes('onVerifyPhone')
     && formFields.includes('Verify this number on WhatsApp before ordering.')
-    && formFields.includes('This number is verified on WhatsApp.')
+    && formFields.includes('Number verified.')
     && formFields.includes('استخدم رقم حسابي')
     && !formFields.includes('OTP')
     && !formFields.includes('onOpenSettings'),

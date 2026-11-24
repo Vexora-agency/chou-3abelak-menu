@@ -46,8 +46,8 @@ change** (both white-label configurable, see below).
       unchecked. Seed a legacy `customer_details_v1` → box still unchecked;
       the legacy key is removed after the visit.
 - [ ] **Member data:** sign in with a complete profile and seed stale guest
-      details → the checkout shows the account name/phone/address, name and
-      phone are read-only, and the remember box is hidden.
+      details → the checkout prefills the account name/phone/address; the name
+      and phone stay editable for this order, and the remember box is hidden.
 
 ## Security notes
 
@@ -61,11 +61,13 @@ change** (both white-label configurable, see below).
   delivery address is never stored. A legacy `customer_details_v1` record is
   read once for prefill with the box **unchecked**, then deleted, so an old
   record can never look like fresh consent.
-- **Member orders:** the signed-in account is the source of truth. Checkout
-  starts from the saved phone/default address/pin, name and phone are
-  read-only, the guest remember-me blob is neither read nor written, and the
-  orders API overwrites the linked order's name/phone/email from the account.
-  Signing out clears account fields from an open checkout on a shared device.
+- **Member orders:** the signed-in account seeds the checkout. Checkout starts
+  from the saved name/phone/default address/pin; the name and phone stay
+  editable per order (a changed number still needs verification), the guest
+  remember-me blob is neither read nor written, and the orders API keeps the
+  entered recipient name and verified phone while taking the email from the
+  account. Signing out clears account fields from an open checkout on a shared
+  device.
 
 ## Recommendation
 

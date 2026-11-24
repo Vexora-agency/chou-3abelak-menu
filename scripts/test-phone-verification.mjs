@@ -202,7 +202,10 @@ const orderRoute = read('functions/api/orders.js');
 check('order route requires verification of the used number', orderRoute.includes('findValidVerification(db, customerUserId, c.phoneNorm'));
 check('order route returns phone_verification_required', orderRoute.includes("error: 'phone_verification_required'"));
 check('order route no longer overwrites the entered phone with the saved one', !orderRoute.includes('c.phoneNorm = profilePhone'));
-check('order route still takes name/email from the account', orderRoute.includes('c.name = profileName') && orderRoute.includes('c.email = accountEmail'));
+check(
+  'order route keeps the entered recipient name and takes email from the account',
+  orderRoute.includes('if (!c.name && profileName) c.name = profileName') && orderRoute.includes('c.email = accountEmail')
+);
 
 const profileRoute = read('functions/api/account/profile.js');
 check('profile route saves a changed phone without verification', !profileRoute.includes("error: 'phone_verification_required'") && !profileRoute.includes('nextPhone') && profileRoute.includes('Saving a changed number is intentionally NOT gated'));

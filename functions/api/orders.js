@@ -255,15 +255,15 @@ export async function onRequest(context) {
     }
   }
 
-  // A member's identity comes from the account, not from the checkout payload:
-  // every linked order therefore carries the saved name and email even if the
-  // device has stale guest data. The PHONE stays the verified number entered
-  // for this order (it may differ from the profile default); the delivery
+  // A member's EMAIL comes from the account, and the PHONE is the verified
+  // number entered for this order (it may differ from the profile default).
+  // The NAME is per-order: the cart prefills it from the account but lets the
+  // member send this order under a different recipient name. The delivery
   // address stays per-order (the client starts from the saved default and lets
-  // the customer refine it).
+  // the customer refine it); the saved default only fills a blank one.
   if (memberProfile) {
     const profileName = typeof memberProfile.name === 'string' ? memberProfile.name.trim().slice(0, 60) : '';
-    if (profileName) c.name = profileName;
+    if (!c.name && profileName) c.name = profileName;
     if (!c.address && typeof memberProfile.address === 'string' && memberProfile.address) {
       c.address = memberProfile.address.trim().slice(0, 200);
     }

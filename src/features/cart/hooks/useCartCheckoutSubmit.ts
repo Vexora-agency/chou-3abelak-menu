@@ -403,8 +403,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     // round-trip.
     if (accountUser && isPhoneVerified && !isPhoneVerified()) {
       setErrorMsg(isAr
-        ? 'أكّد رقم الهاتف عبر واتساب قبل إرسال الطلب.'
-        : 'Verify your phone number on WhatsApp before placing the order.');
+        ? 'أكّد رقم هاتفك لإتمام الطلب.'
+        : 'Verify your phone number to place the order.');
       onRequirePhoneVerification?.();
       return;
     }
@@ -530,8 +530,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         // stale or the number changed mid-flight. Show why and open the code
         // sheet; the cart stays intact.
         setErrorMsg(result.blockedMessage || (isAr
-          ? 'أكّد رقم الهاتف عبر واتساب قبل إرسال الطلب.'
-          : 'Verify your phone number on WhatsApp before placing the order.'));
+          ? 'أكّد رقم هاتفك لإتمام الطلب.'
+          : 'Verify your phone number to place the order.'));
         onRequirePhoneVerification?.();
         return;
       }

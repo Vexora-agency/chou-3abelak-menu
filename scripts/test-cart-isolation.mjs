@@ -133,9 +133,19 @@ ok(
   'the member name and phone fields are both editable in the cart'
 );
 ok(
+  formFields.includes('الرمز جاهز.') && formFields.includes('Code ready.')
+    && !formFields.includes('بانتظار تأكيد المطعم') && !formFields.includes('waiting for the restaurant'),
+  'the pending code note is short with no restaurant mention'
+);
+ok(
+  formFields.includes('absolute end-1.5') && formFields.includes('pv.verifyShort')
+    && formFields.includes("pe-28") && formFields.includes('<Eye'),
+  'the verify/view-code action sits inside the phone field edge (short labels, reserved padding)'
+);
+ok(
   checkout.includes('isPhoneVerified')
     && checkout.includes('onRequirePhoneVerification')
-    && checkout.includes('Verify your phone number on WhatsApp before placing the order.'),
+    && checkout.includes('Verify your phone number to place the order.'),
   'checkout blocks an unverified member number and opens the WhatsApp verification sheet'
 );
 ok(

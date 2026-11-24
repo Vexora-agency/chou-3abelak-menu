@@ -69,9 +69,9 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
     : dial.code
       ? nationalPart(customer.phone, dial.code)
       : customer.phone;
-  // A member's number is editable. EVERY number — the saved one, a changed
-  // one, or the first one — must be confirmed through reverse WhatsApp
-  // verification. The name stays read-only.
+  // Both fields are editable for members: the name is the recipient for this
+  // order, and EVERY phone number — the saved one, a changed one, or the
+  // first one — must be confirmed through reverse WhatsApp verification.
   const phoneLinked = isMember && customer.phone.trim().length > 0;
   const phoneChanged = isMember
     && isDifferentAccountPhone(customer.phone, accountPhone, dial.code);
@@ -157,11 +157,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           placeholder={isAr ? 'اسمك' : 'Your name'}
           maxLength={40}
           autoComplete="name"
-          readOnly={isMember}
-          aria-readonly={isMember || undefined}
           className={`w-full h-11 px-3.5 rounded-xl border text-base focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
-            isMember ? 'opacity-80 cursor-not-allowed' : ''
-          } ${
             darkMode
               ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-400'
               : 'bg-white border-neutral-300 text-[#0A0A0A] placeholder-neutral-500 shadow-xs'

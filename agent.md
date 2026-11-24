@@ -70,14 +70,17 @@
   Map-pin buttons in both address fields are physically right (`right-0.5` +
   `pr-12`), so Arabic RTL shows them on the right as the owner expects. Guarded
   by `test:cart`.
-- Cart phone is editable for members and EVERY number must be verified before
-  ordering — the saved number, a changed number, and the first one. A compact
-  note under the field shows `Verified` / `Not verified` and opens the reverse
-  WhatsApp sheet; "استخدم رقم حسابي" resets to the saved number. The member
-  NAME stays read-only. The server refuses the order on the exact entered
-  number (`phone_verification_required`), never on the saved profile number.
-  The old "طلبك مرتبط بحسابك تلقائيًا." line in the COD card is removed on
-  purpose — do not re-add it. Guarded by `test:cart` + `test:phone`.
+- Cart name and phone are editable for members. The name is the recipient for
+  this order (prefilled from the account, never overwrites the account name);
+  EVERY phone number must be verified before ordering — the saved number, a
+  changed number, and the first one. A compact note under the phone field
+  shows `Verified` / `Not verified` and opens the reverse WhatsApp sheet;
+  "استخدم رقم حسابي" resets to the saved number. A per-order edit survives a
+  later profile refetch. The server refuses the order on the exact entered
+  number (`phone_verification_required`), never on the saved profile number,
+  and keeps the entered name. The old "طلبك مرتبط بحسابك تلقائيًا." line in the
+  COD card is removed on purpose — do not re-add it. Guarded by `test:cart` +
+  `test:phone`.
 - Member wishlist (migration `0041_customer_wishlist`): one membership-scoped
   set of saved dishes, item-level (`user_id + item_id` PK, cascade on account
   delete, 200-item cap). `WishlistProvider` (storefront root) fetches once per

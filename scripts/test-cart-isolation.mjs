@@ -55,19 +55,22 @@ ok(
   'checkout blocks an incomplete member profile and opens account settings without losing the cart'
 );
 ok(
-  checkout.includes('memberProfileKeyRef') && checkout.includes("phone: accountProfile?.phone || ''") && checkout.includes("address: accountProfile?.address || ''"),
-  'member checkout always takes name/phone/address from the account, overriding stale guest data'
+  checkout.includes('memberProfileKeyRef') && checkout.includes('memberIdentitySeededRef')
+    && checkout.includes('seedIdentity')
+    && checkout.includes("address: accountProfile?.address || ''"),
+  'member checkout seeds name/phone/address from the account once and keeps per-order edits'
 );
 const formFields = read('src/features/cart/components/cart/CustomerFormFields.tsx');
 ok(
-  formFields.includes('readOnly={isMember}') && formFields.includes('{!isMember && ('),
-  'member name/phone are account-owned and the guest remember-me checkbox is hidden'
+  !formFields.includes('readOnly={isMember}') && !formFields.includes('aria-readonly={isMember')
+    && formFields.includes('{!isMember && ('),
+  'member name and phone are editable and the guest remember-me checkbox is hidden'
 );
 ok(
   route.includes('memberProfile') && route.includes('phone_verification_required')
     && route.includes('findValidVerification') && !route.includes('c.phoneNorm = profilePhone')
-    && route.includes('c.name = profileName') && route.includes('c.email = accountEmail'),
-  'orders use the account name/email and the verified entered phone for every member order'
+    && route.includes('if (!c.name && profileName) c.name = profileName') && route.includes('c.email = accountEmail'),
+  'orders keep the entered recipient name, take the account email, and use the verified entered phone'
 );
 const profileRoute = read('functions/api/account/profile.js');
 ok(
@@ -126,8 +129,8 @@ ok(
   'member phone is editable: every number shows its WhatsApp verification state and a reset to the saved number'
 );
 ok(
-  (formFields.match(/readOnly=\{isMember\}/g) || []).length === 1,
-  'only the member name stays read-only; the phone field is editable'
+  (formFields.match(/readOnly=\{isMember\}/g) || []).length === 0,
+  'the member name and phone fields are both editable in the cart'
 );
 ok(
   checkout.includes('isPhoneVerified')

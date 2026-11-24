@@ -101,14 +101,15 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [locSheetOpen, setLocSheetOpen] = useState(false);
 
-  // A signed-in member's account is the source of truth for identity
-  // (name/phone/email) and for the starting delivery defaults. The device
-  // "remember me" blob is guest data and must never override it. This runs
-  // when the profile values change, so account-settings edits land here
-  // without a reload; a per-order address/pin edit remains intact until the
-  // next profile change.
+  // A signed-in member's account seeds the checkout identity (name/phone/
+  // email) and the starting delivery defaults. The device "remember me" blob
+  // is guest data and must never override it. Name and phone are per-order
+  // fields: after the first seed they are never overwritten by a later profile
+  // refetch, so an edit the member made in the cart survives. The address
+  // keeps following the account until the member types a per-order one.
   const memberProfileKeyRef = useRef('');
   const memberIdentitySeenRef = useRef(false);
+  const memberIdentitySeededRef = useRef<string | null>(null);
   useEffect(() => {
     if (!accountUser) {
       // Signing out must not leave the member's name/phone/address in a
@@ -118,6 +119,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       if (memberIdentitySeenRef.current) {
         memberIdentitySeenRef.current = false;
         memberProfileKeyRef.current = '';
+        memberIdentitySeededRef.current = null;
         setCustomer((prev) => ({ ...prev, name: '', phone: '', address: '', email: '', remember: false }));
         setLocation(null);
       }
@@ -137,10 +139,14 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     ].join('|');
     if (memberProfileKeyRef.current === key) return;
     memberProfileKeyRef.current = key;
+    const seedIdentity = memberIdentitySeededRef.current !== accountUser.id;
+    if (seedIdentity) memberIdentitySeededRef.current = accountUser.id;
+    const nextName = accountUser.name || '';
+    const nextPhone = accountProfile?.phone || '';
     setCustomer((prev) => ({
       ...prev,
-      name: accountUser.name || prev.name,
-      phone: accountProfile?.phone || '',
+      name: seedIdentity ? (nextName || prev.name) : prev.name,
+      phone: seedIdentity ? nextPhone : (prev.phone || nextPhone),
       address: accountProfile?.address || '',
       email: accountUser.email || '',
       // Members now get the same device opt-in as guests. Their identity

@@ -355,8 +355,8 @@ ok(
 // Cart checkout wiring (CustomerFormFields, fed by CartDrawer).
 ok(
   formFields.includes("from '@/src/hooks/useAddressAutocomplete'") && formFields.includes('useAddressAutocomplete({')
-    && formFields.includes('enabled: addrTyped'),
-  'cart runs suggestions only after the customer types (prefill never fetches)'
+    && formFields.includes('enabled: addrTyped && !location'),
+  'cart runs suggestions only after the customer types, and never while a pin is set'
 );
 ok(
   formFields.includes('/^[A-Za-z]{2}$/') && formFields.includes('toLowerCase()'),

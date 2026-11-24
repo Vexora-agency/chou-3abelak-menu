@@ -494,13 +494,13 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   // the text without touching the pin.
   const addrCountry = /^[A-Za-z]{2}$/.test(dial.iso ?? '') ? dial.iso.toLowerCase() : '';
   // Same rule as the cart: suggestions run only after the customer actually
-  // types; a hydrated profile address never pops the list on open or focus.
+  // types, and never while a pin is set (exact coordinates already fixed).
   const [addrTyped, setAddrTyped] = useState(false);
   const addrAc = useAddressAutocomplete({
     query: address,
     lang,
     country: addrCountry,
-    enabled: addrTyped,
+    enabled: addrTyped && !location,
   });
   const [pickedLabel, setPickedLabel] = useState('');
   // Which address text the current pin belongs to (suggestion pick OR map
@@ -526,7 +526,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     setLocation({ lat: suggestion.lat, lng: suggestion.lng, accuracy: 0 });
     setSaveError('');
   };
-  const showAddrEmptyState = addrTyped && addrAc.open
+  const showAddrEmptyState = addrTyped && !location && addrAc.open
     && !addrAc.loading
     && addrAc.suggestions.length === 0
     && address.trim().length >= 3

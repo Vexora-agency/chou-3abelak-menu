@@ -74,15 +74,15 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   // — no key or Geoapify URL ever lives in the client). A pick fills the text
   // AND sets the pin through onPickCoords; typing only refines the text.
   const addrCountry = /^[A-Za-z]{2}$/.test(dial.iso ?? '') ? dial.iso.toLowerCase() : '';
-  // Suggestions run only after the customer actually types in this field:
-  // a prefilled address (profile default, remembered text) must never pop
-  // the list open on focus or on load.
+  // Suggestions run only after the customer actually types in this field,
+  // and never while a pin is set: with exact coordinates already fixed,
+  // the text is just extra details for the driver.
   const [addrTyped, setAddrTyped] = useState(false);
   const addrAc = useAddressAutocomplete({
     query: customer.address,
     lang,
     country: addrCountry,
-    enabled: addrTyped,
+    enabled: addrTyped && !location,
   });
   const [pickedLabel, setPickedLabel] = useState('');
   // Which address text the current pin belongs to (suggestion pick OR map
@@ -107,7 +107,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
     setCustomer({ ...customer, address: label });
     if (onPickCoords) onPickCoords(suggestion.lat, suggestion.lng, 0, label);
   };
-  const showAddrEmptyState = addrTyped && addrAc.open
+  const showAddrEmptyState = addrTyped && !location && addrAc.open
     && !addrAc.loading
     && addrAc.suggestions.length === 0
     && customer.address.trim().length >= 3

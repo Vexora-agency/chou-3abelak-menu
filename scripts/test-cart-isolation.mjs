@@ -80,7 +80,7 @@ ok(
 );
 const accountSheet = read('src/features/auth/components/AccountSheet.tsx');
 const addressInputAt = accountSheet.indexOf('id="account-address"');
-const addressInput = addressInputAt >= 0 ? accountSheet.slice(addressInputAt, addressInputAt + 2400) : '';
+const addressInput = addressInputAt >= 0 ? accountSheet.slice(addressInputAt, addressInputAt + 3600) : '';
 ok(
   !addressInput.includes('disabled={!location}') && addressInput.includes('onChange=') && addressInput.includes('placeholder='),
   'member settings address is editable without a map pin (pin optional)'
@@ -356,8 +356,8 @@ ok(
 // Cart checkout wiring (CustomerFormFields, fed by CartDrawer).
 ok(
   formFields.includes("from '@/src/hooks/useAddressAutocomplete'") && formFields.includes('useAddressAutocomplete({')
-    && !formFields.includes('enabled:'),
-  'cart address always enables autocomplete (address entry is independent of phone state)'
+    && formFields.includes('enabled: addrTyped'),
+  'cart runs suggestions only after the customer types (prefill never fetches)'
 );
 ok(
   formFields.includes('/^[A-Za-z]{2}$/') && formFields.includes('toLowerCase()'),

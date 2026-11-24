@@ -972,7 +972,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
 
               <div>
                 <label className={labelClass} htmlFor="account-email">{t.email}</label>
-                <div className="relative">
+                <div className="relative" dir="ltr">
                   <input
                     id="account-email"
                     type="email"

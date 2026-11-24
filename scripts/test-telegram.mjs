@@ -940,5 +940,90 @@ function mockDeliveryStore({ linked = true } = {}) {
   ok('delivery-remove rejects bad chat id', badRmRes.status === 400);
 }
 
+// 18. Joint receipt on Telegram: one "تم التسليم" tap completes the pair.
+{
+  const prev = globalThis.fetch;
+  const tgCalls = [];
+  globalThis.fetch = async (url, init) => {
+    tgCalls.push({ method: String(url).split('/').pop(), body: JSON.parse(init.body) });
+    return { ok: true, status: 200, json: async () => ({ ok: true, result: true }) };
+  };
+  const mkRow = (id, number, status, parentNumber) => ({
+    id, number, status, type: 'delivery',
+    customer_name: 'Karim', customer_phone: '96170', customer_address: null, customer_table: null,
+    notes: null, location_lat: null, location_lng: null,
+    items_json: '[]', subtotal: 100, delivery_fee: 0, total: 100, lang: 'ar',
+    track_token: 't'.repeat(32), created_at: 't', updated_at: 't',
+    parent_number: parentNumber ?? null,
+  });
+  const orders = new Map([
+    ['ord-p', mkRow('ord-p', 1001, 'confirmed', null)],
+    ['ord-c', mkRow('ord-c', 1002, 'confirmed', 1001)],
+  ]);
+  const base = mockDb(true);
+  const db = {
+    ledger: base.ledger,
+    orders,
+    prepare(sql) {
+      return {
+        first(...a) { return this.bind(...a).first(...a); },
+        run(...a) { return this.bind(...a).run(...a); },
+        all(...a) { return this.bind(...a).all(...a); },
+        bind(...args) {
+          return {
+            async first() {
+              if (sql.includes('FROM orders WHERE id')) return orders.get(args[0]) || null;
+              if (sql.includes('FROM orders WHERE number')) {
+                for (const r of orders.values()) if (r.number === args[0]) return { ...r };
+                return null;
+              }
+              return base.prepare(sql).bind(...args).first();
+            },
+            async run() {
+              if (sql.includes('UPDATE orders SET status') && !sql.includes('RETURNING')) {
+                const row = orders.get(args[2]);
+                if (!row) return { meta: { changes: 0 } };
+                row.status = args[0];
+                return { meta: { changes: 1 } };
+              }
+              return base.prepare(sql).bind(...args).run();
+            },
+            async all() {
+              if (sql.includes('parent_number IN')) {
+                const nums = new Set(args);
+                return { results: [...orders.values()].filter((r) => nums.has(r.parent_number)) };
+              }
+              if (sql.includes('RETURNING')) {
+                const nums = new Set(args.slice(1));
+                const out = [];
+                for (const r of orders.values()) {
+                  if (nums.has(r.number) && (r.status === 'confirmed' || r.status === 'ready')) {
+                    r.status = 'completed';
+                    out.push({ number: r.number });
+                  }
+                }
+                return { results: out };
+              }
+              return { results: [] };
+            },
+          };
+        },
+      };
+    },
+  };
+  const r = await handleOrderCallback(db, 'tok', { callbackId: 'cbJ1', clickerId: 12345, chatId: 12345, messageId: 11, messageText: 'parent', data: 'tg:rcv:ord-p' });
+  ok('telegram joint receipt handled', r.handled === true && r.status === 'completed');
+  ok('telegram joint receipt flips both rows', db.orders.get('ord-p').status === 'completed' && db.orders.get('ord-c').status === 'completed');
+  const jointToast = tgCalls.find((c) => c.method === 'answerCallbackQuery' && typeof c.body.text === 'string' && c.body.text.includes('الطلبات'));
+  ok('telegram joint receipt names both orders', !!jointToast && jointToast.body.text.includes('#1001') && jointToast.body.text.includes('#1002'));
+  // A `new` sibling stays for the kitchen (same gate as website + admin).
+  db.orders.get('ord-c').status = 'new';
+  db.orders.get('ord-p').status = 'confirmed';
+  tgCalls.length = 0;
+  const r2 = await handleOrderCallback(db, 'tok', { callbackId: 'cbJ2', clickerId: 12345, chatId: 12345, messageId: 11, messageText: 'parent', data: 'tg:rcv:ord-p' });
+  ok('new sibling not flipped by telegram receipt', r2.handled === true && db.orders.get('ord-p').status === 'completed' && db.orders.get('ord-c').status === 'new');
+  globalThis.fetch = prev;
+}
+
 console.log(`telegram: ${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

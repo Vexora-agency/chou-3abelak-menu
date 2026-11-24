@@ -488,10 +488,14 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
   // text and the pin, mirroring the map-sheet onPick below; typing refines
   // the text without touching the pin.
   const addrCountry = /^[A-Za-z]{2}$/.test(dial.iso ?? '') ? dial.iso.toLowerCase() : '';
+  // Same rule as the cart: suggestions run only after the customer actually
+  // types; a hydrated profile address never pops the list on open or focus.
+  const [addrTyped, setAddrTyped] = useState(false);
   const addrAc = useAddressAutocomplete({
     query: address,
     lang,
     country: addrCountry,
+    enabled: addrTyped,
   });
   const [pickedLabel, setPickedLabel] = useState('');
   const handleAccountAddressPick = (suggestion: AddressSuggestion) => {
@@ -503,7 +507,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     setLocation({ lat: suggestion.lat, lng: suggestion.lng, accuracy: 0 });
     setSaveError('');
   };
-  const showAddrEmptyState = addrAc.open
+  const showAddrEmptyState = addrTyped && addrAc.open
     && !addrAc.loading
     && addrAc.suggestions.length === 0
     && address.trim().length >= 3
@@ -1160,13 +1164,16 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                       formTouchedRef.current = true;
                       // Typing refines the text but keeps the pin (same rule
                       // as the cart checkout). Clearing the hook's picked
-                      // marker lets a fresh query fetch again.
+                      // marker lets a fresh query fetch again. This also marks
+                      // the field as typed: suggestions never run on the
+                      // hydrated profile address.
                       addrAc.clearPicked();
                       setPickedLabel('');
+                      setAddrTyped(true);
                       setAddress(e.target.value);
                       setSaveError('');
                     }}
-                    onFocus={() => addrAc.setOpen(true)}
+                    onFocus={() => { if (addrTyped) addrAc.setOpen(true); }}
                     onBlur={() => addrAc.setOpen(false)}
                     onKeyDown={(e) => {
                       const action = addrAc.handleKeyDown(e);

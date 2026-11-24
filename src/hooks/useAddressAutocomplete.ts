@@ -172,6 +172,9 @@ export function useAddressAutocomplete({
 
   const selectSuggestion = useCallback((s: AddressSuggestion) => {
     setPickedLabel(s.label);
+    // Drop stale results so refocusing the field never pops the old list
+    // back open without the user typing again.
+    setSuggestions([]);
     setOpen(false);
     setActiveIndex(-1);
   }, []);

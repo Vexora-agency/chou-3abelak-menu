@@ -74,10 +74,15 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   // — no key or Geoapify URL ever lives in the client). A pick fills the text
   // AND sets the pin through onPickCoords; typing only refines the text.
   const addrCountry = /^[A-Za-z]{2}$/.test(dial.iso ?? '') ? dial.iso.toLowerCase() : '';
+  // Suggestions run only after the customer actually types in this field:
+  // a prefilled address (profile default, remembered text) must never pop
+  // the list open on focus or on load.
+  const [addrTyped, setAddrTyped] = useState(false);
   const addrAc = useAddressAutocomplete({
     query: customer.address,
     lang,
     country: addrCountry,
+    enabled: addrTyped,
   });
   const [pickedLabel, setPickedLabel] = useState('');
   const handleAddressPick = (suggestion: AddressSuggestion) => {
@@ -87,7 +92,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
     setCustomer({ ...customer, address: label });
     if (onPickCoords) onPickCoords(suggestion.lat, suggestion.lng, 0, label);
   };
-  const showAddrEmptyState = addrAc.open
+  const showAddrEmptyState = addrTyped && addrAc.open
     && !addrAc.loading
     && addrAc.suggestions.length === 0
     && customer.address.trim().length >= 3
@@ -292,12 +297,14 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               // plus a detailed address (building, floor, landmark) is the
               // best pair for the driver. The pin is removed only via its
               // explicit X button. Clearing the hook's picked marker lets a
-              // fresh query fetch again.
+              // fresh query fetch again. This also marks the field as typed:
+              // suggestions never run on a prefilled address.
               addrAc.clearPicked();
               setPickedLabel('');
+              setAddrTyped(true);
               setCustomer({ ...customer, address: e.target.value });
             }}
-            onFocus={() => addrAc.setOpen(true)}
+            onFocus={() => { if (addrTyped) addrAc.setOpen(true); }}
             onBlur={() => addrAc.setOpen(false)}
             onKeyDown={(e) => {
               const action = addrAc.handleKeyDown(e);

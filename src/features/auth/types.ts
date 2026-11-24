@@ -25,6 +25,7 @@ export interface AccountOrderItem {
   id: string;
   name: { en: string; ar: string };
   variantName?: { en: string; ar: string };
+  addonIds?: string[];
   addonNames?: { en: string; ar: string }[];
   qty: number;
   unitPrice: number;

@@ -28,7 +28,8 @@ import { useBodyScrollLock } from '@/src/hooks/useBodyScrollLock';
 import { useNow } from '@/src/hooks/useNow';
 import { cleanPhoneInput, phoneDigitsOnly } from '@/src/utils/digits';
 import type { MenuData, MenuItem } from '@/src/types/menu';
-import { pickLangText } from '@/src/utils/menuHelpers';
+import { isSpicyAddon, isSpicyFeatureId, pickLangText } from '@/src/utils/menuHelpers';
+import { HeatPill } from '@/src/components/HeatPill';
 import { hasOptions, priceLabel } from '@/src/utils/pricing';
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { WishlistButton, useWishlist } from '@/src/features/wishlist';
@@ -106,10 +107,40 @@ function itemTitle(item: AccountOrder['items'][number], isAr: boolean) {
   if (!item) return '';
   const base = item.name?.[isAr ? 'ar' : 'en'] || item.name?.en || item.name?.ar || '';
   const variant = item.variantName?.[isAr ? 'ar' : 'en'] || item.variantName?.en || '';
-  const addons = (item.addonNames || [])
-    .map((a) => a?.[isAr ? 'ar' : 'en'] || a?.en || '')
-    .filter(Boolean);
-  return [base, variant, ...addons].filter(Boolean).join(' · ');
+  return [base, variant].filter(Boolean).join(' · ');
+}
+
+/** Heat level id of a member order line ('spicy-mild' | … | null when the
+ *  degree is unknown, undefined when the line has no heat). Add-on ids ride
+ *  along in the account orders payload, so the same detection as the admin
+ *  feed applies here. */
+function accountLineHeatId(item: AccountOrder['items'][number]): string | null | undefined {
+  const names = item.addonNames || [];
+  for (let i = 0; i < names.length; i++) {
+    const fid = Array.isArray(item.addonIds) ? item.addonIds[i] : undefined;
+    const n = names[i];
+    if (!n) continue;
+    if (isSpicyAddon(fid, n.ar) || isSpicyAddon(fid, n.en)) {
+      return typeof fid === 'string' && isSpicyFeatureId(fid) ? fid : null;
+    }
+  }
+  return undefined;
+}
+
+/** Non-heat add-on display names of a member order line (heat renders as a
+ *  HeatPill, never as a text pill). */
+function accountLineAddons(item: AccountOrder['items'][number], isAr: boolean): string[] {
+  const names = item.addonNames || [];
+  const out: string[] = [];
+  for (let i = 0; i < names.length; i++) {
+    const fid = Array.isArray(item.addonIds) ? item.addonIds[i] : undefined;
+    const n = names[i];
+    if (!n) continue;
+    if (isSpicyAddon(fid, n.ar) || isSpicyAddon(fid, n.en)) continue;
+    const label = (isAr ? n.ar : n.en) || n.en || n.ar || '';
+    if (label) out.push(label);
+  }
+  return out;
 }
 
 const OrderCard: FC<{
@@ -191,18 +222,41 @@ const OrderCard: FC<{
           >
             <div className={`px-3.5 pb-3.5 pt-3 border-t space-y-3 ${darkMode ? 'border-neutral-800' : 'border-neutral-200'}`}>
               <div className="space-y-1.5">
-                {order.items.map((item, index) => (
-                  <div key={`${item.id}-${index}`} className="flex justify-between gap-3 text-xs">
-                    <span className="min-w-0 flex-1 break-words">
-                      <bdi dir="ltr" className="tabular-nums font-bold">{item.qty}</bdi>
-                      <span dir="ltr">× </span>
-                      <span dir="auto">{itemTitle(item, isAr)}</span>
-                    </span>
-                    <span className={`shrink-0 tabular-nums ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`} dir="ltr">
-                      {formatPrice(item.qty * item.unitPrice, currency)}
-                    </span>
-                  </div>
-                ))}
+                {order.items.map((item, index) => {
+                  const heatId = accountLineHeatId(item);
+                  const extraAddons = accountLineAddons(item, isAr);
+                  return (
+                    <div key={`${item.id}-${index}`} className="py-0.5">
+                      <div className="flex justify-between gap-3 text-xs">
+                        <span className="min-w-0 flex-1 break-words">
+                          <bdi dir="ltr" className="tabular-nums font-bold">{item.qty}</bdi>
+                          <span dir="ltr">× </span>
+                          <span dir="auto">{itemTitle(item, isAr)}</span>
+                        </span>
+                        <span className={`shrink-0 tabular-nums ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`} dir="ltr">
+                          {formatPrice(item.qty * item.unitPrice, currency)}
+                        </span>
+                      </div>
+                      {(heatId !== undefined || extraAddons.length > 0) && (
+                        <div className="mt-1 flex flex-wrap items-center gap-1">
+                          {heatId !== undefined && <HeatPill featureId={heatId ?? undefined} lang={isAr ? 'ar' : 'en'} size="sm" />}
+                          {extraAddons.map((name, ai) => (
+                            <span
+                              key={`${name}-${ai}`}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border max-w-full ${
+                                darkMode
+                                  ? 'border-[var(--primary)]/30 bg-[var(--primary)]/5 text-[var(--primary)]'
+                                  : 'border-[#8a6d00]/30 bg-[#8a6d00]/5 text-[#8a6d00]'
+                              }`}
+                            >
+                              <bdi dir="auto" className="break-words">+ {name}</bdi>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               <div className={`pt-2 border-t space-y-1 text-xs ${darkMode ? 'border-neutral-800 text-neutral-400' : 'border-neutral-200 text-neutral-500'}`}>

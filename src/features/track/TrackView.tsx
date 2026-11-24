@@ -327,19 +327,6 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
             <h1 className="text-center text-2xl sm:text-3xl font-black mt-1 tabular-nums" dir="ltr">
               <CountUp value={data.number} duration={1.05} format={(n) => `#${Math.round(n)}`} />
             </h1>
-            {typeof data.parentNumber === 'number' && (
-              <p className="mt-2 text-center text-[11px] font-bold text-amber-300 bg-amber-400/10 border border-amber-400/30 rounded-xl px-3 py-1.5" dir="auto">
-                {isAr ? `🔗 هذا الطلب سيصل مع الطلب #${data.parentNumber} — نفس عملية التوصيل` : `🔗 Arriving with order #${data.parentNumber} — same delivery`}
-              </p>
-            )}
-            {data.linked && Array.isArray(data.linked.numbers) && data.linked.numbers.length > 0 && (
-              <p className="mt-2 text-center text-[11px] font-extrabold text-[var(--primary)] bg-[var(--primary)]/10 border border-[var(--primary)]/30 rounded-xl px-3 py-1.5" dir="auto">
-                {isAr
-                  ? `🔗 طلباتك ستصل معًا (${[data.number, ...data.linked.numbers].sort((a, b) => a - b).map((n) => `#${n}`).join(' + ')}) — زر واحد يؤكد استلام الكل`
-                  : `🔗 Your orders (${[data.number, ...data.linked.numbers].sort((a, b) => a - b).map((n) => `#${n}`).join(' + ')}) arrive together — one tap confirms them all`}
-              </p>
-            )}
-
             {cancelled ? (
               <div className="mt-6 rounded-2xl border border-red-500/40 bg-red-950/30 p-5 text-center">
                 <XCircle size={32} className="mx-auto text-red-400" />

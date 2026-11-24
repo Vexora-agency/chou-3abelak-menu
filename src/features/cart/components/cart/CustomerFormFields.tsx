@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CustomerDetails } from '@/src/types/menu';
 import { cleanPhoneInput, phoneDigitsOnly } from '@/src/utils/digits';
 import {
@@ -85,6 +85,21 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
     enabled: addrTyped,
   });
   const [pickedLabel, setPickedLabel] = useState('');
+  // Which address text the current pin belongs to (suggestion pick OR map
+  // pick — both set the pin; typing is compared against this anchor).
+  // A ref mirror of the text is used so the anchor is captured at pin time.
+  const addressRef = useRef(customer.address);
+  addressRef.current = customer.address;
+  const pinAnchorRef = useRef<string | null>(null);
+  const prevLocationRef = useRef(location);
+  useEffect(() => {
+    if (location && !prevLocationRef.current) {
+      pinAnchorRef.current = addressRef.current;
+    } else if (!location) {
+      pinAnchorRef.current = null;
+    }
+    prevLocationRef.current = location;
+  }, [location]);
   const handleAddressPick = (suggestion: AddressSuggestion) => {
     const label = suggestion.label.slice(0, 200);
     addrAc.selectSuggestion(suggestion);
@@ -303,12 +318,13 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               setPickedLabel('');
               setAddrTyped(true);
               {
-                // Stale-pin guard: the pin belongs to the picked label. While
-                // the text only extends it (extra details) or deletes back
-                // inside it, the pin stays; once the text means a different
-                // place, drop the pin so the zone gate, fee and maps link
-                // never run on stale coordinates.
-                const anchor = pickedLabel.trim();
+                // Stale-pin guard: the pin belongs to the anchored text
+                // (picked suggestion or map pin). While the typed text only
+                // extends it (extra details) or deletes back inside it, the
+                // pin stays; once the text means a different place, drop the
+                // pin so the zone gate, fee and maps link never run on stale
+                // coordinates.
+                const anchor = (pinAnchorRef.current ?? '').trim();
                 const typed = e.target.value.trim();
                 if (onClearLocation && location && anchor && typed !== anchor
                   && !typed.startsWith(anchor) && !anchor.startsWith(typed)) {

@@ -47,6 +47,8 @@ import { isSoundOff, setSoundOff } from '@/src/utils/customerOrders';
 import { CustomerAvatar } from './CustomerAvatar';
 import { CartLocationSheet } from '@/src/features/cart/components/cart/CartLocationSheet';
 import { pinAddress } from '@/src/features/cart/hooks/useMidSplitLocationMap';
+import { useAddressAutocomplete, type AddressSuggestion } from '@/src/hooks/useAddressAutocomplete';
+import { AddressSuggestList } from '@/src/components/AddressSuggestList';
 import { CancelOrderButton } from '@/src/features/track/components/CancelOrderButton';
 import { ReceivedButton } from '@/src/features/track/components/ReceivedButton';
 import { useCustomerSession } from '../hooks/useCustomerSession';
@@ -481,6 +483,31 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     : dial.code
       ? nationalPart(phone, dial.code)
       : phone;
+  // Address autocomplete (Geoapify via the server proxy /api/geo/autocomplete
+  // — no key or Geoapify URL ever lives in the client). A pick sets both the
+  // text and the pin, mirroring the map-sheet onPick below; typing refines
+  // the text without touching the pin.
+  const addrCountry = /^[A-Za-z]{2}$/.test(dial.iso ?? '') ? dial.iso.toLowerCase() : '';
+  const addrAc = useAddressAutocomplete({
+    query: address,
+    lang,
+    country: addrCountry,
+  });
+  const [pickedLabel, setPickedLabel] = useState('');
+  const handleAccountAddressPick = (suggestion: AddressSuggestion) => {
+    const label = suggestion.label.slice(0, 200);
+    addrAc.selectSuggestion(suggestion);
+    formTouchedRef.current = true;
+    setPickedLabel(suggestion.label);
+    setAddress(label);
+    setLocation({ lat: suggestion.lat, lng: suggestion.lng, accuracy: 0 });
+    setSaveError('');
+  };
+  const showAddrEmptyState = addrAc.open
+    && !addrAc.loading
+    && addrAc.suggestions.length === 0
+    && address.trim().length >= 3
+    && address !== pickedLabel;
 
   const onPhoneChange = (raw: string) => {
     formTouchedRef.current = true;
@@ -1131,14 +1158,36 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                     value={address}
                     onChange={(e) => {
                       formTouchedRef.current = true;
+                      // Typing refines the text but keeps the pin (same rule
+                      // as the cart checkout). Clearing the hook's picked
+                      // marker lets a fresh query fetch again.
+                      addrAc.clearPicked();
+                      setPickedLabel('');
                       setAddress(e.target.value);
                       setSaveError('');
+                    }}
+                    onFocus={() => addrAc.setOpen(true)}
+                    onBlur={() => addrAc.setOpen(false)}
+                    onKeyDown={(e) => {
+                      const action = addrAc.handleKeyDown(e);
+                      if (action === 'pick') {
+                        const picked = addrAc.suggestions[addrAc.activeIndex] ?? addrAc.suggestions[0];
+                        if (picked) {
+                          e.preventDefault();
+                          handleAccountAddressPick(picked);
+                        }
+                      }
                     }}
                     autoComplete="street-address"
                     dir="auto"
                     maxLength={200}
                     placeholder={isAr ? 'اكتب تفاصيل العنوان' : 'Type the address details'}
                     className={`${inputClass} pr-12`}
+                    role="combobox"
+                    aria-expanded={addrAc.open}
+                    aria-controls="account-address-listbox"
+                    aria-activedescendant={addrAc.activeIndex >= 0 ? `account-address-listbox-opt-${addrAc.activeIndex}` : undefined}
+                    aria-autocomplete="list"
                     aria-describedby="account-address-note"
                     aria-required="true"
                   />
@@ -1155,7 +1204,21 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                   >
                     <MapPin size={19} aria-hidden="true" />
                   </button>
+                  {addrAc.open && (addrAc.loading || addrAc.suggestions.length > 0) && (
+                    <AddressSuggestList
+                      lang={lang}
+                      darkMode={darkMode}
+                      loading={addrAc.loading}
+                      items={addrAc.suggestions}
+                      activeIndex={addrAc.activeIndex}
+                      listId="account-address-listbox"
+                      onPick={handleAccountAddressPick}
+                    />
+                  )}
                 </div>
+                {showAddrEmptyState && (
+                  <p className={`mt-1 text-[10px] font-semibold ${mutedClass}`}>{isAr ? 'لا توجد اقتراحات مطابِقة — أكمل كتابة العنوان يدويًا' : 'No matching suggestions — keep typing your address manually'}</p>
+                )}
                 <p id="account-address-note" className={`mt-1 text-[10px] ${mutedClass}`}>{t.addressHint}</p>
               </div>
 

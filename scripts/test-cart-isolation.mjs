@@ -329,4 +329,101 @@ ok(
   'landing animations are one-shot (no loops/retained layers) and run for every visitor (owner policy)'
 );
 
+/* ---------- G. address autocomplete (cart checkout + account settings) ---------- */
+// Shared client: debounced + min-length gated, served from the server proxy
+// /api/geo/autocomplete — the browser never sees a key or a Geoapify URL.
+const acHook = read('src/hooks/useAddressAutocomplete.ts');
+const acList = read('src/components/AddressSuggestList.tsx');
+ok(
+  acHook.includes('DEBOUNCE_MS') && acHook.includes('MIN_QUERY_LENGTH')
+    && acHook.includes('/api/geo/autocomplete'),
+  'shared hook debounces, enforces a min query length, and calls the server proxy'
+);
+ok(
+  acHook.includes('selectSuggestion') && acHook.includes('clearPicked') && acHook.includes('handleKeyDown')
+    && acHook.includes("'pick'") && acHook.includes("'close'"),
+  'shared hook exposes the pick/clear/keyboard contract the parents rely on'
+);
+ok(
+  !acHook.includes('api.geoapify.com') && !acHook.includes('GEOAPIFY'),
+  'shared hook carries no Geoapify URL or key (the server proxy owns the secret)'
+);
+ok(
+  acList.includes('role="listbox"') && acList.includes('role="option"')
+    && acList.includes('https://www.geoapify.com/'),
+  'suggestion list uses listbox semantics with the required Geoapify attribution link'
+);
+// Cart checkout wiring (CustomerFormFields, fed by CartDrawer).
+ok(
+  formFields.includes("from '@/src/hooks/useAddressAutocomplete'") && formFields.includes('useAddressAutocomplete({')
+    && !formFields.includes('enabled:'),
+  'cart address always enables autocomplete (address entry is independent of phone state)'
+);
+ok(
+  formFields.includes('/^[A-Za-z]{2}$/') && formFields.includes('toLowerCase()'),
+  'cart passes a lowercased 2-letter country code (or empty) to autocomplete'
+);
+ok(
+  formFields.includes("from '@/src/components/AddressSuggestList'") && formFields.includes('<AddressSuggestList')
+    && formFields.includes('cart-address-listbox'),
+  'cart renders the shared suggestion list under the address input'
+);
+ok(
+  formFields.includes('role="combobox"') && formFields.includes('aria-expanded')
+    && formFields.includes('aria-controls') && formFields.includes('aria-autocomplete="list"')
+    && formFields.includes('aria-activedescendant'),
+  'cart address input exposes combobox semantics wired to the listbox'
+);
+ok(
+  formFields.includes('selectSuggestion') && formFields.includes('clearPicked') && formFields.includes('handleKeyDown'),
+  'cart drives pick/clear/keyboard through the hook contract'
+);
+ok(
+  formFields.includes('onPickCoords') && formFields.includes('suggestions[addrAc.activeIndex]')
+    && formFields.includes('setOpen(true)') && formFields.includes('setOpen(false)'),
+  'a picked cart suggestion fills the text and forwards its coords; focus opens, blur closes'
+);
+ok(
+  cartDrawer.includes('onPickCoords={(lat, lng, accuracy, label) => handleMapPick(lat, lng, accuracy, label)}'),
+  'cart wires a picked suggestion into the same handleMapPick path as the map sheet (label wins)'
+);
+ok(
+  formFields.includes('Typing refines the address but keeps the pin'),
+  'manual typing in the cart still keeps the pin (autocomplete never clears it)'
+);
+ok(
+  formFields.includes('لا توجد اقتراحات مطابِقة — أكمل كتابة العنوان يدويًا')
+    && formFields.includes('No matching suggestions — keep typing your address manually')
+    && formFields.includes('pickedLabel'),
+  'cart shows the MSA/English empty state (3+ chars, hidden for the picked label)'
+);
+// Account settings wiring (same hook + list, own pin state).
+ok(
+  accountSheet.includes("from '@/src/hooks/useAddressAutocomplete'") && accountSheet.includes('useAddressAutocomplete({'),
+  'account settings instantiates the same shared hook'
+);
+ok(
+  accountSheet.includes('<AddressSuggestList') && accountSheet.includes('account-address-listbox')
+    && accountSheet.includes('role="combobox"'),
+  'account settings renders the same suggestion list with combobox semantics'
+);
+ok(
+  accountSheet.includes('setLocation({ lat: suggestion.lat') && accountSheet.includes('selectSuggestion')
+    && accountSheet.includes('setAddress(label)'),
+  'a picked account suggestion sets both the address text and the map pin'
+);
+ok(
+  accountSheet.includes('aria-describedby="account-address-note"'),
+  'account address keeps its existing describedby note with autocomplete wired'
+);
+// No secrets or vendor URLs in the integrated parents.
+for (const p of [
+  'src/features/cart/components/cart/CustomerFormFields.tsx',
+  'src/features/auth/components/AccountSheet.tsx',
+  'src/features/cart/components/CartDrawer.tsx',
+]) {
+  const src = read(p);
+  ok(!src.includes('api.geoapify.com') && !src.includes('GEOAPIFY'), `${p} carries no API key or Geoapify URL`);
+}
+
 summary();

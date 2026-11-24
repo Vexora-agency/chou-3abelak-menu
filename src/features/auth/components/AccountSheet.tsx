@@ -1059,7 +1059,7 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                         className="inline-flex min-h-[30px] items-center gap-1 rounded-sm text-amber-600 underline underline-offset-2 transition-colors hover:text-amber-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] dark:text-amber-300"
                       >
                         <BadgeCheck size={12} aria-hidden="true" />
-                        {pv.notVerifiedBadge} · {pv.verifyNow}
+                        {pv.notVerifiedBadge}
                       </button>
                     )}
                   </div>

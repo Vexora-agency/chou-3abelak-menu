@@ -10,7 +10,7 @@ import {
   nationalPart,
   type DialCountry,
 } from '@/src/utils/phoneCountry';
-import { AlertTriangle, BadgeCheck, ChevronDown, Mail, Map, MapPin, Phone, ShieldCheck, X } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, ChevronDown, Eye, Mail, Map, MapPin, Phone, ShieldCheck, X } from 'lucide-react';
 import { PHONE_VERIFY_STR } from '@/src/features/auth';
 
 interface CustomerFormFieldsProps {
@@ -96,7 +96,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
       : null)
     || (showVerify
       ? (verifyPending
-        ? (isAr ? 'الرمز جاهز — بانتظار تأكيد المطعم.' : 'Code ready — waiting for the restaurant to confirm.')
+        ? (isAr ? 'الرمز جاهز.' : 'Code ready.')
         : (isAr ? 'أكّد هذا الرقم عبر واتساب قبل إرسال الطلب.' : 'Verify this number on WhatsApp before ordering.'))
       : null)
     || (phoneLinked
@@ -171,7 +171,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         }`}>
           {isAr ? 'رقم الهاتف *' : 'Phone Number *'}
         </label>
-        <div className="flex" dir="ltr">
+        <div className="relative flex" dir="ltr">
           {dial.code && !phoneForeign && (
             <span
               className={`inline-flex h-11 shrink-0 items-center gap-1.5 rounded-s-xl border border-e-0 px-3 text-sm font-extrabold tabular-nums ${
@@ -195,7 +195,9 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             enterKeyHint="next"
             aria-invalid={phoneErrorText ? true : undefined}
             aria-describedby={phoneNoteVisible ? 'cart-phone-note' : undefined}
-            className={`min-w-0 flex-1 h-11 px-3.5 border text-base tabular-nums text-start focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
+            className={`min-w-0 flex-1 h-11 ps-3.5 border text-base tabular-nums text-start focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
+              showVerify ? 'pe-28' : 'pe-3.5'
+            } ${
               dial.code && !phoneForeign ? 'rounded-e-xl rounded-s-none' : 'rounded-xl'
             } ${
               phoneErrorText ? 'border-red-500/60' : darkMode ? 'border-neutral-700' : 'border-neutral-300'
@@ -205,6 +207,22 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
                 : 'bg-white text-[#0A0A0A] placeholder-neutral-500 shadow-xs'
             }`}
           />
+          {showVerify && onVerifyPhone && (
+            <button
+              type="button"
+              onClick={onVerifyPhone}
+              className={`absolute end-1.5 top-1/2 -translate-y-1/2 inline-flex h-8 items-center gap-1 rounded-full border px-3 text-[11px] font-extrabold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] after:absolute after:-inset-2 after:content-[""] ${
+                darkMode
+                  ? 'border-[var(--primary)]/40 bg-[#181818] text-[var(--primary)]'
+                  : 'border-[#8a6d00]/40 bg-white text-[#8a6d00]'
+              }`}
+            >
+              {verifyPending
+                ? <Eye size={13} aria-hidden="true" />
+                : <ShieldCheck size={13} aria-hidden="true" />}
+              {verifyPending ? pv.viewCode : pv.verifyShort}
+            </button>
+          )}
         </div>
         {phoneNoteVisible && (
           <p
@@ -218,15 +236,6 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               <ShieldCheck size={12} className="me-1 -mt-0.5 inline-block align-middle" aria-hidden="true" />
             ) : null}
             {phoneNoteText}
-            {showVerify && onVerifyPhone && (
-              <button
-                type="button"
-                onClick={onVerifyPhone}
-                className="ms-1.5 underline underline-offset-2 font-extrabold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded-sm"
-              >
-                {verifyPending ? pv.viewCode : pv.verifyNow}
-              </button>
-            )}
             {phoneChanged && accountPhone && (
               <button
                 type="button"

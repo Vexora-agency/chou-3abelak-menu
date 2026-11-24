@@ -114,8 +114,8 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
           orderNumber: null,
           trackToken: null,
           blockedMessage: msg || (lang === 'ar'
-            ? 'أكّد رقم الهاتف عبر واتساب قبل إرسال الطلب.'
-            : 'Verify your phone number on WhatsApp before placing the order.'),
+            ? 'أكّد رقم هاتفك لإتمام الطلب.'
+            : 'Verify your phone number to place the order.'),
           failure: 'phone',
         };
       }

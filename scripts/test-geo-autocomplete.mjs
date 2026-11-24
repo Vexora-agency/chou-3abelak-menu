@@ -277,8 +277,8 @@ try {
     && (res.headers.get('Content-Type') || '').includes('application/json'));
   check('route: response never carries the key', !JSON.stringify(body).includes('route-key-xyz'));
   check('route: upstream URL carries the key server-side', capturedUrl.includes('route-key-xyz'));
-  check('route: upstream URL carries lang + country filter', param(capturedUrl, 'lang') === 'ar'
-    && param(capturedUrl, 'filter') === 'countrycode:lb');
+  check('route: upstream URL carries lang and NO strict country filter (bias-only ranking)',
+    param(capturedUrl, 'lang') === 'ar' && param(capturedUrl, 'filter') === null);
   check('route: upstream URL biases to the restaurant pin (LON,LAT)',
     param(capturedUrl, 'bias') === 'proximity:35.5018,33.8938');
 

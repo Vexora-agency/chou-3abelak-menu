@@ -70,3 +70,11 @@ UNIMTX_SMS_TEMPLATE_ID_EN=
 UNIMTX_SMS_TEMPLATE_VAR=code
 # Optional pre-registered sender name, only if the route requires one.
 UNIMTX_SMS_SIGNATURE=
+
+# --- Address autocomplete (Geoapify, server-side proxy only) ---
+# The browser never sees this key: functions/api/geo/autocomplete.js calls
+# Geoapify server-to-server and returns only stripped suggestions.
+# Get a key at https://www.geoapify.com/ (free tier is enough). Fake value only.
+GEOAPIFY_API_KEY=
+# Optional global autocomplete cap per day (default 2500).
+GEOAPIFY_DAILY_MAX=2500

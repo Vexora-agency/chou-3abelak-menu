@@ -12,6 +12,8 @@ import {
 } from '@/src/utils/phoneCountry';
 import { AlertTriangle, BadgeCheck, ChevronDown, Eye, Mail, Map, MapPin, Phone, ShieldCheck, X } from 'lucide-react';
 import { PHONE_VERIFY_STR } from '@/src/features/auth';
+import { useAddressAutocomplete, type AddressSuggestion } from '@/src/hooks/useAddressAutocomplete';
+import { AddressSuggestList } from '@/src/components/AddressSuggestList';
 
 interface CustomerFormFieldsProps {
   customer: CustomerDetails;
@@ -37,6 +39,9 @@ interface CustomerFormFieldsProps {
   onVerifyPhone?: () => void;
   onOpenLocSheet: () => void;
   onClearLocation: () => void;
+  /** A picked autocomplete suggestion sets the pin through the same map-pick
+      path (location + label); manual typing never touches the pin. */
+  onPickCoords?: (lat: number, lng: number, accuracy: number, label: string) => void;
 }
 
 export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
@@ -57,6 +62,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   onVerifyPhone,
   onOpenLocSheet,
   onClearLocation,
+  onPickCoords,
 }) => {
   const isAr = lang === 'ar';
   const pv = PHONE_VERIFY_STR[lang];
@@ -64,6 +70,28 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const dial: DialCountry = phoneDial ?? { iso: '', code: '' };
   const phoneForeign = isForeignNumber(customer.phone, dial.code);
+  // Address autocomplete (Geoapify via the server proxy /api/geo/autocomplete
+  // — no key or Geoapify URL ever lives in the client). A pick fills the text
+  // AND sets the pin through onPickCoords; typing only refines the text.
+  const addrCountry = /^[A-Za-z]{2}$/.test(dial.iso ?? '') ? dial.iso.toLowerCase() : '';
+  const addrAc = useAddressAutocomplete({
+    query: customer.address,
+    lang,
+    country: addrCountry,
+  });
+  const [pickedLabel, setPickedLabel] = useState('');
+  const handleAddressPick = (suggestion: AddressSuggestion) => {
+    const label = suggestion.label.slice(0, 200);
+    addrAc.selectSuggestion(suggestion);
+    setPickedLabel(suggestion.label);
+    setCustomer({ ...customer, address: label });
+    if (onPickCoords) onPickCoords(suggestion.lat, suggestion.lng, 0, label);
+  };
+  const showAddrEmptyState = addrAc.open
+    && !addrAc.loading
+    && addrAc.suggestions.length === 0
+    && customer.address.trim().length >= 3
+    && customer.address !== pickedLabel;
   const phoneDisplay = phoneForeign
     ? customer.phone
     : dial.code
@@ -263,13 +291,33 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               // Typing refines the address but keeps the pin: a picked point
               // plus a detailed address (building, floor, landmark) is the
               // best pair for the driver. The pin is removed only via its
-              // explicit X button.
+              // explicit X button. Clearing the hook's picked marker lets a
+              // fresh query fetch again.
+              addrAc.clearPicked();
+              setPickedLabel('');
               setCustomer({ ...customer, address: e.target.value });
+            }}
+            onFocus={() => addrAc.setOpen(true)}
+            onBlur={() => addrAc.setOpen(false)}
+            onKeyDown={(e) => {
+              const action = addrAc.handleKeyDown(e);
+              if (action === 'pick') {
+                const picked = addrAc.suggestions[addrAc.activeIndex] ?? addrAc.suggestions[0];
+                if (picked) {
+                  e.preventDefault();
+                  handleAddressPick(picked);
+                }
+              }
             }}
             placeholder={isAr ? 'اكتب عنوانك هنا أو حدّده على الخريطة' : 'Type your address here, or pin it on the map'}
             maxLength={200}
             autoComplete="street-address"
             enterKeyHint="next"
+            role="combobox"
+            aria-expanded={addrAc.open}
+            aria-controls="cart-address-listbox"
+            aria-activedescendant={addrAc.activeIndex >= 0 ? `cart-address-listbox-opt-${addrAc.activeIndex}` : undefined}
+            aria-autocomplete="list"
             className={`w-full h-11 pl-3.5 pr-12 rounded-xl border text-base focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-colors ${
               darkMode
                 ? 'bg-[#181818] border-neutral-700 text-white placeholder-neutral-400'
@@ -291,7 +339,23 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               <MapPin size={20} />
             </button>
           )}
+          {addrAc.open && (addrAc.loading || addrAc.suggestions.length > 0) && (
+            <AddressSuggestList
+              lang={lang}
+              darkMode={darkMode}
+              loading={addrAc.loading}
+              items={addrAc.suggestions}
+              activeIndex={addrAc.activeIndex}
+              listId="cart-address-listbox"
+              onPick={handleAddressPick}
+            />
+          )}
         </div>
+        {showAddrEmptyState && (
+          <p className={`mt-1 text-[10.5px] font-semibold leading-relaxed ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>
+            {isAr ? 'لا توجد اقتراحات مطابِقة — أكمل كتابة العنوان يدويًا' : 'No matching suggestions — keep typing your address manually'}
+          </p>
+        )}
         {location && (
           <div className={`mt-2 rounded-2xl border p-2.5 ${darkMode ? 'border-emerald-400/25 bg-emerald-400/[0.06]' : 'border-emerald-200 bg-emerald-50/80'}`}>
             <div className="flex items-start gap-2.5">

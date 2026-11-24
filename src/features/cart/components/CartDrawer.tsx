@@ -391,6 +391,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               darkMode={darkMode}
               onOpenLocSheet={() => setLocSheetOpen(true)}
               onClearLocation={clearLocation}
+              onPickCoords={(lat, lng, accuracy, label) => handleMapPick(lat, lng, accuracy, label)}
               isMember={!!account.user}
               accountPhone={account.profile?.phone ?? null}
               phoneDial={phoneDial}

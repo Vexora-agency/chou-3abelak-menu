@@ -61,6 +61,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const phoneDial = dialFromSettings(menu.settings);
   const account = useCustomerProfile(isOpen);
   const [verifyOpen, setVerifyOpen] = useState(false);
+  // The number under verification is frozen the moment the sheet opens. The
+  // sheet must follow the number its code was minted for: sending an older
+  // code after editing the field approves the old number while the sheet
+  // polls the new one — a stuck "checking" next to a WhatsApp success.
+  const [verifyPhoneFrozen, setVerifyPhoneFrozen] = useState<string | null>(null);
+  const verificationPhoneRef = useRef<string | null>(null);
+  const openVerification = () => {
+    setVerifyPhoneFrozen(verificationPhoneRef.current);
+    setVerifyOpen(true);
+  };
+  const closeVerification = () => {
+    setVerifyOpen(false);
+    setVerifyPhoneFrozen(null);
+  };
   const phoneVerifiedRef = useRef(false);
   const phoneTakenRef = useRef(false);
   // New members (including Google sign-ups) must add a phone and default
@@ -102,15 +116,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     handleSendOrder,
     zoneBlocked,
     zonePlaceName,
-  } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart, accountUser: account.user, accountProfile: account.profile, accountLoading: account.loading, onRequireAccount, onRequireProfile, isPhoneVerified: () => phoneVerifiedRef.current, isPhoneTaken: () => phoneTakenRef.current, onRequirePhoneVerification: () => setVerifyOpen(true) });
+  } = useCartCheckoutSubmit({ menu, lines, lang, currency, orderingState, onOrderSuccess: onClearCart, accountUser: account.user, accountProfile: account.profile, accountLoading: account.loading, onRequireAccount, onRequireProfile, isPhoneVerified: () => phoneVerifiedRef.current, isPhoneTaken: () => phoneTakenRef.current, onRequirePhoneVerification: openVerification });
 
   // Reverse WhatsApp verification for the exact number typed in the cart.
   // Enabled only while the drawer is open for a signed-in member, so guests
   // make no request and a closed drawer costs nothing.
   const enteredPhoneCheck = checkPhone(customer.phone, phoneDial.code);
   const verificationPhone = enteredPhoneCheck.ok ? enteredPhoneCheck.normalized : null;
+  verificationPhoneRef.current = verificationPhone;
   const phoneVerification = usePhoneVerification(
-    verificationPhone,
+    verifyOpen ? verifyPhoneFrozen : verificationPhone,
     isOpen && !!account.user && !account.loading,
   );
   const savedPhoneCheck = account.profile?.phone
@@ -135,7 +150,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     phoneTakenRef.current = phoneTaken;
   }, [phoneTaken]);
   useEffect(() => {
-    if (!isOpen) setVerifyOpen(false);
+    if (!isOpen) {
+      setVerifyOpen(false);
+      setVerifyPhoneFrozen(null);
+    }
   }, [isOpen]);
 
   // Radical phone-scroll fix: shared counter lock (iOS-safe, nested-sheet
@@ -378,7 +396,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               phoneDial={phoneDial}
               phoneVerified={phoneVerified}
               phoneVerificationPhase={phoneVerification.phase}
-              onVerifyPhone={verificationPhone ? () => setVerifyOpen(true) : undefined}
+              onVerifyPhone={verificationPhone ? openVerification : undefined}
             />
 
             {/* Payment method (COD preselected + locked; future gateways
@@ -478,8 +496,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       {!!account.user && (
         <PhoneVerificationSheet
           open={verifyOpen}
-          onClose={() => setVerifyOpen(false)}
-          phone={verificationPhone}
+          onClose={closeVerification}
+          phone={verifyPhoneFrozen}
           lang={lang}
           darkMode={darkMode}
           verification={phoneVerification}

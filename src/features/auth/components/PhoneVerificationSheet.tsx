@@ -463,10 +463,13 @@ export function PhoneVerificationSheet({
                       </div>
 
                       {verification.phase === 'pending' && (
-                        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+                        <div className="flex flex-col flex-wrap items-center justify-center gap-x-3 gap-y-1">
                           <p className={`inline-flex items-center gap-1.5 text-[10.5px] font-bold ${muted}`} role="status">
                             <Loader2 size={12} className="animate-spin" aria-hidden="true" />
                             {t.waiting}
+                          </p>
+                          <p className={`text-center text-[10px] leading-relaxed ${muted}`}>
+                            {t.currentCodeHint}
                           </p>
                           {leftMs <= 0 && (
                             <button

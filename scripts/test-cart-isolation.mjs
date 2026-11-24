@@ -143,6 +143,12 @@ ok(
   'the cart passes the saved account number as the reset baseline'
 );
 ok(
+  cartDrawer.includes('verifyPhoneFrozen')
+    && cartDrawer.includes('verifyOpen ? verifyPhoneFrozen : verificationPhone')
+    && cartDrawer.includes('phone={verifyPhoneFrozen}'),
+  'the verification sheet freezes the number its code was minted for instead of following later cart edits'
+);
+ok(
   !cartDrawer.includes('onOpenSettings'),
   'the cart no longer routes the phone note to Account → Settings'
 );

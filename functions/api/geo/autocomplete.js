@@ -17,8 +17,11 @@
  *
  * Proximity bias is best-effort: the restaurant pin is parsed from the
  * stored menu.settings.mapUrl with parseMapUrlCoordsJs and skipped when
- * the KV/menu/pin is missing or unparseable. Responses and logs never
- * carry the key, the provider body, or the full query.
+ * the KV/menu/pin is missing or unparseable. There is deliberately NO
+ * strict country filter: delivery areas span borders and the phone-dial
+ * country is not the service area — proximity bias ranks the closest
+ * matches first and the customer picks. Responses and logs never carry
+ * the key, the provider body, or the full query.
  */
 
 import { jsonNoStore } from '../../_shared/session.js';
@@ -101,13 +104,14 @@ export async function onRequest(context) {
 
   const rawLang = params.get('lang');
   const lang = typeof rawLang === 'string' && rawLang.trim().toLowerCase() === 'ar' ? 'ar' : 'en';
-  const rawCountry = params.get('country');
-  const country = typeof rawCountry === 'string' ? rawCountry : '';
+  // NOTE: the client's `country` hint is accepted but intentionally NOT
+  // forwarded as a strict Geoapify filter (see header comment): ranking is
+  // proximity-bias only.
   const bias = await readBias(env);
 
   let upstream;
   try {
-    upstream = await fetchAutocomplete(env, { text: q, lang, country, bias });
+    upstream = await fetchAutocomplete(env, { text: q, lang, country: undefined, bias });
   } catch {
     return jsonNoStore({ error: 'autocomplete_failed' }, 502);
   }

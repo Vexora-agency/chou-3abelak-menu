@@ -47,6 +47,19 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
   const ordering = menu.settings.ordering;
   const phoneDial = dialFromSettings(menu.settings);
 
+  // Names the missing SAVED account field(s) so a member who typed a
+  // perfect per-order address understands why the order still needs the
+  // profile: the gate reads the account, never the cart text.
+  const missingProfileHint = () => {
+    const missing: string[] = [];
+    if (!accountProfile?.phone?.trim()) missing.push(isAr ? 'رقم الهاتف' : 'phone number');
+    if (!accountProfile?.address?.trim()) missing.push(isAr ? 'العنوان الافتراضي' : 'default address');
+    const list = missing.join(isAr ? '، ' : ', ');
+    return isAr
+      ? `أكمل بيانات حسابك المحفوظة${list ? ` (${list})` : ''} قبل إرسال الطلب — عنوان السلة وحده لا يكفي.`
+      : `Complete your saved account details${list ? ` (${list})` : ''} before ordering — this order's address alone is not enough.`;
+  };
+
   // Retrieve remembered customer details if available (delivery only).
   // Prefill is independent from consent: the box checks only when the saved
   // record carries an explicit `remember: true` from the current opt-in. A
@@ -103,13 +116,20 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
 
   // A signed-in member's account seeds the checkout identity (name/phone/
   // email) and the starting delivery defaults. The device "remember me" blob
-  // is guest data and must never override it. Name and phone are per-order
-  // fields: after the first seed they are never overwritten by a later profile
-  // refetch, so an edit the member made in the cart survives. The address
-  // keeps following the account until the member types a per-order one.
+  // is guest data and must never override it. Name, phone AND address are
+  // per-order fields after the first seed: a value the member typed (or a
+  // pin they picked/cleared) survives a later profile refetch; an untouched
+  // field keeps following the account, so account-settings edits still land
+  // here without a reload.
   const memberProfileKeyRef = useRef('');
   const memberIdentitySeenRef = useRef(false);
   const memberIdentitySeededRef = useRef<string | null>(null);
+  const lastSyncedAddressRef = useRef<string | null>(null);
+  const lastSyncedLocKeyRef = useRef<string | null>(null);
+  const locationRef = useRef(location);
+  locationRef.current = location;
+  const customerRef = useRef(customer);
+  customerRef.current = customer;
   useEffect(() => {
     if (!accountUser) {
       // Signing out must not leave the member's name/phone/address in a
@@ -120,6 +140,8 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         memberIdentitySeenRef.current = false;
         memberProfileKeyRef.current = '';
         memberIdentitySeededRef.current = null;
+        lastSyncedAddressRef.current = null;
+        lastSyncedLocKeyRef.current = null;
         setCustomer((prev) => ({ ...prev, name: '', phone: '', address: '', email: '', remember: false }));
         setLocation(null);
       }
@@ -141,12 +163,10 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     memberProfileKeyRef.current = key;
     // The session (name) resolves before the profile (phone): seeding with a
     // half-loaded profile would lock an empty phone forever, so the one-time
-    // identity seed waits for the profile load while the address keeps
-    // following the account on every key change.
+    // identity seed waits for the profile load.
     if (accountLoading) {
       setCustomer((prev) => ({
         ...prev,
-        address: accountProfile?.address || '',
         email: accountUser.email || '',
       }));
       return;
@@ -155,11 +175,22 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     if (seedIdentity) memberIdentitySeededRef.current = accountUser.id;
     const nextName = accountUser.name || '';
     const nextPhone = accountProfile?.phone || '';
+    const nextAddress = accountProfile?.address || '';
+    // Per-order wins: an address the member typed (or a pin they picked or
+    // cleared) is left alone; an untouched field follows the account.
+    const curAddress = customerRef.current.address;
+    const addressEdited = lastSyncedAddressRef.current !== null && curAddress !== lastSyncedAddressRef.current;
+    const finalAddress = seedIdentity ? (nextAddress || curAddress) : (addressEdited ? curAddress : nextAddress);
+    lastSyncedAddressRef.current = finalAddress;
+    const curLoc = locationRef.current;
+    const curLocKey = curLoc ? [curLoc.lat, curLoc.lng, curLoc.accuracy ?? 0].join('|') : '';
+    const locUntouched = (lastSyncedLocKeyRef.current ?? '') === curLocKey;
+    const nextLocKey = saved ? [saved.lat, saved.lng, saved.accuracy ?? 0].join('|') : '';
     setCustomer((prev) => ({
       ...prev,
       name: seedIdentity ? (nextName || prev.name) : prev.name,
       phone: seedIdentity ? (nextPhone || prev.phone) : (prev.phone || nextPhone),
-      address: accountProfile?.address || '',
+      address: finalAddress,
       email: accountUser.email || '',
       // Members now get the same device opt-in as guests. Their identity
       // still comes from the account; the flag persists device-side extras
@@ -167,7 +198,10 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       // fresh every order by design.
       remember: prev.remember || false,
     }));
-    setLocation(saved ? { lat: saved.lat, lng: saved.lng, accuracy: saved.accuracy ?? 0 } : null);
+    if (locUntouched) {
+      lastSyncedLocKeyRef.current = nextLocKey;
+      setLocation(saved ? { lat: saved.lat, lng: saved.lng, accuracy: saved.accuracy ?? 0 } : null);
+    }
   }, [
     accountUser?.id,
     accountUser?.name,
@@ -322,7 +356,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       return;
     }
     if (!isProfileComplete(accountProfile)) {
-      setErrorMsg(AUTH_STR[lang].profileIncompleteOrder);
+      setErrorMsg(missingProfileHint());
       onRequireProfile?.();
       return;
     }
@@ -512,7 +546,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       if (result.failure === 'profile') {
         // Server-side profile gate (defense in depth): the client may hold a
         // stale complete profile. Show why and open Settings over the cart.
-        setErrorMsg(result.blockedMessage || AUTH_STR[lang].profileIncompleteOrder);
+        setErrorMsg(result.blockedMessage || missingProfileHint());
         onRequireProfile?.();
         return;
       }

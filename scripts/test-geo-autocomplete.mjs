@@ -99,7 +99,7 @@ check('url hits the autocomplete endpoint', built.startsWith('https://api.geoapi
 check('url carries text', param(built, 'text') === 'Beirut');
 check('url carries format=json', param(built, 'format') === 'json');
 check('url carries the key (server-side only)', param(built, 'apiKey') === 'test-key-abc123');
-check('url carries limit=5', param(built, 'limit') === '5');
+check('url carries limit=10', param(built, 'limit') === '10');
 check('url carries lang', param(built, 'lang') === 'ar');
 
 const biased = buildAutocompleteUrl(KEY_ENV, { text: 'Beirut', bias: { lng: 35.5, lat: 33.9 } });
@@ -178,6 +178,36 @@ check(
 check('garbage payloads sanitize to []', JSON.stringify(sanitizeAutocompleteResults(null)) === '[]'
   && JSON.stringify(sanitizeAutocompleteResults({})) === '[]'
   && JSON.stringify(sanitizeAutocompleteResults({ results: 'x' })) === '[]');
+check(
+  'sanitizer passes through 10 richer results',
+  sanitizeAutocompleteResults({
+    results: Array.from({ length: 10 }, (_, i) => ({
+      formatted: `Place ${i}, Beirut, Lebanon`,
+      address_line1: `Street ${i}`,
+      address_line2: 'Beirut, Lebanon',
+      lat: 33.8 + i * 0.001,
+      lon: 35.4 + i * 0.001,
+    })),
+  }).length === 10
+);
+check(
+  'street/building rows kept with line1 intact (street names prominent)',
+  (() => {
+    const rows = sanitizeAutocompleteResults({
+      results: [
+        { formatted: 'Hamra Street, Beirut, Lebanon', address_line1: 'Hamra Street', address_line2: 'Beirut, Lebanon', result_type: 'street', street: 'Hamra Street', lat: 33.9, lon: 35.5 },
+        { formatted: 'Bldg 12, Hamra Street, Beirut', address_line1: 'Bldg 12, Hamra Street', address_line2: 'Beirut, Lebanon', result_type: 'building', lat: 33.901, lon: 35.501 },
+      ],
+    });
+    return rows.length === 2 && rows[0].line1 === 'Hamra Street' && rows[1].line1 === 'Bldg 12, Hamra Street';
+  })()
+);
+check(
+  'empty address_line1 kept for label fallback (display uses line1 || label)',
+  JSON.stringify(sanitizeAutocompleteResults({
+    results: [{ formatted: 'Beirut, Lebanon', address_line1: '', address_line2: 'Beirut, Lebanon', result_type: 'city', lat: 33.8938, lon: 35.5018 }],
+  })) === JSON.stringify([{ label: 'Beirut, Lebanon', line1: '', line2: 'Beirut, Lebanon', lat: 33.8938, lng: 35.5018 }])
+);
 
 /* ---------- fetchAutocomplete unit (mocked fetch) ---------- */
 

@@ -351,8 +351,13 @@ const WishlistRow: FC<{
   const showImage = Boolean(item.imageUrl) && !imageFailed;
 
   return (
-    <div
-      className={`group flex items-center gap-3 rounded-2xl border p-2.5 transition-colors ${
+    <motion.div
+      layout="position"
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.92, height: 0, paddingTop: 0, paddingBottom: 0, marginTop: 0, marginBottom: 0 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className={`group flex items-center gap-3 rounded-2xl border p-2.5 transition-colors overflow-hidden ${
         darkMode
           ? 'border-neutral-800 bg-neutral-900 hover:border-[var(--primary)]/40'
           : 'border-neutral-200 bg-[#fafafa] hover:border-[var(--primary)]/60'
@@ -423,7 +428,7 @@ const WishlistRow: FC<{
         tone="surface"
         size="md"
       />
-    </div>
+    </motion.div>
   );
 };
 
@@ -1009,24 +1014,26 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
 
               {wishlistItems.length > 0 && menu && (
                 <div className="mt-3 space-y-2.5 pb-2">
-                  {wishlistItems.map((menuItem) => {
-                    const category = categoryById.get(menuItem.categoryId);
-                    return (
-                      <WishlistRow
-                        key={menuItem.id}
-                        item={menuItem}
-                        categoryName={category ? (isAr ? category.name.ar : category.name.en) : ''}
-                        menu={menu}
-                        lang={lang}
-                        darkMode={darkMode}
-                        currency={currency}
-                        onOpen={() => {
-                          onClose();
-                          onOpenItem?.(menuItem);
-                        }}
-                      />
-                    );
-                  })}
+                  <AnimatePresence initial={false}>
+                    {wishlistItems.map((menuItem) => {
+                      const category = categoryById.get(menuItem.categoryId);
+                      return (
+                        <WishlistRow
+                          key={menuItem.id}
+                          item={menuItem}
+                          categoryName={category ? (isAr ? category.name.ar : category.name.en) : ''}
+                          menu={menu}
+                          lang={lang}
+                          darkMode={darkMode}
+                          currency={currency}
+                          onOpen={() => {
+                            onClose();
+                            onOpenItem?.(menuItem);
+                          }}
+                        />
+                      );
+                    })}
+                  </AnimatePresence>
                 </div>
               )}
             </div>
@@ -1170,6 +1177,17 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                       addrAc.clearPicked();
                       setPickedLabel('');
                       setAddrTyped(true);
+                      {
+                        // Same stale-pin guard as the cart: once the text
+                        // means a different place than the picked label, drop
+                        // the pin instead of gating on stale coordinates.
+                        const anchor = pickedLabel.trim();
+                        const typed = e.target.value.trim();
+                        if (location && anchor && typed !== anchor
+                          && !typed.startsWith(anchor) && !anchor.startsWith(typed)) {
+                          setLocation(null);
+                        }
+                      }
                       setAddress(e.target.value);
                       setSaveError('');
                     }}

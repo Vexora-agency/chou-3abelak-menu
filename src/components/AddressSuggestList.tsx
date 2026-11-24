@@ -34,7 +34,7 @@ export function AddressSuggestList({
     <div
       id={listId}
       role="listbox"
-      className={`absolute inset-x-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-2xl border shadow-xl ${
+      className={`absolute inset-x-0 top-full z-50 mt-1 max-h-[38dvh] min-h-[52px] overflow-y-auto rounded-2xl border shadow-xl ${
         darkMode ? 'border-neutral-700 bg-[#181818]' : 'border-neutral-300 bg-white'
       }`}
     >
@@ -62,7 +62,7 @@ export function AddressSuggestList({
               e.preventDefault();
               onPick(item);
             }}
-            className={`flex w-full items-start gap-2.5 px-4 py-2.5 text-start ${
+            className={`flex min-h-[44px] w-full items-center gap-2.5 px-4 py-2 text-start ${
               active ? 'bg-[var(--primary)]/10' : ''
             }`}
           >

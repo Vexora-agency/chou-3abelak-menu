@@ -96,7 +96,7 @@ export function buildAutocompleteUrl(env, options) {
   params.set('format', 'json');
   params.set('apiKey', apiKey);
   params.set('lang', lang);
-  params.set('limit', '5');
+  params.set('limit', '10');
   const codes = normalizeCountryCodes(
     Array.isArray(opts.countries) ? opts.countries : opts.country,
   );

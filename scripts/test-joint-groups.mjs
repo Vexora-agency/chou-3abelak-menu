@@ -286,4 +286,20 @@ async function insertDirect(db, { phone, status = 'new', createdAt = null, paren
   ok((await resolveReplyToMessageId(db, 4242, 777)) === null, 'unknown order gets no reply id');
 }
 
+/* ---------------- 7. customer surfaces hide the joint messaging ---------------- */
+{
+  const track = readFileSync(join(ROOT, 'src/features/track/TrackView.tsx'), 'utf8');
+  const bell = readFileSync(join(ROOT, 'src/features/track/components/OrdersBell.tsx'), 'utf8');
+  const dash = readFileSync(join(ROOT, 'src/features/orders/components/orders/OrdersDashList.tsx'), 'utf8');
+  for (const [name, src] of [['TrackView', track], ['OrdersBell', bell]]) {
+    ok(!src.includes('سيصل مع الطلب') && !src.includes('ستصل مع'), `${name} shows no joint-delivery banner to the customer (ar)`);
+    ok(!src.includes('Arriving with order') && !src.includes('arrive together'), `${name} shows no joint-delivery banner to the customer (en)`);
+  }
+  // The joint receipt still completes the whole group in one tap (server +
+  // button behavior unchanged); only the explanatory banners are gone.
+  ok(track.includes('groupCount={data.linked') && bell.includes('groupCount={'), 'joint receipt still completes the group in one tap');
+  ok(dash.includes('inGroup') && dash.includes('{!inGroup && o.status'), 'group members hide their own advance buttons; the GroupCard owns the single one');
+  ok(dash.includes('basis-full sm:basis-auto') && !dash.includes('shortCustomerName'), 'customer name stacks below the number on phones, inline on sm+');
+}
+
 summary();

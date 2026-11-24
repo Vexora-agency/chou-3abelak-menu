@@ -49,16 +49,23 @@ interface OrderRowProps {
   flashId: string | null;
   onStatusChange: (id: string, status: OrderStatus) => void;
   onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
+  /** True when this row renders inside a joint-delivery GroupCard: the group
+   *  owns the single advance button, so per-row ack/complete stay hidden
+   *  (cancel + reopen stay per-order). */
+  inGroup?: boolean;
 }
 
-/** First two whitespace-separated name parts for narrow screens. */
-function shortCustomerName(name: string): string {
-  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
-  return parts.slice(0, 2).join(' ') || '—';
-}
+/** Customer name: full width on its own row on phones (long names stay
+ *  readable instead of being squeezed between the number and the total),
+ *  inline on sm+ where there is room. */
+const CustomerName: FC<{ name: string }> = ({ name }) => (
+  <span className="min-w-0 flex-1 basis-full sm:basis-auto order-last sm:order-none text-sm font-semibold" title={name || undefined}>
+    <span className="block truncate">{name || '—'}</span>
+  </span>
+);
 
 /** Single order card (row + expandable detail). Pure presentational. */
-const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, currency, now, flashId, onStatusChange, onConfirm }) => {
+const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, currency, now, flashId, onStatusChange, onConfirm, inGroup = false }) => {
   const TypeIcon = TYPE_ICON[o.type] ?? Store;
   // Smart ETA: absolute 12h time while on-time, mins-late once passed.
   const etaMs = typeof o.etaAt === 'string' && o.etaAt ? Date.parse(o.etaAt) : NaN;
@@ -77,17 +84,14 @@ const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, cur
         className="w-full text-start p-3.5 flex items-center gap-3">
         <span className="shrink-0 w-10 h-10 rounded-xl bg-black border border-neutral-800 text-[var(--primary)] flex items-center justify-center"><TypeIcon size={18} /></span>
         <span className="min-w-0 flex-1">
-          <span className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <b className="text-sm tabular-nums" dir="ltr">#{o.number}</b>
             {typeof o.parentNumber === 'number' && (
               <span dir="auto" className="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-300">
                 {t.linkedShort(o.parentNumber)}
               </span>
             )}
-            <span className="min-w-0 flex-1 text-sm font-semibold" title={o.customer.name || undefined}>
-              <span className="sm:hidden block truncate">{shortCustomerName(o.customer.name)}</span>
-              <span className="hidden sm:block truncate">{o.customer.name || '—'}</span>
-            </span>
+            <CustomerName name={o.customer.name} />
             {o.customerUserId && (
               <span
                 title={t.registeredTip}
@@ -202,11 +206,12 @@ const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, cur
                 {/* Kitchen flow (simplified: new = acknowledge (start preparing),
                     confirmed = complete on delivery/pickup. Legacy `ready`
                     orders keep their complete button — no new order ever
-                    enters `ready`. Cancel stays available until
-                    completion; terminal orders can only reopen. */}
-                {o.status === 'new' && <button type="button" onClick={() => onStatusChange(o.id, 'confirmed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><BellRing size={14} strokeWidth={2.5} />{t.ack}</button>}
-                {o.status === 'confirmed' && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Check size={14} strokeWidth={3} />{t.complete}</button>}
-                {o.status === 'ready' && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Check size={14} strokeWidth={3} />{t.complete}</button>}
+                    enters `ready`. Group members hide their own advance
+                    buttons: the GroupCard owns the single advance button for
+                    the whole pair. Cancel + reopen stay per-order. */}
+                {!inGroup && o.status === 'new' && <button type="button" onClick={() => onStatusChange(o.id, 'confirmed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><BellRing size={14} strokeWidth={2.5} />{t.ack}</button>}
+                {!inGroup && o.status === 'confirmed' && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Check size={14} strokeWidth={3} />{t.complete}</button>}
+                {!inGroup && o.status === 'ready' && <button type="button" onClick={() => onStatusChange(o.id, 'completed')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-extrabold inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"><Check size={14} strokeWidth={3} />{t.complete}</button>}
                 {(o.status === 'completed' || o.status === 'cancelled') && <button type="button" onClick={() => onStatusChange(o.id, 'new')} className="btn-tactile h-11 min-h-[44px] px-5 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">{t.reopen}</button>}
                 {(o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && <button type="button" onClick={() => {
                   if (onConfirm) {
@@ -301,6 +306,7 @@ const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t,
             flashId={flashId}
             onStatusChange={onStatusChange}
             onConfirm={onConfirm}
+            inGroup
           />
         ))}
       </div>

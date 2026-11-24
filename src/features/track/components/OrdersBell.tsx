@@ -699,15 +699,6 @@ export const OrdersBell: React.FC<OrdersBellProps> = ({ lang, darkMode = true })
                         <span className="inline-flex items-center gap-1 ms-1"><PackageSearch size={11} />{isAr ? 'تعذر التحديث' : 'Update unavailable'}</span>
                       )}
                     </p>
-                    {Array.isArray(o.groupNumbers) && o.groupNumbers.length > 0 && (o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') ? (
-                      <p className={`mt-1 text-[11px] font-bold ${darkMode ? 'text-amber-300' : 'text-amber-700'}`} dir="auto">
-                        {isAr ? `🔗 طلباتك ستصل معًا — زر واحد يؤكد استلام الكل` : `🔗 Your orders arrive together — one tap confirms all`}
-                      </p>
-                    ) : typeof o.parentNumber === 'number' && (o.status === 'new' || o.status === 'confirmed' || o.status === 'ready') && (
-                      <p className={`mt-1 text-[11px] font-bold ${darkMode ? 'text-amber-300' : 'text-amber-700'}`} dir="auto">
-                        {isAr ? `🔗 سيصل مع الطلب #${o.parentNumber} — نفس عملية التوصيل` : `🔗 Arriving with order #${o.parentNumber} — same delivery`}
-                      </p>
-                    )}
                     {/* Top-aligned (not centered): the received button carries
                         the waiting hint underneath it, so centering would drag
                         "track live" out of line with it — tops stay parallel. */}

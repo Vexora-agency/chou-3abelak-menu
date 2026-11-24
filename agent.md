@@ -81,6 +81,20 @@
   and keeps the entered name. The old "طلبك مرتبط بحسابك تلقائيًا." line in the
   COD card is removed on purpose — do not re-add it. Guarded by `test:cart` +
   `test:phone`.
+- Joint delivery, customer side: the track page and the orders bell show NO
+  joint-delivery banner — no "arriving with order #N", no "arrive together /
+  one tap confirms all". The joint receipt itself is unchanged: one tap on a
+  grouped order's confirm button still flips the whole group server-side
+  (`group: true`, `completedNumbers`). Guarded by `test:joint-groups`.
+- Joint delivery, admin side: linked orders render as ONE `GroupCard` with a
+  SINGLE advance button for the pair (ack-all → complete-all, laggards
+  aligned first). Member rows hide their own ack/complete buttons (`inGroup`);
+  cancel + reopen stay per-order. On phones the customer name drops to its own
+  full-width row below the number (truncate + title), inline on sm+.
+  Guarded by `test:joint-groups`.
+- Member order lines ("طلباتي") render the same `HeatPill` + add-on pills as
+  the cart (heat never duplicates as text). The account orders payload already
+  carries `addonIds`; the type now declares them. Guarded by `test:cart`.
 - Member wishlist (migration `0041_customer_wishlist`): one membership-scoped
   set of saved dishes, item-level (`user_id + item_id` PK, cascade on account
   delete, 200-item cap). `WishlistProvider` (storefront root) fetches once per

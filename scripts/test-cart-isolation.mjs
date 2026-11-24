@@ -192,6 +192,17 @@ ok(
     && route.includes('phone_verification_required'),
   'settings saves a changed number immediately; checkout remains the verification gate'
 );
+ok(
+  accountSheet.includes('accountLineHeatId')
+    && accountSheet.includes('accountLineAddons')
+    && accountSheet.includes('<HeatPill')
+    && accountSheet.includes("from '@/src/components/HeatPill'"),
+  'member order lines render the heat pill and add-on pills instead of plain text add-ons'
+);
+ok(
+  !accountSheet.includes('[base, variant, ...addons]'),
+  'member order titles exclude add-ons from the text (pills carry them, no duplication)'
+);
 
 /* ---------- B. two-browser separation (simulation) ---------- */
 function makeStore() {

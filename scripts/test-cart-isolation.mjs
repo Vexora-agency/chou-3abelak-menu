@@ -426,8 +426,9 @@ for (const p of [
 }
 ok(
   formFields.includes('startsWith(anchor)') && formFields.includes('onClearLocation()')
-    && accountSheet.includes('startsWith(anchor)') && accountSheet.includes('setLocation(null)'),
-  'editing the text away from the picked label drops the stale pin (zone/fee never run on old coords)'
+    && accountSheet.includes('startsWith(anchor)') && accountSheet.includes('setLocation(null)')
+    && formFields.includes('pinAnchorRef') && accountSheet.includes('pinAnchorRef'),
+  'editing the text away from the anchored pin (suggestion OR map pick) drops the stale pin'
 );
 ok(
   checkout.includes('lastSyncedAddressRef') && checkout.includes('addressEdited')

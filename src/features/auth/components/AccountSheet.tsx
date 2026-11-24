@@ -503,6 +503,20 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     enabled: addrTyped,
   });
   const [pickedLabel, setPickedLabel] = useState('');
+  // Which address text the current pin belongs to (suggestion pick OR map
+  // pick — both set the pin; typing is compared against this anchor).
+  const addressRef = useRef(address);
+  addressRef.current = address;
+  const pinAnchorRef = useRef<string | null>(null);
+  const prevLocationRef = useRef(location);
+  useEffect(() => {
+    if (location && !prevLocationRef.current) {
+      pinAnchorRef.current = addressRef.current;
+    } else if (!location) {
+      pinAnchorRef.current = null;
+    }
+    prevLocationRef.current = location;
+  }, [location]);
   const handleAccountAddressPick = (suggestion: AddressSuggestion) => {
     const label = suggestion.label.slice(0, 200);
     addrAc.selectSuggestion(suggestion);
@@ -1179,9 +1193,9 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
                       setAddrTyped(true);
                       {
                         // Same stale-pin guard as the cart: once the text
-                        // means a different place than the picked label, drop
-                        // the pin instead of gating on stale coordinates.
-                        const anchor = pickedLabel.trim();
+                        // means a different place than the anchored pin text,
+                        // drop the pin instead of saving stale coordinates.
+                        const anchor = (pinAnchorRef.current ?? '').trim();
                         const typed = e.target.value.trim();
                         if (location && anchor && typed !== anchor
                           && !typed.startsWith(anchor) && !anchor.startsWith(typed)) {

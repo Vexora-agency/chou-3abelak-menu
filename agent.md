@@ -103,8 +103,8 @@
   the cart (heat never duplicates as text). The account orders payload already
   carries `addonIds`; the type now declares them. Guarded by `test:cart`.
 - Address autocomplete (Geoapify, server proxy): typing a delivery address
-  shows live street/place suggestions ranked by proximity to the restaurant
-  (no strict country filter — delivery areas span borders); picking one
+  shows live street/place suggestions filtered to the delivery-zone
+  countries and ranked by proximity to the restaurant; picking one
   fills the text AND sets the pin, so fee/zone/ETA/maps links run on exact
   coords. Manual typing and pin-dragging unchanged; key missing degrades
   silently. Key lives only in `GEOAPIFY_API_KEY` (never the browser).

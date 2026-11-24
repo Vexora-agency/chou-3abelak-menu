@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { createAsserts, makeKV, readJson } from './_helpers/shared.mjs';
 import {
   buildAutocompleteUrl,
+  extractServiceCountries,
   fetchAutocomplete,
   isGeoapifyConfigured,
   sanitizeAutocompleteResults,
@@ -84,6 +85,12 @@ check('country usa dropped', param(buildAutocompleteUrl(KEY_ENV, { text: 'Beirut
 check('country single letter dropped', param(buildAutocompleteUrl(KEY_ENV, { text: 'Beirut', country: 'l' }), 'filter') === null);
 check('country digits dropped', param(buildAutocompleteUrl(KEY_ENV, { text: 'Beirut', country: '12' }), 'filter') === null);
 check('country missing means no filter', param(buildAutocompleteUrl(KEY_ENV, { text: 'Beirut' }), 'filter') === null);
+check('countries array joins with commas', param(buildAutocompleteUrl(KEY_ENV, { text: 'Beirut', countries: ['lb', 'eg'] }), 'filter') === 'countrycode:lb,eg');
+check('countries array sanitizes entries', param(buildAutocompleteUrl(KEY_ENV, { text: 'Beirut', countries: [' LB ', 'usa', 7, null] }), 'filter') === 'countrycode:lb');
+check('countries empty means no filter', param(buildAutocompleteUrl(KEY_ENV, { text: 'Beirut', countries: [] }), 'filter') === null);
+check('zone countries come only from selected mode', extractServiceCountries({ settings: { ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'LB' }, { cc: 'EG' }, { cc: 'xx' }] } } } }).join(',') === 'lb,eg,xx');
+check('zone countries ignore non-selected modes', extractServiceCountries({ settings: { ordering: { deliveryZones: { mode: 'all', countries: [{ cc: 'LB' }] } } } }).length === 0);
+check('zone countries fail open on garbage', extractServiceCountries(null).length === 0 && extractServiceCountries({}).length === 0);
 
 /* ---------- URL building ---------- */
 
@@ -260,7 +267,7 @@ const expectedRouteResults = [
 ];
 try {
   const kv = makeKV();
-  await kv.put('menu', JSON.stringify({ settings: { mapUrl: 'https://www.google.com/maps/@33.8938,35.5018,15z' } }));
+  await kv.put('menu', JSON.stringify({ settings: { mapUrl: 'https://www.google.com/maps/@33.8938,35.5018,15z', ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'LB' }, { cc: 'EG' }] } } } }));
   globalThis.fetch = async (url) => {
     capturedUrl = String(url);
     return { ok: true, status: 200, json: async () => routePayload };
@@ -277,8 +284,8 @@ try {
     && (res.headers.get('Content-Type') || '').includes('application/json'));
   check('route: response never carries the key', !JSON.stringify(body).includes('route-key-xyz'));
   check('route: upstream URL carries the key server-side', capturedUrl.includes('route-key-xyz'));
-  check('route: upstream URL carries lang and NO strict country filter (bias-only ranking)',
-    param(capturedUrl, 'lang') === 'ar' && param(capturedUrl, 'filter') === null);
+  check('route: upstream URL carries lang + zone-country filter', param(capturedUrl, 'lang') === 'ar'
+    && param(capturedUrl, 'filter') === 'countrycode:lb,eg');
   check('route: upstream URL biases to the restaurant pin (LON,LAT)',
     param(capturedUrl, 'bias') === 'proximity:35.5018,33.8938');
 
@@ -292,6 +299,27 @@ try {
   check('route: missing KV skips bias and still succeeds',
     resNoKv.status === 200 && bodyNoKv && bodyNoKv.ok === true
     && param(capturedUrl, 'bias') === null);
+
+  // Worldwide service (zones not selected): the client hint is the only
+  // filter; with no hint either, the search runs unfiltered + unbiased.
+  {
+    const kvAll = makeKV();
+    await kvAll.put('menu', JSON.stringify({ settings: { ordering: { deliveryZones: { mode: 'all' } } } }));
+    capturedUrl = '';
+    const resHint = await onRequest({
+      request: customerGet('/api/geo/autocomplete?q=Verdun&country=lb'),
+      env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kvAll },
+    });
+    check('route: worldwide service falls back to the client country hint',
+      resHint.status === 200 && param(capturedUrl, 'filter') === 'countrycode:lb');
+    capturedUrl = '';
+    const resOpen = await onRequest({
+      request: customerGet('/api/geo/autocomplete?q=Verdun'),
+      env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kvAll },
+    });
+    check('route: worldwide service without a hint runs unfiltered',
+      resOpen.status === 200 && param(capturedUrl, 'filter') === null);
+  }
 
   // Upstream failure: generic 502, nothing echoed.
   globalThis.fetch = async () => ({ ok: false, status: 502, json: async () => ({ message: 'provider says no' }) });

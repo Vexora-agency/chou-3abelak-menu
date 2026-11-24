@@ -12,11 +12,13 @@ found". Manual typing and pin-dragging keep working exactly as before.
   `GET /api/geo/autocomplete?q=…&lang=…&country=…` (debounced 350 ms, min
   3 chars, session cache, abort on keystroke).
 - The route validates the query, rate-limits (60/min per IP, 2500/day
-  global via `GEOAPIFY_DAILY_MAX`), calls Geoapify server-to-server with
-  proximity bias on the restaurant pin (no strict country filter —
-  delivery areas span borders, so bias ranks the closest matches first
-  and the customer picks), and returns only
-  `[{ label, line1, line2, lat, lng }]` with `no-store`.
+  global via `GEOAPIFY_DAILY_MAX`), calls Geoapify with
+  `filter=countrycode:<zone countries>` (the delivery-zone list is the
+  only source of truth — never the phone-dial country) plus proximity
+  bias on the restaurant pin, and returns only
+  `[{ label, line1, line2, lat, lng }]` with `no-store`. Worldwide
+  service (no selected zones) falls back to the client country hint,
+  then to unfiltered.
 - The browser never sees the API key or the provider payload. Key missing →
   `503 autocomplete_unavailable`: the UI degrades silently to manual entry.
 - Attribution (required by Geoapify's free tier) renders under the list:

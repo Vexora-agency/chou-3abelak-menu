@@ -15,13 +15,14 @@
  * - Upstream failure → 502 { error: 'autocomplete_failed' }.
  * - Success → 200 { ok: true, results } via jsonNoStore (no-store).
  *
- * Proximity bias is best-effort: the restaurant pin is parsed from the
- * stored menu.settings.mapUrl with parseMapUrlCoordsJs and skipped when
- * the KV/menu/pin is missing or unparseable. There is deliberately NO
- * strict country filter: delivery areas span borders and the phone-dial
- * country is not the service area — proximity bias ranks the closest
- * matches first and the customer picks. Responses and logs never carry
- * the key, the provider body, or the full query.
+ * Ranking combines a strict country filter with proximity bias: the
+ * filter comes from the delivery-zone countries (the service area —
+ * the phone-dial country is NOT used), falling back to the client's
+ * `country` hint only when zones are unknown; worldwide service means
+ * no filter. The bias is best-effort: the restaurant pin is parsed
+ * from the stored menu.settings.mapUrl with parseMapUrlCoordsJs and
+ * skipped when the KV/menu/pin is missing or unparseable. Responses
+ * and logs never carry the key, the provider body, or the full query.
  */
 
 import { jsonNoStore } from '../../_shared/session.js';
@@ -29,8 +30,10 @@ import { checkCustomerApiHeaders } from '../../_shared/auth-session.js';
 import { hitRateLimit } from '../../_shared/ratelimit.js';
 import { parseMapUrlCoordsJs } from '../../_shared/eta.js';
 import {
+  extractServiceCountries,
   fetchAutocomplete,
   isGeoapifyConfigured,
+  normalizeCountryCodes,
   validateAutocompleteQuery,
 } from '../../_shared/geoapify.js';
 
@@ -52,14 +55,23 @@ function dailyMax(env) {
 }
 
 /**
- * Restaurant-pin bias from the stored menu (best effort). Returns
- * { lng, lat } or null when the KV/menu/mapUrl is missing or unparseable.
+ * Stored menu (best effort) — feeds the restaurant-pin bias and the
+ * service-area country filter. Null when the KV/menu is missing.
  */
-async function readBias(env) {
+async function readMenu(env) {
   try {
     const kv = env ? env.MENU_KV : null;
     if (!kv || typeof kv.get !== 'function') return null;
     const menu = await kv.get('menu', { type: 'json' });
+    return menu && typeof menu === 'object' ? menu : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Restaurant-pin bias from the stored menu (best effort). */
+function readBias(menu) {
+  try {
     const mapUrl = menu && menu.settings ? menu.settings.mapUrl : null;
     if (typeof mapUrl !== 'string' || !mapUrl) return null;
     const coords = parseMapUrlCoordsJs(mapUrl);
@@ -104,14 +116,22 @@ export async function onRequest(context) {
 
   const rawLang = params.get('lang');
   const lang = typeof rawLang === 'string' && rawLang.trim().toLowerCase() === 'ar' ? 'ar' : 'en';
-  // NOTE: the client's `country` hint is accepted but intentionally NOT
-  // forwarded as a strict Geoapify filter (see header comment): ranking is
-  // proximity-bias only.
-  const bias = await readBias(env);
+  const rawCountry = params.get('country');
+  const clientCountry = typeof rawCountry === 'string' ? rawCountry : '';
+  const menu = await readMenu(env);
+  const bias = readBias(menu);
+  // Service-area countries first (the delivery-zone list is the source of
+  // truth — the phone-dial country is NOT the service area); the client
+  // hint is only a fallback when zones are unknown, and worldwide service
+  // means no filter at all.
+  const zoneCountries = extractServiceCountries(menu);
+  const countries = zoneCountries.length > 0
+    ? zoneCountries
+    : normalizeCountryCodes(clientCountry);
 
   let upstream;
   try {
-    upstream = await fetchAutocomplete(env, { text: q, lang, country: undefined, bias });
+    upstream = await fetchAutocomplete(env, { text: q, lang, countries, bias });
   } catch {
     return jsonNoStore({ error: 'autocomplete_failed' }, 502);
   }

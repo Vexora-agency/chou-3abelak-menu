@@ -27,6 +27,38 @@ export function isGeoapifyConfigured(env) {
   return !!trimEnv(env, 'GEOAPIFY_API_KEY');
 }
 
+/** Lowercase 2-letter country list (unique, capped at 10). Accepts a
+ *  single code, an array, or anything else (→ []). */
+export function normalizeCountryCodes(value) {
+  const list = Array.isArray(value) ? value : [value];
+  const out = [];
+  for (const v of list) {
+    if (typeof v !== 'string') continue;
+    const code = v.trim().toLowerCase();
+    if (/^[a-z]{2}$/.test(code) && !out.includes(code)) out.push(code);
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
+/**
+ * Service-area countries from the stored menu (delivery zones). Only the
+ * explicit `selected` zone list counts — anything else means worldwide
+ * service and must NOT filter. Returns [] when unknown.
+ */
+export function extractServiceCountries(menu) {
+  try {
+    const settings = menu && typeof menu === 'object' ? menu.settings : null;
+    const ordering = settings && typeof settings === 'object' ? settings.ordering : null;
+    const zones = ordering && typeof ordering === 'object' ? ordering.deliveryZones : null;
+    if (!zones || typeof zones !== 'object' || zones.mode !== 'selected') return [];
+    const list = Array.isArray(zones.countries) ? zones.countries : [];
+    return normalizeCountryCodes(list.map((c) => (c && typeof c === 'object' ? c.cc : c)));
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Trimmed query when it is a 3..100 char string, else null.
  * The route maps null to 400 { error: 'invalid_query' }.
@@ -44,9 +76,10 @@ export function validateAutocompleteQuery(q) {
  * a thrown error).
  *
  * - lang: 'ar' passes through, everything else falls back to 'en'.
- * - country: only a two-letter lowercase code is sent, as
- *   filter=countrycode:xx. Anything else is dropped (fail open: the
- *   search still runs, just unfiltered).
+ * - country/countries: lowercased 2-letter codes, sent as
+ *   filter=countrycode:xx[,yy] (Geoapify accepts comma-separated codes).
+ *   Anything else is dropped (fail open: the search still runs, just
+ *   unfiltered).
  * - bias: { lng, lat } finite numbers only, sent as
  *   bias=proximity:LON,LAT (longitude first, per the Geoapify contract).
  */
@@ -64,9 +97,11 @@ export function buildAutocompleteUrl(env, options) {
   params.set('apiKey', apiKey);
   params.set('lang', lang);
   params.set('limit', '5');
-  const country = typeof opts.country === 'string' ? opts.country.trim().toLowerCase() : '';
-  if (/^[a-z]{2}$/.test(country)) {
-    params.set('filter', `countrycode:${country}`);
+  const codes = normalizeCountryCodes(
+    Array.isArray(opts.countries) ? opts.countries : opts.country,
+  );
+  if (codes.length > 0) {
+    params.set('filter', `countrycode:${codes.join(',')}`);
   }
   const bias = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
   const lng = bias ? bias.lng : NaN;

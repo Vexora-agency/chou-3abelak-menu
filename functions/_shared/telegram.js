@@ -34,7 +34,7 @@ import { safeCompareStrings } from './session.js';
 import { captureBackendException } from './sentry.js';
 import { RISK_REASON_LABEL } from './order-risk.js';
 import COUNTRIES from './geodata/countries.js';
-import { findOrderById, countActiveKitchenOrders, updateOrderStatus } from './repositories/orders.repo.js';
+import { findOrderById, findOrderByNumber, completeGroupByNumbers, countActiveKitchenOrders, findLinkedGroup, updateOrderStatus } from './repositories/orders.repo.js';
 import { orderDistanceKm, orderingEtaOrDefaults } from './eta.js';
 import { notifyOrderStatus } from './push.js';
 
@@ -829,6 +829,51 @@ export function buildOrderKeyboard(adminUrl, orderId, status) {
 
 /* ---------- Phase 5: Confirm / Cancel callbacks ---------- */
 
+/**
+ * Joint delivery on Telegram: one "تم التسليم" tap completes the whole
+ * linked pair (same rule as the website joint receipt and the admin
+ * GroupCard — only confirmed|ready members flip; a `new` sibling stays for
+ * the kitchen, cancelled/completed are never touched). Every flipped
+ * sibling gets its own message stamp (buttons freeze) and its own customer
+ * email, best-effort. Returns the flipped order numbers. NEVER throws.
+ */
+async function cascadeLinkedReceipt(db, token, env, order) {
+  try {
+    if (!db || !order || !Number.isInteger(order.number)) return [];
+    const g = await findLinkedGroup(db, order);
+    const members = Array.isArray(g.members) ? g.members : [];
+    if (members.length < 2) return [];
+    const flipped = await completeGroupByNumbers(db, members.map((m) => m.number));
+    if (!Array.isArray(flipped) || !flipped.length) return [];
+    let origin = '';
+    try {
+      origin = ((env && env.SITE_URL) || '').trim().replace(/\/+$/, '');
+    } catch {}
+    for (const n of flipped) {
+      if (!Number.isInteger(n) || n === order.number) continue;
+      try {
+        const fr = await findOrderByNumber(db, n);
+        if (fr && typeof fr.id === 'string' && fr.id) {
+          await syncOrderStatusToTelegram(db, token, { orderId: fr.id, status: 'completed', adminUrl: '', env });
+        }
+        if (fr) {
+          try {
+            const { mapOrderRow } = await import('./orders.js');
+            const { notifyCustomerOrderEvent } = await import('./customer-email.js');
+            const mapped = mapOrderRow(fr);
+            if (mapped && mapped.customer && typeof mapped.customer.email === 'string' && mapped.customer.email) {
+              await notifyCustomerOrderEvent(db, env, { order: mapped, event: 'completed', origin });
+            }
+          } catch {}
+        }
+      } catch {}
+    }
+    return flipped.filter((n) => Number.isInteger(n));
+  } catch {
+    return [];
+  }
+}
+
 export const ORDER_ACTIONS = { cfm: 'confirmed', rdy: 'ready', cnl: 'cancelled', rcv: 'completed' };
 /**
  * Telegram may only move orders forward along these edges: new is
@@ -1276,6 +1321,14 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
           ? 'Already marked ready ✅'
           : parsed.status === 'completed' ? 'Already marked received 📦' : 'Already cancelled.';
       await answer(already);
+      // Heal missed siblings: a pair completed before joint receipt shipped
+      // (or a lost write) still converges — one tap on either message links
+      // them going forward.
+      if (parsed.status === 'completed') {
+        try {
+          await cascadeLinkedReceipt(db, token, env, order);
+        } catch {}
+      }
       // Self-heal: the classic stuck-Prepare case is a row that already
       // flipped while its message edit was lost (network/429/parse). A repeat
       // tap used to answer without touching the message, stranding the old
@@ -1345,11 +1398,26 @@ export async function handleOrderCallback(db, token, { callbackId, clickerId, ch
       await answer('Could not update — try again.');
       return noop('write_failed');
     }
+    // One tap links them: a receipt on either message of a linked pair
+    // completes every active member (same gate as the website + admin).
+    let jointSiblings = [];
+    if (parsed.status === 'completed') {
+      try {
+        const flipped = await cascadeLinkedReceipt(db, token, env, order);
+        jointSiblings = Array.isArray(flipped) ? flipped.filter((n) => n !== order.number) : [];
+      } catch {
+        jointSiblings = [];
+      }
+    }
     const banner = parsed.status === 'confirmed'
       ? CONFIRMED_BANNER
       : parsed.status === 'ready'
         ? readyBannerFor(order && order.type)
-        : parsed.status === 'completed' ? RECEIVED_BANNER : '❌ تم إلغاء الطلب';
+        : parsed.status === 'completed'
+          ? (jointSiblings.length > 0
+            ? `📦 تم استلام الطلبات ${[order.number, ...jointSiblings].sort((a, b) => a - b).map((n) => `#${n}`).join('، ')}`
+            : RECEIVED_BANNER)
+          : '❌ تم إلغاء الطلب';
     // Rebuild the FULL message (with HTML links) from the DB row: the
     // callback only carries plain text, and re-stamping that would kill
     // the maps link and all formatting. Falls back to plain text only

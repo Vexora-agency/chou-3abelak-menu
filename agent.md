@@ -92,6 +92,13 @@
   cancel + reopen stay per-order. On phones the customer name drops to its own
   full-width row below the number (truncate + title), inline on sm+.
   Guarded by `test:joint-groups`.
+- Joint delivery, Telegram: one «📦 تم التسليم» tap on either message of a
+  linked pair completes every active member (`cascadeLinkedReceipt`, same
+  confirmed|ready-only rule as the website and admin; a `new` sibling stays).
+  Each flipped sibling gets its own message stamp (buttons freeze) and its
+  own customer email; the toast names the whole group. An already-completed
+  tap heals missed siblings the same way. Confirm/cancel stay per-order.
+  Guarded by `test:telegram`.
 - Member order lines ("طلباتي") render the same `HeatPill` + add-on pills as
   the cart (heat never duplicates as text). The account orders payload already
   carries `addonIds`; the type now declares them. Guarded by `test:cart`.

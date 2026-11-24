@@ -139,6 +139,18 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     ].join('|');
     if (memberProfileKeyRef.current === key) return;
     memberProfileKeyRef.current = key;
+    // The session (name) resolves before the profile (phone): seeding with a
+    // half-loaded profile would lock an empty phone forever, so the one-time
+    // identity seed waits for the profile load while the address keeps
+    // following the account on every key change.
+    if (accountLoading) {
+      setCustomer((prev) => ({
+        ...prev,
+        address: accountProfile?.address || '',
+        email: accountUser.email || '',
+      }));
+      return;
+    }
     const seedIdentity = memberIdentitySeededRef.current !== accountUser.id;
     if (seedIdentity) memberIdentitySeededRef.current = accountUser.id;
     const nextName = accountUser.name || '';
@@ -146,7 +158,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     setCustomer((prev) => ({
       ...prev,
       name: seedIdentity ? (nextName || prev.name) : prev.name,
-      phone: seedIdentity ? nextPhone : (prev.phone || nextPhone),
+      phone: seedIdentity ? (nextPhone || prev.phone) : (prev.phone || nextPhone),
       address: accountProfile?.address || '',
       email: accountUser.email || '',
       // Members now get the same device opt-in as guests. Their identity
@@ -165,6 +177,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     accountProfile?.location?.lat,
     accountProfile?.location?.lng,
     accountProfile?.location?.accuracy,
+    accountLoading,
   ]);
   // Delivery-zone gate: resolves the pin to country/subdivision (BigDataCloud
   // client-side reverse-geocode, fail-soft) and hard-blocks delivery pins

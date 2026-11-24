@@ -302,6 +302,19 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
               addrAc.clearPicked();
               setPickedLabel('');
               setAddrTyped(true);
+              {
+                // Stale-pin guard: the pin belongs to the picked label. While
+                // the text only extends it (extra details) or deletes back
+                // inside it, the pin stays; once the text means a different
+                // place, drop the pin so the zone gate, fee and maps link
+                // never run on stale coordinates.
+                const anchor = pickedLabel.trim();
+                const typed = e.target.value.trim();
+                if (onClearLocation && location && anchor && typed !== anchor
+                  && !typed.startsWith(anchor) && !anchor.startsWith(typed)) {
+                  onClearLocation();
+                }
+              }
               setCustomer({ ...customer, address: e.target.value });
             }}
             onFocus={() => { if (addrTyped) addrAc.setOpen(true); }}

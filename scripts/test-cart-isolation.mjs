@@ -56,8 +56,7 @@ ok(
 );
 ok(
   checkout.includes('memberProfileKeyRef') && checkout.includes('memberIdentitySeededRef')
-    && checkout.includes('seedIdentity')
-    && checkout.includes("address: accountProfile?.address || ''"),
+    && checkout.includes('seedIdentity') && checkout.includes('lastSyncedAddressRef'),
   'member checkout seeds name/phone/address from the account once and keeps per-order edits'
 );
 const formFields = read('src/features/cart/components/cart/CustomerFormFields.tsx');
@@ -425,5 +424,19 @@ for (const p of [
   const src = read(p);
   ok(!src.includes('api.geoapify.com') && !src.includes('GEOAPIFY'), `${p} carries no API key or Geoapify URL`);
 }
+ok(
+  formFields.includes('startsWith(anchor)') && formFields.includes('onClearLocation()')
+    && accountSheet.includes('startsWith(anchor)') && accountSheet.includes('setLocation(null)'),
+  'editing the text away from the picked label drops the stale pin (zone/fee never run on old coords)'
+);
+ok(
+  checkout.includes('lastSyncedAddressRef') && checkout.includes('addressEdited')
+    && checkout.includes('locUntouched'),
+  'a per-order address/pin survives profile refetch; untouched fields keep following the account'
+);
+ok(
+  checkout.includes('وحده لا يكفي') && checkout.includes("alone is not enough"),
+  'the incomplete-profile block names the missing saved fields instead of a generic refusal'
+);
 
 summary();

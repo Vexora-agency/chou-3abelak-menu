@@ -335,6 +335,9 @@ const daysAgo = (n) => new Date(Date.now() - n * 86400 * 1000).toISOString();
   const list = await adminCall('GET', undefined, oc);
   const listed = await json(list);
   ok(list.status === 200 && Array.isArray(listed.blocked) && listed.blocked.some((b) => b.phone_norm === P3), 'blocklist GET lists the block');
+  // Enriched cards: the blocked row carries who it is + their order history.
+  const row3 = listed.blocked.find((b) => b.phone_norm === P3);
+  ok(row3 && row3.name === 'Layla Khoury' && row3.orders >= 1 && typeof row3.spent === 'number' && typeof row3.lastNumber === 'number', 'blocklist row carries name, order count, spend and last order');
 
   // Unblock -> ordering works again.
   const del = await adminCall('DELETE', { phone: P3 }, oc);

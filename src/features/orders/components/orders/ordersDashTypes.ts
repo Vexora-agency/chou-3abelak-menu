@@ -132,6 +132,9 @@ export const STR = {
     blockConfirm: 'Block number',
     blockForbidden: 'Only the owner can block numbers.',
     blockFailed: 'Could not block the number. Please try again.',
+    blockedDoneTitle: 'Number blocked',
+    blockedDoneBody: (p: string) => `${p} is now blocked. Future orders from this number will be rejected automatically, and the alert on this order was cleared.`,
+    ok: 'OK',
   },
   ar: {
     today: 'اليوم', d7: '7 أيام', thisMonth: 'هذا الشهر', lastMonth: 'الشهر الماضي', refresh: 'تحديث', live: 'مباشر', liveTip: 'التحديث التلقائي يعمل: الطلبات الجديدة تظهر هنا وحدها', soundOn: 'تنبيهات الطلبات الجديدة مفعّلة', soundOff: 'تنبيهات الطلبات الجديدة متوقفة',
@@ -165,5 +168,8 @@ export const STR = {
     blockConfirm: 'حظر الرقم',
     blockForbidden: 'حظر الأرقام متاح للمالك فقط.',
     blockFailed: 'تعذر حظر الرقم. حاول مجددًا.',
+    blockedDoneTitle: 'تم حظر الرقم',
+    blockedDoneBody: (p: string) => `تم حظر ${p}. سيتم رفض أي طلبات قادمة من هذا الرقم تلقائيًا، وأُزيل التنبيه عن هذا الطلب.`,
+    ok: 'حسنًا',
   },
 } as const;

@@ -103,6 +103,56 @@ export async function removePhoneBlock(db, phoneNorm) {
 }
 
 /**
+ * Order history per blocked phone (for the admin blocklist cards):
+ * order count, lifetime spend, last order time + number, and the most
+ * recent customer name. Keyed by phone_norm; missing phones read as
+ * empty stats. Never throws (empty on any failure).
+ */
+export async function getBlockedPhoneStats(db, phones) {
+  const out = {};
+  try {
+    const list = Array.isArray(phones)
+      ? [...new Set(phones.filter((p) => typeof p === 'string' && p))]
+      : [];
+    if (!list.length) return out;
+    const placeholders = list.map((_, i) => `?${i + 1}`).join(',');
+    const sums = await db
+      .prepare(
+        `SELECT phone_norm, COUNT(*) AS c, COALESCE(SUM(total), 0) AS t, ` +
+          `MAX(created_at) AS lastAt, MAX(number) AS lastNum ` +
+          `FROM orders WHERE phone_norm IN (${placeholders}) GROUP BY phone_norm`
+      )
+      .bind(...list).all();
+    for (const r of (sums && sums.results) || []) {
+      if (!r || typeof r.phone_norm !== 'string') continue;
+      out[r.phone_norm] = {
+        orders: Number.isInteger(r.c) ? r.c : 0,
+        spent: typeof r.t === 'number' && Number.isFinite(r.t) ? r.t : 0,
+        lastAt: typeof r.lastAt === 'string' ? r.lastAt : null,
+        lastNumber: Number.isInteger(r.lastNum) ? r.lastNum : null,
+        name: null,
+      };
+    }
+    const names = await db
+      .prepare(
+        `SELECT phone_norm, customer_name FROM orders ` +
+          `WHERE phone_norm IN (${placeholders}) ORDER BY created_at DESC`
+      )
+      .bind(...list).all();
+    for (const r of (names && names.results) || []) {
+      if (!r || typeof r.phone_norm !== 'string') continue;
+      const entry = out[r.phone_norm] || (out[r.phone_norm] = { orders: 0, spent: 0, lastAt: null, lastNumber: null, name: null });
+      if (entry.name === null && typeof r.customer_name === 'string' && r.customer_name.trim()) {
+        entry.name = r.customer_name.trim().slice(0, 80);
+      }
+    }
+  } catch {
+    /* fail-open: stats are enrichment only */
+  }
+  return out;
+}
+
+/**
  * Non-terminal orders for a phone: new/confirmed/ready (the only live
  * states — released_at is a column, not a status; completed/cancelled are
  * terminal). The per-phone active cap (2) reads this.

@@ -345,6 +345,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
           onConfirm={onConfirm}
           collapsed={false}
           onToggleCollapse={() => {}}
+          currency={menu.settings.currency[lang] || menu.settings.currency.en}
         />
       )}
     </>

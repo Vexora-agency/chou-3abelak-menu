@@ -38,8 +38,9 @@ interface OrdersDashListProps {
   kitchen?: boolean;
   /** Review dismissal: resolves true when the badge cleared. */
   onTrustReview?: (id: string) => Promise<boolean>;
-  /** Block request: opens the confirm gate, then owner-blocklists the number. */
-  onBlockPhone?: (phone: string, orderNumber: number) => void;
+  /** Block request: confirm gate, owner-blocklist, clears the review flag,
+   *  then shows a professional done note. */
+  onBlockPhone?: (phone: string, orderNumber: number, orderId: string) => void;
 }
 
 interface OrderRowProps {
@@ -56,8 +57,9 @@ interface OrderRowProps {
   onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
   /** Review dismissal: resolves true when the badge cleared. */
   onTrustReview?: (id: string) => Promise<boolean>;
-  /** Block request: opens the confirm gate, then owner-blocklists the number. */
-  onBlockPhone?: (phone: string, orderNumber: number) => void;
+  /** Block request: confirm gate, owner-blocklist, clears the review flag,
+   *  then shows a professional done note. */
+  onBlockPhone?: (phone: string, orderNumber: number, orderId: string) => void;
   /** True when this row renders inside a joint-delivery GroupCard: the group
    *  owns the single advance button, so per-row ack/complete stay hidden
    *  (cancel + reopen stay per-order). */
@@ -118,7 +120,7 @@ const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, cur
               phone={o.customer.phone}
               orderNumber={o.number}
               onTrust={onTrustReview ? () => onTrustReview(o.id) : undefined}
-              onBlock={onBlockPhone ? () => onBlockPhone(o.customer.phone, o.number) : undefined}
+              onBlock={onBlockPhone ? () => onBlockPhone(o.customer.phone, o.number, o.id) : undefined}
             />
           </span>
           <span className="block text-[11px] text-neutral-500 truncate mt-0.5" dir="auto">
@@ -369,10 +371,12 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
 
   /**
    * Professional number block: confirm gate first (destructive + hard to
-   * undo), then the owner-only blocklist endpoint. Non-owners get a clear
-   * 403 message instead of a silent failure.
+   * undo), then the owner-only blocklist endpoint. On success the review
+   * flag is cleared too (handled — the badge disappears) and a done note
+   * confirms visibly what happened. Non-owners get a clear 403 message
+   * instead of a silent failure.
    */
-  const requestBlockPhone = (phone: string, orderNumber: number) => {
+  const requestBlockPhone = async (phone: string, orderNumber: number, orderId?: string) => {
     const digits = (phone || '').replace(/[^0-9]/g, '');
     if (digits.length < 6) return;
     const fire = async () => {
@@ -388,6 +392,17 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
         if (!res.ok) {
           if (res.status === 403) throw new Error(t.blockForbidden);
           throw new Error(`HTTP ${res.status}`);
+        }
+        if (orderId && onTrustReview) {
+          try { await onTrustReview(orderId); } catch { /* badge stays, block stood */ }
+        }
+        if (onConfirm) {
+          onConfirm({
+            title: t.blockedDoneTitle,
+            body: t.blockedDoneBody(digits),
+            confirmText: t.ok,
+            mode: 'info',
+          });
         }
       } catch (e) {
         alert(e instanceof Error && e.message ? e.message : t.blockFailed);

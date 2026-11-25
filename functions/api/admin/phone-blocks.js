@@ -17,6 +17,7 @@ import { checkApiHeaders, jsonNoStore, readJsonBody } from '../../_shared/sessio
 import { getRole } from '../../_shared/access.js';
 import {
   addPhoneBlock,
+  getBlockedPhoneStats,
   listPhoneBlocks,
   removePhoneBlock,
 } from '../../_shared/repositories/orders.repo.js';
@@ -61,8 +62,23 @@ export async function onRequest(context) {
   if (request.method === 'GET') {
     try {
       // `blocked` (snake-case rows): the dashboard renders these keys
-      // directly — the shape is the admin API contract.
+      // directly — the shape is the admin API contract. Order stats ride
+      // along (name, count, spend, last order) so the blocklist cards show
+      // who each number belongs to without a second round-trip.
       const blocked = await listPhoneBlocks(db);
+      try {
+        const stats = await getBlockedPhoneStats(db, blocked.map((b) => b.phone_norm));
+        for (const b of blocked) {
+          const s = stats[b.phone_norm];
+          if (s) {
+            b.name = s.name;
+            b.orders = s.orders;
+            b.spent = s.spent;
+            b.lastNumber = s.lastNumber;
+            b.lastAt = s.lastAt;
+          }
+        }
+      } catch {}
       return jsonNoStore({ ok: true, blocked });
     } catch {
       return jsonNoStore({ error: 'unavailable' }, 503);

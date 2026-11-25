@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Check, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Check, Loader2, Phone, Plus, Trash2 } from 'lucide-react';
 import type { AdminFetch } from '@/src/lib/api-client';
 import { cleanPhoneInput, phoneDigitsOnly } from '@/src/utils/digits';
+import { formatPrice } from '@/src/utils/pricing';
 import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 interface PhoneBlocklistSectionProps {
@@ -10,9 +11,20 @@ interface PhoneBlocklistSectionProps {
   onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  /** Store currency word for the lifetime-spend figure (defaults to LBP). */
+  currency?: string;
 }
 
-interface BlockedRow { phone_norm: string; reason: string | null; created_at: string; }
+interface BlockedRow {
+  phone_norm: string;
+  reason: string | null;
+  created_at: string;
+  name?: string | null;
+  orders?: number;
+  spent?: number;
+  lastNumber?: number | null;
+  lastAt?: string | null;
+}
 
 const fmtDate = (iso: string, lang: 'en' | 'ar'): string => {
   const ms = Date.parse(iso);
@@ -23,7 +35,7 @@ const fmtDate = (iso: string, lang: 'en' | 'ar'): string => {
 };
 
 /** Phone blocklist — fake-order protection card: list + add (phone + optional reason) + delete per row. */
-export const PhoneBlocklistSection: React.FC<PhoneBlocklistSectionProps> = ({ lang, adminFetch, onConfirm, collapsed = false, onToggleCollapse }) => {
+export const PhoneBlocklistSection: React.FC<PhoneBlocklistSectionProps> = ({ lang, adminFetch, onConfirm, collapsed = false, onToggleCollapse, currency = 'LBP' }) => {
   const isAr = lang === 'ar';
   const [rows, setRows] = useState<BlockedRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,24 +180,62 @@ export const PhoneBlocklistSection: React.FC<PhoneBlocklistSectionProps> = ({ la
         )}
 
         {!loading && !loadError && rows.length > 0 && (
-          <ul className="space-y-2">
-            {rows.map((r) => (
-              <li key={r.phone_norm} className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-black/40 px-3 py-2">
-                <span className="min-w-0 flex-1">
-                  <span dir="ltr" className="block text-sm font-extrabold tabular-nums text-start">{r.phone_norm}</span>
-                  <span dir="auto" className="block text-[11px] text-neutral-500 truncate">
-                    {[r.reason, fmtDate(r.created_at, lang)].filter(Boolean).join(' · ') || '—'}
-                  </span>
-                </span>
-                <button type="button" onClick={() => askRemove(r.phone_norm)} disabled={busy === `del:${r.phone_norm}`}
-                  aria-label={isAr ? `إلغاء حظر ${r.phone_norm}` : `Unblock ${r.phone_norm}`}
-                  className="btn-tactile shrink-0 h-11 min-h-[44px] min-w-[44px] px-3 rounded-full border border-neutral-700 text-neutral-300 text-xs font-bold inline-flex items-center gap-1.5 disabled:opacity-40 hover:border-red-500 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
-                  {busy === `del:${r.phone_norm}` ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                  {isAr ? 'إلغاء الحظر' : 'Unblock'}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <>
+            <p className="text-[11px] font-bold text-neutral-500">
+              {isAr ? `${rows.length} ${rows.length === 1 ? 'رقم محظور' : 'أرقام محظورة'}` : `${rows.length} blocked ${rows.length === 1 ? 'number' : 'numbers'}`}
+            </p>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {rows.map((r) => {
+                const initial = (r.name && r.name.trim() ? r.name.trim()[0] : r.phone_norm[0]) || '#';
+                const orderCount = typeof r.orders === 'number' ? r.orders : 0;
+                return (
+                  <li key={r.phone_norm} className="rounded-2xl border border-neutral-800 bg-black/40 p-3">
+                    <div className="flex items-start gap-2.5">
+                      <span aria-hidden="true" className="shrink-0 w-10 h-10 rounded-full bg-[var(--primary)]/15 text-[var(--primary)] font-black flex items-center justify-center text-base">
+                        {initial}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span dir="auto" className="block text-sm font-extrabold truncate text-neutral-100">
+                          {r.name && r.name.trim() ? r.name.trim() : (isAr ? 'بدون اسم مسجل' : 'No name on file')}
+                        </span>
+                        <a href={`tel:+${r.phone_norm}`} dir="ltr" className="mt-0.5 flex items-center gap-1 text-xs tabular-nums text-neutral-400 hover:text-[var(--primary)] w-fit">
+                          <Phone size={11} aria-hidden="true" />
+                          <span className="text-start">+{r.phone_norm}</span>
+                        </a>
+                      </span>
+                      <button type="button" onClick={() => askRemove(r.phone_norm)} disabled={busy === `del:${r.phone_norm}`}
+                        aria-label={isAr ? `إلغاء حظر ${r.phone_norm}` : `Unblock ${r.phone_norm}`}
+                        className="btn-tactile shrink-0 h-10 min-h-[40px] px-3 rounded-full border border-neutral-700 text-neutral-300 text-[11px] font-bold inline-flex items-center gap-1 disabled:opacity-40 hover:border-red-500 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
+                        {busy === `del:${r.phone_norm}` ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                        <span className="hidden min-[380px]:inline">{isAr ? 'إلغاء الحظر' : 'Unblock'}</span>
+                      </button>
+                    </div>
+                    <span className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+                      <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-neutral-300 tabular-nums">
+                        {isAr ? `${orderCount} ${orderCount === 1 ? 'طلب' : 'طلبات'}` : `${orderCount} ${orderCount === 1 ? 'order' : 'orders'}`}
+                      </span>
+                      {typeof r.spent === 'number' && r.spent > 0 && (
+                        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-neutral-300 tabular-nums" dir="ltr">
+                          {formatPrice(r.spent)} {currency}
+                        </span>
+                      )}
+                      {typeof r.lastNumber === 'number' && (
+                        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-neutral-400" dir="auto">
+                          {isAr ? `آخر طلب #${r.lastNumber}` : `last #${r.lastNumber}`}
+                          {r.lastAt && fmtDate(r.lastAt, lang) ? ` · ${fmtDate(r.lastAt, lang)}` : ''}
+                        </span>
+                      )}
+                    </span>
+                    {(r.reason || r.created_at) && (
+                      <span dir="auto" className="mt-1.5 block text-[11px] leading-relaxed text-neutral-500 truncate">
+                        {[r.reason, fmtDate(r.created_at, lang)].filter(Boolean).join(' · ') || '—'}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </>
         )}
 
         {msg && (

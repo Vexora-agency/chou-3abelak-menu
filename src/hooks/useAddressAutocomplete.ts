@@ -22,6 +22,10 @@ export interface UseAddressAutocompleteOptions {
   enabled?: boolean;
   /** Live map viewport: ranks nearby streets first. Rounded for cache hits. */
   bias?: { lat: number; lng: number } | null;
+  /** Selected area name (from the area picker): appended to the SERVER
+   * query only («شارع 16، السيوف») — local indexes match street names
+   * alone and must not require the area token. */
+  area?: string;
 }
 
 export interface UseAddressAutocompleteResult {
@@ -140,6 +144,7 @@ export function useAddressAutocomplete({
   country,
   enabled = true,
   bias = null,
+  area = '',
 }: UseAddressAutocompleteOptions): UseAddressAutocompleteResult {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -196,6 +201,13 @@ export function useAddressAutocomplete({
 
   useEffect(() => {
     const trimmed = query.trim();
+    // Server query = typed text + selected area («شارع 16، السيوف»):
+    // providers rank far better with the area attached, while the local
+    // indexes keep matching the street alone.
+    const areaSuffix = typeof area === 'string' ? area.trim().slice(0, 60) : '';
+    const serverQuery = areaSuffix && !trimmed.includes(areaSuffix)
+      ? `${trimmed}، ${areaSuffix}`
+      : trimmed;
 
     // Just-picked text: never fetch.
     if (pickedLabel !== null && trimmed === pickedLabel) {
@@ -212,7 +224,7 @@ export function useAddressAutocomplete({
       return;
     }
 
-    const key = cacheKey(lang, country, trimmed, bias);
+    const key = cacheKey(lang, country, serverQuery, bias);
     const cached = sessionCache.get(key);
     if (cached) {
       setSuggestions(cached);
@@ -259,7 +271,7 @@ export function useAddressAutocomplete({
           /* local is best-effort; the server pass still runs */
         }
         try {
-          const params = new URLSearchParams({ q: trimmed, lang, country });
+          const params = new URLSearchParams({ q: serverQuery, lang, country });
           if (liveBias && Number.isFinite(liveBias.lat) && Number.isFinite(liveBias.lng)) {
             params.set('lat', String(Math.round(liveBias.lat * 1000) / 1000));
             params.set('lng', String(Math.round(liveBias.lng * 1000) / 1000));
@@ -311,7 +323,7 @@ export function useAddressAutocomplete({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [query, lang, country, enabled, pickedLabel]);
+  }, [query, lang, country, enabled, pickedLabel, area]);
 
   const selectSuggestion = useCallback((s: AddressSuggestion) => {
     setPickedLabel(s.label);

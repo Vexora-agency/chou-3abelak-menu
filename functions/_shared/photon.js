@@ -51,14 +51,19 @@ export function buildPhotonUrl(options) {
 
 /**
  * Conservative Arabic normalization for recall variants: strips tashkeel
- * and tatweel, unifies alef forms (أإآٱ→ا). Deliberately keeps ة/ه and
+/** Conservative Arabic normalization for recall variants: strips tashkeel
+ * and tatweel, unifies alef forms (أإآٱ→ا), converts Arabic-Indic digits
+ * (٠-٩) to Western (OSM and Google index house numbers that way), and
+ * expands a standalone «ش» to «شارع». Deliberately keeps ة/ه and
  * ى/ي untouched — converting them merges distinct place names.
  * Returns '' for non-strings. Never throws.
  */
 export function normalizeArabicQuery(text) {
   try {
     if (typeof text !== 'string') return '';
-    let s = text.replace(/[ً-ٰٟـ]/g, '');
+    let s = text.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+    s = s.replace(/(^|\s)ش\.?(?=\s|$)/g, '$1شارع');
+    s = s.replace(/[ً-ٰٟـ]/g, '');
     s = s.replace(/[أإآٱ]/g, 'ا');
     s = s.replace(/\s+/g, ' ').trim();
     return s;

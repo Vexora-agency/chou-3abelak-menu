@@ -136,3 +136,48 @@ export async function fetchReverse(env, params, fetchFn = fetch) {
     return { ok: false, error: 'failed' };
   }
 }
+
+/**
+ * Reverse-geocode to an uppercase ISO country code only (for validating a
+ * pasted pin against the delivery zones). Never throws, never logs.
+ * Returns { ok:true, country:'EG'|…|null } — null country means Nominatim
+ * answered but named no country (open water); the caller decides.
+ */
+export async function fetchReverseCountry(env, params, fetchFn = fetch) {
+  void env;
+  try {
+    const opts = params && typeof params === 'object' ? params : {};
+    const coords = validateLatLng(opts.lat, opts.lng);
+    if (!coords) return { ok: false, error: 'bad_query' };
+    const url = buildReverseUrl(coords.lat, coords.lng, 'en');
+    if (!url) return { ok: false, error: 'bad_query' };
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      try {
+        controller.abort();
+      } catch {}
+    }, REQUEST_TIMEOUT_MS);
+    try {
+      const res = await fetchFn(url, {
+        signal: controller.signal,
+        headers: { Accept: 'application/json', 'User-Agent': CONTACT_UA },
+      });
+      if (!res || !res.ok) return { ok: false, error: 'failed' };
+      let json = null;
+      try {
+        json = await res.json();
+      } catch {
+        return { ok: false, error: 'failed' };
+      }
+      const addr = json && typeof json === 'object' && json.address && typeof json.address === 'object' ? json.address : null;
+      const cc = addr && typeof addr.country_code === 'string' ? addr.country_code.trim().toUpperCase() : '';
+      return { ok: true, country: /^[A-Z]{2}$/.test(cc) ? cc : null };
+    } catch {
+      return { ok: false, error: 'failed' };
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    return { ok: false, error: 'failed' };
+  }
+}

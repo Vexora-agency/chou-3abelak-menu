@@ -38,6 +38,8 @@ export const PLACES_INDEX_LIMIT = 4;
 export function normalizeStreetText(s: string): string {
   if (typeof s !== 'string') return '';
   return s
+    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+    .replace(/(^|\s)ش\.?(?=\s|$)/g, '$1شارع')
     .replace(/[أإآٱ]/g, 'ا')
     .replace(/ة/g, 'ه')
     .replace(/ى/g, 'ي')

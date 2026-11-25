@@ -77,7 +77,7 @@
     "test:receipt-check": "node scripts/test-receipt-check.mjs",
     "test:location-autofix": "tsx scripts/test-location-autofix.mjs",
     "test:remember-pin": "tsx scripts/test-remember-pin.mjs",
-    "test:geo": "node scripts/test-geo-autocomplete.mjs && node scripts/test-geo-reverse.mjs && node scripts/test-google-places.mjs",
+    "test:geo": "node scripts/test-geo-autocomplete.mjs && node scripts/test-geo-reverse.mjs && node scripts/test-google-places.mjs && node scripts/test-maplink.mjs",
     "test:pin-precision": "npx tsx scripts/test-pin-precision.mjs",
     "test:street-index": "npx tsx scripts/test-street-index.mjs",
     "test:places-index": "npx tsx scripts/test-places-index.mjs",

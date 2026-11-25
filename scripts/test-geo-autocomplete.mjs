@@ -174,6 +174,8 @@ check('photon: garbage sanitizes to []', JSON.stringify(sanitizePhotonResults(nu
 check('arabic normalize unifies alef', normalizeArabicQuery('الإسكندرية') === 'الاسكندرية');
 check('arabic normalize strips tashkeel and tatweel', normalizeArabicQuery('شَارع الـسـيوف') === 'شارع السيوف');
 check('arabic normalize keeps ة and ى', normalizeArabicQuery('السيوف') === 'السيوف');
+check('arabic-indic digits become western', normalizeArabicQuery('شارع ١٦') === 'شارع 16');
+check('standalone ش expands to شارع', normalizeArabicQuery('ش ١٦ السيوف') === 'شارع 16 السيوف');
 check('latinize maps شارع to street', latinizeStreetType('السيوف شارع 16') === 'السيوف street 16');
 check('latinize returns null without a street word', latinizeStreetType('السيوف 16') === null);
 check(

@@ -337,8 +337,12 @@ const acHook = read('src/hooks/useAddressAutocomplete.ts');
 const acList = read('src/components/AddressSuggestList.tsx');
 ok(
   acHook.includes('DEBOUNCE_MS') && acHook.includes('MIN_QUERY_LENGTH')
-    && acHook.includes('/api/geo/autocomplete'),
-  'shared hook debounces, enforces a min query length, and calls the server proxy'
+    && acHook.includes('/api/geo/autocomplete') && acHook.includes('takePlaceSession'),
+  'shared hook debounces, enforces a min query length, bills one session, and calls the server proxy'
+);
+ok(
+  acHook.includes('areaSuffix') && acHook.includes("area?: string"),
+  'shared hook appends the picked area to server queries only'
 );
 ok(
   acHook.includes('selectSuggestion') && acHook.includes('clearPicked') && acHook.includes('handleKeyDown')
@@ -375,6 +379,10 @@ ok(
     && picker.includes('aria-controls') && picker.includes('aria-autocomplete="list"')
     && picker.includes('aria-activedescendant'),
   'picker search exposes combobox semantics wired to the listbox'
+);
+ok(
+  picker.includes('handleAreaSelect') && picker.includes('resolve-link') && picker.includes('areaLabel'),
+  'picker offers an area-first step and a Google-Maps-link paste fallback'
 );
 ok(
   picker.includes('selectSuggestion') && picker.includes('handleKeyDown'),

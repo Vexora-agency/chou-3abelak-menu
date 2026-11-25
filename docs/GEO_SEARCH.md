@@ -7,23 +7,23 @@ exact coordinates.
 
 ## Order (each stage runs only while results stay thin)
 
-1. **Offline place libraries** (downloadable, per country): every named
-   district, suburb, village, town and city of Egypt and Lebanon ships with
-   the app (`docs/PLACES_INDEX.md`) — areas suggest instantly, zero network,
-   zero typing by the owner.
+1. **On-device, instant, free**: the customer's own recent picks, then the
+   downloadable places library (districts/suburbs/villages, per country —
+   `docs/PLACES_INDEX.md`), then the region street index
+   (`docs/STREET_INDEX.md`). Zero network, merged first.
 2. **Google Places (New)** — the primary external provider, quota-guarded
    (see `docs/GOOGLE_PLACES.md`). Session-billed, restricted to the
    delivery radius when the restaurant pin + explicit `maxKm` allow it,
    otherwise biased by the live map viewport. Coordinates resolve once on
-   pick, never per keystroke.
+   pick, never per keystroke. Autocomplete (≤5 rows) is followed by a
+   bounded Text Search pass (≤10 detailed rows with coordinates) when
+   still thin.
 3. **Photon** (Komoot OSM typeahead, free, keyless): smart-recall variants
    (normalized Arabic, latinized street-type, deep suffix chain so a
    dialect spelling like السويف still resolves via «شارع 16»,
    streets-only `osm_tag=highway` fallback, soft viewport bias only —
    never a hard bbox), rows carrying the query's street number
    ranked first.
-4. Client-side, the device's own recent picks and the on-device region
-   street index (`docs/STREET_INDEX.md`) merge in front — instant and free.
 
 Geoapify was retired from this path by owner decision
 (`functions/_shared/geoapify.js` stays as a tested standby module only).
@@ -33,6 +33,9 @@ Geoapify was retired from this path by owner decision
 - Cart checkout + account settings address fields query
   `GET /api/geo/autocomplete?q=…&lang=…&country=…&lat=…&lng=…&session=…`
   (debounced 350 ms, min 3 chars, session cache, abort on keystroke).
+  Arabic-Indic digits convert to Western and a lone ش expands to شارع
+  before matching; a picked area is appended to the *server* query only
+  («شارع 16، السيوف»).
 - The route validates the query, rate-limits (60/min per IP; Google calls
   share `GOOGLE_PLACES_DAILY_MAX`, default 300/day), and returns stripped
   rows `[{ label, line1, line2, lat, lng, details?, placeId? }]` with
@@ -47,10 +50,12 @@ Geoapify was retired from this path by owner decision
 
 1. Offline libraries: street index + place indexes ship in the repo
    (`docs/STREET_INDEX.md`, `docs/PLACES_INDEX.md`); rebuild per region
-   with the documented commands.
+   with the documented commands. DB: apply migrations through 0045
+   (`npx wrangler d1 migrations apply ORDERS_DB --remote`).
 2. Google: key + billing + `GOOGLE_PLACES_API_KEY` secret (see
    `docs/GOOGLE_PLACES.md`); without it the app runs 100% on free passes.
-3. Region street index: `docs/STREET_INDEX.md` (rebuild per city).
+3. Pasted Google Maps links resolve via `GET /api/geo/resolve-link?url=…`
+   (server-followed redirects, SSRF allow-list, zone verdict included).
 
 ## Contracts
 

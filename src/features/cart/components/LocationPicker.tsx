@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type * as Leaflet from 'leaflet';
-import { ChevronDown, Loader2, Navigation, Search } from 'lucide-react';
+import { ChevronDown, Link2, Loader2, Navigation, Search } from 'lucide-react';
 import { AUTO_LOCATE_OPTIONS, composePreciseAddress, reverseGeocode, round5, shouldAutoLocateOnOpen, useMidSplitLocationMap } from '../hooks/useMidSplitLocationMap';
+import { loadPlacesIndex } from '@/src/utils/streetIndex';
 import { LocationAddressPreview } from './location/LocationAddressPreview';
 import { fetchPlaceCoords, useAddressAutocomplete } from '@/src/hooks/useAddressAutocomplete';
 import { AddressSuggestList } from '@/src/components/AddressSuggestList';
@@ -44,6 +45,11 @@ const STR = {
     detailsTitle: 'Exact delivery details (optional)',
     bBuilding: 'Building', bFloor: 'Floor', bApt: 'Apartment', bLandmark: 'Landmark',
     phBldg: '5', phFloor: '2', phApt: '3', phLandmark: 'Near the pharmacy',
+    areaLabel: 'Area', areaPh: 'Choose your area…',
+    linkPh: 'Paste a Google Maps link…', linkGo: 'Locate',
+    linkBad: 'That link has no usable location — drag the pin instead.',
+    linkOutside: 'This point is outside the usual delivery zone — confirm it is correct.',
+    linkLoading: 'Resolving link…',
   },
   ar: {
     title: 'موقع التوصيل', close: 'إغلاق', locating: 'جارٍ تحديد موقعك…',
@@ -65,6 +71,11 @@ const STR = {
     detailsTitle: 'تفاصيل دقيقة للتوصيل (اختياري)',
     bBuilding: 'المبنى', bFloor: 'الدور', bApt: 'الشقة', bLandmark: 'علامة مميزة',
     phBldg: '5', phFloor: '2', phApt: '3', phLandmark: 'بجوار الصيدلية',
+    areaLabel: 'الحي / المنطقة', areaPh: 'اختر منطقتك…',
+    linkPh: 'الصق رابط خرائط جوجل…', linkGo: 'تحديد',
+    linkBad: 'لا يوجد موقع صالح في هذا الرابط — اسحب الدبوس يدويًا.',
+    linkOutside: 'هذه النقطة خارج نطاق التوصيل المعتاد — تأكد منها قبل التأكيد.',
+    linkLoading: 'جارٍ فتح الرابط…',
   },
 } as const;
 
@@ -135,12 +146,50 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   const [floor, setFloor] = useState('');
   const [apt, setApt] = useState('');
   const [landmark, setLandmark] = useState('');
+  // Step 1 — area first: the downloadable places library feeds this select.
+  // Picking an area flies the map there, becomes the search bias center and
+  // is appended to server queries («شارع 16، السيوف»). Empty until a
+  // places index file exists for the region.
+  const [areas, setAreas] = useState<Array<{ name: string; lat: number; lng: number }>>([]);
+  const [selectedArea, setSelectedArea] = useState('');
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const cc = /^[A-Za-z]{2}$/.test(country ?? '') ? (country as string).toLowerCase() : '';
+        const idx = await loadPlacesIndex(cc, initial ?? fallback);
+        if (cancelled || !idx) return;
+        const seen = new Set<string>();
+        const list: Array<{ name: string; lat: number; lng: number }> = [];
+        for (const e of idx.entries) {
+          const name = (lang === 'ar' ? e.ar || e.la : e.la || e.ar) || '';
+          if (!name || seen.has(name)) continue;
+          seen.add(name);
+          list.push({ name, lat: e.lat, lng: e.lng });
+          if (list.length >= 150) break;
+        }
+        if (!cancelled) setAreas(list);
+      } catch {
+        /* areas stay empty — search still works */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Pasted Google Maps links (full URLs and goo.gl shorts): resolved
+  // server-side, then pinned exactly like a search pick.
+  const [linkText, setLinkText] = useState('');
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [linkMsg, setLinkMsg] = useState<{ kind: 'err' | 'warn'; text: string } | null>(null);
   const searchAc = useAddressAutocomplete({
     query: searchText,
     lang,
     country: /^[A-Za-z]{2}$/.test(country ?? '') ? (country as string).toLowerCase() : '',
     enabled: true,
     bias: mapCenter,
+    area: selectedArea,
   });
 
   // Load Leaflet lazily (only when the picker opens) and build the map.
@@ -299,6 +348,70 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     setLocError(null);
     setArmedFor(null);
     moveTo(s.lat, s.lng, 20, 17);
+  };
+
+  // Step 1 — area first: fly to the area center, make it the search bias
+  // and append it to server queries («شارع 16، السيوف»). The area pin is
+  // an explicit human choice, so it counts as a verified (manual) pin.
+  const handleAreaSelect = (name: string) => {
+    setSelectedArea(name);
+    setLocError(null);
+    if (!name) return;
+    const hit = areas.find((a) => a.name === name);
+    if (!hit) return;
+    manualRef.current = true;
+    setManual(true);
+    setDetecting(false);
+    setLocError(null);
+    setArmedFor(null);
+    setMapCenter({ lat: round5(hit.lat), lng: round5(hit.lng) });
+    moveTo(hit.lat, hit.lng, 100, 15);
+  };
+
+  // Pasted Google Maps links: resolve server-side (short links followed
+  // there), then pin exactly like a search pick. Outside-zone points still
+  // pin, with an explicit warning — the human verifies.
+  const handleLinkGo = () => {
+    const text = linkText.trim();
+    if (!text || linkBusy) return;
+    setLinkBusy(true);
+    setLinkMsg(null);
+    setLocError(null);
+    void (async () => {
+      try {
+        const ctrl = new AbortController();
+        const timer = window.setTimeout(() => {
+          try {
+            ctrl.abort();
+          } catch {}
+        }, 12000);
+        try {
+          const res = await fetch(`/api/geo/resolve-link?url=${encodeURIComponent(text)}`, {
+            signal: ctrl.signal,
+            headers: { Accept: 'application/json', 'X-Requested-With': 'menu-customer' },
+          });
+          if (!res.ok) throw new Error('unresolvable');
+          const data: unknown = await res.json().catch(() => null);
+          if (!data || typeof data !== 'object') throw new Error('unresolvable');
+          const d = data as { ok?: unknown; lat?: unknown; lng?: unknown; outside?: unknown };
+          if (d.ok !== true || typeof d.lat !== 'number' || !Number.isFinite(d.lat)
+            || typeof d.lng !== 'number' || !Number.isFinite(d.lng)) throw new Error('unresolvable');
+          manualRef.current = true;
+          setManual(true);
+          setDetecting(false);
+          setArmedFor(null);
+          setMapCenter({ lat: round5(d.lat), lng: round5(d.lng) });
+          moveTo(d.lat, d.lng, 100, 17);
+          if (d.outside === true) setLinkMsg({ kind: 'warn', text: t.linkOutside });
+        } finally {
+          window.clearTimeout(timer);
+        }
+      } catch {
+        setLinkMsg({ kind: 'err', text: t.linkBad });
+      } finally {
+        setLinkBusy(false);
+      }
+    })();
   };
 
   const detect = (userTap = false) => {
@@ -478,6 +591,24 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
 
   return (
     <div className="space-y-3">
+      {areas.length > 0 && (
+        <label className="block">
+          <span className={`mb-1 block text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>{t.areaLabel}</span>
+          <select
+            value={selectedArea}
+            onChange={(e) => handleAreaSelect(e.target.value)}
+            dir={isAr ? 'rtl' : 'ltr'}
+            className={`h-12 w-full rounded-2xl border px-3 text-sm font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 bg-black text-white' : 'border-neutral-300 bg-white text-[#0A0A0A]'}`}
+          >
+            <option value="">{t.areaPh}</option>
+            {areas.map((a) => (
+              <option key={`${a.lat}:${a.lng}:${a.name}`} value={a.name}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div className="relative">
         <div className={`flex items-center gap-2 rounded-2xl border px-3 shadow-xs focus-within:ring-2 focus-within:ring-[var(--primary)] transition-shadow ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
           <Search size={16} className={`shrink-0 ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`} aria-hidden="true" />
@@ -526,6 +657,38 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           <p className={`mt-1 text-[11px] font-semibold ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>{t.noResults}</p>
         )}
       </div>
+      <div className={`flex items-center gap-2 rounded-2xl border px-3 transition-shadow focus-within:ring-2 focus-within:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
+        <Link2 size={15} className={`shrink-0 ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`} aria-hidden="true" />
+        <input
+          type="url"
+          value={linkText}
+          onChange={(e) => setLinkText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleLinkGo();
+            }
+          }}
+          placeholder={t.linkPh}
+          dir="ltr"
+          autoComplete="off"
+          aria-label={t.linkPh}
+          className={`h-11 w-full bg-transparent text-sm focus:outline-none ${darkMode ? 'text-white placeholder-neutral-500' : 'text-[#0A0A0A] placeholder-neutral-400'}`}
+        />
+        <button
+          type="button"
+          onClick={handleLinkGo}
+          disabled={linkBusy || linkText.trim().length === 0}
+          className="h-9 shrink-0 rounded-full bg-[var(--primary)] px-4 text-xs font-black text-[#0A0A0A] disabled:opacity-50"
+        >
+          {linkBusy ? <Loader2 size={14} className="animate-spin" /> : t.linkGo}
+        </button>
+      </div>
+      {linkMsg && (
+        <p role={linkMsg.kind === 'err' ? 'alert' : 'status'} className={`text-[11px] font-bold ${linkMsg.kind === 'err' ? 'text-red-500' : 'text-amber-500'}`}>
+          {linkMsg.text}
+        </p>
+      )}
       <div className="flex items-center justify-between gap-2">
         <p className={`text-xs font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>{t.dragHint}</p>
         <button

@@ -23,6 +23,8 @@ const ok = (name, cond) => {
 
 ok('normalize unifies alef', normalizeStreetText('الإسكندرية') === 'الاسكندريه');
 ok('normalize maps ة→ه and ى→ي', normalizeStreetText('المنيرة الكبرى') === 'المنيره الكبري');
+ok('normalize converts arabic-indic digits', normalizeStreetText('شارع ١٦') === 'شارع 16');
+ok('normalize expands standalone ش', normalizeStreetText('ش 16') === 'شارع 16');
 ok('normalize strips tashkeel', normalizeStreetText('شَارع') === 'شارع');
 ok('normalize trims and collapses', normalizeStreetText('  السيوف   شارع  ') === 'السيوف شارع');
 
@@ -45,7 +47,7 @@ ok('latinized شارع matches street', (() => {
 })());
 ok('partial prefix matches', searchStreetIndex(entries, 'أحمد لطفي', 'الإسكندرية', 'Alexandria', 'ar')[0]?.line1 === 'شارع أحمد لطفي السيد');
 ok('missing token means no rows', searchStreetIndex(entries, 'السيوف القاهرة', 'الإسكندرية', 'Alexandria', 'ar').length === 0);
-ok('short query is empty', searchStreetIndex(entries, 'ش', 'الإسكندرية', 'Alexandria', 'ar').length === 0);
+ok('short query is empty', searchStreetIndex(entries, 'س', 'الإسكندرية', 'Alexandria', 'ar').length === 0);
 ok('digit-only query matches numbered streets', searchStreetIndex(entries, '16', 'الإسكندرية', 'Alexandria', 'ar')[0]?.line1 === 'شارع 16');
 ok('deep suffix backoff resolves through dialect area spellings', (() => {
   const r = searchStreetIndex(entries, 'السيوف شماعة شارع 45', 'الإسكندرية', 'Alexandria', 'ar');

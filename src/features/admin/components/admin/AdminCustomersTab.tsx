@@ -53,7 +53,6 @@ const STR = {
     countHint: 'Registered site accounts',
     orders: 'Orders',
     verified: 'Verified',
-    phoneVerified: 'WhatsApp verified',
     joined: 'Joined',
     lastOrder: 'Last order',
     noOrders: 'No orders yet',
@@ -94,7 +93,6 @@ const STR = {
     countHint: 'حسابات مسجلة على الموقع',
     orders: 'الطلبات',
     verified: 'موثّق',
-    phoneVerified: 'واتساب مؤكد',
     joined: 'انضم',
     lastOrder: 'آخر طلب',
     noOrders: 'لا توجد طلبات بعد',
@@ -430,15 +428,7 @@ export function AdminCustomersTab({ lang, currency, adminFetch }: AdminCustomers
                 <div className="flex items-center gap-2 min-w-0 text-neutral-300">
                   <Phone size={13} className="shrink-0 text-[var(--primary)]" aria-hidden="true" />
                   {row.phone ? (
-                    <>
-                      <a href={`tel:+${row.phone}`} className="truncate tabular-nums hover:text-[var(--primary)]" dir="ltr">{row.phone}</a>
-                      {row.phoneVerified && (
-                        <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-1.5 py-0.5 text-[9px] font-extrabold text-emerald-300">
-                          <BadgeCheck size={9} aria-hidden="true" />
-                          {t.phoneVerified}
-                        </span>
-                      )}
-                    </>
+                    <a href={`tel:+${row.phone}`} className="truncate tabular-nums hover:text-[var(--primary)]" dir="ltr">{row.phone}</a>
                   ) : (
                     <span className="text-neutral-500">{t.phoneMissing}</span>
                   )}

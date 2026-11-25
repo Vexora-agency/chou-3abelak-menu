@@ -27,13 +27,13 @@ const json = readJson;
   ok(pickup.ok && pickup.cleaned.location === null, 'location ignored for non-delivery');
   const pickupNoPin = validateOrderInput(orderBody({ type: 'pickup' }), { ...m, settings: { ...m.settings, ordering: { ...m.settings.ordering, types: ['delivery', 'pickup'] } } });
   ok(pickupNoPin.ok === true, 'pickup needs no pin');
-  // Delivery pin is OPTIONAL (manual addresses allowed): absent/null pass
-  // with a null location (address-only order); present-but-malformed
-  // locations still fail closed.
-  const noPin = validateOrderInput(orderBody(), m);
-  ok(noPin.ok === true && noPin.cleaned.location === null, 'absent location allowed (address-only)');
-  ok(validateOrderInput(orderBody({ location: null }), m).ok === true, 'null location allowed (address-only)');
+  // Delivery pin is REQUIRED: absent/null fail with location_required;
+  // present-but-malformed locations still fail closed.
+  const noPin = validateOrderInput(orderBody({ location: undefined }), m);
+  ok(noPin.ok === false && noPin.errors.includes('location_required'), 'absent location rejected (pin required)');
+  ok(validateOrderInput(orderBody({ location: null }), m).errors.includes('location_required'), 'null location rejected (pin required)');
   ok(validateOrderInput(orderBody({ location: 'Beirut' }), m).errors.includes('invalid_location'), 'non-object location rejected');
+  ok(validateOrderInput(orderBody({ location: { lat: 0, lng: 0 } }), m).errors.includes('invalid_location'), 'null-island 0,0 rejected');
   const withPin = validateOrderInput(orderBody({ location: { lat: 33.9, lng: 35.5, accuracy: 30 } }), m);
   ok(withPin.ok === true && withPin.cleaned.phoneNorm === '70123456', 'phone_norm filled');
 }

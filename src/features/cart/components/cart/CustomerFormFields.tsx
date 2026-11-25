@@ -345,7 +345,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
                 }
               }
             }}
-            placeholder={isAr ? 'اكتب عنوانك هنا أو حدّده على الخريطة' : 'Type your address here, or pin it on the map'}
+            placeholder={isAr ? 'اكتب عنوانك بالتفصيل ثم ثبّت الدبوس على الخريطة' : 'Type your detailed address, then pin it on the map'}
             maxLength={200}
             autoComplete="street-address"
             enterKeyHint="next"
@@ -364,8 +364,8 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
             <button
               type="button"
               onClick={onOpenLocSheet}
-              title={isAr ? 'افتح الخريطة لتحديد موقعك (اختياري ويساعد السائق)' : 'Open the map to pin your location (optional, helps the driver)'}
-              aria-label={isAr ? 'افتح الخريطة لتحديد موقعك (اختياري ويساعد السائق)' : 'Open the map to pin your location (optional, helps the driver)'}
+              title={isAr ? 'افتح الخريطة لتحديد موقع التوصيل (إلزامي)' : 'Open the map to pin your delivery location (required)'}
+              aria-label={isAr ? 'افتح الخريطة لتحديد موقع التوصيل (إلزامي)' : 'Open the map to pin your delivery location (required)'}
               className={`absolute right-0.5 top-1/2 -translate-y-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                 darkMode
                   ? 'text-[var(--primary)] hover:bg-[var(--primary)]/10'
@@ -391,6 +391,20 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
           <p className={`mt-1 text-[10.5px] font-semibold leading-relaxed ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>
             {isAr ? 'لا توجد اقتراحات مطابِقة — أكمل كتابة العنوان يدويًا' : 'No matching suggestions — keep typing your address manually'}
           </p>
+        )}
+        {!location && (
+          <button
+            type="button"
+            onClick={onOpenLocSheet}
+            className={`mt-2 flex w-full items-center gap-2.5 rounded-2xl border border-dashed p-2.5 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-amber-400/40 bg-amber-400/[0.06] hover:border-amber-400/70' : 'border-amber-400 bg-amber-50 hover:border-amber-500'}`}
+          >
+            <span className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${darkMode ? 'bg-amber-400 text-[#0A0A0A]' : 'bg-amber-500 text-white'}`}>
+              <MapPin size={16} strokeWidth={2.4} aria-hidden="true" />
+            </span>
+            <span className={`text-[11px] font-extrabold leading-snug ${darkMode ? 'text-amber-200' : 'text-amber-800'}`}>
+              {isAr ? 'ثبّت الدبوس على الخريطة — إلزامي لطلبات التوصيل. ابحث عن شارعك داخل الخريطة ثم ضع الدبوس بدقة.' : 'Pin your location on the map — required for delivery. Search your street inside the map, then drop the pin precisely.'}
+            </span>
+          </button>
         )}
         {location && (
           <div className={`mt-2 rounded-2xl border p-2.5 ${darkMode ? 'border-emerald-400/25 bg-emerald-400/[0.06]' : 'border-emerald-200 bg-emerald-50/80'}`}>

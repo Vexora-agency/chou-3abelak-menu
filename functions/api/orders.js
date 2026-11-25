@@ -133,6 +133,12 @@ export async function onRequest(context) {
     if (code === 'out_of_zone') {
       return jsonNoStore({ error: code, message: { en: 'Your location isn’t in our delivery area right now — contact us.', ar: 'موقعك خارج منطقة التوصيل حاليًا. يرجى التواصل معنا.' } }, 400);
     }
+    if (code === 'location_required') {
+      return jsonNoStore({ error: code, message: { en: 'Pin your delivery location on the map before placing the order.', ar: 'حدّد موقع التوصيل على الخريطة قبل إرسال الطلب.' } }, 400);
+    }
+    if (code === 'invalid_location') {
+      return jsonNoStore({ error: code, message: { en: 'The location coordinates are invalid. Pin the location on the map again.', ar: 'إحداثيات الموقع غير صالحة. حدّد الموقع على الخريطة مرة أخرى.' } }, 400);
+    }
     if (code === 'blocked_phone') {
       // Dead path kept for shape-compat: the route enforces the blocklist
       // directly (single 'rejected' code) and never passes opts.isBlocked.

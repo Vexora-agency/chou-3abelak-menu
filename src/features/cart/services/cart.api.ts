@@ -73,6 +73,20 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
           failure: 'blocked',
         };
       }
+      // Missing or invalid delivery pin: the server now requires a pin for
+      // delivery (location_required / invalid_location). Surface the
+      // bilingual reason and let the checkout reopen the map.
+      if (isRecord(data) && (data.error === 'location_required' || data.error === 'invalid_location')) {
+        const msg = isRecord(data.message) ? str(lang === 'ar' ? data.message.ar : data.message.en) : '';
+        return {
+          orderNumber: null,
+          trackToken: null,
+          blockedMessage: msg || (lang === 'ar'
+            ? 'حدّد موقع التوصيل على الخريطة — الدبوس إلزامي لإتمام الطلب'
+            : 'Pin your delivery location on the map — required to place the order'),
+          failure: 'blocked',
+        };
+      }
       // Missing heat degree (badged-spicy line recorded without one — stale
       // cart or tampered payload): tell the customer exactly how to fix it
       // (re-add the line and pick a degree) instead of a generic error.

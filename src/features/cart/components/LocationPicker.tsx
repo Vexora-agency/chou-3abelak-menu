@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type * as Leaflet from 'leaflet';
-import { Loader2, Navigation } from 'lucide-react';
+import { Loader2, Navigation, Search } from 'lucide-react';
 import { AUTO_LOCATE_OPTIONS, reverseGeocode, round5, shouldAutoLocateOnOpen, useMidSplitLocationMap } from '../hooks/useMidSplitLocationMap';
 import { LocationAddressPreview } from './location/LocationAddressPreview';
+import { useAddressAutocomplete } from '@/src/hooks/useAddressAutocomplete';
+import { AddressSuggestList } from '@/src/components/AddressSuggestList';
 
 interface LocationPickerProps {
   lang: 'en' | 'ar';
@@ -13,6 +15,12 @@ interface LocationPickerProps {
   onClose: () => void;
   /** Override the bottom button label (defaults to "Enter address manually"). */
   manualLabel?: string;
+  /** When true (delivery checkout), the manual-entry button is hidden and
+      the search + pin become the only path — the order cannot be placed
+      without a confirmed pin. */
+  requirePin?: boolean;
+  /** Lowercase 2-letter country for autocomplete bias (e.g. "lb"). */
+  country?: string;
 }
 
 const STR = {
@@ -28,6 +36,10 @@ const STR = {
     confirmAnyway: 'Confirm anyway - tap again',
     poorAcc: 'Weak fix - the pin may be far off. Drag it to correct, or tap confirm again to use it as-is.',
     unsupported: 'This browser has no location service — drag the pin to set your point.',
+    requiredHint: 'Pin your location on the map — required for delivery orders.',
+    searchPh: 'Search street or landmark…',
+    searching: 'Searching…',
+    noResults: 'No results — pan the map or drag the pin.',
   },
   ar: {
     title: 'موقع التوصيل', close: 'إغلاق', locating: 'جارٍ تحديد موقعك…',
@@ -41,10 +53,14 @@ const STR = {
     unsupported: 'هذا المتصفح بلا خدمة موقع — اسحب المؤشر لتحديد نقطتك.',
     confirmAnyway: 'تأكيد رغم ذلك — اضغط مجددًا',
     poorAcc: 'الدقة ضعيفة — قد تكون النقطة بعيدة. اسحب المؤشر للتصحيح، أو اضغط التأكيد مجددًا للاعتماد كما هي.',
+    requiredHint: 'حدّد الدبوس على الخريطة — إلزامي لطلبات التوصيل.',
+    searchPh: 'ابحث عن الشارع أو المعلم…',
+    searching: 'جارٍ البحث…',
+    noResults: 'لا توجد نتائج — حرّك الخريطة أو اسحب الدبوس.',
   },
 } as const;
 
-export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, initial, fallback, onPick, onClose, manualLabel }) => {
+export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, initial, fallback, onPick, onClose, manualLabel, requirePin = false, country = '' }) => {
   const t = STR[lang];
   const isAr = lang === 'ar';
   const mapRef = useRef<HTMLDivElement>(null);
@@ -87,6 +103,15 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   // Once-per-open guard for the silent auto-fix below.
   const autoTriedRef = useRef(false);
   const { addrPreview, addrLoading, previewKey } = useMidSplitLocationMap(point, ready, lang);
+  // In-picker search: jump the pin to a Geoapify suggestion without
+  // leaving the map. Shares the same proxy as the address fields.
+  const [searchText, setSearchText] = useState('');
+  const searchAc = useAddressAutocomplete({
+    query: searchText,
+    lang,
+    country: /^[A-Za-z]{2}$/.test(country ?? '') ? (country as string).toLowerCase() : '',
+    enabled: true,
+  });
 
   // Load Leaflet lazily (only when the picker opens) and build the map.
   useEffect(() => {
@@ -151,12 +176,23 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const moveTo = (lat: number, lng: number, accuracy: number) => {
+  const moveTo = (lat: number, lng: number, accuracy: number, zoom = 16) => {
     setPoint({ lat: round5(lat), lng: round5(lng), accuracy });
     try {
       markerObj.current?.setLatLng([lat, lng]);
-      mapObj.current?.setView([lat, lng], Math.max(mapObj.current.getZoom(), 16));
+      mapObj.current?.setView([lat, lng], Math.max(mapObj.current.getZoom(), zoom));
     } catch {}
+  };
+
+  const handleSearchPick = (s: { lat: number; lng: number; label: string }) => {
+    searchAc.selectSuggestion({ label: s.label, line1: '', line2: '', lat: s.lat, lng: s.lng } as never);
+    setSearchText(s.label);
+    manualRef.current = true;
+    setManual(true);
+    setDetecting(false);
+    setLocError(null);
+    setArmedFor(null);
+    moveTo(s.lat, s.lng, 20, 17);
   };
 
   const detect = (userTap = false) => {
@@ -316,6 +352,54 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
 
   return (
     <div className="space-y-3">
+      {requirePin && (
+        <p role="note" className={`text-xs font-extrabold ${darkMode ? 'text-[var(--primary)]' : 'text-[#8a6d00]'}`}>{t.requiredHint}</p>
+      )}
+      <div className="relative">
+        <div className={`flex items-center gap-2 rounded-2xl border px-3 ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
+          <Search size={16} className={`shrink-0 ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`} aria-hidden="true" />
+          <input
+            type="text"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            onBlur={() => window.setTimeout(() => searchAc.setOpen(false), 120)}
+            onFocus={() => { if (searchText.trim().length >= 3) searchAc.setOpen(true); }}
+            onKeyDown={(e) => {
+              const action = searchAc.handleKeyDown(e);
+              if (action === 'pick') {
+                e.preventDefault();
+                const picked = searchAc.suggestions[searchAc.activeIndex] ?? searchAc.suggestions[0];
+                if (picked) handleSearchPick(picked);
+              } else if (action === 'close') {
+                searchAc.setOpen(false);
+              }
+            }}
+            placeholder={t.searchPh}
+            dir="auto"
+            autoComplete="off"
+            role="combobox"
+            aria-expanded={searchAc.open}
+            aria-controls="picker-search-listbox"
+            aria-label={t.searchPh}
+            className={`w-full h-11 bg-transparent text-sm focus:outline-none ${darkMode ? 'text-white placeholder-neutral-500' : 'text-[#0A0A0A] placeholder-neutral-400'}`}
+          />
+          {searchAc.loading && <Loader2 size={15} className="animate-spin text-[var(--primary)]" aria-hidden="true" />}
+        </div>
+        {searchAc.open && (searchAc.loading || searchAc.suggestions.length > 0) && (
+          <AddressSuggestList
+            lang={lang}
+            darkMode={darkMode}
+            loading={searchAc.loading}
+            items={searchAc.suggestions}
+            activeIndex={searchAc.activeIndex}
+            listId="picker-search-listbox"
+            onPick={(item) => handleSearchPick(item)}
+          />
+        )}
+        {searchAc.open && !searchAc.loading && searchText.trim().length >= 3 && searchAc.suggestions.length === 0 && (
+          <p className={`mt-1 text-[11px] font-semibold ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>{t.noResults}</p>
+        )}
+      </div>
       <div className="flex items-center justify-between gap-2">
         <p className={`text-xs font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>{t.dragHint}</p>
         <button
@@ -374,13 +458,15 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
       >
         {confirming ? <Loader2 size={17} className="animate-spin mx-auto" /> : (point && armedFor === `${point.lat},${point.lng}` ? t.confirmAnyway : t.confirm)}
       </button>
-      <button
-        type="button"
-        onClick={onClose}
-        className={`w-full h-11 min-h-[44px] rounded-full text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}
-      >
-        {manualLabel ?? t.manual}
-      </button>
+      {!requirePin && (
+        <button
+          type="button"
+          onClick={onClose}
+          className={`w-full h-11 min-h-[44px] rounded-full text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}
+        >
+          {manualLabel ?? t.manual}
+        </button>
+      )}
       <style>{`.loc-div-icon{background:none;border:none;}.leaflet-container{font:inherit;background:${darkMode ? '#141414' : '#f0ede6'};}.leaflet-control-attribution{font-size:9px;}.leaflet-touch .leaflet-bar a{width:44px!important;height:44px!important;line-height:44px!important;font-size:22px;}.leaflet-touch .leaflet-control-zoom{margin-top:10px;margin-left:10px;}`}</style>
     </div>
   );

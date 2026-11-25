@@ -490,6 +490,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           darkMode={darkMode}
           onCloseSheet={closeLocSheet}
           onPick={handleMapPick}
+          requirePin
+          country={/^[A-Za-z]{2}$/.test(phoneDial.iso ?? '') ? (phoneDial.iso as string).toLowerCase() : ''}
         />
       )}
 

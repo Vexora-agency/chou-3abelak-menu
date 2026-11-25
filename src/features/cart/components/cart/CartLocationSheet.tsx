@@ -11,6 +11,10 @@ interface CartLocationSheetProps {
   /** Bottom close-button label. Checkout keeps the "type it manually" wording;
    *  member settings uses "close" because its address is pin-owned. */
   manualLabel?: string;
+  /** Delivery checkout: hide the manual-entry escape and require a pin. */
+  requirePin?: boolean;
+  /** Lowercase 2-letter country for in-map search bias. */
+  country?: string;
 }
 
 export const CartLocationSheet: React.FC<CartLocationSheetProps> = ({
@@ -20,11 +24,17 @@ export const CartLocationSheet: React.FC<CartLocationSheetProps> = ({
   onCloseSheet,
   onPick,
   manualLabel,
+  requirePin = false,
+  country = '',
 }) => {
   const isAr = lang === 'ar';
+  const canDismiss = !requirePin || !!location;
+  const requestClose = () => {
+    if (canDismiss) onCloseSheet(!!location);
+  };
   return (
       <div className="absolute inset-0 z-[60] flex items-end justify-center" role="dialog" aria-modal="true" aria-label={isAr ? 'تحديد موقع التوصيل' : 'Pin delivery location'}>
-      <div onClick={() => onCloseSheet(false)} className="absolute inset-0 bg-black/60 anim-fade-in" aria-hidden="true" />
+      <div onClick={requestClose} className="absolute inset-0 bg-black/60 anim-fade-in" aria-hidden="true" />
       {/* Animation on the wrapper, scrolling on the inner div — the body
           lock is held by the cart drawer underneath (shared counter). */}
       <div className={`anim-drawer-in relative w-full max-h-[92vh] max-h-[92dvh] flex flex-col rounded-t-[24px] shadow-2xl overflow-hidden ${darkMode ? 'bg-[#141414] text-white border-t-2 border-[var(--primary)]' : 'bg-white text-[#0A0A0A] border-t-2 border-[var(--primary)]'}`}>
@@ -35,7 +45,7 @@ export const CartLocationSheet: React.FC<CartLocationSheetProps> = ({
           <h3 className="text-base font-black">{isAr ? 'موقع التوصيل' : 'Delivery location'}</h3>
           <button
             type="button"
-            onClick={() => onCloseSheet(false)}
+            onClick={requestClose}
             aria-label={isAr ? 'إغلاق' : 'Close'}
             className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'bg-neutral-800 text-neutral-300' : 'bg-neutral-100 text-neutral-700'}`}
           >
@@ -51,6 +61,8 @@ export const CartLocationSheet: React.FC<CartLocationSheetProps> = ({
           initial={location}
           fallback={{ lat: 33.87476, lng: 35.545704 }}
           manualLabel={manualLabel}
+          requirePin={requirePin}
+          country={country}
           onPick={(lat, lng, accuracy, addressText) => onPick(lat, lng, accuracy, addressText)}
           onClose={() => onCloseSheet(!!location)}
         />

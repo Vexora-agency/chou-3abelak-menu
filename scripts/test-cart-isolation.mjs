@@ -46,9 +46,8 @@ ok(/randomUUID|Math\.random/.test(checkout), 'idempotency key is random per draw
 ok(route.includes('CF-Connecting-IP') && route.includes('RATE_KEY_PREFIX') && route.includes('checkAndReserveOrderBudget'), 'server rate limit is per-IP abuse cap, not per-user identity');
 ok(route.includes('account_required') && route.includes("REQUIRE_ACCOUNT_FOR_COD !== '0'"), 'COD order gate requires a signed-in account (local tests opt out explicitly)');
 ok(
-  route.includes('profile_incomplete') && route.includes('getCustomerProfile') && route.includes('isProfileComplete')
-    && !route.includes('with a map pin'),
-  'orders route requires a complete phone + address profile; the map pin is optional'
+  route.includes('profile_incomplete') && route.includes('getCustomerProfile') && route.includes('isProfileComplete'),
+  'orders route requires a complete phone + address profile'
 );
 ok(
   checkout.includes('isProfileComplete(accountProfile)') && checkout.includes('onRequireProfile'),
@@ -113,7 +112,7 @@ ok(
     && !formFields.includes('Location pinned')
     && formFields.includes('onOpenLocSheet')
     && formFields.includes('MapPin'),
-  'the cart keeps the optional map pin but prints no default-address or pinned-location note'
+  'the cart keeps the required map pin but prints no default-address or pinned-location note'
 );
 ok(
   formFields.includes('phoneChanged')
@@ -178,21 +177,21 @@ ok(
   'cart shows no pin-vs-text helper message under the address'
 );
 ok(
-  checkout.includes('Pin is OPTIONAL') && !checkout.includes('if (!location)'),
-  'checkout accepts a written address with no map pin'
+  checkout.includes('Pin is REQUIRED') && checkout.includes('if (!location'),
+  'checkout requires a map pin for delivery'
 );
 const profilePolicy = read('src/features/auth/profile.ts');
 ok(
   profilePolicy.includes('profile.phone.trim()') && profilePolicy.includes('profile.address.trim()')
     && !profilePolicy.includes('profile.location'),
-  'the client order gate treats the map pin as optional'
+  'the client profile gate keeps phone + address (pin stays optional in settings)'
 );
 const authPolicy = read('functions/_shared/validate-auth.js');
 const completeFnAt = authPolicy.indexOf('export function isProfileComplete');
 const completeFn = completeFnAt >= 0 ? authPolicy.slice(completeFnAt, completeFnAt + 320) : '';
 ok(
   completeFn.includes('phone && address') && !completeFn.includes('location'),
-  'the server order gate treats the map pin as optional'
+  'the server profile gate keeps phone + address (pin stays optional in settings)'
 );
 ok(
   accountSheet.includes('Saving is intentionally NOT gated')

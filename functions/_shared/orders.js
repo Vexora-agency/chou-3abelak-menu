@@ -102,22 +102,24 @@ export function validateOrderInput(body, menu) {
 
   const notes = cleanStr(body.notes, 200);
 
-  // Delivery pin is OPTIONAL (manual addresses allowed): a typed address
-  // alone is enough to order. A pin is a precision bonus, never a gate.
-  // When omitted/null, the order rides on the address text (Telegram falls
-  // back to the address-query link, the fee quote uses no distance).
+  // Delivery pin is REQUIRED: a typed address alone is not enough.
+  // When missing, the order is rejected with location_required so the
+  // customer is sent back to the map to search and drop the pin precisely.
   // When provided it must be finite numbers in range, rounded to 5
   // decimals. Only for delivery; ignored for other types. Accuracy
   // (meters, from the OS fix) rides along when sane — downstream uses it
   // to distrust coarse cell-tower fixes instead of mislabeling them
   // "precise". Coarse fixes (>250m, mirrors MAPS_ACCURACY_OK_M in
-  // telegram.js) are dropped to null so the order stores no pin and
-  // Telegram falls back to the address-query link. A present-but-malformed
-  // location (truthy non-object, out-of-range numbers) is still rejected
-  // as invalid_location to catch tampering.
+  // telegram.js) are rejected as location_required (re-pin with better
+  // accuracy) instead of silently storing an address-only order. A
+  // present-but-malformed location (truthy non-object, out-of-range
+  // numbers, explicit 0,0 null-island) is rejected as invalid_location
+  // to catch tampering.
   let location = null;
   const locRaw = type === 'delivery' ? body.location : undefined;
-  if (locRaw === undefined || locRaw === null) {
+  if (type === 'delivery' && (locRaw === undefined || locRaw === null)) {
+    errors.push('location_required');
+  } else if (locRaw === undefined || locRaw === null) {
     location = null;
   } else if (typeof locRaw !== 'object' || Array.isArray(locRaw)) {
     errors.push('invalid_location');
@@ -126,13 +128,15 @@ export function validateOrderInput(body, menu) {
     const lng = typeof locRaw.lng === 'number' ? locRaw.lng : NaN;
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
       errors.push('invalid_location');
+    } else if (lat === 0 && lng === 0) {
+      errors.push('invalid_location');
     } else {
       const rawAcc = locRaw.accuracy;
       const acc = typeof rawAcc === 'number' && Number.isFinite(rawAcc) && rawAcc >= 0 && rawAcc <= 100000
         ? Math.round(rawAcc)
         : null;
       if (acc !== null && acc > 250) {
-        location = null;
+        errors.push('location_required');
       } else {
         location = { lat: Math.round(lat * 1e5) / 1e5, lng: Math.round(lng * 1e5) / 1e5 };
         if (acc !== null) location.accuracy = acc;
@@ -174,9 +178,9 @@ export function validateOrderInput(body, menu) {
           }
         }
       }
-      // Distance backstop applies ONLY when a pin is present: a bad pin
-      // outside maxKm is blocked, but a missing pin (address-only order)
-      // is allowed — the driver confirms the zone by phone.
+      // Distance backstop applies when a pin is present: a bad pin
+      // outside maxKm is blocked. A missing pin is already rejected above
+      // with location_required, so this gate only sees real pins.
       if (!blocked && location) {
         try {
           const rest = parseMapUrlCoordsJs(typeof norm?.settings?.mapUrl === 'string' ? norm.settings.mapUrl : '');

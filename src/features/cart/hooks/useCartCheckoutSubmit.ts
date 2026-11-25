@@ -446,13 +446,13 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
       setErrorMsg(isAr ? 'يرجى إدخال عنوان التوصيل بالتفصيل' : 'Please enter delivery address');
       return;
     }
-    // Pin is OPTIONAL (manual addresses allowed): a typed delivery address
-    // alone is enough. A present pin sharpens the ticket (exact Telegram
-    // link, distance-based fee); coarse fixes are degraded downstream,
-    // never blocking. A malformed pin state (non-finite) is ignored, not
-    // fatal — the order rides on the address text.
-    if (location && (!Number.isFinite(location.lat) || !Number.isFinite(location.lng))) {
-      clearLocation();
+    // Pin is REQUIRED for delivery: a typed address alone is not enough.
+    // A missing or malformed pin blocks the submit and reopens the map so
+    // the customer can search inside it and drop the pin precisely.
+    if (!location || !Number.isFinite(location.lat) || !Number.isFinite(location.lng)) {
+      setErrorMsg(isAr ? 'حدّد موقع التوصيل على الخريطة — الدبوس إلزامي لإتمام الطلب' : 'Pin your delivery location on the map — required to place the order');
+      setLocSheetOpen(true);
+      return;
     }
     // Delivery-zone hard block (selected zones only): the pin resolved
     // outside the served area. Same copy as the on-screen panel.
@@ -530,9 +530,10 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
           ...(l.addonQty && Object.keys(l.addonQty).length ? { addonQty: { ...l.addonQty } } : {}),
           qty: l.quantity,
         })),
-        // The pin rides along only when present (optional): the server
-        // degrades coarse fixes to the address-query fallback instead of a
-        // fake "exact" pin, and address-only orders store no coords.
+        // The pin is required for delivery: it always rides along here
+        // (sendOrder already blocked a missing pin above), and the server
+        // enforces the same rule. Coarse fixes are still sent — the server
+        // rejects them instead of silently storing an address-only order.
         ...(location ? { location: { lat: location.lat, lng: location.lng, accuracy: Math.round(location.accuracy) } } : {}),
         // Zone claim for the server-side gate: resolved country (+
         // subdivision when known). Omit when unresolved — the server

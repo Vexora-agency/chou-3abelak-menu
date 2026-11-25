@@ -162,6 +162,7 @@ export function orderBody(over = {}) {
     notes: '',
     items: [{ id: 'zaatar', qty: 1 }],
     lang: 'en',
+    location: { lat: 33.8938, lng: 35.5018, accuracy: 30 },
     ...over,
   };
 }

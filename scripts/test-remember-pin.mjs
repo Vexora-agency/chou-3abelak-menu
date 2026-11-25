@@ -1,11 +1,11 @@
 // Pin/address pair, session-only pins: the Telegram maps link must always
 // match what the customer actually submitted this order. Pins are NEVER
 // remembered, so no stale pin from another visit/city can ride along.
-//   - delivery without a pin -> allowed (address-only order, fallback link)
+//   - delivery without a pin -> rejected with location_required
 //   - fresh-picked good coords -> exact pin link (same lat/lng as submitted)
 //   - a confirmed pin always replaces the address with the pin's own geocode
 //     (typed text from a previous location never sticks to new coords)
-//   - coarse fix (>250m) -> dropped before store, fallback (never fake "exact")
+//   - coarse fix (>250m) -> rejected as location_required (re-pin precisely)
 //   - no saved pin -> picker auto-locates every time (fresh fix, never silent)
 // Run: node scripts/test-remember-pin.mjs
 import { createAsserts } from './_helpers/shared.mjs';
@@ -56,11 +56,11 @@ ok(d1 && d1.address === 'Hamra, Main Rd' && d1.remember === true, 'details round
 // Unchecked forgets the details. Pins live in session state only.
 saveRememberedDetails({ name: 'Ali', phone: '70123456', address: 'Hamra', remember: false });
 ok(loadRememberedDetails() === null, 'unchecked forgets details');
-// Delivery without a pin is allowed (address-only order).
+// Delivery without a pin is rejected (pin required).
 {
   const m = JSON.parse(JSON.stringify(MENU));
-  const noPin = validateOrderInput(orderBody(), m);
-  ok(noPin.ok === true && noPin.cleaned.location === null, 'address-only order allowed without pin');
+  const noPin = validateOrderInput(orderBody({ location: undefined }), m);
+  ok(noPin.ok === false && noPin.errors.includes('location_required'), 'address-only order rejected without pin');
 }
 // The address is never stored: withoutAddress drops it, keeps the rest.
 {
@@ -79,8 +79,8 @@ ok(loadRememberedDetails() === null, 'unchecked forgets details');
     orderBody({ address: 'Hamra', location: { lat: 33.9, lng: 35.5, accuracy: 3000 } }),
     m
   );
-  ok(coarse.ok && coarse.cleaned.location === null, 'coarse fix dropped to null (fallback, order still ok)');
-  ok(coarse.cleaned.address === 'Hamra', 'coarse keeps address text for fallback');
+  ok(coarse.ok === false && coarse.errors.includes('location_required'), 'coarse fix rejected (re-pin precisely)');
+  ok(validateOrderInput(orderBody({ location: undefined }), m).errors.includes('location_required'), 'missing pin rejected');
   const noAcc = validateOrderInput(orderBody({ location: { lat: 33.9, lng: 35.5 } }), m);
   ok(noAcc.ok && noAcc.cleaned.location && noAcc.cleaned.location.lat === 33.9, 'missing accuracy kept (legacy clients assumed good)');
   ok(validateOrderInput(orderBody({ location: { lat: 500, lng: 0 } }), m).errors.includes('invalid_location'), 'out-of-range rejected');

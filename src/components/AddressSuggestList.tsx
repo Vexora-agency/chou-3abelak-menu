@@ -105,25 +105,15 @@ export function AddressSuggestList({
           </button>
         );
       })}
-      <a
-        href="https://www.geoapify.com/"
-        target="_blank"
-        rel="noreferrer"
-        className={`block border-t px-4 py-2 text-[11px] ${
-          darkMode
-            ? 'border-neutral-700 text-neutral-500'
-            : 'border-neutral-200 text-neutral-400'
-        }`}
-      >
-        {isAr ? 'اقتراحات العناوين من Geoapify' : 'Address suggestions by Geoapify'}
-      </a>
       {hasGoogleRows && (
         <span
-          className={`block px-4 py-1 text-[11px] ${
-            darkMode ? 'text-neutral-500' : 'text-neutral-400'
+          className={`flex items-center justify-between gap-2 border-t px-4 py-2 text-[12px] ${
+            darkMode ? 'border-neutral-700 text-neutral-500' : 'border-neutral-200 text-neutral-400'
           }`}
         >
-          {isAr ? 'بعض الاقتراحات مدعومة من Google' : 'Some suggestions powered by Google'}
+          <span>{isAr ? 'تشمل اقتراحات من:' : 'Customer-picked suggestions'}</span>
+          {/* Exact untouched brand string per the Google Maps attribution policy. */}
+          <span translate="no" dir="ltr">Google Maps</span>
         </span>
       )}
     </div>

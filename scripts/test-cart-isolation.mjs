@@ -351,8 +351,8 @@ ok(
 );
 ok(
   acList.includes('role="listbox"') && acList.includes('role="option"')
-    && acList.includes('https://www.geoapify.com/'),
-  'suggestion list uses listbox semantics with the required Geoapify attribution link'
+    && acList.includes('Google Maps') && acList.includes('translate="no"'),
+  'suggestion list uses listbox semantics with the required Google Maps attribution'
 );
 // Cart checkout wiring: no address text field — the location is picked on
 // the map sheet, whose search lives in LocationPicker.

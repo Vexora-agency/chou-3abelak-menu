@@ -1,38 +1,31 @@
 /**
- * GET /api/geo/autocomplete?q=…&lang=…&country=…
+ * GET /api/geo/autocomplete?q=…&lang=…&country=…&lat=…&lng=…&session=…
  *
- * Server-side Geoapify autocomplete proxy. The API key never leaves the
+ * Multi-provider suggestion cascade. No provider key ever leaves the
  * server: the browser calls this route with only the customer CSRF header
- * (no session — guests also type delivery addresses), the route calls
- * Geoapify with the key, strips the provider payload to
- * [{ label, line1, line2, lat, lng }], and returns that.
+ * (no session — guests also type delivery addresses), the route fans out
+ * server-to-server and returns stripped rows plus verification flags.
  *
  * - q missing / <3 / >100 chars → 400 { error: 'invalid_query' }.
  * - Per-IP burst cap (60/min) plus a global daily cap
- *   (GEOAPIFY_DAILY_MAX, default 2500) → 429 { error: 'rate_limited' }.
+ *   (GEOAPIFY_DAILY_MAX still gates the shared limiter namespace; Google
+ *   calls have their own GOOGLE_PLACES_DAILY_MAX, default 300) → 429.
  *   Both ride the shared KV limiter, which fails OPEN when KV is missing.
- * - Key missing → 503 { error: 'autocomplete_unavailable' }.
- * - Upstream failure → 502 { error: 'autocomplete_failed' }.
- * - Success → 200 { ok: true, results } via jsonNoStore (no-store).
+ * - Success → 200 { ok:true, results, sources, google } via jsonNoStore.
+ *   Failures degrade to thinner results, never to 5xx for missing keys:
+ *   the search always answers with what the free passes found.
  *
- * Ranking combines owner places first, then a strict area filter with
- * proximity bias: owner-curated names («جنب فرن فلان») outrank every
- * provider; the filter is a circle around the restaurant pin with the
- * delivery radius when the pin is known (else the delivery-zone countries
- * — the phone-dial country is NOT used — else the client `country` hint,
- * else unfiltered). The bias is the client's live map viewport (`lat`/`lng`)
- * when supplied, else the restaurant pin parsed from the stored
- * menu.settings.mapUrl with parseMapUrlCoordsJs (skipped when missing).
- * Deep search: when the filtered pass returns fewer than MIN_RICH_RESULTS
- * rows, the same query runs once more unfiltered, then once in English for
- * Arabic queries (a different Geoapify index slice), then up to 2 keyless
- * Photon passes over smart recall variants — all merged behind the owner
- * and area matches, so side streets outside the list still surface.
- * Responses and logs never carry the key, the provider body, or the full query.
- * A non-sensitive `sources` trail names the passes that answered
- * (custom/geoapify/geoapify-open/geoapify-en/photon/google) for verification,
- * plus a `google` flag (off/rich/ok/empty/capped/error) so the owner can
- * confirm the paid pass is actually armed.
+ * Order: owner-curated places (`custom_places`) → Google Places (primary
+ * external provider, session-billed, restricted to the delivery radius)
+ * → Photon (free, keyless smart-recall backstop). Geoapify was retired
+ * from this path by owner decision (module kept as tested standby).
+ * The bias is the client's live map viewport (`lat`/`lng`) when supplied,
+ * else the restaurant pin parsed from the stored menu.settings.mapUrl
+ * with parseMapUrlCoordsJs (skipped when missing).
+ * Responses and logs never carry keys, provider bodies, or the full query.
+ * `sources` names the passes that answered (custom/google/photon);
+ * `google` is off/rich/ok/empty/capped/error so the owner can confirm
+ * the paid pass is actually armed.
  */
 
 import { jsonNoStore } from '../../_shared/session.js';
@@ -42,8 +35,6 @@ import { parseMapUrlCoordsJs } from '../../_shared/eta.js';
 import {
   extractServiceCountries,
   extractServiceRadiusM,
-  fetchAutocomplete,
-  isGeoapifyConfigured,
   mergeAutocompleteResults,
   MIN_RICH_RESULTS,
   normalizeCountryCodes,
@@ -51,7 +42,7 @@ import {
   validateAutocompleteQuery,
 } from '../../_shared/geoapify.js';
 import { fetchPhoton, buildQueryVariants, rankAppendedByDigits } from '../../_shared/photon.js';
-import { fetchGoogleAutocomplete, googleDailyMax, isGoogleConfigured } from '../../_shared/google.js';
+import { fetchGoogleAutocomplete, googleDailyMax, isGoogleConfigured, validateSessionToken } from '../../_shared/google.js';
 import { searchCustomPlaces, customPlaceToSuggestion } from '../../_shared/repositories/places.repo.js';
 
 const IP_RATE_MAX = 60;
@@ -127,14 +118,11 @@ export async function onRequest(context) {
     return jsonNoStore({ error: 'rate_limited' }, 429);
   }
 
-  if (!isGeoapifyConfigured(env)) {
-    return jsonNoStore({ error: 'autocomplete_unavailable' }, 503);
-  }
-
   const rawLang = params.get('lang');
   const lang = typeof rawLang === 'string' && rawLang.trim().toLowerCase() === 'ar' ? 'ar' : 'en';
   const rawCountry = params.get('country');
   const clientCountry = typeof rawCountry === 'string' ? rawCountry : '';
+  const sessionToken = validateSessionToken(params.get('session'));
   const menu = await readMenu(env);
   // Viewport bias first: when the customer is looking at a map area (the
   // picker sends its live center), rank nearby streets first instead of
@@ -142,16 +130,16 @@ export async function onRequest(context) {
   const viewBias = parseLatLng(params.get('lat'), params.get('lng'));
   const pin = readBias(menu);
   const bias = viewBias || pin;
-  // Primary filter: a circle around the restaurant pin with the delivery
-  // radius (the served area itself) — strictly better than a country guess.
-  // Without a stored pin, fall back to the delivery-zone countries (the
-  // phone-dial country is NOT the service area), then the client hint.
+  // Served area: circle around the restaurant pin with the admin-set
+  // delivery radius (Google restriction, hard). Without an explicit radius
+  // the search only biases by viewport — a guessed default must never
+  // exclude deliverable streets.
   const radiusM = extractServiceRadiusM(menu);
-  const circle = pin && radiusM ? { lat: pin.lat, lng: pin.lng, radiusM } : null;
+  const restrict = pin && radiusM
+    ? { lat: pin.lat, lng: pin.lng, radiusM }
+    : null;
   const zoneCountries = extractServiceCountries(menu);
-  const countries = circle
-    ? []
-    : (zoneCountries.length > 0 ? zoneCountries : normalizeCountryCodes(clientCountry));
+  const region = (zoneCountries.length > 0 ? zoneCountries[0] : normalizeCountryCodes(clientCountry)[0]) || '';
 
   // Owner-curated places first («جنب فرن فلان» beats any provider): the
   // names customers actually use, with the exact pin the owner dropped.
@@ -169,61 +157,51 @@ export async function onRequest(context) {
     head = [];
   }
 
-  let upstream;
-  try {
-    upstream = await fetchAutocomplete(env, { text: q, lang, countries, circle, bias });
-  } catch {
-    return jsonNoStore({ error: 'autocomplete_failed' }, 502);
-  }
-  if (!upstream || !upstream.ok) {
-    if (upstream && upstream.error === 'not_configured') {
-      return jsonNoStore({ error: 'autocomplete_unavailable' }, 503);
-    }
-    return jsonNoStore({ error: 'autocomplete_failed' }, 502);
-  }
-  let results = mergeAutocompleteResults(head, upstream.results);
-  // Non-sensitive source trail for verification (which providers answered —
-  // never the query or the key). The client ignores it; the owner reads it.
+  // Non-sensitive source + Google-status trail for verification (never the
+  // query or a key). The client ignores them; the owner reads them.
+  // google: off (no key) | rich (free passes sufficed) | ok | empty |
+  // capped (daily budget spent) | error (billing/API/quota on Google's side).
   const sources = [];
   if (head.length > 0) sources.push('custom');
-  sources.push('geoapify');
-  // Deep second pass: when the area filter leaves almost nothing (a side
-  // street outside the radius, a new alley, a transliterated name),
-  // run the same query unfiltered and append. Owner places and area
-  // matches keep priority; rows dedupe by coordinates. Costs one extra
-  // provider call only when the first pass is thin.
-  if (results.length < MIN_RICH_RESULTS && (countries.length > 0 || circle)) {
+  let google = isGoogleConfigured(env) ? 'rich' : 'off';
+
+  // Google Places is the primary external provider. One bounded call per
+  // distinct query (debounced + cached client-side); coordinates resolve
+  // once on pick. Free passes below cover thin results and capped budgets.
+  let results = [...head];
+  if (results.length < MIN_RICH_RESULTS && isGoogleConfigured(env)) {
     try {
-      const open = await fetchAutocomplete(env, { text: q, lang, countries: [], circle: null, bias });
-      if (open && open.ok) {
-        results = mergeAutocompleteResults(results, open.results);
-        sources.push('geoapify-open');
+      if (await hitRateLimit(kv, `geo-gg-day:${day}`, googleDailyMax(env), DAY_RATE_WINDOW_SEC)) {
+        const g = await fetchGoogleAutocomplete(env, {
+          text: q,
+          lang,
+          bias,
+          region,
+          restrict,
+          sessionToken,
+        });
+        if (g && g.ok && Array.isArray(g.results) && g.results.length > 0) {
+          results = mergeAutocompleteResults(results, g.results);
+          sources.push('google');
+          google = 'ok';
+        } else if (g && g.ok) {
+          google = 'empty';
+        } else {
+          google = 'error';
+        }
+      } else {
+        google = 'capped';
       }
     } catch {
-      /* keep the first-pass results */
+      google = 'error';
     }
   }
-  // English retry for Arabic queries: Geoapify's Latin records are a
-  // different index slice than Photon's — one bounded call surfaces them.
-  if (results.length < MIN_RICH_RESULTS && lang === 'ar') {
-    try {
-      const en = await fetchAutocomplete(env, { text: q, lang: 'en', countries, circle, bias });
-      if (en && en.ok) {
-        results = mergeAutocompleteResults(results, en.results);
-        sources.push('geoapify-en');
-      }
-    } catch {
-      /* keep what we have */
-    }
-  }
-  // Deep third pass (free, keyless): when both Geoapify passes stay thin —
-  // typical for numbered side streets such as «شارع 16» that the filtered
-  // index does not cover — run the same query against Photon (Komoot,
-  // OSM typeahead) with the same viewport bias and merge behind. Smart
-  // recall: up to 2 Photon calls over normalized/latinized/backoff query
-  // variants (long 4-token queries almost never match one index record),
-  // rows carrying the query's street number rank first, and a bbox around
-  // the bias keeps namesake streets on other continents out.
+  // Free keyless backstop: when owner places + Google stay thin — typical
+  // for numbered side streets the filtered index misses — run the same
+  // query against Photon (Komoot OSM typeahead) and merge behind. Smart
+  // recall: up to 2 calls over normalized/latinized/backoff variants;
+  // fallback variants search streets only (osm_tag=highway); rows carrying
+  // the query's street number rank first behind the earlier matches.
   if (results.length < MIN_RICH_RESULTS) {
     try {
       const zoneRows = [...results];
@@ -250,41 +228,7 @@ export async function onRequest(context) {
         sources.push('photon');
       }
     } catch {
-      /* keep the Geoapify results */
-    }
-  }
-  // Paid last resort (Google Places, quota-guarded): only when every free
-  // pass stays thin AND a key is configured. Coordinates resolve once on
-  // pick via /api/geo/place-details — never per keystroke — and both call
-  // types share one daily budget (GOOGLE_PLACES_DAILY_MAX, default 300).
-  // `google` reports the outcome for activation checks (never the key):
-  // off = no key, rich = free passes sufficed, ok = rows merged,
-  // empty = call worked but nothing matched, capped = daily budget spent,
-  // error = key present but the call failed (billing/API/quota on Google's side).
-  let google = isGoogleConfigured(env) ? 'rich' : 'off';
-  if (results.length < MIN_RICH_RESULTS && isGoogleConfigured(env)) {
-    try {
-      if (await hitRateLimit(kv, `geo-gg-day:${day}`, googleDailyMax(env), DAY_RATE_WINDOW_SEC)) {
-        const g = await fetchGoogleAutocomplete(env, {
-          text: q,
-          lang,
-          bias,
-          region: zoneCountries.length > 0 ? zoneCountries[0] : clientCountry,
-        });
-        if (g && g.ok && Array.isArray(g.results) && g.results.length > 0) {
-          results = mergeAutocompleteResults(results, g.results);
-          sources.push('google');
-          google = 'ok';
-        } else if (g && g.ok) {
-          google = 'empty';
-        } else {
-          google = 'error';
-        }
-      } else {
-        google = 'capped';
-      }
-    } catch {
-      google = 'error';
+      /* keep the Google results */
     }
   }
   return jsonNoStore({ ok: true, results, sources, google });

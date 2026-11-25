@@ -68,9 +68,10 @@ export function extractServiceCountries(menu) {
 }
 
 /**
- * Service radius in meters from the stored delivery zones (maxKm clamped
- * 1..2000, default 100). Null when the menu is missing or maxKm is
- * unusable — the caller then falls back to the country filter.
+ * Service radius in meters from the admin-set delivery maxKm (clamped
+ * 1..2000). Null when the menu is missing or maxKm was never set — a
+ * guessed default must never hard-restrict provider results, so callers
+ * fall back to soft biasing instead.
  */
 export function extractServiceRadiusM(menu) {
   try {
@@ -78,8 +79,8 @@ export function extractServiceRadiusM(menu) {
     const ordering = settings && typeof settings === 'object' ? settings.ordering : null;
     const zones = ordering && typeof ordering === 'object' ? ordering.deliveryZones : null;
     const raw = zones && typeof zones === 'object' ? zones.maxKm : null;
-    const km = typeof raw === 'number' && Number.isFinite(raw) ? Math.round(raw) : 100;
-    if (km < 1 || km > 2000) return null;
+    const km = Math.round(raw);
+    if (typeof raw !== 'number' || !Number.isFinite(raw) || km < 1 || km > 2000) return null;
     return km * 1000;
   } catch {
     return null;

@@ -107,6 +107,30 @@ check('fetch: success returns mapped rows', fetched.ok && fetched.results.length
 check('fetch: POST to the New API endpoint', seenOpts && seenOpts.method === 'POST' && seenUrl === 'https://places.googleapis.com/v1/places:autocomplete');
 check('fetch: key travels only in the header', seenOpts && seenOpts.headers && seenOpts.headers['X-Goog-Api-Key'] === 'test-google-key'
   && !seenUrl.includes('test-google-key') && !JSON.stringify(seenOpts.body).includes('test-google-key'));
+{
+  let seenSess = null;
+  await fetchGoogleAutocomplete(G_ENV, { text: 'شارع 16', sessionToken: 'sess_abc-123' }, async (url, opts) => {
+    seenSess = JSON.parse(opts.body);
+    return { ok: true, status: 200, json: async () => ({ suggestions: [] }) };
+  });
+  check('fetch: session token forwarded for billing sessions', !!seenSess && seenSess.sessionToken === 'sess_abc-123');
+}
+{
+  let seenRestr = null;
+  await fetchGoogleAutocomplete(
+    G_ENV,
+    { text: 'شارع 16', bias: { lat: 31.2, lng: 29.95 }, restrict: { lat: 31.2056, lng: 29.9246, radiusM: 90000 } },
+    async (url, opts) => {
+      seenRestr = JSON.parse(opts.body);
+      return { ok: true, status: 200, json: async () => ({ suggestions: [] }) };
+    }
+  );
+  check('fetch: restriction wins over bias inside the delivery radius',
+    !!seenRestr && !!seenRestr.locationRestriction
+    && seenRestr.locationRestriction.circle.center.latitude === 31.2056
+    && seenRestr.locationRestriction.circle.radius === 50000
+    && !('locationBias' in seenRestr));
+}
 check('fetch: body carries input + language + region + bias', (() => {
   const b = JSON.parse(seenOpts.body);
   return b.input === 'شارع 16' && b.languageCode === 'ar'
@@ -125,6 +149,14 @@ const det = await fetchPlaceDetails(G_ENV, { placeId: 'ChIJN1t_tDeuEmsRMD9Q5I-qd
 check('details: success returns coords', det.ok && det.lat === 31.2 && det.lng === 29.95);
 check('details: key in header, id in path', seenOpts.headers['X-Goog-Api-Key'] === 'test-google-key'
   && seenUrl.includes('/v1/places/ChIJN1t_tDeuEmsRMD9Q5I-qdUQ'));
+{
+  let seenDetUrl = '';
+  await fetchPlaceDetails(G_ENV, { placeId: 'ChIJN1t_tDeuEmsRMD9Q5I-qdUQ', sessionToken: 'sess_abc-123' }, async (url) => {
+    seenDetUrl = String(url);
+    return { ok: true, status: 200, json: async () => ({ location: { latitude: 1, longitude: 1 } }) };
+  });
+  check('details: session token closes the billing session', seenDetUrl.includes('sessionToken=sess_abc-123'));
+}
 check('details: bad id never hits network', (await fetchPlaceDetails(G_ENV, { placeId: 'ab' }, neverFetch)).error === 'bad_query');
 
 /* ---------- shared helper never logs ---------- */
@@ -137,7 +169,7 @@ check('details route never logs', !read('functions/api/geo/place-details.js').in
 const originalFetch = globalThis.fetch;
 try {
   const kv = makeKV();
-  await kv.put('menu', JSON.stringify({ settings: { mapUrl: 'https://www.google.com/maps/@31.2056,29.9246,15z', ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'EG' }] } } } }));
+  await kv.put('menu', JSON.stringify({ settings: { mapUrl: 'https://www.google.com/maps/@31.2056,29.9246,15z', ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'EG' }], maxKm: 30 } } } }));
   const thinGeo = { results: [{ formatted: 'El Soyouf, Alexandria, Egypt', address_line1: 'El Soyouf', address_line2: 'Alexandria, Egypt', lat: 31.2, lon: 29.95 }] };
   let googleCalls = [];
   globalThis.fetch = async (url, opts) => {
@@ -219,7 +251,18 @@ try {
   });
   const res = await placeDetails({ request: customerGet('/api/geo/place-details?placeId=ChIJN1t_tDeuEmsRMD9Q5I-qdUQ'), env: G_ENV });
   const body = await readJson(res);
-  check('route: success is 200 with exact coords + label',
+  {
+  let seenPd = '';
+  globalThis.fetch = async (url) => {
+    seenPd = String(url);
+    return { ok: true, status: 200, json: async () => ({ location: { latitude: 1, longitude: 1 } }) };
+  };
+  const sRes = await placeDetails({ request: customerGet('/api/geo/place-details?placeId=ChIJN1t_tDeuEmsRMD9Q5I-qdUQ&session=sess_9'), env: G_ENV });
+  check('route: place-details forwards the billing session', sRes.status === 200 && seenPd.includes('sessionToken=sess_9'));
+  const badSess = await placeDetails({ request: customerGet('/api/geo/place-details?placeId=ChIJN1t_tDeuEmsRMD9Q5I-qdUQ&session=' + 'x'.repeat(65)), env: G_ENV });
+  check('route: overlong session is still 200 (session best-effort)', badSess.status === 200);
+}
+check('route: success is 200 with exact coords + label',
     res.status === 200 && body && body.ok === true && body.lat === 31.2 && body.lng === 29.95 && body.label === 'Street 16, El Soyouf');
   check('route: success is no-store JSON', res.headers.get('Cache-Control') === 'no-store'
     && (res.headers.get('Content-Type') || '').includes('application/json'));

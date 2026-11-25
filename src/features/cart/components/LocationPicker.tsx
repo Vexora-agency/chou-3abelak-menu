@@ -262,12 +262,22 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
 
   const handleSearchPick = (s: { lat: number | null; lng: number | null; label: string; placeId?: string }) => {
     // Google rows carry no coordinates (predictions have no geometry):
-    // resolve once via the server proxy, then pin exactly like the rest.
+    // resolve once via the server proxy with the same billing session,
+    // then pin exactly like the rest.
     if (s.placeId && (!Number.isFinite(s.lat) || !Number.isFinite(s.lng))) {
       setResolvingPick(true);
       setLocError(null);
-      void fetchPlaceCoords(s.placeId).then((c) => {
+      let session = '';
+      try {
+        session = searchAc.takePlaceSession();
+      } catch {
+        session = '';
+      }
+      void fetchPlaceCoords(s.placeId, session || undefined).then((c) => {
         setResolvingPick(false);
+        try {
+          searchAc.endPlaceSession();
+        } catch {}
         if (!c) {
           setLocError(t.addrFail);
           return;

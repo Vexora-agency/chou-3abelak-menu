@@ -126,7 +126,8 @@ check(
 check('zone countries come only from selected mode', extractServiceCountries({ settings: { ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'LB' }, { cc: 'EG' }, { cc: 'xx' }] } } } }).join(',') === 'lb,eg,xx');
 check('zone countries ignore non-selected modes', extractServiceCountries({ settings: { ordering: { deliveryZones: { mode: 'all', countries: [{ cc: 'LB' }] } } } }).length === 0);
 check('zone countries fail open on garbage', extractServiceCountries(null).length === 0 && extractServiceCountries({}).length === 0);
-check('radius defaults to 100km without zones', extractServiceRadiusM(null) === 100000);
+check('radius is null without an explicit maxKm', extractServiceRadiusM(null) === null
+  && extractServiceRadiusM({ settings: { ordering: { deliveryZones: { mode: 'selected', countries: [] } } } }) === null);
 check('radius reads maxKm', extractServiceRadiusM({ settings: { ordering: { deliveryZones: { maxKm: 30 } } } }) === 30000);
 check('radius clamps garbage', extractServiceRadiusM({ settings: { ordering: { deliveryZones: { maxKm: 0 } } } }) === null
   && extractServiceRadiusM({ settings: { ordering: { deliveryZones: { maxKm: 5000 } } } }) === null);
@@ -413,76 +414,63 @@ for (const bad of ['q=ab', 'q=' + 'x'.repeat(101), '']) {
     res.status === 400 && body && body.error === 'invalid_query');
 }
 
-const noKeyRes = await onRequest({ request: customerGet('/api/geo/autocomplete?q=Beirut'), env: {} });
-const noKeyBody = await readJson(noKeyRes);
-check('route: missing key is 503 autocomplete_unavailable (no KV, no key)',
-  noKeyRes.status === 503 && noKeyBody && noKeyBody.error === 'autocomplete_unavailable');
-check('route: 503 body echoes nothing sensitive', !JSON.stringify(noKeyBody).includes('Beirut'));
-
-// Success path with a stubbed global fetch (the route uses server fetch).
-// Rich zone payload (3 rows): no second pass — the first call carries the
-// zone filter and the restaurant-pin bias.
-const originalFetch = globalThis.fetch;
-let calledUrls = [];
-const richPayload = {
-  results: [
-    {
-      formatted: 'Verdun, Beirut, Lebanon',
-      address_line1: 'Verdun',
-      address_line2: 'Beirut, Lebanon',
-      rank: { importance: 0.9 },
-      datasource: { sourcename: 'openstreetmap' },
-      lat: 33.8886,
-      lon: 35.4798,
-    },
-    {
-      formatted: 'Verdun Street, Beirut, Lebanon',
-      address_line1: 'Verdun Street',
-      address_line2: 'Beirut, Lebanon',
-      street: 'Verdun Street',
-      suburb: 'Verdun',
-      city: 'Beirut',
-      lat: 33.889,
-      lon: 35.48,
-    },
-    {
-      formatted: 'Bldg 4, Verdun Street, Beirut, Lebanon',
-      address_line1: 'Bldg 4, Verdun Street',
-      address_line2: 'Beirut, Lebanon',
-      housenumber: '4',
-      street: 'Verdun Street',
-      city: 'Beirut',
-      lat: 33.8891,
-      lon: 35.4801,
-    },
-    { formatted: 'Bad coords row', lat: 33.8, lon: 'oops' },
-  ],
-};
-const expectedRichResults = [
-  { label: 'Verdun, Beirut, Lebanon', line1: 'Verdun', line2: 'Beirut, Lebanon', lat: 33.8886, lng: 35.4798 },
-  { label: 'Verdun Street, Beirut, Lebanon', line1: 'Verdun Street', line2: 'Beirut, Lebanon', lat: 33.889, lng: 35.48, details: 'Verdun Street, Verdun, Beirut' },
-  { label: 'Bldg 4, Verdun Street, Beirut, Lebanon', line1: 'Bldg 4, Verdun Street', line2: 'Beirut, Lebanon', lat: 33.8891, lng: 35.4801, details: '4 Verdun Street, Beirut' },
-];
-try {
-  const kv = makeKV();
-  await kv.put('menu', JSON.stringify({ settings: { mapUrl: 'https://www.google.com/maps/@33.8938,35.5018,15z', ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'LB' }, { cc: 'EG' }] } } } }));
+const noKeyEnv = {};
+{
+  // No keys at all: free passes still answer (Photon stubbed empty here).
   globalThis.fetch = async (url) => {
     calledUrls.push(String(url));
-    return { ok: true, status: 200, json: async () => richPayload };
+    return { ok: true, status: 200, json: async () => ({ features: [] }) };
   };
-  const res = await onRequest({
-    request: customerGet('/api/geo/autocomplete?q=Verdun%20Beirut&lang=ar&country=lb'),
-    env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv },
-  });
-  const body = await readJson(res);
-  check('route: success is 200 with exact sanitized results',
-    res.status === 200 && body && body.ok === true
-    && JSON.stringify(body.results) === JSON.stringify(expectedRichResults));
-  check('route: rich zone pass needs no second call', calledUrls.length === 1);
-  check('route: sources trail names the answering passes', (() => { const r = body; return Array.isArray(r.sources) && r.sources.includes('geoapify') && !r.sources.includes('google'); })());
-  check('route: google flag is off without a key', body.google === 'off');
-  // Owner places rank first: a matching custom place outranks every
-  // provider row and needs no extra provider call.
+  const resFree = await onRequest({ request: customerGet('/api/geo/autocomplete?q=Beirut'), env: noKeyEnv });
+  const bodyFree = await readJson(resFree);
+  check('route: keyless search still answers 200 from free passes',
+    resFree.status === 200 && bodyFree && bodyFree.ok === true && Array.isArray(bodyFree.results));
+  check('route: google flag is off without a key', bodyFree.google === 'off');
+  check('route: free body echoes nothing sensitive', !JSON.stringify(bodyFree).includes('Beirut'));
+}
+
+// Success paths with a stubbed global fetch (the route uses server fetch).
+const originalFetch = globalThis.fetch;
+let calledUrls = [];
+const googlePayload = {
+  suggestions: [
+    {
+      placePrediction: {
+        placeId: 'ChIJN1t_tDeuEmsRMD9Q5I-qdUQ',
+        text: { text: 'شارع 16، السيوف، الإسكندرية' },
+        structuredFormat: { mainText: { text: 'شارع 16' }, secondaryText: { text: 'السيوف، الإسكندرية' } },
+      },
+    },
+    {
+      placePrediction: {
+        placeId: 'ChIJN1t_tDeuEmsRMD9Q5I-qdUR',
+        text: { text: 'شارع 17، السيوف، الإسكندرية' },
+        structuredFormat: { mainText: { text: 'شارع 17' }, secondaryText: { text: 'السيوف، الإسكندرية' } },
+      },
+    },
+  ],
+};
+const photonGeoJson = {
+  features: [
+    {
+      properties: { street: 'Street 45', district: 'El Soyouf', city: 'Alexandria', country: 'Egypt' },
+      geometry: { coordinates: [29.951, 31.201] },
+    },
+  ],
+};
+const emptyPhoton = { features: [] };
+function googleCalls(urls) {
+  return urls.filter((u) => String(u).includes('places.googleapis.com'));
+}
+function photonCalls(urls) {
+  return urls.filter((u) => String(u).includes('photon.komoot.io'));
+}
+try {
+  const kv = makeKV();
+  await kv.put('menu', JSON.stringify({ settings: { mapUrl: 'https://www.google.com/maps/@31.2056,29.9246,15z', ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'EG' }], maxKm: 30 } } } }));
+  const gEnv = { GOOGLE_PLACES_API_KEY: 'route-google-key', MENU_KV: kv };
+
+  // Google primary: owner places first, then Google rows, no Photon needed.
   calledUrls = [];
   const fakeDb = {
     prepare: () => ({
@@ -493,231 +481,120 @@ try {
       }] }),
     }),
   };
-  globalThis.fetch = async (url) => {
+  let seenBody = null;
+  globalThis.fetch = async (url, opts) => {
     calledUrls.push(String(url));
-    return { ok: true, status: 200, json: async () => richPayload };
+    if (String(url).includes('places.googleapis.com')) {
+      seenBody = JSON.parse(opts.body);
+      return { ok: true, status: 200, json: async () => googlePayload };
+    }
+    return { ok: true, status: 200, json: async () => emptyPhoton };
   };
   const resPlaces = await onRequest({
-    request: customerGet('/api/geo/autocomplete?q=%D8%A7%D9%84%D8%B3%D9%8A%D9%88%D9%81&lang=ar'),
-    env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv, ORDERS_DB: fakeDb },
+    request: customerGet('/api/geo/autocomplete?q=%D8%A7%D9%84%D8%B3%D9%8A%D9%88%D9%81&lang=ar&session=abc123XYZ_-'),
+    env: { ...gEnv, ORDERS_DB: fakeDb },
   });
   const bodyPlaces = await readJson(resPlaces);
   check('route: owner place ranks first with the saved-place line',
     resPlaces.status === 200 && bodyPlaces && bodyPlaces.ok === true
-    && bodyPlaces.results.length >= 1
+    && bodyPlaces.results.length === 3
     && bodyPlaces.results[0].line1 === 'دوار السيوف'
     && bodyPlaces.results[0].line2 === 'مكان محفوظ'
-    && bodyPlaces.results[0].lat === 31.205 && bodyPlaces.results[0].lng === 29.945);
-  check('route: owner head needs no extra provider call', calledUrls.length === 1);
-  check('route: sources trail leads with custom', Array.isArray(bodyPlaces.sources) && bodyPlaces.sources[0] === 'custom');
-  check('route: success is no-store JSON', res.headers.get('Cache-Control') === 'no-store'
-    && (res.headers.get('Content-Type') || '').includes('application/json'));
-  check('route: response never carries the key', !JSON.stringify(body).includes('route-key-xyz'));
-  check('route: upstream URL carries the key server-side', calledUrls[0].includes('route-key-xyz'));
-  check('route: upstream URL carries lang + circle filter around the pin', param(calledUrls[0], 'lang') === 'ar'
-    && param(calledUrls[0], 'filter') === 'circle:35.5018,33.8938,100000');
-  check('route: upstream URL biases to the restaurant pin (LON,LAT)',
-    param(calledUrls[0], 'bias') === 'proximity:35.5018,33.8938');
+    && bodyPlaces.results[1].placeId === 'ChIJN1t_tDeuEmsRMD9Q5I-qdUQ'
+    && bodyPlaces.results[1].lat === null);
+  check('route: sources trail leads with custom then google',
+    Array.isArray(bodyPlaces.sources) && bodyPlaces.sources[0] === 'custom' && bodyPlaces.sources[1] === 'google');
+  check('route: google flag is ok', bodyPlaces.google === 'ok');
+  check('route: Google call is POST with key header + restriction + session',
+    googleCalls(calledUrls).length === 1 && seenBody
+    && seenBody.input === 'السيوف' && seenBody.languageCode === 'ar'
+    && JSON.stringify(seenBody.includedRegionCodes) === JSON.stringify(['EG'])
+    && seenBody.regionCode === 'eg' && seenBody.sessionToken === 'abc123XYZ_-'
+    && seenBody.locationRestriction && seenBody.locationRestriction.circle
+    && seenBody.locationRestriction.circle.center.latitude === 31.2056
+    && !('locationBias' in seenBody));
+  check('route: success is no-store JSON', resPlaces.headers.get('Cache-Control') === 'no-store'
+    && (resPlaces.headers.get('Content-Type') || '').includes('application/json'));
+  check('route: response never carries the key', !JSON.stringify(bodyPlaces).includes('route-google-key'));
 
-  // Thin zone pass (1 row): the deep second pass runs unfiltered with the
-  // same bias; zone rows stay first, duplicates drop. Both Geoapify passes
-  // stay thin (2 rows), so the keyless Photon pass runs third and appends
-  // the numbered side street (e.g. Street 16) behind the zone matches.
+  // Thin Google (empty) falls back to Photon streets.
   calledUrls = [];
-  const thinPayload = {
-    results: [
-      {
-        formatted: 'El Soyouf, Alexandria, Egypt',
-        address_line1: 'El Soyouf',
-        address_line2: 'Alexandria, Egypt',
-        suburb: 'El Soyouf',
-        city: 'Alexandria',
-        lat: 31.2,
-        lon: 29.95,
-      },
-    ],
-  };
-  const openPayload = {
-    results: [
-      {
-        formatted: 'El Soyouf, Alexandria, Egypt',
-        address_line1: 'El Soyouf',
-        address_line2: 'Alexandria, Egypt',
-        suburb: 'El Soyouf',
-        city: 'Alexandria',
-        lat: 31.20001,
-        lon: 29.95001,
-      },
-      {
-        formatted: 'Street 45, El Soyouf, Alexandria, Egypt',
-        address_line1: 'Street 45',
-        address_line2: 'El Soyouf, Alexandria, Egypt',
-        street: 'Street 45',
-        suburb: 'El Soyouf',
-        city: 'Alexandria',
-        lat: 31.201,
-        lon: 29.951,
-      },
-    ],
-  };
-  let thinFirst = true;
-  const photonGeoJson = {
-    features: [
-      {
-        properties: { street: 'Street 16', district: 'El Soyouf', city: 'Alexandria', country: 'Egypt' },
-        geometry: { coordinates: [29.952, 31.202] },
-      },
-    ],
-  };
   globalThis.fetch = async (url) => {
     calledUrls.push(String(url));
-    if (String(url).includes('photon.komoot.io')) {
-      return { ok: true, status: 200, json: async () => photonGeoJson };
+    if (String(url).includes('places.googleapis.com')) {
+      return { ok: true, status: 200, json: async () => ({ suggestions: [] }) };
     }
-    const payload = thinFirst ? thinPayload : openPayload;
-    thinFirst = false;
-    return { ok: true, status: 200, json: async () => payload };
+    return { ok: true, status: 200, json: async () => photonGeoJson };
   };
   const resThin = await onRequest({
-    request: customerGet('/api/geo/autocomplete?q=%D8%A7%D9%84%D8%B3%D9%8A%D9%88%D9%81&lang=ar&country=eg'),
-    env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv },
+    request: customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9%2045&lang=ar&country=eg'),
+    env: gEnv,
   });
   const bodyThin = await readJson(resThin);
-  check('route: thin area pass triggers open + EN + photon passes', calledUrls.length === 4);
-  check('route: EN retry keeps the area filter with lang=en',
-    param(calledUrls[2], 'filter') === 'circle:35.5018,33.8938,100000' && param(calledUrls[2], 'lang') === 'en');
-  check('route: deep pass drops the country filter but keeps the bias',
-    param(calledUrls[1], 'filter') === null && param(calledUrls[1], 'bias') === 'proximity:35.5018,33.8938');
-  check('route: photon pass carries the viewport bias without any key',
-    calledUrls[3].includes('photon.komoot.io') && !calledUrls[3].includes('route-key-xyz'));
-  check('route: merged results keep the zone row first and dedupe',
+  check('route: empty Google pass falls back to Photon streets',
     resThin.status === 200 && bodyThin && bodyThin.ok === true
-    && bodyThin.results.length === 3
-    && bodyThin.results[0].label === 'El Soyouf, Alexandria, Egypt'
-    && bodyThin.results[1].label === 'Street 45, El Soyouf, Alexandria, Egypt'
-    && bodyThin.results[2].label.includes('Street 16'));
+    && bodyThin.google === 'empty'
+    && bodyThin.sources.includes('photon')
+    && bodyThin.results.some((r) => r.line1 === 'Street 45'));
 
-  // Fallback variant: a 4-token query whose Photon full-text pass is empty
-  // still resolves via the backoff variant («El Soyouf Street 16»).
+  // No key: Photon alone still answers; google flag stays off.
   calledUrls = [];
-  globalThis.fetch = async (url) => {
-    calledUrls.push(String(url));
-    const u = String(url);
-    if (u.includes('photon.komoot.io')) {
-      const pq = new URL(u).searchParams.get('q') || '';
-      if (pq === 'Alexandria El Soyouf Street 16') {
-        return { ok: true, status: 200, json: async () => ({ features: [] }) };
-      }
+  const resNoKey = await onRequest({
+    request: customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9%2045&lang=ar'),
+    env: { MENU_KV: kv },
+  });
+  const bodyNoKey = await readJson(resNoKey);
+  check('route: unconfigured Google is skipped, Photon covers',
+    resNoKey.status === 200 && bodyNoKey && bodyNoKey.ok === true
+    && bodyNoKey.google === 'off' && googleCalls(calledUrls).length === 0
+    && photonCalls(calledUrls).length >= 1);
+
+  // Daily budget spent: Google capped, free Photon still answers.
+  {
+    const kvCap = makeKV();
+    await kv.put('menu', JSON.stringify({ settings: { mapUrl: 'https://www.google.com/maps/@31.2056,29.9246,15z' } }));
+    const day = new Date().toISOString().slice(0, 10);
+    await kvCap.put('geo-gg-day:' + day, '300');
+    await kvCap.put('menu', JSON.stringify({ settings: { mapUrl: 'https://www.google.com/maps/@31.2056,29.9246,15z' } }));
+    calledUrls = [];
+    globalThis.fetch = async (url) => {
+      calledUrls.push(String(url));
       return { ok: true, status: 200, json: async () => photonGeoJson };
-    }
-    const payload = geoFirst ? thinPayload : openPayload;
-    geoFirst = false;
-    return { ok: true, status: 200, json: async () => payload };
-  };
-  let geoFirst = true;
-  const resFallback = await onRequest({
-    request: customerGet('/api/geo/autocomplete?q=Alexandria%20El%20Soyouf%20Street%2016&lang=en&country=eg'),
-    env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv },
-  });
-  const bodyFallback = await readJson(resFallback);
-  check('route: empty photon full pass retries the backoff variant', calledUrls.length === 4);
-  check('route: fallback variant resolves the numbered street',
-    resFallback.status === 200 && bodyFallback && bodyFallback.ok === true
-    && bodyFallback.results.length === 3
-    && bodyFallback.results[2].label.includes('Street 16'));
-  check('route: fallback variant searches streets only (osm_tag=highway)',
-    (() => {
-      const photonCalls = calledUrls.filter((u) => String(u).includes('photon.komoot.io'));
-      return photonCalls.length === 2
-        && new URL(photonCalls[1]).searchParams.get('osm_tag') === 'highway'
-        && new URL(photonCalls[1]).searchParams.get('q') === 'El Soyouf Street 16';
-    })());
+    };
+    const resCap = await onRequest({
+      request: customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9%2045&lang=ar'),
+      env: { GOOGLE_PLACES_API_KEY: 'route-google-key', MENU_KV: kvCap },
+    });
+    const bodyCap = await readJson(resCap);
+    check('route: spent budget caps Google but Photon answers',
+      resCap.status === 200 && bodyCap && bodyCap.google === 'capped'
+      && googleCalls(calledUrls).length === 0);
+  }
 
-  // Map viewport bias: a lat/lng from the picker outranks the restaurant
-  // pin; garbage viewports fall back to the pin.
+  // No stored pin: viewport bias (no restriction), same region rule.
   calledUrls = [];
-  globalThis.fetch = async (url) => {
+  let seenBiasBody = null;
+  globalThis.fetch = async (url, opts) => {
     calledUrls.push(String(url));
-    return { ok: true, status: 200, json: async () => richPayload };
+    if (String(url).includes('places.googleapis.com')) {
+      seenBiasBody = JSON.parse(opts.body);
+      return { ok: true, status: 200, json: async () => googlePayload };
+    }
+    return { ok: true, status: 200, json: async () => emptyPhoton };
   };
-  const resView = await onRequest({
-    request: customerGet('/api/geo/autocomplete?q=Verdun&lat=31.2&lng=29.95'),
-    env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv },
+  const resBias = await onRequest({
+    request: customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9%2016&lat=31.2&lng=29.95'),
+    env: { GOOGLE_PLACES_API_KEY: 'route-google-key' },
   });
-  const bodyView = await readJson(resView);
-  check('route: viewport bias outranks the restaurant pin',
-    resView.status === 200 && bodyView && bodyView.ok === true
-    && param(calledUrls[0], 'bias') === 'proximity:29.95,31.2');
-  calledUrls = [];
-  const resBadView = await onRequest({
-    request: customerGet('/api/geo/autocomplete?q=Verdun&lat=oops&lng=200'),
-    env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv },
-  });
-  const bodyBadView = await readJson(resBadView);
-  check('route: invalid viewport falls back to the restaurant pin',
-    resBadView.status === 200 && bodyBadView && bodyBadView.ok === true
-    && param(calledUrls[0], 'bias') === 'proximity:35.5018,33.8938');
-
-  // No KV menu: bias is skipped, the search still succeeds (single call:
-  // no zone filter exists, so no second pass is needed).
-  calledUrls = [];
-  const resNoKv = await onRequest({
-    request: customerGet('/api/geo/autocomplete?q=Verdun'),
-    env: { GEOAPIFY_API_KEY: 'route-key-xyz' },
-  });
-  const bodyNoKv = await readJson(resNoKv);
-  check('route: missing KV skips bias and still succeeds',
-    resNoKv.status === 200 && bodyNoKv && bodyNoKv.ok === true
-    && calledUrls.length === 1 && param(calledUrls[0], 'bias') === null);
-
-  // No stored pin: the delivery-zone countries still filter the search.
-  {
-    const kvZones = makeKV();
-    await kvZones.put('menu', JSON.stringify({ settings: { ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'LB' }, { cc: 'EG' }] } } } }));
-    calledUrls = [];
-    const resZones = await onRequest({
-      request: customerGet('/api/geo/autocomplete?q=Verdun'),
-      env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kvZones },
-    });
-    check('route: pin-less zones fall back to the country filter',
-      resZones.status === 200 && param(calledUrls[0], 'filter') === 'countrycode:lb,eg');
-  }
-
-  // Worldwide service (zones not selected): the client hint is the only
-  // filter; with no hint either, the search runs unfiltered + unbiased.
-  {
-    const kvAll = makeKV();
-    await kvAll.put('menu', JSON.stringify({ settings: { ordering: { deliveryZones: { mode: 'all' } } } }));
-    calledUrls = [];
-    const resHint = await onRequest({
-      request: customerGet('/api/geo/autocomplete?q=Verdun&country=lb'),
-      env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kvAll },
-    });
-    check('route: worldwide service falls back to the client country hint',
-      resHint.status === 200 && param(calledUrls[0], 'filter') === 'countrycode:lb');
-    calledUrls = [];
-    const resOpen = await onRequest({
-      request: customerGet('/api/geo/autocomplete?q=Verdun'),
-      env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kvAll },
-    });
-    check('route: worldwide service without a hint runs unfiltered',
-      resOpen.status === 200 && param(calledUrls[0], 'filter') === null);
-  }
-
-  // Upstream failure: generic 502, nothing echoed.
-  globalThis.fetch = async () => ({ ok: false, status: 502, json: async () => ({ message: 'provider says no' }) });
-  const failRes = await onRequest({
-    request: customerGet('/api/geo/autocomplete?q=Verdun'),
-    env: { GEOAPIFY_API_KEY: 'route-key-xyz' },
-  });
-  const failBody = await readJson(failRes);
-  check('route: upstream failure is 502 autocomplete_failed',
-    failRes.status === 502 && failBody && failBody.error === 'autocomplete_failed'
-    && !JSON.stringify(failBody).includes('provider says no')
-    && !JSON.stringify(failBody).includes('route-key-xyz'));
+  const bodyBias = await readJson(resBias);
+  check('route: pin-less search biases by the live viewport',
+    resBias.status === 200 && bodyBias && bodyBias.ok === true && seenBiasBody
+    && seenBiasBody.locationBias && seenBiasBody.locationBias.circle.center.latitude === 31.2
+    && !('locationRestriction' in seenBiasBody));
 } finally {
   globalThis.fetch = originalFetch;
 }
+
 
 // Rate limits.
 {

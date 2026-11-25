@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { loadStreetIndex, matchRecentPlaces, mergeLocalFirst, saveRecentPlace, searchStreetIndex } from '../utils/streetIndex';
 
@@ -35,11 +35,17 @@ export interface UseAddressAutocompleteResult {
   selectSuggestion: (s: AddressSuggestion) => void;
   clearPicked: () => void;
   handleKeyDown: (e: KeyboardEvent<HTMLInputElement>) => 'pick' | 'close' | null;
+  /** Billing-session token for the current search (Google session pricing):
+   * stable across this query's keystrokes, rotated after pick or 3 min. */
+  takePlaceSession: () => string;
+  /** Close the billing session (call after place-details resolves). */
+  endPlaceSession: () => void;
 }
 
 const DEBOUNCE_MS = 350;
 const MIN_QUERY_LENGTH = 3;
 const CACHE_CAP = 50;
+const SESSION_TTL_MS = 180000; // Google billing sessions stay short-lived.
 
 // Session-level cache shared by all hook instances.
 const sessionCache = new Map<string, AddressSuggestion[]>();
@@ -77,17 +83,23 @@ function isAddressSuggestion(v: unknown): v is AddressSuggestion {
 
 /**
  * Resolve one picked Google suggestion to coordinates (one call per PICK,
- * never per keystroke). Null when the id is malformed, the proxy is
- * unreachable, or the budget is spent — the caller keeps the search open.
+ * never per keystroke). Pass the session token from takePlaceSession so
+ * Google bills autocomplete + details as one session. Null when the id is
+ * malformed, the proxy is unreachable, or the budget is spent — the caller
+ * keeps the search open.
  */
-export async function fetchPlaceCoords(placeId: string): Promise<{ lat: number; lng: number; label: string } | null> {
+export async function fetchPlaceCoords(placeId: string, sessionToken?: string): Promise<{ lat: number; lng: number; label: string } | null> {
   try {
     if (typeof placeId !== 'string' || !/^[A-Za-z0-9_-]{10,200}$/.test(placeId)) return null;
+    const query = `/api/geo/place-details?placeId=${encodeURIComponent(placeId)}`
+      + (typeof sessionToken === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(sessionToken)
+        ? `&session=${encodeURIComponent(sessionToken)}`
+        : '');
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 8000);
     try {
       const res = await fetch(
-        `/api/geo/place-details?placeId=${encodeURIComponent(placeId)}`,
+        query,
         { signal: ctrl.signal, headers: { Accept: 'application/json', 'X-Requested-With': 'menu-customer' } },
       );
       if (!res.ok) return null;
@@ -135,6 +147,23 @@ export function useAddressAutocomplete({
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [pickedLabel, setPickedLabel] = useState<string | null>(null);
+  // Billing session for Google session pricing: one token per search,
+  // shared by this query's autocomplete calls and closed by the
+  // place-details call on pick (rotates after 3 minutes regardless).
+  const placeSessionRef = useRef<{ id: string; startedAt: number } | null>(null);
+  const takePlaceSession = useCallback((): string => {
+    const now = Date.now();
+    if (!placeSessionRef.current || now - placeSessionRef.current.startedAt > SESSION_TTL_MS) {
+      const id = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID().replace(/-/g, '')
+        : `s${Math.random().toString(36).slice(2)}${now.toString(36)}`;
+      placeSessionRef.current = { id, startedAt: now };
+    }
+    return placeSessionRef.current.id;
+  }, []);
+  const endPlaceSession = useCallback(() => {
+    placeSessionRef.current = null;
+  }, []);
 
   // A picked suggestion must never trigger a fetch; the marker clears as
   // soon as the user edits the text manually.
@@ -206,6 +235,13 @@ export function useAddressAutocomplete({
           if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
             params.set('lat', String(Math.round(bias.lat * 1000) / 1000));
             params.set('lng', String(Math.round(bias.lng * 1000) / 1000));
+          }
+          // Billing session groups this search's autocomplete calls with
+          // the eventual place-details call (Google session pricing).
+          try {
+            params.set('session', takePlaceSession());
+          } catch {
+            /* session is best-effort; the search runs without it */
           }
           const res = await fetch(
             `/api/geo/autocomplete?${params.toString()}`,
@@ -313,5 +349,7 @@ export function useAddressAutocomplete({
     selectSuggestion,
     clearPicked,
     handleKeyDown,
+    takePlaceSession,
+    endPlaceSession,
   };
 }

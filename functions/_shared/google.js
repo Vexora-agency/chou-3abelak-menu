@@ -1,20 +1,22 @@
 /**
- * Google Places (New API) helpers — optional LAST-RESORT suggestion pass.
+ * Google Places (New API) helpers — PRIMARY external suggestion pass.
  *
- * Used only when every free pass (owner places, local index, Geoapify,
- * Photon) comes back thin AND a GOOGLE_PLACES_API_KEY is configured.
- * Every Google call (autocomplete + one details call per PICK, never per
- * keystroke) counts against a shared daily cap (GOOGLE_PLACES_DAILY_MAX,
- * default 300 ≈ 9k/month — inside the ~10k free monthly usage; billing
- * account still required, verify the current price page before enabling).
+ * Order in the route: owner places → Google → Photon (free, keyless).
+ * Geoapify was retired from this path by owner decision.
  *
- * The API key travels only in the server-to-server X-Goog-Api-Key header.
- * Autocomplete predictions carry no coordinates by design, so rows keep
- * { lat: null, lng: null, placeId } and the client resolves coordinates
- * once via GET /api/geo/place-details when the customer picks the row.
+ * Professional usage notes (per the official Places API (New) docs):
+ * - Session tokens group one user's autocomplete keystrokes + the final
+ *   place-details call into a billing session (client mints a UUID per
+ *   search, the server forwards it as `sessionToken` to both calls).
+ * - `locationRestriction` (not bias) pins results INSIDE the delivery
+ *   radius around the restaurant pin whenever that radius fits the API
+ *   limit (≤ 50000 m); otherwise a viewport `locationBias` applies.
+ * - `regionCode` formats/biases, `includedRegionCodes` hard-restricts.
+ * - Field masks on both calls return only what the UI needs.
+ * - Attribution must read exactly "Google Maps" (never localized).
  *
- * Conventions mirror functions/_shared/geoapify.js: per-request env reads,
- * 6s AbortController timeouts, and NEVER any logging of the key or query.
+ * The key travels only in the server-to-server X-Goog-Api-Key header.
+ * Coordinates resolve once on PICK via place-details — never per keystroke.
  */
 
 const PLACES_AUTOCOMPLETE_URL = 'https://places.googleapis.com/v1/places:autocomplete';
@@ -53,6 +55,11 @@ export function normalizeGoogleLang(lang) {
 /** Place IDs are URL-safe tokens; anything else is rejected (no lookup). */
 export function validatePlaceId(v) {
   return typeof v === 'string' && PLACE_ID_RE.test(v) ? v : null;
+}
+
+/** Session token: user-generated billing-session id (UUID from the client). */
+export function validateSessionToken(v) {
+  return typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v) ? v : null;
 }
 
 /** Uppercase 2-letter region code or '' (omit the filter when unknown). */
@@ -121,7 +128,10 @@ export function sanitizePlaceDetails(json) {
 
 /**
  * Server-side Places autocomplete call. Never throws, never logs the key
- * or query. Result: { ok:true, results } or { ok:false, error }.
+ * or query. Accepts { text, lang, bias, region, restrict, sessionToken }:
+ * restrict = { lat, lng, radiusM } pins results INSIDE the delivery area
+ * (radius capped at the 50000 m API limit); otherwise the viewport bias
+ * applies. Result: { ok:true, results } or { ok:false, error }.
  */
 export async function fetchGoogleAutocomplete(env, params, fetchFn = fetch) {
   try {
@@ -129,19 +139,37 @@ export async function fetchGoogleAutocomplete(env, params, fetchFn = fetch) {
     const opts = params && typeof params === 'object' ? params : {};
     const raw = typeof opts.text === 'string' ? opts.text.trim() : '';
     if (raw.length < 3 || raw.length > 100) return { ok: false, error: 'bad_query' };
+    const lang = normalizeGoogleLang(opts.lang);
     const body = {
       input: raw,
-      languageCode: normalizeGoogleLang(opts.lang),
+      languageCode: lang,
     };
     const region = normalizeRegionCode(opts.region);
-    if (region) body.includedRegionCodes = [region];
-    const bias = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
-    const lat = bias ? bias.lat : NaN;
-    const lng = bias ? bias.lng : NaN;
-    if (typeof lat === 'number' && Number.isFinite(lat) && Math.abs(lat) <= 90
-      && typeof lng === 'number' && Number.isFinite(lng) && Math.abs(lng) <= 180) {
-      body.locationBias = { circle: { center: { latitude: lat, longitude: lng }, radius: 20000.0 } };
+    if (region) {
+      body.includedRegionCodes = [region];
+      body.regionCode = region.toLowerCase();
     }
+    const restrict = opts.restrict && typeof opts.restrict === 'object' ? opts.restrict : null;
+    const rLat = restrict ? restrict.lat : NaN;
+    const rLng = restrict ? restrict.lng : NaN;
+    const rR = restrict ? restrict.radiusM : NaN;
+    if (typeof rLat === 'number' && Number.isFinite(rLat) && Math.abs(rLat) <= 90
+      && typeof rLng === 'number' && Number.isFinite(rLng) && Math.abs(rLng) <= 180
+      && typeof rR === 'number' && Number.isFinite(rR) && rR > 0) {
+      body.locationRestriction = {
+        circle: { center: { latitude: rLat, longitude: rLng }, radius: Math.min(Math.round(rR), 50000) },
+      };
+    } else {
+      const bias = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
+      const lat = bias ? bias.lat : NaN;
+      const lng = bias ? bias.lng : NaN;
+      if (typeof lat === 'number' && Number.isFinite(lat) && Math.abs(lat) <= 90
+        && typeof lng === 'number' && Number.isFinite(lng) && Math.abs(lng) <= 180) {
+        body.locationBias = { circle: { center: { latitude: lat, longitude: lng }, radius: 20000.0 } };
+      }
+    }
+    const sessionToken = validateSessionToken(opts.sessionToken);
+    if (sessionToken) body.sessionToken = sessionToken;
     const controller = new AbortController();
     const timer = setTimeout(() => {
       try {
@@ -178,8 +206,9 @@ export async function fetchGoogleAutocomplete(env, params, fetchFn = fetch) {
 }
 
 /**
- * Server-side Place Details call (one per PICK, never per keystroke).
- * Never throws, never logs the key. Result: { ok:true, ...coords } or
+ * Server-side Place Details call (one per PICK, never per keystroke,
+ * same sessionToken to close the billing session). Never throws and never
+ * logs the key. Result: { ok:true, ...coords } or
  * { ok:false, error: 'bad_query' | 'failed' | 'not_configured' }.
  */
 export async function fetchPlaceDetails(env, params, fetchFn = fetch) {
@@ -188,6 +217,9 @@ export async function fetchPlaceDetails(env, params, fetchFn = fetch) {
     const opts = params && typeof params === 'object' ? params : {};
     const placeId = validatePlaceId(opts.placeId);
     if (!placeId) return { ok: false, error: 'bad_query' };
+    let url = `${PLACE_DETAILS_URL}${encodeURIComponent(placeId)}?fields=location,displayName,formattedAddress`;
+    const sessionToken = validateSessionToken(opts.sessionToken);
+    if (sessionToken) url += `&sessionToken=${encodeURIComponent(sessionToken)}`;
     const controller = new AbortController();
     const timer = setTimeout(() => {
       try {
@@ -195,13 +227,10 @@ export async function fetchPlaceDetails(env, params, fetchFn = fetch) {
       } catch {}
     }, REQUEST_TIMEOUT_MS);
     try {
-      const res = await fetchFn(
-        `${PLACE_DETAILS_URL}${encodeURIComponent(placeId)}?fields=location,displayName,formattedAddress`,
-        {
-          signal: controller.signal,
-          headers: { 'X-Goog-Api-Key': trimGoogleEnv(env, 'GOOGLE_PLACES_API_KEY') },
-        },
-      );
+      const res = await fetchFn(url, {
+        signal: controller.signal,
+        headers: { 'X-Goog-Api-Key': trimGoogleEnv(env, 'GOOGLE_PLACES_API_KEY') },
+      });
       if (!res || !res.ok) return { ok: false, error: 'failed' };
       let json = null;
       try {

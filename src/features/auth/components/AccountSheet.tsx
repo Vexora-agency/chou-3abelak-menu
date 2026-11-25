@@ -527,9 +527,19 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
       && typeof suggestion.lng === 'number' && Number.isFinite(suggestion.lng)) {
       setLocation({ lat: suggestion.lat, lng: suggestion.lng, accuracy: 0 });
     } else if (suggestion.placeId) {
-      // Google rows resolve once via the server proxy, then pin as usual.
+      // Google rows resolve once via the server proxy with the same
+      // billing session, then pin as usual.
       const pid = suggestion.placeId;
-      void fetchPlaceCoords(pid).then((c) => {
+      let session = '';
+      try {
+        session = addrAc.takePlaceSession();
+      } catch {
+        session = '';
+      }
+      void fetchPlaceCoords(pid, session || undefined).then((c) => {
+        try {
+          addrAc.endPlaceSession();
+        } catch {}
         if (c) setLocation({ lat: c.lat, lng: c.lng, accuracy: 0 });
         else setSaveError(isAr ? 'تعذر تحديد الموقع — أعد المحاولة.' : 'Could not locate this place — try again.');
       });

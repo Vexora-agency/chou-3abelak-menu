@@ -19,7 +19,7 @@
 import { jsonNoStore } from '../../_shared/session.js';
 import { checkCustomerApiHeaders } from '../../_shared/auth-session.js';
 import { hitRateLimit } from '../../_shared/ratelimit.js';
-import { fetchPlaceDetails, googleDailyMax, validatePlaceId } from '../../_shared/google.js';
+import { fetchPlaceDetails, googleDailyMax, validatePlaceId, validateSessionToken } from '../../_shared/google.js';
 
 const IP_RATE_MAX = 60;
 const IP_RATE_WINDOW_SEC = 60;
@@ -47,6 +47,7 @@ export async function onRequest(context) {
   }
   const placeId = validatePlaceId(params.get('placeId'));
   if (!placeId) return jsonNoStore({ error: 'invalid_query' }, 400);
+  const sessionToken = validateSessionToken(params.get('session'));
 
   const kv = env ? env.MENU_KV : null;
   if (!(await hitRateLimit(kv, `rl:geo-ggpd:${clientIp(request)}`, IP_RATE_MAX, IP_RATE_WINDOW_SEC))) {
@@ -59,7 +60,7 @@ export async function onRequest(context) {
 
   let upstream;
   try {
-    upstream = await fetchPlaceDetails(env, { placeId });
+    upstream = await fetchPlaceDetails(env, { placeId, sessionToken: sessionToken || undefined });
   } catch {
     return jsonNoStore({ error: 'place_failed' }, 502);
   }

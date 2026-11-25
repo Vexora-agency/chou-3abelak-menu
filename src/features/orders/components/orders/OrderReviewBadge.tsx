@@ -61,7 +61,7 @@ export const OrderReviewBadge: FC<OrderReviewBadgeProps> = ({
   const canBlock = typeof phone === 'string' && phone.replace(/[^0-9]/g, '').length >= 6;
 
   return (
-    <span ref={wrapRef} className="relative shrink-0 inline-flex">
+    <span ref={wrapRef} className="shrink-0 inline-flex">
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
@@ -74,11 +74,20 @@ export const OrderReviewBadge: FC<OrderReviewBadgeProps> = ({
       </button>
       {open && (
         <span
-          role="dialog"
-          aria-label={isAr ? 'أسباب المراجعة' : 'Review reasons'}
-          className="absolute top-7 z-50 w-60 rounded-2xl border border-amber-400/30 bg-[#171717] p-3 text-start shadow-[0_18px_50px_-12px_rgba(0,0,0,0.8)]"
-          onClick={(e) => e.stopPropagation()}
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+          onClick={(e) => { e.stopPropagation(); }}
         >
+          <span
+            aria-hidden="true"
+            className="absolute inset-0 bg-black/60 anim-fade-in"
+            onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+          />
+          <span
+            role="dialog"
+            aria-label={isAr ? 'أسباب المراجعة' : 'Review reasons'}
+            className="relative w-full max-w-[320px] rounded-2xl border border-amber-400/30 bg-[#171717] p-4 text-start shadow-[0_18px_50px_-12px_rgba(0,0,0,0.8)]"
+            onClick={(e) => e.stopPropagation()}
+          >
           <span className="block text-[11px] font-black text-amber-300">
             {isAr ? 'يحتاج مراجعة' : 'Needs review'}
             {typeof orderNumber === 'number' && (
@@ -133,6 +142,7 @@ export const OrderReviewBadge: FC<OrderReviewBadgeProps> = ({
               {isAr ? 'حظر الرقم' : 'Block number'}
             </button>
           </span>
+        </span>
         </span>
       )}
     </span>

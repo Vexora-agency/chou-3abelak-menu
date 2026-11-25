@@ -6,9 +6,13 @@ export interface AddressSuggestion {
   label: string;
   line1: string;
   line2: string;
-  lat: number;
-  lng: number;
+  /** Null for Google rows: coordinates resolve once on pick via
+   * /api/geo/place-details (predictions carry no geometry by design). */
+  lat: number | null;
+  lng: number | null;
   details?: string;
+  /** Google placeId (server never exposes the API key to use it). */
+  placeId?: string;
 }
 
 export interface UseAddressAutocompleteOptions {
@@ -59,14 +63,46 @@ function cacheSet(key: string, value: AddressSuggestion[]): void {
 function isAddressSuggestion(v: unknown): v is AddressSuggestion {
   if (typeof v !== 'object' || v === null) return false;
   const o = v as Record<string, unknown>;
+  const hasCoords = (typeof o.lat === 'number' && typeof o.lng === 'number')
+    || (o.lat === null && o.lng === null && typeof o.placeId === 'string');
   return (
     typeof o.label === 'string' &&
     typeof o.line1 === 'string' &&
     typeof o.line2 === 'string' &&
-    typeof o.lat === 'number' &&
-    typeof o.lng === 'number' &&
-    (o.details === undefined || typeof o.details === 'string')
+    hasCoords &&
+    (o.details === undefined || typeof o.details === 'string') &&
+    (o.placeId === undefined || typeof o.placeId === 'string')
   );
+}
+
+/**
+ * Resolve one picked Google suggestion to coordinates (one call per PICK,
+ * never per keystroke). Null when the id is malformed, the proxy is
+ * unreachable, or the budget is spent — the caller keeps the search open.
+ */
+export async function fetchPlaceCoords(placeId: string): Promise<{ lat: number; lng: number; label: string } | null> {
+  try {
+    if (typeof placeId !== 'string' || !/^[A-Za-z0-9_-]{10,200}$/.test(placeId)) return null;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const res = await fetch(
+        `/api/geo/place-details?placeId=${encodeURIComponent(placeId)}`,
+        { signal: ctrl.signal, headers: { Accept: 'application/json', 'X-Requested-With': 'menu-customer' } },
+      );
+      if (!res.ok) return null;
+      const data: unknown = await res.json().catch(() => null);
+      if (!data || typeof data !== 'object') return null;
+      const d = data as { ok?: unknown; lat?: unknown; lng?: unknown; label?: unknown };
+      if (d.ok !== true || typeof d.lat !== 'number' || !Number.isFinite(d.lat)) return null;
+      if (typeof d.lng !== 'number' || !Number.isFinite(d.lng)) return null;
+      return { lat: d.lat, lng: d.lng, label: typeof d.label === 'string' && d.label ? d.label : `${d.lat}, ${d.lng}` };
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    return null;
+  }
 }
 
 function extractSuggestions(payload: unknown): AddressSuggestion[] {

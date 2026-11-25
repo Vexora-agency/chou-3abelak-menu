@@ -146,8 +146,13 @@ export function searchStreetIndex(
         ranked.sort((a, b) => {
           if (b.score !== a.score) return b.score - a.score;
           if (hasNear && near) {
-            return distanceM(near.lat, near.lng, a.s.lat, a.s.lng)
-              - distanceM(near.lat, near.lng, b.s.lat, b.s.lng);
+            const dist = (s: AddressSuggestion): number => (
+              typeof s.lat === 'number' && typeof s.lng === 'number'
+              && Number.isFinite(s.lat) && Number.isFinite(s.lng)
+                ? distanceM(near.lat, near.lng, s.lat, s.lng)
+                : Number.POSITIVE_INFINITY
+            );
+            return dist(a.s) - dist(b.s);
           }
           return 0;
         });
@@ -291,7 +296,9 @@ const RECENT_KEY = 'cbx-recent-places-v1';
 const RECENT_CAP = 5;
 const RECENT_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
-export interface RecentPlace extends AddressSuggestion {
+export interface RecentPlace extends Omit<AddressSuggestion, 'lat' | 'lng'> {
+  lat: number;
+  lng: number;
   ts: number;
 }
 

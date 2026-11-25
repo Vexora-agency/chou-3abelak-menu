@@ -3,7 +3,7 @@ import type * as Leaflet from 'leaflet';
 import { ChevronDown, Loader2, Navigation, Search } from 'lucide-react';
 import { AUTO_LOCATE_OPTIONS, composePreciseAddress, reverseGeocode, round5, shouldAutoLocateOnOpen, useMidSplitLocationMap } from '../hooks/useMidSplitLocationMap';
 import { LocationAddressPreview } from './location/LocationAddressPreview';
-import { useAddressAutocomplete } from '@/src/hooks/useAddressAutocomplete';
+import { fetchPlaceCoords, useAddressAutocomplete } from '@/src/hooks/useAddressAutocomplete';
 import { AddressSuggestList } from '@/src/components/AddressSuggestList';
 
 interface LocationPickerProps {
@@ -116,6 +116,8 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   // The search is biased to the live map viewport (where the customer is
   // looking — e.g. Alexandria side streets), not the restaurant pin.
   const [searchText, setSearchText] = useState('');
+  // One place-details resolution in flight (Google pick → coordinates).
+  const [resolvingPick, setResolvingPick] = useState(false);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(
     initial ? { lat: initial.lat, lng: initial.lng } : { lat: fallback.lat, lng: fallback.lng }
   );
@@ -258,7 +260,27 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     drawAccuracy(lat, lng, accuracy);
   };
 
-  const handleSearchPick = (s: { lat: number; lng: number; label: string }) => {
+  const handleSearchPick = (s: { lat: number | null; lng: number | null; label: string; placeId?: string }) => {
+    // Google rows carry no coordinates (predictions have no geometry):
+    // resolve once via the server proxy, then pin exactly like the rest.
+    if (s.placeId && (!Number.isFinite(s.lat) || !Number.isFinite(s.lng))) {
+      setResolvingPick(true);
+      setLocError(null);
+      void fetchPlaceCoords(s.placeId).then((c) => {
+        setResolvingPick(false);
+        if (!c) {
+          setLocError(t.addrFail);
+          return;
+        }
+        applySearchPick({ label: c.label || s.label, lat: c.lat, lng: c.lng });
+      });
+      return;
+    }
+    if (typeof s.lat !== 'number' || typeof s.lng !== 'number') return;
+    applySearchPick({ label: s.label, lat: s.lat, lng: s.lng });
+  };
+
+  const applySearchPick = (s: { lat: number; lng: number; label: string }) => {
     searchAc.selectSuggestion({ label: s.label, line1: '', line2: '', lat: s.lat, lng: s.lng } as never);
     setSearchText(s.label);
     manualRef.current = true;
@@ -477,6 +499,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
             className={`w-full h-12 bg-transparent text-[15px] focus:outline-none ${darkMode ? 'text-white placeholder-neutral-500' : 'text-[#0A0A0A] placeholder-neutral-400'}`}
           />
           {searchAc.loading && <Loader2 size={15} className="animate-spin text-[var(--primary)]" aria-hidden="true" />}
+          {resolvingPick && !searchAc.loading && <Loader2 size={15} className="animate-spin text-[var(--primary)]" aria-hidden="true" />}
         </div>
         {searchAc.open && (searchAc.loading || searchAc.suggestions.length > 0) && (
           <AddressSuggestList

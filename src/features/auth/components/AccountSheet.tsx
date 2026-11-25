@@ -47,7 +47,7 @@ import { isSoundOff, setSoundOff } from '@/src/utils/customerOrders';
 import { CustomerAvatar } from './CustomerAvatar';
 import { CartLocationSheet } from '@/src/features/cart/components/cart/CartLocationSheet';
 import { pinAddress } from '@/src/features/cart/hooks/useMidSplitLocationMap';
-import { useAddressAutocomplete, type AddressSuggestion } from '@/src/hooks/useAddressAutocomplete';
+import { fetchPlaceCoords, useAddressAutocomplete, type AddressSuggestion } from '@/src/hooks/useAddressAutocomplete';
 import { AddressSuggestList } from '@/src/components/AddressSuggestList';
 import { CancelOrderButton } from '@/src/features/track/components/CancelOrderButton';
 import { ReceivedButton } from '@/src/features/track/components/ReceivedButton';
@@ -523,7 +523,17 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     formTouchedRef.current = true;
     setPickedLabel(suggestion.label);
     setAddress(label);
-    setLocation({ lat: suggestion.lat, lng: suggestion.lng, accuracy: 0 });
+    if (typeof suggestion.lat === 'number' && Number.isFinite(suggestion.lat)
+      && typeof suggestion.lng === 'number' && Number.isFinite(suggestion.lng)) {
+      setLocation({ lat: suggestion.lat, lng: suggestion.lng, accuracy: 0 });
+    } else if (suggestion.placeId) {
+      // Google rows resolve once via the server proxy, then pin as usual.
+      const pid = suggestion.placeId;
+      void fetchPlaceCoords(pid).then((c) => {
+        if (c) setLocation({ lat: c.lat, lng: c.lng, accuracy: 0 });
+        else setSaveError(isAr ? 'تعذر تحديد الموقع — أعد المحاولة.' : 'Could not locate this place — try again.');
+      });
+    }
     setSaveError('');
   };
   const showAddrEmptyState = addrTyped && !location && addrAc.open

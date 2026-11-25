@@ -47,6 +47,7 @@ import {
   validateAutocompleteQuery,
 } from '../../_shared/geoapify.js';
 import { fetchPhoton, buildQueryVariants, rankAppendedByDigits } from '../../_shared/photon.js';
+import { fetchGoogleAutocomplete, googleDailyMax, isGoogleConfigured } from '../../_shared/google.js';
 import { searchCustomPlaces, customPlaceToSuggestion } from '../../_shared/repositories/places.repo.js';
 
 const IP_RATE_MAX = 60;
@@ -234,6 +235,27 @@ export async function onRequest(context) {
       }
     } catch {
       /* keep the Geoapify results */
+    }
+  }
+  // Paid last resort (Google Places, quota-guarded): only when every free
+  // pass stays thin AND a key is configured. Coordinates resolve once on
+  // pick via /api/geo/place-details — never per keystroke — and both call
+  // types share one daily budget (GOOGLE_PLACES_DAILY_MAX, default 300).
+  if (results.length < MIN_RICH_RESULTS && isGoogleConfigured(env)) {
+    try {
+      if (await hitRateLimit(kv, `geo-gg-day:${day}`, googleDailyMax(env), DAY_RATE_WINDOW_SEC)) {
+        const g = await fetchGoogleAutocomplete(env, {
+          text: q,
+          lang,
+          bias,
+          region: zoneCountries.length > 0 ? zoneCountries[0] : clientCountry,
+        });
+        if (g && g.ok && Array.isArray(g.results) && g.results.length > 0) {
+          results = mergeAutocompleteResults(results, g.results);
+        }
+      }
+    } catch {
+      /* keep the free results */
     }
   }
   return jsonNoStore({ ok: true, results });

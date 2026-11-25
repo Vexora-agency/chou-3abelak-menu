@@ -30,6 +30,8 @@ export function AddressSuggestList({
 
   if (!loading && items.length === 0) return null;
 
+  const hasGoogleRows = items.some((item) => typeof item.placeId === 'string' && item.placeId);
+
   return (
     <div
       id={listId}
@@ -115,6 +117,15 @@ export function AddressSuggestList({
       >
         {isAr ? 'اقتراحات العناوين من Geoapify' : 'Address suggestions by Geoapify'}
       </a>
+      {hasGoogleRows && (
+        <span
+          className={`block px-4 py-1 text-[11px] ${
+            darkMode ? 'text-neutral-500' : 'text-neutral-400'
+          }`}
+        >
+          {isAr ? 'بعض الاقتراحات مدعومة من Google' : 'Some suggestions powered by Google'}
+        </span>
+      )}
     </div>
   );
 }

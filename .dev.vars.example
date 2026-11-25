@@ -78,3 +78,14 @@ UNIMTX_SMS_SIGNATURE=
 GEOAPIFY_API_KEY=
 # Optional global autocomplete cap per day (default 2500).
 GEOAPIFY_DAILY_MAX=2500
+
+# --- Google Places last-resort suggestions (optional, paid beyond free tier) ---
+# Disabled unless set: without this key the app runs 100% on free providers.
+# The browser never sees it: functions/api/geo/autocomplete.js calls Places
+# server-to-server (X-Goog-Api-Key header) only when every free pass stays
+# thin, and /api/geo/place-details.js resolves coordinates once per PICK.
+# Billing account required; ~10,000 calls/month free per Essentials SKU
+# (verify the current price page before enabling). Fake value only.
+GOOGLE_PLACES_API_KEY=
+# Shared daily budget for autocomplete + details calls (default 300 ≈ 9k/month).
+GOOGLE_PLACES_DAILY_MAX=300

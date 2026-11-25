@@ -300,6 +300,14 @@ const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t,
     } else {
       action = { label: t.alignBoth(active.length), targets: active.filter((m) => m.status === 'new').map((m) => ({ id: m.id, status: 'confirmed' as OrderStatus })) };
     }
+    // One live member left (the rest completed/cancelled): speak singular —
+    // "all (1)" reads like a bug. Multi-target keeps the joint wording.
+    if (action && action.targets.length === 1) {
+      action = {
+        ...action,
+        label: action.targets[0].status === 'completed' ? t.complete : t.ack,
+      };
+    }
   }
   const run = async () => {
     if (!action || busy) return;
@@ -487,12 +495,19 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
         root = p;
       }
       const members = collect(root);
-      if (members.length > 1) {
-        for (const m of members) claimed.add(m.id);
-        out.push({ kind: 'group', key: `g-${root.id}`, members });
+      for (const m of members) claimed.add(m.id);
+      // Cancelled members leave the group frame and render as ordinary
+      // standalone rows (their ملغي pill stays; the expanded detail keeps
+      // the follow-up banner as history). The link itself is never erased —
+      // parentNumber stays the audit trail. Survivors keep grouping; a lone
+      // survivor renders as one normal single order.
+      const dead = members.filter((m) => m.status === 'cancelled');
+      const live = members.filter((m) => m.status !== 'cancelled');
+      for (const d of dead) out.push({ kind: 'single', order: d });
+      if (live.length > 1) {
+        out.push({ kind: 'group', key: `g-${root.id}`, members: live });
       } else {
-        claimed.add(o.id);
-        out.push({ kind: 'single', order: o });
+        for (const m of live) out.push({ kind: 'single', order: m });
       }
     }
     return out;

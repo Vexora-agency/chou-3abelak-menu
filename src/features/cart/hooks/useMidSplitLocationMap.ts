@@ -31,8 +31,79 @@ export function pinAddress(lat: number, lng: number, addressText: string | null)
   return (text || `${lat}, ${lng}`).slice(0, 200);
 }
 
-/** Reverse-geocode via OpenStreetMap Nominatim (called only on Confirm). */
+/** Optional exact-delivery details (Talabat-style): building, floor,
+ * apartment and landmark composed into the confirmed address so the
+ * driver gets one exact deliverable line with the pin. Pure — unit
+ * tested in scripts/test-pin-precision.mjs. */
+export interface PreciseDetails {
+  building: string;
+  floor: string;
+  apt: string;
+  landmark: string;
+}
+
+/** Base reverse text (or the coords fallback) + structured details, ≤200 chars. */
+export function composePreciseAddress(
+  base: string | null,
+  d: PreciseDetails,
+  lat: number,
+  lng: number,
+  lang: 'en' | 'ar',
+): string {
+  const clean = (s: string) => (typeof s === 'string' ? s.trim().slice(0, 60) : '');
+  const b = clean(d.building);
+  const f = clean(d.floor);
+  const a = clean(d.apt);
+  const l = clean(d.landmark);
+  const parts: string[] = [];
+  if (lang === 'ar') {
+    if (b) parts.push(`مبنى ${b}`);
+    if (f) parts.push(`الدور ${f}`);
+    if (a) parts.push(`شقة ${a}`);
+    if (l) parts.push(`علامة: ${l}`);
+  } else {
+    if (b) parts.push(`Bldg ${b}`);
+    if (f) parts.push(`Floor ${f}`);
+    if (a) parts.push(`Apt ${a}`);
+    if (l) parts.push(`Landmark: ${l}`);
+  }
+  const head = typeof base === 'string' && base.trim() ? base.trim() : `${lat}, ${lng}`;
+  const sep = lang === 'ar' ? '، ' : ', ';
+  return (parts.length > 0 ? `${head} — ${parts.join(sep)}` : head).slice(0, 200);
+}
+
+/** Reverse-geocode via the server proxy (building level), direct Nominatim
+ * only as a fallback when the proxy is unreachable. The proxy carries the
+ * identifying User-Agent the Nominatim usage policy requires — browsers
+ * cannot set one themselves. */
 export async function reverseGeocode(lat: number, lng: number, lang: 'en' | 'ar'): Promise<string | null> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const res = await fetch(
+        `/api/geo/reverse?lat=${lat}&lng=${lng}&lang=${lang === 'ar' ? 'ar' : 'en'}`,
+        { signal: ctrl.signal, headers: { Accept: 'application/json', 'X-Requested-With': 'menu-customer' } },
+      );
+      if (res.ok) {
+        const data: unknown = await readJson(res);
+        const addr = data && typeof data === 'object' ? (data as { ok?: unknown; address?: unknown }) : null;
+        if (addr && addr.ok === true) {
+          if (typeof addr.address === 'string' && addr.address.trim()) return addr.address.slice(0, 200);
+          if (addr.address === null) return await directReverseGeocode(lat, lng, lang);
+        }
+      }
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    /* fall through to the direct lookup */
+  }
+  return directReverseGeocode(lat, lng, lang);
+}
+
+/** Direct Nominatim lookup (fallback only — no identifying UA possible). */
+async function directReverseGeocode(lat: number, lng: number, lang: 'en' | 'ar'): Promise<string | null> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 8000);
   try {

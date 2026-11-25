@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type * as Leaflet from 'leaflet';
 import { Loader2, Navigation, Search } from 'lucide-react';
-import { AUTO_LOCATE_OPTIONS, reverseGeocode, round5, shouldAutoLocateOnOpen, useMidSplitLocationMap } from '../hooks/useMidSplitLocationMap';
+import { AUTO_LOCATE_OPTIONS, composePreciseAddress, reverseGeocode, round5, shouldAutoLocateOnOpen, useMidSplitLocationMap } from '../hooks/useMidSplitLocationMap';
 import { LocationAddressPreview } from './location/LocationAddressPreview';
 import { useAddressAutocomplete } from '@/src/hooks/useAddressAutocomplete';
 import { AddressSuggestList } from '@/src/components/AddressSuggestList';
@@ -39,6 +39,11 @@ const STR = {
     searchPh: 'Search street or landmark…',
     searching: 'Searching…',
     noResults: 'No results — try just the street name and number, or drag the pin.',
+    layerStreets: 'Streets', layerSat: 'Satellite', layerLabel: 'Map layer',
+    zoomHint: 'Zoom in for a precise pin — the address follows the pin.',
+    detailsTitle: 'Exact delivery details (optional)',
+    bBuilding: 'Building', bFloor: 'Floor', bApt: 'Apartment', bLandmark: 'Landmark',
+    phBldg: '5', phFloor: '2', phApt: '3', phLandmark: 'Near the pharmacy',
   },
   ar: {
     title: 'موقع التوصيل', close: 'إغلاق', locating: 'جارٍ تحديد موقعك…',
@@ -55,6 +60,11 @@ const STR = {
     searchPh: 'ابحث عن الشارع أو المعلم…',
     searching: 'جارٍ البحث…',
     noResults: 'لا توجد نتائج — جرّب اسم الشارع ورقمه فقط، أو اسحب الدبوس.',
+    layerStreets: 'خريطة', layerSat: 'قمر صناعي', layerLabel: 'طبقة الخريطة',
+    zoomHint: 'قرّب الخريطة لتثبيت دقيق — العنوان يتبع الدبوس.',
+    detailsTitle: 'تفاصيل دقيقة للتوصيل (اختياري)',
+    bBuilding: 'المبنى', bFloor: 'الدور', bApt: 'الشقة', bLandmark: 'علامة مميزة',
+    phBldg: '5', phFloor: '2', phApt: '3', phLandmark: 'بجوار الصيدلية',
   },
 } as const;
 
@@ -109,6 +119,21 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(
     initial ? { lat: initial.lat, lng: initial.lng } : { lat: fallback.lat, lng: fallback.lng }
   );
+  // Streets vs satellite (free Esri imagery): rooftops and entrances are
+  // what identify the exact building in dense blocks — a pro precision win.
+  const [layer, setLayer] = useState<'streets' | 'sat'>('streets');
+  const streetsRef = useRef<Leaflet.TileLayer | null>(null);
+  const satRef = useRef<Leaflet.TileLayer | null>(null);
+  // GPS uncertainty ring: drawn for auto fixes, cleared on any hand move.
+  const circleRef = useRef<Leaflet.Circle | null>(null);
+  // Zoomed-out pins are street-accurate at best — nudge closer, never block.
+  const [zoomLow, setZoomLow] = useState(false);
+  // Exact-delivery details, composed into the confirmed address (never into
+  // the instruction box — the driver reads them with the pin).
+  const [bldg, setBldg] = useState('');
+  const [floor, setFloor] = useState('');
+  const [apt, setApt] = useState('');
+  const [landmark, setLandmark] = useState('');
   const searchAc = useAddressAutocomplete({
     query: searchText,
     lang,
@@ -128,12 +153,16 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         const start: [number, number] = initial ? [initial.lat, initial.lng] : [fallback.lat, fallback.lng];
         const map = L.map(mapRef.current, { zoomControl: true }).setView(start, 16);
         map.attributionControl.setPrefix(false);
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        streetsRef.current = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        })
-          .on('tileerror', () => setTilesFailed(true))
-          .addTo(map);
+        });
+        streetsRef.current.on('tileerror', () => setTilesFailed(true)).addTo(map);
+        // Free Esri World Imagery (attribution required, set below).
+        satRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          maxZoom: 19,
+          attribution: 'Imagery &copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics',
+        });
         const icon = L.divIcon({
           className: 'loc-div-icon',
           html: '<div style="width:34px;height:34px;border-radius:50%;background:var(--primary);border:3px solid #0A0A0A;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.45)"><div style="width:10px;height:10px;border-radius:50%;background:#0A0A0A"></div></div>',
@@ -147,6 +176,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           setManual(true);
           setDetecting(false);
           setLocError(null);
+          clearAccuracy();
           setPoint({ lat: round5(p.lat), lng: round5(p.lng), accuracy: 100 });
         });
         map.on('click', (e: Leaflet.LeafletMouseEvent) => {
@@ -155,6 +185,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           setManual(true);
           setDetecting(false);
           setLocError(null);
+          clearAccuracy();
           setPoint({ lat: round5(e.latlng.lat), lng: round5(e.latlng.lng), accuracy: 100 });
         });
         // Keep the search bias on the live viewport: pans and zooms move
@@ -166,6 +197,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
             if (Number.isFinite(c.lat) && Number.isFinite(c.lng)) {
               setMapCenter({ lat: round5(c.lat), lng: round5(c.lng) });
             }
+            setZoomLow(map.getZoom() < 16);
           } catch {}
         });
         mapObj.current = map;
@@ -191,12 +223,59 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const drawAccuracy = (lat: number, lng: number, accuracy: number) => {
+    try {
+      const L = leafletRef.current;
+      const map = mapObj.current;
+      if (!L || !map) return;
+      try {
+        circleRef.current?.remove();
+      } catch {}
+      circleRef.current = null;
+      // A visible uncertainty ring beats a bare ±number: the customer sees
+      // how far off the fix may be before confirming.
+      if (Number.isFinite(accuracy) && accuracy > 0 && accuracy <= 1000) {
+        circleRef.current = L.circle([lat, lng], {
+          radius: accuracy,
+          color: '#E8FF47',
+          weight: 1,
+          opacity: 0.7,
+          fillOpacity: 0.08,
+          interactive: false,
+        }).addTo(map);
+      }
+    } catch {}
+  };
+
+  const clearAccuracy = () => {
+    try {
+      circleRef.current?.remove();
+    } catch {}
+    circleRef.current = null;
+  };
+
+  const switchLayer = (next: 'streets' | 'sat') => {
+    setLayer(next);
+    try {
+      const map = mapObj.current;
+      if (!map) return;
+      if (next === 'sat') {
+        if (streetsRef.current) map.removeLayer(streetsRef.current);
+        satRef.current?.addTo(map);
+      } else {
+        if (satRef.current) map.removeLayer(satRef.current);
+        streetsRef.current?.addTo(map);
+      }
+    } catch {}
+  };
+
   const moveTo = (lat: number, lng: number, accuracy: number, zoom = 16) => {
     setPoint({ lat: round5(lat), lng: round5(lng), accuracy });
     try {
       markerObj.current?.setLatLng([lat, lng]);
       mapObj.current?.setView([lat, lng], Math.max(mapObj.current.getZoom(), zoom));
     } catch {}
+    drawAccuracy(lat, lng, accuracy);
   };
 
   const handleSearchPick = (s: { lat: number; lng: number; label: string }) => {
@@ -362,8 +441,28 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     }
     if (!addr) setAddrWarn(true);
     setConfirming(false);
-    onPick(point.lat, point.lng, point.accuracy, addr);
+    // The structured details ride with the pin's own address (never the
+    // instruction box): the driver gets one exact deliverable line.
+    onPick(point.lat, point.lng, point.accuracy, composePreciseAddress(
+      addr,
+      { building: bldg, floor, apt, landmark },
+      point.lat,
+      point.lng,
+      lang,
+    ));
   };
+
+  // What Confirm will write, live: base text + the structured details, so
+  // the customer verifies the exact final line before tapping.
+  const composedPreview = point
+    ? composePreciseAddress(
+      previewKey.current === `${point.lat},${point.lng}` ? addrPreview : null,
+      { building: bldg, floor, apt, landmark },
+      point.lat,
+      point.lng,
+      lang,
+    )
+    : null;
 
   return (
     <div className="space-y-3">
@@ -445,6 +544,19 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
             {point.lat}, {point.lng}
           </div>
         )}
+        <div className="absolute z-[500] top-2 end-2 flex gap-1 rounded-full bg-black/60 p-1" role="group" aria-label={t.layerLabel}>
+          {(['streets', 'sat'] as const).map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => switchLayer(l)}
+              aria-pressed={layer === l}
+              className={`h-9 min-h-[36px] px-3 rounded-full text-[11px] font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${layer === l ? 'bg-white text-black' : 'text-white/80'}`}
+            >
+              {l === 'streets' ? t.layerStreets : t.layerSat}
+            </button>
+          ))}
+        </div>
       </div>
 
       {tilesFailed && (
@@ -454,7 +566,67 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         <p role="status" className="text-xs font-bold text-amber-500">{locError}</p>
       )}
 
-      <LocationAddressPreview point={point} addrLoading={addrLoading} addrPreview={addrPreview} darkMode={darkMode} isAr={isAr} />
+      <LocationAddressPreview point={point} addrLoading={addrLoading} addrPreview={composedPreview} darkMode={darkMode} isAr={isAr} />
+      {point && zoomLow && (
+        <p role="status" className={`text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>{t.zoomHint}</p>
+      )}
+      <div className={`rounded-2xl border p-3 ${darkMode ? 'border-neutral-700 bg-black/40' : 'border-neutral-300 bg-neutral-100'}`}>
+        <p className={`text-xs font-black mb-2 ${darkMode ? 'text-neutral-200' : 'text-neutral-700'}`}>{t.detailsTitle}</p>
+        <div className="grid grid-cols-3 gap-2" dir={isAr ? 'rtl' : 'ltr'}>
+          <label className="block">
+            <span className={`block text-[11px] font-bold mb-1 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>{t.bBuilding}</span>
+            <input
+              type="text"
+              value={bldg}
+              onChange={(e) => setBldg(e.target.value)}
+              placeholder={t.phBldg}
+              dir="auto"
+              autoComplete="off"
+              maxLength={60}
+              className={`w-full h-11 rounded-xl border px-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 bg-black text-white placeholder-neutral-600' : 'border-neutral-300 bg-white text-[#0A0A0A] placeholder-neutral-400'}`}
+            />
+          </label>
+          <label className="block">
+            <span className={`block text-[11px] font-bold mb-1 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>{t.bFloor}</span>
+            <input
+              type="text"
+              value={floor}
+              onChange={(e) => setFloor(e.target.value)}
+              placeholder={t.phFloor}
+              dir="auto"
+              autoComplete="off"
+              maxLength={60}
+              className={`w-full h-11 rounded-xl border px-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 bg-black text-white placeholder-neutral-600' : 'border-neutral-300 bg-white text-[#0A0A0A] placeholder-neutral-400'}`}
+            />
+          </label>
+          <label className="block">
+            <span className={`block text-[11px] font-bold mb-1 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>{t.bApt}</span>
+            <input
+              type="text"
+              value={apt}
+              onChange={(e) => setApt(e.target.value)}
+              placeholder={t.phApt}
+              dir="auto"
+              autoComplete="off"
+              maxLength={60}
+              className={`w-full h-11 rounded-xl border px-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 bg-black text-white placeholder-neutral-600' : 'border-neutral-300 bg-white text-[#0A0A0A] placeholder-neutral-400'}`}
+            />
+          </label>
+        </div>
+        <label className="block mt-2" dir={isAr ? 'rtl' : 'ltr'}>
+          <span className={`block text-[11px] font-bold mb-1 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>{t.bLandmark}</span>
+          <input
+            type="text"
+            value={landmark}
+            onChange={(e) => setLandmark(e.target.value)}
+            placeholder={t.phLandmark}
+            dir="auto"
+            autoComplete="off"
+            maxLength={60}
+            className={`w-full h-11 rounded-xl border px-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 bg-black text-white placeholder-neutral-600' : 'border-neutral-300 bg-white text-[#0A0A0A] placeholder-neutral-400'}`}
+          />
+        </label>
+      </div>
       {addrWarn && (
         <p role="status" className="text-xs font-bold text-amber-500">{t.addrFail}</p>
       )}

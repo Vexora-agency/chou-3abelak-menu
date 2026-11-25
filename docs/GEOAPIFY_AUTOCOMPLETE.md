@@ -56,5 +56,6 @@ proxy, so there is no client bundle cost and the key cannot leak.
 - `functions/_shared/geoapify.js` + `functions/api/geo/autocomplete.js`
   (server), `src/hooks/useAddressAutocomplete.ts` +
   `src/components/AddressSuggestList.tsx` (shared UI).
+- Reverse geocoding rides a separate keyless proxy — see `docs/GEO_REVERSE.md`.
 - `npm run test:geo` (route + sanitizer, no network),
   `test:cart` Section G (wiring), `test:joint-groups` untouched.

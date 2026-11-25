@@ -15,13 +15,17 @@ found". Manual typing and pin-dragging keep working exactly as before.
   global via `GEOAPIFY_DAILY_MAX`), calls Geoapify with
   `filter=countrycode:<zone countries>` (the delivery-zone list is the
   only source of truth — never the phone-dial country) plus proximity
-  bias on the restaurant pin, and returns only
+  bias on the live map viewport (`lat`/`lng` from the picker when the
+  customer is looking elsewhere, otherwise the restaurant pin), and
+  returns only
   `[{ label, line1, line2, lat, lng, details? }]` with `no-store`
-  (`limit=15` so side streets have room to appear; `details` carries
+  (`limit=20` so side streets have room to appear; `details` carries
   house number + street + suburb/district/city for small alleys, and
-  fills `line2` when the provider leaves it empty). Worldwide
-  service (no selected zones) falls back to the client country hint,
-  then to unfiltered.
+  fills `line2` when the provider leaves it empty). Deep search: when
+  the filtered pass returns fewer than 3 rows, the same query runs once
+  more unfiltered and merges behind the zone matches (one extra provider
+  call only on thin results). Worldwide service (no selected zones)
+  falls back to the client country hint, then to unfiltered.
 - The browser never sees the API key or the provider payload. Key missing →
   `503 autocomplete_unavailable`: the UI degrades silently to manual entry.
 - Attribution (required by Geoapify's free tier) renders under the list:

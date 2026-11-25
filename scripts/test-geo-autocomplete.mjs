@@ -24,6 +24,11 @@ import {
   extractServiceCountries,
   fetchAutocomplete,
   isGeoapifyConfigured,
+  mergeAutocompleteResults,
+  MIN_RICH_RESULTS,
+  normalizeCountryCodes,
+  parseLatLng,
+  RESULT_LIMIT,
   sanitizeAutocompleteResults,
   trimEnv,
   validateAutocompleteQuery,
@@ -88,6 +93,25 @@ check('country missing means no filter', param(buildAutocompleteUrl(KEY_ENV, { t
 check('countries array joins with commas', param(buildAutocompleteUrl(KEY_ENV, { text: 'Beirut', countries: ['lb', 'eg'] }), 'filter') === 'countrycode:lb,eg');
 check('countries array sanitizes entries', param(buildAutocompleteUrl(KEY_ENV, { text: 'Beirut', countries: [' LB ', 'usa', 7, null] }), 'filter') === 'countrycode:lb');
 check('countries empty means no filter', param(buildAutocompleteUrl(KEY_ENV, { text: 'Beirut', countries: [] }), 'filter') === null);
+check('RESULT_LIMIT is 20 for street-level rows', RESULT_LIMIT === 20);
+check('MIN_RICH_RESULTS threshold is 3', MIN_RICH_RESULTS === 3);
+check('parseLatLng accepts strings', JSON.stringify(parseLatLng('33.8938', '35.5018')) === JSON.stringify({ lat: 33.8938, lng: 35.5018 }));
+check('parseLatLng rejects garbage', parseLatLng('x', '35.5') === null && parseLatLng('33.9', null) === null);
+check('parseLatLng rejects out-of-range', parseLatLng(91, 0) === null && parseLatLng(0, 181) === null);
+check(
+  'merge keeps zone rows first and dedupes by coords',
+  (() => {
+    const a = { label: 'A', line1: 'A', line2: '', lat: 1.00001, lng: 2.00001 };
+    const b = { label: 'B', line1: 'B', line2: '', lat: 3, lng: 4 };
+    const dup = { label: 'A copy', line1: 'A', line2: '', lat: 1.00002, lng: 2.00002 };
+    const merged = mergeAutocompleteResults([a], [dup, b, null, 'junk'], 10);
+    return merged.length === 2 && merged[0] === a && merged[1] === b;
+  })()
+);
+check(
+  'merge caps at the limit',
+  mergeAutocompleteResults([], Array.from({ length: 30 }, (_, i) => ({ label: `P${i}`, line1: '', line2: '', lat: 10 + i * 0.01, lng: 20 })), 20).length === 20
+);
 check('zone countries come only from selected mode', extractServiceCountries({ settings: { ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'LB' }, { cc: 'EG' }, { cc: 'xx' }] } } } }).join(',') === 'lb,eg,xx');
 check('zone countries ignore non-selected modes', extractServiceCountries({ settings: { ordering: { deliveryZones: { mode: 'all', countries: [{ cc: 'LB' }] } } } }).length === 0);
 check('zone countries fail open on garbage', extractServiceCountries(null).length === 0 && extractServiceCountries({}).length === 0);
@@ -99,7 +123,7 @@ check('url hits the autocomplete endpoint', built.startsWith('https://api.geoapi
 check('url carries text', param(built, 'text') === 'Beirut');
 check('url carries format=json', param(built, 'format') === 'json');
 check('url carries the key (server-side only)', param(built, 'apiKey') === 'test-key-abc123');
-check('url carries limit=15', param(built, 'limit') === '15');
+check('url carries limit=20', param(built, 'limit') === '20');
 check('url carries lang', param(built, 'lang') === 'ar');
 
 const biased = buildAutocompleteUrl(KEY_ENV, { text: 'Beirut', bias: { lng: 35.5, lat: 33.9 } });
@@ -181,16 +205,16 @@ check('garbage payloads sanitize to []', JSON.stringify(sanitizeAutocompleteResu
   && JSON.stringify(sanitizeAutocompleteResults({})) === '[]'
   && JSON.stringify(sanitizeAutocompleteResults({ results: 'x' })) === '[]');
 check(
-  'sanitizer passes through 15 richer results',
+  'sanitizer passes through 20 richer results',
   sanitizeAutocompleteResults({
-    results: Array.from({ length: 15 }, (_, i) => ({
+    results: Array.from({ length: 20 }, (_, i) => ({
       formatted: `Place ${i}, Beirut, Lebanon`,
       address_line1: `Street ${i}`,
       address_line2: 'Beirut, Lebanon',
       lat: 33.8 + i * 0.001,
       lon: 35.4 + i * 0.001,
     })),
-  }).length === 15
+  }).length === 20
 );
 check(
   'street/building rows kept with line1 intact (street names prominent)',
@@ -301,9 +325,11 @@ check('route: missing key is 503 autocomplete_unavailable (no KV, no key)',
 check('route: 503 body echoes nothing sensitive', !JSON.stringify(noKeyBody).includes('Beirut'));
 
 // Success path with a stubbed global fetch (the route uses server fetch).
+// Rich zone payload (3 rows): no second pass — the first call carries the
+// zone filter and the restaurant-pin bias.
 const originalFetch = globalThis.fetch;
-let capturedUrl = '';
-const routePayload = {
+let calledUrls = [];
+const richPayload = {
   results: [
     {
       formatted: 'Verdun, Beirut, Lebanon',
@@ -314,18 +340,40 @@ const routePayload = {
       lat: 33.8886,
       lon: 35.4798,
     },
+    {
+      formatted: 'Verdun Street, Beirut, Lebanon',
+      address_line1: 'Verdun Street',
+      address_line2: 'Beirut, Lebanon',
+      street: 'Verdun Street',
+      suburb: 'Verdun',
+      city: 'Beirut',
+      lat: 33.889,
+      lon: 35.48,
+    },
+    {
+      formatted: 'Bldg 4, Verdun Street, Beirut, Lebanon',
+      address_line1: 'Bldg 4, Verdun Street',
+      address_line2: 'Beirut, Lebanon',
+      housenumber: '4',
+      street: 'Verdun Street',
+      city: 'Beirut',
+      lat: 33.8891,
+      lon: 35.4801,
+    },
     { formatted: 'Bad coords row', lat: 33.8, lon: 'oops' },
   ],
 };
-const expectedRouteResults = [
+const expectedRichResults = [
   { label: 'Verdun, Beirut, Lebanon', line1: 'Verdun', line2: 'Beirut, Lebanon', lat: 33.8886, lng: 35.4798 },
+  { label: 'Verdun Street, Beirut, Lebanon', line1: 'Verdun Street', line2: 'Beirut, Lebanon', lat: 33.889, lng: 35.48, details: 'Verdun Street, Verdun, Beirut' },
+  { label: 'Bldg 4, Verdun Street, Beirut, Lebanon', line1: 'Bldg 4, Verdun Street', line2: 'Beirut, Lebanon', lat: 33.8891, lng: 35.4801, details: '4 Verdun Street, Beirut' },
 ];
 try {
   const kv = makeKV();
   await kv.put('menu', JSON.stringify({ settings: { mapUrl: 'https://www.google.com/maps/@33.8938,35.5018,15z', ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'LB' }, { cc: 'EG' }] } } } }));
   globalThis.fetch = async (url) => {
-    capturedUrl = String(url);
-    return { ok: true, status: 200, json: async () => routePayload };
+    calledUrls.push(String(url));
+    return { ok: true, status: 200, json: async () => richPayload };
   };
   const res = await onRequest({
     request: customerGet('/api/geo/autocomplete?q=Verdun%20Beirut&lang=ar&country=lb'),
@@ -334,18 +382,105 @@ try {
   const body = await readJson(res);
   check('route: success is 200 with exact sanitized results',
     res.status === 200 && body && body.ok === true
-    && JSON.stringify(body.results) === JSON.stringify(expectedRouteResults));
+    && JSON.stringify(body.results) === JSON.stringify(expectedRichResults));
+  check('route: rich zone pass needs no second call', calledUrls.length === 1);
   check('route: success is no-store JSON', res.headers.get('Cache-Control') === 'no-store'
     && (res.headers.get('Content-Type') || '').includes('application/json'));
   check('route: response never carries the key', !JSON.stringify(body).includes('route-key-xyz'));
-  check('route: upstream URL carries the key server-side', capturedUrl.includes('route-key-xyz'));
-  check('route: upstream URL carries lang + zone-country filter', param(capturedUrl, 'lang') === 'ar'
-    && param(capturedUrl, 'filter') === 'countrycode:lb,eg');
+  check('route: upstream URL carries the key server-side', calledUrls[0].includes('route-key-xyz'));
+  check('route: upstream URL carries lang + zone-country filter', param(calledUrls[0], 'lang') === 'ar'
+    && param(calledUrls[0], 'filter') === 'countrycode:lb,eg');
   check('route: upstream URL biases to the restaurant pin (LON,LAT)',
-    param(capturedUrl, 'bias') === 'proximity:35.5018,33.8938');
+    param(calledUrls[0], 'bias') === 'proximity:35.5018,33.8938');
 
-  // No KV menu: bias is skipped, the search still succeeds.
-  capturedUrl = '';
+  // Thin zone pass (1 row): the deep second pass runs unfiltered with the
+  // same bias; zone rows stay first, duplicates drop.
+  calledUrls = [];
+  const thinPayload = {
+    results: [
+      {
+        formatted: 'El Soyouf, Alexandria, Egypt',
+        address_line1: 'El Soyouf',
+        address_line2: 'Alexandria, Egypt',
+        suburb: 'El Soyouf',
+        city: 'Alexandria',
+        lat: 31.2,
+        lon: 29.95,
+      },
+    ],
+  };
+  const openPayload = {
+    results: [
+      {
+        formatted: 'El Soyouf, Alexandria, Egypt',
+        address_line1: 'El Soyouf',
+        address_line2: 'Alexandria, Egypt',
+        suburb: 'El Soyouf',
+        city: 'Alexandria',
+        lat: 31.20001,
+        lon: 29.95001,
+      },
+      {
+        formatted: 'Street 45, El Soyouf, Alexandria, Egypt',
+        address_line1: 'Street 45',
+        address_line2: 'El Soyouf, Alexandria, Egypt',
+        street: 'Street 45',
+        suburb: 'El Soyouf',
+        city: 'Alexandria',
+        lat: 31.201,
+        lon: 29.951,
+      },
+    ],
+  };
+  let thinFirst = true;
+  globalThis.fetch = async (url) => {
+    calledUrls.push(String(url));
+    const payload = thinFirst ? thinPayload : openPayload;
+    thinFirst = false;
+    return { ok: true, status: 200, json: async () => payload };
+  };
+  const resThin = await onRequest({
+    request: customerGet('/api/geo/autocomplete?q=%D8%A7%D9%84%D8%B3%D9%8A%D9%88%D9%81&lang=ar&country=eg'),
+    env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv },
+  });
+  const bodyThin = await readJson(resThin);
+  check('route: thin zone pass triggers the deep unfiltered pass', calledUrls.length === 2);
+  check('route: deep pass drops the country filter but keeps the bias',
+    param(calledUrls[1], 'filter') === null && param(calledUrls[1], 'bias') === 'proximity:35.5018,33.8938');
+  check('route: merged results keep the zone row first and dedupe',
+    resThin.status === 200 && bodyThin && bodyThin.ok === true
+    && bodyThin.results.length === 2
+    && bodyThin.results[0].label === 'El Soyouf, Alexandria, Egypt'
+    && bodyThin.results[1].label === 'Street 45, El Soyouf, Alexandria, Egypt');
+
+  // Map viewport bias: a lat/lng from the picker outranks the restaurant
+  // pin; garbage viewports fall back to the pin.
+  calledUrls = [];
+  globalThis.fetch = async (url) => {
+    calledUrls.push(String(url));
+    return { ok: true, status: 200, json: async () => richPayload };
+  };
+  const resView = await onRequest({
+    request: customerGet('/api/geo/autocomplete?q=Verdun&lat=31.2&lng=29.95'),
+    env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv },
+  });
+  const bodyView = await readJson(resView);
+  check('route: viewport bias outranks the restaurant pin',
+    resView.status === 200 && bodyView && bodyView.ok === true
+    && param(calledUrls[0], 'bias') === 'proximity:29.95,31.2');
+  calledUrls = [];
+  const resBadView = await onRequest({
+    request: customerGet('/api/geo/autocomplete?q=Verdun&lat=oops&lng=200'),
+    env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv },
+  });
+  const bodyBadView = await readJson(resBadView);
+  check('route: invalid viewport falls back to the restaurant pin',
+    resBadView.status === 200 && bodyBadView && bodyBadView.ok === true
+    && param(calledUrls[0], 'bias') === 'proximity:35.5018,33.8938');
+
+  // No KV menu: bias is skipped, the search still succeeds (single call:
+  // no zone filter exists, so no second pass is needed).
+  calledUrls = [];
   const resNoKv = await onRequest({
     request: customerGet('/api/geo/autocomplete?q=Verdun'),
     env: { GEOAPIFY_API_KEY: 'route-key-xyz' },
@@ -353,27 +488,27 @@ try {
   const bodyNoKv = await readJson(resNoKv);
   check('route: missing KV skips bias and still succeeds',
     resNoKv.status === 200 && bodyNoKv && bodyNoKv.ok === true
-    && param(capturedUrl, 'bias') === null);
+    && calledUrls.length === 1 && param(calledUrls[0], 'bias') === null);
 
   // Worldwide service (zones not selected): the client hint is the only
   // filter; with no hint either, the search runs unfiltered + unbiased.
   {
     const kvAll = makeKV();
     await kvAll.put('menu', JSON.stringify({ settings: { ordering: { deliveryZones: { mode: 'all' } } } }));
-    capturedUrl = '';
+    calledUrls = [];
     const resHint = await onRequest({
       request: customerGet('/api/geo/autocomplete?q=Verdun&country=lb'),
       env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kvAll },
     });
     check('route: worldwide service falls back to the client country hint',
-      resHint.status === 200 && param(capturedUrl, 'filter') === 'countrycode:lb');
-    capturedUrl = '';
+      resHint.status === 200 && param(calledUrls[0], 'filter') === 'countrycode:lb');
+    calledUrls = [];
     const resOpen = await onRequest({
       request: customerGet('/api/geo/autocomplete?q=Verdun'),
       env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kvAll },
     });
     check('route: worldwide service without a hint runs unfiltered',
-      resOpen.status === 200 && param(capturedUrl, 'filter') === null);
+      resOpen.status === 200 && param(calledUrls[0], 'filter') === null);
   }
 
   // Upstream failure: generic 502, nothing echoed.

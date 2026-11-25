@@ -19,10 +19,13 @@
  * filter comes from the delivery-zone countries (the service area —
  * the phone-dial country is NOT used), falling back to the client's
  * `country` hint only when zones are unknown; worldwide service means
- * no filter. The bias is best-effort: the restaurant pin is parsed
- * from the stored menu.settings.mapUrl with parseMapUrlCoordsJs and
- * skipped when the KV/menu/pin is missing or unparseable. Responses
- * and logs never carry the key, the provider body, or the full query.
+ * no filter. The bias is the client's live map viewport (`lat`/`lng`)
+ * when supplied, else the restaurant pin parsed from the stored
+ * menu.settings.mapUrl with parseMapUrlCoordsJs (skipped when missing).
+ * Deep search: when the filtered pass returns fewer than MIN_RICH_RESULTS
+ * rows, the same query runs once more unfiltered and merges behind the
+ * zone matches, so side streets outside the zone list still surface.
+ * Responses and logs never carry the key, the provider body, or the full query.
  */
 
 import { jsonNoStore } from '../../_shared/session.js';
@@ -33,7 +36,10 @@ import {
   extractServiceCountries,
   fetchAutocomplete,
   isGeoapifyConfigured,
+  mergeAutocompleteResults,
+  MIN_RICH_RESULTS,
   normalizeCountryCodes,
+  parseLatLng,
   validateAutocompleteQuery,
 } from '../../_shared/geoapify.js';
 
@@ -119,7 +125,11 @@ export async function onRequest(context) {
   const rawCountry = params.get('country');
   const clientCountry = typeof rawCountry === 'string' ? rawCountry : '';
   const menu = await readMenu(env);
-  const bias = readBias(menu);
+  // Viewport bias first: when the customer is looking at a map area (the
+  // picker sends its live center), rank nearby streets first instead of
+  // the restaurant pin. Falls back to the restaurant pin when absent.
+  const viewBias = parseLatLng(params.get('lat'), params.get('lng'));
+  const bias = viewBias || readBias(menu);
   // Service-area countries first (the delivery-zone list is the source of
   // truth — the phone-dial country is NOT the service area); the client
   // hint is only a fallback when zones are unknown, and worldwide service
@@ -141,5 +151,19 @@ export async function onRequest(context) {
     }
     return jsonNoStore({ error: 'autocomplete_failed' }, 502);
   }
-  return jsonNoStore({ ok: true, results: upstream.results });
+  let results = upstream.results;
+  // Deep second pass: when the zone filter leaves almost nothing (a side
+  // street outside the zone list, a new alley, a transliterated name),
+  // run the same query unfiltered and append. Zone matches keep priority;
+  // rows dedupe by coordinates. Costs one extra provider call only when
+  // the first pass is thin.
+  if (results.length < MIN_RICH_RESULTS && countries.length > 0) {
+    try {
+      const open = await fetchAutocomplete(env, { text: q, lang, countries: [], bias });
+      if (open && open.ok) results = mergeAutocompleteResults(results, open.results);
+    } catch {
+      /* keep the first-pass results */
+    }
+  }
+  return jsonNoStore({ ok: true, results });
 }

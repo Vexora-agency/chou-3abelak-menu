@@ -15,6 +15,8 @@ export interface UseAddressAutocompleteOptions {
   lang: 'en' | 'ar';
   country: string;
   enabled?: boolean;
+  /** Live map viewport: ranks nearby streets first. Rounded for cache hits. */
+  bias?: { lat: number; lng: number } | null;
 }
 
 export interface UseAddressAutocompleteResult {
@@ -37,8 +39,11 @@ const CACHE_CAP = 50;
 // Session-level cache shared by all hook instances.
 const sessionCache = new Map<string, AddressSuggestion[]>();
 
-function cacheKey(lang: string, country: string, query: string): string {
-  return `${lang}|${country}|${query}`;
+function cacheKey(lang: string, country: string, query: string, bias: { lat: number; lng: number } | null | undefined): string {
+  const b = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)
+    ? `${Math.round(bias.lat * 100) / 100},${Math.round(bias.lng * 100) / 100}`
+    : '';
+  return `${lang}|${country}|${query}|${b}`;
 }
 
 function cacheSet(key: string, value: AddressSuggestion[]): void {
@@ -85,6 +90,7 @@ export function useAddressAutocomplete({
   lang,
   country,
   enabled = true,
+  bias = null,
 }: UseAddressAutocompleteOptions): UseAddressAutocompleteResult {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -119,7 +125,7 @@ export function useAddressAutocomplete({
       return;
     }
 
-    const key = cacheKey(lang, country, trimmed);
+    const key = cacheKey(lang, country, trimmed, bias);
     const cached = sessionCache.get(key);
     if (cached) {
       setSuggestions(cached);
@@ -138,8 +144,13 @@ export function useAddressAutocomplete({
     const timer = window.setTimeout(() => {
       void (async () => {
         try {
+          const params = new URLSearchParams({ q: trimmed, lang, country });
+          if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
+            params.set('lat', String(Math.round(bias.lat * 1000) / 1000));
+            params.set('lng', String(Math.round(bias.lng * 1000) / 1000));
+          }
           const res = await fetch(
-            `/api/geo/autocomplete?q=${encodeURIComponent(trimmed)}&lang=${encodeURIComponent(lang)}&country=${encodeURIComponent(country)}`,
+            `/api/geo/autocomplete?${params.toString()}`,
             {
               headers: { 'X-Requested-With': 'menu-customer' },
               signal: controller.signal,
@@ -170,7 +181,7 @@ export function useAddressAutocomplete({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [query, lang, country, enabled, pickedLabel]);
+  }, [query, lang, country, enabled, pickedLabel, bias?.lat, bias?.lng]);
 
   const selectSuggestion = useCallback((s: AddressSuggestion) => {
     setPickedLabel(s.label);

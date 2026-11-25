@@ -15,6 +15,14 @@
 const GEOAPIFY_BASE = 'https://api.geoapify.com/v1/geocode/autocomplete';
 const REQUEST_TIMEOUT_MS = 6000;
 const MAX_LABEL_CHARS = 120;
+/** Max suggestions returned per search (room for street-level rows). */
+export const RESULT_LIMIT = 20;
+/**
+ * Rich-enough threshold: when the zone-filtered pass returns fewer rows
+ * than this, the server runs a second unfiltered pass (same query + bias)
+ * and merges — deep side-street search without losing zone priority.
+ */
+export const MIN_RICH_RESULTS = 3;
 
 /** Trimmed string env read (per request). Returns '' when missing. */
 export function trimEnv(env, key) {
@@ -96,7 +104,7 @@ export function buildAutocompleteUrl(env, options) {
   params.set('format', 'json');
   params.set('apiKey', apiKey);
   params.set('lang', lang);
-  params.set('limit', '15');
+  params.set('limit', String(RESULT_LIMIT));
   const codes = normalizeCountryCodes(
     Array.isArray(opts.countries) ? opts.countries : opts.country,
   );
@@ -153,6 +161,54 @@ export function sanitizeAutocompleteResults(json) {
     out.push(item);
   }
   return out;
+}
+
+/**
+ * Parse a client map-viewport bias (strings or numbers). Returns rounded
+ * { lat, lng } or null when either side is missing, non-numeric or
+ * out of range. Used so a search follows the map the customer is looking
+ * at instead of always the restaurant pin.
+ */
+export function parseLatLng(latRaw, lngRaw) {
+  const lat = typeof latRaw === 'string' ? Number(latRaw.trim()) : latRaw;
+  const lng = typeof lngRaw === 'string' ? Number(lngRaw.trim()) : lngRaw;
+  if (typeof lat !== 'number' || !Number.isFinite(lat)) return null;
+  if (typeof lng !== 'number' || !Number.isFinite(lng)) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { lat: Math.round(lat * 1e5) / 1e5, lng: Math.round(lng * 1e5) / 1e5 };
+}
+
+/** Dedup key for merging two autocomplete passes (coords first, label fallback). */
+function resultKey(row) {
+  if (!row || typeof row !== 'object') return '';
+  if (typeof row.lat === 'number' && Number.isFinite(row.lat) && typeof row.lng === 'number' && Number.isFinite(row.lng)) {
+    return `${row.lat.toFixed(4)},${row.lng.toFixed(4)}`;
+  }
+  return typeof row.label === 'string' && row.label ? `t:${row.label}` : '';
+}
+
+/**
+ * Merge a second (unfiltered) autocomplete pass behind a first
+ * (zone-filtered) one: zone matches keep their priority, new rows append
+ * deduplicated, total capped at RESULT_LIMIT. Never throws.
+ */
+export function mergeAutocompleteResults(primary, secondary, limit = RESULT_LIMIT) {
+  const cap = Number.isInteger(limit) && limit > 0 ? limit : RESULT_LIMIT;
+  const out = Array.isArray(primary) ? [...primary] : [];
+  const seen = new Set();
+  for (const r of out) {
+    const k = resultKey(r);
+    if (k) seen.add(k);
+  }
+  const rest = Array.isArray(secondary) ? secondary : [];
+  for (const r of rest) {
+    const k = resultKey(r);
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    out.push(r);
+    if (out.length >= cap) break;
+  }
+  return out.slice(0, cap);
 }
 
 /**

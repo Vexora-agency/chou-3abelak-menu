@@ -103,12 +103,18 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   const { addrPreview, addrLoading, previewKey } = useMidSplitLocationMap(point, ready, lang);
   // In-picker search: jump the pin to a Geoapify suggestion without
   // leaving the map. Shares the same proxy as the address fields.
+  // The search is biased to the live map viewport (where the customer is
+  // looking — e.g. Alexandria side streets), not the restaurant pin.
   const [searchText, setSearchText] = useState('');
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(
+    initial ? { lat: initial.lat, lng: initial.lng } : { lat: fallback.lat, lng: fallback.lng }
+  );
   const searchAc = useAddressAutocomplete({
     query: searchText,
     lang,
     country: /^[A-Za-z]{2}$/.test(country ?? '') ? (country as string).toLowerCase() : '',
     enabled: true,
+    bias: mapCenter,
   });
 
   // Load Leaflet lazily (only when the picker opens) and build the map.
@@ -150,6 +156,17 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           setDetecting(false);
           setLocError(null);
           setPoint({ lat: round5(e.latlng.lat), lng: round5(e.latlng.lng), accuracy: 100 });
+        });
+        // Keep the search bias on the live viewport: pans and zooms move
+        // the bias with the map, so side-street search follows the eye.
+        // setView/moveTo also fire moveend, so programmatic moves are covered.
+        map.on('moveend', () => {
+          try {
+            const c = map.getCenter();
+            if (Number.isFinite(c.lat) && Number.isFinite(c.lng)) {
+              setMapCenter({ lat: round5(c.lat), lng: round5(c.lng) });
+            }
+          } catch {}
         });
         mapObj.current = map;
         markerObj.current = marker;

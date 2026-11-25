@@ -323,8 +323,8 @@ const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t,
           <Link2 size={17} strokeWidth={2.5} />
         </span>
         <span className="min-w-0 flex-1 text-[13px] sm:text-[15px] font-black text-[var(--primary)]" dir="auto">
-          <span className="hidden min-[420px]:inline">{t.jointTitle(members.length)}</span>
-          <span className="min-[420px]:hidden">{t.jointShort(members.length)}</span>
+          <span className="hidden sm:inline">{t.jointTitle(members.length)}</span>
+          <span className="sm:hidden">{t.jointShort(members.length)}</span>
         </span>
         <span className="hidden min-[380px]:block h-px flex-1 min-w-4 bg-[var(--primary)]/30" aria-hidden="true" />
         <span className="shrink-0 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-[11px] sm:text-xs font-black px-2.5 sm:px-3 py-1.5 tabular-nums shadow-md whitespace-nowrap" dir="ltr">

@@ -25,9 +25,10 @@
  * Deep search: when the filtered pass returns fewer than MIN_RICH_RESULTS
  * rows, the same query runs once more unfiltered and merges behind the
  * zone matches, so side streets outside the zone list still surface. When
- * both Geoapify passes stay thin, a third keyless pass runs against Photon
- * (Komoot OSM typeahead) with the same viewport bias — this covers
- * numbered side streets the filtered index misses.
+ * both Geoapify passes stay thin, up to 2 keyless Photon passes run over
+ * smart recall variants (normalized Arabic, latinized street-type, token
+ * backoff) with the same viewport bias plus a local bbox; rows carrying
+ * the query's street number rank first.
  * Responses and logs never carry the key, the provider body, or the full query.
  */
 
@@ -45,7 +46,7 @@ import {
   parseLatLng,
   validateAutocompleteQuery,
 } from '../../_shared/geoapify.js';
-import { fetchPhoton } from '../../_shared/photon.js';
+import { fetchPhoton, buildQueryVariants, rankAppendedByDigits } from '../../_shared/photon.js';
 
 const IP_RATE_MAX = 60;
 const IP_RATE_WINDOW_SEC = 60;
@@ -172,13 +173,27 @@ export async function onRequest(context) {
   // Deep third pass (free, keyless): when both Geoapify passes stay thin —
   // typical for numbered side streets such as «شارع 16» that the filtered
   // index does not cover — run the same query against Photon (Komoot,
-  // OSM typeahead) with the same viewport bias and merge behind. Photon
-  // needs no key and complements Geoapify prefix matching.
+  // OSM typeahead) with the same viewport bias and merge behind. Smart
+  // recall: up to 2 Photon calls over normalized/latinized/backoff query
+  // variants (long 4-token queries almost never match one index record),
+  // rows carrying the query's street number rank first, and a bbox around
+  // the bias keeps namesake streets on other continents out.
   if (results.length < MIN_RICH_RESULTS) {
     try {
-      const deep = await fetchPhoton(null, { text: q, lang, bias });
-      if (deep && deep.ok && Array.isArray(deep.results) && deep.results.length > 0) {
-        results = mergeAutocompleteResults(results, deep.results);
+      const zoneRows = [...results];
+      let fresh = [];
+      const variants = buildQueryVariants(q).slice(0, 3);
+      let photonCalls = 0;
+      for (const variant of variants) {
+        if (zoneRows.length + fresh.length >= MIN_RICH_RESULTS || photonCalls >= 2) break;
+        photonCalls += 1;
+        const deep = await fetchPhoton(null, { text: variant, lang, bias });
+        if (!deep || !deep.ok || !Array.isArray(deep.results) || deep.results.length === 0) continue;
+        fresh = mergeAutocompleteResults(fresh, deep.results);
+      }
+      if (fresh.length > 0) {
+        const merged = mergeAutocompleteResults(zoneRows, fresh);
+        results = rankAppendedByDigits(zoneRows, merged.slice(zoneRows.length), q);
       }
     } catch {
       /* keep the Geoapify results */

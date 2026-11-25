@@ -38,7 +38,7 @@ const STR = {
     unsupported: 'This browser has no location service — drag the pin to set your point.',
     searchPh: 'Search street or landmark…',
     searching: 'Searching…',
-    noResults: 'No results — pan the map or drag the pin.',
+    noResults: 'No results — try just the street name and number, or drag the pin.',
   },
   ar: {
     title: 'موقع التوصيل', close: 'إغلاق', locating: 'جارٍ تحديد موقعك…',
@@ -54,7 +54,7 @@ const STR = {
     poorAcc: 'الدقة ضعيفة — قد تكون النقطة بعيدة. اسحب المؤشر للتصحيح، أو اضغط التأكيد مجددًا للاعتماد كما هي.',
     searchPh: 'ابحث عن الشارع أو المعلم…',
     searching: 'جارٍ البحث…',
-    noResults: 'لا توجد نتائج — حرّك الخريطة أو اسحب الدبوس.',
+    noResults: 'لا توجد نتائج — جرّب اسم الشارع ورقمه فقط، أو اسحب الدبوس.',
   },
 } as const;
 

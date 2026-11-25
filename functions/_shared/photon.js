@@ -39,8 +39,142 @@ export function buildPhotonUrl(options) {
     && typeof lon === 'number' && Number.isFinite(lon) && Math.abs(lon) <= 180) {
     params.set('lat', String(lat));
     params.set('lon', String(lon));
+    const box = bboxAround(bias);
+    if (box) params.set('bbox', box);
   }
   return `${PHOTON_BASE}?${params.toString()}`;
+}
+
+/**
+ * Bounding box around a viewport bias (~25 km half-side) so the deep
+ * pass stays local: «شارع 16» near Alexandria must not return a
+ * namesake street on another continent. Format minLon,minLat,maxLon,maxLat.
+ * Returns null for an invalid bias. Never throws.
+ */
+export function bboxAround(bias, delta = 0.25) {
+  try {
+    const b = bias && typeof bias === 'object' ? bias : null;
+    const lat = b ? b.lat : NaN;
+    const lon = b ? b.lng : NaN;
+    if (typeof lat !== 'number' || !Number.isFinite(lat) || Math.abs(lat) > 90) return null;
+    if (typeof lon !== 'number' || !Number.isFinite(lon) || Math.abs(lon) > 180) return null;
+    const d = typeof delta === 'number' && Number.isFinite(delta) && delta > 0 && delta <= 1 ? delta : 0.25;
+    const minLat = Math.max(-90, Math.round((lat - d) * 1e4) / 1e4);
+    const maxLat = Math.min(90, Math.round((lat + d) * 1e4) / 1e4);
+    const minLon = Math.max(-180, Math.round((lon - d) * 1e4) / 1e4);
+    const maxLon = Math.min(180, Math.round((lon + d) * 1e4) / 1e4);
+    return `${minLon},${minLat},${maxLon},${maxLat}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Conservative Arabic normalization for recall variants: strips tashkeel
+ * and tatweel, unifies alef forms (أإآٱ→ا). Deliberately keeps ة/ه and
+ * ى/ي untouched — converting them merges distinct place names.
+ * Returns '' for non-strings. Never throws.
+ */
+export function normalizeArabicQuery(text) {
+  try {
+    if (typeof text !== 'string') return '';
+    let s = text.replace(/[ً-ٰٟـ]/g, '');
+    s = s.replace(/[أإآٱ]/g, 'ا');
+    s = s.replace(/\s+/g, ' ').trim();
+    return s;
+  } catch {
+    return '';
+  }
+}
+
+const STREET_TYPE_SYNONYMS = [
+  ['شارع', 'street'],
+  ['ميدان', 'square'],
+  ['طريق', 'road'],
+  ['كورنيش', 'corniche'],
+  ['كوبري', 'bridge'],
+  ['كوبرى', 'bridge'],
+];
+
+/**
+ * Replace the first Arabic street-type word with its English equivalent
+ * («السيوف شارع 16» → «السيوف street 16»): OSM ways are often tagged in
+ * Latin script even inside Arabic-speaking cities. Returns null when no
+ * street-type word is present. Never throws.
+ */
+export function latinizeStreetType(text) {
+  try {
+    if (typeof text !== 'string' || !text) return null;
+    for (const [ar, en] of STREET_TYPE_SYNONYMS) {
+      if (text.includes(ar)) return text.replace(ar, en);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Smart recall variants for one customer query (max 3, deduped):
+ * original → normalized Arabic → latinized street-type, else backoff that
+ * drops the first token (usually the city: «الإسكندرية السيوف شارع 16»
+ * → «السيوف شارع 16»).
+ * Long multi-token queries almost never match a single index record, so
+ * the shorter variants are what surface the side street. Never throws.
+ */
+export function buildQueryVariants(q) {
+  try {
+    const out = [];
+    const push = (v) => {
+      if (typeof v !== 'string') return;
+      const t = v.replace(/\s+/g, ' ').trim();
+      if (t.length < 3 || t.length > 100) return;
+      if (out.some((x) => x === t)) return;
+      if (out.length < 3) out.push(t);
+    };
+    if (typeof q !== 'string') return out;
+    const original = q.replace(/\s+/g, ' ').trim();
+    push(original);
+    const norm = normalizeArabicQuery(original);
+    push(norm);
+    const latin = latinizeStreetType(norm || original);
+    if (latin) {
+      push(latin);
+    } else {
+      const tokens = (norm || original).split(' ').filter(Boolean);
+      if (tokens.length >= 4) push(tokens.slice(1).join(' '));
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Digit-aware ordering for the appended deep rows: when the query names a
+ * number («شارع 16»), rows carrying that number sort first (stable —
+ * otherwise the original provider order is kept). Zone rows are never
+ * reordered. Caps the total at `limit`. Never throws.
+ */
+export function rankAppendedByDigits(zoneRows, deepRows, query, limit = RESULT_LIMIT) {
+  try {
+    const cap = Number.isInteger(limit) && limit > 0 ? limit : RESULT_LIMIT;
+    const zone = Array.isArray(zoneRows) ? zoneRows.filter((r) => r && typeof r === 'object') : [];
+    const deep = Array.isArray(deepRows) ? deepRows.filter((r) => r && typeof r === 'object') : [];
+    const digits = typeof query === 'string' ? (query.match(/\d+/g) || []) : [];
+    if (!digits.length) return [...zone, ...deep].slice(0, cap);
+    const hay = (r) => `${r.label || ''} ${r.line1 || ''} ${r.details || ''}`;
+    const hit = [];
+    const rest = [];
+    for (const r of deep) {
+      const h = hay(r);
+      if (digits.some((d) => h.includes(d))) hit.push(r);
+      else rest.push(r);
+    }
+    return [...zone, ...hit, ...rest].slice(0, cap);
+  } catch {
+    return [];
+  }
 }
 
 /** Compose a readable label from Photon address parts (best effort). */

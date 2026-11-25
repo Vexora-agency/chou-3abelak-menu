@@ -35,8 +35,13 @@ import {
 } from '../functions/_shared/geoapify.js';
 import { onRequest } from '../functions/api/geo/autocomplete.js';
 import {
+  bboxAround,
   buildPhotonUrl,
+  buildQueryVariants,
   fetchPhoton,
+  latinizeStreetType,
+  normalizeArabicQuery,
+  rankAppendedByDigits,
   sanitizePhotonResults,
 } from '../functions/_shared/photon.js';
 
@@ -158,6 +163,43 @@ check('photon: garbage sanitizes to []', JSON.stringify(sanitizePhotonResults(nu
   check('photon fetch: short query is bad_query without network', !bad.ok && bad.error === 'bad_query');
   const failed = await fetchPhoton(null, { text: 'street 16' }, async () => ({ ok: false }));
   check('photon fetch: upstream failure maps to failed', !failed.ok && failed.error === 'failed');
+check('arabic normalize unifies alef', normalizeArabicQuery('الإسكندرية') === 'الاسكندرية');
+check('arabic normalize strips tashkeel and tatweel', normalizeArabicQuery('شَارع الـسـيوف') === 'شارع السيوف');
+check('arabic normalize keeps ة and ى', normalizeArabicQuery('السيوف') === 'السيوف');
+check('latinize maps شارع to street', latinizeStreetType('السيوف شارع 16') === 'السيوف street 16');
+check('latinize returns null without a street word', latinizeStreetType('السيوف 16') === null);
+check(
+  'variants cover original, normalized and latinized',
+  JSON.stringify(buildQueryVariants('الإسكندرية السيوف شارع 16')) === JSON.stringify(['الإسكندرية السيوف شارع 16', 'الاسكندرية السيوف شارع 16', 'الاسكندرية السيوف street 16'])
+);
+check(
+  'variants back off to the last tokens for long latin queries',
+  JSON.stringify(buildQueryVariants('Alexandria El Soyouf Street 16')) === JSON.stringify(['Alexandria El Soyouf Street 16', 'El Soyouf Street 16'])
+);
+check('variants collapse to one for short queries', JSON.stringify(buildQueryVariants('السيوف')) === JSON.stringify(['السيوف']));
+check('bbox centers on the bias', bboxAround({ lat: 31.2, lng: 29.95 }) === '29.7,30.95,30.2,31.45');
+check('bbox rejects garbage', bboxAround(null) === null && bboxAround({ lat: 91, lng: 0 }) === null);
+check('photon url carries bbox with a bias', new URL(buildPhotonUrl({ text: 'street', bias: { lat: 31.2, lng: 29.95 } })).searchParams.get('bbox') === '29.7,30.95,30.2,31.45');
+check('photon url has no bbox without a bias', new URL(buildPhotonUrl({ text: 'street' })).searchParams.get('bbox') === null);
+check(
+  'digit ranking lifts the numbered street behind the zone rows',
+  (() => {
+    const z = { label: 'Z', line1: 'Z', line2: '', lat: 1, lng: 2 };
+    const a = { label: 'Other road', line1: 'Other road', line2: '', lat: 3, lng: 4 };
+    const b = { label: 'Street 16', line1: 'Street 16', line2: '', lat: 5, lng: 6 };
+    const ranked = rankAppendedByDigits([z], [a, b], 'شارع 16');
+    return ranked.length === 3 && ranked[0] === z && ranked[1] === b && ranked[2] === a;
+  })()
+);
+check(
+  'digit ranking keeps order when the query has no number',
+  (() => {
+    const z = { label: 'Z', line1: 'Z', line2: '', lat: 1, lng: 2 };
+    const a = { label: 'A', line1: 'A', line2: '', lat: 3, lng: 4 };
+    const ranked = rankAppendedByDigits([z], [a], 'السيوف');
+    return ranked.length === 2 && ranked[0] === z && ranked[1] === a;
+  })()
+);
 }
 
 /* ---------- URL building ---------- */
@@ -512,6 +554,35 @@ try {
     && bodyThin.results[0].label === 'El Soyouf, Alexandria, Egypt'
     && bodyThin.results[1].label === 'Street 45, El Soyouf, Alexandria, Egypt'
     && bodyThin.results[2].label.includes('Street 16'));
+
+  // Fallback variant: a 4-token query whose Photon full-text pass is empty
+  // still resolves via the backoff variant («El Soyouf Street 16»).
+  calledUrls = [];
+  globalThis.fetch = async (url) => {
+    calledUrls.push(String(url));
+    const u = String(url);
+    if (u.includes('photon.komoot.io')) {
+      const pq = new URL(u).searchParams.get('q') || '';
+      if (pq === 'Alexandria El Soyouf Street 16') {
+        return { ok: true, status: 200, json: async () => ({ features: [] }) };
+      }
+      return { ok: true, status: 200, json: async () => photonGeoJson };
+    }
+    const payload = geoFirst ? thinPayload : openPayload;
+    geoFirst = false;
+    return { ok: true, status: 200, json: async () => payload };
+  };
+  let geoFirst = true;
+  const resFallback = await onRequest({
+    request: customerGet('/api/geo/autocomplete?q=Alexandria%20El%20Soyouf%20Street%2016&lang=en&country=eg'),
+    env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv },
+  });
+  const bodyFallback = await readJson(resFallback);
+  check('route: empty photon full pass retries the backoff variant', calledUrls.length === 4);
+  check('route: fallback variant resolves the numbered street',
+    resFallback.status === 200 && bodyFallback && bodyFallback.ok === true
+    && bodyFallback.results.length === 3
+    && bodyFallback.results[2].label.includes('Street 16'));
 
   // Map viewport bias: a lat/lng from the picker outranks the restaurant
   // pin; garbage viewports fall back to the pin.

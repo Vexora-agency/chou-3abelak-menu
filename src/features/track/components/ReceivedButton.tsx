@@ -92,7 +92,7 @@ export const ReceivedButton: React.FC<ReceivedButtonProps> = ({
   };
 
   return (
-    <div className={compact ? '' : 'rounded-xl border border-neutral-800 bg-black/40 p-3 text-center'}>
+    <div className={compact ? '' : 'rounded-3xl border border-white/10 bg-white/[0.04] p-4 text-center'}>
       {!compact && (
         <p className={`text-xs font-black mb-2.5 ${darkMode ? 'text-neutral-200' : 'text-neutral-800'}`}>
           {joint

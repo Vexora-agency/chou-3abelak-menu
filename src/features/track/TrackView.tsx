@@ -271,17 +271,16 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
   const etaLabel = etaWindow ? formatEtaRangeWithDay(etaWindow.fromIso, etaWindow.toIso, lang, storeTz, displayNowMs) : '';
 
   return (
-    <div dir={isAr ? 'rtl' : 'ltr'} className="relative isolate min-h-dvh overflow-x-clip bg-[#0A0A0A] text-white flex flex-col items-center px-5 pb-[max(2rem,env(safe-area-inset-bottom))]">
-      {/* Premium depth aura behind the status card (GSAP parallax once the
-          motion layer is idle; static and safe before that). */}
-      <div className="fx-aura z-0" aria-hidden="true" />
-      <div className="relative z-10 w-full max-w-[520px]">
-        {/* Sticky top bar: back-to-menu + language stay reachable no matter
-            how far down the order details scroll (mobile-first fix).
-            Solid background on purpose: backdrop-blur on a sticky bar is a
-            known iOS compositor glitch source (flicker / stuck scrolling),
-            and over this black page a solid bar looks identical. */}
-        <div className="sticky top-0 z-20 -mx-5 px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-[#0A0A0A] border-b border-white/5 shadow-[0_12px_34px_-24px_rgba(0,0,0,0.9)]">
+    <div dir={isAr ? 'rtl' : 'ltr'} className="relative isolate min-h-dvh overflow-x-clip bg-[#0A0A0A] text-white flex flex-col items-center px-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:pb-12">
+      {/* Ambient background: one continuous wash from top to bottom so the
+          page never reads as two halves. Pure decoration, zero layout. */}
+      <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+        <div className="absolute inset-x-0 top-0 h-[480px] bg-[radial-gradient(62%_100%_at_50%_0%,rgba(212,175,55,0.13),transparent_70%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-[340px] bg-[radial-gradient(72%_100%_at_50%_100%,rgba(212,175,55,0.05),transparent_70%)]" />
+      </div>
+      <div className="relative z-10 w-full max-w-[520px] sm:max-w-[560px]">
+        {/* Top bar: sticky on phones (thumb reach), static card on desktop. */}
+        <div className="sticky top-0 z-20 -mx-5 px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-[#0A0A0A]/95 backdrop-blur-none border-b border-white/5 shadow-[0_12px_34px_-24px_rgba(0,0,0,0.9)] sm:static sm:mx-0 sm:mt-6 sm:rounded-2xl sm:border sm:border-white/10 sm:bg-white/[0.03] sm:px-4 sm:shadow-none">
           <div className="flex items-center justify-between gap-2">
             <button
               type="button"
@@ -324,61 +323,76 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
           </div>
         ) : (
           <>
-            <h1 className="text-center text-2xl sm:text-3xl font-black mt-1 tabular-nums" dir="ltr">
-              <CountUp value={data.number} duration={1.05} format={(n) => `#${Math.round(n)}`} />
-            </h1>
-            {cancelled ? (
-              <div className="mt-6 rounded-2xl border border-red-500/40 bg-red-950/30 p-5 text-center">
-                <XCircle size={32} className="mx-auto text-red-400" />
-                <p className="mt-2 font-black">{isAr ? 'تم إلغاء الطلب' : 'Order cancelled'}</p>
-                <p className="mt-1 text-xs text-neutral-400">
-                  {isAr ? 'تواصل معنا إذا كان لديك أي استفسار.' : 'Call us if you have any questions.'}
-                </p>
-              </div>
-            ) : (
-              <ol data-motion-reveal="fade" className="mt-6 space-y-0">
-                {steps.map((s, i) => {
-                  const done = i <= stage;
-                  const current = i === stage;
-                  const Icon = s.icon;
-                  return (
-                    <li key={s.id} className="flex gap-3">
-                      <div className="flex flex-col items-center">
-                        <span
-                          className={`w-9 h-9 rounded-full flex items-center justify-center border-2 ${
-                            done
-                              ? 'bg-[var(--primary)] border-[var(--primary)] text-[#0A0A0A]'
-                              : 'border-neutral-700 text-neutral-600'
-                          } ${current ? 'animate-pulse' : ''}`}
-                        >
-                          <Icon size={17} strokeWidth={2.5} />
-                        </span>
-                        {i < steps.length - 1 && (
-                          <span className={`w-0.5 flex-1 min-h-[22px] ${i < stage ? 'bg-[var(--primary)]' : 'bg-neutral-800'}`} />
-                        )}
-                      </div>
-                      <div className="pb-6 pt-1.5 min-w-0">
-                        <p className={`text-sm font-black break-words ${done ? 'text-white' : 'text-neutral-600'}`}>{s.label}</p>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
-            )}
-
-            {etaLabel && (
-              <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs font-bold text-neutral-300">
-                <Truck size={13} className="shrink-0 text-[var(--primary)]" aria-hidden="true" />
-                <span className="min-w-0 break-words">
-                  {isAr ? 'سيصلك طلبك تقريبًا ' : 'Arriving around '}
-                  <span dir="ltr" className="tabular-nums">{etaLabel}</span>
-                </span>
+            {/* Status card: number + live stage + timeline + ETA in one
+                unbroken surface. */}
+            <section aria-label={isAr ? 'حالة الطلب' : 'Order status'} className="mt-5 rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_18px_50px_-30px_rgba(0,0,0,0.9)]">
+              <p className="text-center text-[10px] font-extrabold uppercase tracking-[0.22em] text-neutral-500">
+                {isAr ? 'طلب' : 'Order'}
               </p>
-            )}
+              <h1 className="text-center text-3xl sm:text-4xl font-black mt-1 tabular-nums" dir="ltr">
+                <CountUp value={data.number} duration={1.05} format={(n) => `#${Math.round(n)}`} />
+              </h1>
+              {!cancelled && (
+                <div className="mt-2.5 flex justify-center">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary)]/15 px-3.5 py-1.5 text-[11px] font-black text-[var(--primary)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" aria-hidden="true" />
+                    {steps[stage].label}
+                  </span>
+                </div>
+              )}
+              {etaLabel && !cancelled && (
+                <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-xs font-bold text-neutral-300">
+                  <Truck size={13} className="shrink-0 text-[var(--primary)]" aria-hidden="true" />
+                  <span className="min-w-0 break-words">
+                    {isAr ? 'سيصلك طلبك تقريبًا ' : 'Arriving around '}
+                    <span dir="ltr" className="tabular-nums">{etaLabel}</span>
+                  </span>
+                </p>
+              )}
+              {cancelled ? (
+                <div className="mt-4 rounded-2xl border border-red-500/40 bg-red-950/30 p-5 text-center">
+                  <XCircle size={32} className="mx-auto text-red-400" />
+                  <p className="mt-2 font-black">{isAr ? 'تم إلغاء الطلب' : 'Order cancelled'}</p>
+                  <p className="mt-1 text-xs text-neutral-400">
+                    {isAr ? 'تواصل معنا إذا كان لديك أي استفسار.' : 'Call us if you have any questions.'}
+                  </p>
+                </div>
+              ) : (
+                <ol data-motion-reveal="fade" className="mt-5 space-y-0">
+                  {steps.map((s, i) => {
+                    const done = i <= stage;
+                    const current = i === stage;
+                    const Icon = s.icon;
+                    return (
+                      <li key={s.id} className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <span
+                            className={`w-9 h-9 rounded-full flex items-center justify-center border-2 ${
+                              done
+                                ? 'bg-[var(--primary)] border-[var(--primary)] text-[#0A0A0A]'
+                                : 'border-white/15 text-neutral-600'
+                            } ${current ? 'animate-pulse' : ''}`}
+                          >
+                            <Icon size={17} strokeWidth={2.5} />
+                          </span>
+                          {i < steps.length - 1 && (
+                            <span className={`w-0.5 flex-1 min-h-[22px] ${i < stage ? 'bg-[var(--primary)]' : 'bg-white/10'}`} />
+                          )}
+                        </div>
+                        <div className="pb-6 pt-1.5 min-w-0 last:pb-1">
+                          <p className={`text-sm font-black break-words ${done ? 'text-white' : 'text-neutral-500'}`}>{s.label}</p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+            </section>
 
-            <div data-motion-reveal="up" data-motion-delay="80" className="mt-2 rounded-2xl border border-neutral-800 border-t-2 border-t-[var(--primary)] bg-neutral-900/60 p-4 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)]">
+            <div data-motion-reveal="up" data-motion-delay="80" className="mt-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4 sm:p-5 shadow-[0_18px_50px_-30px_rgba(0,0,0,0.9)]">
+              <div className="divide-y divide-white/5">
               {data.items.map((it, i) => (
-                <div key={i} className="flex justify-between gap-3 py-1.5 text-sm">
+                <div key={i} className="flex justify-between gap-3 py-2 text-sm first:pt-0 last:pb-0">
                   <span className="min-w-0 flex-1 break-words text-neutral-200">
                     <bdi dir="ltr" className="tabular-nums">{it.qty}</bdi><span dir="ltr"> × </span>
                     {typeof it.unit === 'string' && it.unit ? <span>{unitLabel(it.unit, it.qty, lang)} </span> : null}
@@ -402,7 +416,8 @@ export const TrackView: React.FC<TrackViewProps> = ({ number, token, onBack }) =
                   </span>
                 </div>
               ))}
-              <div className="border-t border-neutral-800 mt-2 pt-2 flex justify-between text-sm font-black">
+              </div>
+              <div className="border-t border-white/10 mt-2.5 pt-2.5 flex justify-between text-sm font-black">
                 <span>{isAr ? 'الإجمالي' : 'Total'}</span>
                 <span className="tabular-nums text-[var(--primary)]">
                   <CountUp value={data.total} duration={1.25} format={(n) => formatPrice(Math.round(n))} />

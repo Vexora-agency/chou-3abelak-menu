@@ -83,7 +83,7 @@ export const InstallAppCard: React.FC<InstallAppCardProps> = ({ orderNumber, tra
   return (
     <section
       aria-labelledby="install-app-title"
-      className="relative mt-4 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4"
+      className="relative mt-4 rounded-3xl border border-white/10 bg-white/[0.04] p-4 sm:p-5"
     >
       <button
         type="button"

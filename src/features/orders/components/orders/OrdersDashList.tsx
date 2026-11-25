@@ -98,11 +98,6 @@ const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, cur
         <span className="min-w-0 flex-1">
           <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <b className="text-sm tabular-nums" dir="ltr">#{o.number}</b>
-            {typeof o.parentNumber === 'number' && (
-              <span dir="auto" className="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-300">
-                {t.linkedShort(o.parentNumber)}
-              </span>
-            )}
             <CustomerName name={o.customer.name} />
             {o.isBlocked === true && (
               <span

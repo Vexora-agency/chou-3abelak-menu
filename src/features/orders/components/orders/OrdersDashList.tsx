@@ -1,7 +1,7 @@
 import { useMemo, useState, type FC } from 'react';
 import { adminFetch } from '@/src/lib/api-client';
 import { AnimatePresence, motion } from 'motion/react';
-import { BellRing, BadgeCheck, Check, ChevronDown, Inbox, Link2, Loader2, MapPin, MessageCircle, Phone, StickyNote, Store, X } from 'lucide-react';
+import { BellRing, BadgeCheck, Ban, Check, ChevronDown, Inbox, Link2, Loader2, MapPin, MessageCircle, Phone, StickyNote, Store, X } from 'lucide-react';
 import { STR } from './ordersDashTypes';
 import type { Order, OrderStatus } from './ordersDashTypes';
 import type { MenuData } from '@/src/types/menu';
@@ -103,6 +103,16 @@ const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, cur
               </span>
             )}
             <CustomerName name={o.customer.name} />
+            {o.isBlocked === true && (
+              <span
+                title={t.blockedTip}
+                aria-label={t.blockedTip}
+                className="shrink-0 inline-flex items-center gap-1 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full border border-red-400/40 bg-red-400/10 text-red-300"
+              >
+                <Ban size={11} aria-hidden="true" />
+                <span>{t.blocked}</span>
+              </span>
+            )}
             {o.customerUserId && (
               <span
                 title={t.registeredTip}

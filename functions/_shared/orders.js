@@ -543,6 +543,10 @@ export function mapOrderRow(row) {
     // CONTRACT: riskScore:number, riskReasons:string[], needsReview:boolean,
     // reviewCleared:boolean.
     ...riskFields(row),
+    // Blocked customer (phone_blocks): blocked phones cannot place NEW
+    // orders, but their history stays visible — marked so a blocked
+    // customer is recognizable at a glance. Absent = not blocked.
+    isBlocked: row.is_blocked === 1,
     ...(row.lang ? { lang: row.lang } : {}),
     ...(row.track_token ? { trackToken: row.track_token } : {}),
   };

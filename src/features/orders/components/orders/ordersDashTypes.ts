@@ -57,6 +57,11 @@ export interface Order {
    *  Always present as string-or-null on new API rows; legacy payloads may
    *  omit it (the badge simply does not render). */
   customerUserId?: string | null;
+  /** Blocked customer (phone blocklist): true when the order's phone is
+   *  currently blocked. Absent on older rows — treat undefined as not
+   *  blocked. Blocked phones cannot place new orders; their history stays
+   *  visible and marked. */
+  isBlocked?: boolean;
 }
 
 /** Kitchen health signal: the 1-minute order-nag sweep heartbeat.
@@ -119,6 +124,7 @@ export const STR = {
     complete: 'Mark completed', cancel: 'Cancel order', reopen: 'Reopen', ack: 'Start preparing',
     wa: 'WhatsApp', call: 'Call', now: 'Just now',
     registered: 'Registered customer', registeredTip: 'This order was placed from a signed-in customer account.',
+    blocked: 'Blocked', blockedTip: 'This customer is blocked — their new orders are rejected automatically.',
     min: (n: number) => `${n} min ago`, hr: (n: number) => `${n}h ago`,
     arrives: (t: string) => `Arrives ~${t}`, late: (n: number) => `${n}m late`,
     linkedShort: (n: number) => `Linked to #${n}`, linkedLong: (n: number) => `Follow-up to order #${n} — same customer, prepare together`,
@@ -155,6 +161,7 @@ export const STR = {
     complete: 'تم التسليم', cancel: 'إلغاء الطلب', reopen: 'إعادة فتح', ack: 'بدء التحضير',
     wa: 'واتساب', call: 'اتصال', now: 'الآن',
     registered: 'عميل مسجل', registeredTip: 'هذا الطلب من حساب عميل مسجل في المنصة.',
+    blocked: 'محظور', blockedTip: 'هذا العميل محظور — طلباته الجديدة تُرفض تلقائيًا.',
     min: (n: number) => `قبل ${n} د`, hr: (n: number) => `قبل ${n} س`,
     arrives: (t: string) => `يوصل ~${t}`, late: (n: number) => `متأخر ${n} د`,
     linkedShort: (n: number) => `مرتبط بـ #${n}`, linkedLong: (n: number) => `تابع للطلب #${n} — نفس الزبون، يُجهَّز معه`,

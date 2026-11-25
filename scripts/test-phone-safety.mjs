@@ -19,7 +19,7 @@ import {
   scoreStaticRisk,
 } from '../functions/_shared/order-risk.js';
 import { formatNewOrderMessage, rebuildOrderMessage } from '../functions/_shared/telegram.js';
-import { updateOrderStatus } from '../functions/_shared/repositories/orders.repo.js';
+import { updateOrderStatus, listOrdersByWindow } from '../functions/_shared/repositories/orders.repo.js';
 import { createSessionToken, getSessionSecret } from '../functions/_shared/session.js';
 import { onRequest as ordersReq } from '../functions/api/orders.js';
 import { onRequest as phoneBlocksReq } from '../functions/api/admin/phone-blocks.js';
@@ -276,10 +276,10 @@ const daysAgo = (n) => new Date(Date.now() - n * 86400 * 1000).toISOString();
   const stored = await db.prepare('SELECT risk_score, risk_reasons FROM orders WHERE number = ?1').bind(r1.data.orderNumber).first();
   ok(typeof stored.risk_score === 'number', 'risk_score column stored');
   const mapped = mapOrderRow(await db.prepare('SELECT * FROM orders WHERE number = ?1').bind(r1.data.orderNumber).first());
-  ok(typeof mapped.riskScore === 'number' && Array.isArray(mapped.riskReasons) && typeof mapped.needsReview === 'boolean' && typeof mapped.reviewCleared === 'boolean', 'mapOrderRow contract fields present');
+  ok(typeof mapped.riskScore === 'number' && Array.isArray(mapped.riskReasons) && typeof mapped.needsReview === 'boolean' && typeof mapped.reviewCleared === 'boolean' && typeof mapped.isBlocked === 'boolean', 'mapOrderRow contract fields present');
   // Legacy row without risk columns still reads as unscored.
   const legacy = mapOrderRow({ id: 'x', number: 1, created_at: 't', status: 'new', type: 'delivery', customer_name: 'A', customer_phone: '1', items_json: '[]', subtotal: 1, delivery_fee: 0, total: 1 });
-  ok(legacy.riskScore === 0 && legacy.riskReasons.length === 0 && legacy.needsReview === false && legacy.reviewCleared === false, 'legacy row unscored defaults');
+  ok(legacy.riskScore === 0 && legacy.riskReasons.length === 0 && legacy.needsReview === false && legacy.reviewCleared === false && legacy.isBlocked === false, 'legacy row unscored defaults');
 }
 
 /* ---------------- 4. blocklist: route + admin CRUD ---------------- */
@@ -330,6 +330,10 @@ const daysAgo = (n) => new Date(Date.now() - n * 86400 * 1000).toISOString();
   ok(blocked.data.message && typeof blocked.data.message.ar === 'string' && blocked.data.message.ar.length > 0, 'blocked message generic Arabic-first');
   const bRows = await db.prepare('SELECT COUNT(*) AS c FROM orders WHERE phone_norm = ?1').bind(P3).first();
   ok(bRows.c === 1, 'blocked order stored nothing');
+  // Blocked history is marked in the admin feed for instant recognition.
+  const feedBlocked = await listOrdersByWindow(db, { days: 365 }, 100);
+  const blockedRow = feedBlocked.find((o) => o.number === first.data.orderNumber);
+  ok(blockedRow && blockedRow.isBlocked === true, 'blocked phone orders read isBlocked in the feed');
 
   // GET round-trip (contract: { ok, blocked: [{ phone_norm, reason, created_at }]}).
   const list = await adminCall('GET', undefined, oc);

@@ -187,7 +187,13 @@ export async function countRecentCancelledByPhone(db, phoneNorm, sinceIso) {
 }
 
 export async function findOrderById(db, id) {
-  return db.prepare('SELECT * FROM orders WHERE id = ?1').bind(id).first();
+  return db
+    .prepare(
+      `SELECT *, EXISTS(SELECT 1 FROM phone_blocks WHERE phone_blocks.phone_norm = orders.phone_norm) AS is_blocked ` +
+        `FROM orders WHERE id = ?1`
+    )
+    .bind(id)
+    .first();
 }
 
 export async function findOrderByNumber(db, number) {
@@ -951,8 +957,14 @@ export async function listOrders(db, where, args, limit) {
   if (!Object.values(WINDOW_WHERE).includes(where)) {
     throw new Error(`Invalid where clause: ${where}`);
   }
+  // is_blocked: blocked phones cannot place NEW orders (route rejects),
+  // but their history stays visible — the admin board marks those rows so
+  // a blocked customer is recognizable at a glance.
   const res = await db
-    .prepare(`SELECT * FROM orders ${where} ORDER BY created_at DESC LIMIT ?${args.length + 1}`)
+    .prepare(
+      `SELECT *, EXISTS(SELECT 1 FROM phone_blocks WHERE phone_blocks.phone_norm = orders.phone_norm) AS is_blocked ` +
+        `FROM orders ${where} ORDER BY created_at DESC LIMIT ?${args.length + 1}`
+    )
     .bind(...args, limit)
     .all();
   const rows = (res && res.results) || [];

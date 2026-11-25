@@ -5,7 +5,16 @@ import { applyTheme } from '@/src/config/theme.config';
 import { captureFrontendError, initSentry } from '@/src/lib/sentry';
 import { recoverFromChunkError, reloadFresh } from '@/src/utils/lazyRetry';
 import { initMotionRuntime } from '@/src/lib/motion';
+import { initWebMCP } from '@/src/lib/webmcp';
 import './index.css';
+
+// Expose read-only store tools to browser agents (WebMCP draft):
+// never blocks render, never throws, unregisters on page unload.
+try {
+  initWebMCP();
+} catch {
+  /* WebMCP is optional enhancement only */
+}
 
 // Premium motion runtime first: Lenis + the reveal observer must be armed
 // before React's first commit, so no above-the-fold section ever flashes.

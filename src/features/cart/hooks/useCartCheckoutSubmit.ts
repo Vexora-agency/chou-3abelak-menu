@@ -450,7 +450,7 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     // A missing or malformed pin blocks the submit and reopens the map so
     // the customer can search inside it and drop the pin precisely.
     if (!location || !Number.isFinite(location.lat) || !Number.isFinite(location.lng)) {
-      setErrorMsg(isAr ? 'حدّد موقع التوصيل على الخريطة — الدبوس إلزامي لإتمام الطلب' : 'Pin your delivery location on the map — required to place the order');
+      setErrorMsg(isAr ? 'يرجى اختيار موقع التوصيل على الخريطة لإتمام طلبك' : 'Please choose your delivery location on the map to complete your order');
       setLocSheetOpen(true);
       return;
     }

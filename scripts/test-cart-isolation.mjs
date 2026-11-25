@@ -97,8 +97,11 @@ ok(
   'the settings map pin is silent: the change-pin control remains, the green note is gone'
 );
 ok(
-  formFields.includes('absolute right-0.5') && formFields.includes('pr-12'),
-  'the cart map-pin button sits on the physical right (correct in Arabic RTL too)'
+  formFields.includes('موقع التوصيل') && formFields.includes('Delivery location')
+    && formFields.includes('onOpenLocSheet')
+    && formFields.includes('MapPin')
+    && !formFields.includes('عنوان التوصيل بالتفصيل'),
+  'the cart uses a pick-location card (no address text field)'
 );
 const cartDrawer = read('src/features/cart/components/CartDrawer.tsx');
 ok(
@@ -351,49 +354,37 @@ ok(
     && acList.includes('https://www.geoapify.com/'),
   'suggestion list uses listbox semantics with the required Geoapify attribution link'
 );
-// Cart checkout wiring (CustomerFormFields, fed by CartDrawer).
+// Cart checkout wiring: no address text field — the location is picked on
+// the map sheet, whose search lives in LocationPicker.
+const picker = read('src/features/cart/components/LocationPicker.tsx');
 ok(
-  formFields.includes("from '@/src/hooks/useAddressAutocomplete'") && formFields.includes('useAddressAutocomplete({')
-    && formFields.includes('enabled: addrTyped && !location'),
-  'cart runs suggestions only after the customer types, and never while a pin is set'
+  picker.includes("from '@/src/hooks/useAddressAutocomplete'") && picker.includes('useAddressAutocomplete({')
+    && picker.includes('AddressSuggestList'),
+  'in-map search with suggestions lives inside the location picker'
 );
 ok(
-  formFields.includes('/^[A-Za-z]{2}$/') && formFields.includes('toLowerCase()'),
-  'cart passes a lowercased 2-letter country code (or empty) to autocomplete'
+  picker.includes('/^[A-Za-z]{2}$/') && picker.includes('toLowerCase()'),
+  'picker passes a lowercased 2-letter country code (or empty) to autocomplete'
 );
 ok(
-  formFields.includes("from '@/src/components/AddressSuggestList'") && formFields.includes('<AddressSuggestList')
-    && formFields.includes('cart-address-listbox'),
-  'cart renders the shared suggestion list under the address input'
+  picker.includes('role="combobox"') && picker.includes('aria-expanded')
+    && picker.includes('aria-controls') && picker.includes('aria-autocomplete="list"')
+    && picker.includes('aria-activedescendant'),
+  'picker search exposes combobox semantics wired to the listbox'
 );
 ok(
-  formFields.includes('role="combobox"') && formFields.includes('aria-expanded')
-    && formFields.includes('aria-controls') && formFields.includes('aria-autocomplete="list"')
-    && formFields.includes('aria-activedescendant'),
-  'cart address input exposes combobox semantics wired to the listbox'
+  picker.includes('selectSuggestion') && picker.includes('handleKeyDown'),
+  'picker drives pick/keyboard through the hook contract'
 );
 ok(
-  formFields.includes('selectSuggestion') && formFields.includes('clearPicked') && formFields.includes('handleKeyDown'),
-  'cart drives pick/clear/keyboard through the hook contract'
+  !formFields.includes("from '@/src/hooks/useAddressAutocomplete'")
+    && !formFields.includes('<AddressSuggestList')
+    && !formFields.includes('role="combobox"'),
+  'cart has no address text field or inline suggestions (pick-location only)'
 );
 ok(
-  formFields.includes('onPickCoords') && formFields.includes('suggestions[addrAc.activeIndex]')
-    && formFields.includes('setOpen(true)') && formFields.includes('setOpen(false)'),
-  'a picked cart suggestion fills the text and forwards its coords; focus opens, blur closes'
-);
-ok(
-  cartDrawer.includes('onPickCoords={(lat, lng, accuracy, label) => handleMapPick(lat, lng, accuracy, label)}'),
-  'cart wires a picked suggestion into the same handleMapPick path as the map sheet (label wins)'
-);
-ok(
-  formFields.includes('Typing refines the address but keeps the pin'),
-  'manual typing in the cart still keeps the pin (autocomplete never clears it)'
-);
-ok(
-  formFields.includes('لا توجد اقتراحات مطابِقة — أكمل كتابة العنوان يدويًا')
-    && formFields.includes('No matching suggestions — keep typing your address manually')
-    && formFields.includes('pickedLabel'),
-  'cart shows the MSA/English empty state (3+ chars, hidden for the picked label)'
+  checkout.includes('Pin is REQUIRED') && checkout.includes('if (!location'),
+  'checkout requires a map pin for delivery'
 );
 // Account settings wiring (same hook + list, own pin state).
 ok(
@@ -424,10 +415,10 @@ for (const p of [
   ok(!src.includes('api.geoapify.com') && !src.includes('GEOAPIFY'), `${p} carries no API key or Geoapify URL`);
 }
 ok(
-  formFields.includes('startsWith(anchor)') && formFields.includes('onClearLocation()')
+  !formFields.includes('pinAnchorRef')
     && accountSheet.includes('startsWith(anchor)') && accountSheet.includes('setLocation(null)')
-    && formFields.includes('pinAnchorRef') && accountSheet.includes('pinAnchorRef'),
-  'editing the text away from the anchored pin (suggestion OR map pick) drops the stale pin'
+    && accountSheet.includes('pinAnchorRef'),
+  'cart has no editable text (no stale pin possible); account editing away from the anchored pin drops the stale pin'
 );
 ok(
   checkout.includes('lastSyncedAddressRef') && checkout.includes('addressEdited')

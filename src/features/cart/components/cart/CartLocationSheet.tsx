@@ -33,11 +33,11 @@ export const CartLocationSheet: React.FC<CartLocationSheetProps> = ({
     if (canDismiss) onCloseSheet(!!location);
   };
   return (
-      <div className="absolute inset-0 z-[60] flex items-end justify-center" role="dialog" aria-modal="true" aria-label={isAr ? 'تحديد موقع التوصيل' : 'Pin delivery location'}>
+      <div className="absolute inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={isAr ? 'تحديد موقع التوصيل' : 'Pin delivery location'}>
       <div onClick={requestClose} className="absolute inset-0 bg-black/60 anim-fade-in" aria-hidden="true" />
       {/* Animation on the wrapper, scrolling on the inner div — the body
           lock is held by the cart drawer underneath (shared counter). */}
-      <div className={`anim-drawer-in relative w-full max-h-[92vh] max-h-[92dvh] flex flex-col rounded-t-[24px] shadow-2xl overflow-hidden ${darkMode ? 'bg-[#141414] text-white border-t-2 border-[var(--primary)]' : 'bg-white text-[#0A0A0A] border-t-2 border-[var(--primary)]'}`}>
+      <div className={`anim-drawer-in relative w-full max-h-[92vh] max-h-[92dvh] flex flex-col rounded-t-[24px] shadow-2xl overflow-hidden sm:max-w-lg sm:rounded-[24px] border-t-2 sm:border-2 ${darkMode ? 'bg-[#141414] text-white border-[var(--primary)]' : 'bg-white text-[#0A0A0A] border-[var(--primary)]'}`}>
       <div data-lenis-prevent className="overflow-y-auto overscroll-contain smooth-scroll-touch no-scrollbar flex-1 min-h-0 p-5 pb-7 overflow-x-clip">
         <div className="w-11 h-1.5 rounded-full mx-auto mb-4 bg-neutral-400/50" />
         {/* Sticky header: X stays reachable while the map sheet scrolls. */}

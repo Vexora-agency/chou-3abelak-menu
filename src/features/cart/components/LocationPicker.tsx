@@ -36,7 +36,6 @@ const STR = {
     confirmAnyway: 'Confirm anyway - tap again',
     poorAcc: 'Weak fix - the pin may be far off. Drag it to correct, or tap confirm again to use it as-is.',
     unsupported: 'This browser has no location service — drag the pin to set your point.',
-    requiredHint: 'Pin your location on the map — required for delivery orders.',
     searchPh: 'Search street or landmark…',
     searching: 'Searching…',
     noResults: 'No results — pan the map or drag the pin.',
@@ -53,7 +52,6 @@ const STR = {
     unsupported: 'هذا المتصفح بلا خدمة موقع — اسحب المؤشر لتحديد نقطتك.',
     confirmAnyway: 'تأكيد رغم ذلك — اضغط مجددًا',
     poorAcc: 'الدقة ضعيفة — قد تكون النقطة بعيدة. اسحب المؤشر للتصحيح، أو اضغط التأكيد مجددًا للاعتماد كما هي.',
-    requiredHint: 'حدّد الدبوس على الخريطة — إلزامي لطلبات التوصيل.',
     searchPh: 'ابحث عن الشارع أو المعلم…',
     searching: 'جارٍ البحث…',
     noResults: 'لا توجد نتائج — حرّك الخريطة أو اسحب الدبوس.',
@@ -352,11 +350,8 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
 
   return (
     <div className="space-y-3">
-      {requirePin && (
-        <p role="note" className={`text-xs font-extrabold ${darkMode ? 'text-[var(--primary)]' : 'text-[#8a6d00]'}`}>{t.requiredHint}</p>
-      )}
       <div className="relative">
-        <div className={`flex items-center gap-2 rounded-2xl border px-3 ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
+        <div className={`flex items-center gap-2 rounded-2xl border px-3 shadow-xs focus-within:ring-2 focus-within:ring-[var(--primary)] transition-shadow ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
           <Search size={16} className={`shrink-0 ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`} aria-hidden="true" />
           <input
             type="text"
@@ -380,8 +375,10 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
             role="combobox"
             aria-expanded={searchAc.open}
             aria-controls="picker-search-listbox"
+            aria-activedescendant={searchAc.activeIndex >= 0 ? `picker-search-listbox-opt-${searchAc.activeIndex}` : undefined}
+            aria-autocomplete="list"
             aria-label={t.searchPh}
-            className={`w-full h-11 bg-transparent text-sm focus:outline-none ${darkMode ? 'text-white placeholder-neutral-500' : 'text-[#0A0A0A] placeholder-neutral-400'}`}
+            className={`w-full h-12 bg-transparent text-[15px] focus:outline-none ${darkMode ? 'text-white placeholder-neutral-500' : 'text-[#0A0A0A] placeholder-neutral-400'}`}
           />
           {searchAc.loading && <Loader2 size={15} className="animate-spin text-[var(--primary)]" aria-hidden="true" />}
         </div>
@@ -413,7 +410,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         </button>
       </div>
 
-      <div dir="ltr" className={`relative h-52 min-[380px]:h-56 sm:h-64 rounded-2xl overflow-hidden border ${darkMode ? 'border-neutral-700 bg-neutral-900' : 'border-neutral-300 bg-neutral-100'}`}>
+      <div dir="ltr" className={`relative h-60 min-[380px]:h-64 sm:h-72 rounded-2xl overflow-hidden border ${darkMode ? 'border-neutral-700 bg-neutral-900' : 'border-neutral-300 bg-neutral-100'}`}>
         <div ref={mapRef} className="absolute inset-0 z-0" />
         {!ready && !loadError && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2">

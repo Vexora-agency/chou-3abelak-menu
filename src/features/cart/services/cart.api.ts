@@ -82,8 +82,8 @@ export async function submitOrder(payload: SubmitOrderPayload, lang: 'en' | 'ar'
           orderNumber: null,
           trackToken: null,
           blockedMessage: msg || (lang === 'ar'
-            ? 'حدّد موقع التوصيل على الخريطة — الدبوس إلزامي لإتمام الطلب'
-            : 'Pin your delivery location on the map — required to place the order'),
+            ? 'يرجى اختيار موقع التوصيل على الخريطة لإتمام طلبك'
+            : 'Please choose your delivery location on the map to complete your order'),
           failure: 'blocked',
         };
       }

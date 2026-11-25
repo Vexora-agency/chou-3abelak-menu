@@ -12,9 +12,10 @@ found". Manual typing and pin-dragging keep working exactly as before.
   `GET /api/geo/autocomplete?q=…&lang=…&country=…` (debounced 350 ms, min
   3 chars, session cache, abort on keystroke).
 - The route validates the query, rate-limits (60/min per IP, 2500/day
-  global via `GEOAPIFY_DAILY_MAX`), calls Geoapify with
-  `filter=countrycode:<zone countries>` (the delivery-zone list is the
-  only source of truth — never the phone-dial country) plus proximity
+  global via `GEOAPIFY_DAILY_MAX`), calls Geoapify with a primary `filter=circle:<lng>,<lat>,<delivery-radius-m>`
+  around the restaurant pin (the served area itself; radius from the
+  delivery-zone maxKm), falling back to `filter=countrycode:<zone
+  countries>` without a stored pin, then the client hint, then unfiltered — plus proximity
   bias on the live map viewport (`lat`/`lng` from the picker when the
   customer is looking elsewhere, otherwise the restaurant pin), and
   returns only
@@ -24,15 +25,15 @@ found". Manual typing and pin-dragging keep working exactly as before.
   fills `line2` when the provider leaves it empty). Deep search: when
   the filtered pass returns fewer than 3 rows, the same query runs once
   more unfiltered and merges behind the zone matches (one extra provider
-  call only on thin results). When both Geoapify passes stay thin,
+  call only on thin results). Owner-curated places (`custom_places`, «جنب فرن فلان») rank above every provider pass. When the area pass stays thin,
   a third keyless stage queries Photon (Komoot OSM typeahead, free without
   a key) with the same viewport bias plus a local bbox, over smart recall
   variants (max 2 calls): normalized Arabic, latinized street-type
   («شارع» to «street», since OSM ways are often Latin-tagged), and a
   backoff that drops the first token (usually the city). Fallback variants
   search streets only (`osm_tag=highway`) so the retry returns named ways
-  instead of more cities. Rows carrying the
-  query street number rank first behind the zone matches. Worldwide service (no selected zones)
+  instead of more cities. Arabic queries retry once in English (a different Geoapify index slice), then up to 2 keyless Photon passes run the smart recall variants. Rows carrying the
+  query street number rank first behind the owner and area matches. Without a stored pin, worldwide service
   falls back to the client country hint, then to unfiltered.
 - The browser never sees the API key or the provider payload. Key missing →
   `503 autocomplete_unavailable`: the UI degrades silently to manual entry.
@@ -59,5 +60,6 @@ proxy, so there is no client bundle cost and the key cannot leak.
   (server), `src/hooks/useAddressAutocomplete.ts` +
   `src/components/AddressSuggestList.tsx` (shared UI).
 - Reverse geocoding rides a separate keyless proxy — see `docs/GEO_REVERSE.md`.
+- The region street index answers first, on-device — see `docs/STREET_INDEX.md`.
 - `npm run test:geo` (route + sanitizer, no network),
   `test:cart` Section G (wiring), `test:joint-groups` untouched.

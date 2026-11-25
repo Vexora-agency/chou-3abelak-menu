@@ -15,20 +15,19 @@
  * - Upstream failure → 502 { error: 'autocomplete_failed' }.
  * - Success → 200 { ok: true, results } via jsonNoStore (no-store).
  *
- * Ranking combines a strict country filter with proximity bias: the
- * filter comes from the delivery-zone countries (the service area —
- * the phone-dial country is NOT used), falling back to the client's
- * `country` hint only when zones are unknown; worldwide service means
- * no filter. The bias is the client's live map viewport (`lat`/`lng`)
+ * Ranking combines owner places first, then a strict area filter with
+ * proximity bias: owner-curated names («جنب فرن فلان») outrank every
+ * provider; the filter is a circle around the restaurant pin with the
+ * delivery radius when the pin is known (else the delivery-zone countries
+ * — the phone-dial country is NOT used — else the client `country` hint,
+ * else unfiltered). The bias is the client's live map viewport (`lat`/`lng`)
  * when supplied, else the restaurant pin parsed from the stored
  * menu.settings.mapUrl with parseMapUrlCoordsJs (skipped when missing).
  * Deep search: when the filtered pass returns fewer than MIN_RICH_RESULTS
- * rows, the same query runs once more unfiltered and merges behind the
- * zone matches, so side streets outside the zone list still surface. When
- * both Geoapify passes stay thin, up to 2 keyless Photon passes run over
- * smart recall variants (normalized Arabic, latinized street-type, token
- * backoff) with the same viewport bias plus a local bbox; rows carrying
- * the query's street number rank first.
+ * rows, the same query runs once more unfiltered, then once in English for
+ * Arabic queries (a different Geoapify index slice), then up to 2 keyless
+ * Photon passes over smart recall variants — all merged behind the owner
+ * and area matches, so side streets outside the list still surface.
  * Responses and logs never carry the key, the provider body, or the full query.
  */
 
@@ -38,6 +37,7 @@ import { hitRateLimit } from '../../_shared/ratelimit.js';
 import { parseMapUrlCoordsJs } from '../../_shared/eta.js';
 import {
   extractServiceCountries,
+  extractServiceRadiusM,
   fetchAutocomplete,
   isGeoapifyConfigured,
   mergeAutocompleteResults,
@@ -47,6 +47,7 @@ import {
   validateAutocompleteQuery,
 } from '../../_shared/geoapify.js';
 import { fetchPhoton, buildQueryVariants, rankAppendedByDigits } from '../../_shared/photon.js';
+import { searchCustomPlaces, customPlaceToSuggestion } from '../../_shared/repositories/places.repo.js';
 
 const IP_RATE_MAX = 60;
 const IP_RATE_WINDOW_SEC = 60;
@@ -134,19 +135,38 @@ export async function onRequest(context) {
   // picker sends its live center), rank nearby streets first instead of
   // the restaurant pin. Falls back to the restaurant pin when absent.
   const viewBias = parseLatLng(params.get('lat'), params.get('lng'));
-  const bias = viewBias || readBias(menu);
-  // Service-area countries first (the delivery-zone list is the source of
-  // truth — the phone-dial country is NOT the service area); the client
-  // hint is only a fallback when zones are unknown, and worldwide service
-  // means no filter at all.
+  const pin = readBias(menu);
+  const bias = viewBias || pin;
+  // Primary filter: a circle around the restaurant pin with the delivery
+  // radius (the served area itself) — strictly better than a country guess.
+  // Without a stored pin, fall back to the delivery-zone countries (the
+  // phone-dial country is NOT the service area), then the client hint.
+  const radiusM = extractServiceRadiusM(menu);
+  const circle = pin && radiusM ? { lat: pin.lat, lng: pin.lng, radiusM } : null;
   const zoneCountries = extractServiceCountries(menu);
-  const countries = zoneCountries.length > 0
-    ? zoneCountries
-    : normalizeCountryCodes(clientCountry);
+  const countries = circle
+    ? []
+    : (zoneCountries.length > 0 ? zoneCountries : normalizeCountryCodes(clientCountry));
+
+  // Owner-curated places first («جنب فرن فلان» beats any provider): the
+  // names customers actually use, with the exact pin the owner dropped.
+  // D1 missing/unreachable reads as empty — never a failure.
+  let head = [];
+  try {
+    const db = env ? env.ORDERS_DB : null;
+    if (db) {
+      const places = await searchCustomPlaces(db, q, lang);
+      head = (Array.isArray(places) ? places : [])
+        .map((p) => customPlaceToSuggestion(p, lang))
+        .filter(Boolean);
+    }
+  } catch {
+    head = [];
+  }
 
   let upstream;
   try {
-    upstream = await fetchAutocomplete(env, { text: q, lang, countries, bias });
+    upstream = await fetchAutocomplete(env, { text: q, lang, countries, circle, bias });
   } catch {
     return jsonNoStore({ error: 'autocomplete_failed' }, 502);
   }
@@ -156,18 +176,28 @@ export async function onRequest(context) {
     }
     return jsonNoStore({ error: 'autocomplete_failed' }, 502);
   }
-  let results = upstream.results;
-  // Deep second pass: when the zone filter leaves almost nothing (a side
-  // street outside the zone list, a new alley, a transliterated name),
-  // run the same query unfiltered and append. Zone matches keep priority;
-  // rows dedupe by coordinates. Costs one extra provider call only when
-  // the first pass is thin.
-  if (results.length < MIN_RICH_RESULTS && countries.length > 0) {
+  let results = mergeAutocompleteResults(head, upstream.results);
+  // Deep second pass: when the area filter leaves almost nothing (a side
+  // street outside the radius, a new alley, a transliterated name),
+  // run the same query unfiltered and append. Owner places and area
+  // matches keep priority; rows dedupe by coordinates. Costs one extra
+  // provider call only when the first pass is thin.
+  if (results.length < MIN_RICH_RESULTS && (countries.length > 0 || circle)) {
     try {
-      const open = await fetchAutocomplete(env, { text: q, lang, countries: [], bias });
+      const open = await fetchAutocomplete(env, { text: q, lang, countries: [], circle: null, bias });
       if (open && open.ok) results = mergeAutocompleteResults(results, open.results);
     } catch {
       /* keep the first-pass results */
+    }
+  }
+  // English retry for Arabic queries: Geoapify's Latin records are a
+  // different index slice than Photon's — one bounded call surfaces them.
+  if (results.length < MIN_RICH_RESULTS && lang === 'ar') {
+    try {
+      const en = await fetchAutocomplete(env, { text: q, lang: 'en', countries, circle, bias });
+      if (en && en.ok) results = mergeAutocompleteResults(results, en.results);
+    } catch {
+      /* keep what we have */
     }
   }
   // Deep third pass (free, keyless): when both Geoapify passes stay thin —

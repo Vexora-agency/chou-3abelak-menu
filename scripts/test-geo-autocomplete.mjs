@@ -22,6 +22,7 @@ import { createAsserts, makeKV, readJson } from './_helpers/shared.mjs';
 import {
   buildAutocompleteUrl,
   extractServiceCountries,
+  extractServiceRadiusM,
   fetchAutocomplete,
   isGeoapifyConfigured,
   mergeAutocompleteResults,
@@ -125,6 +126,12 @@ check(
 check('zone countries come only from selected mode', extractServiceCountries({ settings: { ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'LB' }, { cc: 'EG' }, { cc: 'xx' }] } } } }).join(',') === 'lb,eg,xx');
 check('zone countries ignore non-selected modes', extractServiceCountries({ settings: { ordering: { deliveryZones: { mode: 'all', countries: [{ cc: 'LB' }] } } } }).length === 0);
 check('zone countries fail open on garbage', extractServiceCountries(null).length === 0 && extractServiceCountries({}).length === 0);
+check('radius defaults to 100km without zones', extractServiceRadiusM(null) === 100000);
+check('radius reads maxKm', extractServiceRadiusM({ settings: { ordering: { deliveryZones: { maxKm: 30 } } } }) === 30000);
+check('radius clamps garbage', extractServiceRadiusM({ settings: { ordering: { deliveryZones: { maxKm: 0 } } } }) === null
+  && extractServiceRadiusM({ settings: { ordering: { deliveryZones: { maxKm: 5000 } } } }) === null);
+check('circle filter wins over country codes', new URL(buildAutocompleteUrl(KEY_ENV, { text: 'Beirut', countries: ['lb'], circle: { lat: 33.9, lng: 35.5, radiusM: 30000 } })).searchParams.get('filter') === 'circle:35.5,33.9,30000');
+check('circle rejects a tiny radius', new URL(buildAutocompleteUrl(KEY_ENV, { text: 'Beirut', countries: ['lb'], circle: { lat: 33.9, lng: 35.5, radiusM: 10 } })).searchParams.get('filter') === 'countrycode:lb');
 
 /* ---------- Photon deep-search fallback (keyless, OSM typeahead) ---------- */
 
@@ -472,12 +479,40 @@ try {
     res.status === 200 && body && body.ok === true
     && JSON.stringify(body.results) === JSON.stringify(expectedRichResults));
   check('route: rich zone pass needs no second call', calledUrls.length === 1);
+  // Owner places rank first: a matching custom place outranks every
+  // provider row and needs no extra provider call.
+  calledUrls = [];
+  const fakeDb = {
+    prepare: () => ({
+      all: async () => ({ results: [{
+        name_ar: 'دوار السيوف', name_en: 'El Soyouf Roundabout',
+        lat: 31.205, lng: 29.945, kind: 'landmark',
+        created_at: '2026-11-26T00:00:00.000Z', updated_at: null,
+      }] }),
+    }),
+  };
+  globalThis.fetch = async (url) => {
+    calledUrls.push(String(url));
+    return { ok: true, status: 200, json: async () => richPayload };
+  };
+  const resPlaces = await onRequest({
+    request: customerGet('/api/geo/autocomplete?q=%D8%A7%D9%84%D8%B3%D9%8A%D9%88%D9%81&lang=ar'),
+    env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv, ORDERS_DB: fakeDb },
+  });
+  const bodyPlaces = await readJson(resPlaces);
+  check('route: owner place ranks first with the saved-place line',
+    resPlaces.status === 200 && bodyPlaces && bodyPlaces.ok === true
+    && bodyPlaces.results.length >= 1
+    && bodyPlaces.results[0].line1 === 'دوار السيوف'
+    && bodyPlaces.results[0].line2 === 'مكان محفوظ'
+    && bodyPlaces.results[0].lat === 31.205 && bodyPlaces.results[0].lng === 29.945);
+  check('route: owner head needs no extra provider call', calledUrls.length === 1);
   check('route: success is no-store JSON', res.headers.get('Cache-Control') === 'no-store'
     && (res.headers.get('Content-Type') || '').includes('application/json'));
   check('route: response never carries the key', !JSON.stringify(body).includes('route-key-xyz'));
   check('route: upstream URL carries the key server-side', calledUrls[0].includes('route-key-xyz'));
-  check('route: upstream URL carries lang + zone-country filter', param(calledUrls[0], 'lang') === 'ar'
-    && param(calledUrls[0], 'filter') === 'countrycode:lb,eg');
+  check('route: upstream URL carries lang + circle filter around the pin', param(calledUrls[0], 'lang') === 'ar'
+    && param(calledUrls[0], 'filter') === 'circle:35.5018,33.8938,100000');
   check('route: upstream URL biases to the restaurant pin (LON,LAT)',
     param(calledUrls[0], 'bias') === 'proximity:35.5018,33.8938');
 
@@ -545,11 +580,13 @@ try {
     env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv },
   });
   const bodyThin = await readJson(resThin);
-  check('route: thin zone pass triggers the deep unfiltered pass', calledUrls.length === 3);
+  check('route: thin area pass triggers open + EN + photon passes', calledUrls.length === 4);
+  check('route: EN retry keeps the area filter with lang=en',
+    param(calledUrls[2], 'filter') === 'circle:35.5018,33.8938,100000' && param(calledUrls[2], 'lang') === 'en');
   check('route: deep pass drops the country filter but keeps the bias',
     param(calledUrls[1], 'filter') === null && param(calledUrls[1], 'bias') === 'proximity:35.5018,33.8938');
   check('route: photon pass carries the viewport bias without any key',
-    calledUrls[2].includes('photon.komoot.io') && !calledUrls[2].includes('route-key-xyz'));
+    calledUrls[3].includes('photon.komoot.io') && !calledUrls[3].includes('route-key-xyz'));
   check('route: merged results keep the zone row first and dedupe',
     resThin.status === 200 && bodyThin && bodyThin.ok === true
     && bodyThin.results.length === 3
@@ -629,6 +666,19 @@ try {
   check('route: missing KV skips bias and still succeeds',
     resNoKv.status === 200 && bodyNoKv && bodyNoKv.ok === true
     && calledUrls.length === 1 && param(calledUrls[0], 'bias') === null);
+
+  // No stored pin: the delivery-zone countries still filter the search.
+  {
+    const kvZones = makeKV();
+    await kvZones.put('menu', JSON.stringify({ settings: { ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'LB' }, { cc: 'EG' }] } } } }));
+    calledUrls = [];
+    const resZones = await onRequest({
+      request: customerGet('/api/geo/autocomplete?q=Verdun'),
+      env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kvZones },
+    });
+    check('route: pin-less zones fall back to the country filter',
+      resZones.status === 200 && param(calledUrls[0], 'filter') === 'countrycode:lb,eg');
+  }
 
   // Worldwide service (zones not selected): the client hint is the only
   // filter; with no hint either, the search runs unfiltered + unbiased.

@@ -68,6 +68,24 @@ export function extractServiceCountries(menu) {
 }
 
 /**
+ * Service radius in meters from the stored delivery zones (maxKm clamped
+ * 1..2000, default 100). Null when the menu is missing or maxKm is
+ * unusable — the caller then falls back to the country filter.
+ */
+export function extractServiceRadiusM(menu) {
+  try {
+    const settings = menu && typeof menu === 'object' ? menu.settings : null;
+    const ordering = settings && typeof settings === 'object' ? settings.ordering : null;
+    const zones = ordering && typeof ordering === 'object' ? ordering.deliveryZones : null;
+    const raw = zones && typeof zones === 'object' ? zones.maxKm : null;
+    const km = typeof raw === 'number' && Number.isFinite(raw) ? Math.round(raw) : 100;
+    if (km < 1 || km > 2000) return null;
+    return km * 1000;
+  } catch {
+    return null;
+  }
+}
+/**
  * Trimmed query when it is a 3..100 char string, else null.
  * The route maps null to 400 { error: 'invalid_query' }.
  */
@@ -88,6 +106,9 @@ export function validateAutocompleteQuery(q) {
  *   filter=countrycode:xx[,yy] (Geoapify accepts comma-separated codes).
  *   Anything else is dropped (fail open: the search still runs, just
  *   unfiltered).
+ * - circle: { lat, lng, radiusM } finite numbers — sent as
+ *   filter=circle:LON,LAT,RADIUS_M and wins over the country filter: the
+ *   delivery radius around the restaurant pin IS the served area.
  * - bias: { lng, lat } finite numbers only, sent as
  *   bias=proximity:LON,LAT (longitude first, per the Geoapify contract).
  */
@@ -105,11 +126,23 @@ export function buildAutocompleteUrl(env, options) {
   params.set('apiKey', apiKey);
   params.set('lang', lang);
   params.set('limit', String(RESULT_LIMIT));
-  const codes = normalizeCountryCodes(
-    Array.isArray(opts.countries) ? opts.countries : opts.country,
-  );
-  if (codes.length > 0) {
-    params.set('filter', `countrycode:${codes.join(',')}`);
+  const circle = opts.circle && typeof opts.circle === 'object' ? opts.circle : null;
+  const cLat = circle ? circle.lat : NaN;
+  const cLng = circle ? circle.lng : NaN;
+  const cR = circle ? circle.radiusM : NaN;
+  if (
+    typeof cLat === 'number' && Number.isFinite(cLat) && Math.abs(cLat) <= 90 &&
+    typeof cLng === 'number' && Number.isFinite(cLng) && Math.abs(cLng) <= 180 &&
+    typeof cR === 'number' && Number.isFinite(cR) && cR >= 1000 && cR <= 2000000
+  ) {
+    params.set('filter', `circle:${cLng},${cLat},${Math.round(cR)}`);
+  } else {
+    const codes = normalizeCountryCodes(
+      Array.isArray(opts.countries) ? opts.countries : opts.country,
+    );
+    if (codes.length > 0) {
+      params.set('filter', `countrycode:${codes.join(',')}`);
+    }
   }
   const bias = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
   const lng = bias ? bias.lng : NaN;

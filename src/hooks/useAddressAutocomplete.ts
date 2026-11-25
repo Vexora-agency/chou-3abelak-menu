@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { KeyboardEvent } from 'react';
+import { loadStreetIndex, matchRecentPlaces, mergeLocalFirst, saveRecentPlace, searchStreetIndex } from '../utils/streetIndex';
 
 export interface AddressSuggestion {
   label: string;
@@ -143,6 +144,27 @@ export function useAddressAutocomplete({
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       void (async () => {
+        // Instant local answers first, zero network, most personal first:
+        // this device's own picks, then the region street index. The server
+        // passes merge behind.
+        let local: AddressSuggestion[] = [];
+        try {
+          local = matchRecentPlaces(trimmed);
+          const idx = await loadStreetIndex(country, bias);
+          if (controller.signal.aborted) return;
+          if (idx) {
+            local = mergeLocalFirst(local, searchStreetIndex(idx.entries, trimmed, idx.cityAr, idx.cityEn, lang, 8, bias));
+            if (local.length > 0) {
+              setSuggestions(local);
+              setActiveIndex(-1);
+            }
+          } else if (local.length > 0) {
+            setSuggestions(local);
+            setActiveIndex(-1);
+          }
+        } catch {
+          /* local is best-effort; the server pass still runs */
+        }
         try {
           const params = new URLSearchParams({ q: trimmed, lang, country });
           if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
@@ -159,18 +181,26 @@ export function useAddressAutocomplete({
           if (!res.ok) throw new Error('geo autocomplete failed');
           const payload: unknown = await res.json();
           const items = extractSuggestions(payload);
-          cacheSet(key, items);
-          setSuggestions(items);
+          const merged = mergeLocalFirst(local, items);
+          cacheSet(key, merged);
+          setSuggestions(merged);
           setActiveIndex(-1);
           setError(false);
           setOpen(true);
         } catch {
           // Aborted by a newer keystroke/unmount: leave state to the next run.
           if (controller.signal.aborted) return;
-          // Silent fallback: manual typing keeps working, no banner.
-          setSuggestions([]);
-          setActiveIndex(-1);
-          setError(true);
+          // Silent fallback: local streets (when any) keep working, else
+          // manual typing keeps working, no banner.
+          if (local.length > 0) {
+            setSuggestions(local);
+            setActiveIndex(-1);
+            setError(false);
+          } else {
+            setSuggestions([]);
+            setActiveIndex(-1);
+            setError(true);
+          }
         } finally {
           if (!controller.signal.aborted) setLoading(false);
         }
@@ -185,6 +215,8 @@ export function useAddressAutocomplete({
 
   const selectSuggestion = useCallback((s: AddressSuggestion) => {
     setPickedLabel(s.label);
+    // Remember this device's own pick for instant future suggestions.
+    try { saveRecentPlace(s); } catch {}
     // Drop stale results so refocusing the field never pops the old list
     // back open without the user typing again.
     setSuggestions([]);

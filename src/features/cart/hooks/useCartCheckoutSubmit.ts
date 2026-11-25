@@ -6,7 +6,7 @@ import { formatPrice } from '@/src/utils/pricing';
 import { serverNow } from '@/src/utils/serverTime';
 import { fetchOrderingStatus, type OrderingStatus } from '@/src/utils/status';
 import { checkPhone, dialFromSettings } from '@/src/utils/phoneCountry';
-import { loadRememberedDetails, loadSavedEmail, saveCustomerOrder, saveEmailAddress, saveRememberedDetails, withoutAddress } from '@/src/utils/customerOrders';
+import { loadRememberedDetails, loadSavedEmail, saveCustomerOrder, saveEmailAddress, saveRememberedDetails, withoutNotes } from '@/src/utils/customerOrders';
 import { pinAddress } from './useMidSplitLocationMap';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
 import { formatMMSS } from '@/src/utils/countdown';
@@ -80,7 +80,9 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
     const merged: CustomerDetails = remembered
       ? { ...base, ...(remembered as Partial<CustomerDetails>) }
       : { ...base };
-    merged.address = '';
+    // Notes are per-order and never remembered: a stale "no onions"
+    // from a previous order must never prefill the next one.
+    merged.notes = '';
     // Smart email prefill: the standalone email memory survives even when
     // "remember my details" was never checked (legacy blobs carry no email).
     if (!merged.email) {
@@ -104,13 +106,9 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
 
   // Shared delivery location (React state only — never persisted, never
   // logged). Members may start from their saved default pin once; guests
-  // start pin-less. The device "remember me" blob never restores a pin, so a
-  // stale pin from another visit/city cannot ride along silently. Pinning is
-  // OPTIONAL at checkout — a typed address alone is enough; a fresh pin is a
-  // precision bonus (exact Telegram link, distance-based fee). Clearing the
-  // pin is respected until the profile pin changes. Text + pin travel as a
-  // pair: typing refines the address but keeps the pin (explicit X removes
-  // it).
+  // start pin-less. The device "remember me" blob restores name, phone and
+  // address but never a pin, so a stale pin from another visit/city cannot
+  // ride along silently. Pinning is REQUIRED at checkout for delivery.
   const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [locSheetOpen, setLocSheetOpen] = useState(false);
 
@@ -491,11 +489,12 @@ export function useCartCheckoutSubmit({ menu, lines, lang, currency, orderingSta
         })();
 
     // Save remember details (checked = persist, unchecked = erase). The
-    // device opt-in is available to guests AND signed-in members; the pin is
-    // never persisted, and withoutAddress() still drops the delivery address
-    // so a stale address from another visit can never ride along.
+    // device opt-in is available to guests AND signed-in members. Name,
+    // phone and the pin-derived address are remembered; the per-order
+    // special instructions are stripped so they never prefill the next
+    // order. The pin itself is never persisted (session-only).
     saveRememberedDetails(
-      withoutAddress({ ...customerToSave, remember: customerToSave.remember })
+      withoutNotes({ ...customerToSave, remember: customerToSave.remember })
     );
 
     // Record the order on the server. Transport lives in

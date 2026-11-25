@@ -95,8 +95,9 @@ ok('next new order rings again', isSoundOff() === false);
 
 // Pins are session-only and never remembered: a remembered record carries
 // no location, so no stale pin from another visit/city can hide inside it.
-// (The address is likewise never stored — see withoutAddress + the hook;
-// this raw-util check only covers the pin-shaped keys.)
+// (Name, phone and the pin-derived address ARE stored — see withoutNotes +
+// the hook; per-order special instructions are stripped instead. This
+// raw-util check only covers the pin-shaped keys.)
 saveRememberedDetails({ name: 'Ali', phone: '70123456', address: 'Hamra', remember: true });
 const det = loadRememberedDetails();
 ok('remembered details carry no pin', det !== null && !('location' in det) && !('lat' in det) && !('lng' in det));

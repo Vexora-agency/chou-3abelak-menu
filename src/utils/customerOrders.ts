@@ -122,9 +122,26 @@ function detailsShelf(): Storage | null {
  * fresh on EVERY order and must never persist (a stale address from
  * another visit/city is worse than an empty field). Everything else
  * (name, phone, email, remember flag) passes through untouched.
+ *
+ * NOTE: kept for backward compatibility (tests + legacy call sites).
+ * The checkout now uses withoutNotes() instead: name, phone and the
+ * pin-derived address ARE remembered, while the per-order special
+ * instructions are never stored.
  */
 export function withoutAddress<T extends { address?: unknown }>(customer: T): Omit<T, 'address'> {
   const { address: _omit, ...rest } = customer;
+  void _omit;
+  return rest;
+}
+
+/**
+ * Strip per-order special instructions before remembering: name, phone
+ * and address persist on the device, but the notes field (e.g. "no
+ * onions, extra sauce") belongs to a single order and must never
+ * prefill the next one.
+ */
+export function withoutNotes<T extends { notes?: unknown }>(customer: T): Omit<T, 'notes'> {
+  const { notes: _omit, ...rest } = customer;
   void _omit;
   return rest;
 }

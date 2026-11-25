@@ -1,5 +1,6 @@
-import { useMemo, useState, type FC } from 'react';
+import { useMemo, useRef, useState, type FC } from 'react';
 import { adminFetch } from '@/src/lib/api-client';
+import { LinkedOrdersConnector } from './LinkedOrdersConnector';
 import { AnimatePresence, motion } from 'motion/react';
 import { BellRing, BadgeCheck, Ban, Check, ChevronDown, Inbox, Link2, Loader2, MapPin, MessageCircle, Phone, StickyNote, Store, X } from 'lucide-react';
 import { STR } from './ordersDashTypes';
@@ -281,6 +282,7 @@ const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t,
   // Joint delivery = one customer: trusting one member's flag trusts the
   // whole group (same phone, same story) so a sibling badge never lingers.
   const [busy, setBusy] = useState(false);
+  const membersRef = useRef<HTMLDivElement | null>(null);
   const trustGroup = onTrustReview
     ? async (id: string): Promise<boolean> => {
         const flagged = members.filter((m) => m.needsReview === true);
@@ -302,7 +304,6 @@ const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t,
       action = { label: t.alignBoth(active.length), targets: active.filter((m) => m.status === 'new').map((m) => ({ id: m.id, status: 'confirmed' as OrderStatus })) };
     }
   }
-  const combined = members.reduce((s, m) => s + (typeof m.total === 'number' && Number.isFinite(m.total) ? m.total : 0), 0);
   const run = async () => {
     if (!action || busy) return;
     setBusy(true);
@@ -318,37 +319,45 @@ const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t,
     <motion.div layout="position"
       initial={{ opacity: 1, y: -12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="rounded-2xl border-2 border-[var(--primary)]/40 bg-neutral-900/80 overflow-hidden">
-      <div className="px-3.5 pt-3 pb-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-[var(--primary)]/20">
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[var(--primary)]" dir="auto">
-          <Link2 size={13} />{t.jointTitle(members.length)}
+      className="rounded-3xl border border-[var(--primary)]/50 bg-black/60 overflow-hidden shadow-[0_0_36px_-14px_rgba(212,175,55,0.45)]">
+      {/* Group header: glowing link medallion + joint title + numbers pill. */}
+      <div className="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 pt-3.5 sm:pt-4 pb-3">
+        <span className="shrink-0 w-10 h-10 rounded-full border-2 border-[var(--primary)] bg-[#0A0A0A] text-[var(--primary)] flex items-center justify-center shadow-[0_0_14px_rgba(212,175,55,0.55)]" aria-hidden="true">
+          <Link2 size={17} strokeWidth={2.5} />
         </span>
-        <span className="text-[11px] font-extrabold tabular-nums text-neutral-200" dir="ltr">
+        <span className="min-w-0 flex-1 text-sm sm:text-[15px] font-black text-[var(--primary)] truncate" dir="auto">
+          {t.jointTitle(members.length)}
+        </span>
+        <span className="hidden min-[380px]:block h-px flex-1 min-w-4 bg-[var(--primary)]/30" aria-hidden="true" />
+        <span className="shrink-0 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-black px-3 py-1.5 tabular-nums shadow-md" dir="ltr">
           #{members.map((m) => m.number).join(' + #')}
         </span>
-        <span className="ms-auto text-[11px] font-extrabold tabular-nums text-neutral-300" dir="ltr">
-          {fmt(combined)} <span dir="auto">{currency}</span>
-        </span>
       </div>
-      <div className="p-1.5 space-y-2">
+      <div ref={membersRef} className="relative space-y-2.5 px-3 sm:px-3.5 pb-3 pe-9 sm:pe-10">
+        <LinkedOrdersConnector
+          lang={isAr ? 'ar' : 'en'}
+          containerRef={membersRef}
+          layoutKey={`${members.map((m) => m.id).join('|')}|${openId ?? 'closed'}`}
+        />
         {members.map((m) => (
-          <OrderRow
-            key={m.id}
-            o={m}
-            menu={menu}
-            open={openId === m.id}
-            onToggleOpen={onToggleOpen}
-            t={t}
-            isAr={isAr}
-            currency={currency}
-            now={now}
-            flashId={flashId}
-            onStatusChange={onStatusChange}
-            onConfirm={onConfirm}
-            onTrustReview={trustGroup}
-            onBlockPhone={onBlockPhone}
-            inGroup
-          />
+          <div key={m.id} data-link-row className="relative">
+            <OrderRow
+              o={m}
+              menu={menu}
+              open={openId === m.id}
+              onToggleOpen={onToggleOpen}
+              t={t}
+              isAr={isAr}
+              currency={currency}
+              now={now}
+              flashId={flashId}
+              onStatusChange={onStatusChange}
+              onConfirm={onConfirm}
+              onTrustReview={trustGroup}
+              onBlockPhone={onBlockPhone}
+              inGroup
+            />
+          </div>
         ))}
       </div>
       {action && (

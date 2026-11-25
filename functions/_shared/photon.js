@@ -32,6 +32,9 @@ export function buildPhotonUrl(options) {
   params.set('q', raw);
   params.set('lang', lang);
   params.set('limit', String(RESULT_LIMIT));
+  // Streets-only fallback: osm_tag=highway drops cities/districts/POIs so a
+  // thin retry returns named ways («شارع 16») instead of more localities.
+  if (opts.osmTag === 'highway') params.set('osm_tag', 'highway');
   const bias = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
   const lat = bias ? bias.lat : NaN;
   const lon = bias ? bias.lng : NaN;

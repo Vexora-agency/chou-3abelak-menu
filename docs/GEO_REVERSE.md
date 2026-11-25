@@ -29,9 +29,11 @@ unreachable. Exact-delivery details (building/floor/apartment/landmark,
 `composePreciseAddress`) are appended at Confirm time, so the order carries
 one exact line: reverse text + structured details + pin coordinates.
 
-Free Esri World Imagery backs the optional satellite layer in the picker
-(attribution rendered on the tiles) — rooftops and entrances identify the
-exact building where street data is thin.
+Exact-delivery details live behind one toggle («العنوان غير دقيق؟ أضف
+تفاصيل المبنى»): the map stays clean, and a customer whose preview reads
+wrong expands building/floor/apartment/landmark in place. The composed
+line is previewed live and written on Confirm. A GPS accuracy ring and a
+zoom-for-precision hint keep hand pins honest without blocking.
 
 ## Contracts
 

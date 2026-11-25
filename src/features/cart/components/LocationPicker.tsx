@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type * as Leaflet from 'leaflet';
-import { Loader2, Navigation, Search } from 'lucide-react';
+import { ChevronDown, Loader2, Navigation, Search } from 'lucide-react';
 import { AUTO_LOCATE_OPTIONS, composePreciseAddress, reverseGeocode, round5, shouldAutoLocateOnOpen, useMidSplitLocationMap } from '../hooks/useMidSplitLocationMap';
 import { LocationAddressPreview } from './location/LocationAddressPreview';
 import { useAddressAutocomplete } from '@/src/hooks/useAddressAutocomplete';
@@ -39,7 +39,7 @@ const STR = {
     searchPh: 'Search street or landmark…',
     searching: 'Searching…',
     noResults: 'No results — try just the street name and number, or drag the pin.',
-    layerStreets: 'Streets', layerSat: 'Satellite', layerLabel: 'Map layer',
+    addDetails: 'Address not precise? Add building details', hideDetails: 'Hide details',
     zoomHint: 'Zoom in for a precise pin — the address follows the pin.',
     detailsTitle: 'Exact delivery details (optional)',
     bBuilding: 'Building', bFloor: 'Floor', bApt: 'Apartment', bLandmark: 'Landmark',
@@ -60,7 +60,7 @@ const STR = {
     searchPh: 'ابحث عن الشارع أو المعلم…',
     searching: 'جارٍ البحث…',
     noResults: 'لا توجد نتائج — جرّب اسم الشارع ورقمه فقط، أو اسحب الدبوس.',
-    layerStreets: 'خريطة', layerSat: 'قمر صناعي', layerLabel: 'طبقة الخريطة',
+    addDetails: 'العنوان غير دقيق؟ أضف تفاصيل المبنى', hideDetails: 'إخفاء التفاصيل',
     zoomHint: 'قرّب الخريطة لتثبيت دقيق — العنوان يتبع الدبوس.',
     detailsTitle: 'تفاصيل دقيقة للتوصيل (اختياري)',
     bBuilding: 'المبنى', bFloor: 'الدور', bApt: 'الشقة', bLandmark: 'علامة مميزة',
@@ -119,11 +119,10 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(
     initial ? { lat: initial.lat, lng: initial.lng } : { lat: fallback.lat, lng: fallback.lng }
   );
-  // Streets vs satellite (free Esri imagery): rooftops and entrances are
-  // what identify the exact building in dense blocks — a pro precision win.
-  const [layer, setLayer] = useState<'streets' | 'sat'>('streets');
-  const streetsRef = useRef<Leaflet.TileLayer | null>(null);
-  const satRef = useRef<Leaflet.TileLayer | null>(null);
+  // Exact-delivery details live behind one professional toggle (collapsed by
+  // default): the map stays clean, and a customer whose address reads wrong
+  // expands building/floor/apartment/landmark in place.
+  const [detailsOpen, setDetailsOpen] = useState(false);
   // GPS uncertainty ring: drawn for auto fixes, cleared on any hand move.
   const circleRef = useRef<Leaflet.Circle | null>(null);
   // Zoomed-out pins are street-accurate at best — nudge closer, never block.
@@ -153,16 +152,12 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         const start: [number, number] = initial ? [initial.lat, initial.lng] : [fallback.lat, fallback.lng];
         const map = L.map(mapRef.current, { zoomControl: true }).setView(start, 16);
         map.attributionControl.setPrefix(false);
-        streetsRef.current = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        });
-        streetsRef.current.on('tileerror', () => setTilesFailed(true)).addTo(map);
-        // Free Esri World Imagery (attribution required, set below).
-        satRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-          maxZoom: 19,
-          attribution: 'Imagery &copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics',
-        });
+        })
+          .on('tileerror', () => setTilesFailed(true))
+          .addTo(map);
         const icon = L.divIcon({
           className: 'loc-div-icon',
           html: '<div style="width:34px;height:34px;border-radius:50%;background:var(--primary);border:3px solid #0A0A0A;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.45)"><div style="width:10px;height:10px;border-radius:50%;background:#0A0A0A"></div></div>',
@@ -252,21 +247,6 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
       circleRef.current?.remove();
     } catch {}
     circleRef.current = null;
-  };
-
-  const switchLayer = (next: 'streets' | 'sat') => {
-    setLayer(next);
-    try {
-      const map = mapObj.current;
-      if (!map) return;
-      if (next === 'sat') {
-        if (streetsRef.current) map.removeLayer(streetsRef.current);
-        satRef.current?.addTo(map);
-      } else {
-        if (satRef.current) map.removeLayer(satRef.current);
-        streetsRef.current?.addTo(map);
-      }
-    } catch {}
   };
 
   const moveTo = (lat: number, lng: number, accuracy: number, zoom = 16) => {
@@ -544,19 +524,6 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
             {point.lat}, {point.lng}
           </div>
         )}
-        <div className="absolute z-[500] top-2 end-2 flex gap-1 rounded-full bg-black/60 p-1" role="group" aria-label={t.layerLabel}>
-          {(['streets', 'sat'] as const).map((l) => (
-            <button
-              key={l}
-              type="button"
-              onClick={() => switchLayer(l)}
-              aria-pressed={layer === l}
-              className={`h-9 min-h-[36px] px-3 rounded-full text-[11px] font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${layer === l ? 'bg-white text-black' : 'text-white/80'}`}
-            >
-              {l === 'streets' ? t.layerStreets : t.layerSat}
-            </button>
-          ))}
-        </div>
       </div>
 
       {tilesFailed && (
@@ -570,6 +537,16 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
       {point && zoomLow && (
         <p role="status" className={`text-[11px] font-bold ${darkMode ? 'text-neutral-400' : 'text-neutral-500'}`}>{t.zoomHint}</p>
       )}
+      <button
+        type="button"
+        onClick={() => setDetailsOpen((v) => !v)}
+        aria-expanded={detailsOpen}
+        className={`w-full h-11 min-h-[44px] rounded-full border text-xs font-black inline-flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 text-neutral-200' : 'border-neutral-300 text-neutral-700'}`}
+      >
+        {detailsOpen ? t.hideDetails : t.addDetails}
+        <ChevronDown size={15} className={`transition-transform ${detailsOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+      </button>
+      {detailsOpen && (
       <div className={`rounded-2xl border p-3 ${darkMode ? 'border-neutral-700 bg-black/40' : 'border-neutral-300 bg-neutral-100'}`}>
         <p className={`text-xs font-black mb-2 ${darkMode ? 'text-neutral-200' : 'text-neutral-700'}`}>{t.detailsTitle}</p>
         <div className="grid grid-cols-3 gap-2" dir={isAr ? 'rtl' : 'ltr'}>
@@ -627,6 +604,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           />
         </label>
       </div>
+      )}
       {addrWarn && (
         <p role="status" className="text-xs font-bold text-amber-500">{t.addrFail}</p>
       )}

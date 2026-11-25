@@ -181,6 +181,8 @@ check('bbox centers on the bias', bboxAround({ lat: 31.2, lng: 29.95 }) === '29.
 check('bbox rejects garbage', bboxAround(null) === null && bboxAround({ lat: 91, lng: 0 }) === null);
 check('photon url carries bbox with a bias', new URL(buildPhotonUrl({ text: 'street', bias: { lat: 31.2, lng: 29.95 } })).searchParams.get('bbox') === '29.7,30.95,30.2,31.45');
 check('photon url has no bbox without a bias', new URL(buildPhotonUrl({ text: 'street' })).searchParams.get('bbox') === null);
+check('photon: osm_tag=highway narrows the fallback to streets', new URL(buildPhotonUrl({ text: 'street 16', osmTag: 'highway' })).searchParams.get('osm_tag') === 'highway');
+check('photon: no osm_tag by default', new URL(buildPhotonUrl({ text: 'street 16' })).searchParams.get('osm_tag') === null);
 check(
   'digit ranking lifts the numbered street behind the zone rows',
   (() => {
@@ -583,6 +585,13 @@ try {
     resFallback.status === 200 && bodyFallback && bodyFallback.ok === true
     && bodyFallback.results.length === 3
     && bodyFallback.results[2].label.includes('Street 16'));
+  check('route: fallback variant searches streets only (osm_tag=highway)',
+    (() => {
+      const photonCalls = calledUrls.filter((u) => String(u).includes('photon.komoot.io'));
+      return photonCalls.length === 2
+        && new URL(photonCalls[1]).searchParams.get('osm_tag') === 'highway'
+        && new URL(photonCalls[1]).searchParams.get('q') === 'El Soyouf Street 16';
+    })());
 
   // Map viewport bias: a lat/lng from the picker outranks the restaurant
   // pin; garbage viewports fall back to the pin.

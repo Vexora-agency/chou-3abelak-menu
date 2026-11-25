@@ -184,10 +184,17 @@ export async function onRequest(context) {
       let fresh = [];
       const variants = buildQueryVariants(q).slice(0, 3);
       let photonCalls = 0;
-      for (const variant of variants) {
+      for (let vi = 0; vi < variants.length; vi += 1) {
         if (zoneRows.length + fresh.length >= MIN_RICH_RESULTS || photonCalls >= 2) break;
         photonCalls += 1;
-        const deep = await fetchPhoton(null, { text: variant, lang, bias });
+        // Fallback variants (shorter/latinized) search streets only: they
+        // exist to surface named ways, not more cities or POIs.
+        const deep = await fetchPhoton(null, {
+          text: variants[vi],
+          lang,
+          bias,
+          osmTag: vi > 0 ? 'highway' : undefined,
+        });
         if (!deep || !deep.ok || !Array.isArray(deep.results) || deep.results.length === 0) continue;
         fresh = mergeAutocompleteResults(fresh, deep.results);
       }

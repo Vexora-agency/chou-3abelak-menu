@@ -29,7 +29,9 @@ found". Manual typing and pin-dragging keep working exactly as before.
   a key) with the same viewport bias plus a local bbox, over smart recall
   variants (max 2 calls): normalized Arabic, latinized street-type
   («شارع» to «street», since OSM ways are often Latin-tagged), and a
-  backoff that drops the first token (usually the city). Rows carrying the
+  backoff that drops the first token (usually the city). Fallback variants
+  search streets only (`osm_tag=highway`) so the retry returns named ways
+  instead of more cities. Rows carrying the
   query street number rank first behind the zone matches. Worldwide service (no selected zones)
   falls back to the client country hint, then to unfiltered.
 - The browser never sees the API key or the provider payload. Key missing →

@@ -281,8 +281,10 @@ interface GroupCardProps extends Omit<OrderRowProps, 'o' | 'open'> {
 const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t, isAr, currency, now, flashId, onStatusChange, onConfirm, onTrustReview, onBlockPhone }) => {
   // Joint delivery = one customer: trusting one member's flag trusts the
   // whole group (same phone, same story) so a sibling badge never lingers.
+  // The members container is captured with a callback ref into state, so
+  // the connector's effect re-runs exactly when the element attaches.
   const [busy, setBusy] = useState(false);
-  const membersRef = useRef<HTMLDivElement | null>(null);
+  const [membersEl, setMembersEl] = useState<HTMLDivElement | null>(null);
   const trustGroup = onTrustReview
     ? async (id: string): Promise<boolean> => {
         const flagged = members.filter((m) => m.needsReview === true);
@@ -325,18 +327,19 @@ const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t,
         <span className="shrink-0 w-10 h-10 rounded-full border-2 border-[var(--primary)] bg-[#0A0A0A] text-[var(--primary)] flex items-center justify-center shadow-[0_0_14px_rgba(212,175,55,0.55)]" aria-hidden="true">
           <Link2 size={17} strokeWidth={2.5} />
         </span>
-        <span className="min-w-0 flex-1 text-sm sm:text-[15px] font-black text-[var(--primary)] truncate" dir="auto">
-          {t.jointTitle(members.length)}
+        <span className="min-w-0 flex-1 text-[13px] sm:text-[15px] font-black text-[var(--primary)]" dir="auto">
+          <span className="hidden min-[420px]:inline">{t.jointTitle(members.length)}</span>
+          <span className="min-[420px]:hidden">{t.jointShort(members.length)}</span>
         </span>
         <span className="hidden min-[380px]:block h-px flex-1 min-w-4 bg-[var(--primary)]/30" aria-hidden="true" />
-        <span className="shrink-0 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-xs font-black px-3 py-1.5 tabular-nums shadow-md" dir="ltr">
+        <span className="shrink-0 rounded-full bg-[var(--primary)] text-[#0A0A0A] text-[11px] sm:text-xs font-black px-2.5 sm:px-3 py-1.5 tabular-nums shadow-md whitespace-nowrap" dir="ltr">
           #{members.map((m) => m.number).join(' + #')}
         </span>
       </div>
-      <div ref={membersRef} className="relative space-y-2.5 px-3 sm:px-3.5 pb-3 pe-9 sm:pe-10">
+      <div ref={setMembersEl} className="relative space-y-2.5 px-3 sm:px-3.5 pb-3 pe-11">
         <LinkedOrdersConnector
           lang={isAr ? 'ar' : 'en'}
-          containerRef={membersRef}
+          containerEl={membersEl}
           layoutKey={`${members.map((m) => m.id).join('|')}|${openId ?? 'closed'}`}
         />
         {members.map((m) => (

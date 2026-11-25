@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FC } from 'react';
+import { createPortal } from 'react-dom';
 import { Info, ShieldCheck, Ban } from 'lucide-react';
 
 /** Short bilingual labels for backend risk reason codes. Unknown codes render raw. */
@@ -38,11 +39,15 @@ export const OrderReviewBadge: FC<OrderReviewBadgeProps> = ({
   const [trustBusy, setTrustBusy] = useState(false);
   const [trustFailed, setTrustFailed] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);
+  const popRef = useRef<HTMLSpanElement>(null);
   const isAr = lang === 'ar';
   useEffect(() => {
     if (!open) return;
     const onDocClick = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node | null;
+      if (wrapRef.current && wrapRef.current.contains(t)) return;
+      if (popRef.current && popRef.current.contains(t)) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
@@ -62,17 +67,28 @@ export const OrderReviewBadge: FC<OrderReviewBadgeProps> = ({
 
   return (
     <span ref={wrapRef} className="shrink-0 inline-flex">
-      <button
-        type="button"
+      {/* Plain span (not a <button>): the row header itself is a button, so a
+          nested button would be invalid HTML. Keyboard support included. */}
+      <span
+        role="button"
+        tabIndex={0}
         onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen((v) => !v);
+          }
+        }}
         aria-label={isAr ? 'تنبيه مراجعة: اضغط لعرض الأسباب' : 'Review alert: tap to see reasons'}
         aria-expanded={open}
+        aria-haspopup="dialog"
         title={tip || undefined}
-        className="w-6 h-6 min-w-[24px] min-h-[24px] rounded-full border border-amber-400/60 bg-amber-400/10 text-amber-300 flex items-center justify-center hover:bg-amber-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+        className="w-6 h-6 min-w-[24px] min-h-[24px] rounded-full border border-amber-400/60 bg-amber-400/10 text-amber-300 flex items-center justify-center cursor-pointer select-none hover:bg-amber-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
       >
         <Info size={13} strokeWidth={2.5} aria-hidden="true" />
-      </button>
-      {open && (
+      </span>
+      {open && typeof document !== 'undefined' && createPortal(
         <span
           className="fixed inset-0 z-[70] flex items-center justify-center p-4"
           onClick={(e) => { e.stopPropagation(); }}
@@ -83,6 +99,7 @@ export const OrderReviewBadge: FC<OrderReviewBadgeProps> = ({
             onClick={(e) => { e.stopPropagation(); setOpen(false); }}
           />
           <span
+            ref={popRef}
             role="dialog"
             aria-label={isAr ? 'أسباب المراجعة' : 'Review reasons'}
             className="relative w-full max-w-[320px] rounded-2xl border border-amber-400/30 bg-[#171717] p-4 text-start shadow-[0_18px_50px_-12px_rgba(0,0,0,0.8)]"
@@ -143,7 +160,8 @@ export const OrderReviewBadge: FC<OrderReviewBadgeProps> = ({
             </button>
           </span>
         </span>
-        </span>
+        </span>,
+        document.body
       )}
     </span>
   );

@@ -1,13 +1,15 @@
-import { useLayoutEffect, useState, type FC, type RefObject } from 'react';
+import { useLayoutEffect, useState, type FC } from 'react';
 import { Link2 } from 'lucide-react';
 
 interface LinkedOrdersConnectorProps {
   lang: 'en' | 'ar';
-  /** Relative-positioned wrapper that holds the member rows. */
-  containerRef: RefObject<HTMLDivElement | null>;
+  /** Mounted member-list element (callback-ref state from the parent, so the
+   *  effect re-runs exactly when the element attaches — never a stale null). */
+  containerEl: HTMLDivElement | null;
   /** Re-run measurement when this changes (member count, expand/collapse). */
   layoutKey: string | number;
-  /** Rail distance from the container's inline-end edge (px). */
+  /** Rail distance from the container's inline-end edge (px). Fits a 36px
+   *  medallion fully inside the gutter with room to spare. */
   railInset?: number;
   /** Stub length from the rail toward the cards (px). */
   stubLen?: number;
@@ -34,16 +36,16 @@ interface Geom {
  */
 export const LinkedOrdersConnector: FC<LinkedOrdersConnectorProps> = ({
   lang,
-  containerRef,
+  containerEl,
   layoutKey,
-  railInset = 16,
-  stubLen = 22,
+  railInset = 22,
+  stubLen = 24,
 }) => {
   const isAr = lang === 'ar';
   const [geom, setGeom] = useState<Geom | null>(null);
 
   useLayoutEffect(() => {
-    const container = containerRef.current;
+    const container = containerEl;
     if (!container) return;
     let raf = 0;
     // Synchronous read (offset* forces layout — safe here): background tabs
@@ -88,7 +90,7 @@ export const LinkedOrdersConnector: FC<LinkedOrdersConnectorProps> = ({
       ros.forEach((ro) => ro.disconnect());
       window.removeEventListener('resize', measure);
     };
-  }, [containerRef, layoutKey, isAr, railInset, stubLen]);
+  }, [containerEl, layoutKey, isAr, railInset, stubLen]);
 
   if (!geom || geom.points.length < 2) return null;
   const { railX, stubX, points, mid } = geom;

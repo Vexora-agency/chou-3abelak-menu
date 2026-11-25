@@ -70,10 +70,8 @@ ok('local first, server deduped', merged.length === 2 && merged[0] === local[0] 
 ok('merge never throws on garbage', mergeLocalFirst(null, null).length === 0);
 
 ok('irrelevant country loads nothing (no network)', await loadStreetIndex('lb', null) === null);
-ok('irrelevant viewport loads nothing (no network)', await loadStreetIndex('', { lat: 33.9, lng: 35.5 }) === null);
 
-/* Device-local recents (private by design: this device only). */
-{
+/* Device-local recents (private by design: this device only). */{
   const store = new Map();
   globalThis.window = {
     localStorage: {
@@ -110,6 +108,33 @@ if (!existsSync(fixture)) {
   const mapped = file.entries.map((r) => ({ ar: r[0] || '', la: r[1], lat: r[2], lng: r[3] }));
   const smoke = searchStreetIndex(mapped, 'شارع', file.cityAr, file.cityEn, 'ar');
   ok('fixture answers شارع instantly', smoke.length > 0 && smoke.length <= 8);
+  // Loader integration (stubbed network): manifest → file → search.
+  // Runs BEFORE the no-network tests so a real failed fetch can never
+  // poison the 30s manifest retry window.
+  const realFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url) => {
+      const u = String(url);
+      if (u.endsWith('/manifest.json')) {
+        return { ok: true, json: async () => ({ indexes: [{ id: 'alex-east', country: 'eg', bbox: [31.1, 29.8, 31.3, 30.1] }] }) };
+      }
+      if (u.endsWith('/alex-east.json')) return { ok: true, json: async () => file };
+      return { ok: false, status: 404, json: async () => ({}) };
+    };
+    const byCountry = await loadStreetIndex('eg', null);
+    ok('loader picks the index by country', !!byCountry && byCountry.entries.length > 500);
+    const byViewport = await loadStreetIndex('', { lat: 31.2, lng: 29.95 });
+    ok('loader picks the index by viewport bbox', !!byViewport && byViewport.id === 'alex-east');
+    if (byCountry) {
+      const exact = searchStreetIndex(byCountry.entries, 'شارع السيوف', byCountry.cityAr, byCountry.cityEn, 'ar');
+      ok('loader + search resolve شارع السيوف', exact.length >= 1 && exact[0].line1.includes('السيوف'));
+      const near = searchStreetIndex(byCountry.entries, 'شارع 16', byCountry.cityAr, byCountry.cityEn, 'ar', 8, { lat: 31.2, lng: 29.95 });
+      ok('loader + search resolve شارع 16', near.length >= 1 && near[0].line1.includes('16'));
+    }
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+  ok('irrelevant viewport loads nothing (Beirut outside every bbox)', await loadStreetIndex('', { lat: 33.9, lng: 35.5 }) === null);
 }
 
 console.log(`street-index: ${pass} passed, ${fail} failed`);

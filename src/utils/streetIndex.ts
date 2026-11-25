@@ -200,6 +200,8 @@ export function mergeLocalFirst(local: AddressSuggestion[], server: AddressSugge
 let manifestPromise: Promise<null | {
   indexes: Array<{ id: string; country: string; bbox: [number, number, number, number] }>;
 }> | null = null;
+let manifestFailedAt = 0;
+const MANIFEST_RETRY_MS = 30000;
 const indexCache = new Map<string, Promise<LoadedStreetIndex | null>>();
 
 const EGYPT_BBOX = { minLat: 21.5, minLng: 24.5, maxLat: 31.8, maxLng: 36.0 };
@@ -270,7 +272,18 @@ export function loadStreetIndex(
     const b = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng) ? bias : null;
     const relevant = cc === 'eg' || cc === '' || (b !== null && inBbox(b.lat, b.lng, EGYPT_BBOX));
     if (!relevant) return Promise.resolve(null);
-    if (!manifestPromise) manifestPromise = readManifest();
+    // A failed manifest fetch is retried (at most every 30s) instead of
+    // poisoning the whole session — first load often races offline startup.
+    if (!manifestPromise) {
+      if (Date.now() - manifestFailedAt < MANIFEST_RETRY_MS) return Promise.resolve(null);
+      manifestPromise = readManifest().then((m) => {
+        if (!m) {
+          manifestPromise = null;
+          manifestFailedAt = Date.now();
+        }
+        return m;
+      });
+    }
     return manifestPromise.then((m) => {
       if (!m) return null;
       const hit = m.indexes.find((x) => x.country === 'eg' && cc === 'eg')

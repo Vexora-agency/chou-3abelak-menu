@@ -89,6 +89,16 @@ export function AddressSuggestList({
               >
                 {item.line2}
               </span>
+              {item.details && item.details !== item.line2 && (
+                <span
+                  dir="auto"
+                  className={`block truncate text-[11px] ${
+                    darkMode ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}
+                >
+                  {item.details}
+                </span>
+              )}
             </span>
           </button>
         );

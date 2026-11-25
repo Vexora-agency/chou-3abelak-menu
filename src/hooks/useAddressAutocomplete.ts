@@ -7,6 +7,7 @@ export interface AddressSuggestion {
   line2: string;
   lat: number;
   lng: number;
+  details?: string;
 }
 
 export interface UseAddressAutocompleteOptions {
@@ -57,7 +58,8 @@ function isAddressSuggestion(v: unknown): v is AddressSuggestion {
     typeof o.line1 === 'string' &&
     typeof o.line2 === 'string' &&
     typeof o.lat === 'number' &&
-    typeof o.lng === 'number'
+    typeof o.lng === 'number' &&
+    (o.details === undefined || typeof o.details === 'string')
   );
 }
 

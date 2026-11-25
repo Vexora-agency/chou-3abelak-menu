@@ -16,7 +16,10 @@ found". Manual typing and pin-dragging keep working exactly as before.
   `filter=countrycode:<zone countries>` (the delivery-zone list is the
   only source of truth — never the phone-dial country) plus proximity
   bias on the restaurant pin, and returns only
-  `[{ label, line1, line2, lat, lng }]` with `no-store`. Worldwide
+  `[{ label, line1, line2, lat, lng, details? }]` with `no-store`
+  (`limit=15` so side streets have room to appear; `details` carries
+  house number + street + suburb/district/city for small alleys, and
+  fills `line2` when the provider leaves it empty). Worldwide
   service (no selected zones) falls back to the client country hint,
   then to unfiltered.
 - The browser never sees the API key or the provider payload. Key missing →

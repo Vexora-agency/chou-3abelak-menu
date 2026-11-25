@@ -63,13 +63,16 @@ const LEVEL_RANK = ['spicy-mild', 'spicy-medium', 'spicy-hot'];
   *    were already handled).
  *
  * Layout notes (narrow phones, both languages):
- *  - Geometry is always LTR (mild left → extra-hot right); only TEXT
- *    follows the locale. The two end labels/dots must NEVER overflow the
- *    track box: on old iOS WebKit `overflow-x: clip` is unsupported, the
- *    sheet scroller degrades to scrollable, and the RTL page parks at the
- *    right end — hiding everything but Extra Hot. Margins (mx-8 = 32px)
- *    swallow the worst overhang (44px dot halves = 22px, w-16 label
- *    halves = 32px) so the scroller gets zero x-overflow on any browser.
+ *  - Geometry follows the locale direction: LTR (mild left → extra-hot
+ *    right) in English, RTL (mild right → extra-hot left) in Arabic, so
+ *    the visual order always matches the reading order. Only the TEXT
+ *    follows the locale as well. The two end labels/dots must NEVER
+ *    overflow the track box: on old iOS WebKit `overflow-x: clip` is
+ *    unsupported, the sheet scroller degrades to scrollable, and the RTL
+ *    page parks at the right end — hiding everything but Mild. Margins
+ *    (mx-8 = 32px) swallow the worst overhang (44px dot halves = 22px,
+ *    w-16 label halves = 32px) so the scroller gets zero x-overflow on
+ *    any browser.
  *
  * Perf: interaction flips classes + one fill width (transform/width-only,
  * motion-safe). No blur, no layout reads.
@@ -105,9 +108,11 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
   // Required mode never collapses: the choice is mandatory, so the track
   // stays visible until a level is picked (and stays after).
   const expanded = selectedId !== null || required;
-  // Geometry is always LTR (mild left → extra-hot right) so dots, fill and
-  // labels line up in both languages; only the TEXT follows the locale.
+  // Geometry follows the locale direction: mild at the reading-start side
+  // (left in English, right in Arabic). The fill uses logical `start-0`
+  // so it grows from the same side automatically.
   const pct = (i: number) => (n <= 1 ? 0 : (i / (n - 1)) * 100);
+  const visualLeft = (i: number) => (isAr ? 100 - pct(i) : pct(i));
 
   const promptText = (() => {
     const p = prompt && typeof prompt === 'object' ? prompt : null;
@@ -130,10 +135,13 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
       const rect = el.getBoundingClientRect();
       if (rect.width <= 0) return;
       const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-      const lvl = ordered[Math.round(ratio * (n - 1))];
+      // In Arabic the visual order is mirrored: the right edge is mild
+      // (index 0) and the left edge is extra-hot.
+      const effective = isAr ? 1 - ratio : ratio;
+      const lvl = ordered[Math.round(effective * (n - 1))];
       if (lvl) selectOnly(lvl.featureId);
     },
-    [ordered, n, selectOnly],
+    [ordered, n, selectOnly, isAr],
   );
 
   // Single tap path: pointerdown picks (select-only). There is deliberately
@@ -167,7 +175,9 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
     const back = e.key === 'ArrowLeft' || e.key === 'ArrowUp';
     if (!fwd && !back) return;
     e.preventDefault();
-    const dir = fwd ? 1 : -1;
+    // In Arabic the track is mirrored, so the horizontal arrows swap:
+    // ArrowRight moves toward mild (lower index), ArrowLeft toward hot.
+    const dir = (fwd ? 1 : -1) * (isAr && e.key !== 'ArrowDown' && e.key !== 'ArrowUp' ? -1 : 1);
     const base = activeIdx >= 0 ? activeIdx : dir > 0 ? -1 : n;
     const next = Math.min(n - 1, Math.max(0, base + dir));
     const lvl = ordered[next];
@@ -217,7 +227,7 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
       </div>
 
       {expanded && (
-        <div className="anim-fade-in mt-1 px-1" dir="ltr">
+        <div className="anim-fade-in mt-1 px-1" dir={isAr ? 'rtl' : 'ltr'}>
           <div
             ref={trackRef}
             role="radiogroup"
@@ -268,7 +278,7 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
                   if (e.detail === 0) selectOnly(l.featureId);
                 }}
                 className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center touch-pan-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-                style={{ left: `${pct(i)}%` }}
+                style={{ left: `${visualLeft(i)}%` }}
                 >
                   <span
                     aria-hidden="true"
@@ -300,7 +310,7 @@ export const SpicySlider: React.FC<SpicySliderProps> = ({
                 <div
                   key={l.featureId}
                   className="absolute top-0 -translate-x-1/2 w-16 flex flex-col items-center gap-px"
-                  style={{ left: `${pct(i)}%` }}
+                  style={{ left: `${visualLeft(i)}%` }}
                 >
                   <span className={`flex items-center ${isActive ? 'text-red-500' : darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>
                     {Array.from({ length: flames }).map((_, f) => (

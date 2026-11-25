@@ -96,7 +96,7 @@ export function buildAutocompleteUrl(env, options) {
   params.set('format', 'json');
   params.set('apiKey', apiKey);
   params.set('lang', lang);
-  params.set('limit', '10');
+  params.set('limit', '15');
   const codes = normalizeCountryCodes(
     Array.isArray(opts.countries) ? opts.countries : opts.country,
   );
@@ -118,8 +118,11 @@ export function buildAutocompleteUrl(env, options) {
 /**
  * Strip a Geoapify format=json payload down to the client-safe shape.
  * Drops rows without a non-empty formatted label or finite lat/lon, and
- * strips EVERYTHING else (rank, datasource, name, street, city,
- * result_type, …). Never throws for garbage input — returns [].
+ * strips provider-only fields (rank, datasource, result_type, …).
+ * Keeps label/line1/line2/lat/lng plus an optional `details` string built
+ * from side-street parts (house number, street, suburb, district, city,
+ * postcode) so small alleys stay distinguishable. Never throws for
+ * garbage input — returns [].
  */
 export function sanitizeAutocompleteResults(json) {
   const raw = json && typeof json === 'object' && Array.isArray(json.results) ? json.results : [];
@@ -131,15 +134,61 @@ export function sanitizeAutocompleteResults(json) {
     if (!label) continue;
     if (typeof row.lat !== 'number' || !Number.isFinite(row.lat)) continue;
     if (typeof row.lon !== 'number' || !Number.isFinite(row.lon)) continue;
-    out.push({
+    const line1 = typeof row.address_line1 === 'string' ? row.address_line1 : '';
+    let line2 = typeof row.address_line2 === 'string' ? row.address_line2 : '';
+    const details = buildDetails(row);
+    // Side-street fallback: when the provider leaves line2 empty (common
+    // for street/building rows), reuse the composed details so the row
+    // still shows neighbourhood/city context instead of a bare street.
+    if (!line2 && details) line2 = details;
+    const item = {
       label,
-      line1: typeof row.address_line1 === 'string' ? row.address_line1 : '',
-      line2: typeof row.address_line2 === 'string' ? row.address_line2 : '',
+      line1,
+      line2,
       lat: row.lat,
       lng: row.lon,
-    });
+    };
+    if (details && details !== line2) item.details = details;
+    else if (details) item.details = details;
+    out.push(item);
   }
   return out;
+}
+
+/**
+ * Compose a short side-street context from Geoapify address parts.
+ * Example: "12, Gouraud Street, Mar Mikhael, Beirut" from housenumber +
+ * street + suburb + city. Deduplicated, capped at 120 chars, '' when empty.
+ */
+function buildDetails(row) {
+  try {
+    const parts = [];
+    const push = (v) => {
+      if (typeof v !== 'string') return;
+      const t = v.trim();
+      if (!t) return;
+      if (parts.some((p) => p.toLowerCase() === t.toLowerCase())) return;
+      parts.push(t);
+    };
+    const hn = typeof row.housenumber === 'string' ? row.housenumber.trim() : '';
+    const st = typeof row.street === 'string' ? row.street.trim() : '';
+    if (hn && st) push(`${hn} ${st}`);
+    else {
+      push(hn);
+      push(st);
+    }
+    push(typeof row.suburb === 'string' ? row.suburb : '');
+    push(typeof row.neighbourhood === 'string' ? row.neighbourhood : '');
+    push(typeof row.district === 'string' ? row.district : '');
+    push(typeof row.city === 'string' ? row.city : '');
+    push(typeof row.town === 'string' ? row.town : '');
+    push(typeof row.village === 'string' ? row.village : '');
+    push(typeof row.postcode === 'string' ? row.postcode : '');
+    if (parts.length === 0) return '';
+    return parts.slice(0, 5).join(', ').slice(0, MAX_LABEL_CHARS);
+  } catch {
+    return '';
+  }
 }
 
 /**

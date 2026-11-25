@@ -425,6 +425,68 @@ export function parseMapUrlCoords(url: string | undefined): { lat: number; lng: 
 
 export type MapLocationKind = 'empty' | 'coords' | 'link' | 'search';
 
+/** Whole-value coordinates check for a decoded Maps query string:
+ * anchored decimal pair, or DMS covering the entire text (even truncated
+ * mid-suffix, as owners often paste it cut off). Returns coords or null. */
+function coordsQueryText(text: string): { lat: number; lng: number } | null {
+  const t = (text || '').trim();
+  if (!t) return null;
+  const dm = t.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+  if (dm) {
+    const lat = Number(dm[1]);
+    const lng = Number(dm[2]);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+      return { lat, lng };
+    }
+    return null;
+  }
+  // The DMS engine matches anywhere, so require nothing-but-coords text:
+  // strip every char a DMS reading may contain; anything left means text.
+  const stripped = t
+    .replace(/[0-9\s.,;°ºdD'′’mM"″”sS+\-]/g, '')
+    .replace(/[NSEWnsew]/g, '');
+  if (stripped !== '') return null;
+  return parseMapUrlCoords(t);
+}
+
+const round6 = (v: number) => Math.round(v * 1e6) / 1e6;
+
+/**
+ * Repair a Google Maps search URL whose query text IS coordinates
+ * (decimal pair or DMS, even truncated mid-suffix): rewrite to canonical
+ * decimals so Google always resolves it instead of showing "not found".
+ * Place pages, directions, map views and short links ride through
+ * untouched (returns null = not a pure coords search).
+ */
+export function canonicalCoordsSearchUrl(raw: string | undefined): string | null {
+  const clean = (raw || '').trim();
+  if (!clean) return null;
+  let url: URL;
+  try {
+    url = new URL(/^https?:\/\//i.test(clean) ? clean : `https://${clean}`);
+  } catch {
+    return null;
+  }
+  if (!/^(www\.|maps\.)?google\.[a-z.]+(\.[a-z]{2})?$/i.test(url.hostname)) return null;
+  const path = (url.pathname || '').replace(/\/+$/, '') || '/';
+  const hasSearchParam = ['q', 'query', 'll', 'center'].some((k) => url.searchParams.get(k) !== null);
+  if (path !== '/maps/search' && !(path === '/maps' && hasSearchParam)) return null;
+  const rawQ = url.searchParams.get('query')
+    ?? url.searchParams.get('q')
+    ?? url.searchParams.get('ll')
+    ?? url.searchParams.get('center');
+  if (rawQ === null) return null;
+  let text = rawQ;
+  try {
+    text = decodeURIComponent(rawQ.replace(/\+/g, ' '));
+  } catch {
+    /* keep raw */
+  }
+  const coords = coordsQueryText(text);
+  if (!coords) return null;
+  return `https://www.google.com/maps/search/?api=1&query=${round6(coords.lat)},${round6(coords.lng)}`;
+}
+
 /**
  * True when a WRITTEN-address value isn't really text: a pasted link
  * (scheme or domain+path) or bare coordinates. The footer hides such values
@@ -488,10 +550,19 @@ export function formatDistance(meters: number, lang: 'en' | 'ar'): string {
 // Get Directions link: the saved location in whatever form it was stored
 // (short link, full URL, raw coords, place name) normalized to a working
 // Maps URL — otherwise falls back to a Maps search for the written address.
+// A pure coords search is repaired to canonical decimals so Google resolves
+// it instead of showing "not found". The text fallback prefers the written
+// address in either language (English then Arabic), then the store name in
+// either language — a store with only an Arabic address must still open a
+// working search instead of "#".
 export function buildMapUrl(settings: MenuData['settings']): string {
   const direct = normalizeMapLocation(settings.mapUrl).url;
-  if (direct) return direct;
-  const query = (settings.address?.en || '').trim() || (settings.name?.en || '').trim();
+  if (direct) return canonicalCoordsSearchUrl(direct) ?? direct;
+  const query =
+    (settings.address?.en || '').trim() ||
+    (settings.address?.ar || '').trim() ||
+    (settings.name?.en || '').trim() ||
+    (settings.name?.ar || '').trim();
   if (query) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   return '#';
 }

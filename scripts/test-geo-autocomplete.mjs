@@ -99,7 +99,7 @@ check('url hits the autocomplete endpoint', built.startsWith('https://api.geoapi
 check('url carries text', param(built, 'text') === 'Beirut');
 check('url carries format=json', param(built, 'format') === 'json');
 check('url carries the key (server-side only)', param(built, 'apiKey') === 'test-key-abc123');
-check('url carries limit=10', param(built, 'limit') === '10');
+check('url carries limit=15', param(built, 'limit') === '15');
 check('url carries lang', param(built, 'lang') === 'ar');
 
 const biased = buildAutocompleteUrl(KEY_ENV, { text: 'Beirut', bias: { lng: 35.5, lat: 33.9 } });
@@ -152,7 +152,7 @@ const providerPayload = {
   ],
 };
 const expectedSanitized = [
-  { label: 'Beirut, Lebanon', line1: 'Beirut', line2: 'Lebanon', lat: 33.8938, lng: 35.5018 },
+  { label: 'Beirut, Lebanon', line1: 'Beirut', line2: 'Lebanon', lat: 33.8938, lng: 35.5018, details: 'Hamra, Beirut' },
   { label: 'Hamra Street, Beirut', line1: 'Hamra Street', line2: '', lat: 33.9, lng: 35.5 },
 ];
 check(
@@ -160,10 +160,12 @@ check(
   JSON.stringify(sanitizeAutocompleteResults(providerPayload)) === JSON.stringify(expectedSanitized)
 );
 check(
-  'sanitized rows carry only label/line1/line2/lat/lng',
-  sanitizeAutocompleteResults(providerPayload).every(
-    (row) => JSON.stringify(Object.keys(row).sort()) === JSON.stringify(['label', 'lat', 'line1', 'line2', 'lng'])
-  )
+  'sanitized rows carry only label/line1/line2/lat/lng (+optional details)',
+  sanitizeAutocompleteResults(providerPayload).every((row) => {
+    const keys = Object.keys(row).sort();
+    return JSON.stringify(keys) === JSON.stringify(['label', 'lat', 'line1', 'line2', 'lng']) ||
+      JSON.stringify(keys) === JSON.stringify(['details', 'label', 'lat', 'line1', 'line2', 'lng']);
+  })
 );
 const longLabel = sanitizeAutocompleteResults({
   results: [{ formatted: `  ${'z'.repeat(200)}  `, address_line1: 'a', address_line2: 'b', lat: 1, lon: 1 }],
@@ -179,16 +181,16 @@ check('garbage payloads sanitize to []', JSON.stringify(sanitizeAutocompleteResu
   && JSON.stringify(sanitizeAutocompleteResults({})) === '[]'
   && JSON.stringify(sanitizeAutocompleteResults({ results: 'x' })) === '[]');
 check(
-  'sanitizer passes through 10 richer results',
+  'sanitizer passes through 15 richer results',
   sanitizeAutocompleteResults({
-    results: Array.from({ length: 10 }, (_, i) => ({
+    results: Array.from({ length: 15 }, (_, i) => ({
       formatted: `Place ${i}, Beirut, Lebanon`,
       address_line1: `Street ${i}`,
       address_line2: 'Beirut, Lebanon',
       lat: 33.8 + i * 0.001,
       lon: 35.4 + i * 0.001,
     })),
-  }).length === 10
+  }).length === 15
 );
 check(
   'street/building rows kept with line1 intact (street names prominent)',
@@ -200,6 +202,29 @@ check(
       ],
     });
     return rows.length === 2 && rows[0].line1 === 'Hamra Street' && rows[1].line1 === 'Bldg 12, Hamra Street';
+  })()
+);
+check(
+  'side-street details composed when line2 is empty',
+  (() => {
+    const rows = sanitizeAutocompleteResults({
+      results: [
+        {
+          formatted: 'Gouraud Street, Mar Mikhael, Beirut, Lebanon',
+          address_line1: 'Gouraud Street',
+          address_line2: '',
+          housenumber: '12',
+          street: 'Gouraud Street',
+          suburb: 'Mar Mikhael',
+          city: 'Beirut',
+          lat: 33.8938,
+          lon: 35.5018,
+        },
+      ],
+    });
+    return rows.length === 1 &&
+      rows[0].line2 === '12 Gouraud Street, Mar Mikhael, Beirut' &&
+      rows[0].details === '12 Gouraud Street, Mar Mikhael, Beirut';
   })()
 );
 check(

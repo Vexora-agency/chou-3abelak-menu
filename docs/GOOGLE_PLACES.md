@@ -2,8 +2,12 @@
 
 Egypt's informal addresses (numbered alleys, «جنب فرن فلان») are where free
 OSM-based providers are thinnest — and where Google's index is strongest.
-Google is the PRIMARY external pass: owner places first, then Google;
-Photon (free, keyless) covers thin results, capped budgets, and missing keys.
+Google is the PRIMARY external pass: owner places first, then Google.
+Because autocomplete returns at most 5 predictions BY DESIGN, a second
+bounded pass — Text Search (`places:searchText`, up to 10 full places
+with name + formatted address + coordinates) — runs when autocomplete
+stays thin and the query has 6+ characters. Photon (free, keyless)
+covers capped budgets and missing keys.
 
 ## Professional usage (per the official Places API (New) docs)
 
@@ -32,11 +36,17 @@ Photon (free, keyless) covers thin results, capped budgets, and missing keys.
 - Billing account required. About 10,000 calls/month free per Essentials
   SKU (verify the current price page before enabling).
 - One shared daily budget `GOOGLE_PLACES_DAILY_MAX` (default 300 ≈
-  9k/month with headroom) covers BOTH autocomplete and details calls.
+  9k/month with headroom) covers autocomplete + details + text-search
+  calls together. Text Search fires only on thin results with 6+
+  characters, so ordinary queries cost a single autocomplete call.
   Per-IP burst cap 60/min on top. When spent, Photon + local index answer.
 - No per-keystroke waste by design: autocomplete runs at most once per
   distinct query (debounced 350 ms, cached per session); coordinates
   resolve once per PICK via `/api/geo/place-details?placeId=`.
+- No OAuth/service account needed: plain API keys are the correct
+  server-to-server credential here (OAuth is for end-user or mobile
+  scenarios). For keyless verification, a no-cost Maps Demo Key works
+  (daily quota limits apply).
 
 ## How it works
 

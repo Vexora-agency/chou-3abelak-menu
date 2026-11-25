@@ -20,11 +20,14 @@ import { createAsserts, makeKV, readJson } from './_helpers/shared.mjs';
 import {
   fetchGoogleAutocomplete,
   fetchPlaceDetails,
+  fetchTextSearch,
   googleDailyMax,
   isGoogleConfigured,
   normalizeRegionCode,
   sanitizeGooglePredictions,
   sanitizePlaceDetails,
+  sanitizeTextSearch,
+  TEXT_SEARCH_LIMIT,
   validatePlaceId,
 } from '../functions/_shared/google.js';
 import { onRequest as autocomplete } from '../functions/api/geo/autocomplete.js';
@@ -80,6 +83,23 @@ check('details map to finite coords',
   JSON.stringify(sanitizePlaceDetails({ location: { latitude: 31.2, longitude: 29.95 }, displayName: { text: 'Street 16' }, formattedAddress: 'Street 16, El Soyouf' }))
   === JSON.stringify({ lat: 31.2, lng: 29.95, label: 'Street 16, El Soyouf' }));
 check('details null without a location', sanitizePlaceDetails({}) === null && sanitizePlaceDetails(null) === null);
+check('TEXT_SEARCH_LIMIT is 10 detailed rows', TEXT_SEARCH_LIMIT === 10);
+check(
+  'text search maps full places with coordinates (no follow-up needed)',
+  (() => {
+    const rows = sanitizeTextSearch({
+      places: [
+        { id: 'ChIJN1t_tDeuEmsRMD9Q5I-qdUQ', displayName: { text: 'شارع 16' }, formattedAddress: 'شارع 16، السيوف، الإسكندرية', location: { latitude: 31.202, longitude: 29.952 } },
+        { id: 'short', displayName: { text: 'x' } },
+        { id: 'ChIJN1t_tDeuEmsRMD9Q5I-qdUR', displayName: { text: 'No coords' }, formattedAddress: 'Nowhere' },
+        null,
+      ],
+    });
+    return rows.length === 1 && rows[0].placeId === 'ChIJN1t_tDeuEmsRMD9Q5I-qdUQ'
+      && rows[0].lat === 31.202 && rows[0].lng === 29.952 && rows[0].line1 === 'شارع 16';
+  })()
+);
+check('text search garbage sanitizes to []', sanitizeTextSearch(null).length === 0 && sanitizeTextSearch({}).length === 0);
 
 /* ---------- fetch units (mocked) ---------- */
 
@@ -139,6 +159,24 @@ check('fetch: body carries input + language + region + bias', (() => {
 })());
 const failFetch = async () => ({ ok: false, status: 500, json: async () => ({}) });
 check('fetch: 500 maps to failed', !((await fetchGoogleAutocomplete(G_ENV, { text: 'شارع 16' }, failFetch))).ok);
+{
+  let seenTs = null;
+  const tsFetch = await fetchTextSearch(
+    G_ENV,
+    { text: 'شارع السيوف 16', bias: { lat: 31.2, lng: 29.95 }, region: 'eg', restrict: { lat: 31.2056, lng: 29.9246, radiusM: 90000 } },
+    async (url, opts) => {
+      seenTs = { url: String(url), body: JSON.parse(opts.body) };
+      return { ok: true, status: 200, json: async () => ({ places: [] }) };
+    }
+  );
+  check('text search posts textQuery with restriction capped at 50000',
+    tsFetch.ok && seenTs.url === 'https://places.googleapis.com/v1/places:searchText'
+    && seenTs.body.textQuery === 'شارع السيوف 16' && seenTs.body.pageSize === 10
+    && seenTs.body.locationRestriction.circle.radius === 50000
+    && !('locationBias' in seenTs.body));
+  check('text search rejects short queries without network',
+    (await fetchTextSearch(G_ENV, { text: 'abc' }, neverFetch)).error === 'bad_query' && !called);
+}
 
 const detFetch = async (url, opts) => {
   seenUrl = String(url);
@@ -164,39 +202,58 @@ check('details: bad id never hits network', (await fetchPlaceDetails(G_ENV, { pl
 check('shared helper never logs', !read('functions/_shared/google.js').includes('console.'));
 check('details route never logs', !read('functions/api/geo/place-details.js').includes('console.'));
 
-/* ---------- autocomplete route: Google last resort ---------- */
+/* ---------- autocomplete route: Google primary ---------- */
 
 const originalFetch = globalThis.fetch;
+const thinGeo = { results: [] };
+const textPlaces = {
+  places: [
+    { id: 'ChIJTEXT00000000000001', displayName: { text: 'شارع 16' }, formattedAddress: 'شارع 16، السيوف، الإسكندرية، مصر', location: { latitude: 31.202, longitude: 29.952 } },
+    { id: 'ChIJTEXT00000000000002', displayName: { text: 'شارع 17' }, formattedAddress: 'شارع 17، السيوف، الإسكندرية، مصر', location: { latitude: 31.203, longitude: 29.953 } },
+  ],
+};
 try {
   const kv = makeKV();
   await kv.put('menu', JSON.stringify({ settings: { mapUrl: 'https://www.google.com/maps/@31.2056,29.9246,15z', ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'EG' }], maxKm: 30 } } } }));
-  const thinGeo = { results: [{ formatted: 'El Soyouf, Alexandria, Egypt', address_line1: 'El Soyouf', address_line2: 'Alexandria, Egypt', lat: 31.2, lon: 29.95 }] };
   let googleCalls = [];
+  const serves = {
+    autocomplete: predictions,
+    textsearch: textPlaces,
+  };
   globalThis.fetch = async (url, opts) => {
     const u = String(url);
-    if (u.includes('places.googleapis.com')) {
-      googleCalls.push({ url: u, opts });
-      return { ok: true, status: 200, json: async () => predictions };
+    if (u.includes('places.googleapis.com/v1/places:autocomplete')) {
+      googleCalls.push({ url: u, opts, kind: 'autocomplete' });
+      return { ok: true, status: 200, json: async () => serves.autocomplete };
+    }
+    if (u.includes('places.googleapis.com/v1/places:searchText')) {
+      googleCalls.push({ url: u, opts, kind: 'textsearch' });
+      return { ok: true, status: 200, json: async () => serves.textsearch };
     }
     if (u.includes('photon.komoot.io')) return { ok: true, status: 200, json: async () => ({ features: [] }) };
-    return { ok: true, status: 200, json: async () => thinGeo };
+    return { ok: true, status: 200, json: async () => ({ features: [] }) };
   };
-  const env = { GEOAPIFY_API_KEY: 'route-key-xyz', GOOGLE_PLACES_API_KEY: 'route-google-key', MENU_KV: kv };
+  const env = { GOOGLE_PLACES_API_KEY: 'route-google-key', MENU_KV: kv };
   const res = await autocomplete({ request: customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9%2016&lang=ar&country=eg'), env });
   const body = await readJson(res);
   const googleRows = (body.results || []).filter((r) => r.placeId);
-  check('route: thin free passes trigger one Google call',
-    res.status === 200 && body.ok === true && googleCalls.length === 1);
-  check('route: Google rows merge behind with placeId and null coords',
-    googleRows.length === 1 && googleRows[0].lat === null && googleRows[0].line1 === 'شارع 16');
-  check('route: sources trail includes google', Array.isArray(body.sources) && body.sources.includes('google'));
+  check('route: thin results trigger autocomplete + text search (2 Google calls)',
+    res.status === 200 && body.ok === true && googleCalls.length === 2
+    && googleCalls[0].kind === 'autocomplete' && googleCalls[1].kind === 'textsearch');
+  check('route: autocomplete rows carry placeId with null coords, text rows carry coords',
+    googleRows.length === 3
+    && googleRows[0].lat === null && googleRows[0].line1 === 'شارع 16'
+    && googleRows[1].lat === 31.202 && googleRows[1].line1 === 'شارع 16');
+  check('route: sources trail includes google and google-text',
+    Array.isArray(body.sources) && body.sources.includes('google') && body.sources.includes('google-text'));
   check('route: google flag is ok when rows merged', body.google === 'ok');
+  check('route: response never carries the key', !JSON.stringify(body).includes('route-google-key'));
   // Key present but upstream fails -> error (visible, no secrets).
   globalThis.fetch = async (url) => {
     const u = String(url);
     if (u.includes('places.googleapis.com')) return { ok: false, status: 500, json: async () => ({}) };
     if (u.includes('photon.komoot.io')) return { ok: true, status: 200, json: async () => ({ features: [] }) };
-    return { ok: true, status: 200, json: async () => thinGeo };
+    return { ok: true, status: 200, json: async () => ({ features: [] }) };
   };
   const errRes = await autocomplete({ request: customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9%2016&lang=ar&country=eg'), env });
   check('route: google flag is error on upstream failure', (await readJson(errRes)).google === 'error');
@@ -210,7 +267,7 @@ try {
       calls += 1;
       return { ok: true, status: 200, json: async () => thinGeo };
     };
-    const capEnv = { GEOAPIFY_API_KEY: 'route-key-xyz', GOOGLE_PLACES_API_KEY: 'route-google-key', MENU_KV: kvCap };
+    const capEnv = { GOOGLE_PLACES_API_KEY: 'route-google-key', MENU_KV: kvCap };
     const capRes = await autocomplete({ request: customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9%2016&lang=ar&country=eg'), env: capEnv });
     const capBody = await readJson(capRes);
     check('route: google flag is capped when the budget is spent', capBody.google === 'capped' && !capBody.sources.includes('google'));
@@ -220,7 +277,7 @@ try {
 
   // No key → no Google call, free stack alone.
   googleCalls = [];
-  const resNoKey = await autocomplete({ request: customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9%2016&lang=ar&country=eg'), env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv } });
+  const resNoKey = await autocomplete({ request: customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9%2016&lang=ar&country=eg'), env: { MENU_KV: kv } });
   check('route: unconfigured Google is skipped silently', resNoKey.status === 200 && googleCalls.length === 0);
 } finally {
   globalThis.fetch = originalFetch;

@@ -42,7 +42,7 @@ import {
   validateAutocompleteQuery,
 } from '../../_shared/geoapify.js';
 import { fetchPhoton, buildQueryVariants, pickFallbackVariant, rankAppendedByDigits } from '../../_shared/photon.js';
-import { fetchGoogleAutocomplete, googleDailyMax, isGoogleConfigured, validateSessionToken } from '../../_shared/google.js';
+import { fetchGoogleAutocomplete, fetchTextSearch, googleDailyMax, isGoogleConfigured, validateSessionToken } from '../../_shared/google.js';
 import { searchCustomPlaces, customPlaceToSuggestion } from '../../_shared/repositories/places.repo.js';
 
 const IP_RATE_MAX = 60;
@@ -194,6 +194,28 @@ export async function onRequest(context) {
       }
     } catch {
       google = 'error';
+    }
+  }
+  // Text Search fallback for MORE detailed rows: autocomplete returns at
+  // most 5 predictions BY DESIGN, so when it stays thin this pass fetches
+  // up to 10 full places (name + formatted address + coordinates included —
+  // no follow-up needed to pin). Bounded: queries under 6 chars and spent
+  // budgets never reach Google; each call shares the same daily cap.
+  if (results.length < MIN_RICH_RESULTS && isGoogleConfigured(env) && q.length >= 6) {
+    try {
+      if (await hitRateLimit(kv, `geo-gg-day:${day}`, googleDailyMax(env), DAY_RATE_WINDOW_SEC)) {
+        const t = await fetchTextSearch(env, { text: q, lang, bias, region, restrict });
+        if (t && t.ok && Array.isArray(t.results) && t.results.length > 0) {
+          results = mergeAutocompleteResults(results, t.results);
+          if (!sources.includes('google')) sources.push('google');
+          sources.push('google-text');
+          google = 'ok';
+        }
+      } else if (google === 'empty') {
+        google = 'capped';
+      }
+    } catch {
+      /* keep the autocomplete flag: the fallback alone must not rewrite it */
     }
   }
   // Free keyless backstop: when owner places + Google stay thin — typical

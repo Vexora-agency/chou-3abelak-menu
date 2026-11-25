@@ -20,6 +20,7 @@
  */
 
 const PLACES_AUTOCOMPLETE_URL = 'https://places.googleapis.com/v1/places:autocomplete';
+const PLACES_TEXT_SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
 const PLACE_DETAILS_URL = 'https://places.googleapis.com/v1/places/';
 const REQUEST_TIMEOUT_MS = 6000;
 const MAX_LABEL_CHARS = 120;
@@ -195,6 +196,115 @@ export async function fetchGoogleAutocomplete(env, params, fetchFn = fetch) {
         return { ok: false, error: 'failed' };
       }
       return { ok: true, results: sanitizeGooglePredictions(json) };
+    } catch {
+      return { ok: false, error: 'failed' };
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    return { ok: false, error: 'failed' };
+  }
+}
+
+/**
+ * Text Search (places:searchText) fallback for detailed multi-results:
+ * Autocomplete returns at most 5 predictions BY DESIGN, so when it stays
+ * thin this pass fetches up to TEXT_SEARCH_LIMIT full places (name +
+ * formatted address + coordinates included — no follow-up call needed to
+ * pin). Same { text, lang, bias, restrict, region } shaping as
+ * autocomplete. Never throws, never logs key/query.
+ */
+export const TEXT_SEARCH_LIMIT = 10;
+
+export function sanitizeTextSearch(json) {
+  const list = json && typeof json === 'object' && Array.isArray(json.places) ? json.places : [];
+  const out = [];
+  for (const p of list) {
+    if (!p || typeof p !== 'object') continue;
+    const placeId = validatePlaceId(p.id);
+    if (!placeId) continue;
+    const name = trimText(p.displayName && typeof p.displayName === 'object' ? p.displayName.text : '');
+    const addr = trimText(typeof p.formattedAddress === 'string' ? p.formattedAddress : '');
+    const label = addr || name;
+    if (!label) continue;
+    const loc = p.location && typeof p.location === 'object' ? p.location : null;
+    const lat = loc ? Number(loc.latitude) : NaN;
+    const lng = loc ? Number(loc.longitude) : NaN;
+    if (!Number.isFinite(lat) || Math.abs(lat) > 90) continue;
+    if (!Number.isFinite(lng) || Math.abs(lng) > 180) continue;
+    out.push({
+      label: label.slice(0, MAX_LABEL_CHARS),
+      line1: (name || label).slice(0, MAX_LABEL_CHARS),
+      line2: (addr && addr !== name ? addr : '').slice(0, MAX_LABEL_CHARS),
+      lat,
+      lng,
+      placeId,
+    });
+    if (out.length >= TEXT_SEARCH_LIMIT) break;
+  }
+  return out;
+}
+
+export async function fetchTextSearch(env, params, fetchFn = fetch) {
+  try {
+    if (!isGoogleConfigured(env)) return { ok: false, error: 'not_configured' };
+    const opts = params && typeof params === 'object' ? params : {};
+    const raw = typeof opts.text === 'string' ? opts.text.trim() : '';
+    if (raw.length < 6 || raw.length > 100) return { ok: false, error: 'bad_query' };
+    const body = {
+      textQuery: raw,
+      languageCode: normalizeGoogleLang(opts.lang),
+      pageSize: TEXT_SEARCH_LIMIT,
+    };
+    const region = normalizeRegionCode(opts.region);
+    if (region) {
+      body.includedRegionCodes = [region];
+      body.regionCode = region.toLowerCase();
+    }
+    const restrict = opts.restrict && typeof opts.restrict === 'object' ? opts.restrict : null;
+    const rLat = restrict ? restrict.lat : NaN;
+    const rLng = restrict ? restrict.lng : NaN;
+    const rR = restrict ? restrict.radiusM : NaN;
+    if (typeof rLat === 'number' && Number.isFinite(rLat) && Math.abs(rLat) <= 90
+      && typeof rLng === 'number' && Number.isFinite(rLng) && Math.abs(rLng) <= 180
+      && typeof rR === 'number' && Number.isFinite(rR) && rR > 0) {
+      body.locationRestriction = {
+        circle: { center: { latitude: rLat, longitude: rLng }, radius: Math.min(Math.round(rR), 50000) },
+      };
+    } else {
+      const bias = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
+      const lat = bias ? bias.lat : NaN;
+      const lng = bias ? bias.lng : NaN;
+      if (typeof lat === 'number' && Number.isFinite(lat) && Math.abs(lat) <= 90
+        && typeof lng === 'number' && Number.isFinite(lng) && Math.abs(lng) <= 180) {
+        body.locationBias = { circle: { center: { latitude: lat, longitude: lng }, radius: 20000.0 } };
+      }
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      try {
+        controller.abort();
+      } catch {}
+    }, REQUEST_TIMEOUT_MS);
+    try {
+      const res = await fetchFn(PLACES_TEXT_SEARCH_URL, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': trimGoogleEnv(env, 'GOOGLE_PLACES_API_KEY'),
+          'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location,places.id',
+        },
+        body: JSON.stringify(body),
+      });
+      if (!res || !res.ok) return { ok: false, error: 'failed' };
+      let json = null;
+      try {
+        json = await res.json();
+      } catch {
+        return { ok: false, error: 'failed' };
+      }
+      return { ok: true, results: sanitizeTextSearch(json) };
     } catch {
       return { ok: false, error: 'failed' };
     } finally {

@@ -479,6 +479,7 @@ try {
     res.status === 200 && body && body.ok === true
     && JSON.stringify(body.results) === JSON.stringify(expectedRichResults));
   check('route: rich zone pass needs no second call', calledUrls.length === 1);
+  check('route: sources trail names the answering passes', (() => { const r = body; return Array.isArray(r.sources) && r.sources.includes('geoapify') && !r.sources.includes('google'); })());
   // Owner places rank first: a matching custom place outranks every
   // provider row and needs no extra provider call.
   calledUrls = [];
@@ -507,6 +508,7 @@ try {
     && bodyPlaces.results[0].line2 === 'مكان محفوظ'
     && bodyPlaces.results[0].lat === 31.205 && bodyPlaces.results[0].lng === 29.945);
   check('route: owner head needs no extra provider call', calledUrls.length === 1);
+  check('route: sources trail leads with custom', Array.isArray(bodyPlaces.sources) && bodyPlaces.sources[0] === 'custom');
   check('route: success is no-store JSON', res.headers.get('Cache-Control') === 'no-store'
     && (res.headers.get('Content-Type') || '').includes('application/json'));
   check('route: response never carries the key', !JSON.stringify(body).includes('route-key-xyz'));

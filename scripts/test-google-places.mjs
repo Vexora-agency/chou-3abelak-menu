@@ -157,6 +157,7 @@ try {
     res.status === 200 && body.ok === true && googleCalls.length === 1);
   check('route: Google rows merge behind with placeId and null coords',
     googleRows.length === 1 && googleRows[0].lat === null && googleRows[0].line1 === 'شارع 16');
+  check('route: sources trail includes google', Array.isArray(body.sources) && body.sources.includes('google'));
   check('route: Google key never leaks into URLs or the response',
     !googleCalls[0].url.includes('route-google-key') && !JSON.stringify(body).includes('route-google-key'));
 

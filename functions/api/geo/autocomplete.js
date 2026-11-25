@@ -29,6 +29,8 @@
  * Photon passes over smart recall variants — all merged behind the owner
  * and area matches, so side streets outside the list still surface.
  * Responses and logs never carry the key, the provider body, or the full query.
+ * A non-sensitive `sources` trail names the passes that answered
+ * (custom/geoapify/geoapify-open/geoapify-en/photon/google) for verification.
  */
 
 import { jsonNoStore } from '../../_shared/session.js';
@@ -178,6 +180,11 @@ export async function onRequest(context) {
     return jsonNoStore({ error: 'autocomplete_failed' }, 502);
   }
   let results = mergeAutocompleteResults(head, upstream.results);
+  // Non-sensitive source trail for verification (which providers answered —
+  // never the query or the key). The client ignores it; the owner reads it.
+  const sources = [];
+  if (head.length > 0) sources.push('custom');
+  sources.push('geoapify');
   // Deep second pass: when the area filter leaves almost nothing (a side
   // street outside the radius, a new alley, a transliterated name),
   // run the same query unfiltered and append. Owner places and area
@@ -186,7 +193,10 @@ export async function onRequest(context) {
   if (results.length < MIN_RICH_RESULTS && (countries.length > 0 || circle)) {
     try {
       const open = await fetchAutocomplete(env, { text: q, lang, countries: [], circle: null, bias });
-      if (open && open.ok) results = mergeAutocompleteResults(results, open.results);
+      if (open && open.ok) {
+        results = mergeAutocompleteResults(results, open.results);
+        sources.push('geoapify-open');
+      }
     } catch {
       /* keep the first-pass results */
     }
@@ -196,7 +206,10 @@ export async function onRequest(context) {
   if (results.length < MIN_RICH_RESULTS && lang === 'ar') {
     try {
       const en = await fetchAutocomplete(env, { text: q, lang: 'en', countries, circle, bias });
-      if (en && en.ok) results = mergeAutocompleteResults(results, en.results);
+      if (en && en.ok) {
+        results = mergeAutocompleteResults(results, en.results);
+        sources.push('geoapify-en');
+      }
     } catch {
       /* keep what we have */
     }
@@ -232,6 +245,7 @@ export async function onRequest(context) {
       if (fresh.length > 0) {
         const merged = mergeAutocompleteResults(zoneRows, fresh);
         results = rankAppendedByDigits(zoneRows, merged.slice(zoneRows.length), q);
+        sources.push('photon');
       }
     } catch {
       /* keep the Geoapify results */
@@ -252,11 +266,12 @@ export async function onRequest(context) {
         });
         if (g && g.ok && Array.isArray(g.results) && g.results.length > 0) {
           results = mergeAutocompleteResults(results, g.results);
+          sources.push('google');
         }
       }
     } catch {
       /* keep the free results */
     }
   }
-  return jsonNoStore({ ok: true, results });
+  return jsonNoStore({ ok: true, results, sources });
 }

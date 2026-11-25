@@ -14,7 +14,7 @@ interface ReportCenterOptions {
 export function useReportCenter({ isAr, activeTab, adminFetch }: ReportCenterOptions) {
   // Monthly reports (plan-gated: a 404 from report-settings means the
   // feature is off and the Reports view stays hidden).
-  const [dashView, setDashView] = useState<'overview' | 'reports' | 'customers' | 'accounts'>('overview');
+  const [dashView, setDashView] = useState<'overview' | 'reports' | 'customers' | 'accounts' | 'blocked'>('overview');
   const [customersOn, setCustomersOn] = useState(false);
   const [reportsOn, setReportsOn] = useState(false);
   const [reportSettings, setReportSettings] = useState<ReportSettings | null>(null);

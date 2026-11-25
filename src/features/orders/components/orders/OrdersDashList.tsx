@@ -266,7 +266,17 @@ interface GroupCardProps extends Omit<OrderRowProps, 'o' | 'open'> {
  * (cancelling one must never silently kill the other).
  */
 const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t, isAr, currency, now, flashId, onStatusChange, onConfirm, onTrustReview, onBlockPhone }) => {
+  // Joint delivery = one customer: trusting one member's flag trusts the
+  // whole group (same phone, same story) so a sibling badge never lingers.
   const [busy, setBusy] = useState(false);
+  const trustGroup = onTrustReview
+    ? async (id: string): Promise<boolean> => {
+        const flagged = members.filter((m) => m.needsReview === true);
+        const ids = flagged.length > 0 ? flagged.map((m) => m.id) : [id];
+        const results = await Promise.all(ids.map((mid) => onTrustReview(mid)));
+        return results.every(Boolean);
+      }
+    : undefined;
   const active = members.filter((m) => m.status === 'new' || m.status === 'confirmed' || m.status === 'ready');
   const allNew = active.length > 0 && active.every((m) => m.status === 'new');
   const allPrep = active.length > 0 && active.every((m) => m.status === 'confirmed' || m.status === 'ready');
@@ -323,7 +333,7 @@ const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t,
             flashId={flashId}
             onStatusChange={onStatusChange}
             onConfirm={onConfirm}
-            onTrustReview={onTrustReview}
+            onTrustReview={trustGroup}
             onBlockPhone={onBlockPhone}
             inGroup
           />

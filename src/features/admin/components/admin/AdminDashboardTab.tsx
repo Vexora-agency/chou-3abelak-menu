@@ -4,6 +4,7 @@ import type { MenuData } from '@/src/types/menu';
 import { OrdersDashboard, type CronHealth, type Order, type OrderStatus } from '@/src/features/orders';
 import { ReportsPanel, type ReportSettings, type MonthlyReportRow, CustomerData, type CustomerResult } from '@/src/features/reports';
 import { AdminCustomersTab } from './AdminCustomersTab';
+import { PhoneBlocklistSection } from '../PhoneBlocklistSection';
 import OrderingToggle from './OrderingToggle';
 import { getOrderingState } from '@/src/utils/status';
 import { serverNow } from '@/src/utils/serverTime';
@@ -73,7 +74,7 @@ const SeasonalQuickCard: React.FC<{
   );
 };
 
-export type DashView = 'overview' | 'reports' | 'customers' | 'accounts';
+export type DashView = 'overview' | 'reports' | 'customers' | 'accounts' | 'blocked';
 
 interface AdminDashboardTabProps {
   lang: 'en' | 'ar';
@@ -110,6 +111,10 @@ interface AdminDashboardTabProps {
   onUpdateMenu?: (updater: (prev: MenuData) => MenuData) => void;
   /** Review dismissal: resolves true when the badge cleared. */
   onTrustReview?: (id: string) => Promise<boolean>;
+  /** Owner signal (master login). When false (client login) the Blocked
+   *  view stays hidden — its endpoint is owner-only anyway. Null/undefined
+   *  (still checking) renders everything: fail-open, sections hide on 403. */
+  isOwner?: boolean | null;
 }
 
 /** TAB 0: ORDERS DASHBOARD — pause control, view switcher, orders/reports/customers. */
@@ -120,7 +125,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   reportSettings, reportRows, retentionCfg, reportSched,
   onSaveReportSettings, onResendVerification, onDownloadReport,
   onSearchCustomers, onCustomerAction,
-  adminFetch, onMenuRefreshed, onConfirm, kitchen, onUpdateMenu, onTrustReview,
+  adminFetch, onMenuRefreshed, onConfirm, kitchen, onUpdateMenu, onTrustReview, isOwner,
 }) => {
   const isAr = lang === 'ar';
   // White-label package gates: starter hides Reports UI, the customers view
@@ -131,6 +136,10 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   const showCustomers = customersOn && featuresConfig.enableCustomerData;
   const showAccounts = !kitchen && featuresConfig.enableCustomerData;
   const showOrders = featuresConfig.enableOrderLogging;
+  // Fraud protection lives next to the customers it protects: the blocked
+  // list is an owner-only endpoint, so client logins never see the view
+  // (fail-open while the owner signal is still checking).
+  const showBlocked = isOwner !== false && !kitchen && featuresConfig.enableOrderLogging;
   // An expired timed pause counts as resumed everywhere (the state machine
   // treats it as open) — otherwise admin shows a stuck amber panel + 0:00
   // counter while customers can already order.
@@ -263,9 +272,9 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
             : `${graceHidden} in the 5-min grace window — appearing automatically`}
         </p>
       )}
-      {(showReports || showCustomers || showAccounts) && (
+      {(showReports || showCustomers || showAccounts || showBlocked) && (
         <div className="mb-4 flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800 w-fit max-w-full overflow-x-auto no-scrollbar" role="tablist" aria-label={isAr ? 'لوحة التحكم' : 'Dashboard'}>
-          {(['overview', ...(showReports ? ['reports'] : []), ...(showCustomers ? ['customers'] : []), ...(showAccounts ? ['accounts'] : [])] as Array<'overview' | 'reports' | 'customers' | 'accounts'>).map((v) => {
+          {(['overview', ...(showReports ? ['reports'] : []), ...(showCustomers ? ['customers'] : []), ...(showAccounts ? ['accounts'] : []), ...(showBlocked ? ['blocked'] : [])] as Array<'overview' | 'reports' | 'customers' | 'accounts' | 'blocked'>).map((v) => {
             const active = dashView === v;
             return (
               <button
@@ -278,7 +287,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
               >
                 {active && <motion.span layoutId="dash-view" className="absolute inset-0 rounded-full bg-[var(--primary)] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
                 <span className="relative z-10">
-                  {v === 'overview' ? (isAr ? 'نظرة عامة' : 'Overview') : v === 'reports' ? (isAr ? 'التقارير' : 'Reports') : v === 'customers' ? (isAr ? 'العملاء' : 'Customers') : (isAr ? 'الحسابات' : 'Accounts')}
+                  {v === 'overview' ? (isAr ? 'نظرة عامة' : 'Overview') : v === 'reports' ? (isAr ? 'التقارير' : 'Reports') : v === 'customers' ? (isAr ? 'العملاء' : 'Customers') : v === 'blocked' ? (isAr ? 'المحظورون' : 'Blocked') : (isAr ? 'الحسابات' : 'Accounts')}
                 </span>
               </button>
             );
@@ -327,6 +336,15 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
           lang={lang}
           currency={menu.settings.currency[lang] || menu.settings.currency.en}
           adminFetch={adminFetch}
+        />
+      )}
+      {dashView === 'blocked' && showBlocked && (
+        <PhoneBlocklistSection
+          lang={lang}
+          adminFetch={adminFetch}
+          onConfirm={onConfirm}
+          collapsed={false}
+          onToggleCollapse={() => {}}
         />
       )}
     </>

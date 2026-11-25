@@ -297,6 +297,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         onTrustReview={(id) => handleTrustReview(id)}
             onRefreshOrders={() => void fetchOrders(false)}
             kitchen={isKitchen}
+            isOwner={backup.isOwner}
             reportsOn={isKitchen ? false : report.reportsOn}
             customersOn={isKitchen ? false : report.customersOn}
             dashView={isKitchen ? 'overview' : report.dashView}

@@ -390,7 +390,7 @@ export const MenuList: React.FC<MenuListProps> = ({
   })?.id;
 
   return (
-    <div className="pb-12 space-y-7 w-full">
+    <div className={`pb-12 space-y-7 w-full ${filtering ? 'pt-7 sm:pt-8' : ''}`}>
       {visibleCats.slice(0, Math.max(1, mountedCats)).map((cat) => {
         const catItems = filteredItems.filter((i) => i.categoryId === cat.id);
         const layout = cat.layout || (cat.id === 'manakish' ? 'list' : 'cards');

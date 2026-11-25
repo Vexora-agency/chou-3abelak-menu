@@ -50,6 +50,9 @@ export interface Order {
   riskScore?: number;
   riskReasons?: string[];
   needsReview?: boolean;
+  /** Admin dismissal (migration 0043): a checked-and-legitimate order no
+   *  longer raises the badge. Absent on older rows — treated as not cleared. */
+  reviewCleared?: boolean;
   /** Better Auth user id when the order was placed by a signed-in customer.
    *  Always present as string-or-null on new API rows; legacy payloads may
    *  omit it (the badge simply does not render). */
@@ -88,6 +91,10 @@ export interface OrdersDashboardProps {
   onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
   /** Kitchen board: section title drops "Recent" (plain "Orders"). */
   kitchen?: boolean;
+  /** Review dismissal: resolves true when the badge cleared. */
+  onTrustReview?: (id: string) => Promise<boolean>;
+  /** Block request: opens the confirm gate, then owner-blocklists the number. */
+  onBlockPhone?: (phone: string, orderNumber: number) => void;
 }
 
 export type Period = 'today' | '7d' | 'month' | 'lastMonth';
@@ -120,6 +127,11 @@ export const STR = {
     completeBoth: (n: number) => `Complete all (${n})`,
     alignBoth: (n: number) => `Bring all to the same stage (${n})`,
     by: (n: string) => `by ${n}`,
+    blockTitle: (n: number) => `Block this number (order #${n})?`,
+    blockBody: (p: string) => `Future orders from ${p} will be rejected automatically. The customer only sees a generic error.`,
+    blockConfirm: 'Block number',
+    blockForbidden: 'Only the owner can block numbers.',
+    blockFailed: 'Could not block the number. Please try again.',
   },
   ar: {
     today: 'اليوم', d7: '7 أيام', thisMonth: 'هذا الشهر', lastMonth: 'الشهر الماضي', refresh: 'تحديث', live: 'مباشر', liveTip: 'التحديث التلقائي يعمل: الطلبات الجديدة تظهر هنا وحدها', soundOn: 'تنبيهات الطلبات الجديدة مفعّلة', soundOff: 'تنبيهات الطلبات الجديدة متوقفة',
@@ -148,5 +160,10 @@ export const STR = {
     completeBoth: (n: number) => `إتمام الكل (${n})`,
     alignBoth: (n: number) => `توحيد مرحلة الكل (${n})`,
     by: (n: string) => `بواسطة ${n}`,
+    blockTitle: (n: number) => `حظر هذا الرقم (طلب #${n})؟`,
+    blockBody: (p: string) => `سيتم رفض أي طلبات قادمة من ${p} تلقائيًا. العميل يرى رسالة خطأ عامة فقط.`,
+    blockConfirm: 'حظر الرقم',
+    blockForbidden: 'حظر الأرقام متاح للمالك فقط.',
+    blockFailed: 'تعذر حظر الرقم. حاول مجددًا.',
   },
 } as const;

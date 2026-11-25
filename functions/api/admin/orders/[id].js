@@ -9,6 +9,7 @@ import { getRole } from '../../../_shared/access.js';
 import {
   countActiveKitchenOrders,
   findOrderById,
+  clearOrderReview,
   updateOrderStatus,
 } from '../../../_shared/repositories/orders.repo.js';
 import { orderDistanceKm, orderingEtaOrDefaults } from '../../../_shared/eta.js';
@@ -41,18 +42,48 @@ export async function onRequest(context) {
   }
 
   const status = typeof body.status === 'string' ? body.status : '';
-  if (!STATUSES.includes(status)) {
+  const statusOk = STATUSES.includes(status);
+  // Review dismissal (no status change): marks a flagged order as
+  // checked-and-legitimate. Owner-only — kitchen/client sessions fail
+  // closed, exactly like the phone blocklist.
+  const wantsClear = body.reviewCleared === true;
+  if (!statusOk && !wantsClear) {
     return jsonNoStore({ error: 'invalid_status' }, 400);
+  }
+  const id = params && typeof params.id === 'string' ? params.id : '';
+  if (!id || id.length > 128) {
+    return jsonNoStore({ error: 'not_found' }, 404);
+  }
+  if (wantsClear) {
+    let owner = false;
+    try {
+      owner = (await getRole(request, env)) === 'owner';
+    } catch {
+      owner = false;
+    }
+    if (!owner) return jsonNoStore({ error: 'forbidden', message: 'Forbidden' }, 403);
+    const db = env.ORDERS_DB || null;
+    if (!db) {
+      return jsonNoStore({ error: 'unavailable' }, 503);
+    }
+    try {
+      const cleared = await clearOrderReview(db, id);
+      if (!cleared) return jsonNoStore({ error: 'not_found' }, 404);
+      if (!statusOk) return jsonNoStore({ order: cleared });
+      // Combined clear + status change: fall through to the status flow
+      // below with the dismissal already persisted.
+    } catch (e) {
+      const msg = String((e && e.message) || e);
+      if (/no such column|has no column named/i.test(msg)) {
+        return jsonNoStore({ error: 'unavailable', message: 'Review dismissal needs migration 0043' }, 503);
+      }
+      return jsonNoStore({ error: 'unavailable' }, 503);
+    }
   }
 
   const db = env.ORDERS_DB || null;
   if (!db) {
     return jsonNoStore({ error: 'unavailable' }, 503);
-  }
-
-  const id = params && typeof params.id === 'string' ? params.id : '';
-  if (!id || id.length > 128) {
-    return jsonNoStore({ error: 'not_found' }, 404);
   }
 
   // Single edge-cached menu read for everything below (confirm-stamp inputs

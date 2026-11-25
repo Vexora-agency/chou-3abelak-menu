@@ -1020,6 +1020,23 @@ export async function updateOrderStatus(db, id, status, opts) {
 }
 
 /**
+ * Admin review dismissal (migration 0043): marks a flagged order as
+ * checked-and-legitimate. The score/reasons stay untouched (audit trail);
+ * only the badge computation changes. Returns the mapped order, or null
+ * when the row is missing. Throws on an unmigrated DB (no such column) so
+ * the route can answer 503 instead of silently pretending.
+ */
+export async function clearOrderReview(db, id) {
+  await db
+    .prepare('UPDATE orders SET review_cleared = 1 WHERE id = ?1')
+    .bind(id)
+    .run();
+  const row = await findOrderById(db, id);
+  if (!row) return null;
+  return mapOrderRow(row);
+}
+
+/**
  * Smart ETA math (pure, unit-testable — no DB, no clock reads beyond the
  * explicit confirmedAtMs input).
  *

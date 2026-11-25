@@ -108,6 +108,8 @@ interface AdminDashboardTabProps {
   kitchen?: boolean;
   /** Live menu updater (autosave persists). Absent = no seasonal quick card. */
   onUpdateMenu?: (updater: (prev: MenuData) => MenuData) => void;
+  /** Review dismissal: resolves true when the badge cleared. */
+  onTrustReview?: (id: string) => Promise<boolean>;
 }
 
 /** TAB 0: ORDERS DASHBOARD — pause control, view switcher, orders/reports/customers. */
@@ -118,7 +120,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   reportSettings, reportRows, retentionCfg, reportSched,
   onSaveReportSettings, onResendVerification, onDownloadReport,
   onSearchCustomers, onCustomerAction,
-  adminFetch, onMenuRefreshed, onConfirm, kitchen, onUpdateMenu,
+  adminFetch, onMenuRefreshed, onConfirm, kitchen, onUpdateMenu, onTrustReview,
 }) => {
   const isAr = lang === 'ar';
   // White-label package gates: starter hides Reports UI, the customers view
@@ -295,6 +297,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
         onRefresh={() => onRefreshOrders()}
         kitchenSound={menu.settings.sounds?.kitchen}
         kitchen={kitchen}
+        onTrustReview={onTrustReview}
       />
       )}
       {dashView === 'reports' && showReports && reportSettings && (

@@ -1133,7 +1133,8 @@ function telegramRiskFields(o) {
   } catch {
     reasons = [];
   }
-  return { riskScore: score, riskReasons: reasons, needsReview: score >= 50 };
+  const cleared = o ? o.review_cleared === 1 : false;
+  return { riskScore: score, riskReasons: reasons, needsReview: score >= 50 && !cleared };
 }
 /**
  * Map a raw `orders` DB row to the `cleaned` shape formatNewOrderMessage

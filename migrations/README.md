@@ -36,5 +36,6 @@ Apply remote: `npx wrangler d1 migrations apply ORDERS_DB --remote` (needs the r
 | `0040_phone_verification_method.sql` | `phone_verifications.method` (`whatsapp` default / `sms` fallback), `provider_id` (UniMTX message id) and `attempts` (SMS wrong-code lock). |
 | `0041_customer_wishlist.sql` | Member wishlist: `customer_wishlist` (user_id + item_id PK, cascade on user delete, created_at) + `(user_id, created_at DESC)` index. Item-level (variants are picked when opening the dish). |
 | `0042_phone_ownership.sql` | One verified phone per member: retires elapsed approvals, keeps the FIRST live approval per phone (revokes later duplicates), and adds a partial unique index on `phone_verifications(phone) WHERE status='approved'`. |
+| `0043_review_cleared.sql` | Admin review dismissal (`orders.review_cleared` INTEGER 0/1, default 0 — a checked-and-legitimate flag that hides the needs-review badge while keeping score/reasons as audit trail; no backfill). |
 
 Rules: additive only, never edit an applied migration — add a new `00NN_*.sql` with the next free number (see `docs/ADD_NEW_FEATURE.md` step 1).

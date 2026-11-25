@@ -1,4 +1,5 @@
 import { useMemo, useState, type FC } from 'react';
+import { adminFetch } from '@/src/lib/api-client';
 import { AnimatePresence, motion } from 'motion/react';
 import { BellRing, BadgeCheck, Check, ChevronDown, Inbox, Link2, Loader2, MapPin, MessageCircle, Phone, StickyNote, Store, X } from 'lucide-react';
 import { STR } from './ordersDashTypes';
@@ -35,6 +36,10 @@ interface OrdersDashListProps {
   /** Kitchen board: the section reads "Orders" (no "Recent"); the owner
    *  keeps "Recent orders". Display-only — one prop, no logic fork. */
   kitchen?: boolean;
+  /** Review dismissal: resolves true when the badge cleared. */
+  onTrustReview?: (id: string) => Promise<boolean>;
+  /** Block request: opens the confirm gate, then owner-blocklists the number. */
+  onBlockPhone?: (phone: string, orderNumber: number) => void;
 }
 
 interface OrderRowProps {
@@ -49,6 +54,10 @@ interface OrderRowProps {
   flashId: string | null;
   onStatusChange: (id: string, status: OrderStatus) => void;
   onConfirm?: (box: { title: string; body: string; confirmText: string; mode?: 'confirm' | 'info'; action?: () => void }) => void;
+  /** Review dismissal: resolves true when the badge cleared. */
+  onTrustReview?: (id: string) => Promise<boolean>;
+  /** Block request: opens the confirm gate, then owner-blocklists the number. */
+  onBlockPhone?: (phone: string, orderNumber: number) => void;
   /** True when this row renders inside a joint-delivery GroupCard: the group
    *  owns the single advance button, so per-row ack/complete stay hidden
    *  (cancel + reopen stay per-order). */
@@ -65,7 +74,7 @@ const CustomerName: FC<{ name: string }> = ({ name }) => (
 );
 
 /** Single order card (row + expandable detail). Pure presentational. */
-const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, currency, now, flashId, onStatusChange, onConfirm, inGroup = false }) => {
+const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, currency, now, flashId, onStatusChange, onConfirm, onTrustReview, onBlockPhone, inGroup = false }) => {
   const TypeIcon = TYPE_ICON[o.type] ?? Store;
   // Smart ETA: absolute 12h time while on-time, mins-late once passed.
   const etaMs = typeof o.etaAt === 'string' && o.etaAt ? Date.parse(o.etaAt) : NaN;
@@ -102,7 +111,15 @@ const OrderRow: FC<OrderRowProps> = ({ o, menu, open, onToggleOpen, t, isAr, cur
                 <span className="hidden sm:inline">{t.registered}</span>
               </span>
             )}
-            <OrderReviewBadge lang={isAr ? 'ar' : 'en'} needsReview={o.needsReview} riskReasons={o.riskReasons} />
+            <OrderReviewBadge
+              lang={isAr ? 'ar' : 'en'}
+              needsReview={o.needsReview}
+              riskReasons={o.riskReasons}
+              phone={o.customer.phone}
+              orderNumber={o.number}
+              onTrust={onTrustReview ? () => onTrustReview(o.id) : undefined}
+              onBlock={onBlockPhone ? () => onBlockPhone(o.customer.phone, o.number) : undefined}
+            />
           </span>
           <span className="block text-[11px] text-neutral-500 truncate mt-0.5" dir="auto">
             <bdi>{relTime(o.createdAt, isAr ? 'ar' : 'en', now)}</bdi> · {o.items.map((it) => `${it.qty}× ${typeof it.unit === 'string' && it.unit ? `${unitLabel(it.unit, it.qty, isAr ? 'ar' : 'en')} ` : ''}${itemTitle(it, isAr ? 'ar' : 'en')}`).join(isAr ? '، ' : ', ')}
@@ -248,7 +265,7 @@ interface GroupCardProps extends Omit<OrderRowProps, 'o' | 'open'> {
  * pair forward together (ack all -> complete all). Cancel stays per-order
  * (cancelling one must never silently kill the other).
  */
-const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t, isAr, currency, now, flashId, onStatusChange, onConfirm }) => {
+const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t, isAr, currency, now, flashId, onStatusChange, onConfirm, onTrustReview, onBlockPhone }) => {
   const [busy, setBusy] = useState(false);
   const active = members.filter((m) => m.status === 'new' || m.status === 'confirmed' || m.status === 'ready');
   const allNew = active.length > 0 && active.every((m) => m.status === 'new');
@@ -306,6 +323,8 @@ const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t,
             flashId={flashId}
             onStatusChange={onStatusChange}
             onConfirm={onConfirm}
+            onTrustReview={onTrustReview}
+            onBlockPhone={onBlockPhone}
             inGroup
           />
         ))}
@@ -325,6 +344,7 @@ const GroupCard: FC<GroupCardProps> = ({ members, openId, onToggleOpen, menu, t,
 export const OrdersDashList: FC<OrdersDashListProps> = ({
   lang, menu, currency, loading, totalCount, list, counts, filter, onFilterChange,
   limit, onShowMore, openId, onToggleOpen, flashId, now, onStatusChange, onConfirm, kitchen,
+  onTrustReview, onBlockPhone,
 }) => {
   const t = STR[lang];
   const isAr = lang === 'ar';
@@ -336,6 +356,45 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] as const },
   });
+
+  /**
+   * Professional number block: confirm gate first (destructive + hard to
+   * undo), then the owner-only blocklist endpoint. Non-owners get a clear
+   * 403 message instead of a silent failure.
+   */
+  const requestBlockPhone = (phone: string, orderNumber: number) => {
+    const digits = (phone || '').replace(/[^0-9]/g, '');
+    if (digits.length < 6) return;
+    const fire = async () => {
+      try {
+        const res = await adminFetch('/api/admin/phone-blocks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: digits,
+            reason: isAr ? `طلب مشبوه #${orderNumber}` : `Spam order #${orderNumber}`,
+          }),
+        });
+        if (!res.ok) {
+          if (res.status === 403) throw new Error(t.blockForbidden);
+          throw new Error(`HTTP ${res.status}`);
+        }
+      } catch (e) {
+        alert(e instanceof Error && e.message ? e.message : t.blockFailed);
+      }
+    };
+    if (onConfirm) {
+      onConfirm({
+        title: t.blockTitle(orderNumber),
+        body: t.blockBody(digits),
+        confirmText: t.blockConfirm,
+        action: () => void fire(),
+      });
+    } else {
+      void fire();
+    }
+  };
+  const handleBlockPhone = onBlockPhone ?? requestBlockPhone;
 
   // Joint-delivery groups over the VISIBLE slice: a follow-up attaches to
   // its parent when the parent is on screen, otherwise it renders
@@ -439,6 +498,8 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                 flashId={flashId}
                 onStatusChange={onStatusChange}
                 onConfirm={onConfirm}
+                onTrustReview={onTrustReview}
+                onBlockPhone={handleBlockPhone}
               />
             ) : (
               <GroupCard
@@ -454,6 +515,8 @@ export const OrdersDashList: FC<OrdersDashListProps> = ({
                 flashId={flashId}
                 onStatusChange={onStatusChange}
                 onConfirm={onConfirm}
+                onTrustReview={onTrustReview}
+                onBlockPhone={handleBlockPhone}
               />
             )
           )}

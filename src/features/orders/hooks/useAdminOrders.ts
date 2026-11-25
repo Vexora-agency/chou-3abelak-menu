@@ -141,5 +141,30 @@ export function useAdminOrders({ isAr, timezone, activeTab, enabled = true }: Ad
     }
   };
 
-  return { orders, ordersLoading, ordersError, cronHealth, graceHidden, fetchOrders, handleOrderStatusChange };
+  /**
+   * Review dismissal: the admin checked a flagged order and found it
+   * legitimate. Optimistic badge removal; the server persists
+   * review_cleared (owner-only) and the silent poll re-syncs. Resolves
+   * true on success, false when the badge must stay (alert shown).
+   */
+  const handleTrustReview = async (id: string): Promise<boolean> => {
+    const prev = orders;
+    setOrders((cur) => cur.map((o) => (o.id === id ? { ...o, needsReview: false, reviewCleared: true } : o)));
+    try {
+      const res = await adminFetch(`/api/admin/orders/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewCleared: true }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      void fetchOrders(true);
+      return true;
+    } catch {
+      setOrders(prev);
+      alert(isAr ? 'تعذر إزالة التنبيه. حاول مجددًا.' : 'Could not clear the alert. Please try again.');
+      return false;
+    }
+  };
+
+  return { orders, ordersLoading, ordersError, cronHealth, graceHidden, fetchOrders, handleOrderStatusChange, handleTrustReview };
 }

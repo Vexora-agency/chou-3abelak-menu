@@ -24,7 +24,7 @@ function pushNoticeFor(status: KitchenPushStatus, t: DashboardSTR): string | nul
 }
 
 /* ---------- Main component ---------- */
-const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, menu, orders, currency, loading, onStatusChange, onRefresh, kitchenSound, onConfirm, kitchen }) => {  const isAr = lang === 'ar';
+const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, menu, orders, currency, loading, onStatusChange, onRefresh, kitchenSound, onConfirm, kitchen, onTrustReview, onBlockPhone }) => {  const isAr = lang === 'ar';
   // Owner decision: dashboard animations always play for every visitor.
   const reduce = false;
   const { now } = useOrdersDashClock();
@@ -230,6 +230,8 @@ const OrdersDashboard: FC<OrdersDashboardProps> = ({ lang, menu, orders, currenc
         onStatusChange={onStatusChange}
         onConfirm={onConfirm}
         kitchen={kitchen}
+        onTrustReview={onTrustReview}
+        onBlockPhone={onBlockPhone}
       />
     </div>
   );

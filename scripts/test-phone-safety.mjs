@@ -1,8 +1,9 @@
 // Phone-safety tests: per-phone caps, phone blocklist, risk scoring.
 // Run: node scripts/test-phone-safety.mjs (or: npm run test:phone-safety)
 // Real SQL via node:sqlite behind a minimal D1-shaped adapter — ALL
-// migration files (0001..0032) are applied, so the blocklist table, risk
-// columns and caps behavior are tested for real. No network, no wrangler.
+// migration files are applied, so the blocklist table, risk columns,
+// review dismissal and caps behavior are tested for real. No network,
+// no wrangler.
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -275,10 +276,10 @@ const daysAgo = (n) => new Date(Date.now() - n * 86400 * 1000).toISOString();
   const stored = await db.prepare('SELECT risk_score, risk_reasons FROM orders WHERE number = ?1').bind(r1.data.orderNumber).first();
   ok(typeof stored.risk_score === 'number', 'risk_score column stored');
   const mapped = mapOrderRow(await db.prepare('SELECT * FROM orders WHERE number = ?1').bind(r1.data.orderNumber).first());
-  ok(typeof mapped.riskScore === 'number' && Array.isArray(mapped.riskReasons) && typeof mapped.needsReview === 'boolean', 'mapOrderRow contract fields present');
+  ok(typeof mapped.riskScore === 'number' && Array.isArray(mapped.riskReasons) && typeof mapped.needsReview === 'boolean' && typeof mapped.reviewCleared === 'boolean', 'mapOrderRow contract fields present');
   // Legacy row without risk columns still reads as unscored.
   const legacy = mapOrderRow({ id: 'x', number: 1, created_at: 't', status: 'new', type: 'delivery', customer_name: 'A', customer_phone: '1', items_json: '[]', subtotal: 1, delivery_fee: 0, total: 1 });
-  ok(legacy.riskScore === 0 && legacy.riskReasons.length === 0 && legacy.needsReview === false, 'legacy row unscored defaults');
+  ok(legacy.riskScore === 0 && legacy.riskReasons.length === 0 && legacy.needsReview === false && legacy.reviewCleared === false, 'legacy row unscored defaults');
 }
 
 /* ---------------- 4. blocklist: route + admin CRUD ---------------- */
@@ -388,6 +389,58 @@ const daysAgo = (n) => new Date(Date.now() - n * 86400 * 1000).toISOString();
   ok(!!crebuilt && !crebuilt.includes('⚠️'), 'clean rebuild has no review line');
 }
 
+/* ---------------- 5b. review dismissal: trust clears the badge ---------------- */
+{
+  const db = migratedDb();
+  const { env, ready } = freshEnv(db);
+  await ready;
+  const { onRequest: orderPatchReq } = await import('../functions/api/admin/orders/[id].js');
+  const PF = '71890123';
+  await insertDirect(db, { phone: PF, status: 'completed' });
+  await insertDirect(db, { phone: PF, status: 'completed' });
+  const flagged = await postOrder(env, orderBody({ customer: { name: 'test', phone: PF, address: 'Hamra' }, location: TEST_PIN, idemKey: 'f9' }), '10.3.0.9');
+  ok(flagged.status === 200, 'flagged order accepted for dismissal test');
+  const frow = await db.prepare('SELECT * FROM orders WHERE number = ?1').bind(flagged.data.orderNumber).first();
+  const oid = frow.id;
+  ok(mapOrderRow(frow).needsReview === true, 'flagged order raises the badge');
+
+  const oc = await ownerCookie();
+  const kc = await kitchenCookie();
+  // Admin order routes are plan-gated (pro); mirror a pro account here.
+  const proEnv = { ...env, SITE_PLAN: 'pro' };
+  const patchHdrs = (cookie) => ({
+    'X-Requested-With': 'menu-admin',
+    Origin: 'https://x',
+    'Content-Type': 'application/json',
+    ...(cookie ? { Cookie: cookie } : {}),
+  });
+  const patchCall = (body, cookie) =>
+    orderPatchReq({
+      request: new Request('https://x/api/admin/orders/x', {
+        method: 'PATCH',
+        headers: patchHdrs(cookie),
+        body: JSON.stringify(body),
+      }),
+      env: proEnv,
+      params: { id: oid },
+    });
+
+  // Bad body still rejected as before.
+  const bad = await patchCall({ nope: 1 }, oc);
+  ok(bad.status === 400 && (await json(bad)).error === 'invalid_status', 'review PATCH rejects unknown body');
+  // Kitchen/client sessions fail closed on trust decisions.
+  const denied = await patchCall({ reviewCleared: true }, kc);
+  ok(denied.status === 403, 'review dismissal as kitchen 403');
+  // Owner clears: badge gone, score/reasons kept as audit trail.
+  const cleared = await patchCall({ reviewCleared: true }, oc);
+  const clearedBody = await json(cleared);
+  ok(cleared.status === 200 && clearedBody.order && clearedBody.order.needsReview === false, 'owner clears the badge');
+  const after = mapOrderRow(await db.prepare('SELECT * FROM orders WHERE id = ?1').bind(oid).first());
+  ok(after.needsReview === false && after.reviewCleared === true && after.riskScore >= 50 && after.riskReasons.length > 0, 'cleared row keeps score/reasons, drops the flag');
+  const { orderRowToCleaned: cleaned2 } = await import('../functions/_shared/telegram.js');
+  ok(cleaned2(await db.prepare('SELECT * FROM orders WHERE id = ?1').bind(oid).first()).needsReview === false, 'Telegram shape honors the dismissal');
+}
+
 /* ---------------- 6. migration 0032 ships the schema ---------------- */
 {
   const sql = readFileSync(join(ROOT, 'migrations', '0032_phone_safety.sql'), 'utf8');
@@ -399,6 +452,9 @@ const daysAgo = (n) => new Date(Date.now() - n * 86400 * 1000).toISOString();
   const cols = await db.prepare('SELECT name FROM pragma_table_info(?)').bind('orders').all();
   const names = cols.results.map((c) => c.name);
   ok(names.includes('risk_score') && names.includes('risk_reasons'), 'risk columns applied');
+  const sql43 = readFileSync(join(ROOT, 'migrations', '0043_review_cleared.sql'), 'utf8');
+  ok(sql43.includes('review_cleared'), '0043 adds review_cleared');
+  ok(names.includes('review_cleared'), 'review_cleared column applied');
 }
 
 summary();

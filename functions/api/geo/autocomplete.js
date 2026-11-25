@@ -8,22 +8,22 @@
  *
  * - q missing / <3 / >100 chars → 400 { error: 'invalid_query' }.
  * - Per-IP burst cap (60/min) plus a global daily cap
- *   (GEOAPIFY_DAILY_MAX still gates the shared limiter namespace; Google
- *   calls have their own GOOGLE_PLACES_DAILY_MAX, default 300) → 429.
+ *   (GEO_AC_DAILY_MAX, default 2500; Google calls have their own
+ *   GOOGLE_PLACES_DAILY_MAX, default 300) → 429.
  *   Both ride the shared KV limiter, which fails OPEN when KV is missing.
  * - Success → 200 { ok:true, results, sources, google } via jsonNoStore.
  *   Failures degrade to thinner results, never to 5xx for missing keys:
  *   the search always answers with what the free passes found.
  *
- * Order: owner-curated places (`custom_places`) → Google Places (primary
- * external provider, session-billed, restricted to the delivery radius)
- * → Photon (free, keyless smart-recall backstop). Geoapify was retired
- * from this path by owner decision (module kept as tested standby).
+ * Order: Google Places (primary external provider, session-billed,
+ * restricted to the delivery radius) → Photon (free, keyless smart-recall
+ * backstop). Geoapify was retired from this path by owner decision
+ * (module kept as tested standby).
  * The bias is the client's live map viewport (`lat`/`lng`) when supplied,
  * else the restaurant pin parsed from the stored menu.settings.mapUrl
  * with parseMapUrlCoordsJs (skipped when missing).
  * Responses and logs never carry keys, provider bodies, or the full query.
- * `sources` names the passes that answered (custom/google/photon);
+ * `sources` names the passes that answered (google/google-text/photon);
  * `google` is off/rich/ok/empty/capped/error so the owner can confirm
  * the paid pass is actually armed.
  */
@@ -43,7 +43,6 @@ import {
 } from '../../_shared/geoapify.js';
 import { fetchPhoton, buildQueryVariants, pickFallbackVariant, rankAppendedByDigits } from '../../_shared/photon.js';
 import { fetchGoogleAutocomplete, fetchTextSearch, googleDailyMax, isGoogleConfigured, validateSessionToken } from '../../_shared/google.js';
-import { searchCustomPlaces, customPlaceToSuggestion } from '../../_shared/repositories/places.repo.js';
 
 const IP_RATE_MAX = 60;
 const IP_RATE_WINDOW_SEC = 60;
@@ -55,9 +54,10 @@ function clientIp(request) {
 }
 
 function dailyMax(env) {
-  const raw = env && typeof env.GEOAPIFY_DAILY_MAX === 'string'
-    ? env.GEOAPIFY_DAILY_MAX.trim()
-    : env && env.GEOAPIFY_DAILY_MAX;
+  const trim = (v) => (typeof v === 'string' ? v.trim() : v);
+  // GEO_AC_DAILY_MAX is the current knob; the retired Geoapify name still
+  // works as a fallback so older dashboards keep their cap.
+  const raw = trim(env && (env.GEO_AC_DAILY_MAX ?? env.GEOAPIFY_DAILY_MAX));
   const n = Number(raw);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : DEFAULT_DAILY_MAX;
 }
@@ -141,34 +141,17 @@ export async function onRequest(context) {
   const zoneCountries = extractServiceCountries(menu);
   const region = (zoneCountries.length > 0 ? zoneCountries[0] : normalizeCountryCodes(clientCountry)[0]) || '';
 
-  // Owner-curated places first («جنب فرن فلان» beats any provider): the
-  // names customers actually use, with the exact pin the owner dropped.
-  // D1 missing/unreachable reads as empty — never a failure.
-  let head = [];
-  try {
-    const db = env ? env.ORDERS_DB : null;
-    if (db) {
-      const places = await searchCustomPlaces(db, q, lang);
-      head = (Array.isArray(places) ? places : [])
-        .map((p) => customPlaceToSuggestion(p, lang))
-        .filter(Boolean);
-    }
-  } catch {
-    head = [];
-  }
-
   // Non-sensitive source + Google-status trail for verification (never the
   // query or a key). The client ignores them; the owner reads them.
   // google: off (no key) | rich (free passes sufficed) | ok | empty |
   // capped (daily budget spent) | error (billing/API/quota on Google's side).
   const sources = [];
-  if (head.length > 0) sources.push('custom');
   let google = isGoogleConfigured(env) ? 'rich' : 'off';
 
   // Google Places is the primary external provider. One bounded call per
   // distinct query (debounced + cached client-side); coordinates resolve
   // once on pick. Free passes below cover thin results and capped budgets.
-  let results = [...head];
+  let results = [];
   if (results.length < MIN_RICH_RESULTS && isGoogleConfigured(env)) {
     try {
       if (await hitRateLimit(kv, `geo-gg-day:${day}`, googleDailyMax(env), DAY_RATE_WINDOW_SEC)) {

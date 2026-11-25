@@ -244,7 +244,7 @@ check('shared helper never logs (no key/query in logs)', !geoSource.includes('co
 check('route never logs (no key/query in logs)', !routeSource.includes('console.'));
 check('route wires the per-IP burst key', routeSource.includes('rl:geo-ac:'));
 check('route wires the global daily key', routeSource.includes('geo-ac-day:'));
-check('route reads the daily cap env', routeSource.includes('GEOAPIFY_DAILY_MAX'));
+check('route reads the daily cap env', routeSource.includes('GEO_AC_DAILY_MAX'));
 check('route biases from the stored map pin', routeSource.includes('parseMapUrlCoordsJs'));
 
 /* ---------- sanitizer ---------- */
@@ -479,43 +479,35 @@ try {
   await kv.put('menu', JSON.stringify({ settings: { mapUrl: 'https://www.google.com/maps/@31.2056,29.9246,15z', ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'EG' }], maxKm: 30 } } } }));
   const gEnv = { GOOGLE_PLACES_API_KEY: 'route-google-key', MENU_KV: kv };
 
-  // Google primary: owner places first, then Google rows, no Photon needed.
+  // Google primary: Google rows lead (no owner blocklist, no D1 reads).
   calledUrls = [];
-  const fakeDb = {
-    prepare: () => ({
-      all: async () => ({ results: [{
-        name_ar: 'دوار السيوف', name_en: 'El Soyouf Roundabout',
-        lat: 31.205, lng: 29.945, kind: 'landmark',
-        created_at: '2026-11-26T00:00:00.000Z', updated_at: null,
-      }] }),
-    }),
-  };
   let seenBody = null;
   globalThis.fetch = async (url, opts) => {
     calledUrls.push(String(url));
-    if (String(url).includes('places.googleapis.com')) {
+    if (String(url).includes('places.googleapis.com/v1/places:autocomplete')) {
       seenBody = JSON.parse(opts.body);
       return { ok: true, status: 200, json: async () => googlePayload };
+    }
+    if (String(url).includes('places.googleapis.com/v1/places:searchText')) {
+      return { ok: true, status: 200, json: async () => ({ places: [] }) };
     }
     return { ok: true, status: 200, json: async () => emptyPhoton };
   };
   const resPlaces = await onRequest({
     request: customerGet('/api/geo/autocomplete?q=%D8%A7%D9%84%D8%B3%D9%8A%D9%88%D9%81&lang=ar&session=abc123XYZ_-'),
-    env: { ...gEnv, ORDERS_DB: fakeDb },
+    env: gEnv,
   });
   const bodyPlaces = await readJson(resPlaces);
-  check('route: owner place ranks first with the saved-place line',
+  check('route: Google rows lead with placeId and null coords',
     resPlaces.status === 200 && bodyPlaces && bodyPlaces.ok === true
-    && bodyPlaces.results.length === 3
-    && bodyPlaces.results[0].line1 === 'دوار السيوف'
-    && bodyPlaces.results[0].line2 === 'مكان محفوظ'
-    && bodyPlaces.results[1].placeId === 'ChIJN1t_tDeuEmsRMD9Q5I-qdUQ'
-    && bodyPlaces.results[1].lat === null);
-  check('route: sources trail leads with custom then google',
-    Array.isArray(bodyPlaces.sources) && bodyPlaces.sources[0] === 'custom' && bodyPlaces.sources[1] === 'google');
+    && bodyPlaces.results.length === 2
+    && bodyPlaces.results[0].placeId === 'ChIJN1t_tDeuEmsRMD9Q5I-qdUQ'
+    && bodyPlaces.results[0].lat === null);
+  check('route: sources trail leads with google',
+    Array.isArray(bodyPlaces.sources) && bodyPlaces.sources[0] === 'google');
   check('route: google flag is ok', bodyPlaces.google === 'ok');
-  check('route: Google call is POST with key header + restriction + session',
-    googleCalls(calledUrls).length === 1 && seenBody
+  check('route: autocomplete call is POST with key header + restriction + session',
+    googleCalls(calledUrls).length === 2 && seenBody
     && seenBody.input === 'السيوف' && seenBody.languageCode === 'ar'
     && JSON.stringify(seenBody.includedRegionCodes) === JSON.stringify(['EG'])
     && seenBody.regionCode === 'eg' && seenBody.sessionToken === 'abc123XYZ_-'

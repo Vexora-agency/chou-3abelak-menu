@@ -7,6 +7,13 @@ export interface StreetEntry {
   lng: number;
 }
 
+/** A named place (district, suburb, village, town, city) from the
+ * downloadable per-country places library. Same shape as a street
+ * plus its OSM place kind. */
+export interface PlaceEntry extends StreetEntry {
+  kind: string;
+}
+
 export interface LoadedStreetIndex {
   id: string;
   cityAr: string;
@@ -15,7 +22,14 @@ export interface LoadedStreetIndex {
   entries: StreetEntry[];
 }
 
+export interface LoadedPlacesIndex {
+  id: string;
+  country: string;
+  entries: PlaceEntry[];
+}
+
 export const STREET_INDEX_LIMIT = 8;
+export const PLACES_INDEX_LIMIT = 4;
 
 /** Same Arabic recall rules as the server and zone matching (alef unify,
  * ة→ه, ى→ي, no tashkeel/tatweel). Merging ه/ة spellings is deliberate:
@@ -212,22 +226,29 @@ export function mergeLocalFirst(local: AddressSuggestion[], server: AddressSugge
 
 /* ---------- lazy region index loading ---------- */
 
-let manifestPromise: Promise<null | {
-  indexes: Array<{ id: string; country: string; bbox: [number, number, number, number] }>;
-}> | null = null;
-let manifestFailedAt = 0;
+interface ManifestHit { id: string; country: string; bbox: [number, number, number, number] }
+
+const manifests = new Map<string, {
+  promise: Promise<{ indexes: ManifestHit[] } | null> | null;
+  failedAt: number;
+}>();
 const MANIFEST_RETRY_MS = 30000;
-const indexCache = new Map<string, Promise<LoadedStreetIndex | null>>();
+const indexCache = new Map<string, Promise<LoadedStreetIndex | LoadedPlacesIndex | null>>();
 
 const EGYPT_BBOX = { minLat: 21.5, minLng: 24.5, maxLat: 31.8, maxLng: 36.0 };
+const LEBANON_BBOX = { minLat: 32.9, minLng: 35.0, maxLat: 34.8, maxLng: 36.7 };
+const COUNTRY_BBOX: Record<string, { minLat: number; minLng: number; maxLat: number; maxLng: number }> = {
+  eg: EGYPT_BBOX,
+  lb: LEBANON_BBOX,
+};
 
 function inBbox(lat: number, lng: number, b: { minLat: number; minLng: number; maxLat: number; maxLng: number }): boolean {
   return lat >= b.minLat && lat <= b.maxLat && lng >= b.minLng && lng <= b.maxLng;
 }
 
-async function readManifest(): Promise<null | { indexes: Array<{ id: string; country: string; bbox: [number, number, number, number] }> }> {
+async function readManifest(base: string): Promise<{ indexes: ManifestHit[] } | null> {
   try {
-    const res = await fetch('/data/street-index/manifest.json');
+    const res = await fetch(`/data/${base}/manifest.json`);
     if (!res.ok) return null;
     const data: unknown = await res.json();
     if (!data || typeof data !== 'object') return null;
@@ -239,77 +260,246 @@ async function readManifest(): Promise<null | { indexes: Array<{ id: string; cou
   }
 }
 
-async function loadIndexFile(id: string): Promise<LoadedStreetIndex | null> {
+function loadManifest(base: string): Promise<{ indexes: ManifestHit[] } | null> {
+  let state = manifests.get(base);
+  if (!state) {
+    state = { promise: null, failedAt: 0 };
+    manifests.set(base, state);
+  }
+  // A failed manifest fetch is retried (at most every 30s) instead of
+  // poisoning the whole session — first load often races offline startup.
+  if (!state.promise) {
+    if (Date.now() - state.failedAt < MANIFEST_RETRY_MS) return Promise.resolve(null);
+    state.promise = readManifest(base).then((m) => {
+      if (!m) {
+        state!.promise = null;
+        state!.failedAt = Date.now();
+      }
+      return m;
+    });
+  }
+  return state.promise;
+}
+
+function pickIndex(
+  m: { indexes: ManifestHit[] } | null,
+  country: string,
+  bias: { lat: number; lng: number } | null,
+): ManifestHit | null {
   try {
-    const res = await fetch(`/data/street-index/${id}.json`);
+    if (!m) return null;
+    const cc = typeof country === 'string' ? country.trim().toLowerCase() : '';
+    const b = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng) ? bias : null;
+    return m.indexes.find((x) => x.country === cc && cc !== '')
+      || (b ? m.indexes.find((x) => Array.isArray(x.bbox) && x.bbox.length === 4
+        && b.lat >= x.bbox[0] && b.lat <= x.bbox[2] && b.lng >= x.bbox[1] && b.lng <= x.bbox[3]) : undefined)
+      || (cc === '' && b === null ? m.indexes[0] : undefined)
+      || null;
+  } catch {
+    return null;
+  }
+}
+
+function countryRelevant(country: string, bias: { lat: number; lng: number } | null): boolean {
+  const cc = typeof country === 'string' ? country.trim().toLowerCase() : '';
+  const b = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng) ? bias : null;
+  if (cc === 'eg' || cc === 'lb' || cc === '') return true;
+  if (!b) return false;
+  const box = COUNTRY_BBOX[cc];
+  return box ? inBbox(b.lat, b.lng, box) : false;
+}
+
+async function loadRowFile(base: string, id: string): Promise<{ id: string; country: string; cityAr: string; cityEn: string; entries: unknown } | null> {
+  try {
+    const res = await fetch(`/data/${base}/${id}.json`);
     if (!res.ok) return null;
     const data: unknown = await res.json();
     if (!data || typeof data !== 'object') return null;
-    const d = data as { id?: unknown; cityAr?: unknown; cityEn?: unknown; country?: unknown; entries?: unknown };
+    const d = data as { id?: unknown; country?: unknown; cityAr?: unknown; cityEn?: unknown; entries?: unknown };
     if (typeof d.id !== 'string' || !Array.isArray(d.entries)) return null;
-    const entries: StreetEntry[] = [];
-    for (const row of d.entries) {
-      if (!Array.isArray(row) || row.length < 4) continue;
-      const [ar, la, lat, lng] = row as [unknown, unknown, unknown, unknown];
-      if (typeof lat !== 'number' || !Number.isFinite(lat)) continue;
-      if (typeof lng !== 'number' || !Number.isFinite(lng)) continue;
-      entries.push({
-        ar: typeof ar === 'string' ? ar : '',
-        la: typeof la === 'string' ? la : null,
-        lat,
-        lng,
-      });
-    }
     return {
       id: d.id,
+      country: typeof d.country === 'string' ? d.country : '',
       cityAr: typeof d.cityAr === 'string' ? d.cityAr : '',
       cityEn: typeof d.cityEn === 'string' ? d.cityEn : '',
-      country: typeof d.country === 'string' ? d.country : '',
-      entries,
+      entries: d.entries,
     };
   } catch {
     return null;
   }
 }
 
+function toStreetEntry(row: unknown): StreetEntry | null {
+  if (!Array.isArray(row) || row.length < 4) return null;
+  const [ar, la, lat, lng] = row as [unknown, unknown, unknown, unknown];
+  if (typeof lat !== 'number' || !Number.isFinite(lat)) return null;
+  if (typeof lng !== 'number' || !Number.isFinite(lng)) return null;
+  return { ar: typeof ar === 'string' ? ar : '', la: typeof la === 'string' ? la : null, lat, lng };
+}
+
 /**
- * Pick the region index for this search: country match first, else a bias
- * inside the index bbox. Manifest (and files) load once per session and
- * only when Egypt is plausibly relevant — Beirut users never download it.
- * Never throws (null = no local index).
+ * Pick the region street index for this search: country match first, else
+ * a bias inside the index bbox. Manifest (and files) load once per session
+ * and only when the region is plausibly relevant. Never throws (null = no
+ * local index).
  */
 export function loadStreetIndex(
   country: string,
   bias: { lat: number; lng: number } | null | undefined,
 ): Promise<LoadedStreetIndex | null> {
   try {
-    const cc = typeof country === 'string' ? country.trim().toLowerCase() : '';
     const b = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng) ? bias : null;
-    const relevant = cc === 'eg' || cc === '' || (b !== null && inBbox(b.lat, b.lng, EGYPT_BBOX));
-    if (!relevant) return Promise.resolve(null);
-    // A failed manifest fetch is retried (at most every 30s) instead of
-    // poisoning the whole session — first load often races offline startup.
-    if (!manifestPromise) {
-      if (Date.now() - manifestFailedAt < MANIFEST_RETRY_MS) return Promise.resolve(null);
-      manifestPromise = readManifest().then((m) => {
-        if (!m) {
-          manifestPromise = null;
-          manifestFailedAt = Date.now();
-        }
-        return m;
-      });
-    }
-    return manifestPromise.then((m) => {
-      if (!m) return null;
-      const hit = m.indexes.find((x) => x.country === 'eg' && cc === 'eg')
-        || (b ? m.indexes.find((x) => Array.isArray(x.bbox) && x.bbox.length === 4
-          && b.lat >= x.bbox[0] && b.lat <= x.bbox[2] && b.lng >= x.bbox[1] && b.lng <= x.bbox[3]) : undefined)
-        || (cc === '' && b === null ? m.indexes.find((x) => x.country === 'eg') : undefined);
+    if (!countryRelevant(country, b)) return Promise.resolve(null);
+    return loadManifest('street-index').then((m) => {
+      const hit = pickIndex(m, country, b);
       if (!hit) return null;
-      let p = indexCache.get(hit.id);
+      const key = `street-index:${hit.id}`;
+      let p = indexCache.get(key) as Promise<LoadedStreetIndex | null> | undefined;
       if (!p) {
-        p = loadIndexFile(hit.id);
-        indexCache.set(hit.id, p);
+        p = (async (): Promise<LoadedStreetIndex | null> => {
+          const file = await loadRowFile('street-index', hit.id);
+          if (!file) return null;
+          const entries: StreetEntry[] = [];
+          for (const row of file.entries as unknown[]) {
+            const e = toStreetEntry(row);
+            if (e) entries.push(e);
+          }
+          return { id: file.id, cityAr: file.cityAr, cityEn: file.cityEn, country: file.country, entries };
+        })();
+        indexCache.set(key, p);
+      }
+      return p;
+    }).catch(() => null);
+  } catch {
+    return Promise.resolve(null);
+  }
+}
+
+/** Arabic + English kind labels for place rows (line2 context). */
+const KIND_LABEL: Record<string, { ar: string; en: string }> = {
+  city: { ar: 'مدينة', en: 'City' },
+  town: { ar: 'مدينة', en: 'Town' },
+  village: { ar: 'قرية', en: 'Village' },
+  suburb: { ar: 'حي', en: 'District' },
+  neighbourhood: { ar: 'حي', en: 'Neighborhood' },
+  quarter: { ar: 'حي', en: 'Quarter' },
+  hamlet: { ar: 'عزبة', en: 'Hamlet' },
+  isolated_dwelling: { ar: 'نجع', en: 'Hamlet' },
+};
+
+export function kindLabel(kind: string, lang: 'en' | 'ar'): string {
+  const k = KIND_LABEL[kind];
+  if (!k) return '';
+  return lang === 'ar' ? k.ar : k.en;
+}
+
+/**
+ * Same token rules as streets, but the label context is the place kind
+ * (district/village/…) instead of a city — an area name always deserves a
+ * visible row even when no street matches it.
+ */
+export function searchPlaces(
+  entries: PlaceEntry[],
+  query: string,
+  lang: 'en' | 'ar',
+  limit: number = PLACES_INDEX_LIMIT,
+  near: { lat: number; lng: number } | null = null,
+): AddressSuggestion[] {
+  try {
+    if (!Array.isArray(entries) || entries.length === 0) return [];
+    const core = queryTokens(query).filter((t) => t.length >= 2 || /\d/.test(t));
+    if (core.length === 0) return [];
+    const chains: string[][] = [core];
+    for (let i = 1; i < core.length; i += 1) {
+      const suf = core.slice(i);
+      if (suf.length >= 2) chains.push(suf);
+    }
+    const cap = Number.isInteger(limit) && limit > 0 ? limit : PLACES_INDEX_LIMIT;
+    const run = (tokens: string[]): AddressSuggestion[] => {
+      const ranked: Array<{ s: AddressSuggestion; score: number }> = [];
+      for (const e of entries) {
+        if (!e || typeof e.lat !== 'number' || typeof e.lng !== 'number') continue;
+        if (!Number.isFinite(e.lat) || !Number.isFinite(e.lng)) continue;
+        const name = (lang === 'ar' ? e.ar || e.la : e.la || e.ar) || '';
+        if (!name) continue;
+        const score = scoreEntry(e, tokens);
+        if (score < 0) continue;
+        const kind = kindLabel(typeof e.kind === 'string' ? e.kind : '', lang);
+        ranked.push({
+          s: { label: kind ? `${name}، ${kind}` : name, line1: name, line2: kind, lat: e.lat, lng: e.lng },
+          score,
+        });
+      }
+      if (ranked.length === 0) return [];
+      const hasNear = near && Number.isFinite(near.lat) && Number.isFinite(near.lng);
+      ranked.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (hasNear && near) {
+          const dist = (s: AddressSuggestion): number => (
+            typeof s.lat === 'number' && typeof s.lng === 'number'
+            && Number.isFinite(s.lat) && Number.isFinite(s.lng)
+              ? distanceM(near.lat, near.lng, s.lat, s.lng)
+              : Number.POSITIVE_INFINITY
+          );
+          return dist(a.s) - dist(b.s);
+        }
+        return 0;
+      });
+      return ranked.slice(0, cap).map((r) => r.s);
+    };
+    for (const tokens of chains) {
+      if (tokens.length === 0) continue;
+      const hit = run(tokens);
+      if (hit.length > 0) return hit;
+    }
+    if (core.length >= 2) {
+      const last = core[core.length - 1];
+      if (/\d/.test(last) || last.length >= 4) return run([last]);
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Pick the downloadable places library for this search: country match
+ * first, else a bias inside the index bbox. Same once-per-session caching
+ * as streets. Never throws (null = no places index).
+ */
+export function loadPlacesIndex(
+  country: string,
+  bias: { lat: number; lng: number } | null | undefined,
+): Promise<LoadedPlacesIndex | null> {
+  try {
+    const b = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng) ? bias : null;
+    if (!countryRelevant(country, b)) return Promise.resolve(null);
+    return loadManifest('places-index').then((m) => {
+      const hit = pickIndex(m, country, b);
+      if (!hit) return null;
+      const key = `places-index:${hit.id}`;
+      let p = indexCache.get(key) as Promise<LoadedPlacesIndex | null> | undefined;
+      if (!p) {
+        p = (async (): Promise<LoadedPlacesIndex | null> => {
+          const file = await loadRowFile('places-index', hit.id);
+          if (!file) return null;
+          const entries: PlaceEntry[] = [];
+          for (const row of file.entries as unknown[]) {
+            if (!Array.isArray(row) || row.length < 5) continue;
+            const [ar, la, lat, lng, kind] = row as [unknown, unknown, unknown, unknown, unknown];
+            if (typeof lat !== 'number' || !Number.isFinite(lat)) continue;
+            if (typeof lng !== 'number' || !Number.isFinite(lng)) continue;
+            entries.push({
+              ar: typeof ar === 'string' ? ar : '',
+              la: typeof la === 'string' ? la : null,
+              lat,
+              lng,
+              kind: typeof kind === 'string' ? kind : '',
+            });
+          }
+          return { id: file.id, country: file.country, entries };
+        })();
+        indexCache.set(key, p);
       }
       return p;
     }).catch(() => null);

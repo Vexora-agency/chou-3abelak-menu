@@ -5,7 +5,6 @@ import { OrdersDashboard, type CronHealth, type Order, type OrderStatus } from '
 import { ReportsPanel, type ReportSettings, type MonthlyReportRow, CustomerData, type CustomerResult } from '@/src/features/reports';
 import { AdminCustomersTab } from './AdminCustomersTab';
 import { PhoneBlocklistSection } from '../PhoneBlocklistSection';
-import { CustomPlacesSection } from '../CustomPlacesSection';
 import OrderingToggle from './OrderingToggle';
 import { getOrderingState } from '@/src/utils/status';
 import { serverNow } from '@/src/utils/serverTime';
@@ -75,7 +74,7 @@ const SeasonalQuickCard: React.FC<{
   );
 };
 
-export type DashView = 'overview' | 'reports' | 'customers' | 'accounts' | 'blocked' | 'places';
+export type DashView = 'overview' | 'reports' | 'customers' | 'accounts' | 'blocked';
 
 interface AdminDashboardTabProps {
   lang: 'en' | 'ar';
@@ -141,8 +140,6 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
   // list is an owner-only endpoint, so client logins never see the view
   // (fail-open while the owner signal is still checking).
   const showBlocked = isOwner !== false && !kitchen && featuresConfig.enableOrderLogging;
-  // Owner places rank first in customer search: same owner-only rule.
-  const showPlaces = isOwner !== false && !kitchen && featuresConfig.enableOrderLogging;
   // An expired timed pause counts as resumed everywhere (the state machine
   // treats it as open) — otherwise admin shows a stuck amber panel + 0:00
   // counter while customers can already order.
@@ -275,9 +272,9 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
             : `${graceHidden} in the 5-min grace window — appearing automatically`}
         </p>
       )}
-      {(showReports || showCustomers || showAccounts || showBlocked || showPlaces) && (
+      {(showReports || showCustomers || showAccounts || showBlocked) && (
         <div className="mb-4 flex gap-1 p-1 bg-neutral-900 rounded-full border border-neutral-800 w-fit max-w-full overflow-x-auto no-scrollbar" role="tablist" aria-label={isAr ? 'لوحة التحكم' : 'Dashboard'}>
-          {(['overview', ...(showReports ? ['reports'] : []), ...(showCustomers ? ['customers'] : []), ...(showAccounts ? ['accounts'] : []), ...(showBlocked ? ['blocked'] : []), ...(showPlaces ? ['places'] : [])] as Array<'overview' | 'reports' | 'customers' | 'accounts' | 'blocked' | 'places'>).map((v) => {
+          {(['overview', ...(showReports ? ['reports'] : []), ...(showCustomers ? ['customers'] : []), ...(showAccounts ? ['accounts'] : []), ...(showBlocked ? ['blocked'] : [])] as Array<'overview' | 'reports' | 'customers' | 'accounts' | 'blocked'>).map((v) => {
             const active = dashView === v;
             return (
               <button
@@ -290,7 +287,7 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
               >
                 {active && <motion.span layoutId="dash-view" className="absolute inset-0 rounded-full bg-[var(--primary)] shadow-md" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
                 <span className="relative z-10">
-                  {v === 'overview' ? (isAr ? 'نظرة عامة' : 'Overview') : v === 'reports' ? (isAr ? 'التقارير' : 'Reports') : v === 'customers' ? (isAr ? 'العملاء' : 'Customers') : v === 'blocked' ? (isAr ? 'المحظورون' : 'Blocked') : v === 'places' ? (isAr ? 'الأماكن والمعالم' : 'Places') : (isAr ? 'الحسابات' : 'Accounts')}
+                  {v === 'overview' ? (isAr ? 'نظرة عامة' : 'Overview') : v === 'reports' ? (isAr ? 'التقارير' : 'Reports') : v === 'customers' ? (isAr ? 'العملاء' : 'Customers') : v === 'blocked' ? (isAr ? 'المحظورون' : 'Blocked') : (isAr ? 'الحسابات' : 'Accounts')}
                 </span>
               </button>
             );
@@ -349,13 +346,6 @@ export const AdminDashboardTab: React.FC<AdminDashboardTabProps> = ({
           collapsed={false}
           onToggleCollapse={() => {}}
           currency={menu.settings.currency[lang] || menu.settings.currency.en}
-        />
-      )}
-      {dashView === 'places' && showPlaces && (
-        <CustomPlacesSection
-          lang={lang}
-          adminFetch={adminFetch}
-          onConfirm={onConfirm}
         />
       )}
     </>

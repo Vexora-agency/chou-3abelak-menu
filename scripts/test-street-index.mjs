@@ -73,7 +73,7 @@ const merged = mergeLocalFirst(local, server);
 ok('local first, server deduped', merged.length === 2 && merged[0] === local[0] && merged[1] === server[1]);
 ok('merge never throws on garbage', mergeLocalFirst(null, null).length === 0);
 
-ok('irrelevant country loads nothing (no network)', await loadStreetIndex('lb', null) === null);
+ok('irrelevant country loads nothing (no network)', await loadStreetIndex('fr', null) === null);
 
 /* Device-local recents (private by design: this device only). */{
   const store = new Map();

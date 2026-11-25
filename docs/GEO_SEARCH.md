@@ -7,8 +7,10 @@ exact coordinates.
 
 ## Order (each stage runs only while results stay thin)
 
-1. **Owner places** (`custom_places` — «جنب فرن فلان»): the names
-   customers actually use, with the exact pin the owner dropped.
+1. **Offline place libraries** (downloadable, per country): every named
+   district, suburb, village, town and city of Egypt and Lebanon ships with
+   the app (`docs/PLACES_INDEX.md`) — areas suggest instantly, zero network,
+   zero typing by the owner.
 2. **Google Places (New)** — the primary external provider, quota-guarded
    (see `docs/GOOGLE_PLACES.md`). Session-billed, restricted to the
    delivery radius when the restaurant pin + explicit `maxKm` allow it,
@@ -36,15 +38,16 @@ Geoapify was retired from this path by owner decision
   rows `[{ label, line1, line2, lat, lng, details?, placeId? }]` with
   `no-store` (Google rows carry `placeId` and null coords until the pick
   resolves them via `/api/geo/place-details`).
-- `sources` names the passes that answered (`custom/google/photon`) and
+- `sources` names the passes that answered (`google/google-text/photon`) and
   the `google` flag reports `off/rich/ok/empty/capped/error` — the owner
   verification readout. Responses and logs never carry keys, provider
   bodies, or the full query.
 
 ## Setup
 
-1. Owner places: dashboard → «الأماكن والمعالم» (migration `0044` must be
-   applied: `npx wrangler d1 migrations apply ORDERS_DB --remote`).
+1. Offline libraries: street index + place indexes ship in the repo
+   (`docs/STREET_INDEX.md`, `docs/PLACES_INDEX.md`); rebuild per region
+   with the documented commands.
 2. Google: key + billing + `GOOGLE_PLACES_API_KEY` secret (see
    `docs/GOOGLE_PLACES.md`); without it the app runs 100% on free passes.
 3. Region street index: `docs/STREET_INDEX.md` (rebuild per city).

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { loadStreetIndex, matchRecentPlaces, mergeLocalFirst, saveRecentPlace, searchStreetIndex } from '../utils/streetIndex';
+import { loadPlacesIndex, loadStreetIndex, matchRecentPlaces, mergeLocalFirst, saveRecentPlace, searchPlaces, searchStreetIndex } from '../utils/streetIndex';
 
 export interface AddressSuggestion {
   label: string;
@@ -231,23 +231,27 @@ export function useAddressAutocomplete({
     const timer = window.setTimeout(() => {
       void (async () => {
         // Instant local answers first, zero network, most personal first:
-        // this device's own picks, then the region street index. The server
-        // passes merge behind.
+        // this device's own picks, then the downloadable places library
+        // (districts/suburbs/villages), then the region street index. The
+        // server passes merge behind.
         // Viewport bias is read here — at fetch time — so map movement
         // never aborts typing (see biasRef above).
         const liveBias = biasRef.current;
         let local: AddressSuggestion[] = [];
         try {
           local = matchRecentPlaces(trimmed);
-          const idx = await loadStreetIndex(country, liveBias);
+          const [placesIdx, streetIdx] = await Promise.all([
+            loadPlacesIndex(country, liveBias),
+            loadStreetIndex(country, liveBias),
+          ]);
           if (controller.signal.aborted) return;
-          if (idx) {
-            local = mergeLocalFirst(local, searchStreetIndex(idx.entries, trimmed, idx.cityAr, idx.cityEn, lang, 8, liveBias));
-            if (local.length > 0) {
-              setSuggestions(local);
-              setActiveIndex(-1);
-            }
-          } else if (local.length > 0) {
+          if (placesIdx) {
+            local = mergeLocalFirst(local, searchPlaces(placesIdx.entries, trimmed, lang, 4, liveBias));
+          }
+          if (streetIdx) {
+            local = mergeLocalFirst(local, searchStreetIndex(streetIdx.entries, trimmed, streetIdx.cityAr, streetIdx.cityEn, lang, 8, liveBias));
+          }
+          if (local.length > 0) {
             setSuggestions(local);
             setActiveIndex(-1);
           }

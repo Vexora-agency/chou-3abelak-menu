@@ -24,7 +24,10 @@
  * menu.settings.mapUrl with parseMapUrlCoordsJs (skipped when missing).
  * Deep search: when the filtered pass returns fewer than MIN_RICH_RESULTS
  * rows, the same query runs once more unfiltered and merges behind the
- * zone matches, so side streets outside the zone list still surface.
+ * zone matches, so side streets outside the zone list still surface. When
+ * both Geoapify passes stay thin, a third keyless pass runs against Photon
+ * (Komoot OSM typeahead) with the same viewport bias — this covers
+ * numbered side streets the filtered index misses.
  * Responses and logs never carry the key, the provider body, or the full query.
  */
 
@@ -42,6 +45,7 @@ import {
   parseLatLng,
   validateAutocompleteQuery,
 } from '../../_shared/geoapify.js';
+import { fetchPhoton } from '../../_shared/photon.js';
 
 const IP_RATE_MAX = 60;
 const IP_RATE_WINDOW_SEC = 60;
@@ -163,6 +167,21 @@ export async function onRequest(context) {
       if (open && open.ok) results = mergeAutocompleteResults(results, open.results);
     } catch {
       /* keep the first-pass results */
+    }
+  }
+  // Deep third pass (free, keyless): when both Geoapify passes stay thin —
+  // typical for numbered side streets such as «شارع 16» that the filtered
+  // index does not cover — run the same query against Photon (Komoot,
+  // OSM typeahead) with the same viewport bias and merge behind. Photon
+  // needs no key and complements Geoapify prefix matching.
+  if (results.length < MIN_RICH_RESULTS) {
+    try {
+      const deep = await fetchPhoton(null, { text: q, lang, bias });
+      if (deep && deep.ok && Array.isArray(deep.results) && deep.results.length > 0) {
+        results = mergeAutocompleteResults(results, deep.results);
+      }
+    } catch {
+      /* keep the Geoapify results */
     }
   }
   return jsonNoStore({ ok: true, results });

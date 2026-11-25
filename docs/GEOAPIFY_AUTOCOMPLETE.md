@@ -24,7 +24,9 @@ found". Manual typing and pin-dragging keep working exactly as before.
   fills `line2` when the provider leaves it empty). Deep search: when
   the filtered pass returns fewer than 3 rows, the same query runs once
   more unfiltered and merges behind the zone matches (one extra provider
-  call only on thin results). Worldwide service (no selected zones)
+  call only on thin results). When both Geoapify passes stay thin,
+  a third keyless pass queries Photon (Komoot OSM typeahead, free without
+  a key) with the same viewport bias and merges behind. Worldwide service (no selected zones)
   falls back to the client country hint, then to unfiltered.
 - The browser never sees the API key or the provider payload. Key missing →
   `503 autocomplete_unavailable`: the UI degrades silently to manual entry.

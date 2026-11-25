@@ -34,6 +34,11 @@ import {
   validateAutocompleteQuery,
 } from '../functions/_shared/geoapify.js';
 import { onRequest } from '../functions/api/geo/autocomplete.js';
+import {
+  buildPhotonUrl,
+  fetchPhoton,
+  sanitizePhotonResults,
+} from '../functions/_shared/photon.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (relative) => readFileSync(join(ROOT, relative), 'utf8');
@@ -115,6 +120,45 @@ check(
 check('zone countries come only from selected mode', extractServiceCountries({ settings: { ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'LB' }, { cc: 'EG' }, { cc: 'xx' }] } } } }).join(',') === 'lb,eg,xx');
 check('zone countries ignore non-selected modes', extractServiceCountries({ settings: { ordering: { deliveryZones: { mode: 'all', countries: [{ cc: 'LB' }] } } } }).length === 0);
 check('zone countries fail open on garbage', extractServiceCountries(null).length === 0 && extractServiceCountries({}).length === 0);
+
+/* ---------- Photon deep-search fallback (keyless, OSM typeahead) ---------- */
+
+check('photon: url hits the komoot endpoint', (buildPhotonUrl({ text: 'street 16' }) || '').startsWith('https://photon.komoot.io/api/'));
+check('photon: url carries q + lang + limit', (() => {
+  const u = buildPhotonUrl({ text: 'street 16', lang: 'ar' });
+  return !!u && new URL(u).searchParams.get('q') === 'street 16' && new URL(u).searchParams.get('lang') === 'ar' && new URL(u).searchParams.get('limit') === '20';
+})());
+check('photon: unknown lang falls back to en', new URL(buildPhotonUrl({ text: 'street', lang: 'fr' })).searchParams.get('lang') === 'en');
+check('photon: viewport bias uses lat/lon names', (() => {
+  const u = new URL(buildPhotonUrl({ text: 'street', bias: { lat: 31.2, lng: 29.95 } }));
+  return u.searchParams.get('lat') === '31.2' && u.searchParams.get('lon') === '29.95';
+})());
+check('photon: bad query returns null', buildPhotonUrl({ text: 'ab' }) === null && buildPhotonUrl({}) === null);
+check(
+  'photon: sanitizer maps GeoJSON to the shared client shape',
+  (() => {
+    const rows = sanitizePhotonResults({
+      features: [
+        {
+          properties: { street: 'Street 16', district: 'El Soyouf', city: 'Alexandria', country: 'Egypt' },
+          geometry: { coordinates: [29.96, 31.21] },
+        },
+        { properties: {}, geometry: { coordinates: ['x', 'y'] } },
+        null,
+      ],
+    });
+    return rows.length === 1 && rows[0].label.includes('Street 16')
+      && rows[0].lat === 31.21 && rows[0].lng === 29.96 && typeof rows[0].line1 === 'string';
+  })()
+);
+check('photon: garbage sanitizes to []', JSON.stringify(sanitizePhotonResults(null)) === '[]'
+  && JSON.stringify(sanitizePhotonResults({})) === '[]');
+{
+  const bad = await fetchPhoton(null, { text: 'ab' }, async () => ({ ok: true, json: async () => ({}) }));
+  check('photon fetch: short query is bad_query without network', !bad.ok && bad.error === 'bad_query');
+  const failed = await fetchPhoton(null, { text: 'street 16' }, async () => ({ ok: false }));
+  check('photon fetch: upstream failure maps to failed', !failed.ok && failed.error === 'failed');
+}
 
 /* ---------- URL building ---------- */
 
@@ -394,7 +438,9 @@ try {
     param(calledUrls[0], 'bias') === 'proximity:35.5018,33.8938');
 
   // Thin zone pass (1 row): the deep second pass runs unfiltered with the
-  // same bias; zone rows stay first, duplicates drop.
+  // same bias; zone rows stay first, duplicates drop. Both Geoapify passes
+  // stay thin (2 rows), so the keyless Photon pass runs third and appends
+  // the numbered side street (e.g. Street 16) behind the zone matches.
   calledUrls = [];
   const thinPayload = {
     results: [
@@ -433,8 +479,19 @@ try {
     ],
   };
   let thinFirst = true;
+  const photonGeoJson = {
+    features: [
+      {
+        properties: { street: 'Street 16', district: 'El Soyouf', city: 'Alexandria', country: 'Egypt' },
+        geometry: { coordinates: [29.952, 31.202] },
+      },
+    ],
+  };
   globalThis.fetch = async (url) => {
     calledUrls.push(String(url));
+    if (String(url).includes('photon.komoot.io')) {
+      return { ok: true, status: 200, json: async () => photonGeoJson };
+    }
     const payload = thinFirst ? thinPayload : openPayload;
     thinFirst = false;
     return { ok: true, status: 200, json: async () => payload };
@@ -444,14 +501,17 @@ try {
     env: { GEOAPIFY_API_KEY: 'route-key-xyz', MENU_KV: kv },
   });
   const bodyThin = await readJson(resThin);
-  check('route: thin zone pass triggers the deep unfiltered pass', calledUrls.length === 2);
+  check('route: thin zone pass triggers the deep unfiltered pass', calledUrls.length === 3);
   check('route: deep pass drops the country filter but keeps the bias',
     param(calledUrls[1], 'filter') === null && param(calledUrls[1], 'bias') === 'proximity:35.5018,33.8938');
+  check('route: photon pass carries the viewport bias without any key',
+    calledUrls[2].includes('photon.komoot.io') && !calledUrls[2].includes('route-key-xyz'));
   check('route: merged results keep the zone row first and dedupe',
     resThin.status === 200 && bodyThin && bodyThin.ok === true
-    && bodyThin.results.length === 2
+    && bodyThin.results.length === 3
     && bodyThin.results[0].label === 'El Soyouf, Alexandria, Egypt'
-    && bodyThin.results[1].label === 'Street 45, El Soyouf, Alexandria, Egypt');
+    && bodyThin.results[1].label === 'Street 45, El Soyouf, Alexandria, Egypt'
+    && bodyThin.results[2].label.includes('Street 16'));
 
   // Map viewport bias: a lat/lng from the picker outranks the restaurant
   // pin; garbage viewports fall back to the pin.

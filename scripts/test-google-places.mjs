@@ -158,6 +158,31 @@ try {
   check('route: Google rows merge behind with placeId and null coords',
     googleRows.length === 1 && googleRows[0].lat === null && googleRows[0].line1 === 'شارع 16');
   check('route: sources trail includes google', Array.isArray(body.sources) && body.sources.includes('google'));
+  check('route: google flag is ok when rows merged', body.google === 'ok');
+  // Key present but upstream fails -> error (visible, no secrets).
+  globalThis.fetch = async (url) => {
+    const u = String(url);
+    if (u.includes('places.googleapis.com')) return { ok: false, status: 500, json: async () => ({}) };
+    if (u.includes('photon.komoot.io')) return { ok: true, status: 200, json: async () => ({ features: [] }) };
+    return { ok: true, status: 200, json: async () => thinGeo };
+  };
+  const errRes = await autocomplete({ request: customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9%2016&lang=ar&country=eg'), env });
+  check('route: google flag is error on upstream failure', (await readJson(errRes)).google === 'error');
+  // Daily budget spent -> capped (skipped before any call).
+  {
+    const kvCap = makeKV();
+    const day = new Date().toISOString().slice(0, 10);
+    await kvCap.put('geo-gg-day:' + day, '300');
+    let calls = 0;
+    globalThis.fetch = async (url) => {
+      calls += 1;
+      return { ok: true, status: 200, json: async () => thinGeo };
+    };
+    const capEnv = { GEOAPIFY_API_KEY: 'route-key-xyz', GOOGLE_PLACES_API_KEY: 'route-google-key', MENU_KV: kvCap };
+    const capRes = await autocomplete({ request: customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9%2016&lang=ar&country=eg'), env: capEnv });
+    const capBody = await readJson(capRes);
+    check('route: google flag is capped when the budget is spent', capBody.google === 'capped' && !capBody.sources.includes('google'));
+  }
   check('route: Google key never leaks into URLs or the response',
     !googleCalls[0].url.includes('route-google-key') && !JSON.stringify(body).includes('route-google-key'));
 

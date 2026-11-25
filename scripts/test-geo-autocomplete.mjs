@@ -480,6 +480,7 @@ try {
     && JSON.stringify(body.results) === JSON.stringify(expectedRichResults));
   check('route: rich zone pass needs no second call', calledUrls.length === 1);
   check('route: sources trail names the answering passes', (() => { const r = body; return Array.isArray(r.sources) && r.sources.includes('geoapify') && !r.sources.includes('google'); })());
+  check('route: google flag is off without a key', body.google === 'off');
   // Owner places rank first: a matching custom place outranks every
   // provider row and needs no extra provider call.
   calledUrls = [];

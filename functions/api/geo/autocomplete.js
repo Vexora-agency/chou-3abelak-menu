@@ -30,7 +30,9 @@
  * and area matches, so side streets outside the list still surface.
  * Responses and logs never carry the key, the provider body, or the full query.
  * A non-sensitive `sources` trail names the passes that answered
- * (custom/geoapify/geoapify-open/geoapify-en/photon/google) for verification.
+ * (custom/geoapify/geoapify-open/geoapify-en/photon/google) for verification,
+ * plus a `google` flag (off/rich/ok/empty/capped/error) so the owner can
+ * confirm the paid pass is actually armed.
  */
 
 import { jsonNoStore } from '../../_shared/session.js';
@@ -255,6 +257,11 @@ export async function onRequest(context) {
   // pass stays thin AND a key is configured. Coordinates resolve once on
   // pick via /api/geo/place-details — never per keystroke — and both call
   // types share one daily budget (GOOGLE_PLACES_DAILY_MAX, default 300).
+  // `google` reports the outcome for activation checks (never the key):
+  // off = no key, rich = free passes sufficed, ok = rows merged,
+  // empty = call worked but nothing matched, capped = daily budget spent,
+  // error = key present but the call failed (billing/API/quota on Google's side).
+  let google = isGoogleConfigured(env) ? 'rich' : 'off';
   if (results.length < MIN_RICH_RESULTS && isGoogleConfigured(env)) {
     try {
       if (await hitRateLimit(kv, `geo-gg-day:${day}`, googleDailyMax(env), DAY_RATE_WINDOW_SEC)) {
@@ -267,11 +274,18 @@ export async function onRequest(context) {
         if (g && g.ok && Array.isArray(g.results) && g.results.length > 0) {
           results = mergeAutocompleteResults(results, g.results);
           sources.push('google');
+          google = 'ok';
+        } else if (g && g.ok) {
+          google = 'empty';
+        } else {
+          google = 'error';
         }
+      } else {
+        google = 'capped';
       }
     } catch {
-      /* keep the free results */
+      google = 'error';
     }
   }
-  return jsonNoStore({ ok: true, results, sources });
+  return jsonNoStore({ ok: true, results, sources, google });
 }

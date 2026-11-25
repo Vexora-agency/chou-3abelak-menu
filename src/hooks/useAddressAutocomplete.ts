@@ -147,6 +147,27 @@ export function useAddressAutocomplete({
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [pickedLabel, setPickedLabel] = useState<string | null>(null);
+  // Live viewport, decoupled from fetching: the map recenters constantly
+  // on mobile (GPS drift, auto-pan, programmatic setView) and every center
+  // change used to abort the in-flight search and restart it — a perpetual
+  // cancel loop where suggestions never arrive. The bias is now read at
+  // fetch time only; a moved map clears stale rows instead of refetching.
+  const biasRef = useRef<{ lat: number; lng: number } | null>(null);
+  biasRef.current = bias;
+  const biasKey = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)
+    ? `${Math.round(bias.lat * 100) / 100},${Math.round(bias.lng * 100) / 100}`
+    : '';
+  const prevBiasKeyRef = useRef(biasKey);
+  useEffect(() => {
+    if (prevBiasKeyRef.current !== biasKey) {
+      prevBiasKeyRef.current = biasKey;
+      // Drop rows ranked for the old viewport; the next keystroke fetches
+      // with the fresh center. Never aborts: an in-flight search keeps its
+      // (slightly older) bias and still resolves.
+      setSuggestions([]);
+      setActiveIndex(-1);
+    }
+  }, [biasKey]);
   // Billing session for Google session pricing: one token per search,
   // shared by this query's autocomplete calls and closed by the
   // place-details call on pick (rotates after 3 minutes regardless).
@@ -212,13 +233,16 @@ export function useAddressAutocomplete({
         // Instant local answers first, zero network, most personal first:
         // this device's own picks, then the region street index. The server
         // passes merge behind.
+        // Viewport bias is read here — at fetch time — so map movement
+        // never aborts typing (see biasRef above).
+        const liveBias = biasRef.current;
         let local: AddressSuggestion[] = [];
         try {
           local = matchRecentPlaces(trimmed);
-          const idx = await loadStreetIndex(country, bias);
+          const idx = await loadStreetIndex(country, liveBias);
           if (controller.signal.aborted) return;
           if (idx) {
-            local = mergeLocalFirst(local, searchStreetIndex(idx.entries, trimmed, idx.cityAr, idx.cityEn, lang, 8, bias));
+            local = mergeLocalFirst(local, searchStreetIndex(idx.entries, trimmed, idx.cityAr, idx.cityEn, lang, 8, liveBias));
             if (local.length > 0) {
               setSuggestions(local);
               setActiveIndex(-1);
@@ -232,9 +256,9 @@ export function useAddressAutocomplete({
         }
         try {
           const params = new URLSearchParams({ q: trimmed, lang, country });
-          if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
-            params.set('lat', String(Math.round(bias.lat * 1000) / 1000));
-            params.set('lng', String(Math.round(bias.lng * 1000) / 1000));
+          if (liveBias && Number.isFinite(liveBias.lat) && Number.isFinite(liveBias.lng)) {
+            params.set('lat', String(Math.round(liveBias.lat * 1000) / 1000));
+            params.set('lng', String(Math.round(liveBias.lng * 1000) / 1000));
           }
           // Billing session groups this search's autocomplete calls with
           // the eventual place-details call (Google session pricing).
@@ -283,7 +307,7 @@ export function useAddressAutocomplete({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [query, lang, country, enabled, pickedLabel, bias?.lat, bias?.lng]);
+  }, [query, lang, country, enabled, pickedLabel]);
 
   const selectSuggestion = useCallback((s: AddressSuggestion) => {
     setPickedLabel(s.label);

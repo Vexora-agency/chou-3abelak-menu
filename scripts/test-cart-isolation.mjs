@@ -350,6 +350,10 @@ ok(
   'shared hook carries no Geoapify URL or key (the server proxy owns the secret)'
 );
 ok(
+  acHook.includes('biasRef') && !acHook.includes('bias?.lat, bias?.lng])'),
+  'map movement never aborts typing: viewport bias is read at fetch time only'
+);
+ok(
   acList.includes('role="listbox"') && acList.includes('role="option"')
     && acList.includes('Google Maps') && acList.includes('translate="no"'),
   'suggestion list uses listbox semantics with the required Google Maps attribution'

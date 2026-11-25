@@ -95,7 +95,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
     || (showVerify
       ? (verifyPending
         ? (isAr ? 'الرمز جاهز.' : 'Code ready.')
-        : (isAr ? 'أكّد هذا الرقم عبر واتساب قبل إرسال الطلب.' : 'Verify this number on WhatsApp before ordering.'))
+        : (isAr ? 'أكّد هذا الرقم قبل إرسال الطلب.' : 'Verify this number before ordering.'))
       : null)
     || (phoneLinked
       ? null

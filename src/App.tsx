@@ -313,16 +313,15 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   // Search & Category Filter
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  // Badge quick-filter (new / spicy / top) — single-select, mutually exclusive
-  // with categories: picking a badge resets the category to All and vice versa
+  // Badge quick-filter (new / spicy / top) — single-select, composes with
+  // the category and the search: picking a badge keeps the category so
+  // e.g. Manakish + Spicy shows spicy manakish, and vice versa.
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
   const toggleBadge = (b: string) => {
     setSelectedBadge((prev) => (prev === b ? null : b));
-    setSelectedCategory('all');
   };
   const selectCategory = (id: string) => {
     setSelectedCategory(id);
-    setSelectedBadge(null);
   };
 
   // Modal Item Details

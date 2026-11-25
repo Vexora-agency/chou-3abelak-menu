@@ -122,12 +122,17 @@ export function searchStreetIndex(
     if (!Array.isArray(entries) || entries.length === 0) return [];
     const core = queryTokens(query).filter((t) => t.length >= 2 || /\d/.test(t));
     if (core.length === 0) return [];
-    // Full query first, then the area-drop backoff («السيوف شارع 16» → «شارع 16»).
-    const variants = core.length >= 2 ? [core, core.slice(1)] : [core];
+    // Full query first, then progressively shorter suffixes («السيوف شماعة
+    // شارع 16» → «شماعة شارع 16» → «شارع 16»): a dialect spelling in the
+    // area tokens must not hide the street. First non-empty wins.
+    const chains = [core];
+    for (let i = 1; i < core.length; i += 1) {
+      const suf = core.slice(i);
+      if (suf.length >= 2) chains.push(suf);
+    }
     const cap = Number.isInteger(limit) && limit > 0 ? limit : STREET_INDEX_LIMIT;
     const city = lang === 'ar' ? cityAr : cityEn;
-    for (const tokens of variants) {
-      if (tokens.length === 0) continue;
+    const run = (tokens: string[]): AddressSuggestion[] => {
       const ranked: Array<{ s: AddressSuggestion; score: number }> = [];
       for (const e of entries) {
         if (!e || typeof e.lat !== 'number' || typeof e.lng !== 'number') continue;
@@ -141,23 +146,33 @@ export function searchStreetIndex(
           score,
         });
       }
-      if (ranked.length > 0) {
-        const hasNear = near && Number.isFinite(near.lat) && Number.isFinite(near.lng);
-        ranked.sort((a, b) => {
-          if (b.score !== a.score) return b.score - a.score;
-          if (hasNear && near) {
-            const dist = (s: AddressSuggestion): number => (
-              typeof s.lat === 'number' && typeof s.lng === 'number'
-              && Number.isFinite(s.lat) && Number.isFinite(s.lng)
-                ? distanceM(near.lat, near.lng, s.lat, s.lng)
-                : Number.POSITIVE_INFINITY
-            );
-            return dist(a.s) - dist(b.s);
-          }
-          return 0;
-        });
-        return ranked.slice(0, cap).map((r) => r.s);
-      }
+      if (ranked.length === 0) return [];
+      const hasNear = near && Number.isFinite(near.lat) && Number.isFinite(near.lng);
+      ranked.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (hasNear && near) {
+          const dist = (s: AddressSuggestion): number => (
+            typeof s.lat === 'number' && typeof s.lng === 'number'
+            && Number.isFinite(s.lat) && Number.isFinite(s.lng)
+              ? distanceM(near.lat, near.lng, s.lat, s.lng)
+              : Number.POSITIVE_INFINITY
+          );
+          return dist(a.s) - dist(b.s);
+        }
+        return 0;
+      });
+      return ranked.slice(0, cap).map((r) => r.s);
+    };
+    for (const tokens of chains) {
+      if (tokens.length === 0) continue;
+      const hit = run(tokens);
+      if (hit.length > 0) return hit;
+    }
+    // Last resort: the final token alone when it is strong enough to stand
+    // on its own (a street number, or a long word like a latinized type).
+    if (core.length >= 2) {
+      const last = core[core.length - 1];
+      if (/\d/.test(last) || last.length >= 4) return run([last]);
     }
     return [];
   } catch {

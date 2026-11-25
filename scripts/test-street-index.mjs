@@ -47,6 +47,10 @@ ok('partial prefix matches', searchStreetIndex(entries, 'أحمد لطفي', 'ا
 ok('missing token means no rows', searchStreetIndex(entries, 'السيوف القاهرة', 'الإسكندرية', 'Alexandria', 'ar').length === 0);
 ok('short query is empty', searchStreetIndex(entries, 'ش', 'الإسكندرية', 'Alexandria', 'ar').length === 0);
 ok('digit-only query matches numbered streets', searchStreetIndex(entries, '16', 'الإسكندرية', 'Alexandria', 'ar')[0]?.line1 === 'شارع 16');
+ok('deep suffix backoff resolves through dialect area spellings', (() => {
+  const r = searchStreetIndex(entries, 'السيوف شماعة شارع 45', 'الإسكندرية', 'Alexandria', 'ar');
+  return r.length === 1 && r[0].line1 === 'شارع 45';
+})());
 ok('digit boost orders numbered first', (() => {
   const r = searchStreetIndex(entries, 'شارع 45', 'الإسكندرية', 'Alexandria', 'ar');
   return r.length === 1 && r[0].line1 === 'شارع 45';
@@ -108,6 +112,8 @@ if (!existsSync(fixture)) {
   const mapped = file.entries.map((r) => ({ ar: r[0] || '', la: r[1], lat: r[2], lng: r[3] }));
   const smoke = searchStreetIndex(mapped, 'شارع', file.cityAr, file.cityEn, 'ar');
   ok('fixture answers شارع instantly', smoke.length > 0 && smoke.length <= 8);
+  const dialectLocal = searchStreetIndex(mapped, 'الإسكندرية السويف شماعة شارع 16', file.cityAr, file.cityEn, 'ar');
+  ok('fixture resolves the dialect query via suffix backoff', dialectLocal.length >= 1 && (dialectLocal[0].line1 || '').includes('16'));
   // Loader integration (stubbed network): manifest → file → search.
   // Runs BEFORE the no-network tests so a real failed fetch can never
   // poison the 30s manifest retry window.

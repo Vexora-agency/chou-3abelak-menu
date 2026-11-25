@@ -35,6 +35,9 @@ export function buildPhotonUrl(options) {
   // Streets-only fallback: osm_tag=highway drops cities/districts/POIs so a
   // thin retry returns named ways («شارع 16») instead of more localities.
   if (opts.osmTag === 'highway') params.set('osm_tag', 'highway');
+  // Soft viewport bias only (lat/lon rank nearby results first). Deliberately
+  // NO hard bbox: it would amputate cross-region queries (a Beirut-centered
+  // map asking about Alexandria) instead of merely deprioritizing them.
   const bias = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
   const lat = bias ? bias.lat : NaN;
   const lon = bias ? bias.lng : NaN;
@@ -42,34 +45,8 @@ export function buildPhotonUrl(options) {
     && typeof lon === 'number' && Number.isFinite(lon) && Math.abs(lon) <= 180) {
     params.set('lat', String(lat));
     params.set('lon', String(lon));
-    const box = bboxAround(bias);
-    if (box) params.set('bbox', box);
   }
   return `${PHOTON_BASE}?${params.toString()}`;
-}
-
-/**
- * Bounding box around a viewport bias (~25 km half-side) so the deep
- * pass stays local: «شارع 16» near Alexandria must not return a
- * namesake street on another continent. Format minLon,minLat,maxLon,maxLat.
- * Returns null for an invalid bias. Never throws.
- */
-export function bboxAround(bias, delta = 0.25) {
-  try {
-    const b = bias && typeof bias === 'object' ? bias : null;
-    const lat = b ? b.lat : NaN;
-    const lon = b ? b.lng : NaN;
-    if (typeof lat !== 'number' || !Number.isFinite(lat) || Math.abs(lat) > 90) return null;
-    if (typeof lon !== 'number' || !Number.isFinite(lon) || Math.abs(lon) > 180) return null;
-    const d = typeof delta === 'number' && Number.isFinite(delta) && delta > 0 && delta <= 1 ? delta : 0.25;
-    const minLat = Math.max(-90, Math.round((lat - d) * 1e4) / 1e4);
-    const maxLat = Math.min(90, Math.round((lat + d) * 1e4) / 1e4);
-    const minLon = Math.max(-180, Math.round((lon - d) * 1e4) / 1e4);
-    const maxLon = Math.min(180, Math.round((lon + d) * 1e4) / 1e4);
-    return `${minLon},${minLat},${maxLon},${maxLat}`;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -118,10 +95,12 @@ export function latinizeStreetType(text) {
 }
 
 /**
- * Smart recall variants for one customer query (max 3, deduped):
- * original → normalized Arabic → latinized street-type, else backoff that
- * drops the first token (usually the city: «الإسكندرية السيوف شارع 16»
- * → «السيوف شارع 16»).
+ * Smart recall variants for one customer query (max 6, deduped):
+ * original → normalized Arabic → latinized street-type, then a deep
+ * suffix chain that drops leading tokens one by one
+ * («الإسكندرية السويف شماعة شارع 16» → … → «شماعة شارع 16» →
+ * «شارع 16»). A dialect spelling in the area tokens (السويف vs السيوف)
+ * no longer kills the street match: the street+number suffix still hits.
  * Long multi-token queries almost never match a single index record, so
  * the shorter variants are what surface the side street. Never throws.
  */
@@ -133,23 +112,46 @@ export function buildQueryVariants(q) {
       const t = v.replace(/\s+/g, ' ').trim();
       if (t.length < 3 || t.length > 100) return;
       if (out.some((x) => x === t)) return;
-      if (out.length < 3) out.push(t);
+      if (out.length < 6) out.push(t);
     };
     if (typeof q !== 'string') return out;
     const original = q.replace(/\s+/g, ' ').trim();
     push(original);
     const norm = normalizeArabicQuery(original);
     push(norm);
-    const latin = latinizeStreetType(norm || original);
-    if (latin) {
-      push(latin);
-    } else {
-      const tokens = (norm || original).split(' ').filter(Boolean);
-      if (tokens.length >= 4) push(tokens.slice(1).join(' '));
+    const base = norm || original;
+    const latin = latinizeStreetType(base);
+    if (latin) push(latin);
+    const tokens = base.split(' ').filter(Boolean);
+    for (let i = 1; i < tokens.length; i += 1) {
+      const suf = tokens.slice(i).join(' ');
+      if (suf.split(' ').filter(Boolean).length < 2) break;
+      push(suf);
     }
     return out;
   } catch {
     return [];
+  }
+}
+
+/**
+ * Pick the fallback variant for the second deep pass: the shortest
+ * non-full variant (sharpest retry — «شارع 16» beats a five-token
+ * misspelled area string), ties broken toward the earlier entry.
+ * Null when there is nothing but the full query. Never throws.
+ */
+export function pickFallbackVariant(variants) {
+  try {
+    if (!Array.isArray(variants) || variants.length < 2) return null;
+    const rest = variants.slice(1).filter((v) => typeof v === 'string' && v);
+    let best = null;
+    for (const v of rest) {
+      const len = v.split(' ').filter(Boolean).length;
+      if (!best || len < best.len) best = { v, len };
+    }
+    return best ? best.v : null;
+  } catch {
+    return null;
   }
 }
 

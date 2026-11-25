@@ -36,10 +36,10 @@ import {
 } from '../functions/_shared/geoapify.js';
 import { onRequest } from '../functions/api/geo/autocomplete.js';
 import {
-  bboxAround,
   buildPhotonUrl,
   buildQueryVariants,
   fetchPhoton,
+  pickFallbackVariant,
   latinizeStreetType,
   normalizeArabicQuery,
   rankAppendedByDigits,
@@ -177,18 +177,27 @@ check('arabic normalize keeps ة and ى', normalizeArabicQuery('السيوف') =
 check('latinize maps شارع to street', latinizeStreetType('السيوف شارع 16') === 'السيوف street 16');
 check('latinize returns null without a street word', latinizeStreetType('السيوف 16') === null);
 check(
-  'variants cover original, normalized and latinized',
-  JSON.stringify(buildQueryVariants('الإسكندرية السيوف شارع 16')) === JSON.stringify(['الإسكندرية السيوف شارع 16', 'الاسكندرية السيوف شارع 16', 'الاسكندرية السيوف street 16'])
+  'variants cover original, normalized, latinized and suffix chain',
+  JSON.stringify(buildQueryVariants('الإسكندرية السيوف شارع 16')) === JSON.stringify(['الإسكندرية السيوف شارع 16', 'الاسكندرية السيوف شارع 16', 'الاسكندرية السيوف street 16', 'السيوف شارع 16', 'شارع 16'])
 );
 check(
-  'variants back off to the last tokens for long latin queries',
-  JSON.stringify(buildQueryVariants('Alexandria El Soyouf Street 16')) === JSON.stringify(['Alexandria El Soyouf Street 16', 'El Soyouf Street 16'])
+  'variants survive dialect spellings via the street suffix',
+  buildQueryVariants('الإسكندرية السويف شماعة شارع 16').includes('شارع 16')
+);
+check('fallback prefers the shortest digit suffix',
+  pickFallbackVariant(buildQueryVariants('الإسكندرية السويف شماعة شارع 16')) === 'شارع 16');
+check('fallback prefers the shortest suffix when no digits exist',
+  pickFallbackVariant(buildQueryVariants('الإسكندرية السيوف شارع الحمرا')) === 'شارع الحمرا');
+check('fallback is null without alternatives',
+  pickFallbackVariant(['السيوف']) === null && pickFallbackVariant([]) === null);
+check(
+  'variants chain suffixes for long latin queries',
+  JSON.stringify(buildQueryVariants('Alexandria El Soyouf Street 16')) === JSON.stringify(['Alexandria El Soyouf Street 16', 'El Soyouf Street 16', 'Soyouf Street 16', 'Street 16'])
 );
 check('variants collapse to one for short queries', JSON.stringify(buildQueryVariants('السيوف')) === JSON.stringify(['السيوف']));
-check('bbox centers on the bias', bboxAround({ lat: 31.2, lng: 29.95 }) === '29.7,30.95,30.2,31.45');
-check('bbox rejects garbage', bboxAround(null) === null && bboxAround({ lat: 91, lng: 0 }) === null);
-check('photon url carries bbox with a bias', new URL(buildPhotonUrl({ text: 'street', bias: { lat: 31.2, lng: 29.95 } })).searchParams.get('bbox') === '29.7,30.95,30.2,31.45');
-check('photon url has no bbox without a bias', new URL(buildPhotonUrl({ text: 'street' })).searchParams.get('bbox') === null);
+check('photon url never carries a hard bbox (soft bias only)',
+  new URL(buildPhotonUrl({ text: 'street', bias: { lat: 31.2, lng: 29.95 } })).searchParams.get('bbox') === null
+  && new URL(buildPhotonUrl({ text: 'street', bias: { lat: 31.2, lng: 29.95 } })).searchParams.get('lat') === '31.2');
 check('photon: osm_tag=highway narrows the fallback to streets', new URL(buildPhotonUrl({ text: 'street 16', osmTag: 'highway' })).searchParams.get('osm_tag') === 'highway');
 check('photon: no osm_tag by default', new URL(buildPhotonUrl({ text: 'street 16' })).searchParams.get('osm_tag') === null);
 check(
@@ -536,6 +545,39 @@ try {
     && bodyThin.google === 'empty'
     && bodyThin.sources.includes('photon')
     && bodyThin.results.some((r) => r.line1 === 'Street 45'));
+
+  // Dialect spelling (السويف شماعة): the full-text pass misses, the digit
+  // suffix («شارع 16», streets-only) still resolves the side street.
+  calledUrls = [];
+  const dialectGeoJson = {
+    features: [
+      {
+        properties: { street: 'Street 16', district: 'El Soyouf', city: 'Alexandria', country: 'Egypt' },
+        geometry: { coordinates: [29.952, 31.202] },
+      },
+    ],
+  };
+  globalThis.fetch = async (url) => {
+    calledUrls.push(String(url));
+    const u = String(url);
+    if (u.includes('places.googleapis.com')) return { ok: true, status: 200, json: async () => ({ suggestions: [] }) };
+    if (u.includes('photon.komoot.io')) {
+      const pq = new URL(u).searchParams.get('q') || '';
+      if (pq === 'شارع 16') return { ok: true, status: 200, json: async () => dialectGeoJson };
+      return { ok: true, status: 200, json: async () => ({ features: [] }) };
+    }
+    return { ok: true, status: 200, json: async () => ({ features: [] }) };
+  };
+  const resDialect = await onRequest({
+    request: customerGet('/api/geo/autocomplete?q=' + encodeURIComponent('الإسكندرية السويف شماعة شارع 16') + '&lang=ar'),
+    env: gEnv,
+  });
+  const bodyDialect = await readJson(resDialect);
+  check('route: dialect spelling still resolves via the digit suffix',
+    resDialect.status === 200 && bodyDialect && bodyDialect.ok === true
+    && bodyDialect.results.some((r) => r.line1 === 'Street 16' || (r.label || '').includes('16')));
+  check('route: suffix retry searches streets only',
+    photonCalls(calledUrls).some((u) => new URL(u).searchParams.get('osm_tag') === 'highway'));
 
   // No key: Photon alone still answers; google flag stays off.
   calledUrls = [];

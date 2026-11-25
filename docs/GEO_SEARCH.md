@@ -15,8 +15,10 @@ exact coordinates.
    otherwise biased by the live map viewport. Coordinates resolve once on
    pick, never per keystroke.
 3. **Photon** (Komoot OSM typeahead, free, keyless): smart-recall variants
-   (normalized Arabic, latinized street-type, token backoff, streets-only
-   `osm_tag=highway` fallback), rows carrying the query's street number
+   (normalized Arabic, latinized street-type, deep suffix chain so a
+   dialect spelling like السويف still resolves via «شارع 16»,
+   streets-only `osm_tag=highway` fallback, soft viewport bias only —
+   never a hard bbox), rows carrying the query's street number
    ranked first.
 4. Client-side, the device's own recent picks and the on-device region
    street index (`docs/STREET_INDEX.md`) merge in front — instant and free.

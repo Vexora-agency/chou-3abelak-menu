@@ -41,7 +41,7 @@ import {
   parseLatLng,
   validateAutocompleteQuery,
 } from '../../_shared/geoapify.js';
-import { fetchPhoton, buildQueryVariants, rankAppendedByDigits } from '../../_shared/photon.js';
+import { fetchPhoton, buildQueryVariants, pickFallbackVariant, rankAppendedByDigits } from '../../_shared/photon.js';
 import { fetchGoogleAutocomplete, googleDailyMax, isGoogleConfigured, validateSessionToken } from '../../_shared/google.js';
 import { searchCustomPlaces, customPlaceToSuggestion } from '../../_shared/repositories/places.repo.js';
 
@@ -206,15 +206,19 @@ export async function onRequest(context) {
     try {
       const zoneRows = [...results];
       let fresh = [];
-      const variants = buildQueryVariants(q).slice(0, 3);
-      let photonCalls = 0;
-      for (let vi = 0; vi < variants.length; vi += 1) {
-        if (zoneRows.length + fresh.length >= MIN_RICH_RESULTS || photonCalls >= 2) break;
-        photonCalls += 1;
+      const variants = buildQueryVariants(q);
+      // Full query first, then the sharpest suffix: a dialect spelling in
+      // the area tokens must not cost the second (and last) deep call.
+      const passes = [];
+      if (variants.length > 0) passes.push(variants[0]);
+      const fallback = pickFallbackVariant(variants);
+      if (fallback && fallback !== passes[0]) passes.push(fallback);
+      for (let vi = 0; vi < passes.length && vi < 2; vi += 1) {
+        if (zoneRows.length + fresh.length >= MIN_RICH_RESULTS) break;
         // Fallback variants (shorter/latinized) search streets only: they
         // exist to surface named ways, not more cities or POIs.
         const deep = await fetchPhoton(null, {
-          text: variants[vi],
+          text: passes[vi],
           lang,
           bias,
           osmTag: vi > 0 ? 'highway' : undefined,

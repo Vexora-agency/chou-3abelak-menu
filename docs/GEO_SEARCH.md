@@ -39,7 +39,9 @@ Geoapify was retired from this path by owner decision
   (debounced 350 ms, min 3 chars, session cache, abort on keystroke).
   Arabic-Indic digits convert to Western and a lone ش expands to شارع
   before matching; a picked area is appended to the *server* query only
-  («شارع 16، السيوف»).
+  («شارع 16، السيوف»). An explicit «بحث» button (and Enter on an empty
+   list) reruns the full cascade immediately — skipping the debounce delay
+   and the session cache — for deliberate deep searches.
 - The route validates the query, rate-limits (60/min per IP; Google calls
   share `GOOGLE_PLACES_DAILY_MAX`, default 300/day), and returns stripped
   rows `[{ label, line1, line2, lat, lng, details?, placeId? }]` with
@@ -58,8 +60,6 @@ Geoapify was retired from this path by owner decision
    (`npx wrangler d1 migrations apply ORDERS_DB --remote`).
 2. Google: key + billing + `GOOGLE_PLACES_API_KEY` secret (see
    `docs/GOOGLE_PLACES.md`); without it the app runs 100% on free passes.
-3. Pasted Google Maps links resolve via `GET /api/geo/resolve-link?url=…`
-   (server-followed redirects, SSRF allow-list, zone verdict included).
 
 ## Contracts
 

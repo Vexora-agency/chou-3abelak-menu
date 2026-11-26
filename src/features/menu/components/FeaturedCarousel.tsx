@@ -62,6 +62,32 @@ function useReducedMotion(): boolean {
   return reduced;
 }
 
+/** 1 card on phones, 2 on tablets, 3 on large screens. */
+function slidesPerViewNow(): number {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return 1;
+  if (window.matchMedia('(min-width: 1120px)').matches) return 3;
+  if (window.matchMedia('(min-width: 768px)').matches) return 2;
+  return 1;
+}
+
+function useSlidesPerView(): number {
+  const [perView, setPerView] = useState(slidesPerViewNow);
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const tablet = window.matchMedia('(min-width: 768px)');
+    const desktop = window.matchMedia('(min-width: 1120px)');
+    const onChange = () => setPerView(slidesPerViewNow());
+    tablet.addEventListener('change', onChange);
+    desktop.addEventListener('change', onChange);
+    onChange();
+    return () => {
+      tablet.removeEventListener('change', onChange);
+      desktop.removeEventListener('change', onChange);
+    };
+  }, []);
+  return perView;
+}
+
 interface PriceParts {
   amount: string;
   currency?: string;
@@ -316,12 +342,14 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   const isAr = lang === 'ar';
   const isLight = variant === 'light';
   const reduced = useReducedMotion();
+  const slidesPerView = useSlidesPerView();
   const titleId = useId();
   const pressingRef = useRef(false);
   const autoplayMs =
     Number.isFinite(autoplayIntervalMs) && autoplayIntervalMs >= 1000
       ? autoplayIntervalMs
       : AUTOPLAY_MS;
+  const perView = Math.min(slidesPerView, Math.max(1, items.length));
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
@@ -338,8 +366,20 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     () => typeof document === 'undefined' || !document.hidden,
   );
 
+  const activeSlides = new Set<number>();
+  for (let i = 0; i < perView && items.length > 0; i += 1) {
+    activeSlides.add((selectedIndex + i) % items.length);
+  }
+
   const autoplayOn = autoplay && !reduced && items.length > 1;
   const running = autoplayOn && !paused && pageVisible;
+
+  // The number of visible slides is CSS-driven (1 / 2 / 3); Embla must
+  // remeasure when a breakpoint changes the slide widths.
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.reInit();
+  }, [emblaApi, perView]);
 
   useEffect(() => {
     if (!emblaApi) return;
@@ -410,7 +450,12 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
       className={`fc-root fc-root--${variant}${className ? ` ${className}` : ''}`}
       aria-labelledby={titleId}
       onPointerDown={handlePress}
-      style={{ '--fc-autoplay': `${autoplayMs}ms` } as React.CSSProperties}
+      style={
+        {
+          '--fc-autoplay': `${autoplayMs}ms`,
+          '--fc-per-view': perView,
+        } as React.CSSProperties
+      }
     >
       <div className="fc-head">
         <h2 className="fc-title" id={titleId}>
@@ -444,7 +489,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                 lang={lang}
                 currency={currency}
                 index={index}
-                active={index === selectedIndex}
+                active={activeSlides.has(index)}
                 eager={index === 0}
                 darkMode={!isLight}
                 orderingEnabled={orderingEnabled}

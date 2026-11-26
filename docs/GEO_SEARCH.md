@@ -40,9 +40,7 @@ Geoapify was retired from this path by owner decision
   A single explicit «بحث» button (and Enter on an empty list) reruns the
   cascade at once and auto-pins the first fresh result — typing alone only
   ever suggests, never moves the pin.
-- The confirmed pin shows its offline Plus Code
-  (`src/utils/plusCodes.ts`, no quota, no key) so the driver can paste it
-  into any maps app for exact navigation.
+- The confirmed pin shows exact coordinates with GPS accuracy.
   Arabic-Indic digits convert to Western and a lone ش expands to شارع
   before matching; a picked area is appended to the *server* query only
   («شارع 16، السيوف»). An explicit «بحث» button (and Enter on an empty

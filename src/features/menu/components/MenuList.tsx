@@ -7,8 +7,8 @@ import { resolveCategoryMark, parseMarkStyle, markOpacity01, markPosition, markS
 import { useMenuListFiltering } from '../hooks/useMenuListFiltering';
 import { useMenuListCartQuantities } from '../hooks/useMenuListCartQuantities';
 import { MenuListEmptyState } from './menu-list/MenuListEmptyState';
-import { MenuListSectionHeader } from './menu-list/MenuListCompactRow';
-import { MenuListCompactRow } from './menu-list/MenuListCompactRow';
+import { MenuListSectionHeader } from './menu-list/MenuListSectionHeader';
+import { MenuListWaveRow } from './menu-list/MenuListWaveRow';
 import { MenuListListRow } from './menu-list/MenuListListRow';
 import { MenuListGridCard } from './menu-list/MenuListGridCard';
 import { MenuListPhotoCard } from './menu-list/MenuListPhotoCard';
@@ -69,7 +69,7 @@ function useGridCols(kind: 'list' | 'compact' | 'cards' | 'photos' | 'round'): n
     if (kind === 'round') return mq(1280) ? 8 : mq(1024) ? 6 : mq(640) ? 4 : 2;
     if (kind === 'photos') return mq(1280) ? 4 : mq(1024) ? 3 : 2;
     if (kind === 'list') return mq(1280) ? 3 : mq(768) ? 2 : 1;
-    return mq(768) ? 2 : 1; // compact
+    return 1; // compact = one full-width soft-wave band per item
   };
   const [cols, setCols] = useState(get);
   useEffect(() => {
@@ -144,6 +144,8 @@ interface MenuListRowItemProps {
   festive?: boolean;
   /** True only for the first visible photos/round section (required). */
   firstMedia: boolean;
+  /** Last visible item in a compact section: no trailing wave divider. */
+  isLast: boolean;
 }
 
 /** Picks the row component for the section layout (single place, head + tail). */
@@ -172,23 +174,25 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
   totalQtyOf,
   festive = false,
   firstMedia,
+  isLast,
 }: MenuListRowItemProps) => {
   const qty = totalQtyOf(item);
   if (kind === 'compact') {
     return (
-      <MenuListCompactRow
+      <MenuListWaveRow
         item={item}
         index={index}
+        isLast={isLast}
         leaveDelayMs={leaveDelayMs}
         skipEntrance={skipEntrance}
         orderingEnabled={orderingEnabled}
         festive={festive}
-                menu={menu}
+        menu={menu}
         lang={lang}
         currency={currency}
-        darkMode={darkMode}
         isAr={isAr}
         qty={qty}
+        sectionMark={sectionMark}
         onAddItem={onAddItem}
         onUpdateLine={onUpdateLine}
         onOpenItem={onOpenItem}
@@ -408,7 +412,7 @@ export const MenuList: React.FC<MenuListProps> = ({
         const kind = isCompactSection ? 'compact' : isListSection ? 'list' : layout === 'photos' ? 'photos' : layout === 'round' ? 'round' : 'cards';
         const gridClass =
           kind === 'compact'
-            ? 'grid grid-cols-1 md:grid-cols-2 gap-x-10 menu-section-grid'
+            ? 'wave-stack grid grid-cols-1 menu-section-grid'
             : kind === 'list'
               ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-3.5 menu-section-grid'
               : kind === 'photos'
@@ -433,7 +437,7 @@ export const MenuList: React.FC<MenuListProps> = ({
         const snapRows = (n: number) => Math.max(cols, Math.ceil(n / cols) * cols);
         const effInitial = snapRows(initial);
         const effBatch = snapRows(batch);
-        const rowCtx: Omit<MenuListRowItemProps, 'item' | 'index' | 'leaveDelayMs' | 'skipEntrance'> = {
+        const rowCtx: Omit<MenuListRowItemProps, 'item' | 'index' | 'leaveDelayMs' | 'skipEntrance' | 'isLast'> = {
           kind,
           menu,
           lang,
@@ -588,6 +592,7 @@ export const MenuList: React.FC<MenuListProps> = ({
                 // entrance: first-paint items (visibleCounts untouched) keep
                 // the animated reveal exactly as today.
                 skipEntrance={idx >= effInitial && (visibleCounts[cat.id] ?? 0) > effInitial}
+                isLast={idx === visibleItems.length - 1}
                 {...rowCtx}
               />
             ))}
@@ -600,22 +605,35 @@ export const MenuList: React.FC<MenuListProps> = ({
         // as every other layout — otherwise round headers/cards stick to
         // the viewport edges on desktop while the rest is centered.
         // The band's vertical padding reveals its backdrop above/below.
-        const sectionWrapClass = kind === 'round'
-          ? `w-full py-8 sm:py-10 ${darkMode ? 'round-band' : 'round-band-light'}`
-          : kind === 'list'
-            ? 'px-5 sm:px-8 max-w-3xl md:max-w-5xl xl:max-w-7xl mx-auto w-full'
-            : 'px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full';
+        // Compact is a full-bleed ribbon: the bands touch the viewport edges
+        // on phones and sit in a 900px column on larger screens. Its header
+        // and pager share the .wave-column measure so they line up with the
+        // band copy instead of floating outside the ribbon.
+        const sectionWrapClass = kind === 'compact'
+          ? 'w-full'
+          : kind === 'round'
+            ? `w-full py-8 sm:py-10 ${darkMode ? 'round-band' : 'round-band-light'}`
+            : kind === 'list'
+              ? 'px-5 sm:px-8 max-w-3xl md:max-w-5xl xl:max-w-7xl mx-auto w-full'
+              : 'px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full';
         const sectionInnerClass = kind === 'round'
           ? 'px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full'
           : undefined;
+        const sectionHeader = (
+          <MenuListSectionHeader title={isAr ? cat.name.ar : cat.name.en} darkMode={darkMode} count={catItems.length} festive={isFestive} />
+        );
         const sectionBody = (
           <>
             {/* Category Header */}
-            <MenuListSectionHeader title={isAr ? cat.name.ar : cat.name.en} darkMode={darkMode} count={catItems.length} festive={isFestive} />
+            {kind === 'compact' ? <div className="wave-column">{sectionHeader}</div> : sectionHeader}
             {/* One grid per section: compact/list/cards differ only by the
                 grid classes and the row component, both resolved above. */}
             {itemsGrid}
-            {pagerButton}
+            {pagerButton
+              ? kind === 'compact'
+                ? <div className="wave-column">{pagerButton}</div>
+                : pagerButton
+              : null}
           </>
         );
         return (

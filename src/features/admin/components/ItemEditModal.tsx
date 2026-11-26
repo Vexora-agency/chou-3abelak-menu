@@ -43,9 +43,9 @@ export const ItemEditModal: React.FC<ItemEditModalProps> = ({
   const isAr = lang === 'ar';
   const { nonEmptySections, sizesSection } = useItemEditorSections(menu);
   // The photo field only matters where a photo is actually shown: the photos,
-  // round, cards and list layouts, and the featured carousel. Compact rows
-  // never render one — except when the item already HAS a photo (kept visible
-  // so it can be replaced or removed, never stranded).
+  // round, cards, list and soft-wave (compact) layouts, and the featured
+  // carousel. An item without a photo still keeps the field when one exists,
+  // so it can be replaced or removed, never stranded.
   const cat = menu.categories.find((c) => c.id === item.categoryId);
   const catLayout = cat?.layout || (cat?.id === 'manakish' ? 'list' : 'cards');
   const photoRelevant =
@@ -53,6 +53,7 @@ export const ItemEditModal: React.FC<ItemEditModalProps> = ({
     catLayout === 'round' ||
     catLayout === 'cards' ||
     catLayout === 'list' ||
+    catLayout === 'compact' ||
     item.featured ||
     Boolean(item.imageUrl?.trim());
   // Escape closes the topmost layer: the addon picker first, the modal after.

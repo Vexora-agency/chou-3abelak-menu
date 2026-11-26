@@ -1,0 +1,377 @@
+/* ==========================================================================
+   Compact layout → soft-wave ribbon
+   One full-bleed band per item, alternating brand yellow and ink, joined by
+   the soft wave. Colours are intentionally fixed to the brand in both page
+   themes: the band is the poster, the page around it can be light or dark.
+   ========================================================================== */
+
+/* Header/pager column: same 900px measure as the bands, with the same
+   inline padding so the section title lines up with the band copy. */
+.wave-column {
+  width: 100%;
+  max-width: 900px;
+  margin-inline: auto;
+  padding-inline: clamp(14px, 2.6vw, 34px);
+}
+
+.wave-stack {
+  width: 100%;
+  max-width: 900px;
+  margin-inline: auto;
+}
+
+.wave-row {
+  position: relative;
+}
+
+.wave-band {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2.2vw, 28px);
+}
+.wave-band--yellow {
+  background: var(--primary);
+  color: #0a0a0a;
+  padding: clamp(26px, 3.5vw, 42px) clamp(14px, 2.6vw, 34px) 8px;
+}
+.wave-band--black {
+  background: #0a0a0a;
+  color: #ffffff;
+  padding: 8px clamp(14px, 2.6vw, 34px);
+}
+.wave-band--yellow.is-last,
+.wave-band--black.is-last {
+  padding-bottom: clamp(24px, 3.5vw, 42px);
+}
+.wave-band.is-interactive {
+  cursor: pointer;
+}
+.wave-band.is-soldout {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.wave-band--yellow:focus-visible {
+  outline: 3px solid #0a0a0a;
+  outline-offset: -4px;
+}
+.wave-band--black:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: -4px;
+}
+
+/* Media / copy columns */
+.wave-media {
+  /* A smaller dish frame keeps each band short; the extra width goes to
+     the copy, which matters most on phones and for longer descriptions. */
+  flex: 0 0 40%;
+  min-width: 0;
+}
+.wave-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.wave-body--yellow {
+  text-align: start;
+}
+.wave-body--black {
+  text-align: end;
+}
+
+.wave-title {
+  font-size: clamp(22px, 3.2vw, 32px);
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  overflow-wrap: break-word;
+}
+.wave-desc {
+  margin-top: 6px;
+  max-width: 38ch;
+  font-size: clamp(12px, 1.45vw, 15px);
+  font-weight: 400;
+  line-height: 1.75;
+}
+.wave-body--yellow .wave-desc {
+  color: rgba(10, 10, 10, 0.72);
+}
+.wave-body--black .wave-desc {
+  color: #a3a099;
+}
+.wave-price {
+  margin-top: clamp(10px, 1.4vw, 16px);
+  font-size: clamp(20px, 2.6vw, 29px);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.wave-body--black .wave-price {
+  color: var(--primary);
+}
+
+/* Dish frame: one crisp border + the site's hard offset shadow. The inner
+   image wrapper is over-scaled so the GSAP parallax never exposes an edge. */
+.wave-frame {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: clamp(16px, 1.8vw, 22px);
+  border: 2px solid #ffffff;
+  background: #141414;
+  box-shadow: 4px 4px 0 #0a0a0a, 0 18px 34px rgba(0, 0, 0, 0.22);
+}
+[dir="rtl"] .wave-frame {
+  box-shadow: -4px 4px 0 #0a0a0a, 0 18px 34px rgba(0, 0, 0, 0.22);
+}
+.wave-band--black .wave-frame {
+  border-color: var(--primary);
+  box-shadow: 4px 4px 0 var(--primary), 0 18px 34px rgba(0, 0, 0, 0.55);
+}
+[dir="rtl"] .wave-band--black .wave-frame {
+  box-shadow: -4px 4px 0 var(--primary), 0 18px 34px rgba(0, 0, 0, 0.55);
+}
+.wave-frame-imgwrap {
+  position: absolute;
+  inset: 0;
+}
+.wave-frame-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  scale: 1.12;
+}
+.wave-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wave-fallback--yellow {
+  background: radial-gradient(70% 70% at 50% 45%, rgba(10, 10, 10, 0.1), rgba(10, 10, 10, 0.02));
+  color: rgba(10, 10, 10, 0.22);
+}
+.wave-fallback--black {
+  background: radial-gradient(70% 70% at 50% 45%, rgba(255, 196, 0, 0.14), rgba(20, 20, 20, 0.2));
+  color: rgba(255, 196, 0, 0.28);
+}
+
+/* Soft wave divider — 1px overlap + same-colour hairline stroke seal the
+   sub-pixel seam between each wave and the band that follows it. */
+.wave-divider {
+  height: clamp(84px, 10vw, 140px);
+  line-height: 0;
+  margin-bottom: -1px;
+}
+.wave-divider svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.wave-divider--to-black {
+  background: var(--primary);
+  color: #0a0a0a;
+}
+.wave-divider--to-yellow {
+  background: #0a0a0a;
+  color: var(--primary);
+}
+.wave-divider path {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Action */
+.wave-action {
+  display: flex;
+  margin-top: clamp(14px, 1.8vw, 22px);
+}
+.wave-body--yellow .wave-action {
+  justify-content: flex-start;
+}
+.wave-body--black .wave-action {
+  justify-content: flex-end;
+}
+.wave-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding-inline: clamp(16px, 2vw, 26px);
+  border-radius: 999px;
+  font-size: clamp(12.5px, 1.1vw, 15px);
+  font-weight: 900;
+  line-height: 1;
+}
+.wave-band--yellow .wave-add {
+  background: #0a0a0a;
+  color: var(--primary);
+  box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.4);
+}
+.wave-band--black .wave-add {
+  background: var(--primary);
+  color: #0a0a0a;
+  box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.6);
+}
+.wave-add:hover {
+  filter: brightness(1.08);
+}
+.wave-add:active {
+  transform: scale(0.97);
+}
+.wave-band--yellow .wave-add:focus-visible,
+.wave-band--yellow .wave-stepper button:focus-visible {
+  outline: 3px solid #0a0a0a;
+  outline-offset: 3px;
+}
+.wave-band--black .wave-add:focus-visible,
+.wave-band--black .wave-stepper button:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+.wave-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 4px;
+  border-radius: 999px;
+}
+.wave-band--yellow .wave-stepper {
+  background: #0a0a0a;
+  color: var(--primary);
+}
+.wave-band--black .wave-stepper {
+  background: var(--primary);
+  color: #0a0a0a;
+}
+.wave-stepper button {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.wave-band--yellow .wave-stepper button {
+  background: rgba(255, 196, 0, 0.14);
+}
+.wave-band--yellow .wave-stepper button:hover {
+  background: rgba(255, 196, 0, 0.26);
+}
+.wave-band--black .wave-stepper button {
+  background: rgba(0, 0, 0, 0.12);
+}
+.wave-band--black .wave-stepper button:hover {
+  background: rgba(0, 0, 0, 0.22);
+}
+.wave-stepper button:active {
+  transform: scale(0.9);
+}
+.wave-stepper__qty {
+  min-width: 30px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Badges + wishlist row */
+.wave-meta {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+/* The ink band's copy is end-aligned; mirror the meta row so the badge sits
+   on the same edge as the title instead of floating on the far side. */
+.wave-body--black .wave-meta {
+  flex-direction: row-reverse;
+}
+.wave-meta__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.wave-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1.5px solid;
+  font-size: 10.5px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.wave-badge--brand {
+  background: #0a0a0a;
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.wave-band--black .wave-badge--brand {
+  background: var(--primary);
+  color: #0a0a0a;
+}
+.wave-badge--spicy {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+  border-color: rgba(220, 38, 38, 0.25);
+}
+.wave-band--black .wave-badge--spicy {
+  background: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+.wave-badge--soldout {
+  background: #525252;
+  color: #ffffff;
+  border-color: #525252;
+}
+.wave-band--black .wave-badge--soldout {
+  background: #404040;
+  border-color: #404040;
+}
+
+/* Very narrow phones: keep the image useful but give the copy more room. */
+@media (max-width: 380px) {
+  .wave-band {
+    gap: 12px;
+  }
+  .wave-band--yellow {
+    padding: 24px 14px 8px;
+  }
+  .wave-band--black {
+    padding: 8px 14px;
+  }
+  .wave-band--yellow.is-last,
+  .wave-band--black.is-last {
+    padding-bottom: 24px;
+  }
+  .wave-title {
+    font-size: 20px;
+  }
+  .wave-desc {
+    font-size: 11.5px;
+  }
+  .wave-price {
+    font-size: 19px;
+  }
+  .wave-divider {
+    height: 88px;
+  }
+  .wave-add {
+    padding-inline: 16px;
+    font-size: 12.5px;
+  }
+}

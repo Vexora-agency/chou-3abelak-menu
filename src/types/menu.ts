@@ -140,9 +140,9 @@ export interface Category {
   id: string;
   name: { en: string; ar: string };
   visible: boolean;
-  /** How its items render in the menu: cards grid, text-first list, compact
-      rows, photo-first cards, or round cards (circular photo + title +
-      description + price). */
+  /** How its items render in the menu: cards grid, text-first list,
+      soft-wave bands (the `compact` value), photo-first cards, or round
+      cards (circular photo + title + description + price). */
   layout?: 'cards' | 'list' | 'compact' | 'photos' | 'round';
   /** Watermark for cards: 'brand' (pan mark), a glyph key
       (pizza/cup/coffee/cake/croissant/salad/sandwich/utensils),

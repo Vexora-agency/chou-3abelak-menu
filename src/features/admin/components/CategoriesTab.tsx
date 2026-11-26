@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlignJustify, ChevronDown, ChevronUp, Eye, EyeOff, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, EyeOff, Image as ImageIcon, Plus, Trash2, Waves } from 'lucide-react';
 import type { MenuData } from '@/src/types/menu';
 import { Pager } from './Pager';
 
@@ -62,7 +62,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
                       : activeLayout === 'list'
                         ? (isAr ? 'صورة بجانب الاسم والسعر.' : 'Photo beside the name and price.')
                         : activeLayout === 'compact'
-                          ? (isAr ? 'صفوف نصية مدمجة.' : 'Dense text-only rows.')
+                          ? (isAr ? 'شريط متناوب بموجات ناعمة بين الأصناف.' : 'Alternating soft-wave bands.')
                           : (isAr ? 'صورة دائرية بإطار ذهبي.' : 'Round photo in a gold ring.');
                 return (
           <div
@@ -143,7 +143,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
             </button>
           </div>
 
-          {/* Display layout: cards grid, text-first list, compact rows,
+          {/* Display layout: cards grid, text-first list, soft-wave bands,
               photo-first cards or round dish cards */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] text-neutral-500 font-bold">{isAr ? 'الشكل:' : 'Style:'}</span>
@@ -162,7 +162,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
                     }
                     className={`px-3 h-7 rounded-full text-[11px] font-bold transition-colors ${active ? 'bg-[var(--primary)] text-[#0A0A0A]' : 'text-neutral-400 hover:text-white'}`}
                   >
-                    {l === 'cards' ? (isAr ? 'بطاقات' : 'Cards') : l === 'list' ? (isAr ? 'قائمة' : 'List') : l === 'compact' ? (isAr ? 'مدمج' : 'Compact') : l === 'photos' ? (isAr ? 'معرض' : 'Gallery') : (isAr ? 'دائري' : 'Round')}
+                    {l === 'cards' ? (isAr ? 'بطاقات' : 'Cards') : l === 'list' ? (isAr ? 'قائمة' : 'List') : l === 'compact' ? (isAr ? 'موجات' : 'Waves') : l === 'photos' ? (isAr ? 'معرض' : 'Gallery') : (isAr ? 'دائري' : 'Round')}
                   </button>
                 );
               })}
@@ -170,7 +170,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({
           </div>
           <p className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-neutral-500">
             {activeLayout === 'compact' ? (
-              <AlignJustify size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
+              <Waves size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
             ) : (
               <ImageIcon size={12} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
             )}

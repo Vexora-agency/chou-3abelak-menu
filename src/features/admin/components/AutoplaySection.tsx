@@ -114,17 +114,17 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
           <div className="rounded-2xl border border-neutral-800 bg-black/40 overflow-hidden">
             <FeaturedCarousel
               key={previewItems.map((i) => i.id).join('|')}
+              variant="dark"
+              title={isAr ? 'المميز والأكثر طلبًا' : 'Featured Items'}
               items={previewItems}
               menu={menu}
               onOpenItem={() => {}}
-              onAddToCart={() => {}}
+              onAddToCart={() => false}
               currency={currency}
               lang={lang}
-              darkMode={menu.settings.defaultTheme !== 'light'}
               autoplay={on}
-              autoplayInterval={every}
-              forceSlider
-              showArrows
+              autoplayIntervalMs={every * 1000}
+              orderingEnabled={false}
             />
             {demoClone && (
               <p className="px-4 pb-3 -mt-1 text-center text-[10px] text-neutral-500">

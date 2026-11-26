@@ -1,534 +1,501 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { MenuData, MenuItem } from '@/src/types/menu';
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useEffect, useId, useRef, useState } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
+import { ShoppingCart } from 'lucide-react';
+import type { MenuData, MenuItem } from '@/src/types/menu';
 import { pickLangText } from '@/src/utils/menuHelpers';
+import {
+  effectiveBadges,
+  formatPrice,
+  hasVariants,
+  minVariantPrice,
+  normalizePricing,
+  requiredExtrasMin,
+  unitLabel,
+} from '@/src/utils/pricing';
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
-import { priceLabel, effectiveBadges } from '@/src/utils/pricing';
 import { WishlistButton } from '@/src/features/wishlist';
-import { SplitText } from '@/src/components/motion';
-import { scheduleIdle } from '@/src/utils/scheduleIdle';
+import './featured-carousel.css';
 
-interface FeaturedCarouselProps {
+export interface FeaturedCarouselProps {
+  /** `dark` is the black stage; `light` is the white stage. */
+  variant: 'dark' | 'light';
+  title: string;
   items: MenuItem[];
   menu: MenuData;
-  onOpenItem: (item: MenuItem) => void;
-  onAddToCart: (item: MenuItem) => void;
   currency: string;
   lang: 'en' | 'ar';
-  darkMode: boolean;
-  autoplay: boolean;
-  autoplayInterval: number;
-  /** Force the mobile slider layout even on wide screens (admin live preview). */
-  forceSlider?: boolean;
-  /** Preview-only manual arrows: step through cards with the same slide motion. */
-  showArrows?: boolean;
-  /** Menu-only mode (starter): hides the add button, cards are not clickable. */
+  /** Silent quick-add of `qty` units. False → the caller opens the item sheet. */
+  onAddToCart: (item: MenuItem, qty: number) => boolean;
+  /** Used when a quick add cannot be resolved silently (required choices). */
+  onOpenItem: (item: MenuItem) => void;
   orderingEnabled?: boolean;
+  /** Master switch from the menu settings. Cadence defaults to the approved 5s. */
+  autoplay?: boolean;
+  /** Optional cadence override (admin live preview). Storefront stays at 5s. */
+  autoplayIntervalMs?: number;
 }
 
-/** Desktop ≥768px (mirrors the md: breakpoint): 3 cards slide together. */
-function useDesktop(): boolean {
-  const get = () =>
-    typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(min-width: 768px)').matches;
-  const [v, setV] = useState(get);
+/** The approved progress duration. Keep in sync with --fc-autoplay in CSS. */
+const AUTOPLAY_MS = 5000;
+const SUCCESS_MS = 1400;
+
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
+function useReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(prefersReducedMotion);
   useEffect(() => {
-    const m = window.matchMedia('(min-width: 768px)');
-    const on = () => setV(m.matches);
-    m.addEventListener('change', on);
-    on();
-    return () => m.removeEventListener('change', on);
+    if (typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = () => setReduced(mq.matches);
+    mq.addEventListener('change', onChange);
+    onChange();
+    return () => mq.removeEventListener('change', onChange);
   }, []);
-  return v;
+  return reduced;
 }
 
-export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
-  items,
+interface PriceParts {
+  amount: string;
+  currency?: string;
+  unit?: string;
+}
+
+/** Amount / currency / unit split so each part can take its designed size. */
+function featuredPrice(
+  item: MenuItem,
+  menu: MenuData,
+  lang: 'en' | 'ar',
+  currency: string,
+): PriceParts {
+  const isAr = lang === 'ar';
+  const p = normalizePricing(item);
+  const free = isAr ? 'مجانًا' : 'FREE';
+  try {
+    const extras = requiredExtrasMin(item, menu);
+    const amount = hasVariants(item)
+      ? minVariantPrice(item) + extras
+      : typeof p.price === 'number'
+        ? p.price + extras
+        : extras > 0
+          ? extras
+          : null;
+    if (amount === null) return { amount: '—' };
+    if (amount <= 0) return { amount: free };
+    return {
+      amount: formatPrice(amount),
+      currency: currency || undefined,
+      unit: p.showUnit ? `/ ${unitLabel(p.unit, 1, lang)}` : undefined,
+    };
+  } catch {
+    return { amount: '—' };
+  }
+}
+
+function badgeText(item: MenuItem, menu: MenuData, isAr: boolean): string {
+  const badges = effectiveBadges(menu, item);
+  if (badges.includes('top')) return isAr ? 'الأكثر طلبًا' : 'BEST SELLER';
+  if (badges.includes('new')) return isAr ? 'جديد' : 'NEW';
+  return '';
+}
+
+interface FeaturedCardProps {
+  item: MenuItem;
+  menu: MenuData;
+  lang: 'en' | 'ar';
+  currency: string;
+  index: number;
+  active: boolean;
+  eager: boolean;
+  orderingEnabled: boolean;
+  onAddToCart: (item: MenuItem, qty: number) => boolean;
+  onOpenItem: (item: MenuItem) => void;
+}
+
+const FeaturedCard: React.FC<FeaturedCardProps> = ({
+  item,
   menu,
-  onOpenItem,
-  onAddToCart,
-  currency,
   lang,
-  darkMode,
-  autoplay,
-  autoplayInterval,
-  forceSlider = false,
-  showArrows = false,
-  orderingEnabled = true,
+  currency,
+  index,
+  active,
+  eager,
+  orderingEnabled,
+  onAddToCart,
+  onOpenItem,
 }) => {
   const isAr = lang === 'ar';
-  const interactive = orderingEnabled;
+  const pricing = normalizePricing(item);
+  const [qty, setQty] = useState(pricing.minQty);
+  const [added, setAdded] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+  const successTimer = useRef<number | null>(null);
 
-  // One-card-at-a-time slider on mobile: smooth transform slide with dots,
-  // wraps instantly at the end. Desktop slides 3 cards at a time in ONE row
-  // (equal thirds, step = one card, instant wrap at the end).
-  const isDesktop = useDesktop();
-  const visible = !forceSlider && isDesktop ? 3 : 1;
-  const marqueeOn = autoplay && items.length > 1;
-  const perCard = Math.min(10, Math.max(2, autoplayInterval || 4));
-  const [index, setIndex] = useState(0);
-  const [instant, setInstant] = useState(false);
-  // Short-lived compositor hint: the track gets .slider-sliding (which opts
-  // into will-change: transform) only while a slide transition actually runs.
-  // Instant jumps (end-wrap, breakpoint stranding) run with transition: none
-  // and need no layer. The 750ms window covers the 0.7s CSS slide + margin.
-  const [sliding, setSliding] = useState(false);
-  const slidingFrom = useRef(0);
   useEffect(() => {
-    if (instant) {
-      slidingFrom.current = index;
+    return () => {
+      if (successTimer.current !== null) window.clearTimeout(successTimer.current);
+    };
+  }, []);
+
+  const name = pickLangText(item.name, lang);
+  const description = pickLangText(item.description, lang).trim();
+  const price = featuredPrice(item, menu, lang, currency);
+  const badge = badgeText(item, menu, isAr);
+  const hot = effectiveBadges(menu, item).includes('spicy');
+  const isGold = index % 2 === 1;
+  const showPhoto = Boolean(item.imageUrl) && !imageFailed;
+
+  const decrease = () => setQty((q) => Math.max(pricing.minQty, q - pricing.step));
+  const increase = () => setQty((q) => Math.min(pricing.maxQty, q + pricing.step));
+
+  const handleAdd = () => {
+    if (!orderingEnabled || added) return;
+    const requiresChoice =
+      Array.isArray(item.requiredGroups) && item.requiredGroups.length > 0;
+    if (requiresChoice) {
+      onOpenItem(item);
       return;
     }
-    if (slidingFrom.current === index) return;
-    slidingFrom.current = index;
-    setSliding(true);
-    const t = window.setTimeout(() => setSliding(false), 750);
-    return () => window.clearTimeout(t);
-  }, [index, instant]);
-  // Broken remote photos fall back to the plain branded card (same pattern
-  // as the menu photo cards) — one record for all cards, no per-card hooks.
-  const [failedPhoto, setFailedPhoto] = useState<Record<string, boolean>>({});
-  const indexRef = useRef(0);
-  const pausedRef = useRef(false);
-  const inViewRef = useRef(true);
-  const sectionRef = useRef<HTMLDivElement | null>(null);
-  const resumeTimer = useRef<number | null>(null);
-  const touchX = useRef<number | null>(null);
-  const count = items.length;
-  // Last start position with a FULL window (6 items, 3 visible → 0..3).
-  const maxIndex = Math.max(0, count - visible);
-
-  // Pixel step = one card + one gap (card widths are container-driven, so a
-  // resize listener is enough — no per-frame measuring). Drives --sx on the
-  // track for mobile AND desktop alike.
-  const trackRef = useRef<HTMLDivElement | null>(null);
-  const [stepPx, setStepPx] = useState(0);
-  const gapPx = visible > 1 ? 16 : 0; // md:gap-4
-  useEffect(() => {
-    // rAF-coalesced + change-guarded: a resize burst shares one width read,
-    // and identical widths skip the setState entirely. The track is also
-    // observed (card widths are container-driven — fonts/images settling
-    // changes them without any window resize). Initial measure stays
-    // synchronous so the first paint carries the correct --sx.
-    let ticking = false;
-    let last = -1;
-    const measure = () => {
-      const first = trackRef.current?.children[0] as HTMLElement | undefined;
-      const next = first ? first.getBoundingClientRect().width + gapPx : 0;
-      if (next !== last) {
-        last = next;
-        setStepPx(next);
-      }
-    };
-    const requestMeasure = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        ticking = false;
-        measure();
-      });
-    };
-    // First measure on idle (settled tree, ~free reads): measuring in the
-    // dirty post-mount tree forced a full-page layout on slower devices.
-    // Autoplay (4 s+) and manual slides happen long after this.
-    const cancelIdle = scheduleIdle(measure, 1200);
-    const ro = trackRef.current ? new ResizeObserver(requestMeasure) : null;
-    if (trackRef.current && ro) ro.observe(trackRef.current);
-    window.addEventListener('resize', requestMeasure);
-    return () => {
-      cancelIdle();
-      window.removeEventListener('resize', requestMeasure);
-      ro?.disconnect();
-    };
-  }, [gapPx, count]);
-
-  // Resizing across the md breakpoint can strand the index past the end —
-  // restart instantly rather than showing half-empty space.
-  useEffect(() => {
-    if (indexRef.current > maxIndex) {
-      setInstant(true);
-      indexRef.current = 0;
-      setIndex(0);
-      requestAnimationFrame(() => requestAnimationFrame(() => setInstant(false)));
+    if (!onAddToCart(item, qty)) {
+      onOpenItem(item);
+      return;
     }
-  }, [maxIndex]);
+    setAdded(true);
+    successTimer.current = window.setTimeout(() => {
+      successTimer.current = null;
+      setAdded(false);
+    }, SUCCESS_MS);
+  };
 
-  // Fresh mount per item list (parent keys by item ids), so index/ref
-  // always start at 0 — no reset effect needed.
+  return (
+    <article
+      className={`fc-card${isGold ? ' is-gold' : ''}${active ? ' is-active' : ''}`}
+      data-testid={`featured-card-${item.id}`}
+      aria-roledescription={isAr ? 'بطاقة' : 'card'}
+    >
+      <div className="fc-photo" aria-hidden="true">
+        {showPhoto ? (
+          <SmartMenuImage
+            item={item}
+            name=""
+            sizes="280px"
+            width={800}
+            height={800}
+            eager={eager}
+            plain
+            onError={() => setImageFailed(true)}
+            className="fc-photo-img"
+          />
+        ) : null}
+      </div>
+
+      <svg
+        className="fc-liquid"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path
+          className="fc-liquid-fill"
+          d="M100,0L50,0C46,12 54,24 49,38C44,52 54,66 48,80C46,88 48,94 46,100L100,100Z"
+        />
+        <path
+          className="fc-liquid-edge"
+          d="M50,0C46,12 54,24 49,38C44,52 54,66 48,80C46,88 48,94 46,100"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+
+      {hot ? <span className="fc-hot">{isAr ? 'حار' : 'SPICY'}</span> : null}
+
+      <div className="fc-text">
+        {badge ? <span className="fc-badge">{badge}</span> : null}
+        <h3 className="fc-name">{name}</h3>
+        {description ? <p className="fc-desc">{description}</p> : null}
+        <div className="fc-price">
+          <span dir="ltr">{price.amount}</span>
+          {price.currency ? <small>{price.currency}</small> : null}
+          {price.unit ? <em>{price.unit}</em> : null}
+        </div>
+      </div>
+
+      {orderingEnabled ? (
+        <div className="fc-bar">
+          <button
+            type="button"
+            className={`fc-add${added ? ' is-added' : ''}`}
+            onClick={handleAdd}
+            aria-disabled={added || undefined}
+            aria-label={
+              added
+                ? isAr
+                  ? `تمت إضافة ${name} إلى السلة`
+                  : `${name} added to cart`
+                : isAr
+                  ? `أضف ${name} إلى السلة، الكمية ${qty}`
+                  : `Add ${name} to cart, quantity ${qty}`
+            }
+          >
+            {added ? (
+              <span>{isAr ? 'تمت الإضافة ✓' : 'Added ✓'}</span>
+            ) : (
+              <>
+                <ShoppingCart size={18} strokeWidth={2.4} aria-hidden="true" />
+                <span>{isAr ? 'أضف للسلة' : 'Add to cart'}</span>
+              </>
+            )}
+          </button>
+
+          <div className="fc-qty">
+            <button
+              type="button"
+              className="fc-qty-btn fc-qty-btn--minus"
+              onClick={decrease}
+              disabled={qty <= pricing.minQty}
+              aria-label={isAr ? 'تقليل الكمية' : 'Decrease quantity'}
+            >
+              −
+            </button>
+            <span className="fc-qty-value" aria-live="polite" aria-atomic="true">
+              {qty}
+            </span>
+            <button
+              type="button"
+              className="fc-qty-btn fc-qty-btn--plus"
+              onClick={increase}
+              disabled={qty >= pricing.maxQty}
+              aria-label={isAr ? 'زيادة الكمية' : 'Increase quantity'}
+            >
+              +
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <span className="fc-sr-only" role="status" aria-live="polite">
+        {added ? (isAr ? `تمت إضافة ${name} إلى السلة` : `${name} added to cart`) : ''}
+      </span>
+    </article>
+  );
+};
+
+export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
+  variant,
+  title,
+  items,
+  menu,
+  currency,
+  lang,
+  onAddToCart,
+  onOpenItem,
+  orderingEnabled = true,
+  autoplay = true,
+  autoplayIntervalMs = AUTOPLAY_MS,
+}) => {
+  const isAr = lang === 'ar';
+  const isLight = variant === 'light';
+  const reduced = useReducedMotion();
+  const titleId = useId();
+  const pressingRef = useRef(false);
+  const autoplayMs =
+    Number.isFinite(autoplayIntervalMs) && autoplayIntervalMs >= 1000
+      ? autoplayIntervalMs
+      : AUTOPLAY_MS;
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: true,
+    align: 'start',
+    direction: isAr ? 'rtl' : 'ltr',
+    slidesToScroll: 1,
+    duration: reduced ? 0 : 24,
+  });
+
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [cycle, setCycle] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [pageVisible, setPageVisible] = useState(
+    () => typeof document === 'undefined' || !document.hidden,
+  );
+
+  const autoplayOn = autoplay && !reduced && items.length > 1;
+  const running = autoplayOn && !paused && pageVisible;
+
   useEffect(() => {
-    if (!marqueeOn || count <= 1) return;
-    // Hold the first slide change for 8 s: the 6 s intro + first paint own the
-    // LCP window, and moving the hero card out from under it only hurts.
-    const startedAt = performance.now();
+    if (!emblaApi) return;
+    const onSelect = () => {
+      setSelectedIndex(emblaApi.selectedScrollSnap());
+      // A new slide owns a fresh 5s window.
+      setCycle((c) => c + 1);
+    };
+    onSelect();
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+    return () => {
+      emblaApi.off('select', onSelect);
+      emblaApi.off('reInit', onSelect);
+    };
+  }, [emblaApi]);
+
+  // A pointer press anywhere on the stage freezes the progress and the timer.
+  // Releasing restarts both from zero so the fill can never desync from the
+  // actual 5s cadence.
+  useEffect(() => {
+    const release = () => {
+      if (!pressingRef.current) return;
+      pressingRef.current = false;
+      setPaused(false);
+      setCycle((c) => c + 1);
+    };
+    window.addEventListener('pointerup', release);
+    window.addEventListener('pointercancel', release);
+    return () => {
+      window.removeEventListener('pointerup', release);
+      window.removeEventListener('pointercancel', release);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      const visible = !document.hidden;
+      setPageVisible(visible);
+      if (visible) setCycle((c) => c + 1);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  useEffect(() => {
+    if (!emblaApi || !running) return;
     const id = window.setInterval(() => {
-      if (performance.now() - startedAt < 8000) return;
-      // Offscreen autoplay is invisible work: no state update, no track
-      // transition, no compositor pass while the customer scrolls the menu.
-      if (document.hidden || pausedRef.current || !inViewRef.current) return;
-      const next = indexRef.current + 1;
-      if (next > maxIndex) {
-        // Instant wrap (no visible rewind), then re-enable animation
-        setInstant(true);
-        indexRef.current = 0;
-        setIndex(0);
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => setInstant(false))
-        );
-      } else {
-        indexRef.current = next;
-        setIndex(next);
-      }
-    }, perCard * 1000);
+      if (document.hidden) return;
+      emblaApi.scrollNext();
+    }, autoplayMs);
     return () => window.clearInterval(id);
-  }, [marqueeOn, count, perCard, maxIndex]);
+  }, [emblaApi, running, cycle, autoplayMs]);
 
-  useEffect(() => {
-    return () => {
-      if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
-    };
-  }, []);
+  const handlePress = () => {
+    pressingRef.current = true;
+    setPaused(true);
+  };
 
-  // Pause autoplay while the carousel is out of view.
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el || typeof IntersectionObserver !== 'function') return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        inViewRef.current = entries[0]?.isIntersecting ?? true;
-      },
-      { threshold: 0.01 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  const pause = () => {
-    pausedRef.current = true;
-    if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
-    resumeTimer.current = null;
-  };
-  const resumeSoon = () => {
-    if (resumeTimer.current !== null) window.clearTimeout(resumeTimer.current);
-    resumeTimer.current = window.setTimeout(() => {
-      pausedRef.current = false;
-      resumeTimer.current = null;
-    }, 3000);
-  };
-  const goTo = (i: number) => {
-    pause();
-    // Mobile wraps around the whole list; desktop clamps to full windows.
-    const n = visible > 1
-      ? Math.min(maxIndex, Math.max(0, i))
-      : ((i % count) + count) % count;
-    indexRef.current = n;
-    setIndex(n);
-    resumeSoon();
-  };
-  const onTouchStart = (e: React.TouchEvent) => {
-    pause();
-    touchX.current = e.touches[0].clientX;
-  };
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (touchX.current !== null) {
-      const dx = e.changedTouches[0].clientX - touchX.current;
-      if (Math.abs(dx) > 40) {
-        // Mirrored in RTL: the track advances rightward there, so a
-        // finger swiping left goes to the previous card (native RTL paging).
-        const step = dx < 0 ? 1 : -1;
-        const raw = indexRef.current + (isAr ? -step : step);
-        const n = visible > 1
-          ? Math.min(maxIndex, Math.max(0, raw))
-          : ((raw % count) + count) % count;
-        indexRef.current = n;
-        setIndex(indexRef.current);
-      }
-    }
-    touchX.current = null;
-    resumeSoon();
+  const goTo = (index: number) => {
+    emblaApi?.scrollTo(index);
   };
 
   if (items.length === 0) return null;
 
-  // The first item with a photo is the LCP candidate (a featured item is
-  // allowed to have no photo). Everything below keys off this, not idx 0.
-  const heroIdx = items.findIndex((item) => Boolean(item.imageUrl));
+  // Member-only wishlist button in the stage header (never over the photo).
+  // Guests get null from WishlistButton, so the approved composition stays
+  // pixel-identical for them.
+  const item = items[Math.min(selectedIndex, items.length - 1)] ?? items[0];
 
-  const renderCard = (item: MenuItem, idx: number) => {
-    const isYellowCard = idx % 2 === 1; // Alternating cards
-    const isHero = idx === heroIdx;
-    const eff = effectiveBadges(menu, item);
-    const badgeText = eff.includes('top')
-      ? (isAr ? 'الأكثر طلبًا' : 'BEST SELLER')
-      : eff.includes('spicy')
-      ? (isAr ? 'حار ومقرمش' : 'HOT & SPICY')
-      : (isAr ? 'جديد' : 'NEW');
-
-    const cardLabel = `${pickLangText(item.name, lang)} ${priceLabel(item, lang, currency, menu)}`;
-    const showPhoto = Boolean(item.imageUrl) && !failedPhoto[item.id];
-    return (
+  return (
+    <section
+      className={`fc-root fc-root--${variant}`}
+      aria-labelledby={titleId}
+      style={{ '--fc-autoplay': `${autoplayMs}ms` } as React.CSSProperties}
+    >
       <div
-        key={item.id}
-        onClick={() => interactive && onOpenItem(item)}
-        onPointerDown={pause}
-        role={interactive ? 'button' : undefined}
-        tabIndex={interactive ? 0 : undefined}
-        aria-label={interactive ? cardLabel : undefined}
-        data-testid={`featured-card-${item.id}`}
-        data-item-id={item.id}
-        data-motion-reveal={isHero ? undefined : 'scale'}
-        data-motion-delay={isHero ? undefined : Math.min(idx, 5) * 60}
-        style={
-          isHero
-            ? undefined
-            : ({
-                '--fx-delay': `${Math.min(idx, 5) * 60}ms`,
-                '--fx-dur': '0.55s',
-              } as React.CSSProperties)
-        }
-        onKeyDown={(e) => {
-          if (!interactive) return;
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onOpenItem(item);
-          }
-        }}
-        // The first card is the LCP candidate: render it visible immediately
-        // (no initial opacity 0 / whileInView gate). The rest keep the stagger.
-        // (Entrance is handled by the site-wide CSS reveal system.)
-
-        onPointerMove={(e) => {
-          if (e.pointerType !== 'mouse') return;
-          const r = e.currentTarget.getBoundingClientRect();
-          e.currentTarget.style.setProperty('--fx-mx', `${e.clientX - r.left}px`);
-          e.currentTarget.style.setProperty('--fx-my', `${e.clientY - r.top}px`);
-        }}
-        className={`group fx-spotlight-host relative flex-shrink-0 w-full ${forceSlider ? '' : 'md:w-auto md:min-w-0 md:grow-0 md:shrink-0 md:basis-[calc((100%_-_2rem)/3)]'} h-40 rounded-[22px] p-4 flex flex-col justify-between overflow-hidden ${interactive ? 'cursor-pointer' : ''} card-lift shadow-md border ${
-          isYellowCard
-            ? 'bg-[var(--primary)] text-[#0A0A0A] border-[var(--primary)]'
-            : darkMode
-            ? 'bg-[#181818] text-[#F2EDE0] border-white/10'
-            : 'bg-[#0A0A0A] text-white border-[#0A0A0A]'
-        }`}
+        className={`fc-stage${isLight ? ' fc-stage--light' : ''}`}
+        onPointerDown={handlePress}
       >
-        {/* Item photo background: the dish behind the card content. The scrim
-            follows the card scheme (light on gold for black text, dark on
-            dark for white text) so every scheme stays readable. */}
-        {showPhoto && (
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-            <SmartMenuImage
-              item={item}
-              name=""
-              sizes="(max-width: 767px) 90vw, (max-width: 1279px) 31vw, 395px"
-              eager={isHero}
-              fetchPriorityHigh={isHero}
-              plain={isHero}
-              draggable={false}
-              onError={() =>
-                setFailedPhoto((prev) => (prev[item.id] ? prev : { ...prev, [item.id]: true }))
-              }
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-            <div
-              className={`absolute inset-0 ${
-                isYellowCard
-                  ? 'bg-gradient-to-t from-white/70 via-white/25 to-white/50'
-                  : 'bg-gradient-to-t from-black/80 via-black/45 to-black/60'
-              }`}
-            />
-          </div>
-        )}
-
-        {/* Cursor spotlight (React Bits feel): a soft depth sheen that follows
-            the mouse. Pure CSS variable writes — no React re-render, and the
-            media query keeps it off touch devices. */}
-        <span
-          aria-hidden="true"
-          className="fx-spotlight"
-          style={
-            {
-              '--fx-spot': isYellowCard ? 'rgba(255,255,255,0.55)' : 'rgba(255,196,0,0.18)',
-            } as React.CSSProperties
-          }
-        />
-
-        {/* Brand mark from the logo (pan + handle) as a quiet watermark.
-            Decorative: lazy everywhere except the first card so it never
-            competes at high priority. */}
-        {!showPhoto && (
-        <img
-          src="/assets/pan-icon-yellow-192.webp"
-          alt=""
-          aria-hidden="true"
-          loading={idx === 0 ? 'eager' : 'lazy'}
-          decoding="async"
-          draggable={false}
-          className={`absolute -end-3 -top-2 w-24 pointer-events-none select-none -rotate-12 rtl:[transform:scaleX(-1)] transition-transform duration-500 group-hover:-rotate-3 group-hover:scale-110 ${
-            isYellowCard ? 'opacity-[0.16]' : 'opacity-[0.20]'
-          }`}
-          style={isYellowCard ? { filter: 'brightness(0)' } : undefined}
-        />
-        )}
-
-        {/* Top Tag Badge */}
-        <div className="relative flex justify-between items-start">
-          <span
-            className={`inline-block px-3 py-1 rounded-full text-[11px] font-extrabold ${isAr ? '' : 'tracking-wider uppercase'} ${
-              isYellowCard
-                ? 'bg-[#0A0A0A] text-[var(--primary)]'
-                : 'bg-[var(--primary)] text-[#0A0A0A]'
-            }`}
-          >
-            {badgeText}
-          </span>
-
-          <div className="flex items-center gap-1.5">
+        <div className="fc-head">
+          <h2 className="fc-title" id={titleId}>
+            {title}
+          </h2>
+          <span className="fc-wishlist">
             <WishlistButton
               itemId={item.id}
               itemName={pickLangText(item.name, lang)}
               lang={lang}
-              darkMode={darkMode}
-              tone="overlay"
+              darkMode={!isLight}
+              tone="surface"
               size="sm"
             />
-            {interactive && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddToCart(item);
-                }}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90 shadow-sm ${
-                  isYellowCard
-                    ? 'bg-[#0A0A0A] text-[var(--primary)] hover:bg-black/80'
-                    : 'bg-[var(--primary)] text-[#0A0A0A] hover:brightness-110'
-                }`}
-                aria-label={isAr ? `أضف ${item.name.ar} إلى السلة` : `Add ${item.name.en} to cart`}
-                title={isAr ? 'أضف إلى الطلب' : 'Add to cart'}
-              >
-                <Plus size={16} className="stroke-[3]" />
-              </button>
-            )}
-          </div>
+          </span>
         </div>
 
-        {/* Bottom Info: Name & Price */}
-        <div className="relative flex justify-between items-end gap-2">
-          <div className="flex-1 min-w-0 pe-2">
-                    <h3 className="font-bold text-base leading-tight line-clamp-2">
-                      {pickLangText(item.name, lang)}
-                    </h3>
-                            {pickLangText(item.description, lang).trim() ? (
-                              <p
-                                dir="auto"
-                                className={`text-xs mt-0.5 line-clamp-1 ${isAr ? 'leading-relaxed' : ''} ${
-                                  isYellowCard ? 'text-black/75' : 'text-neutral-400'
-                                }`}
-                              >
-                                {pickLangText(item.description, lang)}
-                              </p>
-                            ) : null}
-          </div>
-
-          <div
-            className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-black shadow-sm tabular-nums ${
-              isYellowCard
-                ? 'bg-[#0A0A0A] text-[var(--primary)]'
-                : 'bg-[var(--primary)] text-[#0A0A0A]'
-            }`}
-            dir="auto"
-          >
-            {priceLabel(item, lang, currency, menu)}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div ref={sectionRef} className="mt-6 mb-4 px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
-      {/* Section Title with Yellow Bar */}
-      <div className="flex items-center gap-2.5 mb-3.5">
-        <span
-          className="w-1.5 h-6 bg-[var(--primary)] rounded-sm origin-center section-bar-in"
-          aria-hidden="true"
-        />
-        <h2 className={`text-xl sm:text-2xl font-extrabold ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`}>
-          <SplitText text={isAr ? 'المميز والأكثر طلبًا' : 'Featured Items'} stagger={65} />
-        </h2>
-      </div>
-
-      {/* One-card slider on mobile, 3-card sliding row on desktop (both autoplay).
-          The viewport clips horizontally by design — but it must NOT slice the
-          cards vertically: hover lifts each card ~4px (card-lift) and the
-          entrance rises from y:22. py-3 gives that breathing room; -my-3 pulls
-          it back so title/dots spacing does not move. */}
-      <div className="relative overflow-hidden py-3 -my-3">
         <div
-          ref={trackRef}
-          onMouseEnter={pause}
-          onMouseLeave={resumeSoon}
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-          onPointerDown={pause}
-          className={`slider-track flex gap-0 ${forceSlider ? '' : 'md:gap-4'} ${
-            instant ? 'slider-track-instant' : ''
-          } ${sliding && !instant ? 'slider-sliding' : ''}`}
-          style={{ '--sx': `${isAr ? index * stepPx : -index * stepPx}px` } as React.CSSProperties}
+          className="fc-viewport"
+          ref={emblaRef}
+          role="group"
+          aria-roledescription={isAr ? 'كاروسيل' : 'carousel'}
+          aria-label={title}
         >
-          {items.map((item, idx) => renderCard(item, idx))}
+          <div className="fc-track">
+            {items.map((item, index) => (
+              <div
+                key={item.id}
+                className="fc-slide"
+                role="group"
+                aria-roledescription={isAr ? 'شريحة' : 'slide'}
+                aria-label={
+                  isAr
+                    ? `الشريحة ${index + 1} من ${items.length}`
+                    : `Slide ${index + 1} of ${items.length}`
+                }
+              >
+                <FeaturedCard
+                  item={item}
+                  menu={menu}
+                  lang={lang}
+                  currency={currency}
+                  index={index}
+                  active={index === selectedIndex}
+                  eager={!isLight && index === 0}
+                  orderingEnabled={orderingEnabled}
+                  onAddToCart={onAddToCart}
+                  onOpenItem={onOpenItem}
+                />
+              </div>
+            ))}
+          </div>
         </div>
-        {/* Preview-only manual arrows: same slide motion, step gray ⇄ yellow */}
-        {showArrows && count > 1 && (
-          <>
-            <button
-              type="button"
-              onClick={() => goTo(index - 1)}
-              className="absolute start-1.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/55 text-white backdrop-blur flex items-center justify-center hover:bg-black/75 transition-colors after:absolute after:-inset-2 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              aria-label={isAr ? 'السابق' : 'Previous slide'}
-            >
-              <ChevronLeft size={16} className="rtl:rotate-180" />
-            </button>
-            <button
-              type="button"
-              onClick={() => goTo(index + 1)}
-              className="absolute end-1.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/55 text-white backdrop-blur flex items-center justify-center hover:bg-black/75 transition-colors after:absolute after:-inset-2 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              aria-label={isAr ? 'التالي' : 'Next slide'}
-            >
-              <ChevronRight size={16} className="rtl:rotate-180" />
-            </button>
-          </>
-        )}
+
+        {items.length > 1 ? (
+          <div
+            className="fc-dots"
+            role="group"
+            aria-label={isAr ? 'شرائح الكاروسيل' : 'Carousel slides'}
+          >
+            {items.map((item, index) => {
+              const active = index === selectedIndex;
+              const showProgress = active && autoplayOn;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="fc-dot-btn"
+                  onClick={() => goTo(index)}
+                  aria-label={
+                    isAr ? `الشريحة ${index + 1} من ${items.length}` : `Slide ${index + 1} of ${items.length}`
+                  }
+                  aria-current={active ? 'true' : undefined}
+                >
+                  <span
+                    className={`fc-dot${active ? ' is-active' : ''}${
+                      active && !autoplayOn ? ' is-static' : ''
+                    }`}
+                  >
+                    {showProgress ? (
+                      <span
+                        key={cycle}
+                        className={`fc-dot-fill${paused || !pageVisible ? ' is-paused' : ''}`}
+                      />
+                    ) : null}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
-      {/* Dots: one per start position (mobile: every card, desktop: every full window).
-          Uniform 8px dots; the active one stretches into a solid pill — calm,
-          premium, readable at a glance in both modes (no glow by owner call). */}
-      {marqueeOn && maxIndex >= 1 && (
-        <div className="flex justify-center items-center gap-2 mt-1.5" role="tablist" aria-label={isAr ? 'شرائح المميز' : 'Featured slides'}>
-          {Array.from({ length: maxIndex + 1 }).map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              role="tab"
-              aria-selected={idx === index}
-              aria-label={`${isAr ? 'شريحة' : 'Slide'} ${idx + 1}`}
-              onClick={() => goTo(idx)}
-              className={`h-11 min-h-[44px] px-2 inline-flex items-center rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
-                idx === index
-                  // Active: gold on dark, solid black on light (owner call).
-                  ? darkMode ? 'text-[var(--primary)]' : 'text-[#0A0A0A]'
-                  : darkMode ? 'text-white/25 hover:text-white/40' : 'text-black/20 hover:text-black/40'
-              }`}
-            >
-              <span className={`block h-2 rounded-full transition-all duration-300 ${
-                idx === index
-                  ? darkMode
-                    ? 'w-8 bg-[var(--primary)]'
-                    : 'w-8 bg-[#0A0A0A]'
-                  : 'w-2 bg-current'
-              }`} />
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    </section>
   );
 };

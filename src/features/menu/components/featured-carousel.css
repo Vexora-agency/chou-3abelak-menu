@@ -1,0 +1,613 @@
+/* ==========================================================================
+   Featured carousel — two stages, one component.
+   Brand tokens only: the project's --primary gold, --black, --white and the
+   neutral greys. Every colour used below is declared ONCE here as a token;
+   the TSX never carries a hex value. The light stage stays white even when
+   the storefront itself is in dark mode (owner requirement).
+   ========================================================================== */
+
+.fc-root {
+  /* Brand (live tokens — re-skinning the project re-skins the carousel). */
+  --fc-gold: var(--primary);
+  --fc-ink: var(--black);
+  --fc-white: var(--white);
+  --fc-muted-dark: #a8a8a8;
+  --fc-muted-light: #5f5f5f;
+  --fc-on-gold-muted: rgba(10, 10, 10, 0.72);
+
+  /* Surfaces, borders and controls from the approved design. */
+  --fc-stage-line-dark: var(--gray-border);
+  --fc-stage-line-light: #e6e3d8;
+  --fc-card-line-dark: #2e2e2e;
+  --fc-card-line-light: #e6e3d8;
+  --fc-photo-scrim: rgba(0, 0, 0, 0.53);
+  --fc-hot-bg-dark: rgba(10, 10, 10, 0.8);
+  --fc-hot-bg-light: rgba(255, 255, 255, 0.9);
+  --fc-bar-dark: rgba(10, 10, 10, 0.8);
+  --fc-bar-line-dark: #333333;
+  --fc-qty-minus-dark: #2c2c2c;
+  --fc-qty-minus-light: #edebe3;
+  --fc-dot-dark: #444444;
+  --fc-dot-light: #d9d6cb;
+  --fc-dot-track-dark: #333333;
+  --fc-dot-track-light: #edebe3;
+  --fc-focus-dark: #ffffff;
+  --fc-focus-light: #0a0a0a;
+
+  /* Geometry and motion. */
+  --fc-stage-radius: 32px;
+  --fc-card-radius: 30px;
+  --fc-card-height: 280px;
+  --fc-autoplay: 5000ms;
+
+  margin-inline: 6px;
+  font-family: inherit;
+}
+
+.fc-stage {
+  position: relative;
+  overflow: hidden;
+  padding: 22px 0 20px;
+  color: var(--fc-white);
+  background: var(--fc-ink);
+  border: 1px solid var(--fc-stage-line-dark);
+  border-radius: var(--fc-stage-radius);
+}
+
+.fc-stage--light {
+  color: var(--fc-ink);
+  background: var(--fc-white);
+  border-color: var(--fc-stage-line-light);
+}
+
+/* Title: gold bar + black/white title, no entrance animation. */
+.fc-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px 18px;
+}
+
+.fc-head::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 5px;
+  height: 26px;
+  border-radius: 4px;
+  background: var(--fc-gold);
+}
+
+.fc-title {
+  margin: 0;
+  color: var(--fc-white);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+/* Member-only wishlist control: absolute so the member state arriving late
+   never shifts the title/card geometry. Hidden entirely for guests. */
+.fc-wishlist {
+  position: absolute;
+  top: 13px;
+  left: 20px;
+  transform: translateY(-50%);
+}
+
+.fc-stage--light .fc-title {
+  color: var(--fc-ink);
+}
+
+/* Embla viewport + track. The 10px side padding is the approved gutter:
+   clipping happens at the padding box, so quiet card edges may peek. */
+.fc-viewport {
+  overflow: hidden;
+  padding: 0 10px;
+}
+
+.fc-track {
+  display: flex;
+  gap: 12px;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fc-track:active {
+  cursor: grabbing;
+}
+
+.fc-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Card
+   -------------------------------------------------------------------------- */
+
+.fc-card {
+  position: relative;
+  width: 100%;
+  height: var(--fc-card-height);
+  overflow: hidden;
+  background: var(--fc-ink);
+  border: 1px solid var(--fc-card-line-dark);
+  border-radius: var(--fc-card-radius);
+  opacity: 0.5;
+  transform: scale(0.95);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.fc-card.is-active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.fc-stage--light .fc-card {
+  background: var(--fc-white);
+  border-color: var(--fc-card-line-light);
+}
+
+/* Photo: locked to the physical left, square, full card height, cropped by
+   its own overflow box. Never animated, never zoomed, never parallaxed. */
+.fc-photo {
+  position: absolute;
+  top: 0;
+  left: -10%;
+  height: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--fc-ink);
+}
+
+.fc-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, var(--fc-photo-scrim), transparent 32%);
+  pointer-events: none;
+}
+
+.fc-photo-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Hot tag: the only thing allowed above the photo, pinned top-left. */
+.fc-hot {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 4;
+  padding: 3px 10px;
+  color: var(--fc-gold);
+  background: var(--fc-hot-bg-dark);
+  border: 1px solid var(--fc-gold);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+.fc-stage--light .fc-hot {
+  color: var(--fc-ink);
+  background: var(--fc-hot-bg-light);
+  border-color: var(--fc-stage-line-light);
+}
+
+/* --------------------------------------------------------------------------
+   Liquid divider (SVG 100x100, non-scaling 2.5px yellow edge)
+   -------------------------------------------------------------------------- */
+
+.fc-liquid {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.fc-liquid-fill {
+  fill: var(--fc-ink);
+}
+
+.fc-liquid-edge {
+  fill: none;
+  stroke: var(--fc-gold);
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.fc-card.is-gold .fc-liquid-fill {
+  fill: var(--fc-gold);
+}
+
+.fc-card.is-gold .fc-liquid-edge {
+  stroke: none;
+}
+
+.fc-stage--light .fc-card:not(.is-gold) .fc-liquid-fill {
+  fill: var(--fc-white);
+}
+
+/* --------------------------------------------------------------------------
+   Text column
+   -------------------------------------------------------------------------- */
+
+.fc-text {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 40%;
+  /* Breathing room against the liquid edge on 360px screens. The width stays
+     exactly 40% as specified; only the inner content is inset. */
+  padding-left: 6px;
+  text-align: right;
+}
+
+.fc-badge {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 12px;
+  color: var(--fc-ink);
+  background: var(--fc-gold);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+.fc-card.is-gold .fc-badge,
+.fc-stage--light .fc-badge {
+  color: var(--fc-gold);
+  background: var(--fc-ink);
+}
+
+.fc-name {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: var(--fc-white);
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.fc-card.is-gold .fc-name,
+.fc-stage--light .fc-name {
+  color: var(--fc-ink);
+}
+
+.fc-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 5px 0 8px;
+  color: var(--fc-muted-dark);
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.fc-card.is-gold .fc-desc,
+.fc-stage--light .fc-desc {
+  color: var(--fc-on-gold-muted);
+}
+
+.fc-stage--light .fc-card:not(.is-gold) .fc-desc {
+  color: var(--fc-muted-light);
+}
+
+/* Price: amount 26/900, currency small, unit below when the item sells by
+   dozen/box/etc. Numbers stay LTR even inside the RTL column. */
+.fc-price {
+  color: var(--fc-gold);
+  font-size: 26px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.fc-card.is-gold .fc-price,
+.fc-stage--light .fc-price {
+  color: var(--fc-ink);
+}
+
+.fc-price small {
+  margin-inline-start: 6px;
+  color: var(--fc-white);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fc-card.is-gold .fc-price small,
+.fc-stage--light .fc-price small {
+  color: var(--fc-ink);
+}
+
+.fc-price em {
+  display: block;
+  margin-top: 4px;
+  color: var(--fc-muted-dark);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.fc-card.is-gold .fc-price em {
+  color: var(--fc-on-gold-muted);
+}
+
+.fc-stage--light .fc-price em {
+  color: var(--fc-muted-light);
+}
+
+.fc-stage--light .fc-card.is-gold .fc-price em {
+  color: var(--fc-on-gold-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Bottom pill: add button + quantity stepper
+   -------------------------------------------------------------------------- */
+
+.fc-bar {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  background: var(--fc-bar-dark);
+  border: 1px solid var(--fc-bar-line-dark);
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.fc-stage--light .fc-bar {
+  background: var(--fc-white);
+  border-color: var(--fc-stage-line-light);
+}
+
+.fc-add {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  color: var(--fc-ink);
+  background: var(--fc-gold);
+  border: 0;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.fc-add:active {
+  transform: scale(0.95);
+}
+
+.fc-add.is-added {
+  color: var(--fc-gold);
+  background: var(--fc-ink);
+  box-shadow: inset 0 0 0 2px var(--fc-gold);
+}
+
+.fc-add svg {
+  flex: 0 0 auto;
+}
+
+.fc-qty {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  color: var(--fc-white);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.fc-qty-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fc-qty-btn--minus {
+  color: var(--fc-white);
+  background: var(--fc-qty-minus-dark);
+}
+
+.fc-qty-btn--plus {
+  color: var(--fc-ink);
+  background: var(--fc-gold);
+}
+
+.fc-qty-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.fc-qty-value {
+  min-width: 18px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.fc-stage--light .fc-qty {
+  color: var(--fc-ink);
+}
+
+.fc-stage--light .fc-qty-btn--minus {
+  color: var(--fc-ink);
+  background: var(--fc-qty-minus-light);
+}
+
+/* --------------------------------------------------------------------------
+   Dots: the active dot is the 5s autoplay progress track.
+   -------------------------------------------------------------------------- */
+
+.fc-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.fc-dot-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.fc-dot {
+  position: relative;
+  display: block;
+  width: 8px;
+  height: 8px;
+  overflow: hidden;
+  background: var(--fc-dot-dark);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.fc-dot.is-active {
+  width: 38px;
+  background: var(--fc-dot-track-dark);
+}
+
+.fc-dot.is-static {
+  background: var(--fc-gold);
+}
+
+.fc-stage--light .fc-dot {
+  background: var(--fc-dot-light);
+}
+
+.fc-stage--light .fc-dot.is-active {
+  background: var(--fc-dot-track-light);
+}
+
+.fc-stage--light .fc-dot.is-static {
+  background: var(--fc-gold);
+}
+
+.fc-dot-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-start: 0;
+  width: 100%;
+  background: var(--fc-gold);
+  border-radius: inherit;
+  animation: fc-dot-fill var(--fc-autoplay) linear forwards;
+}
+
+.fc-dot-fill.is-paused {
+  animation-play-state: paused;
+}
+
+@keyframes fc-dot-fill {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* Visible keyboard focus on every control, in both stages. */
+.fc-stage button:focus-visible {
+  outline: 2px solid var(--fc-focus-dark);
+  outline-offset: 2px;
+}
+
+.fc-stage--light button:focus-visible {
+  outline-color: var(--fc-focus-light);
+}
+
+.fc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Narrow phones: keep the text column off the liquid and the price in one
+   piece without changing any of the specified sizes above 359px.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 359px) {
+  .fc-text {
+    right: 12px;
+    width: 41%;
+    padding-left: 4px;
+  }
+
+  .fc-name {
+    font-size: 19px;
+  }
+
+  .fc-price {
+    font-size: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-card,
+  .fc-dot,
+  .fc-add {
+    transition: none;
+  }
+
+  .fc-dot-fill {
+    width: 100%;
+    animation: none;
+  }
+}

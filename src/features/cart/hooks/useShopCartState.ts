@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { MenuData, MenuItem, CartLine, ResolvedCartLine } from '@/src/types/menu';
 import {
   cartLineKey, clampQty, isValidQty, lineTotal,
-  perUnitPrice, hasOptions, normalizePricing, validatePicks,
+  perUnitPrice, getVariant, hasOptions, normalizePricing, validatePicks,
 } from '@/src/utils/pricing';
 import { clampSplitPicks, effectiveAddonQty, resolveSplitCounts } from '@/src/utils/splitPicks';
 import { isRecord, parseJson } from '@/src/utils/safeJson';
@@ -299,6 +299,36 @@ export function useShopCartState(
     onAdded?.();
   };
 
+  /**
+   * Quick add for the featured carousel: place `qty` units of the default
+   * configuration in ONE go, without opening the item sheet or the cart
+   * drawer (the carousel shows its own "added" confirmation). Existing
+   * add paths above stay untouched.
+   *
+   * Returns false when the choice cannot be resolved silently — an item
+   * with REQUIRED pick groups (the customer must choose an option) or an
+   * invalid menu state. The caller then opens the item sheet instead.
+   */
+  const handleQuickAdd = (item: MenuItem, qty: number): boolean => {
+    if (!item.available || !menu) return false;
+    if (Array.isArray(item.requiredGroups) && item.requiredGroups.length > 0) return false;
+    const variant = getVariant(item)?.featureId;
+    const quantity = clampQty(item, qty);
+    try {
+      validatePicks(menu, item, [], undefined, quantity);
+      perUnitPrice(item, { variantId: variant, addonIds: [], qty: quantity });
+    } catch {
+      return false;
+    }
+    const incoming = buildLine(item.id, variant, quantity, { ids: [], addonQty: undefined });
+    setCart((prev) => {
+      const copy = { ...prev };
+      upsertLine(copy, menu, item, incoming);
+      return copy;
+    });
+    return true;
+  };
+
   const handleUpdateLine = (key: string, dir: 1 | -1) => {
     setCart((prev) => {
       const line = prev[key];
@@ -421,6 +451,7 @@ export function useShopCartState(
     totalCartPrice,
     handleAddItem,
     handleAddConfigured,
+    handleQuickAdd,
     handleUpdateLine,
     handleRemoveLine,
     handleRemoveAddon,

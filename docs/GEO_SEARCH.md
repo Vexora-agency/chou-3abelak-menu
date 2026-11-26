@@ -65,6 +65,14 @@ Geoapify was retired from this path by owner decision
   rows `[{ label, line1, line2, lat, lng, details?, placeId? }]` with
   `no-store` (Google rows carry `placeId` and null coords until the pick
   resolves them via `/api/geo/place-details`).
+- Delivery scope comes from the admin's delivery zones: every selected
+  zone country hard-filters Google (`includedRegionCodes`) and Nominatim
+  (`countrycodes`), so suggestions never leave the countries the owner
+  sells in. The first zone country formats results (`regionCode`). Photon
+  has no country filter in its API and stays a soft viewport bias; the
+  downloadable street/places indexes load per country and per viewport.
+  Undeliverable pins are still blocked at order submit, never by hiding
+  correctly typed suggestions.
 - `sources` names the passes that answered (`google/google-text/photon`) and
   the `google` flag reports `off/rich/ok/empty/capped/error` — the owner
   verification readout. Responses and logs never carry keys, provider

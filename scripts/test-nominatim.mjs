@@ -54,6 +54,10 @@ check('url biases with an open viewbox (never a fence)', (() => {
   return (u.searchParams.get('viewbox') || '').split(',').length === 4 && u.searchParams.get('bounded') === '0';
 })());
 check('url rejects short queries', buildNominatimUrl({ text: 'ab' }) === null);
+check('url joins the admin zone list', (() => {
+  const u = new URL(buildNominatimUrl({ text: 'شارع 105', lang: 'ar', country: ['LB', 'eg'] }));
+  return u.searchParams.get('countrycodes') === 'lb,eg';
+})());
 
 const payload = [
   {

@@ -178,6 +178,15 @@ export async function onRequest(context) {
   const region = (zoneCountries.length > 0
     ? zoneCountries[0]
     : normalizeCountryCodes(clientCountry)[0] || (cfGeo ? cfGeo.cc : '')) || '';
+  // Full delivery-country allow-list: the admin's selected zone countries
+  // (every country the owner sells in), else the single fallback country.
+  // Google and Nominatim hard-filter to this list, so suggestions never
+  // leave the delivery area's countries. Photon stays a soft viewport bias
+  // (its API has no country filter) and the local indexes load per country.
+  const regions = (zoneCountries.length > 0
+    ? zoneCountries
+    : (region ? [region] : [])
+  ).map((c) => String(c || '').trim().toUpperCase()).filter((c, i, a) => /^[A-Z]{2}$/.test(c) && a.indexOf(c) === i).slice(0, 10);
 
   // Non-sensitive source + Google-status trail for verification (never the
   // query or a key). The client ignores them; the owner reads them.
@@ -198,6 +207,7 @@ export async function onRequest(context) {
           lang,
           bias,
           region,
+          regions,
           sessionToken,
         });
         if (g && g.ok && Array.isArray(g.results) && g.results.length > 0) {
@@ -224,7 +234,7 @@ export async function onRequest(context) {
   if (results.length < MIN_RICH_RESULTS && isGoogleConfigured(env) && q.length >= 6) {
     try {
       if (await hitRateLimit(kv, `geo-gg-day:${day}`, googleDailyMax(env), DAY_RATE_WINDOW_SEC)) {
-        const t = await fetchTextSearch(env, { text: q, lang, bias, region });
+        const t = await fetchTextSearch(env, { text: q, lang, bias, region, regions });
         if (t && t.ok && Array.isArray(t.results) && t.results.length > 0) {
           results = mergeAutocompleteResults(results, t.results);
           if (!sources.includes('google')) sources.push('google');
@@ -290,7 +300,7 @@ export async function onRequest(context) {
         const nm = await fetchNominatim(env, {
           text: q,
           lang,
-          country: region || clientCountry,
+          country: regions.length > 0 ? regions : (clientCountry || ''),
           bias,
         });
         if (nm && nm.ok && Array.isArray(nm.results) && nm.results.length > 0) {
@@ -304,7 +314,7 @@ export async function onRequest(context) {
             const nmBase = await fetchNominatim(env, {
               text: base,
               lang,
-              country: region || clientCountry,
+              country: regions.length > 0 ? regions : (clientCountry || ''),
               bias,
             });
             if (nmBase && nmBase.ok && Array.isArray(nmBase.results) && nmBase.results.length > 0) {

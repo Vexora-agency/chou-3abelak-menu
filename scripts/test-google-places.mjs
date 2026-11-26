@@ -24,6 +24,7 @@ import {
   googleDailyMax,
   isGoogleConfigured,
   normalizeRegionCode,
+  normalizeRegionCodes,
   sanitizeGooglePredictions,
   sanitizePlaceDetails,
   sanitizeTextSearch,
@@ -61,6 +62,7 @@ check('placeId accepts tokens', validatePlaceId('ChIJN1t_tDeuEmsRMD9Q5I-qdUQ') !
 check('placeId rejects garbage', validatePlaceId('ab') === null && validatePlaceId(null) === null && validatePlaceId('has space here!!!!') === null);
 check('region uppercases EG', normalizeRegionCode('eg') === 'EG');
 check('region rejects junk', normalizeRegionCode('usa') === '' && normalizeRegionCode(null) === '');
+check('regions accept the admin zone list', JSON.stringify(normalizeRegionCodes(['lb', 'EG', 'lb', 'usa'])) === JSON.stringify(['LB', 'EG']));
 
 /* ---------- mapping ---------- */
 

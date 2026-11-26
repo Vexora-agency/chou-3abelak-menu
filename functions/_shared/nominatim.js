@@ -49,8 +49,15 @@ export function buildNominatimUrl(options) {
   params.set('namedetails', '1');
   params.set('limit', String(NOMINATIM_RESULT_LIMIT));
   const codes = opts.country;
-  if (typeof codes === 'string' && /^[a-z]{2}$/i.test(codes.trim())) {
-    params.set('countrycodes', codes.trim().toLowerCase());
+  // Single code or the admin's full delivery-country list: Nominatim takes
+  // a comma-joined allow-list, so every selected zone country stays in.
+  const codeList = (Array.isArray(codes) ? codes : [codes])
+    .filter((c) => typeof c === 'string' && /^[a-z]{2}$/i.test(c.trim()))
+    .map((c) => c.trim().toLowerCase())
+    .filter((c, i, a) => a.indexOf(c) === i)
+    .slice(0, 10);
+  if (codeList.length > 0) {
+    params.set('countrycodes', codeList.join(','));
   }
   const bias = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
   const lat = bias ? bias.lat : NaN;

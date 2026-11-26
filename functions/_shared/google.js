@@ -10,7 +10,8 @@
  *   search, the server forwards it as `sessionToken` to both calls).
  * - Soft `locationBias` from the live map viewport ranks nearby results
  *   first without ever excluding correctly-typed places; `regionCode`
- *   formats results, `includedRegionCodes` hard-restricts the country.
+ *   formats results, `includedRegionCodes` hard-restricts to the admin's
+ *   delivery countries (every selected zone country, never outside).
  * - Field masks on both calls return only what the UI needs.
  * - Attribution must read exactly "Google Maps" (never localized).
  *
@@ -67,6 +68,23 @@ export function normalizeRegionCode(v) {
   if (typeof v !== 'string') return '';
   const code = v.trim().toUpperCase();
   return /^[A-Z]{2}$/.test(code) ? code : '';
+}
+
+/**
+ * Uppercase 2-letter region list (unique, capped at 10) from a single code
+ * or an array. Accepts the admin's full delivery-zone country list so the
+ * search stays inside every country the owner sells in — never outside.
+ */
+export function normalizeRegionCodes(v) {
+  const list = Array.isArray(v) ? v : [v];
+  const out = [];
+  for (const item of list) {
+    if (typeof item !== 'string') continue;
+    const code = item.trim().toUpperCase();
+    if (/^[A-Z]{2}$/.test(code) && !out.includes(code)) out.push(code);
+    if (out.length >= 10) break;
+  }
+  return out;
 }
 
 function trimText(v) {
@@ -144,10 +162,12 @@ export async function fetchGoogleAutocomplete(env, params, fetchFn = fetch) {
       input: raw,
       languageCode: lang,
     };
-    const region = normalizeRegionCode(opts.region);
-    if (region) {
-      body.includedRegionCodes = [region];
-      body.regionCode = region.toLowerCase();
+    const regions = normalizeRegionCodes(
+      Array.isArray(opts.regions) && opts.regions.length > 0 ? opts.regions : opts.region,
+    );
+    if (regions.length > 0) {
+      body.includedRegionCodes = regions;
+      body.regionCode = regions[0].toLowerCase();
     }
     const bias = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
     const lat = bias ? bias.lat : NaN;
@@ -243,10 +263,12 @@ export async function fetchTextSearch(env, params, fetchFn = fetch) {
       languageCode: normalizeGoogleLang(opts.lang),
       pageSize: TEXT_SEARCH_LIMIT,
     };
-    const region = normalizeRegionCode(opts.region);
-    if (region) {
-      body.includedRegionCodes = [region];
-      body.regionCode = region.toLowerCase();
+    const regions = normalizeRegionCodes(
+      Array.isArray(opts.regions) && opts.regions.length > 0 ? opts.regions : opts.region,
+    );
+    if (regions.length > 0) {
+      body.includedRegionCodes = regions;
+      body.regionCode = regions[0].toLowerCase();
     }
     const biasTs = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
     const latTs = biasTs ? biasTs.lat : NaN;

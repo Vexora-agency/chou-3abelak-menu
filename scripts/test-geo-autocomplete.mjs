@@ -739,6 +739,44 @@ try {
     resBadCf.status === 200 && bodyBadCf && seenCfBody
     && seenCfBody.locationBias.circle.center.latitude === 33.8938
     && bodyBadCf.bias === 'view');
+
+  // Admin delivery scope: every selected zone country hard-filters Google
+  // (includedRegionCodes) and Nominatim (countrycodes) — never outside.
+  {
+    const kvZones = makeKV();
+    await kvZones.put('menu', JSON.stringify({ settings: { ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'LB' }, { cc: 'EG' }], maxKm: 100 } } } }));
+    calledUrls = [];
+    let seenZoneGoogle = null;
+    globalThis.fetch = async (url, opts) => {
+      calledUrls.push(String(url));
+      const u = String(url);
+      if (u.includes('places.googleapis.com/v1/places:autocomplete')) {
+        seenZoneGoogle = JSON.parse(opts.body);
+        return { ok: true, status: 200, json: async () => ({ suggestions: [] }) };
+      }
+      if (u.includes('places.googleapis.com')) {
+        return { ok: true, status: 200, json: async () => ({ suggestions: [] }) };
+      }
+      if (u.includes('photon.komoot.io')) return { ok: true, status: 200, json: async () => ({ features: [] }) };
+      if (u.includes('nominatim.openstreetmap.org/search')) {
+        return { ok: true, status: 200, json: async () => ([]) };
+      }
+      return { ok: true, status: 200, json: async () => ({}) };
+    };
+    const resZones = await onRequest({
+      request: customerGet('/api/geo/autocomplete?q=' + encodeURIComponent('شارع 105') + '&lang=ar&country=eg'),
+      env: { GOOGLE_PLACES_API_KEY: 'route-google-key', MENU_KV: kvZones },
+    });
+    const bodyZones = await readJson(resZones);
+    const nmUrl = calledUrls.find((u) => u.includes('nominatim.openstreetmap.org/search')) || '';
+    const nmCodes = nmUrl ? (new URL(nmUrl).searchParams.get('countrycodes') || '') : '';
+    check('route: selected zone countries filter Google regions and Nominatim codes',
+      resZones.status === 200 && bodyZones && bodyZones.ok === true && seenZoneGoogle
+      && Array.isArray(seenZoneGoogle.includedRegionCodes)
+      && seenZoneGoogle.includedRegionCodes.includes('LB')
+      && seenZoneGoogle.includedRegionCodes.includes('EG')
+      && nmCodes.split(',').includes('lb') && nmCodes.split(',').includes('eg'));
+  }
 } finally {
   globalThis.fetch = originalFetch;
 }

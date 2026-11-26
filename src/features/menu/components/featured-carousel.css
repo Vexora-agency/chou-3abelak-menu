@@ -33,7 +33,7 @@
 
   /* Geometry and motion. */
   --fc-card-radius: 30px;
-  --fc-card-height: clamp(280px, 34vw, 360px);
+  --fc-card-height: clamp(280px, 34vw, 300px);
   --fc-autoplay: 5000ms;
 
   box-sizing: border-box;
@@ -46,7 +46,6 @@
 
 /* Title row sits directly on the page — no surrounding stage panel. */
 .fc-head {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -72,15 +71,6 @@
 
 .fc-root--light .fc-title {
   color: var(--fc-ink);
-}
-
-/* Member-only wishlist control: absolute, so late membership never shifts
-   the title/card. Hidden entirely for guests. */
-.fc-wishlist {
-  position: absolute;
-  top: calc((100% - 18px) / 2);
-  left: clamp(20px, 2vw, 24px);
-  transform: translateY(-50%);
 }
 
 /* Embla viewport + track. */
@@ -582,10 +572,6 @@
     padding: 0 16px 14px;
   }
 
-  .fc-wishlist {
-    left: 16px;
-  }
-
   .fc-head::before {
     width: 4px;
     height: 24px;
@@ -670,10 +656,6 @@
 @media (max-width: 319px) {
   .fc-head {
     padding: 0 12px 12px;
-  }
-
-  .fc-wishlist {
-    left: 12px;
   }
 
   .fc-title {

@@ -114,6 +114,7 @@ interface FeaturedCardProps {
   index: number;
   active: boolean;
   eager: boolean;
+  darkMode: boolean;
   orderingEnabled: boolean;
   onAddToCart: (item: MenuItem, qty: number) => boolean;
   onOpenItem: (item: MenuItem) => void;
@@ -127,6 +128,7 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
   index,
   active,
   eager,
+  darkMode,
   orderingEnabled,
   onAddToCart,
   onOpenItem,
@@ -253,6 +255,16 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
               </>
             )}
           </button>
+
+          <WishlistButton
+            itemId={item.id}
+            itemName={name}
+            lang={lang}
+            darkMode={darkMode}
+            tone="surface"
+            size="sm"
+            className="fc-wishlist-inline"
+          />
 
           <div className="fc-qty">
             <button
@@ -393,11 +405,6 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
 
   if (items.length === 0) return null;
 
-  // Member-only wishlist button in the carousel header (never over the
-  // photo). Guests get null from WishlistButton, so the approved composition
-  // stays pixel-identical for them.
-  const item = items[Math.min(selectedIndex, items.length - 1)] ?? items[0];
-
   return (
     <section
       className={`fc-root fc-root--${variant}${className ? ` ${className}` : ''}`}
@@ -409,16 +416,6 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
         <h2 className="fc-title" id={titleId}>
           {title}
         </h2>
-        <span className="fc-wishlist">
-          <WishlistButton
-            itemId={item.id}
-            itemName={pickLangText(item.name, lang)}
-            lang={lang}
-            darkMode={!isLight}
-            tone="surface"
-            size="sm"
-          />
-        </span>
       </div>
 
       <div
@@ -449,6 +446,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                 index={index}
                 active={index === selectedIndex}
                 eager={index === 0}
+                darkMode={!isLight}
                 orderingEnabled={orderingEnabled}
                 onAddToCart={onAddToCart}
                 onOpenItem={onOpenItem}

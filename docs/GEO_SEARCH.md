@@ -69,13 +69,21 @@ Geoapify was retired from this path by owner decision
   `no-store` (Google rows carry `placeId` and null coords until the pick
   resolves them via `/api/geo/place-details`).
 - Delivery scope comes from the admin's delivery zones: every selected
-  zone country hard-filters Google (`includedRegionCodes`) and Nominatim
-  (`countrycodes`), so suggestions never leave the countries the owner
-  sells in. The first zone country formats results (`regionCode`). Photon
-  has no country filter in its API and stays a soft viewport bias; the
-  downloadable street/places indexes load per country and per viewport.
-  Undeliverable pins are still blocked at order submit, never by hiding
-  correctly typed suggestions.
+  zone country hard-filters Google (`includedRegionCodes`), ORS
+  (`boundary.country`) and Nominatim (`countrycodes`), so suggestions
+  never leave the countries the owner sells in. When the admin narrows a
+  country to explicit subdivisions (governorates), one provider-agnostic
+  post-filter drops rows outside every selected box — removing an area in
+  admin hides it from search, not just from submit (`functions/_shared/
+  subdiv-scope.js`, boxes sourced from GADM v4.1). Rows without
+  coordinates pass through (their zone is enforced at pick/submit), and
+  `zoneScope` rides the response so the on-device indexes filter
+  identically. The first zone country formats results (`regionCode`).
+  Photon has no country filter in its API and stays a soft viewport bias;
+  the downloadable street/places indexes load per country and per
+  viewport. Undeliverable pins are still blocked at order submit, never by
+  hiding correctly typed suggestions outside an explicit subdivision
+  selection.
 - `sources` names the passes that answered (`google/google-text/photon`) and
   the `google` flag reports `off/rich/ok/empty/capped/error` — the owner
   verification readout. Responses and logs never carry keys, provider

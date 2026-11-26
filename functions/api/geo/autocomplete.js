@@ -52,6 +52,7 @@ import {
 import { fetchPhoton, buildQueryVariants, pickFallbackVariant, rankAppendedByDigits } from '../../_shared/photon.js';
 import { fetchGoogleAutocomplete, fetchTextSearch, googleDailyMax, isGoogleConfigured, validateSessionToken } from '../../_shared/google.js';
 import { fetchOrsAutocomplete, isOrsConfigured, normalizeOrsQuery, orsDailyMax } from '../../_shared/ors.js';
+import { buildZoneScope, filterRowsByScope } from '../../_shared/subdiv-scope.js';
 import { fetchNominatim } from '../../_shared/nominatim.js';
 
 const IP_RATE_MAX = 60;
@@ -383,5 +384,15 @@ export async function onRequest(context) {
       /* keep everything found so far */
     }
   }
-  return jsonNoStore({ ok: true, results, sources, ors, google, bias: biasSrc, menu: menu !== null, zones: zoneCountries.length });
+  // Delivery-subdivision scope: when the admin selected explicit
+  // subdivisions (governorates), provider rows outside every selected box
+  // are dropped here — one provider-agnostic post-filter, so removing an
+  // area in admin hides it from search, not just from submit. Rows without
+  // coordinates (Google predictions) pass through: their zone is enforced
+  // when the pick resolves. Countries on 'ALL' and unknown boxes stay
+  // unfiltered (fail open). `zoneScope` rides the response so the
+  // on-device indexes filter their rows identically.
+  const zoneScope = buildZoneScope(menu);
+  results = filterRowsByScope(results, zoneScope);
+  return jsonNoStore({ ok: true, results, sources, ors, google, bias: biasSrc, menu: menu !== null, zones: zoneCountries.length, zoneScope });
 }

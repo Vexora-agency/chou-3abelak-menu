@@ -793,6 +793,49 @@ try {
 }
 
 
+// Subdivision scope: selecting Mount Lebanon only (LB-JL) hides southern
+// rows from every pass, keeps coord-less rows for pick-time enforcement,
+// and publishes zoneScope for the on-device indexes.
+{
+  const kvScope = makeKV();
+  await kvScope.put('menu', JSON.stringify({ settings: { ordering: { deliveryZones: { mode: 'selected', countries: [{ cc: 'LB', subdivisions: ['LB-JL'] }], maxKm: 100 } } } }));
+  const origFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url) => {
+      const u = String(url);
+      if (u.includes('photon.komoot.io')) {
+        return {
+          ok: true, status: 200, json: async () => ({
+            features: [
+              { properties: { name: 'Dekwaneh', city: 'Dekwaneh' }, geometry: { coordinates: [35.5466, 33.8804] } },
+              { properties: { name: 'Tyre', city: 'Tyre' }, geometry: { coordinates: [35.2, 33.27] } },
+            ],
+          }),
+        };
+      }
+      if (u.includes('nominatim.openstreetmap.org')) return { ok: true, status: 200, json: async () => [] };
+      if (u.includes('places.googleapis.com')) return { ok: true, status: 200, json: async () => ({ suggestions: [] }) };
+      if (u.includes('api.heigit.org')) return { ok: true, status: 200, json: async () => ({ type: 'FeatureCollection', features: [] }) };
+      return { ok: true, status: 200, json: async () => ({}) };
+    };
+    const resScope = await onRequest({
+      request: customerGet('/api/geo/autocomplete?q=' + encodeURIComponent('دكوانة') + '&lang=ar&country=lb'),
+      env: { MENU_KV: kvScope },
+    });
+    const bodyScope = await readJson(resScope);
+    const labels = (bodyScope.results || []).map((r) => r.line1 || r.label || '');
+    check('route: subdivision scope hides out-of-scope rows, keeps in-scope ones',
+      resScope.status === 200 && bodyScope && labels.some((l) => l.includes('Dekwaneh'))
+      && !labels.some((l) => l.includes('Tyre')));
+    check('route: zoneScope published for the on-device indexes',
+      Array.isArray(bodyScope.zoneScope) && bodyScope.zoneScope.length === 1
+      && bodyScope.zoneScope[0].cc === 'LB' && bodyScope.zoneScope[0].bboxes.length === 1);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+}
+
+
 // Rate limits.
 {
   const kv = makeKV();

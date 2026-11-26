@@ -2,6 +2,7 @@
 // Run: npx tsx scripts/test-street-index.mjs
 import { existsSync, readFileSync } from 'node:fs';
 import {
+  inScopeBoxes,
   loadRecentPlaces,
   loadStreetIndex,
   matchRecentPlaces,
@@ -47,6 +48,13 @@ ok('ال-flexibility: bare and article queries match either spelling', (() => {
   const a = searchStreetIndex(es, 'حمرا', 'بيروت', 'Beirut', 'ar');
   const b = searchStreetIndex(es, 'الحمرا', 'بيروت', 'Beirut', 'ar');
   return a.length === 1 && b.length === 1;
+})());
+ok('scope boxes admit inside, reject outside, pass when unrestricted', (() => {
+  const boxes = [[33.8, 35.4, 33.95, 35.55]];
+  return inScopeBoxes(33.88, 35.5, boxes) === true
+    && inScopeBoxes(34.5, 36.0, boxes) === false
+    && inScopeBoxes(34.5, 36.0, null) === true
+    && inScopeBoxes(null, 35.5, boxes) === true;
 })());
 ok('latinized شارع matches street', (() => {
   const r = searchStreetIndex(entries, 'السيوف street', 'الإسكندرية', 'Alexandria', 'ar');

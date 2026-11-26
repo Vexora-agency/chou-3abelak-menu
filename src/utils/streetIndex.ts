@@ -201,6 +201,25 @@ export function searchStreetIndex(
 }
 
 /** Dedup key shared with the server merge (coords first, label fallback). */
+export function inScopeBoxes(
+  lat: unknown,
+  lng: unknown,
+  boxes: Array<[number, number, number, number]> | null | undefined,
+): boolean {
+  try {
+    // No scope (first search, or whole countries served): everything shows.
+    // Coord-less rows pass too — their zone is enforced at pick/submit.
+    if (!Array.isArray(boxes) || boxes.length === 0) return true;
+    if (typeof lat !== 'number' || !Number.isFinite(lat)) return true;
+    if (typeof lng !== 'number' || !Number.isFinite(lng)) return true;
+    return boxes.some((b) => Array.isArray(b) && b.length === 4
+      && lat >= b[0] && lat <= b[2] && lng >= b[1] && lng <= b[3]);
+  } catch {
+    return true;
+  }
+}
+
+/** Dedup key shared with the server merge (coords first, label fallback). */
 function rowKey(r: { lat?: unknown; lng?: unknown; label?: unknown }): string {
   const lat = typeof r.lat === 'number' && Number.isFinite(r.lat) ? r.lat : NaN;
   const lng = typeof r.lng === 'number' && Number.isFinite(r.lng) ? r.lng : NaN;

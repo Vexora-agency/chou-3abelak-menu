@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { loadPlacesIndex, loadStreetIndex, matchRecentPlaces, mergeLocalFirst, saveRecentPlace, searchPlaces, searchStreetIndex } from '../utils/streetIndex';
+import { inScopeBoxes, loadPlacesIndex, loadStreetIndex, matchRecentPlaces, mergeLocalFirst, saveRecentPlace, searchPlaces, searchStreetIndex } from '../utils/streetIndex';
 
 export interface AddressSuggestion {
   label: string;
@@ -180,6 +180,11 @@ export function useAddressAutocomplete({
   // fetch time only; a moved map clears stale rows instead of refetching.
   const biasRef = useRef<{ lat: number; lng: number } | null>(null);
   biasRef.current = bias;
+  // Admin subdivision scope, cached from the last server answer
+  // (`zoneScope: [{ cc, bboxes }]`): the on-device indexes filter their
+  // rows with it, mirroring the server post-filter. Null = unrestricted
+  // (first search, or the admin serves whole countries).
+  const scopeRef = useRef<Array<[number, number, number, number]> | null>(null);
   const biasKey = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)
     ? `${Math.round(bias.lat * 100) / 100},${Math.round(bias.lng * 100) / 100}`
     : '';
@@ -283,11 +288,19 @@ export function useAddressAutocomplete({
             loadStreetIndex(country, liveBias),
           ]);
           if (controller.signal.aborted) return;
+          // Admin subdivision scope (cached from the last server answer):
+          // index rows outside every selected box are hidden, exactly like
+          // the server post-filter. The device's own recents always stay.
+          const scope = scopeRef.current;
           if (placesIdx) {
-            local = mergeLocalFirst(local, searchPlaces(placesIdx.entries, trimmed, lang, 4, liveBias));
+            const rows = searchPlaces(placesIdx.entries, trimmed, lang, 4, liveBias)
+              .filter((r) => inScopeBoxes(r.lat, r.lng, scope));
+            local = mergeLocalFirst(local, rows);
           }
           if (streetIdx) {
-            local = mergeLocalFirst(local, searchStreetIndex(streetIdx.entries, trimmed, streetIdx.cityAr, streetIdx.cityEn, lang, 8, liveBias));
+            const rows = searchStreetIndex(streetIdx.entries, trimmed, streetIdx.cityAr, streetIdx.cityEn, lang, 8, liveBias)
+              .filter((r) => inScopeBoxes(r.lat, r.lng, scope));
+            local = mergeLocalFirst(local, rows);
           }
           if (local.length > 0) {
             setSuggestions(local);
@@ -322,6 +335,27 @@ export function useAddressAutocomplete({
           );
           if (!res.ok) throw new Error('geo autocomplete failed');
           const payload: unknown = await res.json();
+          try {
+            const zs = (payload as { zoneScope?: unknown }).zoneScope;
+            if (Array.isArray(zs) && zs.length > 0) {
+              const boxes: Array<[number, number, number, number]> = [];
+              for (const entry of zs) {
+                const b = (entry as { bboxes?: unknown }).bboxes;
+                if (Array.isArray(b)) {
+                  for (const box of b) {
+                    if (Array.isArray(box) && box.length === 4 && box.every((n) => typeof n === 'number' && Number.isFinite(n))) {
+                      boxes.push([box[0], box[1], box[2], box[3]]);
+                    }
+                  }
+                }
+              }
+              scopeRef.current = boxes.length > 0 ? boxes : null;
+            } else {
+              scopeRef.current = null;
+            }
+          } catch {
+            scopeRef.current = null;
+          }
           const items = extractSuggestions(payload);
           // Trusted viewport (human pan/pick or GPS fix): instant local
           // rows lead. Untouched fallback viewport: the fallback center is

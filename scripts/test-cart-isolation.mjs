@@ -409,6 +409,10 @@ ok(
   'index picker is geography-first (bias outside every file serves nothing local) and the fallback matches the restaurant country'
 );
 ok(
+  acHook.includes('scopeRef') && acHook.includes('zoneScope') && acHook.includes('inScopeBoxes'),
+  'on-device index rows obey the admin subdivision scope (recents always stay)'
+);
+ok(
   acList.includes('attached') && picker.includes('attached'),
   'suggestion list attaches inside one bordered card (no floating box)'
 );

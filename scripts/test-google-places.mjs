@@ -136,20 +136,20 @@ check('fetch: key travels only in the header', seenOpts && seenOpts.headers && s
   check('fetch: session token forwarded for billing sessions', !!seenSess && seenSess.sessionToken === 'sess_abc-123');
 }
 {
-  let seenRestr = null;
+  let seenBiasOnly = null;
   await fetchGoogleAutocomplete(
     G_ENV,
-    { text: 'شارع 16', bias: { lat: 31.2, lng: 29.95 }, restrict: { lat: 31.2056, lng: 29.9246, radiusM: 90000 } },
+    { text: 'شارع 16', bias: { lat: 31.2, lng: 29.95 }, region: 'eg' },
     async (url, opts) => {
-      seenRestr = JSON.parse(opts.body);
+      seenBiasOnly = JSON.parse(opts.body);
       return { ok: true, status: 200, json: async () => ({ suggestions: [] }) };
     }
   );
-  check('fetch: restriction wins over bias inside the delivery radius',
-    !!seenRestr && !!seenRestr.locationRestriction
-    && seenRestr.locationRestriction.circle.center.latitude === 31.2056
-    && seenRestr.locationRestriction.circle.radius === 50000
-    && !('locationBias' in seenRestr));
+  check('fetch: soft viewport bias, never a hard fence',
+    !!seenBiasOnly && seenBiasOnly.locationBias
+    && seenBiasOnly.locationBias.circle.center.latitude === 31.2
+    && seenBiasOnly.locationBias.circle.radius === 20000
+    && !('locationRestriction' in seenBiasOnly));
 }
 check('fetch: body carries input + language + region + bias', (() => {
   const b = JSON.parse(seenOpts.body);
@@ -163,17 +163,17 @@ check('fetch: 500 maps to failed', !((await fetchGoogleAutocomplete(G_ENV, { tex
   let seenTs = null;
   const tsFetch = await fetchTextSearch(
     G_ENV,
-    { text: 'شارع السيوف 16', bias: { lat: 31.2, lng: 29.95 }, region: 'eg', restrict: { lat: 31.2056, lng: 29.9246, radiusM: 90000 } },
+    { text: 'شارع السيوف 16', bias: { lat: 31.2, lng: 29.95 }, region: 'eg' },
     async (url, opts) => {
       seenTs = { url: String(url), body: JSON.parse(opts.body) };
       return { ok: true, status: 200, json: async () => ({ places: [] }) };
     }
   );
-  check('text search posts textQuery with restriction capped at 50000',
+  check('text search posts textQuery with soft viewport bias',
     tsFetch.ok && seenTs.url === 'https://places.googleapis.com/v1/places:searchText'
     && seenTs.body.textQuery === 'شارع السيوف 16' && seenTs.body.pageSize === 10
-    && seenTs.body.locationRestriction.circle.radius === 50000
-    && !('locationBias' in seenTs.body));
+    && seenTs.body.locationBias && seenTs.body.locationBias.circle.center.latitude === 31.2
+    && !('locationRestriction' in seenTs.body));
   check('text search rejects short queries without network',
     (await fetchTextSearch(G_ENV, { text: 'abc' }, neverFetch)).error === 'bad_query' && !called);
 }

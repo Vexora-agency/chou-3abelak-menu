@@ -508,14 +508,14 @@ try {
   check('route: sources trail leads with google',
     Array.isArray(bodyPlaces.sources) && bodyPlaces.sources[0] === 'google');
   check('route: google flag is ok', bodyPlaces.google === 'ok');
-  check('route: autocomplete call is POST with key header + restriction + session',
+  check('route: autocomplete call is POST with key header + viewport bias + session',
     googleCalls(calledUrls).length === 2 && seenBody
     && seenBody.input === 'السيوف' && seenBody.languageCode === 'ar'
     && JSON.stringify(seenBody.includedRegionCodes) === JSON.stringify(['EG'])
     && seenBody.regionCode === 'eg' && seenBody.sessionToken === 'abc123XYZ_-'
-    && seenBody.locationRestriction && seenBody.locationRestriction.circle
-    && seenBody.locationRestriction.circle.center.latitude === 31.2056
-    && !('locationBias' in seenBody));
+    && seenBody.locationBias && seenBody.locationBias.circle
+    && seenBody.locationBias.circle.center.latitude === 31.2056
+    && !('locationRestriction' in seenBody));
   check('route: success is no-store JSON', resPlaces.headers.get('Cache-Control') === 'no-store'
     && (resPlaces.headers.get('Content-Type') || '').includes('application/json'));
   check('route: response never carries the key', !JSON.stringify(bodyPlaces).includes('route-google-key'));
@@ -607,7 +607,8 @@ try {
       && googleCalls(calledUrls).length === 0);
   }
 
-  // No stored pin: viewport bias (no restriction), same region rule.
+  // Bias always follows the live viewport (or restaurant pin) — never a
+  // hard fence, so no pin-less/pinned distinction is needed anymore.
   calledUrls = [];
   let seenBiasBody = null;
   globalThis.fetch = async (url, opts) => {

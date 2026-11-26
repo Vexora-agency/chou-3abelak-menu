@@ -12,9 +12,9 @@ exact coordinates.
    `docs/PLACES_INDEX.md`), then the region street index
    (`docs/STREET_INDEX.md`). Zero network, merged first.
 2. **Google Places (New)** — the primary external provider, quota-guarded
-   (see `docs/GOOGLE_PLACES.md`). Session-billed, restricted to the
-   delivery radius when the restaurant pin + explicit `maxKm` allow it,
-   otherwise biased by the live map viewport. Coordinates resolve once on
+   (see `docs/GOOGLE_PLACES.md`). Session-billed, soft-biased by the live
+   map viewport (never fenced — out-of-zone pins are blocked at order
+   submit, not hidden from search). Coordinates resolve once on
    pick, never per keystroke. Autocomplete (≤5 rows) is followed by a
    bounded Text Search pass (≤10 detailed rows with coordinates) when
    still thin.

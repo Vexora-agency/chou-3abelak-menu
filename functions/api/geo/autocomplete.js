@@ -16,7 +16,7 @@
  *   the search always answers with what the free passes found.
  *
  * Order: Google Places (primary external provider, session-billed,
- * restricted to the delivery radius) → Google Text Search (up to 10 full
+ * biased by the live map viewport) → Google Text Search (up to 10 full
  * detailed places) → Photon (free, keyless smart-recall backstop) →
  * Nominatim full-text search (free, keyless; catches named POIs buried
  * mid-query that prefix indexes miss). Geoapify was retired from this
@@ -36,7 +36,6 @@ import { hitRateLimit } from '../../_shared/ratelimit.js';
 import { parseMapUrlCoordsJs } from '../../_shared/eta.js';
 import {
   extractServiceCountries,
-  extractServiceRadiusM,
   mergeAutocompleteResults,
   MIN_RICH_RESULTS,
   normalizeCountryCodes,
@@ -130,17 +129,12 @@ export async function onRequest(context) {
   // Viewport bias first: when the customer is looking at a map area (the
   // picker sends its live center), rank nearby streets first instead of
   // the restaurant pin. Falls back to the restaurant pin when absent.
+  // Deliberately a SOFT bias only — never a hard fence: undeliverable pins
+  // are blocked at order submit (country/subdivision + maxKm check), while
+  // hiding them from search would strand customers who typed correctly.
   const viewBias = parseLatLng(params.get('lat'), params.get('lng'));
   const pin = readBias(menu);
   const bias = viewBias || pin;
-  // Served area: circle around the restaurant pin with the admin-set
-  // delivery radius (Google restriction, hard). Without an explicit radius
-  // the search only biases by viewport — a guessed default must never
-  // exclude deliverable streets.
-  const radiusM = extractServiceRadiusM(menu);
-  const restrict = pin && radiusM
-    ? { lat: pin.lat, lng: pin.lng, radiusM }
-    : null;
   const zoneCountries = extractServiceCountries(menu);
   const region = (zoneCountries.length > 0 ? zoneCountries[0] : normalizeCountryCodes(clientCountry)[0]) || '';
 
@@ -163,7 +157,6 @@ export async function onRequest(context) {
           lang,
           bias,
           region,
-          restrict,
           sessionToken,
         });
         if (g && g.ok && Array.isArray(g.results) && g.results.length > 0) {
@@ -190,7 +183,7 @@ export async function onRequest(context) {
   if (results.length < MIN_RICH_RESULTS && isGoogleConfigured(env) && q.length >= 6) {
     try {
       if (await hitRateLimit(kv, `geo-gg-day:${day}`, googleDailyMax(env), DAY_RATE_WINDOW_SEC)) {
-        const t = await fetchTextSearch(env, { text: q, lang, bias, region, restrict });
+        const t = await fetchTextSearch(env, { text: q, lang, bias, region });
         if (t && t.ok && Array.isArray(t.results) && t.results.length > 0) {
           results = mergeAutocompleteResults(results, t.results);
           if (!sources.includes('google')) sources.push('google');

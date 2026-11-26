@@ -8,10 +8,9 @@
  * - Session tokens group one user's autocomplete keystrokes + the final
  *   place-details call into a billing session (client mints a UUID per
  *   search, the server forwards it as `sessionToken` to both calls).
- * - `locationRestriction` (not bias) pins results INSIDE the delivery
- *   radius around the restaurant pin whenever that radius fits the API
- *   limit (≤ 50000 m); otherwise a viewport `locationBias` applies.
- * - `regionCode` formats/biases, `includedRegionCodes` hard-restricts.
+ * - Soft `locationBias` from the live map viewport ranks nearby results
+ *   first without ever excluding correctly-typed places; `regionCode`
+ *   formats results, `includedRegionCodes` hard-restricts the country.
  * - Field masks on both calls return only what the UI needs.
  * - Attribution must read exactly "Google Maps" (never localized).
  *
@@ -129,10 +128,10 @@ export function sanitizePlaceDetails(json) {
 
 /**
  * Server-side Places autocomplete call. Never throws, never logs the key
- * or query. Accepts { text, lang, bias, region, restrict, sessionToken }:
- * restrict = { lat, lng, radiusM } pins results INSIDE the delivery area
- * (radius capped at the 50000 m API limit); otherwise the viewport bias
- * applies. Result: { ok:true, results } or { ok:false, error }.
+ * or query. Accepts { text, lang, bias, region, sessionToken } — the
+ * viewport bias is a soft ranking hint only, never a fence: correctly
+ * typed places are never excluded. Result: { ok:true, results } or
+ * { ok:false, error }.
  */
 export async function fetchGoogleAutocomplete(env, params, fetchFn = fetch) {
   try {
@@ -150,24 +149,12 @@ export async function fetchGoogleAutocomplete(env, params, fetchFn = fetch) {
       body.includedRegionCodes = [region];
       body.regionCode = region.toLowerCase();
     }
-    const restrict = opts.restrict && typeof opts.restrict === 'object' ? opts.restrict : null;
-    const rLat = restrict ? restrict.lat : NaN;
-    const rLng = restrict ? restrict.lng : NaN;
-    const rR = restrict ? restrict.radiusM : NaN;
-    if (typeof rLat === 'number' && Number.isFinite(rLat) && Math.abs(rLat) <= 90
-      && typeof rLng === 'number' && Number.isFinite(rLng) && Math.abs(rLng) <= 180
-      && typeof rR === 'number' && Number.isFinite(rR) && rR > 0) {
-      body.locationRestriction = {
-        circle: { center: { latitude: rLat, longitude: rLng }, radius: Math.min(Math.round(rR), 50000) },
-      };
-    } else {
-      const bias = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
-      const lat = bias ? bias.lat : NaN;
-      const lng = bias ? bias.lng : NaN;
-      if (typeof lat === 'number' && Number.isFinite(lat) && Math.abs(lat) <= 90
-        && typeof lng === 'number' && Number.isFinite(lng) && Math.abs(lng) <= 180) {
-        body.locationBias = { circle: { center: { latitude: lat, longitude: lng }, radius: 20000.0 } };
-      }
+    const bias = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
+    const lat = bias ? bias.lat : NaN;
+    const lng = bias ? bias.lng : NaN;
+    if (typeof lat === 'number' && Number.isFinite(lat) && Math.abs(lat) <= 90
+      && typeof lng === 'number' && Number.isFinite(lng) && Math.abs(lng) <= 180) {
+      body.locationBias = { circle: { center: { latitude: lat, longitude: lng }, radius: 20000.0 } };
     }
     const sessionToken = validateSessionToken(opts.sessionToken);
     if (sessionToken) body.sessionToken = sessionToken;
@@ -211,7 +198,7 @@ export async function fetchGoogleAutocomplete(env, params, fetchFn = fetch) {
  * Autocomplete returns at most 5 predictions BY DESIGN, so when it stays
  * thin this pass fetches up to TEXT_SEARCH_LIMIT full places (name +
  * formatted address + coordinates included — no follow-up call needed to
- * pin). Same { text, lang, bias, restrict, region } shaping as
+ * pin). Same { text, lang, bias, region } shaping as
  * autocomplete. Never throws, never logs key/query.
  */
 export const TEXT_SEARCH_LIMIT = 10;
@@ -261,24 +248,12 @@ export async function fetchTextSearch(env, params, fetchFn = fetch) {
       body.includedRegionCodes = [region];
       body.regionCode = region.toLowerCase();
     }
-    const restrict = opts.restrict && typeof opts.restrict === 'object' ? opts.restrict : null;
-    const rLat = restrict ? restrict.lat : NaN;
-    const rLng = restrict ? restrict.lng : NaN;
-    const rR = restrict ? restrict.radiusM : NaN;
-    if (typeof rLat === 'number' && Number.isFinite(rLat) && Math.abs(rLat) <= 90
-      && typeof rLng === 'number' && Number.isFinite(rLng) && Math.abs(rLng) <= 180
-      && typeof rR === 'number' && Number.isFinite(rR) && rR > 0) {
-      body.locationRestriction = {
-        circle: { center: { latitude: rLat, longitude: rLng }, radius: Math.min(Math.round(rR), 50000) },
-      };
-    } else {
-      const bias = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
-      const lat = bias ? bias.lat : NaN;
-      const lng = bias ? bias.lng : NaN;
-      if (typeof lat === 'number' && Number.isFinite(lat) && Math.abs(lat) <= 90
-        && typeof lng === 'number' && Number.isFinite(lng) && Math.abs(lng) <= 180) {
-        body.locationBias = { circle: { center: { latitude: lat, longitude: lng }, radius: 20000.0 } };
-      }
+    const biasTs = opts.bias && typeof opts.bias === 'object' ? opts.bias : null;
+    const latTs = biasTs ? biasTs.lat : NaN;
+    const lngTs = biasTs ? biasTs.lng : NaN;
+    if (typeof latTs === 'number' && Number.isFinite(latTs) && Math.abs(latTs) <= 90
+      && typeof lngTs === 'number' && Number.isFinite(lngTs) && Math.abs(lngTs) <= 180) {
+      body.locationBias = { circle: { center: { latitude: latTs, longitude: lngTs }, radius: 20000.0 } };
     }
     const controller = new AbortController();
     const timer = setTimeout(() => {

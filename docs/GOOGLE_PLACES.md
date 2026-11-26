@@ -15,11 +15,12 @@ covers capped budgets and missing keys.
   (`takePlaceSession`, rotated after pick or 3 minutes) and sends it as
   `session`; the server forwards it as `sessionToken` to BOTH autocomplete
   and place-details, grouping each search + pick into one billing session.
-- **Restriction over bias**: when the restaurant pin and an explicit admin
-  `maxKm` exist, results are restricted INSIDE the delivery circle
-  (`locationRestriction`, capped at the 50 000 m API limit); otherwise the
-  live map viewport biases (`locationBias`), per Google's viewport guidance.
+- **Soft bias, never a hard fence**: the live map viewport (or restaurant
+  pin fallback) biases ranking through a `locationBias` circle, per
+  Google's viewport guidance — correctly-typed places are never excluded.
   `regionCode` formats, `includedRegionCodes` hard-restricts the country.
+  Out-of-zone pins stay orderable-or-blocked by the existing delivery-zone
+  check at order submit, not by hiding them from search.
 - **Field masks** on both calls return only what the UI needs; no query
   predictions are requested.
 - **Attribution**: exactly `Google Maps` (never localized, `translate="no"`),
@@ -52,7 +53,7 @@ covers capped budgets and missing keys.
 
 - `functions/_shared/google.js`: Places API (New) autocomplete
   (`X-Goog-Api-Key` header — never URL/body) with languageCode,
-  regionCode, restriction-or-bias, and sessionToken.
+  regionCode, viewport bias, and sessionToken.
 - Predictions carry no geometry by design, so rows are
   `{ label, line1, line2, lat: null, lng: null, placeId }`. The client
   (`fetchPlaceCoords` in `src/hooks/useAddressAutocomplete`) resolves
@@ -79,5 +80,5 @@ covers capped budgets and missing keys.
 - `functions/_shared/google.js` + `functions/api/geo/autocomplete.js`
   (primary pass) + `functions/api/geo/place-details.js`.
 - `node scripts/test-google-places.mjs` (wired into `npm run test:geo`):
-  gating, mapping, header-only key, session forwarding, restriction vs
-  bias, quota paths.
+  gating, mapping, header-only key, session forwarding, soft-bias-only,
+  quota paths.

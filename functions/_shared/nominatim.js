@@ -1,8 +1,8 @@
 /**
  * Nominatim full-text search fallback (OpenStreetMap, keyless).
  *
- * Runs LAST and only for long, specific queries (POI names like
- * «كنيسة الانبا اثناسيوس»): autocomplete/typeahead indexes match from the
+ * Runs LAST for specific queries (numbered streets like «شارع 16», POI
+ * names like «كنيسة الانبا اثناسيوس»): autocomplete/typeahead indexes match from the
  * start of a record, while Nominatim search matches tokens anywhere, so it
  * catches what prefix search misses. 1 req/s provider policy is honored
  * with a dedicated per-IP throttle (1 call per 2s) plus the same daily
@@ -18,7 +18,7 @@ const MAX_ADDR_CHARS = 200;
 const CONTACT_UA = 'chou-3abelak-menu/1.0 (delivery address search)';
 export const NOMINATIM_RESULT_LIMIT = 8;
 
-/** Trimmed 6..100 char query (short queries never reach this pass). */
+/** Trimmed 6..100 char query (shorter queries never reach this pass). */
 export function validateNominatimQuery(q) {
   if (typeof q !== 'string') return null;
   const text = q.trim().replace(/\s+/g, ' ');

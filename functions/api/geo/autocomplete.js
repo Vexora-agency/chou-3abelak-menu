@@ -280,9 +280,10 @@ export async function onRequest(context) {
   // Final free pass — Nominatim full-text search. Autocomplete/typeahead
   // indexes match from the START of a record, so a named POI buried mid-query
   // («كنيسة الانبا اثناسيوس السيوف في الاسكندرية») can miss everywhere above
-  // while a token search still finds it. Only for long specific queries,
-  // throttled to the provider's 1 req/s policy (1 call per 2s per IP).
-  if (results.length < MIN_RICH_RESULTS && q.trim().length >= 8) {
+  // while a token search still finds it. Short numbered streets («شارع 16»)
+  // need it too, so the gate is deliberately low; throttling (1 call per 2s
+  // per IP + daily cap) bounds the cost.
+  if (results.length < MIN_RICH_RESULTS && q.trim().length >= 4) {
     try {
       if (await hitRateLimit(kv, `rl:geo-nm:${clientIp(request)}`, 1, 2)
         && await hitRateLimit(kv, `geo-nm-day:${day}`, dailyMax(env), DAY_RATE_WINDOW_SEC)) {
@@ -295,6 +296,22 @@ export async function onRequest(context) {
         if (nm && nm.ok && Array.isArray(nm.results) && nm.results.length > 0) {
           results = mergeAutocompleteResults(results, nm.results);
           sources.push('nominatim');
+        } else {
+          // Area-appended queries («شارع 16، السيوف») can poison token
+          // search toward the area: retry the street alone as a base query.
+          const base = q.split(/[،,]/)[0].trim();
+          if (base && base !== q.trim() && base.length >= 4) {
+            const nmBase = await fetchNominatim(env, {
+              text: base,
+              lang,
+              country: region || clientCountry,
+              bias,
+            });
+            if (nmBase && nmBase.ok && Array.isArray(nmBase.results) && nmBase.results.length > 0) {
+              results = mergeAutocompleteResults(results, nmBase.results);
+              sources.push('nominatim');
+            }
+          }
         }
       }
     } catch {

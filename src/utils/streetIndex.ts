@@ -292,10 +292,29 @@ function pickIndex(
     if (!m) return null;
     const cc = typeof country === 'string' ? country.trim().toLowerCase() : '';
     const b = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng) ? bias : null;
-    return m.indexes.find((x) => x.country === cc && cc !== '')
-      || (b ? m.indexes.find((x) => Array.isArray(x.bbox) && x.bbox.length === 4
-        && b.lat >= x.bbox[0] && b.lat <= x.bbox[2] && b.lng >= x.bbox[1] && b.lng <= x.bbox[3]) : undefined)
-      || (cc === '' && b === null ? m.indexes[0] : undefined)
+    const hasBbox = (x: ManifestHit): boolean => Array.isArray(x.bbox) && x.bbox.length === 4
+      && Number.isFinite(x.bbox[0]) && Number.isFinite(x.bbox[1])
+      && Number.isFinite(x.bbox[2]) && Number.isFinite(x.bbox[3]);
+    const inside = (x: ManifestHit): boolean => hasBbox(x) && b !== null
+      && b.lat >= (x.bbox as [number, number, number, number])[0]
+      && b.lat <= (x.bbox as [number, number, number, number])[2]
+      && b.lng >= (x.bbox as [number, number, number, number])[1]
+      && b.lng <= (x.bbox as [number, number, number, number])[3];
+    // A live bias is ground truth: a file covering it wins even when the
+    // country code points elsewhere, and — critically — a bias OUTSIDE
+    // every file never falls back to a wrong-city file. A Cairo bias must
+    // not load the Alexandria-only index just because both are `eg`.
+    if (b) {
+      const geoHit = m.indexes.find((x) => inside(x));
+      if (geoHit) return geoHit;
+      // No file covers this viewport: serve nothing local rather than a
+      // wrong city. Legacy manifests without any bbox keep country match.
+      const anyBbox = m.indexes.some((x) => hasBbox(x));
+      if (anyBbox) return null;
+      return (cc !== '' ? m.indexes.find((x) => x.country === cc) : undefined) || null;
+    }
+    return (cc !== '' ? m.indexes.find((x) => x.country === cc) : undefined)
+      || (cc === '' ? m.indexes[0] : undefined)
       || null;
   } catch {
     return null;
@@ -340,10 +359,11 @@ function toStreetEntry(row: unknown): StreetEntry | null {
 }
 
 /**
- * Pick the region street index for this search: country match first, else
- * a bias inside the index bbox. Manifest (and files) load once per session
- * and only when the region is plausibly relevant. Never throws (null = no
- * local index).
+ * Pick the region street index for this search: a live bias inside a file's
+ * bbox wins first; a bias outside every file serves nothing local (never a
+ * wrong-city file); without a bias the country match wins. Manifest (and
+ * files) load once per session and only when the region is plausibly
+ * relevant. Never throws (null = no local index).
  */
 export function loadStreetIndex(
   country: string,
@@ -465,9 +485,10 @@ export function searchPlaces(
 }
 
 /**
- * Pick the downloadable places library for this search: country match
- * first, else a bias inside the index bbox. Same once-per-session caching
- * as streets. Never throws (null = no places index).
+ * Pick the downloadable places library for this search: a live bias inside
+ * a file's bbox wins first; a bias outside every file serves nothing local
+ * (never a wrong-city file); without a bias the country match wins. Same
+ * once-per-session caching as streets. Never throws (null = no places index).
  */
 export function loadPlacesIndex(
   country: string,

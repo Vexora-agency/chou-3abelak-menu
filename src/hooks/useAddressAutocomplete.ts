@@ -265,16 +265,19 @@ export function useAddressAutocomplete({
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       void (async () => {
-        // Instant local answers first, zero network, most personal first:
-        // this device's own picks, then the downloadable places library
-        // (districts/suburbs/villages), then the region street index. The
-        // server passes merge behind.
+        // Instant local answers first when the viewport is trusted (human
+        // pan/pick or GPS fix), zero network, most personal first: this
+        // device's own picks, then the downloadable places library, then
+        // the region street index. On an untouched fallback viewport the
+        // server (network location) leads instead — see merge below.
         // Viewport bias is read here — at fetch time — so map movement
         // never aborts typing (see biasRef above).
         const liveBias = biasRef.current;
         let local: AddressSuggestion[] = [];
+        let recentCount = 0;
         try {
           local = matchRecentPlaces(trimmed);
+          recentCount = local.length;
           const [placesIdx, streetIdx] = await Promise.all([
             loadPlacesIndex(country, liveBias),
             loadStreetIndex(country, liveBias),
@@ -298,10 +301,11 @@ export function useAddressAutocomplete({
           if (liveBias && Number.isFinite(liveBias.lat) && Number.isFinite(liveBias.lng)) {
             params.set('lat', String(Math.round(liveBias.lat * 1000) / 1000));
             params.set('lng', String(Math.round(liveBias.lng * 1000) / 1000));
-            // Untouched opening viewport: let the server prefer its network
-            // location over this fallback center.
-            if (autoBias) params.set('auto', '1');
           }
+          // Untouched opening viewport (or a bias-less field): let the
+          // server prefer its network location over the fallback center.
+          // Sent even without lat/lng so bias-less fields still get it.
+          if (autoBias) params.set('auto', '1');
           // Billing session groups this search's autocomplete calls with
           // the eventual place-details call (Google session pricing).
           try {
@@ -319,7 +323,14 @@ export function useAddressAutocomplete({
           if (!res.ok) throw new Error('geo autocomplete failed');
           const payload: unknown = await res.json();
           const items = extractSuggestions(payload);
-          const merged = mergeLocalFirst(local, items);
+          // Trusted viewport (human pan/pick or GPS fix): instant local
+          // rows lead. Untouched fallback viewport: the fallback center is
+          // unreliable (wrong city possible), so the server — which prefers
+          // the network location — leads; only the device's own recents
+          // keep their head start.
+          const merged = autoBias
+            ? mergeLocalFirst(mergeLocalFirst(local.slice(0, recentCount), items), local.slice(recentCount))
+            : mergeLocalFirst(local, items);
           cacheSet(key, merged);
           setSuggestions(merged);
           setActiveIndex(-1);

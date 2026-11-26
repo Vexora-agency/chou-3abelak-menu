@@ -501,6 +501,9 @@ export function AccountSheet({ open, onClose, onSignIn, lang, darkMode, currency
     lang,
     country: addrCountry,
     enabled: addrTyped && !location,
+    // No map viewport here: let the server use its network location
+    // instead of falling back to the restaurant pin.
+    autoBias: true,
   });
   const [pickedLabel, setPickedLabel] = useState('');
   // Which address text the current pin belongs to (suggestion pick OR map

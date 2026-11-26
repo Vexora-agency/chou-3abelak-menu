@@ -54,12 +54,15 @@ export const CartLocationSheet: React.FC<CartLocationSheetProps> = ({
         </div>
 
         {/* Interactive map: detect, drag the pin or tap, then confirm.
-            Tiles + address lookup load only while this sheet is open. */}
+            Tiles + address lookup load only while this sheet is open.
+            Fallback matches the restaurant country (Alexandria for EG),
+            never a foreign capital — and the untouched-viewport network
+            fallback still outranks it until GPS or a human move. */}
         <LocationPicker
           lang={lang}
           darkMode={darkMode}
           initial={location}
-          fallback={{ lat: 33.87476, lng: 35.545704 }}
+          fallback={country === 'eg' ? { lat: 31.2001, lng: 29.9187 } : { lat: 33.87476, lng: 35.545704 }}
           manualLabel={manualLabel}
           requirePin={requirePin}
           country={country}

@@ -133,6 +133,7 @@ if (!existsSync(fixture)) {
     ok('loader picks the index by country', !!byCountry && byCountry.entries.length > 500);
     const byViewport = await loadStreetIndex('', { lat: 31.2, lng: 29.95 });
     ok('loader picks the index by viewport bbox', !!byViewport && byViewport.id === 'alex-east');
+    ok('loader refuses a wrong-city file (Cairo bias never loads Alexandria)', await loadStreetIndex('eg', { lat: 30.05, lng: 31.25 }) === null);
     if (byCountry) {
       const exact = searchStreetIndex(byCountry.entries, 'شارع السيوف', byCountry.cityAr, byCountry.cityEn, 'ar');
       ok('loader + search resolve شارع السيوف', exact.length >= 1 && exact[0].line1.includes('السيوف'));

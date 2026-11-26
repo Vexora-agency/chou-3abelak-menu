@@ -607,6 +607,68 @@ try {
       && googleCalls(calledUrls).length === 0);
   }
 
+  // Short numbered streets («شارع 16», 7 chars) reach the full-text pass
+  // when typeahead stays thin — the old ≥8 gate starved them.
+  {
+    calledUrls = [];
+    globalThis.fetch = async (url) => {
+      calledUrls.push(String(url));
+      const u = String(url);
+      if (u.includes('places.googleapis.com')) return { ok: true, status: 200, json: async () => ({ suggestions: [] }) };
+      if (u.includes('photon.komoot.io')) return { ok: true, status: 200, json: async () => ({ features: [] }) };
+      if (u.includes('nominatim.openstreetmap.org/search')) {
+        return {
+          ok: true, status: 200, json: async () => ([{
+            place_id: 4242, lat: '30.0499', lon: '31.2486', name: 'شارع 16',
+            display_name: 'شارع 16، مدينة نصر، القاهرة، مصر',
+            address: { road: 'شارع 16', suburb: 'مدينة نصر', city: 'القاهرة' },
+          }]),
+        };
+      }
+      return { ok: true, status: 200, json: async () => ({}) };
+    };
+    const resShort = await onRequest({
+      request: customerGet('/api/geo/autocomplete?q=' + encodeURIComponent('شارع 16') + '&lang=ar&country=eg'),
+      env: { MENU_KV: makeKV() },
+    });
+    const bodyShort = await readJson(resShort);
+    check('route: short numbered street reaches nominatim when typeahead is thin',
+      resShort.status === 200 && bodyShort && bodyShort.ok === true
+      && Array.isArray(bodyShort.sources) && bodyShort.sources.includes('nominatim')
+      && bodyShort.results.some((r) => (r.line1 || r.label || '').includes('16')));
+
+    // Area-appended query retries the street alone when full text misses.
+    calledUrls = [];
+    let nmCalls = 0;
+    globalThis.fetch = async (url) => {
+      calledUrls.push(String(url));
+      const u = String(url);
+      if (u.includes('places.googleapis.com')) return { ok: true, status: 200, json: async () => ({ suggestions: [] }) };
+      if (u.includes('photon.komoot.io')) return { ok: true, status: 200, json: async () => ({ features: [] }) };
+      if (u.includes('nominatim.openstreetmap.org/search')) {
+        nmCalls += 1;
+        if (nmCalls === 1) return { ok: true, status: 200, json: async () => ([]) };
+        return {
+          ok: true, status: 200, json: async () => ([{
+            place_id: 4243, lat: '31.2646', lon: '30.0088', name: 'شارع 16',
+            display_name: 'شارع 16، السيوف، الإسكندرية، مصر',
+            address: { road: 'شارع 16', suburb: 'السيوف', city: 'الإسكندرية' },
+          }]),
+        };
+      }
+      return { ok: true, status: 200, json: async () => ({}) };
+    };
+    const resArea = await onRequest({
+      request: customerGet('/api/geo/autocomplete?q=' + encodeURIComponent('شارع 16، السيوف') + '&lang=ar&country=eg'),
+      env: { MENU_KV: makeKV() },
+    });
+    const bodyArea = await readJson(resArea);
+    check('route: area-appended query retries the street alone',
+      resArea.status === 200 && bodyArea && bodyArea.ok === true
+      && nmCalls === 2
+      && bodyArea.results.some((r) => (r.line1 || r.label || '').includes('16')));
+  }
+
   // Bias always follows the live viewport (or restaurant pin) — never a
   // hard fence, so no pin-less/pinned distinction is needed anymore.
   calledUrls = [];

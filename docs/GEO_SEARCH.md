@@ -26,8 +26,9 @@ exact coordinates.
    ranked first.
 4. **Nominatim full-text search** (free, keyless, throttled to its 1 req/s
    policy): catches named POIs buried mid-query («كنيسة الانبا اثناسيوس
-   السيوف في الاسكندرية») that prefix indexes miss. Only for queries of
-   8+ characters.
+   السيوف في الاسكندرية») that prefix indexes miss. Gate is ≥4 chars so
+   short numbered streets («شارع 16») reach it too; an area-appended
+   query retries the street alone when the full text misses.
 
 Geoapify was retired from this path by owner decision
 (`functions/_shared/geoapify.js` stays as a tested standby module only).
@@ -40,8 +41,14 @@ Geoapify was retired from this path by owner decision
   The client marks untouched opening viewports with `auto=1`: the server
   then prefers Cloudflare's city-level network geo over the fallback map
   center, so a customer whose GPS is still fixing gets their own city
-  first. Any pan, drag or pick flips to the explicit viewport. The
+  first. A precise center (saved point or live GPS fix) also clears the
+  untouched flag, so GPS outranks the network location once it lands. Any
+  pan, drag or pick flips to the explicit viewport. The
   `bias` answer field names the winner (`cf`/`view`/`pin`/`none`).
+  Local indexes are geography-first: a bias outside every downloaded
+  file serves nothing local (never a wrong-city file), and while the
+  viewport is still untouched the server leads and local rows append
+  behind (the device's own recents keep priority).
   A single explicit «بحث» button (and Enter on an empty list) reruns the
   cascade at once and auto-pins the first fresh result — typing alone only
   ever suggests, never moves the pin.

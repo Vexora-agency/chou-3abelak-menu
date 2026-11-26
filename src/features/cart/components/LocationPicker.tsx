@@ -132,6 +132,15 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   // in Cairo must not get Alexandria results just because GPS is still
   // fixing or denied. Any deliberate map interaction flips to the viewport.
   const [touched, setTouched] = useState(false);
+  // A precise center (saved point or live GPS fix) outranks the network
+  // location: once set, the opening viewport is no longer "untouched" even
+  // though no human panned. Starts true when opening on a saved point.
+  const [hasFix, setHasFix] = useState<boolean>(() => !!initial);
+  // Last applied center: a moveend that did not actually move the center
+  // (invalidateSize after open, tile reloads) is never a human touch.
+  const lastCenterRef = useRef<{ lat: number; lng: number } | null>(
+    initial ? { lat: initial.lat, lng: initial.lng } : { lat: fallback.lat, lng: fallback.lng }
+  );
   // Set before every programmatic setView so the moveend handler below can
   // tell a code-driven move (no touch) from a human pan/zoom.
   const progMoveRef = useRef(false);
@@ -188,7 +197,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     enabled: true,
     bias: mapCenter,
     area: selectedArea,
-    autoBias: !touched,
+    autoBias: !touched && !hasFix,
   });
   // Explicit search auto-pins: the customer is NEVER forced to pick from
   // the list. Typing only suggests; pressing بحث (or Enter on an empty
@@ -273,7 +282,15 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
             if (progMoveRef.current) {
               progMoveRef.current = false;
             } else {
-              setTouched(true);
+              // Same-center moveend (open invalidateSize, tile reloads) is
+              // not a human pan: only a real displacement counts as touch.
+              const prev = lastCenterRef.current;
+              const moved = !prev || !Number.isFinite(c.lat) || !Number.isFinite(c.lng)
+                || Math.abs(c.lat - prev.lat) > 0.00005 || Math.abs(c.lng - prev.lng) > 0.00005;
+              if (moved) setTouched(true);
+            }
+            if (Number.isFinite(c.lat) && Number.isFinite(c.lng)) {
+              lastCenterRef.current = { lat: c.lat, lng: c.lng };
             }
             setZoomLow(map.getZoom() < 16);
           } catch {}
@@ -281,10 +298,23 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         mapObj.current = map;
         markerObj.current = marker;
         setReady(true);
+        // Opening resize must not read as a human pan: guard it so the
+        // untouched-viewport network-location fallback survives it. The
+        // moveend equality guard below is the second belt; this flag is
+        // cleared shortly after in case no moveend fires at all.
         window.setTimeout(() => {
           try {
+            progMoveRef.current = true;
             map.invalidateSize();
-          } catch {}
+          } catch {
+            progMoveRef.current = false;
+          }
+          window.setTimeout(() => {
+            // A consumed flag is already false; only an unconsumed one is
+            // cleared here — and its moveend (if any) carries the same
+            // center, which the equality guard ignores anyway.
+            progMoveRef.current = false;
+          }, 1000);
         }, 350);
       } catch {
         if (!cancelled) setLoadError(true);
@@ -334,6 +364,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
 
   const moveTo = (lat: number, lng: number, accuracy: number, zoom = 16) => {
     setPoint({ lat: round5(lat), lng: round5(lng), accuracy });
+    lastCenterRef.current = { lat, lng };
     try {
       progMoveRef.current = true;
       markerObj.current?.setLatLng([lat, lng]);
@@ -446,6 +477,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
           const acc = typeof accuracy === 'number' ? accuracy : 100;
           moveTo(latitude, longitude, acc);
+          setHasFix(true);
           setLocError(null);
           if (acc <= 60) {
             setDetecting(false);
@@ -482,6 +514,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         const prev = pointRef.current;
         if (!prev || acc < prev.accuracy) {
           moveTo(latitude, longitude, acc);
+          setHasFix(true);
         }
       },
       (err) => {
@@ -527,6 +560,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
         const { latitude, longitude, accuracy } = pos.coords;
         if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
         moveTo(latitude, longitude, typeof accuracy === 'number' ? accuracy : 100);
+        setHasFix(true);
       },
       () => {
         if (seq !== seqRef.current) return;

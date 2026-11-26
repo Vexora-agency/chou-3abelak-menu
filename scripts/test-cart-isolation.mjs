@@ -358,6 +358,10 @@ ok(
   'map movement never aborts typing: viewport read at fetch time, session + auto-bias flags sent'
 );
 ok(
+  acHook.includes("if (autoBias) params.set('auto', '1')") && acHook.includes('recentCount'),
+  'untouched viewports send auto even bias-less; server leads until the viewport is trusted (recents keep priority)'
+);
+ok(
   acList.includes('role="listbox"') && acList.includes('role="option"')
     && acList.includes('Google Maps') && acList.includes('translate="no"'),
   'suggestion list uses listbox semantics with the required Google Maps attribution'
@@ -384,6 +388,16 @@ ok(
   picker.includes('handleAreaSelect') && picker.includes('areaLabel')
     && picker.includes('forceSearch') && acHook.includes('forceSearch'),
   'picker offers an area-first step and an explicit search action'
+);
+ok(
+  picker.includes('hasFix') && picker.includes('autoBias: !touched && !hasFix')
+    && picker.includes('lastCenterRef'),
+  'opening resize/same-center moveend never counts as touch; GPS/saved fix clears the untouched flag'
+);
+ok(
+  read('src/utils/streetIndex.ts').includes('wrong-city file')
+    && read('src/features/cart/components/cart/CartLocationSheet.tsx').includes("country === 'eg'"),
+  'index picker is geography-first (bias outside every file serves nothing local) and the fallback matches the restaurant country'
 );
 ok(
   acList.includes('attached') && picker.includes('attached'),

@@ -62,6 +62,24 @@ function trimText(v) {
 }
 
 /**
+ * Expand terse Pelias admin abbreviations seen in Lebanese labels
+ * ("..., JL, لبنان") into their Arabic name, so the row reads
+ * naturally. Only whole comma-separated segments match — never inside
+ * a street or place name. Never throws.
+ */
+export function expandAdminAbbreviations(label) {
+  try {
+    if (typeof label !== 'string' || !label) return label;
+    return label
+      .split(',')
+      .map((seg) => (seg.trim() === 'JL' ? seg.replace('JL', 'جبل لبنان') : seg))
+      .join(',');
+  } catch {
+    return label;
+  }
+}
+
+/**
  * Build the Pelias autocomplete URL. Returns null for an invalid query.
  * lang 'ar' passes through, regions become a comma-joined boundary.country
  * allow-list, and bias becomes a soft focus.point ranking hint.
@@ -102,7 +120,7 @@ export function sanitizeOrsResults(json) {
     if (!f || typeof f !== 'object') continue;
     const props = f.properties && typeof f.properties === 'object' ? f.properties : null;
     if (!props) continue;
-    const label = trimText(typeof props.label === 'string' ? props.label : '');
+    const label = expandAdminAbbreviations(trimText(typeof props.label === 'string' ? props.label : ''));
     if (!label) continue;
     const name = trimText(typeof props.name === 'string' ? props.name : '');
     const parts = label.split(',').map((p) => p.trim()).filter(Boolean);

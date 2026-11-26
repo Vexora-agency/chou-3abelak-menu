@@ -13,6 +13,7 @@ import { createAsserts, makeKV, readJson } from './_helpers/shared.mjs';
 import {
   ORS_RESULT_LIMIT,
   buildOrsAutocompleteUrl,
+  expandAdminAbbreviations,
   fetchOrsAutocomplete,
   isOrsConfigured,
   normalizeOrsCountries,
@@ -77,6 +78,10 @@ const peliasPayload = {
     && rows[0].label.includes('Mount Lebanon') && rows[0].lat === 33.8804 && rows[0].lng === 35.5466);
   check('sanitizer keeps the street row second', rows[1].line1 === 'Street 105');
   check('garbage sanitizes to []', sanitizeOrsResults(null).length === 0 && sanitizeOrsResults({}).length === 0);
+check('admin abbreviations expand to Arabic (JL → جبل لبنان)',
+  expandAdminAbbreviations('سيتي راما دكوانه, JL, لبنان') === 'سيتي راما دكوانه, جبل لبنان, لبنان'
+  && expandAdminAbbreviations('شارع الجلاء, بيروت, لبنان') === 'شارع الجلاء, بيروت, لبنان'
+  && expandAdminAbbreviations(null) === null);
   const many = {
     type: 'FeatureCollection',
     features: Array.from({ length: 20 }, (_, i) => ({

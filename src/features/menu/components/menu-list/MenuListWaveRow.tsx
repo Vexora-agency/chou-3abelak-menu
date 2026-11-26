@@ -33,6 +33,8 @@ export interface MenuListWaveRowProps {
   menu: MenuData;
   lang: 'en' | 'ar';
   currency: string;
+  /** Page theme: the alternating band is ink on dark, white on light. */
+  darkMode: boolean;
   isAr: boolean;
   qty: number;
   orderingEnabled?: boolean;
@@ -55,6 +57,7 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
   menu,
   lang,
   currency,
+  darkMode,
   isAr,
   qty,
   orderingEnabled = true,
@@ -65,6 +68,11 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
   onOpenItem,
 }) => {
   const isYellow = index % 2 === 0;
+  // Even bands stay brand yellow in both themes. The alternating band is
+  // ink on dark pages and white on light pages, so the ribbon keeps the
+  // site's black/white language instead of stamping a black block on white.
+  const bandTone = isYellow ? 'yellow' : darkMode ? 'black' : 'white';
+  const bandIsDark = !isYellow && darkMode;
   const isSoldOut = !item.available;
   const interactive = orderingEnabled && !isSoldOut;
   const name = pickLangText(item.name, lang);
@@ -83,7 +91,7 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
   const showImage = Boolean(item.imageUrl) && failedSrc !== (item.imageUrl ?? '');
   const markImg = sectionMark?.kind === 'img' ? sectionMark.src : null;
   const MarkIcon = sectionMark?.kind === 'glyph' ? sectionMark.Comp : null;
-  const markTone = isYellow ? 'opacity-20' : 'opacity-25';
+  const markTone = bandIsDark ? 'opacity-25' : 'opacity-20';
 
   const revealProps = (delay: number) =>
     skipEntrance
@@ -102,7 +110,7 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
             <SmartMenuImage
               item={item}
               name={name}
-              sizes="(max-width: 639px) 40vw, 360px"
+              sizes="(max-width: 639px) 35vw, 320px"
               onError={() => setFailedSrc(item.imageUrl ?? '')}
               className="wave-frame-img"
               width={800}
@@ -110,7 +118,7 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
             />
           </div>
         ) : (
-          <div className={`wave-fallback ${isYellow ? 'wave-fallback--yellow' : 'wave-fallback--black'}`}>
+          <div className={`wave-fallback wave-fallback--${bandTone === 'black' ? 'black' : bandTone === 'white' ? 'white' : 'yellow'}`}>
             {markImg ? (
               <img src={markImg} alt="" aria-hidden="true" className={`max-h-[42%] w-auto max-w-[42%] object-contain ${markTone}`} />
             ) : MarkIcon ? (
@@ -187,7 +195,7 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
 
   const body = (
     <div
-      className={`wave-body ${isYellow ? 'wave-body--yellow' : 'wave-body--black'}`}
+      className={`wave-body ${isYellow ? 'wave-body--yellow' : darkMode ? 'wave-body--black' : 'wave-body--white'}`}
       {...revealProps(80)}
     >
       <div className="wave-meta">
@@ -209,7 +217,7 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
             itemId={item.id}
             itemName={name}
             lang={lang}
-            darkMode={!isYellow}
+            darkMode={bandIsDark}
             tone="surface"
             size="sm"
           />
@@ -238,7 +246,7 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
       data-item-id={item.id}
     >
       <div
-        className={`wave-band ${isYellow ? 'wave-band--yellow' : 'wave-band--black'} ${
+        className={`wave-band wave-band--${bandTone} ${
           interactive ? 'is-interactive' : ''
         } ${isSoldOut ? 'is-soldout' : ''} ${isLast ? 'is-last' : ''}`}
         onClick={() => interactive && onOpenItem(item)}
@@ -260,7 +268,15 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
 
       {!isLast && (
         <div
-          className={`wave-divider ${isYellow ? 'wave-divider--to-black' : 'wave-divider--to-yellow'}`}
+          className={`wave-divider ${
+            darkMode
+              ? isYellow
+                ? 'wave-divider--to-black'
+                : 'wave-divider--to-yellow'
+              : isYellow
+                ? 'wave-divider--to-white'
+                : 'wave-divider--white-to-yellow'
+          }`}
           aria-hidden="true"
         >
           <svg viewBox="0 0 480 112" preserveAspectRatio="none">

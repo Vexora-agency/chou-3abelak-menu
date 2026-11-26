@@ -190,6 +190,7 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
         menu={menu}
         lang={lang}
         currency={currency}
+        darkMode={darkMode}
         isAr={isAr}
         qty={qty}
         sectionMark={sectionMark}

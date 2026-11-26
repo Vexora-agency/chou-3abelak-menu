@@ -33,16 +33,25 @@
 .wave-band--yellow {
   background: var(--primary);
   color: #0a0a0a;
-  padding: clamp(26px, 3.5vw, 42px) clamp(14px, 2.6vw, 34px) 8px;
+  padding: clamp(20px, 2.6vw, 30px) clamp(14px, 2.6vw, 34px) 8px;
 }
 .wave-band--black {
   background: #0a0a0a;
   color: #ffffff;
   padding: 8px clamp(14px, 2.6vw, 34px);
 }
+/* Light page: the ink band becomes a clean white band. Yellow stays the
+   brand anchor; black text, a black frame and a yellow offset shadow keep
+   the same graphic language as the site's light cards. */
+.wave-band--white {
+  background: #ffffff;
+  color: #0a0a0a;
+  padding: 8px clamp(14px, 2.6vw, 34px);
+}
 .wave-band--yellow.is-last,
-.wave-band--black.is-last {
-  padding-bottom: clamp(24px, 3.5vw, 42px);
+.wave-band--black.is-last,
+.wave-band--white.is-last {
+  padding-bottom: clamp(20px, 2.6vw, 30px);
 }
 .wave-band.is-interactive {
   cursor: pointer;
@@ -64,7 +73,7 @@
 .wave-media {
   /* A smaller dish frame keeps each band short; the extra width goes to
      the copy, which matters most on phones and for longer descriptions. */
-  flex: 0 0 40%;
+  flex: 0 0 35%;
   min-width: 0;
 }
 .wave-body {
@@ -74,7 +83,8 @@
 .wave-body--yellow {
   text-align: start;
 }
-.wave-body--black {
+.wave-body--black,
+.wave-body--white {
   text-align: end;
 }
 
@@ -98,8 +108,11 @@
 .wave-body--black .wave-desc {
   color: #a3a099;
 }
+.wave-body--white .wave-desc {
+  color: rgba(10, 10, 10, 0.68);
+}
 .wave-price {
-  margin-top: clamp(10px, 1.4vw, 16px);
+  margin-top: clamp(8px, 1.2vw, 14px);
   font-size: clamp(20px, 2.6vw, 29px);
   font-weight: 900;
   line-height: 1;
@@ -107,6 +120,9 @@
 }
 .wave-body--black .wave-price {
   color: var(--primary);
+}
+.wave-body--white .wave-price {
+  color: #0a0a0a;
 }
 
 /* Dish frame: one crisp border + the site's hard offset shadow. The inner
@@ -129,6 +145,14 @@
 }
 [dir="rtl"] .wave-band--black .wave-frame {
   box-shadow: -4px 4px 0 var(--primary), 0 18px 34px rgba(0, 0, 0, 0.55);
+}
+.wave-band--white .wave-frame {
+  border-color: #0a0a0a;
+  background: #ffffff;
+  box-shadow: 4px 4px 0 var(--primary), 0 18px 34px rgba(0, 0, 0, 0.18);
+}
+[dir="rtl"] .wave-band--white .wave-frame {
+  box-shadow: -4px 4px 0 var(--primary), 0 18px 34px rgba(0, 0, 0, 0.18);
 }
 .wave-frame-imgwrap {
   position: absolute;
@@ -155,6 +179,10 @@
   background: radial-gradient(70% 70% at 50% 45%, rgba(255, 196, 0, 0.14), rgba(20, 20, 20, 0.2));
   color: rgba(255, 196, 0, 0.28);
 }
+.wave-fallback--white {
+  background: radial-gradient(70% 70% at 50% 45%, rgba(10, 10, 10, 0.07), rgba(10, 10, 10, 0.015));
+  color: rgba(10, 10, 10, 0.22);
+}
 
 /* Soft wave divider — 1px overlap + same-colour hairline stroke seal the
    sub-pixel seam between each wave and the band that follows it. */
@@ -177,6 +205,14 @@
   background: #0a0a0a;
   color: var(--primary);
 }
+.wave-divider--to-white {
+  background: var(--primary);
+  color: #ffffff;
+}
+.wave-divider--white-to-yellow {
+  background: #ffffff;
+  color: var(--primary);
+}
 .wave-divider path {
   fill: currentColor;
   stroke: currentColor;
@@ -188,12 +224,13 @@
 /* Action */
 .wave-action {
   display: flex;
-  margin-top: clamp(14px, 1.8vw, 22px);
+  margin-top: clamp(10px, 1.4vw, 18px);
 }
 .wave-body--yellow .wave-action {
   justify-content: flex-start;
 }
-.wave-body--black .wave-action {
+.wave-body--black .wave-action,
+.wave-body--white .wave-action {
   justify-content: flex-end;
 }
 .wave-add {
@@ -213,7 +250,8 @@
   color: var(--primary);
   box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.4);
 }
-.wave-band--black .wave-add {
+.wave-band--black .wave-add,
+.wave-band--white .wave-add {
   background: var(--primary);
   color: #0a0a0a;
   box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.6);
@@ -234,6 +272,15 @@
   outline: 3px solid var(--primary);
   outline-offset: 3px;
 }
+.wave-band--white .wave-add:focus-visible,
+.wave-band--white .wave-stepper button:focus-visible,
+.wave-band--white:focus-visible {
+  outline: 3px solid #0a0a0a;
+  outline-offset: 3px;
+}
+.wave-band--white:focus-visible {
+  outline-offset: -4px;
+}
 .wave-stepper {
   display: flex;
   align-items: center;
@@ -246,7 +293,8 @@
   background: #0a0a0a;
   color: var(--primary);
 }
-.wave-band--black .wave-stepper {
+.wave-band--black .wave-stepper,
+.wave-band--white .wave-stepper {
   background: var(--primary);
   color: #0a0a0a;
 }
@@ -265,10 +313,12 @@
 .wave-band--yellow .wave-stepper button:hover {
   background: rgba(255, 196, 0, 0.26);
 }
-.wave-band--black .wave-stepper button {
+.wave-band--black .wave-stepper button,
+.wave-band--white .wave-stepper button {
   background: rgba(0, 0, 0, 0.12);
 }
-.wave-band--black .wave-stepper button:hover {
+.wave-band--black .wave-stepper button:hover,
+.wave-band--white .wave-stepper button:hover {
   background: rgba(0, 0, 0, 0.22);
 }
 .wave-stepper button:active {
@@ -285,15 +335,16 @@
 /* Badges + wishlist row */
 .wave-meta {
   display: flex;
-  min-height: 34px;
+  min-height: 30px;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 /* The ink band's copy is end-aligned; mirror the meta row so the badge sits
    on the same edge as the title instead of floating on the far side. */
-.wave-body--black .wave-meta {
+.wave-body--black .wave-meta,
+.wave-body--white .wave-meta {
   flex-direction: row-reverse;
 }
 .wave-meta__badges {
@@ -349,14 +400,16 @@
     gap: 12px;
   }
   .wave-band--yellow {
-    padding: 24px 14px 8px;
+    padding: 20px 14px 8px;
   }
-  .wave-band--black {
+  .wave-band--black,
+  .wave-band--white {
     padding: 8px 14px;
   }
   .wave-band--yellow.is-last,
-  .wave-band--black.is-last {
-    padding-bottom: 24px;
+  .wave-band--black.is-last,
+  .wave-band--white.is-last {
+    padding-bottom: 20px;
   }
   .wave-title {
     font-size: 20px;

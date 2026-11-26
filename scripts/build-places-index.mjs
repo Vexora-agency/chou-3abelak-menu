@@ -25,7 +25,7 @@ const OVERPASS_URLS = [
   'https://overpass-api.de/api/interpreter',
 ];
 const UA = 'chou-3abelak-menu/1.0 (places index build)';
-const DEFAULT_KINDS = ['city', 'town', 'village', 'hamlet', 'suburb', 'neighbourhood', 'quarter', 'isolated_dwelling'];
+const DEFAULT_KINDS = ['city', 'town', 'village', 'hamlet', 'suburb', 'neighbourhood', 'quarter', 'isolated_dwelling', 'locality', 'borough', 'municipality', 'farm'];
 const KIND_RANK = { city: 0, town: 1, village: 2, suburb: 3, neighbourhood: 4, quarter: 5, hamlet: 6, isolated_dwelling: 7, borough: 4, municipality: 2, locality: 7, farm: 8 };
 
 function arg(name, fallback = '') {

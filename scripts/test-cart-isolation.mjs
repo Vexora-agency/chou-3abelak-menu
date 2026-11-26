@@ -395,6 +395,15 @@ ok(
   'opening resize/same-center moveend never counts as touch; GPS/saved fix clears the untouched flag'
 );
 ok(
+  picker.includes('علامة مميزة') && !picker.includes('مميزةة')
+    && picker.includes("dir={isAr ? 'rtl' : 'ltr'}"),
+  'details labels spelled correctly and every input follows the UI direction (Arabic placeholders from the right)'
+);
+ok(
+  picker.includes('focus-within:ring-neutral-400/50') && !picker.includes('focus-within:ring-[var(--primary)]'),
+  'search box focus is a subtle neutral ring, not the loud brand-yellow ring'
+);
+ok(
   read('src/utils/streetIndex.ts').includes('wrong-city file')
     && read('src/features/cart/components/cart/CartLocationSheet.tsx').includes("country === 'eg'"),
   'index picker is geography-first (bias outside every file serves nothing local) and the fallback matches the restaurant country'

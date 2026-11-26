@@ -67,7 +67,7 @@ const STR = {
     addDetails: 'العنوان غير دقيق؟ أضف تفاصيل المبنى', hideDetails: 'إخفاء التفاصيل',
     zoomHint: 'قرّب الخريطة لتثبيت دقيق — العنوان يتبع الدبوس.',
     detailsTitle: 'تفاصيل إضافية للدقة (اختيارية)',
-    bBuilding: 'المبنى', bFloor: 'الدور', bApt: 'الشقة', bLandmark: 'علامة مميزةة',
+    bBuilding: 'المبنى', bFloor: 'الدور', bApt: 'الشقة', bLandmark: 'علامة مميزة',
     phBldg: '5', phFloor: '2', phApt: '3', phLandmark: 'بجوار الصيدلية',
     areaLabel: 'الحي / المنطقة', areaPh: 'اختر منطقتك…',
   },
@@ -639,7 +639,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           </select>
         </label>
       )}
-      <div className={`rounded-2xl border bg-clip-padding shadow-xs transition-shadow focus-within:ring-2 focus-within:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
+      <div className={`rounded-2xl border bg-clip-padding shadow-xs transition-shadow focus-within:border-neutral-500 focus-within:ring-1 focus-within:ring-neutral-400/50 ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
         <div className="flex items-center gap-2 px-3">
           <input
             type="text"
@@ -668,7 +668,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
               }
             }}
             placeholder={t.searchPh}
-            dir="auto"
+            dir={isAr ? 'rtl' : 'ltr'}
             autoComplete="off"
             role="combobox"
             aria-expanded={searchAc.open}
@@ -780,7 +780,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
               value={bldg}
               onChange={(e) => setBldg(e.target.value)}
               placeholder={t.phBldg}
-              dir="auto"
+              dir={isAr ? 'rtl' : 'ltr'}
               autoComplete="off"
               maxLength={60}
               className={`w-full h-11 rounded-xl border px-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 bg-black text-white placeholder-neutral-600' : 'border-neutral-300 bg-white text-[#0A0A0A] placeholder-neutral-400'}`}
@@ -793,7 +793,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
               value={floor}
               onChange={(e) => setFloor(e.target.value)}
               placeholder={t.phFloor}
-              dir="auto"
+              dir={isAr ? 'rtl' : 'ltr'}
               autoComplete="off"
               maxLength={60}
               className={`w-full h-11 rounded-xl border px-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 bg-black text-white placeholder-neutral-600' : 'border-neutral-300 bg-white text-[#0A0A0A] placeholder-neutral-400'}`}
@@ -806,7 +806,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
               value={apt}
               onChange={(e) => setApt(e.target.value)}
               placeholder={t.phApt}
-              dir="auto"
+              dir={isAr ? 'rtl' : 'ltr'}
               autoComplete="off"
               maxLength={60}
               className={`w-full h-11 rounded-xl border px-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 bg-black text-white placeholder-neutral-600' : 'border-neutral-300 bg-white text-[#0A0A0A] placeholder-neutral-400'}`}
@@ -820,7 +820,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
             value={landmark}
             onChange={(e) => setLandmark(e.target.value)}
             placeholder={t.phLandmark}
-            dir="auto"
+            dir={isAr ? 'rtl' : 'ltr'}
             autoComplete="off"
             maxLength={60}
             className={`w-full h-11 rounded-xl border px-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 bg-black text-white placeholder-neutral-600' : 'border-neutral-300 bg-white text-[#0A0A0A] placeholder-neutral-400'}`}

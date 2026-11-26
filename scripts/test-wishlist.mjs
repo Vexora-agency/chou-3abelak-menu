@@ -163,7 +163,7 @@ const surfaces = [
   'src/features/menu/components/menu-list/MenuListPhotoCard.tsx',
   'src/features/menu/components/menu-list/MenuListGridCard.tsx',
   'src/features/menu/components/menu-list/MenuListListRow.tsx',
-  'src/features/menu/components/menu-list/MenuListCompactRow.tsx',
+  'src/features/menu/components/menu-list/MenuListWaveRow.tsx',
   'src/features/menu/components/menu-list/MenuListRoundCard.tsx',
   'src/features/menu/components/FeaturedCarousel.tsx',
   'src/features/menu/components/ItemDetailsModal.tsx',
@@ -245,7 +245,7 @@ check(
 const categoriesTab = read('src/features/admin/components/CategoriesTab.tsx');
 check(
   'the admin style hints are short and cover every layout',
-  has(categoriesTab, 'Large photo-first cards', 'Photo background with a readable scrim', 'Photo beside the name and price', 'Dense text-only rows', 'Round photo in a gold ring', 'AlignJustify')
+  has(categoriesTab, 'Large photo-first cards', 'Photo background with a readable scrim', 'Photo beside the name and price', 'Alternating soft-wave bands', 'Round photo in a gold ring', 'Waves')
 );
 
 /* ---------- account sheet ---------- */

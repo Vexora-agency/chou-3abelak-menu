@@ -25,6 +25,13 @@
 
 @import "tailwindcss";
 
+/* One extra wide breakpoint for the full-bleed menu: at 1800px+ the card
+   grids add a column instead of inflating every card. Named (not an
+   arbitrary min-[1800px] variant) so it is ordered after 2xl in the output. */
+@theme {
+  --breakpoint-3xl: 112.5rem;
+}
+
 /* Tailwind v4 scans every text file for class candidates — docs and notes can
    contain literal arbitrary-value examples that would otherwise emit dead
    brand rules into the production CSS. Exclude non-code paths so dist only

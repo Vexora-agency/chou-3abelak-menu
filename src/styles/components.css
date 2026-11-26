@@ -11,6 +11,24 @@
   margin-inline: -10px;
 }
 
+/* Wide menu canvas (>=1440px): every category section runs edge-to-edge
+   like the wave ribbon, with the same fluid inner gutter (6vw, capped at
+   96px). Below 1440 the centered container is untouched, so tablets and
+   smaller laptops keep their comfortable gutters and card sizes. */
+@media (min-width: 1440px) {
+  .menu-wide.menu-wide {
+    max-width: none;
+    width: 100%;
+    padding-inline: clamp(40px, 6vw, 96px);
+  }
+  /* The sticky chips bar mirrors the wide canvas: its background reaches
+     both viewport edges while the chips keep the same inner gutter. */
+  .menu-wide-nav.menu-wide-nav {
+    margin-inline: calc(-1 * clamp(40px, 6vw, 96px));
+    padding-inline: clamp(40px, 6vw, 96px);
+  }
+}
+
 /* Phased "show less" (MenuList): doomed items fade/slide out while FULLY laid
    out — zero layout change, so the scroll position cannot jump — then unmount
    in one commit. Compositor-only (opacity/transform) for 60fps; per-item delay

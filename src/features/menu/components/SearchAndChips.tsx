@@ -133,7 +133,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
   }`;
 
   return (
-    <div className="px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
+    <div className="menu-wide px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full">
       {/* Overlapping Floating Search Bar */}
       <div className="relative -mt-6 z-20 max-w-xl mx-auto">
         <label htmlFor="menu-search-input" className="sr-only">
@@ -174,7 +174,7 @@ export const SearchAndChips: React.FC<SearchAndChipsProps> = ({
       {/* Sticky navigation: categories row (scroll arrows) + badge quick-filters below */}
       <nav
         aria-label={isAr ? 'تصنيفات القائمة' : 'Menu categories'}
-        className={`sticky top-0 z-20 -mx-5 sm:-mx-8 px-5 sm:px-8 py-3 mt-1.5 transition-[background-color] duration-300 ${
+        className={`menu-wide-nav sticky top-0 z-20 -mx-5 sm:-mx-8 px-5 sm:px-8 py-3 mt-1.5 transition-[background-color] duration-300 ${
           darkMode ? 'bg-[#0A0A0A] border-b border-white/5' : 'bg-white border-b border-black/5'
         }`}
       >

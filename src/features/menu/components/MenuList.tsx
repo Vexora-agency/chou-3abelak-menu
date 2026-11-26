@@ -86,18 +86,18 @@ function useGridCols(kind: 'list' | 'compact' | 'cards' | 'photos' | 'round'): n
   const get = () => {
     if (typeof window === 'undefined' || !window.matchMedia) return kind === 'cards' || kind === 'photos' || kind === 'round' ? 2 : 1;
     const mq = (min: number) => window.matchMedia(`(min-width: ${min}px)`).matches;
-    if (kind === 'cards') return mq(1280) ? 5 : mq(1024) ? 4 : mq(640) ? 3 : 2;
+    if (kind === 'cards') return mq(1800) ? 6 : mq(1280) ? 5 : mq(1024) ? 4 : mq(640) ? 3 : 2;
     // Round sections go full-bleed and dense: more compact columns fill
     // the viewport width professionally.
-    if (kind === 'round') return mq(1280) ? 8 : mq(1024) ? 6 : mq(640) ? 4 : 2;
-    if (kind === 'photos') return mq(1280) ? 4 : mq(1024) ? 3 : 2;
-    if (kind === 'list') return mq(1280) ? 3 : mq(768) ? 2 : 1;
+    if (kind === 'round') return mq(1800) ? 10 : mq(1280) ? 8 : mq(1024) ? 6 : mq(640) ? 4 : 2;
+    if (kind === 'photos') return mq(1800) ? 6 : mq(1536) ? 5 : mq(1280) ? 4 : mq(1024) ? 3 : 2;
+    if (kind === 'list') return mq(1800) ? 4 : mq(1280) ? 3 : mq(768) ? 2 : 1;
     return 1; // compact = one full-width soft-wave band per item
   };
   const [cols, setCols] = useState(get);
   useEffect(() => {
     const onChange = () => setCols(get());
-    const mqls = [640, 768, 1024, 1280].map((min) => window.matchMedia(`(min-width: ${min}px)`));
+    const mqls = [640, 768, 1024, 1280, 1536, 1800].map((min) => window.matchMedia(`(min-width: ${min}px)`));
     mqls.forEach((m) => m.addEventListener('change', onChange));
     onChange();
     return () => mqls.forEach((m) => m.removeEventListener('change', onChange));
@@ -450,20 +450,20 @@ export const MenuList: React.FC<MenuListProps> = ({
           kind === 'compact'
             ? 'wave-stack grid grid-cols-1 lg:grid-cols-2 menu-section-grid'
             : kind === 'list'
-              ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-3.5 menu-section-grid'
+              ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 gap-3 sm:gap-3.5 menu-section-grid'
               : kind === 'photos'
                 // Photo cards pair up from the smallest phones, exactly like
                 // the text cards: narrow screens get the compact card (no
                 // description, smaller title/ticket — see MenuListPhotoCard).
-                // Large screens step up to 4 columns so cards stay petite.
-                ? 'grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-6 menu-section-grid'
+                // Wide screens add columns instead of inflating the cards.
+                ? 'grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-3.5 sm:gap-6 menu-section-grid'
                 // Round sections are full-bleed (see sectionWrapClass below):
                 // dense compact columns use the whole viewport width.
                 : kind === 'round'
-                  ? 'grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 menu-section-grid menu-grid-round'
+                  ? 'grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 3xl:grid-cols-10 gap-3 sm:gap-4 menu-section-grid menu-grid-round'
                 // Single column under 360px: two 133px cards squeeze Arabic
                 // names + price + action at 320px — one readable column wins.
-                : 'grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5 menu-section-grid';
+                : 'grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 3xl:grid-cols-6 gap-3.5 sm:gap-4 md:gap-5 menu-section-grid';
         const total = catItems.length;
         // Snap the window to FULL rows of this section's live grid: on a
         // 5-column desktop grid initial 12 → 15, batch 8 → 10, so no orphan
@@ -654,24 +654,23 @@ export const MenuList: React.FC<MenuListProps> = ({
         );
         // scroll-mt clears the sticky stack (banner + two chip rows ≈150px)
         // so the anchored header never hides underneath after chip taps.
-        // Round sections keep the full-bleed branded BACKDROP, but their
-        // content (header + grid + pager) sits in the same centered column
-        // as every other layout — otherwise round headers/cards stick to
-        // the viewport edges on desktop while the rest is centered.
-        // The band's vertical padding reveals its backdrop above/below.
+        // Round sections keep the full-bleed branded BACKDROP, while their
+        // content (header + grid + pager) follows the same measure as the
+        // other layouts. The band's vertical padding reveals the backdrop.
         // Compact is a full-bleed ribbon: the bands touch the viewport edges
-        // on phones and sit in a 900px column on larger screens. Its header
-        // and pager share the .wave-column measure so they line up with the
-        // band copy instead of floating outside the ribbon.
+        // and its header/pager share the .wave-column measure.
+        // `menu-wide` lets every category run edge-to-edge on large screens
+        // (see components.css): the same 6vw/96px inner gutter as the wave
+        // ribbon, so card sections no longer sit in a narrow center column.
         const sectionWrapClass = kind === 'compact'
           ? 'w-full'
           : kind === 'round'
             ? `w-full py-8 sm:py-10 ${darkMode ? 'round-band' : 'round-band-light'}`
             : kind === 'list'
-              ? 'px-5 sm:px-8 max-w-3xl md:max-w-5xl xl:max-w-7xl mx-auto w-full'
-              : 'px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full';
+              ? 'menu-wide px-5 sm:px-8 max-w-3xl md:max-w-5xl xl:max-w-7xl mx-auto w-full'
+              : 'menu-wide px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full';
         const sectionInnerClass = kind === 'round'
-          ? 'px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full'
+          ? 'menu-wide px-5 sm:px-8 max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto w-full'
           : undefined;
         const sectionHeader = (
           <MenuListSectionHeader title={isAr ? cat.name.ar : cat.name.en} darkMode={darkMode} count={catItems.length} festive={isFestive} />

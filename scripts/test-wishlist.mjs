@@ -221,12 +221,12 @@ check(
 );
 const menuListSource = read('src/features/menu/components/MenuList.tsx');
 check(
-  'the list section is responsive: 1 / 2 / 3 columns',
+  'the list section is responsive: 1 / 2 / 3 / 4 columns on a wide canvas',
   has(
     menuListSource,
-    "if (kind === 'list') return mq(1280) ? 3 : mq(768) ? 2 : 1;",
-    'grid-cols-1 md:grid-cols-2 xl:grid-cols-3',
-    'max-w-3xl md:max-w-5xl xl:max-w-7xl'
+    "if (kind === 'list') return mq(1800) ? 4 : mq(1280) ? 3 : mq(768) ? 2 : 1;",
+    'grid-cols-1 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4',
+    'menu-wide px-5 sm:px-8 max-w-3xl md:max-w-5xl xl:max-w-7xl'
   )
 );
 const itemEdit = read('src/features/admin/components/ItemEditModal.tsx');

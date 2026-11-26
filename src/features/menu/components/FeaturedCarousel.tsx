@@ -33,6 +33,8 @@ export interface FeaturedCarouselProps {
   autoplay?: boolean;
   /** Optional cadence override (admin live preview). Storefront stays at 5s. */
   autoplayIntervalMs?: number;
+  /** Optional layout classes from the page (e.g. vertical rhythm). */
+  className?: string;
 }
 
 /** The approved progress duration. Keep in sync with --fc-autoplay in CSS. */
@@ -297,6 +299,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   orderingEnabled = true,
   autoplay = true,
   autoplayIntervalMs = AUTOPLAY_MS,
+  className = '',
 }) => {
   const isAr = lang === 'ar';
   const isLight = variant === 'light';
@@ -342,9 +345,9 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     };
   }, [emblaApi]);
 
-  // A pointer press anywhere on the stage freezes the progress and the timer.
-  // Releasing restarts both from zero so the fill can never desync from the
-  // actual 5s cadence.
+  // A pointer press anywhere on the carousel freezes the progress and the
+  // timer. Releasing restarts both from zero so the fill can never desync
+  // from the actual 5s cadence.
   useEffect(() => {
     const release = () => {
       if (!pressingRef.current) return;
@@ -390,112 +393,108 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
 
   if (items.length === 0) return null;
 
-  // Member-only wishlist button in the stage header (never over the photo).
-  // Guests get null from WishlistButton, so the approved composition stays
-  // pixel-identical for them.
+  // Member-only wishlist button in the carousel header (never over the
+  // photo). Guests get null from WishlistButton, so the approved composition
+  // stays pixel-identical for them.
   const item = items[Math.min(selectedIndex, items.length - 1)] ?? items[0];
 
   return (
     <section
-      className={`fc-root fc-root--${variant}`}
+      className={`fc-root fc-root--${variant}${className ? ` ${className}` : ''}`}
       aria-labelledby={titleId}
+      onPointerDown={handlePress}
       style={{ '--fc-autoplay': `${autoplayMs}ms` } as React.CSSProperties}
     >
-      <div
-        className={`fc-stage${isLight ? ' fc-stage--light' : ''}`}
-        onPointerDown={handlePress}
-      >
-        <div className="fc-head">
-          <h2 className="fc-title" id={titleId}>
-            {title}
-          </h2>
-          <span className="fc-wishlist">
-            <WishlistButton
-              itemId={item.id}
-              itemName={pickLangText(item.name, lang)}
-              lang={lang}
-              darkMode={!isLight}
-              tone="surface"
-              size="sm"
-            />
-          </span>
-        </div>
-
-        <div
-          className="fc-viewport"
-          ref={emblaRef}
-          role="group"
-          aria-roledescription={isAr ? 'كاروسيل' : 'carousel'}
-          aria-label={title}
-        >
-          <div className="fc-track">
-            {items.map((item, index) => (
-              <div
-                key={item.id}
-                className="fc-slide"
-                role="group"
-                aria-roledescription={isAr ? 'شريحة' : 'slide'}
-                aria-label={
-                  isAr
-                    ? `الشريحة ${index + 1} من ${items.length}`
-                    : `Slide ${index + 1} of ${items.length}`
-                }
-              >
-                <FeaturedCard
-                  item={item}
-                  menu={menu}
-                  lang={lang}
-                  currency={currency}
-                  index={index}
-                  active={index === selectedIndex}
-                  eager={!isLight && index === 0}
-                  orderingEnabled={orderingEnabled}
-                  onAddToCart={onAddToCart}
-                  onOpenItem={onOpenItem}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {items.length > 1 ? (
-          <div
-            className="fc-dots"
-            role="group"
-            aria-label={isAr ? 'شرائح الكاروسيل' : 'Carousel slides'}
-          >
-            {items.map((item, index) => {
-              const active = index === selectedIndex;
-              const showProgress = active && autoplayOn;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="fc-dot-btn"
-                  onClick={() => goTo(index)}
-                  aria-label={
-                    isAr ? `الشريحة ${index + 1} من ${items.length}` : `Slide ${index + 1} of ${items.length}`
-                  }
-                  aria-current={active ? 'true' : undefined}
-                >
-                  <span
-                    className={`fc-dot${active ? ' is-active' : ''}${
-                      active && !autoplayOn ? ' is-static' : ''
-                    }`}
-                  >
-                    {showProgress ? (
-                      <span
-                        key={cycle}
-                        className={`fc-dot-fill${paused || !pageVisible ? ' is-paused' : ''}`}
-                      />
-                    ) : null}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
+      <div className="fc-head">
+        <h2 className="fc-title" id={titleId}>
+          {title}
+        </h2>
+        <span className="fc-wishlist">
+          <WishlistButton
+            itemId={item.id}
+            itemName={pickLangText(item.name, lang)}
+            lang={lang}
+            darkMode={!isLight}
+            tone="surface"
+            size="sm"
+          />
+        </span>
       </div>
+
+      <div
+        className="fc-viewport"
+        ref={emblaRef}
+        role="group"
+        aria-roledescription={isAr ? 'كاروسيل' : 'carousel'}
+        aria-label={title}
+      >
+        <div className="fc-track">
+          {items.map((slideItem, index) => (
+            <div
+              key={slideItem.id}
+              className="fc-slide"
+              role="group"
+              aria-roledescription={isAr ? 'شريحة' : 'slide'}
+              aria-label={
+                isAr
+                  ? `الشريحة ${index + 1} من ${items.length}`
+                  : `Slide ${index + 1} of ${items.length}`
+              }
+            >
+              <FeaturedCard
+                item={slideItem}
+                menu={menu}
+                lang={lang}
+                currency={currency}
+                index={index}
+                active={index === selectedIndex}
+                eager={index === 0}
+                orderingEnabled={orderingEnabled}
+                onAddToCart={onAddToCart}
+                onOpenItem={onOpenItem}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {items.length > 1 ? (
+        <div
+          className="fc-dots"
+          role="group"
+          aria-label={isAr ? 'شرائح الكاروسيل' : 'Carousel slides'}
+        >
+          {items.map((dotItem, index) => {
+            const active = index === selectedIndex;
+            const showProgress = active && autoplayOn;
+            return (
+              <button
+                key={dotItem.id}
+                type="button"
+                className="fc-dot-btn"
+                onClick={() => goTo(index)}
+                aria-label={
+                  isAr ? `الشريحة ${index + 1} من ${items.length}` : `Slide ${index + 1} of ${items.length}`
+                }
+                aria-current={active ? 'true' : undefined}
+              >
+                <span
+                  className={`fc-dot${active ? ' is-active' : ''}${
+                    active && !autoplayOn ? ' is-static' : ''
+                  }`}
+                >
+                  {showProgress ? (
+                    <span
+                      key={cycle}
+                      className={`fc-dot-fill${paused || !pageVisible ? ' is-paused' : ''}`}
+                    />
+                  ) : null}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
     </section>
   );
 };

@@ -592,32 +592,6 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   // is display-only with a call CTA. Gated in one place, passed down.
   const orderingOn = featuresConfig.enableOrdering;
   const featuredItems = displayMenu.items.filter((i) => i.featured && i.available);
-  // Second (white) carousel: "جرّب كمان". Items outside the featured set,
-  // one per category first so the row reads as discovery rather than a
-  // repeat of the hero picks; photo-ready items lead. Cheap enough to derive
-  // inline (52 items max) and keeps the hook order above all early returns.
-  const moreItems = (() => {
-    const pool = displayMenu.items.filter((i) => i.available && !i.featured);
-    const ordered = [...pool].sort(
-      (a, b) => Number(Boolean(b.imageUrl)) - Number(Boolean(a.imageUrl)),
-    );
-    const picks: MenuItem[] = [];
-    const seenCategories = new Set<string>();
-    for (const item of ordered) {
-      if (seenCategories.has(item.categoryId)) continue;
-      seenCategories.add(item.categoryId);
-      picks.push(item);
-      if (picks.length >= 8) break;
-    }
-    if (picks.length < 8) {
-      for (const item of ordered) {
-        if (picks.includes(item)) continue;
-        picks.push(item);
-        if (picks.length >= 8) break;
-      }
-    }
-    return picks;
-  })();
   // Live endpoint state wins; the menu-derived state is the fail-open
   // fallback when the endpoint is unreachable (an outage never stops orders).
   // resolveLiveOrdering additionally discards a provably-stale paused value
@@ -713,41 +687,24 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
                 darkMode={darkMode}
               />
 
-              {/* Featured carousels: black stage first, white discovery stage
-                  right below (14px apart). Both hide under filters/search. */}
-              {selectedCategory === 'all' && !searchQuery.trim() && !selectedBadge && (
-                <div className="mt-6 mb-4 flex flex-col gap-[14px]">
-                  {featuredItems.length > 0 && (
-                    <FeaturedCarousel
-                      key={`featured-dark-${featuredItems.map((i) => i.id).join('|')}`}
-                      variant="dark"
-                      title={isAr ? 'المميز والأكثر طلبًا' : 'Featured Items'}
-                      items={featuredItems}
-                      menu={menu}
-                      onOpenItem={orderingOn ? setActiveItem : () => {}}
-                      onAddToCart={handleQuickAdd}
-                      currency={currency}
-                      lang={lang}
-                      autoplay={menu.settings.featuredAutoplay !== false}
-                      orderingEnabled={orderingOn}
-                    />
-                  )}
-                  {moreItems.length > 0 && (
-                    <FeaturedCarousel
-                      key={`featured-light-${moreItems.map((i) => i.id).join('|')}`}
-                      variant="light"
-                      title={isAr ? 'جرّب كمان' : 'Try These Too'}
-                      items={moreItems}
-                      menu={menu}
-                      onOpenItem={orderingOn ? setActiveItem : () => {}}
-                      onAddToCart={handleQuickAdd}
-                      currency={currency}
-                      lang={lang}
-                      autoplay={menu.settings.featuredAutoplay !== false}
-                      orderingEnabled={orderingOn}
-                    />
-                  )}
-                </div>
+              {/* One theme-aware featured carousel (no stage wrapper); the
+                  same card renders light on a light storefront and dark on a
+                  dark one. Hidden under filters/search like before. */}
+              {selectedCategory === 'all' && !searchQuery.trim() && !selectedBadge && featuredItems.length > 0 && (
+                <FeaturedCarousel
+                  key={`featured-${featuredItems.map((i) => i.id).join('|')}`}
+                  className="mt-6 mb-4"
+                  variant={darkMode ? 'dark' : 'light'}
+                  title={isAr ? 'المميز والأكثر طلبًا' : 'Featured Items'}
+                  items={featuredItems}
+                  menu={menu}
+                  onOpenItem={orderingOn ? setActiveItem : () => {}}
+                  onAddToCart={handleQuickAdd}
+                  currency={currency}
+                  lang={lang}
+                  autoplay={menu.settings.featuredAutoplay !== false}
+                  orderingEnabled={orderingOn}
+                />
               )}
 
               {/* Menu Items List and Categorized Grids */}

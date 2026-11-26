@@ -11,16 +11,18 @@
  *   (GEO_AC_DAILY_MAX, default 2500; Google calls have their own
  *   GOOGLE_PLACES_DAILY_MAX, default 300) → 429.
  *   Both ride the shared KV limiter, which fails OPEN when KV is missing.
- * - Success → 200 { ok:true, results, sources, google } via jsonNoStore.
+ * - Success → 200 { ok:true, results, sources, ors, google } via jsonNoStore.
  *   Failures degrade to thinner results, never to 5xx for missing keys:
  *   the search always answers with what the free passes found.
  *
- * Order: Google Places (primary external provider, session-billed,
- * biased by the live map viewport) → Google Text Search (up to 10 full
- * detailed places) → Photon (free, keyless smart-recall backstop) →
- * Nominatim full-text search (free, keyless; catches named POIs buried
- * mid-query that prefix indexes miss). Geoapify was retired from this
- * path by owner decision (module kept as tested standby).
+ * Order: ORS (hosted Pelias, primary keyed pass — free plan, no card,
+ * type-ahead WITH coordinates, country-filtered) → Google Places
+ * (secondary keyed pass, session-billed, biased by the live map viewport)
+ * → Google Text Search (up to 10 full detailed places) → Photon (free,
+ * keyless smart-recall backstop) → Nominatim full-text search (free,
+ * keyless; catches named POIs buried mid-query that prefix indexes
+ * miss). Geoapify was retired from this path by owner decision (module
+ * kept as tested standby).
  * The bias is the client's live map viewport (`lat`/`lng`) when supplied,
  * else the restaurant pin parsed from the stored menu.settings.mapUrl
  * with parseMapUrlCoordsJs (skipped when missing), else — when the client
@@ -30,9 +32,9 @@
  * keys, provider bodies, the full query, or coordinates beyond the answered
  * suggestions; `bias` only names the winning source (cf/view/pin/none).
  * Responses and logs never carry keys, provider bodies, or the full query.
- * `sources` names the passes that answered (google/google-text/photon/nominatim);
- * `google` is off/rich/ok/empty/capped/error so the owner can confirm
- * the paid pass is actually armed.
+ * `sources` names the passes that answered (ors/google/google-text/photon/nominatim);
+ * `ors`/`google` are off/rich/ok/empty/capped/error so the owner can confirm
+ * the keyed passes are actually armed.
  */
 
 import { jsonNoStore } from '../../_shared/session.js';
@@ -49,6 +51,7 @@ import {
 } from '../../_shared/geoapify.js';
 import { fetchPhoton, buildQueryVariants, pickFallbackVariant, rankAppendedByDigits } from '../../_shared/photon.js';
 import { fetchGoogleAutocomplete, fetchTextSearch, googleDailyMax, isGoogleConfigured, validateSessionToken } from '../../_shared/google.js';
+import { fetchOrsAutocomplete, isOrsConfigured, orsDailyMax } from '../../_shared/ors.js';
 import { fetchNominatim } from '../../_shared/nominatim.js';
 
 const IP_RATE_MAX = 60;
@@ -188,21 +191,53 @@ export async function onRequest(context) {
     : (region ? [region] : [])
   ).map((c) => String(c || '').trim().toUpperCase()).filter((c, i, a) => /^[A-Z]{2}$/.test(c) && a.indexOf(c) === i).slice(0, 10);
 
-  // Non-sensitive source + Google-status trail for verification (never the
-  // query or a key). The client ignores them; the owner reads them.
-  // google: off (no key) | rich (free passes sufficed) | ok | empty |
-  // capped (daily budget spent) | error (billing/API/quota on Google's side).
+  // Non-sensitive source + provider-status trail for verification (never
+  // the query or a key). The client ignores them; the owner reads them.
+  // ors/google: off (no key) | rich (free passes sufficed) | ok | empty |
+  // capped (daily budget spent) | error (key/quota/provider-side failure).
   // menu/zones diagnose the delivery-scope wiring: menu=false means the
   // production KV binding is missing (zones unreadable, country falls back
   // to the phone-derived code); zones=0 with menu=true means the admin
   // zones are not on `selected` mode.
   const sources = [];
+  let ors = isOrsConfigured(env) ? 'rich' : 'off';
   let google = isGoogleConfigured(env) ? 'rich' : 'off';
 
-  // Google Places is the primary external provider. One bounded call per
+  // OpenRouteService (hosted Pelias) is the primary keyed provider: free
+  // Standard plan, no card, type-ahead autocomplete WITH coordinates in
+  // every row (no follow-up details call), hard-filtered to the delivery
+  // countries. One bounded call per distinct query (debounced + cached
+  // client-side). Google below stays as the secondary keyed pass for
+  // owners who fix its billing; free passes cover thin and capped results.
+  let results = [];
+  if (results.length < MIN_RICH_RESULTS && isOrsConfigured(env)) {
+    try {
+      if (await hitRateLimit(kv, `geo-ors-day:${day}`, orsDailyMax(env), DAY_RATE_WINDOW_SEC)) {
+        const o = await fetchOrsAutocomplete(env, {
+          text: q,
+          lang,
+          bias,
+          regions,
+        });
+        if (o && o.ok && Array.isArray(o.results) && o.results.length > 0) {
+          results = mergeAutocompleteResults(results, o.results);
+          sources.push('ors');
+          ors = 'ok';
+        } else if (o && o.ok) {
+          ors = 'empty';
+        } else {
+          ors = 'error';
+        }
+      } else {
+        ors = 'capped';
+      }
+    } catch {
+      ors = 'error';
+    }
+  }
+  // Google Places is the secondary keyed provider. One bounded call per
   // distinct query (debounced + cached client-side); coordinates resolve
   // once on pick. Free passes below cover thin results and capped budgets.
-  let results = [];
   if (results.length < MIN_RICH_RESULTS && isGoogleConfigured(env)) {
     try {
       if (await hitRateLimit(kv, `geo-gg-day:${day}`, googleDailyMax(env), DAY_RATE_WINDOW_SEC)) {
@@ -332,5 +367,5 @@ export async function onRequest(context) {
       /* keep everything found so far */
     }
   }
-  return jsonNoStore({ ok: true, results, sources, google, bias: biasSrc, menu: menu !== null, zones: zoneCountries.length });
+  return jsonNoStore({ ok: true, results, sources, ors, google, bias: biasSrc, menu: menu !== null, zones: zoneCountries.length });
 }

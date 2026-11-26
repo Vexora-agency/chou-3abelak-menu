@@ -38,6 +38,9 @@ Geoapify was retired from this path by owner decision
 - Cart checkout + account settings address fields query
   `GET /api/geo/autocomplete?q=…&lang=…&country=…&lat=…&lng=…&session=…`
   (debounced 350 ms, min 3 chars, session cache, abort on keystroke).
+  Cascade: ORS (primary keyed pass, free plan — see
+  `docs/ORS_GEOCODE.md`) → Google (secondary keyed pass) → Photon →
+  Nominatim → local indexes.
   The client marks untouched opening viewports with `auto=1`: the server
   then prefers Cloudflare's city-level network geo over the fallback map
   center, so a customer whose GPS is still fixing gets their own city

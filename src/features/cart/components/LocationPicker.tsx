@@ -66,8 +66,8 @@ const STR = {
     noResults: 'لا توجد نتائج — جرّب اسم الشارع ورقمه فقط، أو اسحب الدبوس.',
     addDetails: 'العنوان غير دقيق؟ أضف تفاصيل المبنى', hideDetails: 'إخفاء التفاصيل',
     zoomHint: 'قرّب الخريطة لتثبيت دقيق — العنوان يتبع الدبوس.',
-    detailsTitle: 'تفاصيل دقيقة للتوصيل (اختياري)',
-    bBuilding: 'المبنى', bFloor: 'الدور', bApt: 'الشقة', bLandmark: 'علامة مميزة',
+    detailsTitle: 'تفاصيل إضافية للدقة (اختيارية)',
+    bBuilding: 'المبنى', bFloor: 'الدور', bApt: 'الشقة', bLandmark: 'علامة مميزةة',
     phBldg: '5', phFloor: '2', phApt: '3', phLandmark: 'بجوار الصيدلية',
     areaLabel: 'الحي / المنطقة', areaPh: 'اختر منطقتك…',
   },
@@ -583,7 +583,6 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
       )}
       <div className="relative">
         <div className={`flex items-center gap-2 rounded-2xl border px-3 shadow-xs focus-within:ring-2 focus-within:ring-[var(--primary)] transition-shadow ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
-          <Search size={16} className={`shrink-0 ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`} aria-hidden="true" />
           <input
             type="text"
             value={searchText}
@@ -630,9 +629,10 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
               disabled={searchText.trim().length < 3}
               aria-label={t.searchGo}
               title={t.searchGo}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary)] text-[#0A0A0A] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+              className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-xs font-black text-[#0A0A0A] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
             >
-              <Search size={15} aria-hidden="true" />
+              <Search size={14} aria-hidden="true" />
+              {t.searchGo}
             </button>
           )}
         </div>

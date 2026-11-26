@@ -1,4 +1,5 @@
 import React from 'react';
+import { encodePlusCode } from '@/src/utils/plusCodes';
 
 interface LocationAddressPreviewProps {
   point: { lat: number; lng: number; accuracy: number } | null;
@@ -15,6 +16,7 @@ export const LocationAddressPreview: React.FC<LocationAddressPreviewProps> = ({
   darkMode,
   isAr,
 }) => {
+  const plusCode = point ? encodePlusCode(point.lat, point.lng) : '';
   return (
     <>
       {/* Live address preview: exactly what Confirm will write. Move the
@@ -32,7 +34,10 @@ export const LocationAddressPreview: React.FC<LocationAddressPreviewProps> = ({
           <>
             <p className={`text-[13px] font-black leading-snug ${darkMode ? 'text-white' : 'text-[#0A0A0A]'}`} dir="auto">{addrPreview}</p>
             <p className={`text-[11px] tabular-nums mt-0.5 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`} dir="ltr">
-              {point.lat}, {point.lng} · ±{Math.round(point.accuracy)}m
+              {point.lat}, {point.lng} · ±{Math.round(point.accuracy)}m{plusCode ? ` · ${plusCode}` : ''}
+            </p>
+            <p className={`text-[10px] mt-0.5 ${darkMode ? 'text-neutral-500' : 'text-neutral-500'}`}>
+              {isAr ? 'رمز بلس — الصقه في أي تطبيق خرائط للوصول الدقيق' : 'Plus code — paste it in any maps app for exact navigation'}
             </p>
           </>
         ) : (

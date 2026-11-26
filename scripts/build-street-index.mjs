@@ -30,16 +30,27 @@ async function overpassQuery(q) {
   let last = null;
   for (const url of OVERPASS_URLS) {
     for (let attempt = 0; attempt < 4; attempt += 1) {
+      const ctl = new AbortController();
+      // Client-side ceiling above the server [timeout]: a hanging mirror
+      // must fail fast to the next one instead of stalling the run forever.
+      const timer = setTimeout(() => {
+        try {
+          ctl.abort();
+        } catch {}
+      }, 150000);
       try {
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': UA },
           body: 'data=' + encodeURIComponent(q),
+          signal: ctl.signal,
         });
+        clearTimeout(timer);
         if (res.ok) return res;
         last = new Error(`overpass ${res.status} at ${url}`);
         if (res.status === 400 || res.status === 406) throw last;
       } catch (e) {
+        clearTimeout(timer);
         last = e;
       }
       await new Promise((r) => setTimeout(r, 8000 * (attempt + 1)));

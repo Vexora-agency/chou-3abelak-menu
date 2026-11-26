@@ -52,6 +52,9 @@ export interface MenuListWaveRowProps {
 
 const WAVE_Y2B = 'M0,56 C100,6 180,106 295,60 C365,30 425,74 480,40 L480,112 L0,112 Z';
 const WAVE_B2Y = 'M0,56 C100,106 180,6 295,52 C365,82 425,38 480,72 L480,112 L0,112 Z';
+// The same B2Y silhouette filled from the top: the closing flow keeps the
+// page strip BELOW the yellow, exactly like the opening flow keeps it above.
+const WAVE_B2Y_TOP = 'M0,0 L480,0 L480,72 C425,38 365,82 295,52 C180,6 100,106 0,56 Z';
 
 /**
  * Entry/exit flow for the compact ribbon.
@@ -65,7 +68,9 @@ export const WaveFlow: React.FC<{ position: 'top' | 'bottom'; darkMode: boolean 
     aria-hidden="true"
   >
     <svg viewBox="0 0 480 112" preserveAspectRatio="none">
-      <path d={position === 'top' ? WAVE_B2Y : WAVE_Y2B} />
+      {/* Same silhouette as the entry wave, not a mirrored one, so the
+          closing blob reads exactly like the opening blob. */}
+      <path d={position === 'top' ? WAVE_B2Y : WAVE_B2Y_TOP} />
     </svg>
   </div>
 );

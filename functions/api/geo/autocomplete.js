@@ -16,14 +16,16 @@
  *   the search always answers with what the free passes found.
  *
  * Order: Google Places (primary external provider, session-billed,
- * restricted to the delivery radius) → Photon (free, keyless smart-recall
- * backstop). Geoapify was retired from this path by owner decision
- * (module kept as tested standby).
+ * restricted to the delivery radius) → Google Text Search (up to 10 full
+ * detailed places) → Photon (free, keyless smart-recall backstop) →
+ * Nominatim full-text search (free, keyless; catches named POIs buried
+ * mid-query that prefix indexes miss). Geoapify was retired from this
+ * path by owner decision (module kept as tested standby).
  * The bias is the client's live map viewport (`lat`/`lng`) when supplied,
  * else the restaurant pin parsed from the stored menu.settings.mapUrl
  * with parseMapUrlCoordsJs (skipped when missing).
  * Responses and logs never carry keys, provider bodies, or the full query.
- * `sources` names the passes that answered (google/google-text/photon);
+ * `sources` names the passes that answered (google/google-text/photon/nominatim);
  * `google` is off/rich/ok/empty/capped/error so the owner can confirm
  * the paid pass is actually armed.
  */
@@ -43,6 +45,7 @@ import {
 } from '../../_shared/geoapify.js';
 import { fetchPhoton, buildQueryVariants, pickFallbackVariant, rankAppendedByDigits } from '../../_shared/photon.js';
 import { fetchGoogleAutocomplete, fetchTextSearch, googleDailyMax, isGoogleConfigured, validateSessionToken } from '../../_shared/google.js';
+import { fetchNominatim } from '../../_shared/nominatim.js';
 
 const IP_RATE_MAX = 60;
 const IP_RATE_WINDOW_SEC = 60;
@@ -238,6 +241,30 @@ export async function onRequest(context) {
       }
     } catch {
       /* keep the Google results */
+    }
+  }
+  // Final free pass — Nominatim full-text search. Autocomplete/typeahead
+  // indexes match from the START of a record, so a named POI buried mid-query
+  // («كنيسة الانبا اثناسيوس السيوف في الاسكندرية») can miss everywhere above
+  // while a token search still finds it. Only for long specific queries,
+  // throttled to the provider's 1 req/s policy (1 call per 2s per IP).
+  if (results.length < MIN_RICH_RESULTS && q.trim().length >= 8) {
+    try {
+      if (await hitRateLimit(kv, `rl:geo-nm:${clientIp(request)}`, 1, 2)
+        && await hitRateLimit(kv, `geo-nm-day:${day}`, dailyMax(env), DAY_RATE_WINDOW_SEC)) {
+        const nm = await fetchNominatim(env, {
+          text: q,
+          lang,
+          country: region || clientCountry,
+          bias,
+        });
+        if (nm && nm.ok && Array.isArray(nm.results) && nm.results.length > 0) {
+          results = mergeAutocompleteResults(results, nm.results);
+          sources.push('nominatim');
+        }
+      }
+    } catch {
+      /* keep everything found so far */
     }
   }
   return jsonNoStore({ ok: true, results, sources, google });

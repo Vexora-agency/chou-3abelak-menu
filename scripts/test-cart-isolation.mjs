@@ -381,8 +381,9 @@ ok(
   'picker search exposes combobox semantics wired to the listbox'
 );
 ok(
-  picker.includes('handleAreaSelect') && picker.includes('resolve-link') && picker.includes('areaLabel'),
-  'picker offers an area-first step and a Google-Maps-link paste fallback'
+  picker.includes('handleAreaSelect') && picker.includes('areaLabel')
+    && picker.includes('forceSearch') && acHook.includes('forceSearch'),
+  'picker offers an area-first step and an explicit search action'
 );
 ok(
   picker.includes('selectSuggestion') && picker.includes('handleKeyDown'),

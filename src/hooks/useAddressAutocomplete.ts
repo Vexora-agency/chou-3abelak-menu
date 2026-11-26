@@ -44,6 +44,9 @@ export interface UseAddressAutocompleteResult {
   takePlaceSession: () => string;
   /** Close the billing session (call after place-details resolves). */
   endPlaceSession: () => void;
+  /** Explicit search (the «بحث» button): reruns the full cascade at once,
+   * skipping the debounce delay and the session cache. */
+  forceSearch: () => void;
 }
 
 const DEBOUNCE_MS = 350;
@@ -152,6 +155,15 @@ export function useAddressAutocomplete({
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [pickedLabel, setPickedLabel] = useState<string | null>(null);
+  // Explicit search (the «بحث» button / Enter on empty results): reruns the
+  // full cascade immediately, skipping the debounce delay and the session
+  // cache. An in-flight keystroke still wins — it aborts this run.
+  const [forceNonce, setForceNonce] = useState(0);
+  const forceSearch = useCallback(() => {
+    setPickedLabel(null);
+    setForceNonce((n) => n + 1);
+  }, []);
+  const nonceRef = useRef(forceNonce);
   // Live viewport, decoupled from fetching: the map recenters constantly
   // on mobile (GPS drift, auto-pan, programmatic setView) and every center
   // change used to abort the in-flight search and restart it — a perpetual
@@ -225,7 +237,9 @@ export function useAddressAutocomplete({
     }
 
     const key = cacheKey(lang, country, serverQuery, bias);
-    const cached = sessionCache.get(key);
+    const forced = nonceRef.current !== forceNonce;
+    nonceRef.current = forceNonce;
+    const cached = forced ? undefined : sessionCache.get(key);
     if (cached) {
       setSuggestions(cached);
       setActiveIndex(-1);
@@ -317,13 +331,13 @@ export function useAddressAutocomplete({
           if (!controller.signal.aborted) setLoading(false);
         }
       })();
-    }, DEBOUNCE_MS);
+    }, forced ? 0 : DEBOUNCE_MS);
 
     return () => {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [query, lang, country, enabled, pickedLabel, area]);
+  }, [query, lang, country, enabled, pickedLabel, area, forceNonce]);
 
   const selectSuggestion = useCallback((s: AddressSuggestion) => {
     setPickedLabel(s.label);
@@ -391,5 +405,6 @@ export function useAddressAutocomplete({
     handleKeyDown,
     takePlaceSession,
     endPlaceSession,
+    forceSearch,
   };
 }

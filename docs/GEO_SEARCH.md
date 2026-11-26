@@ -24,6 +24,10 @@ exact coordinates.
    streets-only `osm_tag=highway` fallback, soft viewport bias only —
    never a hard bbox), rows carrying the query's street number
    ranked first.
+4. **Nominatim full-text search** (free, keyless, throttled to its 1 req/s
+   policy): catches named POIs buried mid-query («كنيسة الانبا اثناسيوس
+   السيوف في الاسكندرية») that prefix indexes miss. Only for queries of
+   8+ characters.
 
 Geoapify was retired from this path by owner decision
 (`functions/_shared/geoapify.js` stays as a tested standby module only).

@@ -165,6 +165,30 @@ async function main() {
     }
   }
 
+  // --append: keep places gathered by earlier runs (busy servers drop big
+  // queries, so large areas are built in pieces, then merged). Previous
+  // rows merge by the same name key with kind-rank preference, so reruns
+  // over the same bbox stay idempotent instead of duplicating rows.
+  if (append) {
+    try {
+      const prevRaw = fs.readFileSync(file, 'utf8');
+      const prev = JSON.parse(prevRaw);
+      if (prev && Array.isArray(prev.entries)) {
+        for (const row of prev.entries) {
+          if (!Array.isArray(row) || row.length < 5) continue;
+          const key = `${normName(row[0] || '').toLowerCase()}|${String(row[1] || '').toLowerCase()}`;
+          if (!key.replace('|', '')) continue;
+          const kind = typeof row[4] === 'string' ? row[4] : '';
+          const rank = KIND_RANK[kind] !== undefined ? KIND_RANK[kind] : 8;
+          const prevRow = seen.get(key);
+          if (!prevRow || rank < (KIND_RANK[prevRow[4]] !== undefined ? KIND_RANK[prevRow[4]] : 8)) {
+            seen.set(key, row);
+          }
+        }
+      }
+    } catch {}
+  }
+
   const entries = [...seen.values()].sort((a, b) => String(a[0] || a[1]).localeCompare(String(b[0] || b[1]), 'ar'));
   const payload = { id, country, cityAr: '', cityEn: '', count: entries.length, entries };
   fs.writeFileSync(file, JSON.stringify(payload));

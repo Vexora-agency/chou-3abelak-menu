@@ -15,6 +15,9 @@ plan — 0 €, no card, email signup only.
   — unlike Google predictions, which need a billed place-details call.
 - **Country filtering**: `boundary.country` hard-filters to the admin's
   delivery countries; `focus.point` stays a soft viewport ranking hint.
+  Up to 2 calls per search (raw + fully normalized recall variant:
+  digits, ش→شارع, alef/hamza unify, ة→ه, ى→ي, ال stripped) so dialect
+  spellings still recall.
 - **Extensible**: Pelias is open-source (MIT). Later the same engine can
   be self-hosted (`pelias` On-Premise, unlimited) with our own curated
   streets and places imported as custom data — no vendor can block that.

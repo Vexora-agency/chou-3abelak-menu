@@ -21,12 +21,13 @@ const ok = (name, cond) => {
   }
 };
 
-ok('normalize unifies alef', normalizeStreetText('الإسكندرية') === 'الاسكندريه');
-ok('normalize maps ة→ه and ى→ي', normalizeStreetText('المنيرة الكبرى') === 'المنيره الكبري');
+ok('normalize unifies alef and strips ال', normalizeStreetText('الإسكندرية') === 'اسكندريه');
+ok('normalize maps ة→ه and ى→ي and strips ال', normalizeStreetText('المنيرة الكبرى') === 'منيره كبري');
 ok('normalize converts arabic-indic digits', normalizeStreetText('شارع ١٦') === 'شارع 16');
 ok('normalize expands standalone ش', normalizeStreetText('ش 16') === 'شارع 16');
 ok('normalize strips tashkeel', normalizeStreetText('شَارع') === 'شارع');
-ok('normalize trims and collapses', normalizeStreetText('  السيوف   شارع  ') === 'السيوف شارع');
+ok('normalize unifies hamza seats ؤ/ئ→ء and strips ال', normalizeStreetText('رئيس الوزراء') === 'رءيس وزراء');
+ok('normalize trims and collapses', normalizeStreetText('  السيوف   شارع  ') === 'سيوف شارع');
 
 const entries = [
   { ar: 'شارع 16', la: 'Street 16', lat: 31.202, lng: 29.952 },
@@ -41,6 +42,12 @@ const found = searchStreetIndex(entries, 'السيوف شارع 16', 'الإسك
 ok('every token must match (exact street)', found.length === 1 && found[0].line1 === 'شارع 16');
 ok('label carries the city', found.length === 1 && found[0].label === 'شارع 16، الإسكندرية');
 ok('latin query matches latin names', searchStreetIndex(entries, 'street 16', 'الإسكندرية', 'Alexandria', 'en')[0]?.line1 === 'Street 16');
+ok('ال-flexibility: bare and article queries match either spelling', (() => {
+  const es = [{ ar: 'شارع الحمرا', la: null, lat: 1, lng: 1 }];
+  const a = searchStreetIndex(es, 'حمرا', 'بيروت', 'Beirut', 'ar');
+  const b = searchStreetIndex(es, 'الحمرا', 'بيروت', 'Beirut', 'ar');
+  return a.length === 1 && b.length === 1;
+})());
 ok('latinized شارع matches street', (() => {
   const r = searchStreetIndex(entries, 'السيوف street', 'الإسكندرية', 'Alexandria', 'ar');
   return r.length === 3 && r[0].line1 === 'شارع 16';

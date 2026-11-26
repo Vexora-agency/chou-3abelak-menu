@@ -31,19 +31,23 @@ export interface LoadedPlacesIndex {
 export const STREET_INDEX_LIMIT = 8;
 export const PLACES_INDEX_LIMIT = 4;
 
-/** Same Arabic recall rules as the server and zone matching (alef unify,
- * ة→ه, ى→ي, no tashkeel/tatweel). Merging ه/ة spellings is deliberate:
- * Egyptian users type both, and truly distinct street names differing only
- * by that letter are vanishingly rare. */
+/** Same Arabic recall rules as the server and zone matching, extended for
+ * typing flexibility: alef unify, ؤ/ئ→ء, no tashkeel/tatweel, ة→ه, ى→ي,
+ * and the definite article ال stripped (both sides, so «الحمرا» ≡ «حمرا»).
+ * Merging ه/ة spellings is deliberate: Egyptian and Lebanese users type
+ * both, and truly distinct street names differing only by that letter are
+ * vanishingly rare. */
 export function normalizeStreetText(s: string): string {
   if (typeof s !== 'string') return '';
   return s
     .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
     .replace(/(^|\s)ش\.?(?=\s|$)/g, '$1شارع')
     .replace(/[أإآٱ]/g, 'ا')
+    .replace(/[ؤئ]/g, 'ء')
+    .replace(/[ً-ٰٟـ]/g, '')
     .replace(/ة/g, 'ه')
     .replace(/ى/g, 'ي')
-    .replace(/[ً-ٰٟـ]/g, '')
+    .replace(/(^|\s)ال(?=[\u0600-\u06FF])/g, '$1')
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .trim();

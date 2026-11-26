@@ -51,7 +51,7 @@ import {
 } from '../../_shared/geoapify.js';
 import { fetchPhoton, buildQueryVariants, pickFallbackVariant, rankAppendedByDigits } from '../../_shared/photon.js';
 import { fetchGoogleAutocomplete, fetchTextSearch, googleDailyMax, isGoogleConfigured, validateSessionToken } from '../../_shared/google.js';
-import { fetchOrsAutocomplete, isOrsConfigured, orsDailyMax } from '../../_shared/ors.js';
+import { fetchOrsAutocomplete, isOrsConfigured, normalizeOrsQuery, orsDailyMax } from '../../_shared/ors.js';
 import { fetchNominatim } from '../../_shared/nominatim.js';
 
 const IP_RATE_MAX = 60;
@@ -207,35 +207,48 @@ export async function onRequest(context) {
   // OpenRouteService (hosted Pelias) is the primary keyed provider: free
   // Standard plan, no card, type-ahead autocomplete WITH coordinates in
   // every row (no follow-up details call), hard-filtered to the delivery
-  // countries. One bounded call per distinct query (debounced + cached
+  // countries. Up to 2 calls (raw + fully normalized variant) so dialect
+  // spellings still recall; budgets and the MIN_RICH_RESULTS gate bound
+  // the cost. One bounded search per distinct query (debounced + cached
   // client-side). Google below stays as the secondary keyed pass for
   // owners who fix its billing; free passes cover thin and capped results.
   let results = [];
   if (results.length < MIN_RICH_RESULTS && isOrsConfigured(env)) {
     try {
-      if (await hitRateLimit(kv, `geo-ors-day:${day}`, orsDailyMax(env), DAY_RATE_WINDOW_SEC)) {
+      const zoneRows = [...results];
+      let fresh = [];
+      const norm = normalizeOrsQuery(q);
+      const variants = norm && norm !== q.trim() ? [q, norm] : [q];
+      for (let vi = 0; vi < variants.length && vi < 2; vi += 1) {
+        if (zoneRows.length + fresh.length >= MIN_RICH_RESULTS) break;
+        if (!(await hitRateLimit(kv, `geo-ors-day:${day}`, orsDailyMax(env), DAY_RATE_WINDOW_SEC))) {
+          if (ors === 'rich' || ors === 'empty') ors = 'capped';
+          break;
+        }
         const o = await fetchOrsAutocomplete(env, {
-          text: q,
+          text: variants[vi],
           lang,
           bias,
           regions,
         });
         if (o && o.ok && Array.isArray(o.results) && o.results.length > 0) {
-          results = mergeAutocompleteResults(results, o.results);
-          sources.push('ors');
+          fresh = mergeAutocompleteResults(fresh, o.results);
           ors = 'ok';
         } else if (o && o.ok) {
-          ors = 'empty';
+          if (ors !== 'ok') ors = 'empty';
         } else if (o && o.error === 'denied') {
           ors = 'denied';
-        } else {
+          break;
+        } else if (ors !== 'ok' && ors !== 'denied') {
           ors = 'error';
         }
-      } else {
-        ors = 'capped';
+      }
+      if (fresh.length > 0) {
+        results = mergeAutocompleteResults(zoneRows, fresh);
+        if (!sources.includes('ors')) sources.push('ors');
       }
     } catch {
-      ors = 'error';
+      if (ors !== 'ok' && ors !== 'denied') ors = 'error';
     }
   }
   // Google Places is the secondary keyed provider. One bounded call per

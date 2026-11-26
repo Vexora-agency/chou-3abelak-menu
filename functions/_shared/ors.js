@@ -44,6 +44,27 @@ export function normalizeOrsLang(lang) {
   return typeof lang === 'string' && lang.trim().toLowerCase() === 'ar' ? 'ar' : 'en';
 }
 
+/**
+ * Fully normalized recall variant for the second ORS call: Arabic-Indic
+ * digits → Western, lone ش → شارع, alef unify, ؤ/ئ → ء, no tashkeel,
+ * ة → ه, ى → ي, and the definite article ال stripped — mirroring the
+ * client index so «الحمرا» also matches records stored as «حمرا» and
+ * vice versa. Returns '' for non-strings. Never throws.
+ */
+export function normalizeOrsQuery(text) {
+  try {
+    if (typeof text !== 'string') return '';
+    let s = text.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+    s = s.replace(/(^|\s)ش\.?(?=\s|$)/g, '$1شارع');
+    s = s.replace(/[أإآٱ]/g, 'ا').replace(/[ؤئ]/g, 'ء').replace(/[ً-ٰٟـ]/g, '');
+    s = s.replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+    s = s.replace(/(^|\s)ال(?=[\u0600-\u06FF])/g, '$1');
+    return s.replace(/\s+/g, ' ').trim();
+  } catch {
+    return '';
+  }
+}
+
 /** Uppercase 2-letter country list (unique, capped at 10) for boundary.country. */
 export function normalizeOrsCountries(v) {
   const list = Array.isArray(v) ? v : [v];

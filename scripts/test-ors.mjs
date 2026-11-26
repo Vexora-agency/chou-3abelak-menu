@@ -18,6 +18,7 @@ import {
   isOrsConfigured,
   normalizeOrsCountries,
   normalizeOrsLang,
+  normalizeOrsQuery,
   orsDailyMax,
   sanitizeOrsResults,
 } from '../functions/_shared/ors.js';
@@ -82,6 +83,12 @@ check('admin abbreviations expand to Arabic (JL → جبل لبنان)',
   expandAdminAbbreviations('سيتي راما دكوانه, JL, لبنان') === 'سيتي راما دكوانه, جبل لبنان, لبنان'
   && expandAdminAbbreviations('شارع الجلاء, بيروت, لبنان') === 'شارع الجلاء, بيروت, لبنان'
   && expandAdminAbbreviations(null) === null);
+check('recall variant unifies digits, ش, hamza, ة/ه, ى/ي and strips ال',
+  normalizeOrsQuery('الإسكندرية') === 'اسكندريه'
+  && normalizeOrsQuery('ش ١٦') === 'شارع 16'
+  && normalizeOrsQuery('رئيس الوزراء') === 'رءيس وزراء'
+  && normalizeOrsQuery('  الحمرا  ') === 'حمرا'
+  && normalizeOrsQuery('') === '' && normalizeOrsQuery(null) === '');
   const many = {
     type: 'FeatureCollection',
     features: Array.from({ length: 20 }, (_, i) => ({
@@ -230,6 +237,41 @@ check('shared helper never mentions the key name in code paths', !/apiKey|api_ke
     const body = await readJson(res);
     check('route: rejected ORS key reports denied',
       res.status === 200 && body && body.ors === 'denied' && !(body.sources || []).includes('ors'));
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+}
+
+// Route integration: normalized variant recalls when the raw query misses.
+{
+  const kv = makeKV();
+  const origFetch = globalThis.fetch;
+  try {
+    const seenTexts = [];
+    globalThis.fetch = async (url) => {
+      const u = String(url);
+      if (u.includes('api.heigit.org')) {
+        seenTexts.push(new URL(u).searchParams.get('text'));
+        if (seenTexts.length === 1) {
+          return { ok: true, status: 200, json: async () => ({ type: 'FeatureCollection', features: [] }) };
+        }
+        return { ok: true, status: 200, json: async () => peliasPayload };
+      }
+      if (u.includes('photon.komoot.io')) return { ok: true, status: 200, json: async () => ({ features: [] }) };
+      if (u.includes('nominatim.openstreetmap.org')) return { ok: true, status: 200, json: async () => [] };
+      return { ok: true, status: 200, json: async () => ({}) };
+    };
+    const res = await onRequest({
+      request: new Request('https://example.com/api/geo/autocomplete?q=' + encodeURIComponent('الدكوانة') + '&lang=ar&country=lb', {
+        headers: { 'X-Requested-With': 'menu-customer' },
+      }),
+      env: { ORS_API_KEY: 'route-ors-key', MENU_KV: kv },
+    });
+    const body = await readJson(res);
+    check('route: normalized ORS variant recalls dialect spellings',
+      res.status === 200 && body && body.ors === 'ok' && seenTexts.length === 2
+      && seenTexts[0] === 'الدكوانة' && seenTexts[1] === 'دكوانه'
+      && body.results.length > 0);
   } finally {
     globalThis.fetch = origFetch;
   }

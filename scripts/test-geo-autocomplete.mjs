@@ -628,6 +628,55 @@ try {
     resBias.status === 200 && bodyBias && bodyBias.ok === true && seenBiasBody
     && seenBiasBody.locationBias && seenBiasBody.locationBias.circle.center.latitude === 31.2
     && !('locationRestriction' in seenBiasBody));
+
+  // Network-location fallback: an untouched opening viewport (auto=1) with
+  // no GPS fix yet ranks the customer's real city first — Cairo, not the
+  // restaurant's city. Garbage CF data fails open to the client bias.
+  calledUrls = [];
+  let seenCfBody = null;
+  const cfStub = async (url, opts) => {
+    calledUrls.push(String(url));
+    if (String(url).includes('places.googleapis.com/v1/places:autocomplete')) {
+      seenCfBody = JSON.parse(opts.body);
+      return { ok: true, status: 200, json: async () => ({ suggestions: [] }) };
+    }
+    if (String(url).includes('places.googleapis.com')) {
+      return { ok: true, status: 200, json: async () => ({ suggestions: [] }) };
+    }
+    return { ok: true, status: 200, json: async () => emptyPhoton };
+  };
+  const cfReq = customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9&lang=ar&lat=33.8938&lng=35.5018&auto=1');
+  cfReq.cf = { latitude: '30.0444', longitude: '31.2357', country: 'eg' };
+  globalThis.fetch = cfStub;
+  const resCf = await onRequest({ request: cfReq, env: { GOOGLE_PLACES_API_KEY: 'route-google-key' } });
+  const bodyCf = await readJson(resCf);
+  check('route: untouched viewport prefers the network location',
+    resCf.status === 200 && bodyCf && bodyCf.ok === true && seenCfBody
+    && seenCfBody.locationBias.circle.center.latitude === 30.04
+    && seenCfBody.locationBias.circle.center.longitude === 31.24
+    && seenCfBody.regionCode === 'eg');
+  check('route: bias flag reports the winning source', bodyCf.bias === 'cf');
+
+  const noAutoReq = customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9&lang=ar&lat=33.8938&lng=35.5018');
+  noAutoReq.cf = { latitude: '30.0444', longitude: '31.2357', country: 'eg' };
+  calledUrls = [];
+  seenCfBody = null;
+  const resNoAuto = await onRequest({ request: noAutoReq, env: { GOOGLE_PLACES_API_KEY: 'route-google-key' } });
+  const bodyNoAuto = await readJson(resNoAuto);
+  check('route: touched viewport keeps the client center over CF geo',
+    resNoAuto.status === 200 && bodyNoAuto && seenCfBody
+    && seenNoAutoBias(seenCfBody) && bodyNoAuto.bias === 'view');
+
+  const badCfReq = customerGet('/api/geo/autocomplete?q=%D8%B4%D8%A7%D8%B1%D8%B9&lang=ar&lat=33.8938&lng=35.5018&auto=1');
+  badCfReq.cf = { latitude: 'oops', longitude: null, country: 'xx1' };
+  calledUrls = [];
+  seenCfBody = null;
+  const resBadCf = await onRequest({ request: badCfReq, env: { GOOGLE_PLACES_API_KEY: 'route-google-key' } });
+  const bodyBadCf = await readJson(resBadCf);
+  check('route: garbage CF geo fails open to the client viewport',
+    resBadCf.status === 200 && bodyBadCf && seenCfBody
+    && seenCfBody.locationBias.circle.center.latitude === 33.8938
+    && bodyBadCf.bias === 'view');
 } finally {
   globalThis.fetch = originalFetch;
 }
@@ -654,6 +703,11 @@ try {
   });
   const body = await readJson(res);
   check('route: global daily cap denies with 429 rate_limited', res.status === 429 && body && body.error === 'rate_limited');
+}
+
+
+function seenNoAutoBias(b) {
+  return b && b.locationBias && b.locationBias.circle && b.locationBias.circle.center.latitude === 33.8938;
 }
 
 /* ---------- src/ must never reach the provider or the key ---------- */

@@ -354,8 +354,8 @@ ok(
   'shared hook carries no Geoapify URL or key (the server proxy owns the secret)'
 );
 ok(
-  acHook.includes('biasRef') && !acHook.includes('bias?.lat, bias?.lng])'),
-  'map movement never aborts typing: viewport bias is read at fetch time only'
+  acHook.includes('biasRef') && acHook.includes('takePlaceSession') && acHook.includes('autoBias'),
+  'map movement never aborts typing: viewport read at fetch time, session + auto-bias flags sent'
 );
 ok(
   acList.includes('role="listbox"') && acList.includes('role="option"')

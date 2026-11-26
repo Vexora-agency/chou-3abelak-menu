@@ -23,7 +23,12 @@
  * path by owner decision (module kept as tested standby).
  * The bias is the client's live map viewport (`lat`/`lng`) when supplied,
  * else the restaurant pin parsed from the stored menu.settings.mapUrl
- * with parseMapUrlCoordsJs (skipped when missing).
+ * with parseMapUrlCoordsJs (skipped when missing), else — when the client
+ * marks its viewport untouched (`auto=1`) — Cloudflare's city-level
+ * network location (free, keyless, fails open). Any deliberate pan, drag
+ * or pick flips the client to the explicit viewport. Responses never carry
+ * keys, provider bodies, the full query, or coordinates beyond the answered
+ * suggestions; `bias` only names the winning source (cf/view/pin/none).
  * Responses and logs never carry keys, provider bodies, or the full query.
  * `sources` names the passes that answered (google/google-text/photon/nominatim);
  * `google` is off/rich/ok/empty/capped/error so the owner can confirm
@@ -53,6 +58,32 @@ const DEFAULT_DAILY_MAX = 2500;
 
 function clientIp(request) {
   return request.headers.get('CF-Connecting-IP') || 'unknown';
+}
+
+/**
+ * Cloudflare network location (city-level, free, no key): { lat, lng, cc }
+ * or null. Used ONLY when the client map is still on its untouched opening
+ * center (`auto=1`) — GPS denied or still fixing must not strand results in
+ * the restaurant's city. Never throws, never logged.
+ */
+function readCfGeo(request) {
+  try {
+    const cf = request && typeof request === 'object' ? request.cf : null;
+    if (!cf || typeof cf !== 'object') return null;
+    const lat = Number(cf.latitude);
+    const lng = Number(cf.longitude);
+    if (!Number.isFinite(lat) || Math.abs(lat) > 90) return null;
+    if (!Number.isFinite(lng) || Math.abs(lng) > 180) return null;
+    const cc = typeof cf.country === 'string' ? cf.country.trim().toUpperCase() : '';
+    if (!/^[A-Z]{2}$/.test(cc)) return null;
+    return {
+      lat: Math.round(lat * 100) / 100,
+      lng: Math.round(lng * 100) / 100,
+      cc,
+    };
+  } catch {
+    return null;
+  }
 }
 
 function dailyMax(env) {
@@ -134,9 +165,19 @@ export async function onRequest(context) {
   // hiding them from search would strand customers who typed correctly.
   const viewBias = parseLatLng(params.get('lat'), params.get('lng'));
   const pin = readBias(menu);
-  const bias = viewBias || pin;
+  // Network-location fallback: when the client map is still on its untouched
+  // opening center (`auto=1`), Cloudflare's city-level geo (free, no key)
+  // outranks it — GPS denied or still fixing must not strand the customer
+  // in the restaurant's city. Any deliberate pan/drag/pick switches the
+  // client to `auto=0` and the viewport wins again. Fails OPEN without it
+  // (local dev, VPNs without geo).
+  const cfGeo = params.get('auto') === '1' ? readCfGeo(request) : null;
+  const bias = cfGeo || viewBias || pin;
+  const biasSrc = cfGeo ? 'cf' : (viewBias ? 'view' : (pin ? 'pin' : 'none'));
   const zoneCountries = extractServiceCountries(menu);
-  const region = (zoneCountries.length > 0 ? zoneCountries[0] : normalizeCountryCodes(clientCountry)[0]) || '';
+  const region = (zoneCountries.length > 0
+    ? zoneCountries[0]
+    : normalizeCountryCodes(clientCountry)[0] || (cfGeo ? cfGeo.cc : '')) || '';
 
   // Non-sensitive source + Google-status trail for verification (never the
   // query or a key). The client ignores them; the owner reads them.
@@ -260,5 +301,5 @@ export async function onRequest(context) {
       /* keep everything found so far */
     }
   }
-  return jsonNoStore({ ok: true, results, sources, google });
+  return jsonNoStore({ ok: true, results, sources, google, bias: biasSrc });
 }

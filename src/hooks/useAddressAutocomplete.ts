@@ -22,6 +22,14 @@ export interface UseAddressAutocompleteOptions {
   enabled?: boolean;
   /** Live map viewport: ranks nearby streets first. Rounded for cache hits. */
   bias?: { lat: number; lng: number } | null;
+  /**
+   * True while the viewport is still the untouched opening center (map not
+   * panned, pin not dragged, nothing picked). The server then prefers its
+   * network location over the fallback center, so a customer whose GPS is
+   * still fixing (or denied) gets their own city first — not the
+   * restaurant's. Any deliberate move flips this to false.
+   */
+  autoBias?: boolean;
   /** Selected area name (from the area picker): appended to the SERVER
    * query only («شارع 16، السيوف») — local indexes match street names
    * alone and must not require the area token. */
@@ -57,11 +65,11 @@ const SESSION_TTL_MS = 180000; // Google billing sessions stay short-lived.
 // Session-level cache shared by all hook instances.
 const sessionCache = new Map<string, AddressSuggestion[]>();
 
-function cacheKey(lang: string, country: string, query: string, bias: { lat: number; lng: number } | null | undefined): string {
+function cacheKey(lang: string, country: string, query: string, bias: { lat: number; lng: number } | null | undefined, autoBias: boolean): string {
   const b = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)
     ? `${Math.round(bias.lat * 100) / 100},${Math.round(bias.lng * 100) / 100}`
     : '';
-  return `${lang}|${country}|${query}|${b}`;
+  return `${lang}|${country}|${query}|${b}|${autoBias ? 'auto' : 'view'}`;
 }
 
 function cacheSet(key: string, value: AddressSuggestion[]): void {
@@ -148,6 +156,7 @@ export function useAddressAutocomplete({
   enabled = true,
   bias = null,
   area = '',
+  autoBias = false,
 }: UseAddressAutocompleteOptions): UseAddressAutocompleteResult {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -236,7 +245,7 @@ export function useAddressAutocomplete({
       return;
     }
 
-    const key = cacheKey(lang, country, serverQuery, bias);
+    const key = cacheKey(lang, country, serverQuery, bias, autoBias);
     const forced = nonceRef.current !== forceNonce;
     nonceRef.current = forceNonce;
     const cached = forced ? undefined : sessionCache.get(key);
@@ -289,6 +298,9 @@ export function useAddressAutocomplete({
           if (liveBias && Number.isFinite(liveBias.lat) && Number.isFinite(liveBias.lng)) {
             params.set('lat', String(Math.round(liveBias.lat * 1000) / 1000));
             params.set('lng', String(Math.round(liveBias.lng * 1000) / 1000));
+            // Untouched opening viewport: let the server prefer its network
+            // location over this fallback center.
+            if (autoBias) params.set('auto', '1');
           }
           // Billing session groups this search's autocomplete calls with
           // the eventual place-details call (Google session pricing).
@@ -337,7 +349,7 @@ export function useAddressAutocomplete({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [query, lang, country, enabled, pickedLabel, area, forceNonce]);
+  }, [query, lang, country, enabled, pickedLabel, area, autoBias, forceNonce]);
 
   const selectSuggestion = useCallback((s: AddressSuggestion) => {
     setPickedLabel(s.label);

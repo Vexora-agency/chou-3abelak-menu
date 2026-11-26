@@ -126,6 +126,15 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(
     initial ? { lat: initial.lat, lng: initial.lng } : { lat: fallback.lat, lng: fallback.lng }
   );
+  // Untouched opening viewport vs. deliberate looking-around: the very first
+  // searches (and any re-search before the first pan/drag/pick) ride on the
+  // server's network location instead of the fallback center — a customer
+  // in Cairo must not get Alexandria results just because GPS is still
+  // fixing or denied. Any deliberate map interaction flips to the viewport.
+  const [touched, setTouched] = useState(false);
+  // Set before every programmatic setView so the moveend handler below can
+  // tell a code-driven move (no touch) from a human pan/zoom.
+  const progMoveRef = useRef(false);
   // Exact-delivery details live behind one professional toggle (collapsed by
   // default): the map stays clean, and a customer whose address reads wrong
   // expands building/floor/apartment/landmark in place.
@@ -179,6 +188,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     enabled: true,
     bias: mapCenter,
     area: selectedArea,
+    autoBias: !touched,
   });
   // Explicit search auto-pins: the customer is NEVER forced to pick from
   // the list. Typing only suggests; pressing بحث (or Enter on an empty
@@ -236,6 +246,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           setManual(true);
           setDetecting(false);
           setLocError(null);
+          setTouched(true);
           clearAccuracy();
           setPoint({ lat: round5(p.lat), lng: round5(p.lng), accuracy: 100 });
         });
@@ -245,17 +256,24 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           setManual(true);
           setDetecting(false);
           setLocError(null);
+          setTouched(true);
           clearAccuracy();
           setPoint({ lat: round5(e.latlng.lat), lng: round5(e.latlng.lng), accuracy: 100 });
         });
         // Keep the search bias on the live viewport: pans and zooms move
         // the bias with the map, so side-street search follows the eye.
-        // setView/moveTo also fire moveend, so programmatic moves are covered.
+        // setView/moveTo also fire moveend, so programmatic moves are covered
+        // — but only human pans count as "touched" for the auto-bias flag.
         map.on('moveend', () => {
           try {
             const c = map.getCenter();
             if (Number.isFinite(c.lat) && Number.isFinite(c.lng)) {
               setMapCenter({ lat: round5(c.lat), lng: round5(c.lng) });
+            }
+            if (progMoveRef.current) {
+              progMoveRef.current = false;
+            } else {
+              setTouched(true);
             }
             setZoomLow(map.getZoom() < 16);
           } catch {}
@@ -317,9 +335,12 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
   const moveTo = (lat: number, lng: number, accuracy: number, zoom = 16) => {
     setPoint({ lat: round5(lat), lng: round5(lng), accuracy });
     try {
+      progMoveRef.current = true;
       markerObj.current?.setLatLng([lat, lng]);
       mapObj.current?.setView([lat, lng], Math.max(mapObj.current.getZoom(), zoom));
-    } catch {}
+    } catch {
+      progMoveRef.current = false;
+    }
     drawAccuracy(lat, lng, accuracy);
   };
 
@@ -330,6 +351,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     if (s.placeId && (!Number.isFinite(s.lat) || !Number.isFinite(s.lng))) {
       setResolvingPick(true);
       setLocError(null);
+      setTouched(true);
       let session = '';
       try {
         session = searchAc.takePlaceSession();
@@ -350,6 +372,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
       return;
     }
     if (typeof s.lat !== 'number' || typeof s.lng !== 'number') return;
+    setTouched(true);
     applySearchPick({ label: s.label, lat: s.lat, lng: s.lng });
   };
 
@@ -375,6 +398,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     if (!hit) return;
     manualRef.current = true;
     setManual(true);
+    setTouched(true);
     setDetecting(false);
     setLocError(null);
     setArmedFor(null);

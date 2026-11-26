@@ -37,6 +37,11 @@ Geoapify was retired from this path by owner decision
 - Cart checkout + account settings address fields query
   `GET /api/geo/autocomplete?q=…&lang=…&country=…&lat=…&lng=…&session=…`
   (debounced 350 ms, min 3 chars, session cache, abort on keystroke).
+  The client marks untouched opening viewports with `auto=1`: the server
+  then prefers Cloudflare's city-level network geo over the fallback map
+  center, so a customer whose GPS is still fixing gets their own city
+  first. Any pan, drag or pick flips to the explicit viewport. The
+  `bias` answer field names the winner (`cf`/`view`/`pin`/`none`).
   A single explicit «بحث» button (and Enter on an empty list) reruns the
   cascade at once and auto-pins the first fresh result — typing alone only
   ever suggests, never moves the pin.

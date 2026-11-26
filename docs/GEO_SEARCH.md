@@ -41,7 +41,9 @@ Geoapify was retired from this path by owner decision
   before matching; a picked area is appended to the *server* query only
   («شارع 16، السيوف»). An explicit «بحث» button (and Enter on an empty
    list) reruns the full cascade immediately — skipping the debounce delay
-   and the session cache — for deliberate deep searches.
+   and the session cache — then auto-moves the pin to the first fresh
+   result, so the customer is never forced to pick from the list; typing
+   alone only ever suggests.
 - The route validates the query, rate-limits (60/min per IP; Google calls
   share `GOOGLE_PLACES_DAILY_MAX`, default 300/day), and returns stripped
   rows `[{ label, line1, line2, lat, lng, details?, placeId? }]` with

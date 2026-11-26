@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type * as Leaflet from 'leaflet';
 import { ChevronDown, Loader2, Navigation, Search } from 'lucide-react';
 import { AUTO_LOCATE_OPTIONS, composePreciseAddress, reverseGeocode, round5, shouldAutoLocateOnOpen, useMidSplitLocationMap } from '../hooks/useMidSplitLocationMap';
@@ -180,6 +180,31 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
     bias: mapCenter,
     area: selectedArea,
   });
+  // Explicit search auto-pins: the customer is NEVER forced to pick from
+  // the list. Typing only suggests; pressing بحث (or Enter on an empty
+  // list) flies the pin to the first result of the fresh search. A newer
+  // keystroke cancels the pending auto-pick by clearing the marker below.
+  const autoPickRef = useRef<string | null>(null);
+  const doExplicitSearch = useCallback(() => {
+    const t = searchText.trim();
+    if (t.length < 3) return;
+    autoPickRef.current = t;
+    searchAc.setOpen(true);
+    searchAc.forceSearch();
+  }, [searchText, searchAc]);
+  useEffect(() => {
+    if (!autoPickRef.current) return;
+    if (searchAc.loading) return;
+    if (searchAc.suggestions.length > 0 && searchText.trim() === autoPickRef.current) {
+      const first = searchAc.suggestions[0];
+      autoPickRef.current = null;
+      handleSearchPick(first);
+    } else if (searchAc.suggestions.length === 0 && searchAc.open) {
+      // Search settled with nothing: leave the guidance hint up.
+      autoPickRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchAc.suggestions, searchAc.loading, searchAc.open]);
 
   // Load Leaflet lazily (only when the picker opens) and build the map.
   useEffect(() => {
@@ -562,23 +587,27 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           <input
             type="text"
             value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={(e) => {
+              autoPickRef.current = null;
+              setSearchText(e.target.value);
+            }}
             onBlur={() => window.setTimeout(() => searchAc.setOpen(false), 120)}
             onFocus={() => { if (searchText.trim().length >= 3) searchAc.setOpen(true); }}
             onKeyDown={(e) => {
               const action = searchAc.handleKeyDown(e);
               if (action === 'pick') {
                 e.preventDefault();
+                autoPickRef.current = null;
                 const picked = searchAc.suggestions[searchAc.activeIndex] ?? searchAc.suggestions[0];
                 if (picked) handleSearchPick(picked);
               } else if (action === 'close') {
+                autoPickRef.current = null;
                 searchAc.setOpen(false);
               } else if (e.key === 'Enter' && searchText.trim().length >= 3 && searchAc.suggestions.length === 0) {
-                // Nothing suggested: the explicit search runs the full
-                // cascade at once (deep providers + fresh Nominatim pass).
+                // Nothing to pick: an explicit search flies the pin to the
+                // first fresh result instead of forcing list picks.
                 e.preventDefault();
-                searchAc.setOpen(true);
-                searchAc.forceSearch();
+                doExplicitSearch();
               }
             }}
             placeholder={t.searchPh}
@@ -597,10 +626,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           {!searchAc.loading && !resolvingPick && (
             <button
               type="button"
-              onClick={() => {
-                searchAc.setOpen(true);
-                searchAc.forceSearch();
-              }}
+              onClick={doExplicitSearch}
               disabled={searchText.trim().length < 3}
               aria-label={t.searchGo}
               title={t.searchGo}

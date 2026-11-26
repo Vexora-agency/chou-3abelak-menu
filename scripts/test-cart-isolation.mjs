@@ -386,6 +386,10 @@ ok(
   'picker offers an area-first step and an explicit search action'
 );
 ok(
+  picker.includes('autoPickRef') && picker.includes('doExplicitSearch'),
+  'explicit search auto-pins the first fresh result: no forced list picks'
+);
+ok(
   picker.includes('selectSuggestion') && picker.includes('handleKeyDown'),
   'picker drives pick/keyboard through the hook contract'
 );

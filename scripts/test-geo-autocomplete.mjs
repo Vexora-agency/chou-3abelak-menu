@@ -776,6 +776,17 @@ try {
       && seenZoneGoogle.includedRegionCodes.includes('LB')
       && seenZoneGoogle.includedRegionCodes.includes('EG')
       && nmCodes.split(',').includes('lb') && nmCodes.split(',').includes('eg'));
+    check('route: menu/zones flags diagnose the delivery-scope wiring',
+      bodyZones.menu === true && bodyZones.zones === 2);
+    {
+      const resNoMenu = await onRequest({
+        request: customerGet('/api/geo/autocomplete?q=' + encodeURIComponent('شارع 105') + '&lang=ar&country=eg'),
+        env: { GOOGLE_PLACES_API_KEY: 'route-google-key' },
+      });
+      const bodyNoMenu = await readJson(resNoMenu);
+      check('route: missing menu reports menu=false zones=0 (KV binding check)',
+        resNoMenu.status === 200 && bodyNoMenu && bodyNoMenu.menu === false && bodyNoMenu.zones === 0);
+    }
   }
 } finally {
   globalThis.fetch = originalFetch;

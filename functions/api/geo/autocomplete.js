@@ -192,6 +192,10 @@ export async function onRequest(context) {
   // query or a key). The client ignores them; the owner reads them.
   // google: off (no key) | rich (free passes sufficed) | ok | empty |
   // capped (daily budget spent) | error (billing/API/quota on Google's side).
+  // menu/zones diagnose the delivery-scope wiring: menu=false means the
+  // production KV binding is missing (zones unreadable, country falls back
+  // to the phone-derived code); zones=0 with menu=true means the admin
+  // zones are not on `selected` mode.
   const sources = [];
   let google = isGoogleConfigured(env) ? 'rich' : 'off';
 
@@ -328,5 +332,5 @@ export async function onRequest(context) {
       /* keep everything found so far */
     }
   }
-  return jsonNoStore({ ok: true, results, sources, google, bias: biasSrc });
+  return jsonNoStore({ ok: true, results, sources, google, bias: biasSrc, menu: menu !== null, zones: zoneCountries.length });
 }

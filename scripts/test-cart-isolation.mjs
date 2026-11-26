@@ -386,6 +386,10 @@ ok(
   'picker offers an area-first step and an explicit search action'
 );
 ok(
+  acList.includes('attached') && picker.includes('attached'),
+  'suggestion list attaches inside one bordered card (no floating box)'
+);
+ok(
   picker.includes('autoPickRef') && picker.includes('doExplicitSearch'),
   'explicit search auto-pins the first fresh result: no forced list picks'
 );

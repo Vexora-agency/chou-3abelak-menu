@@ -581,8 +581,8 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           </select>
         </label>
       )}
-      <div className="relative">
-        <div className={`flex items-center gap-2 rounded-2xl border px-3 shadow-xs focus-within:ring-2 focus-within:ring-[var(--primary)] transition-shadow ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
+      <div className={`rounded-2xl border bg-clip-padding shadow-xs transition-shadow focus-within:ring-2 focus-within:ring-[var(--primary)] ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
+        <div className="flex items-center gap-2 px-3">
           <input
             type="text"
             value={searchText}
@@ -620,9 +620,11 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
             aria-label={t.searchPh}
             className={`w-full h-12 bg-transparent text-[15px] focus:outline-none ${darkMode ? 'text-white placeholder-neutral-500' : 'text-[#0A0A0A] placeholder-neutral-400'}`}
           />
-          {searchAc.loading && <Loader2 size={15} className="animate-spin text-[var(--primary)]" aria-hidden="true" />}
-          {resolvingPick && !searchAc.loading && <Loader2 size={15} className="animate-spin text-[var(--primary)]" aria-hidden="true" />}
-          {!searchAc.loading && !resolvingPick && (
+          {searchAc.loading || resolvingPick ? (
+            <span className="flex h-9 shrink-0 items-center px-1" aria-hidden="true">
+              <Loader2 size={16} className="animate-spin text-[var(--primary)]" />
+            </span>
+          ) : (
             <button
               type="button"
               onClick={doExplicitSearch}
@@ -637,18 +639,23 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           )}
         </div>
         {searchAc.open && (searchAc.loading || searchAc.suggestions.length > 0) && (
-          <AddressSuggestList
-            lang={lang}
-            darkMode={darkMode}
-            loading={searchAc.loading}
-            items={searchAc.suggestions}
-            activeIndex={searchAc.activeIndex}
-            listId="picker-search-listbox"
-            onPick={(item) => handleSearchPick(item)}
-          />
+          <div className={`border-t ${darkMode ? 'border-neutral-700' : 'border-neutral-300'}`}>
+            <AddressSuggestList
+              lang={lang}
+              darkMode={darkMode}
+              loading={searchAc.loading}
+              items={searchAc.suggestions}
+              activeIndex={searchAc.activeIndex}
+              listId="picker-search-listbox"
+              onPick={(item) => handleSearchPick(item)}
+              attached
+            />
+          </div>
         )}
         {searchAc.open && !searchAc.loading && searchText.trim().length >= 3 && searchAc.suggestions.length === 0 && (
-          <p className={`mt-1 text-[11px] font-semibold ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>{t.noResults}</p>
+          <div className={`border-t px-4 py-3 text-[11px] font-semibold ${darkMode ? 'border-neutral-700 text-neutral-500' : 'border-neutral-300 text-neutral-400'}`}>
+            {t.noResults}
+          </div>
         )}
       </div>
       <div className="flex items-center justify-between gap-2">

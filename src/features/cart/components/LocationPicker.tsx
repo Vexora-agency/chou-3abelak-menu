@@ -639,7 +639,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           </select>
         </label>
       )}
-      <div className={`rounded-2xl border bg-clip-padding shadow-xs transition-shadow focus-within:border-neutral-500 focus-within:ring-1 focus-within:ring-neutral-400/50 ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
+      <div className={`rounded-2xl border bg-clip-padding shadow-xs ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
         <div className="flex items-center gap-2 px-3">
           <input
             type="text"

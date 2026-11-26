@@ -400,8 +400,8 @@ ok(
   'details labels spelled correctly and every input follows the UI direction (Arabic placeholders from the right)'
 );
 ok(
-  picker.includes('focus-within:ring-neutral-400/50') && !picker.includes('focus-within:ring-[var(--primary)]'),
-  'search box focus is a subtle neutral ring, not the loud brand-yellow ring'
+  picker.includes('rounded-2xl border bg-clip-padding shadow-xs') && !picker.includes('focus-within:ring'),
+  'search box carries no focus halo at all — only its resting border'
 );
 ok(
   read('src/utils/streetIndex.ts').includes('wrong-city file')

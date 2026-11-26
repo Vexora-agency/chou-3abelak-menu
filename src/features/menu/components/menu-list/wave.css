@@ -9,31 +9,42 @@
    inline padding so the section title lines up with the band copy. */
 .wave-column {
   width: 100%;
-  max-width: 900px;
+  max-width: 1100px;
   margin-inline: auto;
   padding-inline: clamp(14px, 2.6vw, 34px);
 }
 
 .wave-stack {
   width: 100%;
-  max-width: 900px;
+  max-width: 1100px;
   margin-inline: auto;
 }
 
 .wave-row {
   position: relative;
 }
+/* Two-up rows stretch to the taller dish so both halves paint the same
+   continuous band. Phones keep their natural height. */
+@media (min-width: 1024px) {
+  .wave-row {
+    height: 100%;
+  }
+  .wave-row > .wave-band {
+    height: 100%;
+  }
+}
 
 .wave-band {
   position: relative;
   display: flex;
+  min-height: 164px;
   align-items: center;
   gap: clamp(12px, 2.2vw, 28px);
 }
 .wave-band--yellow {
   background: var(--primary);
   color: #0a0a0a;
-  padding: clamp(18px, 2.2vw, 26px) clamp(14px, 2.6vw, 34px) 8px;
+  padding: 8px clamp(14px, 2.6vw, 34px);
 }
 .wave-band--black {
   background: #0a0a0a;
@@ -51,7 +62,7 @@
 .wave-band--yellow.is-last,
 .wave-band--black.is-last,
 .wave-band--white.is-last {
-  padding-bottom: clamp(18px, 2.2vw, 26px);
+  padding-bottom: 8px;
 }
 .wave-band.is-interactive {
   cursor: pointer;
@@ -73,8 +84,14 @@
 .wave-media {
   /* A smaller dish frame keeps each band short; the extra width goes to
      the copy, which matters most on phones and for longer descriptions. */
-  flex: 0 0 32%;
+  flex: 0 0 30%;
   min-width: 0;
+}
+/* A lone last desktop item fills the row, but its photo stays a portrait
+   card instead of stretching to the whole 1100px band. */
+.wave-row--full .wave-media {
+  flex-basis: 24%;
+  max-width: 260px;
 }
 .wave-body {
   flex: 1 1 auto;
@@ -442,9 +459,7 @@
   .wave-band {
     gap: 12px;
   }
-  .wave-band--yellow {
-    padding: 18px 14px 8px;
-  }
+  .wave-band--yellow,
   .wave-band--black,
   .wave-band--white {
     padding: 8px 14px;
@@ -452,7 +467,7 @@
   .wave-band--yellow.is-last,
   .wave-band--black.is-last,
   .wave-band--white.is-last {
-    padding-bottom: 18px;
+    padding-bottom: 8px;
   }
   .wave-title {
     font-size: 20px;

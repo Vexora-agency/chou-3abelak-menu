@@ -8,7 +8,7 @@ import { useMenuListFiltering } from '../hooks/useMenuListFiltering';
 import { useMenuListCartQuantities } from '../hooks/useMenuListCartQuantities';
 import { MenuListEmptyState } from './menu-list/MenuListEmptyState';
 import { MenuListSectionHeader } from './menu-list/MenuListSectionHeader';
-import { MenuListWaveRow, WaveFlow } from './menu-list/MenuListWaveRow';
+import { MenuListWaveRow, WaveDivider, WaveFlow } from './menu-list/MenuListWaveRow';
 import { MenuListListRow } from './menu-list/MenuListListRow';
 import { MenuListGridCard } from './menu-list/MenuListGridCard';
 import { MenuListPhotoCard } from './menu-list/MenuListPhotoCard';
@@ -59,6 +59,29 @@ const MIN_REST = 4;
  * `gridClass` below (sm:640 md:768 lg:1024 xl:1280). Re-evaluates on resize
  * so rotating/resizing re-snaps the visible window to full rows.
  */
+/**
+ * Desktop compact layout: two dishes per full-width row (shared row tone)
+ * with one full-width wave between rows. Phones keep one dish per band and
+ * its own wave, so the alternating rhythm stays intact on small screens.
+ */
+function useWaveTwoUp(): boolean {
+  const query = '(min-width: 1024px)';
+  const [twoUp, setTwoUp] = useState(() =>
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia(query).matches
+      : false
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia(query);
+    const onChange = () => setTwoUp(mq.matches);
+    mq.addEventListener('change', onChange);
+    onChange();
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return twoUp;
+}
+
 function useGridCols(kind: 'list' | 'compact' | 'cards' | 'photos' | 'round'): number {
   const get = () => {
     if (typeof window === 'undefined' || !window.matchMedia) return kind === 'cards' || kind === 'photos' || kind === 'round' ? 2 : 1;
@@ -146,6 +169,12 @@ interface MenuListRowItemProps {
   firstMedia: boolean;
   /** Last visible item in a compact section: no trailing wave divider. */
   isLast: boolean;
+  /** Compact band tone: per item on phones, shared per desktop row. */
+  toneIsYellow: boolean;
+  /** Mobile renders its own divider; desktop renders one after each row. */
+  showDivider: boolean;
+  /** Lone last desktop item: span both columns instead of leaving a hole. */
+  fullWidth: boolean;
 }
 
 /** Picks the row component for the section layout (single place, head + tail). */
@@ -175,14 +204,19 @@ const MenuListRowItem: React.FC<MenuListRowItemProps> = ({
   festive = false,
   firstMedia,
   isLast,
+  toneIsYellow,
+  showDivider,
+  fullWidth,
 }: MenuListRowItemProps) => {
   const qty = totalQtyOf(item);
   if (kind === 'compact') {
     return (
       <MenuListWaveRow
         item={item}
-        index={index}
         isLast={isLast}
+        toneIsYellow={toneIsYellow}
+        showDivider={showDivider}
+        fullWidth={fullWidth}
         leaveDelayMs={leaveDelayMs}
         skipEntrance={skipEntrance}
         orderingEnabled={orderingEnabled}
@@ -350,6 +384,7 @@ export const MenuList: React.FC<MenuListProps> = ({
   const initial = intOr(smRaw.initial, 12);
   const batch = intOr(smRaw.batch, 8);
   // One hook call per grid kind (never inside the section loop below).
+  const waveTwoUp = useWaveTwoUp();
   const cardsCols = useGridCols('cards');
   const listCols = useGridCols('list');
   const compactCols = useGridCols('compact');
@@ -413,7 +448,7 @@ export const MenuList: React.FC<MenuListProps> = ({
         const kind = isCompactSection ? 'compact' : isListSection ? 'list' : layout === 'photos' ? 'photos' : layout === 'round' ? 'round' : 'cards';
         const gridClass =
           kind === 'compact'
-            ? 'wave-stack grid grid-cols-1 menu-section-grid'
+            ? 'wave-stack grid grid-cols-1 lg:grid-cols-2 menu-section-grid'
             : kind === 'list'
               ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-3.5 menu-section-grid'
               : kind === 'photos'
@@ -438,7 +473,10 @@ export const MenuList: React.FC<MenuListProps> = ({
         const snapRows = (n: number) => Math.max(cols, Math.ceil(n / cols) * cols);
         const effInitial = snapRows(initial);
         const effBatch = snapRows(batch);
-        const rowCtx: Omit<MenuListRowItemProps, 'item' | 'index' | 'leaveDelayMs' | 'skipEntrance' | 'isLast'> = {
+        const rowCtx: Omit<
+          MenuListRowItemProps,
+          'item' | 'index' | 'leaveDelayMs' | 'skipEntrance' | 'isLast' | 'toneIsYellow' | 'showDivider' | 'fullWidth'
+        > = {
           kind,
           menu,
           lang,
@@ -579,24 +617,39 @@ export const MenuList: React.FC<MenuListProps> = ({
         const isLeaving = leaving?.id === cat.id;
         const itemsGrid = (
           <div className={gridClass}>
-            {visibleItems.map((item, idx) => (
-              <MenuListRowItem
-                key={item.id}
-                item={item}
-                index={idx}
-                leaveDelayMs={
-                  isLeaving && idx >= (leaving?.from ?? visible)
-                    ? Math.min((visible - 1 - idx) * 5, 200)
-                    : null
-                }
-                // Only items mounted by an explicit expansion skip the
-                // entrance: first-paint items (visibleCounts untouched) keep
-                // the animated reveal exactly as today.
-                skipEntrance={idx >= effInitial && (visibleCounts[cat.id] ?? 0) > effInitial}
-                isLast={idx === visibleItems.length - 1}
-                {...rowCtx}
-              />
-            ))}
+            {visibleItems.map((item, idx) => {
+              const isLast = idx === visibleItems.length - 1;
+              // Desktop pairs share one row tone; phones alternate per band.
+              const toneIndex = waveTwoUp ? Math.floor(idx / 2) : idx;
+              const toneIsYellow = toneIndex % 2 === 0;
+              // A lone last item spans both columns instead of half-empty.
+              const fullWidth = waveTwoUp && isLast && idx % 2 === 0;
+              return (
+                <React.Fragment key={item.id}>
+                  <MenuListRowItem
+                    item={item}
+                    index={idx}
+                    leaveDelayMs={
+                      isLeaving && idx >= (leaving?.from ?? visible)
+                        ? Math.min((visible - 1 - idx) * 5, 200)
+                        : null
+                    }
+                    // Only items mounted by an explicit expansion skip the
+                    // entrance: first-paint items (visibleCounts untouched) keep
+                    // the animated reveal exactly as today.
+                    skipEntrance={idx >= effInitial && (visibleCounts[cat.id] ?? 0) > effInitial}
+                    isLast={isLast}
+                    toneIsYellow={toneIsYellow}
+                    showDivider={!waveTwoUp && !isLast}
+                    fullWidth={fullWidth}
+                    {...rowCtx}
+                  />
+                  {kind === 'compact' && waveTwoUp && idx % 2 === 1 && !isLast ? (
+                    <WaveDivider toneIsYellow={toneIsYellow} darkMode={darkMode} />
+                  ) : null}
+                </React.Fragment>
+              );
+            })}
           </div>
         );
         // scroll-mt clears the sticky stack (banner + two chip rows ≈150px)
@@ -625,7 +678,11 @@ export const MenuList: React.FC<MenuListProps> = ({
         );
         // The compact ribbon needs a lower entry edge when its last visible
         // band is yellow; an ink/white last band already matches the page.
-        const lastBandIsYellow = kind === 'compact' && visibleItems.length % 2 === 1;
+        // On desktop the tone belongs to the last ROW, not the last item.
+        const lastToneIndex = waveTwoUp
+          ? Math.floor((visibleItems.length - 1) / 2)
+          : visibleItems.length - 1;
+        const lastBandIsYellow = kind === 'compact' && visibleItems.length > 0 && lastToneIndex % 2 === 0;
         const sectionBody = (
           <>
             {/* Category Header */}

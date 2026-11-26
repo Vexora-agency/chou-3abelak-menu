@@ -23,9 +23,14 @@ import './wave.css';
  */
 export interface MenuListWaveRowProps {
   item: MenuItem;
-  index: number;
   /** No wave after the last visible band (it would lead nowhere). */
   isLast: boolean;
+  /** Band tone chosen by the parent: per item on phones, per row on desktop. */
+  toneIsYellow: boolean;
+  /** Mobile keeps its own full-width divider; desktop renders row dividers. */
+  showDivider: boolean;
+  /** Lone last item on desktop: span both columns instead of leaving a hole. */
+  fullWidth?: boolean;
   /** Phased-collapse fade delay (null = not leaving). See .row-leaving. */
   leaveDelayMs?: number | null;
   /** Post-expansion mounts skip the entrance (never rest invisible). */
@@ -65,10 +70,32 @@ export const WaveFlow: React.FC<{ position: 'top' | 'bottom'; darkMode: boolean 
   </div>
 );
 
+/** Full-width divider after a desktop row (or under a phone band). */
+export const WaveDivider: React.FC<{ toneIsYellow: boolean; darkMode: boolean }> = ({ toneIsYellow, darkMode }) => (
+  <div
+    className={`wave-divider col-span-full ${
+      darkMode
+        ? toneIsYellow
+          ? 'wave-divider--to-black'
+          : 'wave-divider--to-yellow'
+        : toneIsYellow
+          ? 'wave-divider--to-white'
+          : 'wave-divider--white-to-yellow'
+    }`}
+    aria-hidden="true"
+  >
+    <svg viewBox="0 0 480 112" preserveAspectRatio="none">
+      <path d={toneIsYellow ? WAVE_Y2B : WAVE_B2Y} />
+    </svg>
+  </div>
+);
+
 export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
   item,
-  index,
   isLast,
+  toneIsYellow,
+  showDivider,
+  fullWidth = false,
   leaveDelayMs,
   skipEntrance,
   menu,
@@ -84,7 +111,7 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
   onUpdateLine,
   onOpenItem,
 }) => {
-  const isYellow = index % 2 === 0;
+  const isYellow = toneIsYellow;
   // Even bands stay brand yellow in both themes. The alternating band is
   // ink on dark pages and white on light pages, so the ribbon keeps the
   // site's black/white language instead of stamping a black block on white.
@@ -127,7 +154,7 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
             <SmartMenuImage
               item={item}
               name={name}
-              sizes="(max-width: 639px) 35vw, 320px"
+              sizes="(max-width: 639px) 30vw, 180px"
               onError={() => setFailedSrc(item.imageUrl ?? '')}
               className="wave-frame-img"
               width={800}
@@ -258,7 +285,7 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
 
   return (
     <div
-      className={`wave-row${leaveDelayMs != null ? ' row-leaving' : ''}`}
+      className={`wave-row${fullWidth ? ' wave-row--full lg:col-span-2' : ''}${leaveDelayMs != null ? ' row-leaving' : ''}`}
       style={leaveDelayMs != null ? ({ '--leave-d': `${leaveDelayMs}ms` } as React.CSSProperties) : undefined}
       data-item-id={item.id}
     >
@@ -283,24 +310,7 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
         {isYellow ? body : media}
       </div>
 
-      {!isLast && (
-        <div
-          className={`wave-divider ${
-            darkMode
-              ? isYellow
-                ? 'wave-divider--to-black'
-                : 'wave-divider--to-yellow'
-              : isYellow
-                ? 'wave-divider--to-white'
-                : 'wave-divider--white-to-yellow'
-          }`}
-          aria-hidden="true"
-        >
-          <svg viewBox="0 0 480 112" preserveAspectRatio="none">
-            <path d={isYellow ? WAVE_Y2B : WAVE_B2Y} />
-          </svg>
-        </div>
-      )}
+      {showDivider && <WaveDivider toneIsYellow={isYellow} darkMode={darkMode} />}
     </div>
   );
 };

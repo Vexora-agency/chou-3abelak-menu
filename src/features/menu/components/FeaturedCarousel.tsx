@@ -287,7 +287,7 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
             itemName={name}
             lang={lang}
             darkMode={darkMode}
-            tone="surface"
+            tone="overlay"
             size="sm"
             className="fc-wishlist-inline"
           />
@@ -371,7 +371,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     activeSlides.add((selectedIndex + i) % items.length);
   }
 
-  const autoplayOn = autoplay && !reduced && items.length > 1;
+  const autoplayOn = autoplay && items.length > 1;
   const running = autoplayOn && !paused && pageVisible;
 
   // The number of visible slides is CSS-driven (1 / 2 / 3); Embla must

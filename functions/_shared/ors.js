@@ -14,7 +14,7 @@
  * 6s AbortController timeouts, and NEVER any logging of the key or query.
  */
 
-const ORS_AUTOCOMPLETE_URL = 'https://api.heigit.org/geocode/autocomplete';
+const ORS_AUTOCOMPLETE_URL = 'https://api.heigit.org/pelias/v1/autocomplete';
 const REQUEST_TIMEOUT_MS = 6000;
 const MAX_LABEL_CHARS = 120;
 export const ORS_RESULT_LIMIT = 10;
@@ -155,7 +155,13 @@ export async function fetchOrsAutocomplete(env, params, fetchFn = fetch) {
           Authorization: trimOrsEnv(env, 'ORS_API_KEY'),
         },
       });
-      if (!res || !res.ok) return { ok: false, error: 'failed' };
+      if (!res || !res.ok) {
+        // 401/403 = the key itself is rejected (wrong copy, unverified
+        // account, blocked) — surfaced as `denied` so the owner knows the
+        // fix is on the key, not the wiring. Anything else is `failed`.
+        if (res && (res.status === 401 || res.status === 403)) return { ok: false, error: 'denied' };
+        return { ok: false, error: 'failed' };
+      }
       let json = null;
       try {
         json = await res.json();

@@ -39,7 +39,7 @@ check('short queries rejected without network', buildOrsAutocompleteUrl({ text: 
   const u = new URL(buildOrsAutocompleteUrl({
     text: 'شارع 105', lang: 'ar', bias: { lat: 33.8804, lng: 35.5466 }, regions: ['lb', 'EG'],
   }));
-  check('url hits the hosted Pelias autocomplete', u.origin === 'https://api.heigit.org' && u.pathname === '/geocode/autocomplete');
+  check('url hits the hosted Pelias autocomplete', u.origin === 'https://api.heigit.org' && u.pathname === '/pelias/v1/autocomplete');
   check('url carries text + lang + size + country allow-list',
     u.searchParams.get('text') === 'شارع 105' && u.searchParams.get('lang') === 'ar'
     && u.searchParams.get('size') === '10' && u.searchParams.get('boundary.country') === 'LB,EG');
@@ -121,6 +121,10 @@ check('fetch: unconfigured never hits network', (await fetchOrsAutocomplete({}, 
     seenHeaders && seenHeaders.Authorization === 'ors-test-key'
     && !seenUrl.includes('ors-test-key') && !String(seenBody).includes('ors-test-key'));
   check('fetch: 500 maps to failed', !(await fetchOrsAutocomplete(KEY_ENV, { text: 'دكوانة' }, async () => ({ ok: false, status: 500, json: async () => ({}) }))).ok);
+  check('fetch: 401 maps to denied (key rejected)',
+    (await fetchOrsAutocomplete(KEY_ENV, { text: 'دكوانة' }, async () => ({ ok: false, status: 401, json: async () => ({ error: 'Authorization field missing' }) }))).error === 'denied');
+  check('fetch: 403 maps to denied (key rejected)',
+    (await fetchOrsAutocomplete(KEY_ENV, { text: 'دكوانة' }, async () => ({ ok: false, status: 403, json: async () => ({}) }))).error === 'denied');
 }
 
 const src = (await import('node:fs')).readFileSync(
@@ -193,6 +197,34 @@ check('shared helper never mentions the key name in code paths', !/apiKey|api_ke
     check('route: spent ORS budget caps ORS but Photon answers',
       res.status === 200 && body && body.ors === 'capped'
       && !seen.some((u) => u.includes('api.heigit.org')));
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+}
+
+// Route integration: a rejected key surfaces as denied (not a wiring bug).
+{
+  const kv = makeKV();
+  const origFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url) => {
+      const u = String(url);
+      if (u.includes('api.heigit.org')) {
+        return { ok: false, status: 401, json: async () => ({ error: 'Authorization field missing' }) };
+      }
+      if (u.includes('photon.komoot.io')) return { ok: true, status: 200, json: async () => ({ features: [] }) };
+      if (u.includes('nominatim.openstreetmap.org')) return { ok: true, status: 200, json: async () => [] };
+      return { ok: true, status: 200, json: async () => ({}) };
+    };
+    const res = await onRequest({
+      request: new Request('https://example.com/api/geo/autocomplete?q=' + encodeURIComponent('دكوانة') + '&lang=ar&country=lb', {
+        headers: { 'X-Requested-With': 'menu-customer' },
+      }),
+      env: { ORS_API_KEY: 'route-ors-key', MENU_KV: kv },
+    });
+    const body = await readJson(res);
+    check('route: rejected ORS key reports denied',
+      res.status === 200 && body && body.ors === 'denied' && !(body.sources || []).includes('ors'));
   } finally {
     globalThis.fetch = origFetch;
   }

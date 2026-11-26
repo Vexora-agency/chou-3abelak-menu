@@ -194,7 +194,8 @@ export async function onRequest(context) {
   // Non-sensitive source + provider-status trail for verification (never
   // the query or a key). The client ignores them; the owner reads them.
   // ors/google: off (no key) | rich (free passes sufficed) | ok | empty |
-  // capped (daily budget spent) | error (key/quota/provider-side failure).
+  // capped (daily budget spent) | denied (key rejected: 401/403 — fix the
+  // key, not the wiring) | error (provider/outage-side failure).
   // menu/zones diagnose the delivery-scope wiring: menu=false means the
   // production KV binding is missing (zones unreadable, country falls back
   // to the phone-derived code); zones=0 with menu=true means the admin
@@ -225,6 +226,8 @@ export async function onRequest(context) {
           ors = 'ok';
         } else if (o && o.ok) {
           ors = 'empty';
+        } else if (o && o.error === 'denied') {
+          ors = 'denied';
         } else {
           ors = 'error';
         }

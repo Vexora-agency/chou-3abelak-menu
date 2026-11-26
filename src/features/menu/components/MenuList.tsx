@@ -8,7 +8,7 @@ import { useMenuListFiltering } from '../hooks/useMenuListFiltering';
 import { useMenuListCartQuantities } from '../hooks/useMenuListCartQuantities';
 import { MenuListEmptyState } from './menu-list/MenuListEmptyState';
 import { MenuListSectionHeader } from './menu-list/MenuListSectionHeader';
-import { MenuListWaveRow } from './menu-list/MenuListWaveRow';
+import { MenuListWaveRow, WaveFlow } from './menu-list/MenuListWaveRow';
 import { MenuListListRow } from './menu-list/MenuListListRow';
 import { MenuListGridCard } from './menu-list/MenuListGridCard';
 import { MenuListPhotoCard } from './menu-list/MenuListPhotoCard';
@@ -623,13 +623,29 @@ export const MenuList: React.FC<MenuListProps> = ({
         const sectionHeader = (
           <MenuListSectionHeader title={isAr ? cat.name.ar : cat.name.en} darkMode={darkMode} count={catItems.length} festive={isFestive} />
         );
+        // The compact ribbon needs a lower entry edge when its last visible
+        // band is yellow; an ink/white last band already matches the page.
+        const lastBandIsYellow = kind === 'compact' && visibleItems.length % 2 === 1;
         const sectionBody = (
           <>
             {/* Category Header */}
             {kind === 'compact' ? <div className="wave-column">{sectionHeader}</div> : sectionHeader}
+            {/* Entry flow: page colour → yellow, so the ribbon emerges. */}
+            {kind === 'compact' ? (
+              <div className="wave-stack">
+                <WaveFlow position="top" darkMode={darkMode} />
+              </div>
+            ) : null}
             {/* One grid per section: compact/list/cards differ only by the
                 grid classes and the row component, both resolved above. */}
             {itemsGrid}
+            {/* Exit flow only when the last band is yellow; otherwise the
+                last band and the page already share the same tone. */}
+            {lastBandIsYellow ? (
+              <div className="wave-stack">
+                <WaveFlow position="bottom" darkMode={darkMode} />
+              </div>
+            ) : null}
             {pagerButton
               ? kind === 'compact'
                 ? <div className="wave-column">{pagerButton}</div>

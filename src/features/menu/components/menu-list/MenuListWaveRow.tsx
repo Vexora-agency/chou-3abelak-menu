@@ -48,6 +48,23 @@ export interface MenuListWaveRowProps {
 const WAVE_Y2B = 'M0,56 C100,6 180,106 295,60 C365,30 425,74 480,40 L480,112 L0,112 Z';
 const WAVE_B2Y = 'M0,56 C100,106 180,6 295,52 C365,82 425,38 480,72 L480,112 L0,112 Z';
 
+/**
+ * Entry/exit flow for the compact ribbon.
+ * Top: the page colour above, brand yellow below — the ribbon emerges.
+ * Bottom: brand yellow above, the page colour below — only needed when the
+ * last band is yellow; ink/white last bands already match their page.
+ */
+export const WaveFlow: React.FC<{ position: 'top' | 'bottom'; darkMode: boolean }> = ({ position, darkMode }) => (
+  <div
+    className={`wave-flow wave-flow--${position} wave-flow--${darkMode ? 'dark' : 'light'}`}
+    aria-hidden="true"
+  >
+    <svg viewBox="0 0 480 112" preserveAspectRatio="none">
+      <path d={position === 'top' ? WAVE_B2Y : WAVE_Y2B} />
+    </svg>
+  </div>
+);
+
 export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
   item,
   index,

@@ -26,7 +26,7 @@ const OVERPASS_URLS = [
 ];
 const UA = 'chou-3abelak-menu/1.0 (places index build)';
 const DEFAULT_KINDS = ['city', 'town', 'village', 'hamlet', 'suburb', 'neighbourhood', 'quarter', 'isolated_dwelling'];
-const KIND_RANK = { city: 0, town: 1, village: 2, suburb: 3, neighbourhood: 4, quarter: 5, hamlet: 6, isolated_dwelling: 7 };
+const KIND_RANK = { city: 0, town: 1, village: 2, suburb: 3, neighbourhood: 4, quarter: 5, hamlet: 6, isolated_dwelling: 7, borough: 4, municipality: 2, locality: 7, farm: 8 };
 
 function arg(name, fallback = '') {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
@@ -142,7 +142,11 @@ async function main() {
       if (!raw) continue;
       const isArabic = /[\u0600-\u06FF]/.test(raw);
       const nameAr = (ar || (isArabic ? raw : '')).slice(0, 120);
-      const nameLatin = (!isArabic ? raw : (ar && raw !== ar ? raw : '')).slice(0, 120) || null;
+      // Latin fallback chain: native Latin name, then the Arabic name's
+      // Latin spelling, then name:en — many Lebanese places carry an
+      // English name while `name` itself is Arabic (e.g. دكوانة/Dekwaneh).
+      const en = typeof tags['name:en'] === 'string' && tags['name:en'].trim() ? tags['name:en'].trim() : '';
+      const nameLatin = ((!isArabic ? raw : '') || (ar && raw !== ar ? raw : '') || en).slice(0, 120) || null;
       if (!nameAr && !nameLatin) continue;
       let lat = NaN;
       let lon = NaN;

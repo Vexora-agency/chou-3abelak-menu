@@ -407,6 +407,10 @@ const KIND_LABEL: Record<string, { ar: string; en: string }> = {
   quarter: { ar: 'حي', en: 'Quarter' },
   hamlet: { ar: 'عزبة', en: 'Hamlet' },
   isolated_dwelling: { ar: 'نجع', en: 'Hamlet' },
+  farm: { ar: 'مزرعة', en: 'Farm' },
+  locality: { ar: 'منطقة', en: 'Locality' },
+  borough: { ar: 'حي', en: 'Borough' },
+  municipality: { ar: 'بلدية', en: 'Municipality' },
 };
 
 export function kindLabel(kind: string, lang: 'en' | 'ar'): string {

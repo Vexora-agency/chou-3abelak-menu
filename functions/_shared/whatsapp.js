@@ -75,15 +75,26 @@ export function extractVerificationCode(text) {
 }
 
 /**
- * True when the message is plausibly about verification. Normal customer
- * messages on the same business number are left untouched (no auto-reply).
+ * True when the message is plausibly about PHONE verification. Normal
+ * customer messages on the same business number are left untouched (no
+ * auto-reply). The match is deliberately narrow: a generic "code" / "رمز"
+ * word (promo code, discount code, order question) must NOT trigger a
+ * verification reply.
  */
 export function looksLikeVerificationMessage(text) {
   if (typeof text !== 'string' || !text.trim()) return false;
-  const keyword = /(verify|verification|\bcode\b|\bref\b|تأكيد|تحقق|تاكيد|رمز|مرجع)/i.test(text);
-  if (keyword) return true;
+  const value = text.trim();
+
+  // The prefilled site message and the common "verify my number" phrasings.
+  const verifyIntent = /(?:verify|verification)\s+(?:my\s+)?(?:phone|number|whatsapp)|(?:phone|number)\s+verification|تأكيد\s+(?:رقم|هاتف|رقمي|رقم\s+هاتفي)|تحقق\s+من\s+(?:الرقم|رقم|الهاتف)|رمز\s+التحقق/i;
+  if (verifyIntent.test(value)) return true;
+
+  // A labelled code line: "Code: 123456", "my code is 123456",
+  // "الرمز: 123456", "الرمز هو 123456". Not "my order code is 123456".
+  if (/(?:^|\n)\s*(?:my\s+)?(?:code|رمز|كود)\s*(?:is|هو)?\s*[:：]?\s*\d{6}\b/i.test(value)) return true;
+
   // A short message that is essentially just the code is also a valid attempt.
-  return !!extractVerificationCode(text) && text.trim().length <= 20;
+  return !!extractVerificationCode(value) && value.length <= 20;
 }
 
 /**

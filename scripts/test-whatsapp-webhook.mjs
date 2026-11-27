@@ -29,7 +29,7 @@ import {
   verifyWebhookSignature,
   whatsappReply,
 } from '../functions/_shared/whatsapp.js';
-import { VERIFICATION_CODE_TTL_MS } from '../functions/_shared/phone-verification.js';
+import { VERIFICATION_CODE_TTL_MS, buildVerificationMessage } from '../functions/_shared/phone-verification.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (relative) => readFileSync(join(ROOT, relative), 'utf8');
@@ -60,6 +60,23 @@ check('ordinary message ignored', !looksLikeVerificationMessage('do you deliver 
 check('prefer does not look like "ref"', !looksLikeVerificationMessage('I prefer pickup please'));
 check('a short bare code is a verification attempt', looksLikeVerificationMessage('123456'));
 check('a long order message with 6 digits is ignored', !looksLikeVerificationMessage('my order number is 123456 and I need it today'));
+check(
+  'the exact prefilled English message is a verification attempt',
+  looksLikeVerificationMessage(buildVerificationMessage({ code: '123456', reference: 'ABCD1234', lang: 'en' }))
+);
+check(
+  'the exact prefilled Arabic message is a verification attempt',
+  looksLikeVerificationMessage(buildVerificationMessage({ code: '123456', reference: 'ABCD1234', lang: 'ar' }))
+);
+check('a labelled code line is a verification attempt', looksLikeVerificationMessage('Code: 123456'));
+check('a natural "my code is" line is a verification attempt', looksLikeVerificationMessage('my code is 123456'));
+check('an Arabic labelled code line is a verification attempt', looksLikeVerificationMessage('الرمز: 123456'));
+check('a natural Arabic code line is a verification attempt', looksLikeVerificationMessage('الرمز هو 123456'));
+check('a promo-code question is NOT a verification attempt', !looksLikeVerificationMessage('What is the promo code?'));
+check('an Arabic discount-code question is NOT a verification attempt', !looksLikeVerificationMessage('ما هو رمز الخصم؟'));
+check('an order-confirmation question is NOT a verification attempt', !looksLikeVerificationMessage('I want to confirm my order'));
+check('an Arabic order-confirmation question is NOT a verification attempt', !looksLikeVerificationMessage('أريد تأكيد الطلب'));
+check('"my order code is" is NOT a verification attempt', !looksLikeVerificationMessage('my order code is 123456'));
 
 /* ---------- webhook payload parsing ---------- */
 

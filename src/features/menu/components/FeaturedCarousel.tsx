@@ -356,7 +356,9 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     align: 'start',
     direction: isAr ? 'rtl' : 'ltr',
     slidesToScroll: 1,
-    duration: reduced ? 0 : 24,
+    // Keep a visible card-to-card slide on every device. Reduced motion gets
+    // a shorter (not zero) slide so the desktop row still reads as moving.
+    duration: reduced ? 18 : 24,
   });
 
   const [selectedIndex, setSelectedIndex] = useState(0);

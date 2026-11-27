@@ -733,9 +733,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* Keep the content moving (the owner wants the same desktop rhythm as the
-     phone) but make the slide/scale changes instant. The tiny dot progress
-     stays as the single, calm indicator. */
+  /* Keep the content moving (the owner wants the desktop row to slide like
+     the phone) but drop the card scale/opacity transitions. The short Embla
+     slide and the tiny dot progress remain. */
   .fc-card,
   .fc-dot,
   .fc-add {

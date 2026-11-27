@@ -490,7 +490,7 @@
   overflow: hidden;
   background: var(--fc-dot-dark);
   border-radius: 999px;
-  transition: width 0.4s ease;
+  transition: width 0.4s ease, background-color 0.3s ease;
 }
 
 .fc-dot.is-active {
@@ -729,16 +729,5 @@
 
   .fc-dots {
     margin-top: 12px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* Keep the content moving (the owner wants the desktop row to slide like
-     the phone) but drop the card scale/opacity transitions. The short Embla
-     slide and the tiny dot progress remain. */
-  .fc-card,
-  .fc-dot,
-  .fc-add {
-    transition: none;
   }
 }

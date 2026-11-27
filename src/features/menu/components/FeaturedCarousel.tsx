@@ -41,27 +41,6 @@ export interface FeaturedCarouselProps {
 const AUTOPLAY_MS = 5000;
 const SUCCESS_MS = 1400;
 
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-}
-
-function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(prefersReducedMotion);
-  useEffect(() => {
-    if (typeof window.matchMedia !== 'function') return;
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const onChange = () => setReduced(mq.matches);
-    mq.addEventListener('change', onChange);
-    onChange();
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return reduced;
-}
-
 /** 1 card on phones, 2 on tablets, 3 on large screens. */
 function slidesPerViewNow(): number {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return 1;
@@ -341,7 +320,6 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
 }) => {
   const isAr = lang === 'ar';
   const isLight = variant === 'light';
-  const reduced = useReducedMotion();
   const slidesPerView = useSlidesPerView();
   const titleId = useId();
   const pressingRef = useRef(false);
@@ -356,9 +334,8 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     align: 'start',
     direction: isAr ? 'rtl' : 'ltr',
     slidesToScroll: 1,
-    // Keep a visible card-to-card slide on every device. Reduced motion gets
-    // a shorter (not zero) slide so the desktop row still reads as moving.
-    duration: reduced ? 18 : 24,
+    // One smooth, phone-like card-to-card slide on every device.
+    duration: 24,
   });
 
   const [selectedIndex, setSelectedIndex] = useState(0);

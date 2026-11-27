@@ -508,6 +508,17 @@
   }
 }
 
+/* Closing row: the soft drop shadow is clipped by the ribbon's paint
+   containment at the exit wave, which reads as a grey edge on the yellow
+   band. Keep the brand's hard offset only, so the hand-off to the page and
+   the next section stays clean. */
+.menu-section--waves-end .wave-stack.grid > .wave-row:nth-last-child(-n + 2) .wave-band--yellow .wave-frame {
+  box-shadow: 4px 4px 0 #0a0a0a;
+}
+[dir="rtl"] .menu-section--waves-end .wave-stack.grid > .wave-row:nth-last-child(-n + 2) .wave-band--yellow .wave-frame {
+  box-shadow: -4px 4px 0 #0a0a0a;
+}
+
 /* Final desktop overrides (last in the file, so they win over the base
    band/media declarations): full-bleed stays, interior stays near 1280. */
 @media (min-width: 1024px) {

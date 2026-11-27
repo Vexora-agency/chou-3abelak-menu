@@ -710,7 +710,12 @@ export const MenuList: React.FC<MenuListProps> = ({
           </>
         );
         return (
-          <section key={cat.id} id={`category-${cat.id}`} data-motion-reveal="fade" className={`scroll-mt-[160px] menu-section${isFestive ? ' xmas-festive' : ''}`}>
+          <section
+            key={cat.id}
+            id={`category-${cat.id}`}
+            data-motion-reveal="fade"
+            className={`scroll-mt-[160px] menu-section${kind === 'compact' && lastBandIsYellow ? ' menu-section--waves-end' : ''}${isFestive ? ' xmas-festive' : ''}`}
+          >
             {sectionInnerClass ? (
               <div className={sectionWrapClass}>
                 <div className={sectionInnerClass}>

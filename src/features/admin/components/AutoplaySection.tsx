@@ -1,6 +1,8 @@
 import React from 'react';
+import { ChevronDown, Timer } from 'lucide-react';
 import type { MenuData, MenuSettings } from '@/src/types/menu';
 import { FeaturedCarousel } from '@/src/features/menu';
+import { autoplayIntervalOrDefault } from '@/src/utils/settingsDefaults';
 import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
 
 type AutoplayValues = Pick<MenuSettings, 'featuredAutoplay' | 'featuredAutoplayInterval'>;
@@ -26,7 +28,9 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
 }) => {
   const isAr = lang === 'ar';
   const on = featuredAutoplay !== false;
-  const every = Math.min(10, Math.max(2, featuredAutoplayInterval || 4));
+  const every = autoplayIntervalOrDefault(featuredAutoplayInterval);
+  const secondsLabel = (n: number) =>
+    isAr ? (n === 2 ? 'ثانيتان' : `${n} ثوانٍ`) : `${n} seconds`;
   const featured = menu.items.filter((i) => i.featured && i.available);
   // With a single featured item the real slider can't move (same as the
   // site) — duplicate it as a clearly-marked demo clone so the preview
@@ -75,18 +79,48 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
         </button>
       </div>
       {on && (
-        <div className="anim-fade-in">
-          <label className="block text-xs text-neutral-400 mb-1">
-            {isAr ? 'بعد كم ثانية يتحرك؟ (2 - 10)' : 'Slide every N seconds (2 - 10)'}
+        <div className="anim-fade-in space-y-1.5">
+          <label
+            htmlFor="carousel-autoplay-interval"
+            className="block text-xs font-bold text-neutral-300"
+          >
+            {isAr ? 'كل كم ثانية يتحرك الكاروسيل؟' : 'How often should the carousel move?'}
           </label>
-          <input
-            type="number"
-            min={2}
-            max={10}
-            value={featuredAutoplayInterval || 4}
-            onChange={(e) => onUpdate((prev) => ({ ...prev, featuredAutoplayInterval: Math.min(10, Math.max(2, Number(e.target.value) || 4)) }))}
-            className="w-full h-10 px-3 rounded-lg bg-black border border-neutral-700 text-sm focus:border-[var(--primary)]"
-          />
+          <div className="relative">
+            <Timer
+              size={15}
+              aria-hidden="true"
+              className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-[var(--primary)]"
+            />
+            <select
+              id="carousel-autoplay-interval"
+              value={every}
+              onChange={(event) =>
+                onUpdate((prev) => ({
+                  ...prev,
+                  featuredAutoplayInterval: Number(event.target.value),
+                }))
+              }
+              aria-describedby="carousel-autoplay-interval-hint"
+              className="h-11 min-h-[44px] w-full appearance-none rounded-xl border border-neutral-700 bg-neutral-950 ps-10 pe-10 text-sm font-bold text-white focus:border-[var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+            >
+              {Array.from({ length: 9 }, (_, index) => index + 2).map((seconds) => (
+                <option key={seconds} value={seconds}>
+                  {secondsLabel(seconds)}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={15}
+              aria-hidden="true"
+              className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-neutral-400"
+            />
+          </div>
+          <p id="carousel-autoplay-interval-hint" className="text-[10px] leading-relaxed text-neutral-500">
+            {isAr
+              ? 'القيمة المختارة تُطبَّق على كاروسيل الموقع بعد حفظ الإعدادات، وتظهر مباشرة في المعاينة.'
+              : 'The selected value is applied to the storefront carousel after saving, and updates this preview instantly.'}
+          </p>
         </div>
       )}
 

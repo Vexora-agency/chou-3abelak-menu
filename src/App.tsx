@@ -8,6 +8,7 @@ import { Header } from '@/src/components/Header';
 import { AnnouncementBanner } from '@/src/components/AnnouncementBanner';
 import { type OrderingStatus } from '@/src/utils/status';
 import { resolveLiveOrdering } from '@/src/utils/ordering';
+import { autoplayIntervalOrDefault } from '@/src/utils/settingsDefaults';
 import { serverNow } from '@/src/utils/serverTime';
 import { refreshMotionRuntime } from '@/src/lib/motion';
 import { dialFromSettings } from '@/src/utils/phoneCountry';import { SearchAndChips, FeaturedCarousel, MenuList, useMenuLoader } from '@/src/features/menu';
@@ -588,6 +589,8 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
   const displayMenu: MenuData = menu ?? staticFallbackMenu;
   const isAr = lang === 'ar';
   const currency = isAr ? displayMenu.settings.currency.ar : displayMenu.settings.currency.en;
+  // Storefront must use the SAME cadence the admin picks (no hidden 5s).
+  const featuredAutoplaySeconds = autoplayIntervalOrDefault(displayMenu.settings.featuredAutoplayInterval);
   // Menu-only mode (starter): no cart, no checkout, no item modal — the menu
   // is display-only with a call CTA. Gated in one place, passed down.
   const orderingOn = featuresConfig.enableOrdering;
@@ -703,6 +706,7 @@ export default function App() {  const { menu, setMenu, loading } = useMenuLoade
                   currency={currency}
                   lang={lang}
                   autoplay={menu.settings.featuredAutoplay !== false}
+                  autoplayIntervalMs={featuredAutoplaySeconds * 1000}
                   orderingEnabled={orderingOn}
                 />
               )}

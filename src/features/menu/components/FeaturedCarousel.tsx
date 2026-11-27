@@ -33,7 +33,8 @@ export interface FeaturedCarouselProps {
   orderingEnabled?: boolean;
   /** Master switch from the menu settings. Cadence defaults to the approved 5s. */
   autoplay?: boolean;
-  /** Optional cadence override (admin live preview). Storefront stays at 5s. */
+  /** Optional cadence override. The storefront passes the owner's chosen
+   *  interval; the 5s default is only a fallback. */
   autoplayIntervalMs?: number;
   /** Optional layout classes from the page (e.g. vertical rhythm). */
   className?: string;
@@ -393,7 +394,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     if (!emblaApi) return;
     const onSelect = () => {
       setSelectedIndex(emblaApi.selectedScrollSnap());
-      // A new slide owns a fresh 5s window.
+      // A new slide owns a fresh autoplay window.
       setCycle((c) => c + 1);
     };
     onSelect();
@@ -407,7 +408,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
 
   // A pointer press anywhere on the carousel freezes the progress and the
   // timer. Releasing restarts both from zero so the fill can never desync
-  // from the actual 5s cadence.
+  // from the actual cadence.
   useEffect(() => {
     const release = () => {
       if (!pressingRef.current) return;

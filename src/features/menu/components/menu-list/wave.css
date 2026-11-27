@@ -172,6 +172,7 @@
 /* Dish frame: one crisp border + the site's hard offset shadow. The inner
    image wrapper is over-scaled so the GSAP parallax never exposes an edge. */
 .wave-frame {
+  --wave-hard: #0a0a0a;
   position: relative;
   aspect-ratio: 1 / 1;
   overflow: hidden;
@@ -184,6 +185,7 @@
   box-shadow: -4px 4px 0 #0a0a0a, 0 18px 34px rgba(0, 0, 0, 0.22);
 }
 .wave-band--black .wave-frame {
+  --wave-hard: var(--primary);
   border-color: var(--primary);
   box-shadow: 4px 4px 0 var(--primary), 0 18px 34px rgba(0, 0, 0, 0.55);
 }
@@ -191,6 +193,7 @@
   box-shadow: -4px 4px 0 var(--primary), 0 18px 34px rgba(0, 0, 0, 0.55);
 }
 .wave-band--white .wave-frame {
+  --wave-hard: var(--primary);
   border-color: #0a0a0a;
   background: #ffffff;
   box-shadow: 4px 4px 0 var(--primary), 0 18px 34px rgba(0, 0, 0, 0.18);
@@ -508,15 +511,22 @@
   }
 }
 
-/* Closing row: the soft drop shadow is clipped by the ribbon's paint
-   containment at the exit wave, which reads as a grey edge on the yellow
-   band. Keep the brand's hard offset only, so the hand-off to the page and
-   the next section stays clean. */
-.menu-section--waves-end .wave-stack.grid > .wave-row:nth-last-child(-n + 2) .wave-band--yellow .wave-frame {
-  box-shadow: 4px 4px 0 #0a0a0a;
+/* Closing rows (the last two bands, every tone and viewport): the blurred
+   shadows of the dish frame and the add pill sit at the white/black end of
+   the ribbon and read as a grey separator between the last band and the
+   next section. Keep the brand's hard frame offset; drop the blur and the
+   pill shadow so the last band's tone flows into the page. */
+.wave-stack.grid > .wave-row:last-child .wave-frame,
+.wave-stack.grid > .wave-row:nth-last-child(2) .wave-frame {
+  box-shadow: 4px 4px 0 var(--wave-hard, #0a0a0a);
 }
-[dir="rtl"] .menu-section--waves-end .wave-stack.grid > .wave-row:nth-last-child(-n + 2) .wave-band--yellow .wave-frame {
-  box-shadow: -4px 4px 0 #0a0a0a;
+[dir="rtl"] .wave-stack.grid > .wave-row:last-child .wave-frame,
+[dir="rtl"] .wave-stack.grid > .wave-row:nth-last-child(2) .wave-frame {
+  box-shadow: -4px 4px 0 var(--wave-hard, #0a0a0a);
+}
+.wave-stack.grid > .wave-row:last-child .wave-add,
+.wave-stack.grid > .wave-row:nth-last-child(2) .wave-add {
+  box-shadow: none;
 }
 
 /* Final desktop overrides (last in the file, so they win over the base

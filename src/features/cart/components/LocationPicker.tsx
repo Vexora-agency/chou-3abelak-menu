@@ -639,7 +639,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
           </select>
         </label>
       )}
-      <div className={`rounded-2xl border bg-clip-padding shadow-xs ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
+      <div className={`rounded-2xl border bg-clip-padding shadow-xs transition-colors focus-within:border-neutral-500 ${darkMode ? 'border-neutral-700 bg-black' : 'border-neutral-300 bg-white'}`}>
         <div className="flex items-center gap-2 px-3">
           <input
             type="text"
@@ -676,7 +676,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ lang, darkMode, 
             aria-activedescendant={searchAc.activeIndex >= 0 ? `picker-search-listbox-opt-${searchAc.activeIndex}` : undefined}
             aria-autocomplete="list"
             aria-label={t.searchPh}
-            className={`w-full h-12 bg-transparent text-[15px] focus:outline-none ${darkMode ? 'text-white placeholder-neutral-500' : 'text-[#0A0A0A] placeholder-neutral-400'}`}
+            className={`no-focus-ring w-full h-12 bg-transparent text-[15px] focus:outline-none ${darkMode ? 'text-white placeholder-neutral-500' : 'text-[#0A0A0A] placeholder-neutral-400'}`}
           />
           {searchAc.loading || resolvingPick ? (
             <span className="flex h-9 shrink-0 items-center px-1" aria-hidden="true">

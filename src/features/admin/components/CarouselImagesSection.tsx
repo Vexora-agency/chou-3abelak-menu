@@ -581,9 +581,13 @@ export const CarouselImagesSection: React.FC<CarouselImagesSectionProps> = ({
                           ? isAr
                             ? 'وصف مخصص'
                             : 'Custom copy'
-                          : isAr
-                            ? 'يتبع وصف الصنف'
-                            : 'Uses item description'}
+                          : hasItemDescription
+                            ? isAr
+                              ? 'يتبع وصف الصنف'
+                              : 'Uses item description'
+                            : isAr
+                              ? 'بدون وصف'
+                              : 'No copy'}
                       </span>
                     </div>
                     <p className="mt-0.5 text-[9.5px] leading-relaxed text-neutral-500">
@@ -680,9 +684,13 @@ export const CarouselImagesSection: React.FC<CarouselImagesSectionProps> = ({
                     ? isAr
                       ? 'هذا النص يظهر في الكاروسيل فقط. اترك لغة فارغة لاستخدام وصف الصنف بها.'
                       : 'This copy appears in the carousel only. Leave a language empty to use the item description there.'
-                    : isAr
-                      ? 'لا يوجد وصف مخصص بعد؛ يعرض الكاروسيل وصف الصنف تلقائيًا. اكتب هنا لتخصيصه.'
-                      : 'No custom copy yet — the carousel currently shows the item description. Write here to override it.'}
+                    : hasItemDescription
+                      ? isAr
+                        ? 'لا يوجد وصف مخصص بعد؛ يعرض الكاروسيل وصف الصنف تلقائيًا. اكتب هنا لتخصيصه.'
+                        : 'No custom copy yet — the carousel currently shows the item description. Write here to override it.'
+                      : isAr
+                        ? 'اكتب وصفًا بالعربية أو الإنجليزية ليظهر في بطاقة الكاروسيل.'
+                        : 'Write an Arabic or English description to show it on the carousel card.'}
                 </p>
               </div>
               </div>

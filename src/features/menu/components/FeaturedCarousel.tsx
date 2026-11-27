@@ -1,11 +1,12 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, SlidersHorizontal } from 'lucide-react';
 import type { MenuData, MenuItem } from '@/src/types/menu';
 import { pickLangText } from '@/src/utils/menuHelpers';
 import {
   effectiveBadges,
   formatPrice,
+  hasOptions,
   hasVariants,
   minVariantPrice,
   normalizePricing,
@@ -162,12 +163,19 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
   const isGold = index % 2 === 1;
   const showPhoto = Boolean(item.imageUrl) && !imageFailed;
   const imageTransform = carouselImageTransform(item.carouselImage);
+  // Any size/add-on means the customer must choose before adding (the same
+  // sheet the menu list opens). Only plain items quick-add with the stepper.
+  const needsChoices = hasOptions(item);
 
   const decrease = () => setQty((q) => Math.max(pricing.minQty, q - pricing.step));
   const increase = () => setQty((q) => Math.min(pricing.maxQty, q + pricing.step));
 
   const handleAdd = () => {
     if (!orderingEnabled || added) return;
+    if (needsChoices) {
+      onOpenItem(item);
+      return;
+    }
     const requiresChoice =
       Array.isArray(item.requiredGroups) && item.requiredGroups.length > 0;
     if (requiresChoice) {
@@ -255,13 +263,22 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
                 ? isAr
                   ? `تمت إضافة ${name} إلى السلة`
                   : `${name} added to cart`
-                : isAr
-                  ? `أضف ${name} إلى السلة، الكمية ${qty}`
-                  : `Add ${name} to cart, quantity ${qty}`
+                : needsChoices
+                  ? isAr
+                    ? `اختر خيارات ${name}`
+                    : `Choose options for ${name}`
+                  : isAr
+                    ? `أضف ${name} إلى السلة، الكمية ${qty}`
+                    : `Add ${name} to cart, quantity ${qty}`
             }
           >
             {added ? (
               <span>{isAr ? 'تمت الإضافة ✓' : 'Added ✓'}</span>
+            ) : needsChoices ? (
+              <>
+                <SlidersHorizontal size={18} strokeWidth={2.4} aria-hidden="true" />
+                <span>{isAr ? 'اختر الخيارات' : 'Choose options'}</span>
+              </>
             ) : (
               <>
                 <ShoppingCart size={18} strokeWidth={2.4} aria-hidden="true" />
@@ -280,29 +297,31 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
             className="fc-wishlist-inline"
           />
 
-          <div className="fc-qty">
-            <button
-              type="button"
-              className="fc-qty-btn fc-qty-btn--minus"
-              onClick={decrease}
-              disabled={qty <= pricing.minQty}
-              aria-label={isAr ? 'تقليل الكمية' : 'Decrease quantity'}
-            >
-              −
-            </button>
-            <span className="fc-qty-value" aria-live="polite" aria-atomic="true">
-              {qty}
-            </span>
-            <button
-              type="button"
-              className="fc-qty-btn fc-qty-btn--plus"
-              onClick={increase}
-              disabled={qty >= pricing.maxQty}
-              aria-label={isAr ? 'زيادة الكمية' : 'Increase quantity'}
-            >
-              +
-            </button>
-          </div>
+          {!needsChoices ? (
+            <div className="fc-qty">
+              <button
+                type="button"
+                className="fc-qty-btn fc-qty-btn--minus"
+                onClick={decrease}
+                disabled={qty <= pricing.minQty}
+                aria-label={isAr ? 'تقليل الكمية' : 'Decrease quantity'}
+              >
+                −
+              </button>
+              <span className="fc-qty-value" aria-live="polite" aria-atomic="true">
+                {qty}
+              </span>
+              <button
+                type="button"
+                className="fc-qty-btn fc-qty-btn--plus"
+                onClick={increase}
+                disabled={qty >= pricing.maxQty}
+                aria-label={isAr ? 'زيادة الكمية' : 'Increase quantity'}
+              >
+                +
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

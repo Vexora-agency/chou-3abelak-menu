@@ -311,6 +311,9 @@ export function useShopCartState(
    */
   const handleQuickAdd = (item: MenuItem, qty: number): boolean => {
     if (!item.available || !menu) return false;
+    // Sizes/add-ons must be chosen in the item sheet, exactly like the menu
+    // list. The carousel only quick-adds plain items.
+    if (hasOptions(item)) return false;
     if (Array.isArray(item.requiredGroups) && item.requiredGroups.length > 0) return false;
     const variant = getVariant(item)?.featureId;
     const quantity = clampQty(item, qty);

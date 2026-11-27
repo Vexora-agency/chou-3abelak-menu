@@ -4,6 +4,7 @@
  */
 export { MenuList } from './components/MenuList';
 export { FeaturedCarousel } from './components/FeaturedCarousel';
+export { CarouselCardPreview } from './components/CarouselCardPreview';
 export { SearchAndChips } from './components/SearchAndChips';
 // NOTE: ItemDetailsModal is intentionally NOT re-exported here — App.tsx
 // imports it directly (lazy) so it splits into its own chunk instead of

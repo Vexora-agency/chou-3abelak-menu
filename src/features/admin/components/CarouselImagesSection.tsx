@@ -1,13 +1,23 @@
 import React, { useState } from 'react';
 import {
+  Crosshair,
   FlipHorizontal2,
   FlipVertical2,
+  Grid3x3,
   Image as ImageIcon,
+  Minus,
+  Moon,
+  Move,
+  MoveHorizontal,
+  MoveVertical,
+  Plus,
   RotateCcw,
   RotateCw,
+  Sun,
   Undo2,
 } from 'lucide-react';
 import type { CarouselImageAdjust, MenuData } from '@/src/types/menu';
+import { CarouselCardPreview } from '@/src/features/menu';
 import { pickLangText } from '@/src/utils/menuHelpers';
 import {
   CAROUSEL_IMAGE_MAX_PAN,
@@ -15,6 +25,7 @@ import {
   CAROUSEL_IMAGE_MAX_SCALE,
   CAROUSEL_IMAGE_MIN_SCALE,
   carouselImageTransform,
+  isDefaultCarouselImage,
   normalizeCarouselImage,
 } from '@/src/utils/carouselImage';
 import { SettingsGroupBody, SettingsGroupHeader } from './SettingsCollapsible';
@@ -35,11 +46,16 @@ const RangeField: React.FC<{
   max: number;
   step: number;
   onChange: (value: number) => void;
-}> = ({ label, value, display, min, max, step, onChange }) => (
-  <label className="block">
+  icon?: React.ReactNode;
+  disabled?: boolean;
+}> = ({ label, value, display, min, max, step, onChange, icon, disabled = false }) => (
+  <label className={`block ${disabled ? 'opacity-45' : ''}`}>
     <span className="mb-0.5 flex items-center justify-between gap-2 text-[10.5px] font-bold text-neutral-400">
-      <span>{label}</span>
-      <span className="tabular-nums text-neutral-200" dir="ltr">{display}</span>
+      <span className="inline-flex min-w-0 items-center gap-1.5">
+        {icon ? <span className="shrink-0 text-neutral-500">{icon}</span> : null}
+        <span className="truncate">{label}</span>
+      </span>
+      <span className="shrink-0 tabular-nums text-neutral-200" dir="ltr">{display}</span>
     </span>
     <input
       type="range"
@@ -48,17 +64,46 @@ const RangeField: React.FC<{
       step={step}
       value={value}
       dir="ltr"
+      disabled={disabled}
       onChange={(event) => onChange(Number(event.target.value))}
-      className="h-8 w-full cursor-pointer accent-[var(--primary)]"
+      className="h-8 w-full cursor-pointer accent-[var(--primary)] disabled:cursor-not-allowed"
       aria-label={label}
     />
   </label>
+);
+
+const ToolButton: React.FC<{
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  active?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}> = ({ label, onClick, disabled = false, active, className = '', children }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    aria-label={label}
+    aria-pressed={active === undefined ? undefined : active}
+    title={label}
+    className={`inline-flex min-h-[40px] min-w-0 items-center justify-center gap-1.5 rounded-xl border px-2.5 text-[10.5px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40 ${
+      active
+        ? 'border-[var(--primary)] bg-[var(--primary)]/15 text-[var(--primary)]'
+        : 'border-neutral-700 bg-neutral-950 text-neutral-300 hover:border-neutral-500 hover:text-white'
+    } ${className}`}
+  >
+    {children}
+  </button>
 );
 
 /**
  * Per-card carousel photo framing. The adjustments live on the item as
  * `carouselImage` and are applied ONLY by the featured carousel — the item
  * photo used everywhere else stays exactly as it is.
+ *
+ * The editor shows the actual card (photo + text + action bar) and lets the
+ * owner drag the photo directly inside it, so framing is judged in context.
  */
 export const CarouselImagesSection: React.FC<CarouselImagesSectionProps> = ({
   menu,
@@ -70,8 +115,16 @@ export const CarouselImagesSection: React.FC<CarouselImagesSectionProps> = ({
   const isAr = lang === 'ar';
   const featured = menu.items.filter((item) => item.featured && item.available);
   const [selectedId, setSelectedId] = useState('');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
+    menu.settings.defaultTheme === 'light' ? 'light' : 'dark'
+  );
+  const [showGrid, setShowGrid] = useState(false);
+
   const active = featured.find((item) => item.id === selectedId) || featured[0] || null;
+  const activeIndex = active ? Math.max(0, featured.findIndex((item) => item.id === active.id)) : 0;
   const adjust = active ? normalizeCarouselImage(active.carouselImage) : null;
+  const hasPhoto = Boolean(active?.imageUrl);
+  const isDefault = adjust ? isDefaultCarouselImage(adjust) : true;
 
   const patch = (next: Partial<CarouselImageAdjust>) => {
     if (!active || !adjust) return;
@@ -97,14 +150,22 @@ export const CarouselImagesSection: React.FC<CarouselImagesSectionProps> = ({
     }));
   };
 
+  const zoomBy = (delta: number) => {
+    if (!adjust) return;
+    patch({ scale: adjust.scale + delta });
+  };
+
+  const panDisplay = (value: number) =>
+    `${value > 0 ? '+' : ''}${Math.round(value)}%`;
+
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
       <SettingsGroupHeader
         title={isAr ? 'صور الكاروسيل' : 'Carousel Images'}
         subtitle={
           isAr
-            ? 'اضبط صورة كل كارت: تكبير، تحريك، تدوير، وقلب'
-            : 'Frame each carousel card photo: zoom, pan, rotate and flip'
+            ? 'اضبط الصورة داخل بطاقة الكاروسيل نفسها: اسحبها، كبّرها أو صغّرها، وشاهد النتيجة كما تظهر في الموقع.'
+            : 'Frame the photo inside the real carousel card: drag, zoom and see exactly how it looks on the site.'
         }
         lang={lang}
         collapsed={collapsed}
@@ -124,23 +185,28 @@ export const CarouselImagesSection: React.FC<CarouselImagesSectionProps> = ({
           </p>
         ) : (
           <div className="space-y-3">
-            <div className="flex flex-wrap gap-1.5">
+            <div
+              className="flex flex-wrap gap-1.5"
+              role="group"
+              aria-label={isAr ? 'اختر صنفًا لضبط صورته' : 'Choose an item to frame'}
+            >
               {featured.map((item) => {
                 const name = pickLangText(item.name, lang) || item.id;
                 const selected = active?.id === item.id;
+                const customized = !isDefaultCarouselImage(normalizeCarouselImage(item.carouselImage));
                 return (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => setSelectedId(item.id)}
                     aria-pressed={selected}
-                    className={`inline-flex min-h-[40px] max-w-full items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                    className={`relative inline-flex min-h-[44px] max-w-full items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
                       selected
                         ? 'border-[var(--primary)] bg-[var(--primary)]/15 text-[var(--primary)]'
                         : 'border-neutral-700 bg-neutral-950 text-neutral-300 hover:border-neutral-500'
                     }`}
                   >
-                    <span className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-neutral-800">
+                    <span className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-neutral-800">
                       {item.imageUrl ? (
                         <img
                           src={item.imageUrl}
@@ -155,146 +221,274 @@ export const CarouselImagesSection: React.FC<CarouselImagesSectionProps> = ({
                       )}
                     </span>
                     <span className="truncate">{name}</span>
+                    {customized ? (
+                      <span
+                        className="absolute -top-0.5 -end-0.5 h-2.5 w-2.5 rounded-full border-2 border-neutral-900 bg-[var(--primary)]"
+                        aria-hidden="true"
+                      />
+                    ) : null}
                   </button>
                 );
               })}
             </div>
 
             {active && adjust ? (
-              <div className="grid gap-3 sm:grid-cols-[170px_minmax(0,1fr)]">
-                <div className="mx-auto w-full max-w-[180px] sm:mx-0 sm:max-w-none">
-                  <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-neutral-700 bg-black">
-                    {active.imageUrl ? (
-                      <img
-                        src={active.imageUrl}
-                        alt={
-                          isAr
-                            ? `معاينة صورة ${pickLangText(active.name, lang)} في الكاروسيل`
-                            : `Carousel preview for ${pickLangText(active.name, lang)}`
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
+                <div className="min-w-0">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold text-neutral-200">
+                        {isAr ? 'معاينة داخل البطاقة' : 'In-card preview'}
+                      </p>
+                      <p className="text-[9.5px] leading-relaxed text-neutral-500">
+                        {isAr
+                          ? 'نفس البطاقة والنص وشريط الطلب الذين يراهم العميل'
+                          : 'The same card, text and order bar customers see'}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <ToolButton
+                        label={
+                          showGrid
+                            ? isAr
+                              ? 'إخفاء شبكة التقسيم'
+                              : 'Hide framing grid'
+                            : isAr
+                              ? 'إظهار شبكة التقسيم'
+                              : 'Show framing grid'
                         }
-                        loading="lazy"
-                        decoding="async"
-                        className="absolute inset-0 h-full w-full object-cover"
-                        style={{ transform: carouselImageTransform(adjust) }}
-                      />
-                    ) : (
-                      <div className="flex h-full flex-col items-center justify-center gap-1.5 px-3 text-center">
-                        <ImageIcon size={22} className="text-neutral-600" aria-hidden="true" />
-                        <span className="text-[10px] text-neutral-500">
-                          {isAr ? 'لا توجد صورة لهذا الصنف' : 'No photo for this item'}
-                        </span>
+                        onClick={() => setShowGrid((value) => !value)}
+                        active={showGrid}
+                        className="h-10 w-10 px-0"
+                      >
+                        <Grid3x3 size={15} aria-hidden="true" />
+                      </ToolButton>
+                      <div
+                        className="inline-flex items-center rounded-xl border border-neutral-700 bg-neutral-950 p-0.5"
+                        role="group"
+                        aria-label={isAr ? 'معاينة البطاقة فاتحة أو داكنة' : 'Preview the card light or dark'}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setTheme('dark')}
+                          aria-pressed={theme === 'dark'}
+                          aria-label={isAr ? 'معاينة داكنة' : 'Dark preview'}
+                          title={isAr ? 'معاينة داكنة' : 'Dark preview'}
+                          className={`inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                            theme === 'dark'
+                              ? 'bg-[var(--primary)] text-[#0A0A0A]'
+                              : 'text-neutral-400 hover:text-white'
+                          }`}
+                        >
+                          <Moon size={14} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTheme('light')}
+                          aria-pressed={theme === 'light'}
+                          aria-label={isAr ? 'معاينة فاتحة' : 'Light preview'}
+                          title={isAr ? 'معاينة فاتحة' : 'Light preview'}
+                          className={`inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
+                            theme === 'light'
+                              ? 'bg-[var(--primary)] text-[#0A0A0A]'
+                              : 'text-neutral-400 hover:text-white'
+                          }`}
+                        >
+                          <Sun size={14} aria-hidden="true" />
+                        </button>
                       </div>
-                    )}
-                    <span className="pointer-events-none absolute bottom-1.5 start-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[9px] font-bold text-neutral-200">
-                      {isAr ? 'معاينة الكاروسيل' : 'Carousel preview'}
-                    </span>
+                    </div>
                   </div>
-                  <p className="mt-1 text-[9.5px] leading-relaxed text-neutral-500">
-                    {isAr
-                      ? 'هذه المعاينة تقريبية؛ التعديل يخص الكاروسيل فقط ولا يغيّر صورة الصنف في بقية الصفحات.'
-                      : 'Approximate preview; changes apply to the carousel only, never to the item photo elsewhere.'}
-                  </p>
+
+                  <div className="mx-auto w-full max-w-[430px]">
+                    <CarouselCardPreview
+                      key={`${active.id}:${active.imageUrl ?? ''}`}
+                      item={active}
+                      menu={menu}
+                      lang={lang}
+                      theme={theme}
+                      index={activeIndex}
+                      adjust={adjust}
+                      onAdjust={hasPhoto ? patch : undefined}
+                      showGrid={showGrid}
+                    />
+                  </div>
+
+                  {!hasPhoto ? (
+                    <p className="mt-2 rounded-lg border border-[var(--primary)]/30 bg-[var(--primary)]/10 px-2.5 py-2 text-[10px] font-bold leading-relaxed text-[var(--primary)]">
+                      {isAr
+                        ? 'لا توجد صورة لهذا الصنف. أضف صورته من تبويب «الأصناف»، ثم ارجع هنا لضبطها داخل البطاقة.'
+                        : 'This item has no photo. Add one from the “Items” tab, then come back here to frame it.'}
+                    </p>
+                  ) : null}
+
+                  <div className="mt-2 flex items-start gap-1.5 rounded-lg border border-neutral-800 bg-neutral-950/60 px-2.5 py-2 text-[9.5px] leading-relaxed text-neutral-500">
+                    <Move size={13} className="mt-0.5 shrink-0 text-[var(--primary)]" aria-hidden="true" />
+                    <p>
+                      {isAr
+                        ? 'اسحب الصورة داخل البطاقة لتحريكها، واستخدم عجلة الفأرة أو إصبعين للتكبير والتصغير. يمكنك أيضًا تحريك البطاقة بالأسهم و + / − بعد التركيز عليها، وهذا لا يغيّر صورة الصنف في بقية الصفحات.'
+                        : 'Drag the photo inside the card to move it, and use the wheel or two fingers to zoom. Arrow keys and + / − also work after focusing the card. This never changes the item photo elsewhere.'}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="min-w-0 space-y-1">
-                  <RangeField
-                    label={isAr ? 'الحجم' : 'Size'}
-                    value={adjust.scale}
-                    display={`${Math.round(adjust.scale * 100)}%`}
-                    min={CAROUSEL_IMAGE_MIN_SCALE}
-                    max={CAROUSEL_IMAGE_MAX_SCALE}
-                    step={0.05}
-                    onChange={(value) => patch({ scale: value })}
-                  />
-                  <RangeField
-                    label={isAr ? 'الموضع الأفقي' : 'Horizontal position'}
-                    value={adjust.x}
-                    display={`${adjust.x}%`}
-                    min={-CAROUSEL_IMAGE_MAX_PAN}
-                    max={CAROUSEL_IMAGE_MAX_PAN}
-                    step={1}
-                    onChange={(value) => patch({ x: value })}
-                  />
-                  <RangeField
-                    label={isAr ? 'الموضع الرأسي' : 'Vertical position'}
-                    value={adjust.y}
-                    display={`${adjust.y}%`}
-                    min={-CAROUSEL_IMAGE_MAX_PAN}
-                    max={CAROUSEL_IMAGE_MAX_PAN}
-                    step={1}
-                    onChange={(value) => patch({ y: value })}
-                  />
-                  <RangeField
-                    label={isAr ? 'التدوير' : 'Rotation'}
-                    value={adjust.rotate}
-                    display={`${adjust.rotate}°`}
-                    min={-CAROUSEL_IMAGE_MAX_ROTATE}
-                    max={CAROUSEL_IMAGE_MAX_ROTATE}
-                    step={5}
-                    onChange={(value) => patch({ rotate: value })}
-                  />
-
-                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => patch({ rotate: adjust.rotate - 90 })}
-                      className="inline-flex h-9 items-center gap-1 rounded-full bg-neutral-800 px-2.5 text-[10.5px] font-bold text-neutral-200 hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
-                      aria-label={isAr ? 'تدوير 90 درجة لليسار' : 'Rotate 90° left'}
-                    >
-                      <RotateCcw size={13} aria-hidden="true" />
-                      90°
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => patch({ rotate: adjust.rotate + 90 })}
-                      className="inline-flex h-9 items-center gap-1 rounded-full bg-neutral-800 px-2.5 text-[10.5px] font-bold text-neutral-200 hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
-                      aria-label={isAr ? 'تدوير 90 درجة لليمين' : 'Rotate 90° right'}
-                    >
-                      <RotateCw size={13} aria-hidden="true" />
-                      90°
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => patch({ flipX: !adjust.flipX })}
-                      aria-pressed={adjust.flipX === true}
-                      className={`inline-flex h-9 items-center gap-1 rounded-full px-2.5 text-[10.5px] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
-                        adjust.flipX
-                          ? 'bg-[var(--primary)] text-[#0A0A0A]'
-                          : 'bg-neutral-800 text-neutral-200 hover:bg-neutral-700'
-                      }`}
-                      aria-label={isAr ? 'قلب أفقي' : 'Flip horizontally'}
-                    >
-                      <FlipHorizontal2 size={13} aria-hidden="true" />
-                      {isAr ? 'قلب أفقي' : 'Flip H'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => patch({ flipY: !adjust.flipY })}
-                      aria-pressed={adjust.flipY === true}
-                      className={`inline-flex h-9 items-center gap-1 rounded-full px-2.5 text-[10.5px] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] ${
-                        adjust.flipY
-                          ? 'bg-[var(--primary)] text-[#0A0A0A]'
-                          : 'bg-neutral-800 text-neutral-200 hover:bg-neutral-700'
-                      }`}
-                      aria-label={isAr ? 'قلب رأسي' : 'Flip vertically'}
-                    >
-                      <FlipVertical2 size={13} aria-hidden="true" />
-                      {isAr ? 'قلب رأسي' : 'Flip V'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={reset}
-                      className="inline-flex h-9 items-center gap-1 rounded-full border border-neutral-700 px-2.5 text-[10.5px] font-bold text-neutral-300 hover:border-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
-                      aria-label={isAr ? 'إعادة ضبط صورة الكاروسيل' : 'Reset carousel photo'}
-                    >
-                      <Undo2 size={13} aria-hidden="true" />
-                      {isAr ? 'إعادة ضبط' : 'Reset'}
-                    </button>
+                <div className="min-w-0 space-y-2.5">
+                  <div className="rounded-2xl border border-neutral-800 bg-black/30 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold text-neutral-200">
+                        {isAr ? 'حجم الصورة' : 'Photo size'}
+                      </span>
+                      <span
+                        className="rounded-full bg-neutral-800 px-2 py-0.5 text-[10px] font-bold tabular-nums text-neutral-100"
+                        dir="ltr"
+                      >
+                        {Math.round(adjust.scale * 100)}%
+                      </span>
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => zoomBy(-0.1)}
+                        disabled={!hasPhoto || adjust.scale <= CAROUSEL_IMAGE_MIN_SCALE + 0.001}
+                        aria-label={isAr ? 'تصغير الصورة' : 'Make photo smaller'}
+                        title={isAr ? 'تصغير الصورة' : 'Make photo smaller'}
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-neutral-700 bg-neutral-950 text-neutral-200 transition-colors hover:border-neutral-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Minus size={16} aria-hidden="true" />
+                      </button>
+                      <input
+                        type="range"
+                        min={CAROUSEL_IMAGE_MIN_SCALE}
+                        max={CAROUSEL_IMAGE_MAX_SCALE}
+                        step={0.01}
+                        value={adjust.scale}
+                        dir="ltr"
+                        disabled={!hasPhoto}
+                        onChange={(event) => patch({ scale: Number(event.target.value) })}
+                        aria-label={isAr ? 'حجم الصورة داخل البطاقة' : 'Photo size inside the card'}
+                        className="h-8 min-w-0 flex-1 cursor-pointer accent-[var(--primary)] disabled:cursor-not-allowed"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => zoomBy(0.1)}
+                        disabled={!hasPhoto || adjust.scale >= CAROUSEL_IMAGE_MAX_SCALE - 0.001}
+                        aria-label={isAr ? 'تكبير الصورة' : 'Make photo larger'}
+                        title={isAr ? 'تكبير الصورة' : 'Make photo larger'}
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-neutral-700 bg-neutral-950 text-neutral-200 transition-colors hover:border-neutral-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Plus size={16} aria-hidden="true" />
+                      </button>
+                    </div>
+                    <div className="mt-0.5 flex justify-between text-[9px] tabular-nums text-neutral-600" dir="ltr">
+                      <span>{Math.round(CAROUSEL_IMAGE_MIN_SCALE * 100)}%</span>
+                      <span>{Math.round(CAROUSEL_IMAGE_MAX_SCALE * 100)}%</span>
+                    </div>
                   </div>
-                  <p className="pt-1 text-[9.5px] leading-relaxed text-neutral-500">
+
+                  <div className="rounded-2xl border border-neutral-800 bg-black/30 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold text-neutral-200">
+                        {isAr ? 'الموضع' : 'Position'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => patch({ x: 0, y: 0 })}
+                        disabled={!hasPhoto || (adjust.x === 0 && adjust.y === 0)}
+                        className="inline-flex min-h-[32px] items-center gap-1 rounded-lg border border-neutral-700 bg-neutral-950 px-2 text-[10px] font-bold text-neutral-300 transition-colors hover:border-neutral-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Crosshair size={12} aria-hidden="true" />
+                        {isAr ? 'توسيط' : 'Center'}
+                      </button>
+                    </div>
+                    <div className="mt-1 space-y-1">
+                      <RangeField
+                        icon={<MoveHorizontal size={12} aria-hidden="true" />}
+                        label={isAr ? 'أفقي' : 'Horizontal'}
+                        value={adjust.x}
+                        display={panDisplay(adjust.x)}
+                        min={-CAROUSEL_IMAGE_MAX_PAN}
+                        max={CAROUSEL_IMAGE_MAX_PAN}
+                        step={0.1}
+                        disabled={!hasPhoto}
+                        onChange={(value) => patch({ x: value })}
+                      />
+                      <RangeField
+                        icon={<MoveVertical size={12} aria-hidden="true" />}
+                        label={isAr ? 'رأسي' : 'Vertical'}
+                        value={adjust.y}
+                        display={panDisplay(adjust.y)}
+                        min={-CAROUSEL_IMAGE_MAX_PAN}
+                        max={CAROUSEL_IMAGE_MAX_PAN}
+                        step={0.1}
+                        disabled={!hasPhoto}
+                        onChange={(value) => patch({ y: value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-neutral-800 bg-black/30 p-3">
+                    <RangeField
+                      icon={<RotateCw size={12} aria-hidden="true" />}
+                      label={isAr ? 'التدوير' : 'Rotation'}
+                      value={adjust.rotate}
+                      display={`${Math.round(adjust.rotate)}°`}
+                      min={-CAROUSEL_IMAGE_MAX_ROTATE}
+                      max={CAROUSEL_IMAGE_MAX_ROTATE}
+                      step={5}
+                      disabled={!hasPhoto}
+                      onChange={(value) => patch({ rotate: value })}
+                    />
+                    <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                      <ToolButton
+                        label={isAr ? 'تدوير 90 درجة لليسار' : 'Rotate 90° left'}
+                        onClick={() => patch({ rotate: adjust.rotate - 90 })}
+                        disabled={!hasPhoto}
+                      >
+                        <RotateCcw size={14} aria-hidden="true" />
+                        <span dir="ltr">90°</span>
+                      </ToolButton>
+                      <ToolButton
+                        label={isAr ? 'تدوير 90 درجة لليمين' : 'Rotate 90° right'}
+                        onClick={() => patch({ rotate: adjust.rotate + 90 })}
+                        disabled={!hasPhoto}
+                      >
+                        <RotateCw size={14} aria-hidden="true" />
+                        <span dir="ltr">90°</span>
+                      </ToolButton>
+                      <ToolButton
+                        label={isAr ? 'قلب أفقي' : 'Flip horizontally'}
+                        onClick={() => patch({ flipX: !adjust.flipX })}
+                        active={adjust.flipX === true}
+                        disabled={!hasPhoto}
+                      >
+                        <FlipHorizontal2 size={14} aria-hidden="true" />
+                        {isAr ? 'قلب أفقي' : 'Flip H'}
+                      </ToolButton>
+                      <ToolButton
+                        label={isAr ? 'قلب رأسي' : 'Flip vertically'}
+                        onClick={() => patch({ flipY: !adjust.flipY })}
+                        active={adjust.flipY === true}
+                        disabled={!hasPhoto}
+                      >
+                        <FlipVertical2 size={14} aria-hidden="true" />
+                        {isAr ? 'قلب رأسي' : 'Flip V'}
+                      </ToolButton>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={reset}
+                    disabled={!hasPhoto || isDefault}
+                    className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border border-neutral-700 bg-neutral-950 px-3 text-[11px] font-bold text-neutral-300 transition-colors hover:border-neutral-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <Undo2 size={14} aria-hidden="true" />
+                    {isAr ? 'إعادة ضبط الصورة' : 'Reset photo framing'}
+                  </button>
+                  <p className="text-[9.5px] leading-relaxed text-neutral-500">
                     {isAr
-                      ? 'التعديلات تُحفظ مع القائمة. استخدم «تغيير الصورة» من تبويب الأصناف لتغيير الصورة نفسها.'
-                      : 'Changes save with the menu. Use “Change photo” in the Items tab to replace the image itself.'}
+                      ? 'التعديلات تُحفظ مع القائمة، وتخص كاروسيل المميز فقط. لتغيير الصورة نفسها استخدم «تغيير الصورة» من تبويب الأصناف.'
+                      : 'Changes save with the menu and apply to the featured carousel only. To replace the photo itself, use “Change photo” in the Items tab.'}
                   </p>
                 </div>
               </div>

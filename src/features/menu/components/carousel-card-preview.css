@@ -1,0 +1,133 @@
+/* ==========================================================================
+   In-card carousel photo editor preview.
+   Reuses the storefront card CSS; these rules only add editing affordances
+   (drag cursor, focus ring, rule-of-thirds grid, empty-photo placeholder).
+   ========================================================================== */
+
+.cc-preview.fc-root {
+  max-width: none;
+  margin: 0;
+  padding-inline: 0;
+}
+
+.cc-preview.is-interactive .fc-photo {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cc-preview.is-interactive .fc-photo:active {
+  cursor: grabbing;
+}
+
+.cc-preview .fc-bar,
+.cc-preview .fc-add,
+.cc-preview .fc-qty-btn {
+  cursor: default;
+}
+
+.cc-heart {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.cc-preview:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 34px;
+}
+
+.cc-preview .fc-photo-adjust {
+  will-change: transform;
+}
+
+.cc-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.cc-grid > span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.cc-grid > span:nth-child(1) {
+  left: 33.333%;
+}
+
+.cc-grid > span:nth-child(2) {
+  left: 66.666%;
+}
+
+.cc-grid > i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.cc-grid > i:nth-of-type(1) {
+  top: 33.333%;
+}
+
+.cc-grid > i:nth-of-type(2) {
+  top: 66.666%;
+}
+
+.fc-root--light .cc-grid > span,
+.fc-root--light .cc-grid > i {
+  background: rgba(10, 10, 10, 0.28);
+}
+
+.cc-empty {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  color: var(--fc-muted-dark);
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.5;
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.035) 0,
+    rgba(255, 255, 255, 0.035) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+}
+
+.fc-root--light .cc-empty {
+  color: var(--fc-muted-light);
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(10, 10, 10, 0.04) 0,
+    rgba(10, 10, 10, 0.04) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+}

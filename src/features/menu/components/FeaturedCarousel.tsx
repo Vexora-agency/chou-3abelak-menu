@@ -443,6 +443,15 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     return () => window.clearInterval(id);
   }, [emblaApi, running, cycle, autoplayMs]);
 
+  // Changing the chosen cadence starts a fresh window immediately, so the
+  // dot fill and the timer always agree (no leftover partial old cycle).
+  const prevAutoplayMs = useRef(autoplayMs);
+  useEffect(() => {
+    if (prevAutoplayMs.current === autoplayMs) return;
+    prevAutoplayMs.current = autoplayMs;
+    setCycle((c) => c + 1);
+  }, [autoplayMs]);
+
   const handlePress = () => {
     pressingRef.current = true;
     setPaused(true);

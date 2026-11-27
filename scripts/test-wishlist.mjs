@@ -172,6 +172,27 @@ for (const path of surfaces) {
   const source = read(path);
   check(`${path.split('/').pop()} renders the member heart`, has(source, 'WishlistButton', 'itemId={item.id}'));
 }
+const featuredCarousel = read('src/features/menu/components/FeaturedCarousel.tsx');
+check(
+  'the featured card opens details on tap, not at the end of a swipe',
+  has(
+    featuredCarousel,
+    'className="fc-open"',
+    'onOpenDetails={compact ? undefined : openDetails}',
+    'suppressOpenUntilRef.current',
+    'onPointerMove={handlePointerMove}'
+  )
+);
+check(
+  'long featured names get a third line and a one-line description',
+  has(
+    read('src/features/menu/components/featured-carousel.css'),
+    '.fc-card.is-name-lg .fc-name',
+    '-webkit-line-clamp: 3',
+    '.fc-card.is-name-xl .fc-name',
+    '.fc-card.is-name-lg .fc-desc'
+  )
+);
 const itemModal = read('src/features/menu/components/ItemDetailsModal.tsx');
 check(
   'the item sheet puts a bare heart at the top beside Close',

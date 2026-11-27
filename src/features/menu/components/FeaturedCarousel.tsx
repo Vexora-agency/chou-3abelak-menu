@@ -72,14 +72,15 @@ function useSlidesPerView(): number {
   return perView;
 }
 
-interface PriceParts {
+export interface PriceParts {
   amount: string;
   currency?: string;
   unit?: string;
 }
 
-/** Amount / currency / unit split so each part can take its designed size. */
-function featuredPrice(
+/** Amount / currency / unit split so each part can take its designed size.
+ *  Shared with the admin in-card editor so both previews read identically. */
+export function featuredPrice(
   item: MenuItem,
   menu: MenuData,
   lang: 'en' | 'ar',
@@ -109,7 +110,7 @@ function featuredPrice(
   }
 }
 
-function badgeText(item: MenuItem, menu: MenuData, isAr: boolean): string {
+export function badgeText(item: MenuItem, menu: MenuData, isAr: boolean): string {
   const badges = effectiveBadges(menu, item);
   if (badges.includes('top')) return isAr ? 'الأكثر طلبًا' : 'BEST SELLER';
   if (badges.includes('new')) return isAr ? 'جديد' : 'NEW';
@@ -128,6 +129,8 @@ interface FeaturedCardProps {
   orderingEnabled: boolean;
   onAddToCart: (item: MenuItem, qty: number) => boolean;
   onOpenItem: (item: MenuItem) => void;
+  /** Whole-card tap → item sheet. Undefined in the admin preview. */
+  onOpenDetails?: (item: MenuItem) => void;
 }
 
 const FeaturedCard: React.FC<FeaturedCardProps> = ({
@@ -142,6 +145,7 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
   orderingEnabled,
   onAddToCart,
   onOpenItem,
+  onOpenDetails,
 }) => {
   const isAr = lang === 'ar';
   const pricing = normalizePricing(item);
@@ -158,6 +162,11 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
 
   const name = pickLangText(item.name, lang);
   const description = pickLangText(item.description, lang).trim();
+  // Card copy is fixed-height. Long names get a third line at a slightly
+  // smaller size; their description collapses to one line so the price and
+  // the action bar never collide. The full text lives in the item sheet.
+  const nameLength = name.trim().length;
+  const nameTier = nameLength > 38 ? ' is-name-xl' : nameLength > 24 ? ' is-name-lg' : '';
   const price = featuredPrice(item, menu, lang, currency);
   const badge = badgeText(item, menu, isAr);
   const hot = effectiveBadges(menu, item).includes('spicy');
@@ -196,7 +205,7 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
 
   return (
     <article
-      className={`fc-card${isGold ? ' is-gold' : ''}${active ? ' is-active' : ''}`}
+      className={`fc-card${isGold ? ' is-gold' : ''}${active ? ' is-active' : ''}${nameTier}`}
       data-testid={`featured-card-${item.id}`}
       aria-roledescription={isAr ? 'بطاقة' : 'card'}
     >
@@ -243,14 +252,25 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
 
       <div className="fc-text">
         {badge ? <span className="fc-badge">{badge}</span> : null}
-        <h3 className="fc-name">{name}</h3>
-        {description ? <p className="fc-desc">{description}</p> : null}
+        <h3 className="fc-name" title={name}>{name}</h3>
+        {description ? <p className="fc-desc" title={description}>{description}</p> : null}
         <div className="fc-price">
           <span dir="ltr">{price.amount}</span>
           {price.currency ? <small>{price.currency}</small> : null}
           {price.unit ? <em>{price.unit}</em> : null}
         </div>
       </div>
+
+      {onOpenDetails ? (
+        <button
+          type="button"
+          className="fc-open"
+          onClick={() => onOpenDetails(item)}
+          aria-label={isAr ? `عرض تفاصيل ${name}` : `View details for ${name}`}
+          title={name}
+          data-testid={`featured-card-open-${item.id}`}
+        />
+      ) : null}
 
       {orderingEnabled ? (
         <div className="fc-bar">
@@ -353,6 +373,11 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   const slidesPerView = useSlidesPerView();
   const titleId = useId();
   const pressingRef = useRef(false);
+  // Drag-vs-tap guard: a card opens details only on a real tap, never at the
+  // end of an Embla swipe.
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const draggedRef = useRef(false);
+  const suppressOpenUntilRef = useRef(0);
   const autoplayMs =
     Number.isFinite(autoplayIntervalMs) && autoplayIntervalMs >= 1000
       ? autoplayIntervalMs
@@ -452,9 +477,30 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     setCycle((c) => c + 1);
   }, [autoplayMs]);
 
-  const handlePress = () => {
+  const handlePress = (event: React.PointerEvent) => {
     pressingRef.current = true;
+    dragStartRef.current = { x: event.clientX, y: event.clientY };
+    draggedRef.current = false;
     setPaused(true);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent) => {
+    const start = dragStartRef.current;
+    if (!start || draggedRef.current) return;
+    if (Math.abs(event.clientX - start.x) > 8 || Math.abs(event.clientY - start.y) > 8) {
+      draggedRef.current = true;
+    }
+  };
+
+  const handlePointerUp = () => {
+    if (draggedRef.current) suppressOpenUntilRef.current = Date.now() + 350;
+    dragStartRef.current = null;
+    draggedRef.current = false;
+  };
+
+  const openDetails = (item: MenuItem) => {
+    if (Date.now() < suppressOpenUntilRef.current) return;
+    onOpenItem(item);
   };
 
   const goTo = (index: number) => {
@@ -468,6 +514,9 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
       className={`fc-root fc-root--${variant}${compact ? ' fc-root--compact' : ''}${className ? ` ${className}` : ''}`}
       aria-labelledby={titleId}
       onPointerDown={handlePress}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       style={
         {
           '--fc-autoplay': `${autoplayMs}ms`,
@@ -513,6 +562,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
                 orderingEnabled={orderingEnabled}
                 onAddToCart={onAddToCart}
                 onOpenItem={onOpenItem}
+                onOpenDetails={compact ? undefined : openDetails}
               />
             </div>
           ))}

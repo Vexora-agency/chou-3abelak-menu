@@ -274,8 +274,51 @@
   font-weight: 900;
   line-height: 1.25;
   overflow-wrap: anywhere;
+  text-wrap: balance;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+/* Long dish names: a third line at a slightly smaller size, and a one-line
+   description so the price/action bar keep their reserved space. The full
+   name and description stay available in the item sheet (card tap). */
+.fc-card.is-name-lg .fc-name {
+  font-size: 18px;
+  -webkit-line-clamp: 3;
+}
+
+.fc-card.is-name-xl .fc-name {
+  font-size: 16.5px;
+  letter-spacing: -0.01em;
+  -webkit-line-clamp: 3;
+}
+
+.fc-card.is-name-lg .fc-desc,
+.fc-card.is-name-xl .fc-desc {
+  -webkit-line-clamp: 1;
+}
+
+/* Whole-card details target. It sits above the photo/copy (z2) but below the
+   action bar (z3), so add/qty/wishlist keep their own hits. A real button
+   gives the card keyboard access without nesting controls in a button. */
+.fc-open {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fc-root .fc-open:focus-visible {
+  outline-offset: -4px;
 }
 
 .fc-card.is-gold .fc-name,
@@ -786,9 +829,10 @@
   font-size: 9px;
 }
 
-.fc-root--compact .fc-name {
+.fc-root--compact .fc-card .fc-name {
   font-size: 13px;
   line-height: 1.2;
+  -webkit-line-clamp: 2;
 }
 
 .fc-root--compact .fc-desc {

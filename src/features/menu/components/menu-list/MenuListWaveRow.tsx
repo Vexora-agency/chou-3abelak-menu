@@ -267,7 +267,7 @@ export const MenuListWaveRow: React.FC<MenuListWaveRowProps> = ({
             itemName={name}
             lang={lang}
             darkMode={bandIsDark}
-            tone="surface"
+            tone="overlay"
             size="sm"
           />
         </div>

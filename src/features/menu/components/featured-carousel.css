@@ -33,7 +33,7 @@
 
   /* Geometry and motion. */
   --fc-card-radius: 30px;
-  --fc-card-height: 240px;
+  --fc-card-height: 230px;
   --fc-gap: 12px;
   --fc-per-view: 1;
   --fc-autoplay: 5000ms;
@@ -296,6 +296,12 @@
 .fc-card.is-name-lg .fc-desc,
 .fc-card.is-name-xl .fc-desc {
   -webkit-line-clamp: 1;
+}
+
+/* Long name + a unit price line: keep the name and price, hide the
+   description (it remains one tap away in the item sheet). */
+.fc-card.is-dense .fc-desc {
+  display: none;
 }
 
 /* Whole-card details target. It sits above the photo/copy (z2) but below the

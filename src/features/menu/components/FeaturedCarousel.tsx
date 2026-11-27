@@ -168,6 +168,9 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
   const nameLength = name.trim().length;
   const nameTier = nameLength > 38 ? ' is-name-xl' : nameLength > 24 ? ' is-name-lg' : '';
   const price = featuredPrice(item, menu, lang, currency);
+  // Long name + unit line: drop the description rather than let the price
+  // collide with the action bar on the shorter card.
+  const dense = Boolean(nameTier && price.unit);
   const badge = badgeText(item, menu, isAr);
   const hot = effectiveBadges(menu, item).includes('spicy');
   const isGold = index % 2 === 1;
@@ -205,7 +208,7 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
 
   return (
     <article
-      className={`fc-card${isGold ? ' is-gold' : ''}${active ? ' is-active' : ''}${nameTier}`}
+      className={`fc-card${isGold ? ' is-gold' : ''}${active ? ' is-active' : ''}${nameTier}${dense ? ' is-dense' : ''}`}
       data-testid={`featured-card-${item.id}`}
       aria-roledescription={isAr ? 'بطاقة' : 'card'}
     >

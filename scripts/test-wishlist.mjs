@@ -193,6 +193,19 @@ check(
     '.fc-card.is-name-lg .fc-desc'
   )
 );
+check(
+  'the wave heart uses the same glass overlay tone as the rest of the menu',
+  has(
+    read('src/features/menu/components/menu-list/MenuListWaveRow.tsx'),
+    'darkMode={bandIsDark}',
+    'tone="overlay"',
+    'size="sm"'
+  ) && !read('src/features/menu/components/menu-list/MenuListWaveRow.tsx').includes('tone="surface"')
+);
+check(
+  'the storefront carousel card is 10px shorter',
+  has(read('src/features/menu/components/featured-carousel.css'), '--fc-card-height: 230px')
+);
 const itemModal = read('src/features/menu/components/ItemDetailsModal.tsx');
 check(
   'the item sheet puts a bare heart at the top beside Close',

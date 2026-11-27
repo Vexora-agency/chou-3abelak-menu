@@ -14,6 +14,7 @@ import {
 } from '@/src/utils/pricing';
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { WishlistButton } from '@/src/features/wishlist';
+import { carouselImageTransform } from '@/src/utils/carouselImage';
 import './featured-carousel.css';
 
 export interface FeaturedCarouselProps {
@@ -35,6 +36,8 @@ export interface FeaturedCarouselProps {
   autoplayIntervalMs?: number;
   /** Optional layout classes from the page (e.g. vertical rhythm). */
   className?: string;
+  /** Small single-card preview used by the admin settings (no title). */
+  compact?: boolean;
 }
 
 /** The approved progress duration. Keep in sync with --fc-autoplay in CSS. */
@@ -158,6 +161,7 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
   const hot = effectiveBadges(menu, item).includes('spicy');
   const isGold = index % 2 === 1;
   const showPhoto = Boolean(item.imageUrl) && !imageFailed;
+  const imageTransform = carouselImageTransform(item.carouselImage);
 
   const decrease = () => setQty((q) => Math.max(pricing.minQty, q - pricing.step));
   const increase = () => setQty((q) => Math.min(pricing.maxQty, q + pricing.step));
@@ -189,17 +193,22 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
     >
       <div className="fc-photo" aria-hidden="true">
         {showPhoto ? (
-          <SmartMenuImage
-            item={item}
-            name=""
-            sizes="280px"
-            width={800}
-            height={800}
-            eager={eager}
-            plain
-            onError={() => setImageFailed(true)}
-            className="fc-photo-img"
-          />
+          <div
+            className="fc-photo-adjust"
+            style={imageTransform ? { transform: imageTransform } : undefined}
+          >
+            <SmartMenuImage
+              item={item}
+              name=""
+              sizes="280px"
+              width={800}
+              height={800}
+              eager={eager}
+              plain
+              onError={() => setImageFailed(true)}
+              className="fc-photo-img"
+            />
+          </div>
         ) : null}
       </div>
 
@@ -317,6 +326,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   autoplay = true,
   autoplayIntervalMs = AUTOPLAY_MS,
   className = '',
+  compact = false,
 }) => {
   const isAr = lang === 'ar';
   const isLight = variant === 'light';
@@ -327,7 +337,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
     Number.isFinite(autoplayIntervalMs) && autoplayIntervalMs >= 1000
       ? autoplayIntervalMs
       : AUTOPLAY_MS;
-  const perView = Math.min(slidesPerView, Math.max(1, items.length));
+  const perView = Math.min(compact ? 1 : slidesPerView, Math.max(1, items.length));
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: true,
@@ -426,7 +436,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
 
   return (
     <section
-      className={`fc-root fc-root--${variant}${className ? ` ${className}` : ''}`}
+      className={`fc-root fc-root--${variant}${compact ? ' fc-root--compact' : ''}${className ? ` ${className}` : ''}`}
       aria-labelledby={titleId}
       onPointerDown={handlePress}
       style={

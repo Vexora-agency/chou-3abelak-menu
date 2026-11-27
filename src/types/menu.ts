@@ -13,6 +13,23 @@ export interface ItemPricing {
   showUnit: boolean;
 }
 
+/**
+ * Non-destructive framing for the featured-carousel photo only. It never
+ * changes the item photo used by the rest of the storefront.
+ * - scale: 0.8–2.5 (1 = cover)
+ * - x / y: pan in percent of the photo frame (-50..50)
+ * - rotate: degrees (-180..180)
+ * - flipX / flipY: mirror on that axis
+ */
+export interface CarouselImageAdjust {
+  scale: number;
+  x: number;
+  y: number;
+  rotate: number;
+  flipX?: boolean;
+  flipY?: boolean;
+}
+
 /** Optional admin color for the feature library. Purely cosmetic: the admin
  *  Libraries tab uses it to tell sections/options apart. The customer
  *  storefront keeps one unified brand color (heat stays red). */
@@ -128,6 +145,9 @@ export interface MenuItem {
       data:). Frontend builds srcset as `s 400w, m 800w, imageUrl <w>w`;
       missing variants fall back to imageUrl alone. */
   imageVariants?: { s?: string; m?: string };
+  /** Optional framing used ONLY by the featured carousel photo. The item
+      photo itself stays untouched everywhere else. */
+  carouselImage?: CarouselImageAdjust;
   /** Opt out of heat entirely: no heat section is offered for this item
       (normalize strips any heat rows and never injects them), even though it
       has other add-ons. For drinks, desserts and other never-spicy items.

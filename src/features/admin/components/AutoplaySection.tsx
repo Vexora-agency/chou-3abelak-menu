@@ -125,6 +125,7 @@ export const AutoplaySection: React.FC<AutoplaySectionProps> = ({
               autoplay={on}
               autoplayIntervalMs={every * 1000}
               orderingEnabled={false}
+              compact
             />
             {demoClone && (
               <p className="px-4 pb-3 -mt-1 text-center text-[10px] text-neutral-500">

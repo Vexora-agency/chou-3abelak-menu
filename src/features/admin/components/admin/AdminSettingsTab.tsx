@@ -23,6 +23,7 @@ import { PaymentsSection } from '../PaymentsSection';
 import { SoundsSection } from '../SoundsSection';
 import { NotifyEmailSection } from '../NotifyEmailSection';
 import { AutoplaySection } from '../AutoplaySection';
+import { CarouselImagesSection } from '../CarouselImagesSection';
 import { SeasonalSection } from '../SeasonalSection';
 
 interface AdminSettingsTabProps {
@@ -403,6 +404,14 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
               return { ...m, settings: { ...m.settings, ...next } };
             })
           }
+        />
+
+        <CarouselImagesSection
+          collapsed={!!collapsedGroups['carousel-images']}
+          onToggleCollapse={() => onToggleCollapse('carousel-images')}
+          menu={menu}
+          lang={lang}
+          onUpdateMenu={onUpdateMenu}
         />
 
         <ShowMoreSection

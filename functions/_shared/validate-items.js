@@ -335,6 +335,27 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
       }
       // Non-object imageVariants is dropped silently (no item rejection).
     }
+    // Optional carousel-only framing (non-destructive; the item photo stays
+    // untouched everywhere else). Garbage/default values are dropped.
+    let carouselImage;
+    if (item.carouselImage !== undefined && item.carouselImage !== null) {
+      const ci = item.carouselImage;
+      if (ci && typeof ci === 'object' && !Array.isArray(ci)) {
+        const num = (v, min, max, fallback) =>
+          typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : fallback;
+        const scale = Math.round(num(ci.scale, 0.8, 2.5, 1) * 100) / 100;
+        const cx = Math.round(num(ci.x, -50, 50, 0) * 10) / 10;
+        const cy = Math.round(num(ci.y, -50, 50, 0) * 10) / 10;
+        const rotate = Math.round(num(ci.rotate, -180, 180, 0));
+        const flipX = ci.flipX === true;
+        const flipY = ci.flipY === true;
+        if (scale !== 1 || cx !== 0 || cy !== 0 || rotate !== 0 || flipX || flipY) {
+          carouselImage = { scale, x: cx, y: cy, rotate };
+          if (flipX) carouselImage.flipX = true;
+          if (flipY) carouselImage.flipY = true;
+        }
+      }
+    }
     const cleanItem = {
       id,
       categoryId,
@@ -347,6 +368,7 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
     };
     if (imageUrl) cleanItem.imageUrl = imageUrl;
     if (imageVariants) cleanItem.imageVariants = imageVariants;
+    if (carouselImage) cleanItem.carouselImage = carouselImage;
     if (item.noHeat === true) cleanItem.noHeat = true;
     if (variants) cleanItem.variants = variants;
     // Explicit default (★ marks in place, order untouched): must point at a size.

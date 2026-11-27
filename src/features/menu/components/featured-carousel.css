@@ -156,6 +156,16 @@
   pointer-events: none;
 }
 
+.fc-photo-adjust {
+  position: absolute;
+  inset: 0;
+  transform-origin: center;
+}
+
+.fc-root--light .fc-photo {
+  background: var(--fc-white);
+}
+
 .fc-photo-img {
   display: block;
   width: 100%;
@@ -730,4 +740,89 @@
   .fc-dots {
     margin-top: 12px;
   }
+}
+
+/* --------------------------------------------------------------------------
+   Admin preview: small single-card carousel (no stage, no title).
+   -------------------------------------------------------------------------- */
+
+.fc-root--compact {
+  max-width: 100%;
+  padding-inline: 0;
+}
+
+.fc-root--compact .fc-head {
+  display: none;
+}
+
+.fc-root--compact .fc-viewport {
+  padding: 0;
+}
+
+.fc-root--compact .fc-track {
+  gap: 8px;
+}
+
+.fc-root--compact .fc-card {
+  height: 150px;
+  border-radius: 18px;
+}
+
+.fc-root--compact .fc-photo {
+  width: 64%;
+  aspect-ratio: auto;
+}
+
+.fc-root--compact .fc-text {
+  top: 8px;
+  right: 8px;
+  width: 40%;
+  padding-left: 4px;
+}
+
+.fc-root--compact .fc-badge {
+  margin-bottom: 3px;
+  padding: 2px 7px;
+  font-size: 9px;
+}
+
+.fc-root--compact .fc-name {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.fc-root--compact .fc-desc {
+  display: none;
+}
+
+.fc-root--compact .fc-price {
+  font-size: 16px;
+}
+
+.fc-root--compact .fc-price small {
+  margin-inline-start: 3px;
+  font-size: 9px;
+}
+
+.fc-root--compact .fc-price em {
+  margin-top: 1px;
+  font-size: 9px;
+}
+
+.fc-root--compact .fc-dots {
+  margin-top: 8px;
+}
+
+.fc-root--compact .fc-dot-btn {
+  min-width: 18px;
+  height: 30px;
+}
+
+.fc-root--compact .fc-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.fc-root--compact .fc-dot.is-active {
+  width: 26px;
 }

@@ -3,7 +3,8 @@
 // announcement + privacy blocks (reading them unguarded crashes render).
 // Run: npx tsx scripts/test-settings-defaults.ts
 import { ensureSettingsBlocks, formatHoursRange, formatTime12h, isOpenNow } from '../src/utils/menuHelpers';
-import type { MenuData } from '../src/types/menu';
+import { hasCustomCarouselDescription, pickCarouselDescription } from '../src/utils/carouselDescription';
+import type { MenuData, MenuItem } from '../src/types/menu';
 
 let pass = 0;
 let fail = 0;
@@ -163,6 +164,44 @@ const baseMenu = (settings: unknown): MenuData => ({
   }
   const noBlock = ensureSettingsBlocks(baseMenu({ ordering: {} }));
   ok(noBlock.settings.seasonal.theme === 'off', 'seasonal fills when block missing');
+}
+
+// 10. Carousel-only description: custom wins per language, otherwise the
+// item description is used (the storefront and admin preview share this).
+{
+  const item = {
+    id: 'demo',
+    categoryId: 'demo',
+    name: { en: 'Demo', ar: 'تجربة' },
+    description: { en: 'Item copy', ar: 'وصف الصنف' },
+    pricing: { price: 1 },
+  } as unknown as MenuItem;
+
+  ok(pickCarouselDescription(item, 'en') === 'Item copy', 'carousel desc falls back to item (en)');
+  ok(pickCarouselDescription(item, 'ar') === 'وصف الصنف', 'carousel desc falls back to item (ar)');
+  ok(hasCustomCarouselDescription(item) === false, 'no custom carousel desc by default');
+
+  const arOnly = {
+    ...item,
+    carouselDescription: { ar: 'وصف الكاروسيل', en: '' },
+  } as MenuItem;
+  ok(pickCarouselDescription(arOnly, 'ar') === 'وصف الكاروسيل', 'custom carousel desc wins (ar)');
+  ok(pickCarouselDescription(arOnly, 'en') === 'Item copy', 'other language falls back to item');
+  ok(hasCustomCarouselDescription(arOnly) === true, 'one-language custom is detected');
+
+  const blank = {
+    ...item,
+    carouselDescription: { ar: '   ', en: '\t' },
+  } as MenuItem;
+  ok(pickCarouselDescription(blank, 'ar') === 'وصف الصنف', 'blank custom falls back (ar)');
+  ok(hasCustomCarouselDescription(blank) === false, 'blank custom is not considered custom');
+
+  const both = {
+    ...item,
+    carouselDescription: { ar: 'كاروسيل عربي', en: 'Carousel EN' },
+  } as MenuItem;
+  ok(pickCarouselDescription(both, 'ar') === 'كاروسيل عربي', 'custom wins (ar both)');
+  ok(pickCarouselDescription(both, 'en') === 'Carousel EN', 'custom wins (en both)');
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

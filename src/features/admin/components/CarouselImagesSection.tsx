@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Copy,
   Crosshair,
   FlipHorizontal2,
   FlipVertical2,
@@ -19,6 +20,10 @@ import {
 import type { CarouselImageAdjust, MenuData } from '@/src/types/menu';
 import { CarouselCardPreview } from '@/src/features/menu';
 import { pickLangText } from '@/src/utils/menuHelpers';
+import {
+  CAROUSEL_DESCRIPTION_MAX,
+  hasCustomCarouselDescription,
+} from '@/src/utils/carouselDescription';
 import {
   CAROUSEL_IMAGE_MAX_PAN,
   CAROUSEL_IMAGE_MAX_ROTATE,
@@ -98,9 +103,10 @@ const ToolButton: React.FC<{
 );
 
 /**
- * Per-card carousel photo framing. The adjustments live on the item as
- * `carouselImage` and are applied ONLY by the featured carousel — the item
- * photo used everywhere else stays exactly as it is.
+ * Per-card carousel editor. The photo framing lives on the item as
+ * `carouselImage`, and the optional carousel-only copy lives as
+ * `carouselDescription`; both are applied ONLY by the featured carousel — the
+ * item photo and description used everywhere else stay exactly as they are.
  *
  * The editor shows the actual card (photo + text + action bar) and lets the
  * owner drag the photo directly inside it, so framing is judged in context.
@@ -125,6 +131,21 @@ export const CarouselImagesSection: React.FC<CarouselImagesSectionProps> = ({
   const adjust = active ? normalizeCarouselImage(active.carouselImage) : null;
   const hasPhoto = Boolean(active?.imageUrl);
   const isDefault = adjust ? isDefaultCarouselImage(adjust) : true;
+  const itemDescription = {
+    en: typeof active?.description?.en === 'string' ? active.description.en : '',
+    ar: typeof active?.description?.ar === 'string' ? active.description.ar : '',
+  };
+  const hasItemDescription = Boolean(
+    itemDescription.en.trim() || itemDescription.ar.trim()
+  );
+  const itemDescriptionPreview =
+    pickLangText(itemDescription, lang) || itemDescription.en || itemDescription.ar;
+  const customDescription = active?.carouselDescription;
+  const hasCustomDescription = active ? hasCustomCarouselDescription(active) : false;
+  const descriptionEn =
+    typeof customDescription?.en === 'string' ? customDescription.en : '';
+  const descriptionAr =
+    typeof customDescription?.ar === 'string' ? customDescription.ar : '';
 
   const patch = (next: Partial<CarouselImageAdjust>) => {
     if (!active || !adjust) return;
@@ -158,14 +179,62 @@ export const CarouselImagesSection: React.FC<CarouselImagesSectionProps> = ({
   const panDisplay = (value: number) =>
     `${value > 0 ? '+' : ''}${Math.round(value)}%`;
 
+  const setDescriptionField = (key: 'en' | 'ar', value: string) => {
+    if (!active) return;
+    const current = {
+      en: typeof active.carouselDescription?.en === 'string' ? active.carouselDescription.en : '',
+      ar: typeof active.carouselDescription?.ar === 'string' ? active.carouselDescription.ar : '',
+    };
+    const next = { ...current, [key]: value.slice(0, CAROUSEL_DESCRIPTION_MAX) };
+    onUpdateMenu((prev) => ({
+      ...prev,
+      items: prev.items.map((item) => {
+        if (item.id !== active.id) return item;
+        if (!next.en.trim() && !next.ar.trim()) {
+          const { carouselDescription: _dropped, ...rest } = item;
+          void _dropped;
+          return rest;
+        }
+        return { ...item, carouselDescription: next };
+      }),
+    }));
+  };
+
+  const useItemDescription = () => {
+    if (!active || !hasItemDescription) return;
+    const next = {
+      en: (itemDescription.en ?? '').slice(0, CAROUSEL_DESCRIPTION_MAX),
+      ar: (itemDescription.ar ?? '').slice(0, CAROUSEL_DESCRIPTION_MAX),
+    };
+    onUpdateMenu((prev) => ({
+      ...prev,
+      items: prev.items.map((item) =>
+        item.id === active.id ? { ...item, carouselDescription: next } : item
+      ),
+    }));
+  };
+
+  const clearCustomDescription = () => {
+    if (!active) return;
+    onUpdateMenu((prev) => ({
+      ...prev,
+      items: prev.items.map((item) => {
+        if (item.id !== active.id) return item;
+        const { carouselDescription: _dropped, ...rest } = item;
+        void _dropped;
+        return rest;
+      }),
+    }));
+  };
+
   return (
     <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
       <SettingsGroupHeader
-        title={isAr ? 'صور الكاروسيل' : 'Carousel Images'}
+        title={isAr ? 'بطاقات الكاروسيل' : 'Carousel Cards'}
         subtitle={
           isAr
-            ? 'اضبط الصورة داخل بطاقة الكاروسيل نفسها: اسحبها، كبّرها أو صغّرها، وشاهد النتيجة كما تظهر في الموقع.'
-            : 'Frame the photo inside the real carousel card: drag, zoom and see exactly how it looks on the site.'
+            ? 'اضبط صورة كل بطاقة ووصفها داخل شكلها الحقيقي: اسحب الصورة أو كبّرها، واكتب وصفًا خاصًا بالكاروسيل إن أردت.'
+            : 'Frame each card photo and write its copy inside the real card: drag or zoom the photo, and add a carousel-only description when needed.'
         }
         lang={lang}
         collapsed={collapsed}
@@ -181,7 +250,7 @@ export const CarouselImagesSection: React.FC<CarouselImagesSectionProps> = ({
           <p className="rounded-xl border border-dashed border-neutral-700 px-4 py-3 text-center text-[11px] text-neutral-500">
             {isAr
               ? 'لا توجد أصناف مميزة بعد — علّم أي صنف بـ «مميز» ليظهر هنا.'
-              : 'No featured items yet — star an item as Featured to edit its carousel photo here.'}
+              : 'No featured items yet — star an item as Featured to edit its carousel card here.'}
           </p>
         ) : (
           <div className="space-y-3">
@@ -233,7 +302,8 @@ export const CarouselImagesSection: React.FC<CarouselImagesSectionProps> = ({
             </div>
 
             {active && adjust ? (
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
+              <div className="space-y-3">
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)]">
                 <div className="min-w-0">
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <div className="min-w-0">
@@ -491,6 +561,130 @@ export const CarouselImagesSection: React.FC<CarouselImagesSectionProps> = ({
                       : 'Changes save with the menu and apply to the featured carousel only. To replace the photo itself, use “Change photo” in the Items tab.'}
                   </p>
                 </div>
+              </div>
+
+              <div className="rounded-2xl border border-neutral-800 bg-black/30 p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <p className="text-[11px] font-bold text-neutral-200">
+                        {isAr ? 'وصف الكاروسيل' : 'Carousel description'}
+                      </p>
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${
+                          hasCustomDescription
+                            ? 'border-[var(--primary)]/30 bg-[var(--primary)]/15 text-[var(--primary)]'
+                            : 'border-neutral-700 bg-neutral-800 text-neutral-400'
+                        }`}
+                      >
+                        {hasCustomDescription
+                          ? isAr
+                            ? 'وصف مخصص'
+                            : 'Custom copy'
+                          : isAr
+                            ? 'يتبع وصف الصنف'
+                            : 'Uses item description'}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[9.5px] leading-relaxed text-neutral-500">
+                      {isAr
+                        ? 'نص يظهر في بطاقة الكاروسيل فقط، ولا يغيّر وصف الصنف في القائمة أو صفحة التفاصيل.'
+                        : 'Copy shown in the carousel card only; it never changes the item description in the menu or details sheet.'}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {hasItemDescription ? (
+                      <button
+                        type="button"
+                        onClick={useItemDescription}
+                        className="inline-flex min-h-[36px] items-center gap-1 rounded-lg border border-[var(--primary)]/30 bg-[var(--primary)]/10 px-2 text-[10px] font-bold text-[var(--primary)] transition-colors hover:border-[var(--primary)]/60 hover:bg-[var(--primary)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                      >
+                        <Copy size={13} aria-hidden="true" />
+                        {isAr ? 'استخدام وصف الصنف' : 'Use item description'}
+                      </button>
+                    ) : null}
+                    {hasCustomDescription ? (
+                      <button
+                        type="button"
+                        onClick={clearCustomDescription}
+                        className="inline-flex min-h-[36px] items-center gap-1 rounded-lg border border-neutral-700 bg-neutral-950 px-2 text-[10px] font-bold text-neutral-300 transition-colors hover:border-neutral-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                      >
+                        <Undo2 size={13} aria-hidden="true" />
+                        {isAr ? 'مسح الوصف المخصص' : 'Clear custom copy'}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+
+                {hasItemDescription ? (
+                  <p className="mt-1.5 rounded-lg bg-neutral-950/60 px-2.5 py-2 text-[9.5px] leading-relaxed text-neutral-500">
+                    <span className="font-bold text-neutral-400">
+                      {isAr ? 'وصف الصنف الحالي: ' : 'Current item description: '}
+                    </span>
+                    <span className="line-clamp-2">{itemDescriptionPreview}</span>
+                  </p>
+                ) : (
+                  <p className="mt-1.5 rounded-lg border border-dashed border-neutral-700 px-2.5 py-2 text-[9.5px] leading-relaxed text-neutral-500">
+                    {isAr
+                      ? 'لا يوجد وصف للصنف — اكتب وصفًا خاصًا بالكاروسيل هنا.'
+                      : 'This item has no description — write a carousel-only one here.'}
+                  </p>
+                )}
+
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-0.5 flex items-center justify-between gap-2 text-[10px] font-bold text-neutral-400">
+                      <span>{isAr ? 'الوصف بالعربية' : 'Arabic description'}</span>
+                      <span className="tabular-nums text-neutral-500" dir="ltr">
+                        {descriptionAr.length}/{CAROUSEL_DESCRIPTION_MAX}
+                      </span>
+                    </span>
+                    <textarea
+                      rows={3}
+                      maxLength={CAROUSEL_DESCRIPTION_MAX}
+                      value={descriptionAr}
+                      onChange={(event) => setDescriptionField('ar', event.target.value)}
+                      dir="rtl"
+                      placeholder={
+                        isAr
+                          ? 'اكتب وصفًا قصيرًا يظهر في بطاقة الكاروسيل...'
+                          : 'Arabic carousel-only copy…'
+                      }
+                      className="w-full resize-y rounded-xl border border-neutral-700 bg-neutral-950 px-2.5 py-2 text-xs leading-relaxed text-white placeholder:text-neutral-600 focus:border-[var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-0.5 flex items-center justify-between gap-2 text-[10px] font-bold text-neutral-400">
+                      <span>{isAr ? 'الوصف بالإنجليزية' : 'English description'}</span>
+                      <span className="tabular-nums text-neutral-500" dir="ltr">
+                        {descriptionEn.length}/{CAROUSEL_DESCRIPTION_MAX}
+                      </span>
+                    </span>
+                    <textarea
+                      rows={3}
+                      maxLength={CAROUSEL_DESCRIPTION_MAX}
+                      value={descriptionEn}
+                      onChange={(event) => setDescriptionField('en', event.target.value)}
+                      dir="ltr"
+                      placeholder={
+                        isAr
+                          ? 'English carousel-only copy…'
+                          : 'Write a short carousel-only description…'
+                      }
+                      className="w-full resize-y rounded-xl border border-neutral-700 bg-neutral-950 px-2.5 py-2 text-xs leading-relaxed text-white placeholder:text-neutral-600 focus:border-[var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+                    />
+                  </label>
+                </div>
+                <p className="mt-1.5 text-[9px] leading-relaxed text-neutral-500">
+                  {hasCustomDescription
+                    ? isAr
+                      ? 'هذا النص يظهر في الكاروسيل فقط. اترك لغة فارغة لاستخدام وصف الصنف بها.'
+                      : 'This copy appears in the carousel only. Leave a language empty to use the item description there.'
+                    : isAr
+                      ? 'لا يوجد وصف مخصص بعد؛ يعرض الكاروسيل وصف الصنف تلقائيًا. اكتب هنا لتخصيصه.'
+                      : 'No custom copy yet — the carousel currently shows the item description. Write here to override it.'}
+                </p>
+              </div>
               </div>
             ) : null}
           </div>

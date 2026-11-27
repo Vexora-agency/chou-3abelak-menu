@@ -2,7 +2,7 @@
  * Item validation for restaurant menu documents (pricing, variants, add-ons, legacy migration).
  * Single consumer: the validate.js orchestrator (via validate-catalog re-export).
  */
-import { validateBilingual, ID_REGEX, stripControls } from './validate-core.js';
+import { validateBilingual, validateBilingualOpt, ID_REGEX, stripControls } from './validate-core.js';
 
 /**
  * Validates the items array (pricing, variants, add-ons, legacy migration).
@@ -335,6 +335,12 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
       }
       // Non-object imageVariants is dropped silently (no item rejection).
     }
+    // Optional carousel-only description (never touches the item's own copy).
+    // Empty/garbage values are dropped so the storefront falls back cleanly.
+    const carouselDescription = validateBilingualOpt(item.carouselDescription, 300);
+    const hasCarouselDescription = Boolean(
+      carouselDescription.en.trim() || carouselDescription.ar.trim()
+    );
     // Optional carousel-only framing (non-destructive; the item photo stays
     // untouched everywhere else). Garbage/default values are dropped.
     let carouselImage;
@@ -368,6 +374,7 @@ function validateItems(items, errors, categoryIds, legacyGroups, featureById, en
     };
     if (imageUrl) cleanItem.imageUrl = imageUrl;
     if (imageVariants) cleanItem.imageVariants = imageVariants;
+    if (hasCarouselDescription) cleanItem.carouselDescription = carouselDescription;
     if (carouselImage) cleanItem.carouselImage = carouselImage;
     if (item.noHeat === true) cleanItem.noHeat = true;
     if (variants) cleanItem.variants = variants;

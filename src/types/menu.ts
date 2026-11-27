@@ -145,6 +145,10 @@ export interface MenuItem {
       data:). Frontend builds srcset as `s 400w, m 800w, imageUrl <w>w`;
       missing variants fall back to imageUrl alone. */
   imageVariants?: { s?: string; m?: string };
+  /** Optional description used ONLY by the featured carousel. Each language
+      falls back to the item's own `description` when empty, so the item card,
+      menu list and details sheet keep their original copy. */
+  carouselDescription?: { en: string; ar: string };
   /** Optional framing used ONLY by the featured carousel photo. The item
       photo itself stays untouched everywhere else. */
   carouselImage?: CarouselImageAdjust;

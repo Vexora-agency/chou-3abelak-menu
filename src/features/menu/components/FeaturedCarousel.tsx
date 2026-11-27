@@ -16,6 +16,7 @@ import {
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { WishlistButton } from '@/src/features/wishlist';
 import { carouselImageTransform } from '@/src/utils/carouselImage';
+import { pickCarouselDescription } from '@/src/utils/carouselDescription';
 import './featured-carousel.css';
 
 export interface FeaturedCarouselProps {
@@ -161,7 +162,7 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
   }, []);
 
   const name = pickLangText(item.name, lang);
-  const description = pickLangText(item.description, lang).trim();
+  const description = pickCarouselDescription(item, lang);
   // Card copy is fixed-height. Long names get a third line at a slightly
   // smaller size; their description collapses to one line so the price and
   // the action bar never collide. The full text lives in the item sheet.

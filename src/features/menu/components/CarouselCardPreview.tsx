@@ -14,6 +14,7 @@ import {
   CAROUSEL_IMAGE_MIN_SCALE,
   carouselImageTransform,
 } from '@/src/utils/carouselImage';
+import { pickCarouselDescription } from '@/src/utils/carouselDescription';
 import { SmartMenuImage } from '@/src/components/SmartMenuImage';
 import { badgeText, featuredPrice } from './FeaturedCarousel';
 import './carousel-card-preview.css';
@@ -92,7 +93,7 @@ export const CarouselCardPreview: React.FC<CarouselCardPreviewProps> = ({
 
   const isGold = index % 2 === 1;
   const name = pickLangText(item.name, lang);
-  const description = pickLangText(item.description, lang).trim();
+  const description = pickCarouselDescription(item, lang);
   const nameLength = name.trim().length;
   const nameTier = nameLength > 38 ? ' is-name-xl' : nameLength > 24 ? ' is-name-lg' : '';
   const price = featuredPrice(item, menu, lang, menu.settings.currency[lang] || menu.settings.currency.en);

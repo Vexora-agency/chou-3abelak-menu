@@ -313,7 +313,8 @@ export const PHONE_VERIFY_STR = {
     smsErrorFailed: 'Could not send the SMS. Check the number or use WhatsApp.',
     smsCooldown: 'Please wait a moment before requesting another SMS.',
     waiting: 'Confirming your number automatically…',
-    currentCodeHint: 'Send the code shown above, from this same number. Ignore any older message.',
+    currentCodeHint:
+      'Send the code shown above from the same WhatsApp number displayed here. A message from a different number will not confirm it.',
     expiresIn: 'Code expires in',
     expired: 'This code expired.',
     getCode: 'Get my code',
@@ -385,7 +386,8 @@ export const PHONE_VERIFY_STR = {
     smsErrorFailed: 'تعذّر إرسال رسالة SMS. تحقق من الرقم أو استخدم واتساب.',
     smsCooldown: 'يرجى الانتظار لحظة قبل طلب رسالة SMS جديدة.',
     waiting: 'جارٍ تأكيد رقمك تلقائيًا…',
-    currentCodeHint: 'أرسل الرمز الظاهر أعلاه من نفس هذا الرقم، وتجاهل أي رسالة أقدم.',
+    currentCodeHint:
+      'أرسل الرمز الظاهر أعلاه من رقم واتساب نفسه المعروض هنا. الرسالة من رقم مختلف لن تؤكد الرقم.',
     expiresIn: 'تنتهي الصلاحية بعد',
     expired: 'انتهت صلاحية هذا الرمز.',
     getCode: 'أرسل لي رمزًا',

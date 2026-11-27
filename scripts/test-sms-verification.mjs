@@ -254,6 +254,10 @@ check(
   'sheet shows the cancelled-after-phone-change reason',
   sheet.includes("verification.smsError === 'phone_changed'") && sheet.includes('t.smsErrorPhoneChanged')
 );
+check(
+  'sheet shows the linked-account reason for an SMS ownership conflict',
+  sheet.includes("verification.smsError === 'phone_linked_other_account'") && sheet.includes('t.errorPhoneLinked')
+);
 check('sheet shows SMS only for the SMS method', sheet.includes("active?.method === 'sms'"));
 
 const accountsTab = read('src/features/admin/components/admin/AdminCustomersTab.tsx');

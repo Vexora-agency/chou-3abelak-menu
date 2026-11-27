@@ -27,6 +27,8 @@ export const WHATSAPP_REPLIES = Object.freeze({
     missing: '✍️ Send the 6-digit verification code shown on the site.',
     conflict:
       'This number is linked to another member account. Use your own number or contact us.',
+    wrongNumber:
+      '⚠️ This code is for a different phone number. Open the site, check the number you entered, then send the code from that same WhatsApp number.',
   },
   ar: {
     success: '✅ تم تأكيد رقمك بنجاح. يمكنك العودة إلى الموقع الآن.',
@@ -36,6 +38,8 @@ export const WHATSAPP_REPLIES = Object.freeze({
       '⌛ انتهت صلاحية رمز التحقق أو لم يعد الطلب فعالًا. اطلب رمزًا جديدًا من الموقع ثم أرسله هنا.',
     missing: '✍️ أرسل رمز التحقق المكوّن من 6 أرقام كما يظهر في الموقع.',
     conflict: 'هذا الرقم مرتبط بحساب عضو آخر. استخدم رقمك أو تواصل معنا.',
+    wrongNumber:
+      '⚠️ هذا الرمز يخص رقم هاتف آخر. افتح الموقع، وتحقق من الرقم الذي أدخلته، ثم أرسل الرمز من رقم واتساب نفسه.',
   },
 });
 

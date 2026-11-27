@@ -148,7 +148,8 @@ export function PhoneVerificationSheet({
   };
 
   const verified = verification.phase === 'verified';
-  const phoneTaken = verification.error === 'phone_linked_other_account';
+  const phoneTaken = verification.error === 'phone_linked_other_account'
+    || verification.smsError === 'phone_linked_other_account';
   const errorText = verification.error === 'rate_limited'
     ? t.errorRate
     : verification.error === 'cooldown'
@@ -174,6 +175,8 @@ export function PhoneVerificationSheet({
         ? t.smsErrorExpired
         : verification.smsError === 'phone_changed'
           ? t.smsErrorPhoneChanged
+          : verification.smsError === 'phone_linked_other_account'
+          ? t.errorPhoneLinked
           : verification.smsError === 'sms_unavailable'
           ? t.smsErrorUnavailable
           : verification.smsError === 'sms_verify_failed'
@@ -336,7 +339,7 @@ export function PhoneVerificationSheet({
                 <div className="space-y-4">
                   <div className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-2.5 ${subtleCard}`}>
                     <span className={`text-[10.5px] font-bold ${muted}`}>{t.numberLabel}</span>
-                    <b className="text-[13px] font-black tabular-nums" dir="ltr">+{phone || '—'}</b>
+                    <b className="text-[13px] font-black tabular-nums" dir="ltr">+{active?.phone || phone || '—'}</b>
                   </div>
                   <div className={`rounded-2xl border px-4 py-5 text-center ${subtleCard}`}>
                     <ShieldCheck size={24} className={`mx-auto ${muted}`} aria-hidden="true" />
@@ -403,7 +406,7 @@ export function PhoneVerificationSheet({
 
                   <div className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-2.5 ${subtleCard}`}>
                     <span className={`text-[10.5px] font-bold ${muted}`}>{t.numberLabel}</span>
-                    <b className="text-[13px] font-black tabular-nums" dir="ltr">+{phone || '—'}</b>
+                    <b className="text-[13px] font-black tabular-nums" dir="ltr">+{active?.phone || phone || '—'}</b>
                   </div>
 
                   {active?.method === 'sms' ? (

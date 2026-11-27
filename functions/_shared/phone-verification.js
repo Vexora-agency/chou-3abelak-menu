@@ -13,6 +13,7 @@
  * No SQL here — see `repositories/phone-verifications.repo.js`.
  */
 
+import { dialCodeFromNumber } from './dial-codes.js';
 import { getSessionSecret, safeCompareStrings } from './session.js';
 import { normalizePhoneDigits } from './validate-auth.js';
 
@@ -130,6 +131,56 @@ export function normalizeVerificationPhone(value) {
   const digits = normalizePhoneDigits(value);
   if (digits.length < 6 || digits.length > 15) return null;
   return digits;
+}
+
+/**
+ * Canonicalize a number into the restaurant's international digits.
+ *
+ * The checkout UI already composes the dial code, but the API is public: a
+ * direct caller can send `0120…`, `0020…` or `+20…` and create textually
+ * different rows for the same real number. Ownership checks and the WhatsApp
+ * webhook compare exact digits, so every equivalent shape must collapse into
+ * the single value the webhook sees from Meta.
+ *
+ * `dialCode` is derived from the store's WhatsApp/phone setting. When it is
+ * missing (misconfigured store or KV blip) we keep the legacy digits-only
+ * behaviour and never guess a country.
+ */
+export function canonicalizeVerificationPhone(value, dialCode = '') {
+  const text = typeof value === 'string' ? value.trim() : '';
+  const explicit = text.startsWith('+') || text.startsWith('00');
+  let digits = normalizePhoneDigits(text);
+  if (!digits) return null;
+  // `00` is the international access prefix, not part of the number.
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (!digits) return null;
+
+  const code = typeof dialCode === 'string' ? dialCode.replace(/[^0-9]/g, '') : '';
+  if (!code) {
+    return digits.length >= 6 && digits.length <= 15 ? digits : null;
+  }
+
+  // An explicit `+foreign…`/`00foreign…` number is not this restaurant's.
+  if (explicit && !digits.startsWith(code)) return null;
+  // A long plain number that starts with another known country code is also
+  // foreign (mirrors the checkout validation). A trunk-zero national number
+  // is exempt: its leading `0` tells us it is national.
+  if (!explicit && !digits.startsWith(code) && !digits.startsWith('0')) {
+    const foreign = dialCodeFromNumber(digits);
+    if (foreign && foreign !== code && digits.length >= 10) return null;
+  }
+
+  let national = (digits.startsWith(code) ? digits.slice(code.length) : digits)
+    .replace(/^0+/, '');
+  // A doubled country code (20 20… / 970 970…) is the same real number. The
+  // webhook only sees Meta's single-code form, so collapse it before storage.
+  if (national.startsWith(code)) {
+    const collapsed = national.slice(code.length).replace(/^0+/, '');
+    if (collapsed.length >= 4) national = collapsed;
+  }
+  if (national.length < 4) return null;
+  const canonical = `${code}${national}`;
+  return canonical.length >= 6 && canonical.length <= 15 ? canonical : null;
 }
 
 export function isApprovedVerification(row, nowMs = Date.now()) {

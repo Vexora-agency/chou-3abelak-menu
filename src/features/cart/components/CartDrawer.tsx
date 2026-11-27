@@ -395,6 +395,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               phoneDial={phoneDial}
               phoneVerified={phoneVerified}
               phoneVerificationPhase={phoneVerification.phase}
+              phoneTaken={phoneTaken}
               onVerifyPhone={verificationPhone ? openVerification : undefined}
             />
 

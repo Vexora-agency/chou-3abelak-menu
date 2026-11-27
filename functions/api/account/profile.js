@@ -17,7 +17,13 @@ import {
   phoneOwnedByAnotherUser,
   revokeUserVerifications,
 } from '../../_shared/repositories/phone-verifications.repo.js';
-import { PHONE_LINKED_ERROR, PHONE_LINKED_MESSAGE, verificationValidUntil } from '../../_shared/phone-verification.js';
+import {
+  canonicalizeVerificationPhone,
+  PHONE_LINKED_ERROR,
+  PHONE_LINKED_MESSAGE,
+  verificationValidUntil,
+} from '../../_shared/phone-verification.js';
+import { getStorePhoneSettings } from '../../_shared/store-phone.js';
 import { authErrorMessage, validateProfileAddress, validateProfileLocation, validateProfilePhone } from '../../_shared/validate-auth.js';
 
 function publicUser(user) {
@@ -79,6 +85,15 @@ export async function onRequest(context) {
   if (!phone.phone) {
     return jsonNoStore({ error: 'phone_required', message: authErrorMessage('phone_required') }, 400);
   }
+  // Store the same canonical digits the verification route checks and the
+  // WhatsApp webhook sends. Without this, 0120… / 0020… / a doubled country
+  // code would miss the live owner, revoke the wrong proof, and save a value
+  // the order gate can never match.
+  const storePhone = await getStorePhoneSettings(env);
+  const phoneValue = canonicalizeVerificationPhone(phone.phone, storePhone.dialCode);
+  if (!phoneValue) {
+    return jsonNoStore({ error: 'phone_invalid', message: authErrorMessage('phone_invalid') }, 400);
+  }
   const address = validateProfileAddress(body && body.address);
   if (!address.ok) {
     return jsonNoStore({ error: address.code, message: authErrorMessage(address.code) }, 400);
@@ -104,17 +119,19 @@ export async function onRequest(context) {
     //  1. a number already verified by ANOTHER member is refused here too, so
     //     the member gets the reason immediately (and the order gate repeats
     //     it);
-    //  2. changing the saved number revokes every live proof for this member.
-    //     Moving to a sibling's number and back therefore requires a fresh
-    //     verification of the original number.
+    //  2. changing the saved number revokes every live proof for this member,
+    //     except the proof for the number being saved. Moving to a sibling's
+    //     number and back therefore requires a fresh verification of the
+    //     original number, while saving a number the member just verified
+    //     never un-verifies it.
     const nowMs = Date.now();
     const nowIso = new Date(nowMs).toISOString();
     const previous = await getCustomerProfile(db, auth.user.id);
     const previousPhone = previous && previous.phone ? previous.phone : null;
-    const phoneChanged = previousPhone !== phone.phone;
+    const phoneChanged = previousPhone !== phoneValue;
 
-    await expireStaleApproved(db, nowMs, phone.phone);
-    if (await phoneOwnedByAnotherUser(db, phone.phone, auth.user.id, nowMs)) {
+    await expireStaleApproved(db, nowMs, phoneValue);
+    if (await phoneOwnedByAnotherUser(db, phoneValue, auth.user.id, nowMs)) {
       return jsonNoStore({ error: PHONE_LINKED_ERROR, message: PHONE_LINKED_MESSAGE }, 409);
     }
     if (phoneChanged) {
@@ -123,7 +140,7 @@ export async function onRequest(context) {
         auth.user.id,
         nowIso,
         'profile_phone_changed',
-        phone.phone
+        phoneValue
       );
     }
 
@@ -131,7 +148,7 @@ export async function onRequest(context) {
       db,
       auth.user.id,
       {
-        phone: phone.phone,
+        phone: phoneValue,
         address: address.address,
         location: address.address ? location.location : null,
       },

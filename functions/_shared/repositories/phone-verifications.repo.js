@@ -187,11 +187,29 @@ export async function findVerifiedPhoneOwner(db, phone, nowMs = Date.now()) {
     .first();
 }
 
-/** The live owner row when the number belongs to a DIFFERENT member. */
+/**
+ * The live owner row when the number belongs to a DIFFERENT member.
+ *
+ * Ask for "any live approval whose user is not me" directly. Taking the
+ * earliest owner and comparing afterwards hid a duplicate when the earliest
+ * owner happened to be the requester. The partial unique index normally keeps
+ * one approval, but the query must still be safe on legacy data.
+ */
 export async function phoneOwnedByAnotherUser(db, phone, userId, nowMs = Date.now()) {
-  if (!db || !userId) return null;
-  const owner = await findVerifiedPhoneOwner(db, phone, nowMs);
-  return owner && owner.user_id !== userId ? owner : null;
+  const digits = phoneOrNull(phone);
+  if (!db || !userId || !digits) return null;
+  const cutoffIso = new Date(nowMs - VERIFICATION_VALIDITY_MS).toISOString();
+  return db
+    .prepare(
+      `SELECT id, user_id, phone, status, decided_at, decided_by
+         FROM phone_verifications
+        WHERE phone = ?1 AND status = 'approved' AND decided_at >= ?2
+          AND user_id <> ?3
+        ORDER BY decided_at ASC, id ASC
+        LIMIT 1`
+    )
+    .bind(digits, cutoffIso, userId)
+    .first();
 }
 
 /**
@@ -199,34 +217,34 @@ export async function phoneOwnedByAnotherUser(db, phone, userId, nowMs = Date.no
  * profile phone changes: moving away from a number — even temporarily — means
  * the old proof is gone, and moving back requires a fresh verification.
  *
- * `exceptPendingPhone` keeps a pending request for the number currently being
- * saved. That is the active re-verification attempt (for example: request the
- * SMS for X, then save X while the code is still in flight); old approvals for
- * X are still revoked, so a previous proof never survives the change.
+ * `exceptPhone` keeps both the live approval and the pending request for the
+ * number currently being saved. That covers the first save of a number the
+ * member just verified (previous profile phone was empty): the proof must
+ * survive, otherwise saving settings silently un-verifies the number and
+ * frees it for another account. Proofs for every other number are still
+ * revoked, so moving away and back requires a fresh verification.
  */
 export async function revokeUserVerifications(
   db,
   userId,
   nowIso,
   reason = 'profile_phone_changed',
-  exceptPendingPhone = null
+  exceptPhone = null
 ) {
   if (!db || !userId) return 0;
   const stamp = typeof nowIso === 'string' ? nowIso : new Date().toISOString();
   const why = typeof reason === 'string' && reason ? reason.slice(0, 40) : 'profile_phone_changed';
-  const keepPendingPhone = phoneOrNull(exceptPendingPhone) || null;
+  const keepPhone = phoneOrNull(exceptPhone) || null;
   const res = await db
     .prepare(
       `UPDATE phone_verifications
           SET status = 'revoked',
               decided_at = CASE WHEN status = 'pending' THEN ?1 ELSE decided_at END,
               decided_by = ?2
-        WHERE user_id = ?3 AND (
-          status = 'approved'
-          OR (status = 'pending' AND (?4 IS NULL OR phone <> ?4))
-        )`
+        WHERE user_id = ?3 AND status IN ('approved', 'pending')
+          AND (?4 IS NULL OR phone <> ?4)`
     )
-    .bind(stamp, why, userId, keepPendingPhone)
+    .bind(stamp, why, userId, keepPhone)
     .run();
   return Number(res?.meta?.changes) || 0;
 }
@@ -382,6 +400,31 @@ export async function listPendingVerificationsByPhone(db, phone, nowIso) {
         LIMIT 10`
     )
     .bind(digits, stamp)
+    .all();
+  return res && Array.isArray(res.results) ? res.results : [];
+}
+
+/**
+ * Every live WhatsApp pending row, bounded. Used by the webhook only when the
+ * sender has no pending row of their own: if the code still matches a row for
+ * a DIFFERENT number, the member typed a number that does not match the
+ * WhatsApp they are sending from. The webhook can then explain the mismatch
+ * instead of staying silent.
+ */
+export async function listLivePendingWaVerifications(db, nowIso, limit = 50) {
+  if (!db) return [];
+  const stamp = typeof nowIso === 'string' && nowIso ? nowIso : new Date().toISOString();
+  const max = Math.min(100, Math.max(1, Number.isInteger(limit) ? limit : 50));
+  const res = await db
+    .prepare(
+      `SELECT id, user_id, phone, reference, code_hash, status, lang, method, provider_id, attempts,
+              created_at, expires_at
+         FROM phone_verifications
+        WHERE status = 'pending' AND method = 'whatsapp' AND expires_at > ?1
+        ORDER BY created_at DESC
+        LIMIT ?2`
+    )
+    .bind(stamp, max)
     .all();
   return res && Array.isArray(res.results) ? res.results : [];
 }

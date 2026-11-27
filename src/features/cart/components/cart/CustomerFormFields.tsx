@@ -33,6 +33,8 @@ interface CustomerFormFieldsProps {
   phoneVerified?: boolean;
   /** Reverse-WhatsApp state for the typed number (members only). */
   phoneVerificationPhase?: 'idle' | 'checking' | 'unverified' | 'pending' | 'verified' | 'error';
+  /** The typed number is already verified by another member account. */
+  phoneTaken?: boolean;
   /** Opens the code sheet for the typed number. */
   onVerifyPhone?: () => void;
   onOpenLocSheet: () => void;
@@ -53,6 +55,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   accountPhone,
   phoneVerified = false,
   phoneVerificationPhase,
+  phoneTaken = false,
   onVerifyPhone,
   onOpenLocSheet,
 }) => {
@@ -76,9 +79,10 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
   const phoneCheck = checkPhone(customer.phone, dial.code);
   const phoneValid = phoneCheck.ok;
   const showVerified = !!(isMember && phoneValid && !phoneForeign && phoneVerified);
+  const phoneTakenHere = !!(isMember && phoneValid && !phoneForeign && phoneTaken);
   const verifyPending = phoneVerificationPhase === 'pending';
   const showVerify = !!(isMember && phoneValid && !phoneForeign && !showVerified
-    && phoneVerificationPhase !== 'checking' && onVerifyPhone);
+    && !phoneTakenHere && phoneVerificationPhase !== 'checking' && onVerifyPhone);
   const phoneErrorText = phoneError || (phoneForeign
     ? (isMember
       ? (isAr
@@ -92,6 +96,11 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
     || (showVerified
       ? (isAr ? 'تم تأكيد الرقم.' : 'Number verified.')
       : null)
+    || (phoneTakenHere
+      ? (isAr
+        ? 'هذا الرقم مرتبط بحساب عضو آخر. استخدم رقمك أو تواصل معنا.'
+        : 'This number is linked to another member account. Use your own number or contact us.')
+      : null)
     || (showVerify
       ? (verifyPending
         ? (isAr ? 'الرمز جاهز.' : 'Code ready.')
@@ -103,7 +112,7 @@ export const CustomerFormFields: React.FC<CustomerFormFieldsProps> = ({
         ? (isAr ? `نقبل أرقام +${dial.code} فقط.` : `Only +${dial.code} numbers are accepted.`)
         : (isAr ? 'أدخل رقم الهاتف مع رمز الدولة.' : 'Enter the phone number with its country code.'));
   const phoneNoteVisible = !!phoneNoteText;
-  const phoneNoteTone = phoneErrorText
+  const phoneNoteTone = phoneErrorText || phoneTakenHere
     ? 'text-red-500'
     : showVerified
       ? (darkMode ? 'text-emerald-400' : 'text-emerald-700')

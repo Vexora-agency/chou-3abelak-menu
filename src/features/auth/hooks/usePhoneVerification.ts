@@ -153,6 +153,12 @@ export function usePhoneVerification(
   const [error, setError] = useState<string | null>(null);
   const [smsError, setSmsError] = useState<string | null>(null);
   const [retryAfter, setRetryAfter] = useState(0);
+  // The server may canonicalize the typed number (0120… -> 2012…). Polling
+  // and SMS verification must use the number the row was actually stored
+  // under, otherwise a correct WhatsApp approval is never observed. A ref
+  // keeps the poller on the latest value without restarting effects.
+  const canonicalPhoneRef = useRef<string | null>(normalized);
+  const previousNormalizedRef = useRef<string | null>(normalized);
   const [requesting, setRequesting] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const requestingRef = useRef(false);
@@ -163,6 +169,13 @@ export function usePhoneVerification(
   const requestSeqRef = useRef(0);
   phoneRef.current = normalized;
   phaseRef.current = phase;
+  // A different typed/selected number must never reuse the previous number's
+  // server-canonical value. Reset during render so an in-flight poll cannot
+  // apply the old row to the new number.
+  if (previousNormalizedRef.current !== normalized) {
+    previousNormalizedRef.current = normalized;
+    canonicalPhoneRef.current = normalized;
+  }
 
   const clearError = useCallback(() => {
     setError(null);
@@ -185,7 +198,8 @@ export function usePhoneVerification(
   }, [userId]);
 
   const refresh = useCallback(async () => {
-    const target = phoneRef.current;
+    const typed = phoneRef.current;
+    const target = canonicalPhoneRef.current || typed;
     if (!enabled || !userId || !target) {
       setPhase('idle');
       return;
@@ -197,7 +211,7 @@ export function usePhoneVerification(
       const state = await fetchPhoneVerification(target);
       // A newer request (or a different number) owns the state now; a stale
       // status read must never wipe the code the member is looking at.
-      if (phoneRef.current !== target || requestSeqRef.current !== seq) return;
+      if (phoneRef.current !== typed || requestSeqRef.current !== seq) return;
       if (state.verified) {
         applyVerified(state.verifiedUntil);
         return;
@@ -210,6 +224,8 @@ export function usePhoneVerification(
         setVerifiedUntil(null);
         setPhase('error');
         setError('phone_linked_other_account');
+        // A code cached before the number was claimed must not resurface.
+        writeCache(userId, null);
         return;
       }
       if (state.pending) {
@@ -224,16 +240,21 @@ export function usePhoneVerification(
       setActive(null);
       setVerifiedUntil(null);
       setPhase('unverified');
-      const cached = readCache(userId);
-      if (cached && cached.phone === target && Date.parse(cached.expiresAt) <= Date.now()) {
-        writeCache(userId, null);
-      }
+      // The server has no live pending row: a cached code is stale (expired,
+      // superseded, or approved on another surface). Drop it so the sheet
+      // cannot offer a code the webhook will never accept.
+      writeCache(userId, null);
+      // A number that became free again must not keep the old linked reason.
+      setError((prev) => (prev === 'phone_linked_other_account' ? null : prev));
+      setSmsError((prev) => (prev === 'phone_linked_other_account' ? null : prev));
     } catch {
-      if (phoneRef.current !== target || requestSeqRef.current !== seq) return;
+      if (phoneRef.current !== typed || requestSeqRef.current !== seq) return;
       // A status read failure must not destroy an active code the member can
       // still send; keep the sheet usable and let the next poll recover.
       if (phaseRef.current !== 'pending') setPhase('error');
-      setError('unavailable');
+      // A transport failure is not proof that a terminal ownership answer was
+      // wrong: keep the linked reason instead of replacing it with "unavailable".
+      setError((prev) => (prev === 'phone_linked_other_account' ? prev : 'unavailable'));
     }
   }, [applyVerified, enabled, userId]);
 
@@ -249,6 +270,10 @@ export function usePhoneVerification(
     try {
       const result = await requestPhoneVerification(target, lang, method);
       if (phoneRef.current !== target) return;
+      // Adopt the server's canonical number: the pending/approved row is
+      // stored under it, not necessarily under the raw typed value.
+      const serverPhone = result.verification?.phone || result.pending?.phone || null;
+      if (serverPhone && serverPhone !== target) canonicalPhoneRef.current = serverPhone;
       if (result.verified) {
         applyVerified(result.verifiedUntil ?? null);
         return;
@@ -295,6 +320,7 @@ export function usePhoneVerification(
       const parsed = errorCode(err);
       if (phoneRef.current !== target) return;
       if (parsed.pending) {
+        if (parsed.pending.phone !== target) canonicalPhoneRef.current = parsed.pending.phone;
         const cached = readCache(userId);
         setActive(mergePending(parsed.pending, cached));
         setPhase('pending');
@@ -311,7 +337,8 @@ export function usePhoneVerification(
 
   /** Submit the 6-digit code received by SMS. */
   const verifySms = useCallback(async (code: string) => {
-    const target = phoneRef.current;
+    const typed = phoneRef.current;
+    const target = canonicalPhoneRef.current || typed;
     if (!enabled || !userId || !target || verifyingRef.current) return;
     if (!active || active.method !== 'sms') return;
     const digits = String(code || '').replace(/[^0-9]/g, '');
@@ -324,7 +351,7 @@ export function usePhoneVerification(
     setSmsError(null);
     try {
       const result = await verifyPhoneSms(target, digits);
-      if (phoneRef.current !== target) return;
+      if (phoneRef.current !== typed) return;
       if (result.verified) {
         applyVerified(result.verifiedUntil ?? null);
       } else {
@@ -332,7 +359,7 @@ export function usePhoneVerification(
       }
     } catch (err) {
       const parsed = errorCode(err);
-      if (phoneRef.current !== target) return;
+      if (phoneRef.current !== typed) return;
       setSmsError(parsed.code);
     } finally {
       verifyingRef.current = false;
@@ -348,6 +375,7 @@ export function usePhoneVerification(
     setRetryAfter(0);
     setActive(null);
     setVerifiedUntil(null);
+    canonicalPhoneRef.current = normalized;
     if (!enabled || !userId || !normalized) {
       setPhase('idle');
       return;

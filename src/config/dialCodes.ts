@@ -294,6 +294,9 @@ export function composeFull(code: string, national: string): string {
   if (!code) return digits;
   const rest = digits.replace(/^0+/, '');
   if (!rest) return '';
+  // A full number pasted without +/00 already starts with the country code.
+  // Prefixing it again would save 961961… / 970970… to the store settings.
+  if (rest.startsWith(code) && rest.length > 9) return rest;
   return `${code}${rest}`;
 }
 

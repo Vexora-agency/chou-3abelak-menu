@@ -22,6 +22,7 @@ import {
   VERIFICATION_VALIDITY_MS,
   buildVerificationMessage,
   buildVerificationWhatsAppUrl,
+  canonicalizeVerificationPhone,
   codeExpiresAt,
   generateVerificationCode,
   getVerificationSecret,
@@ -101,6 +102,23 @@ check('phone rejects a short number', normalizeVerificationPhone('12345') === nu
 check('phone rejects a 16-digit number', normalizeVerificationPhone('1234567890123456') === null);
 check('non-string phone normalizes to null', normalizeVerificationPhone(null) === null);
 
+/* ---------- canonical phone (same real number, one value) ---------- */
+
+const EG = '20';
+const EG_PHONE = '201205561080';
+check('canonical keeps international digits', canonicalizeVerificationPhone(EG_PHONE, EG) === EG_PHONE);
+check('canonical accepts a plus and spaces', canonicalizeVerificationPhone('+20 120 556 1080', EG) === EG_PHONE);
+check('canonical strips the 00 access prefix', canonicalizeVerificationPhone('00201205561080', EG) === EG_PHONE);
+check('canonical composes a trunk-zero national number', canonicalizeVerificationPhone('01205561080', EG) === EG_PHONE);
+check('canonical collapses a doubled country code', canonicalizeVerificationPhone('20201205561080', EG) === EG_PHONE);
+check('canonical collapses a doubled Lebanon code', canonicalizeVerificationPhone('96196170123456', '961') === '96170123456');
+check('canonical normalizes Arabic digits', canonicalizeVerificationPhone('٠١٢٠٥٥٦١٠٨٠', EG) === EG_PHONE);
+check('canonical rejects an explicit foreign number', canonicalizeVerificationPhone('+96170123456', EG) === null);
+check('canonical rejects a foreign number without a plus', canonicalizeVerificationPhone('96170123456', EG) === null);
+check('canonical keeps legacy digits when the store has no code', canonicalizeVerificationPhone('01205561080', '') === '01205561080');
+check('canonical rejects a too-short number', canonicalizeVerificationPhone('123', EG) === null);
+check('canonical rejects a non-string number', canonicalizeVerificationPhone(null, EG) === null);
+
 const messageEn = buildVerificationMessage({ code: '123456', reference: 'ABC123', lang: 'en' });
 check('English message carries code + reference', messageEn.includes('123456') && messageEn.includes('ABC123'));
 const messageAr = buildVerificationMessage({ code: '123456', reference: 'ABC123', lang: 'ar' });
@@ -176,6 +194,10 @@ check(
 );
 check('customer route has no Telegram notification', !/telegram/i.test(customerRoute));
 check('customer route generates the WhatsApp code server-side', customerRoute.includes('generateVerificationCode()') && customerRoute.includes("body.action === 'verify'") && customerRoute.includes('body.code'));
+check(
+  'customer route canonicalizes the number before ownership checks',
+  customerRoute.includes('canonicalizeVerificationPhone') && customerRoute.includes('getStorePhoneSettings')
+);
 
 /* ---------- admin route ---------- */
 
@@ -189,11 +211,19 @@ check(
   'admin approval re-checks one-owner-per-phone',
   adminRoute.includes('phoneOwnedByAnotherUser') && adminRoute.includes('expireStaleApproved')
 );
+check(
+  'admin approval maps an ownership race to the linked reason',
+  adminRoute.includes('UNIQUE constraint failed') && adminRoute.includes('PHONE_LINKED_ERROR')
+);
 
 const webhookRoute = read('functions/api/whatsapp/webhook.js');
 check(
   'whatsapp webhook re-checks ownership before approving',
   webhookRoute.includes('phoneOwnedByAnotherUser') && webhookRoute.includes("decidedBy: 'ownership_conflict'")
+);
+check(
+  'whatsapp webhook explains a code sent from a different number',
+  webhookRoute.includes('listLivePendingWaVerifications') && webhookRoute.includes("whatsappReply('wrongNumber'")
 );
 
 /* ---------- order + profile gates ---------- */
@@ -214,6 +244,10 @@ check(
   profileRoute.includes('phoneOwnedByAnotherUser') && profileRoute.includes('PHONE_LINKED_ERROR')
 );
 check(
+  'profile route canonicalizes the saved number',
+  profileRoute.includes('canonicalizeVerificationPhone') && profileRoute.includes('getStorePhoneSettings')
+);
+check(
   'changing the saved phone revokes every old proof',
   profileRoute.includes('revokeUserVerifications') && profileRoute.includes('phoneChanged')
 );
@@ -226,6 +260,12 @@ check('order route remains the verification gate', orderRoute.includes("error: '
 check(
   'order route refuses a number owned by another member',
   orderRoute.includes('phoneOwnedByAnotherUser') && orderRoute.includes('PHONE_LINKED_ERROR')
+);
+check(
+  'order route fails closed when the phone check cannot be read',
+  orderRoute.includes("code: 'order_phone_owner_read'")
+    && orderRoute.includes('verified = false')
+    && !orderRoute.includes('verified = true')
 );
 
 /* ---------- customers repo ---------- */
@@ -260,6 +300,10 @@ check(
   'hook stops on a number owned by another member',
   hook.includes('state.linkedToOtherAccount') && hook.includes("setError('phone_linked_other_account')")
 );
+check(
+  'hook polls the server-canonical number',
+  hook.includes('canonicalPhoneRef') && hook.includes('canonicalPhoneRef.current = serverPhone')
+);
 
 const sharedPhone = read('functions/_shared/phone-verification.js');
 check(
@@ -274,15 +318,24 @@ check(
     && phoneRepo.includes('revokeUserVerifications')
     && phoneRepo.includes('expireStaleApproved')
 );
+check('ownership asks for a DIFFERENT user, not just the earliest', phoneRepo.includes('user_id <> ?3'));
 check(
-  'revocation keeps a pending code for the number being saved',
-  phoneRepo.includes('exceptPendingPhone') && phoneRepo.includes('keepPendingPhone')
+  'revocation keeps the proof for the number being saved',
+  phoneRepo.includes('exceptPhone') &&
+    phoneRepo.includes('keepPhone') &&
+    phoneRepo.includes("status IN ('approved', 'pending')")
 );
 
 const cartDrawer = read('src/features/cart/components/CartDrawer.tsx');
 check('cart watches the entered number', cartDrawer.includes('usePhoneVerification(') && cartDrawer.includes('verificationPhone'));
 check('cart passes the verified gate to checkout', cartDrawer.includes('isPhoneVerified: () => phoneVerifiedRef.current'));
 check('cart opens the sheet on demand', cartDrawer.includes('onRequirePhoneVerification') && cartDrawer.includes('<PhoneVerificationSheet'));
+check('cart field receives the linked state', cartDrawer.includes('phoneTaken={phoneTaken}'));
+const cartField = read('src/features/cart/components/cart/CustomerFormFields.tsx');
+check(
+  'cart field shows the linked reason instead of a verify button',
+  cartField.includes('phoneTakenHere') && cartField.includes("phoneVerificationPhase !== 'checking'")
+);
 
 const accountSheet = read('src/features/auth/components/AccountSheet.tsx');
 check('settings verifying saves the current form', accountSheet.includes('void save();') && accountSheet.includes('setVerifyOpen(false);'));

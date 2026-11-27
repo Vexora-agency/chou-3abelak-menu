@@ -117,7 +117,13 @@ export async function onRequest(context) {
       return jsonNoStore({ error: 'not_pending', message: 'This request was already decided or expired.' }, 409);
     }
     return jsonNoStore({ ok: true, verification: publicRow(row) });
-  } catch {
+  } catch (err) {
+    const message = err && typeof err.message === 'string' ? err.message : '';
+    // A race with the webhook/another tab can lose to the one-owner index.
+    // Show the same friendly reason instead of a generic 503.
+    if (/UNIQUE constraint failed:\s*phone_verifications\.phone/i.test(message)) {
+      return jsonNoStore({ error: PHONE_LINKED_ERROR, message: PHONE_LINKED_MESSAGE }, 409);
+    }
     return jsonNoStore({ error: 'unavailable' }, 503);
   }
 }

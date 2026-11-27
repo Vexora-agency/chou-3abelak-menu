@@ -34,6 +34,7 @@ import {
   findValidVerificationByPhone,
   finishWhatsAppEvent,
   getVerificationById,
+  listLivePendingWaVerifications,
   listPendingVerificationsByPhone,
   phoneOwnedByAnotherUser,
 } from '../../_shared/repositories/phone-verifications.repo.js';
@@ -71,7 +72,7 @@ async function replyAllowed(db, env, phone, nowMs) {
 }
 
 async function maybeReply(env, db, msg, text, nowMs, outcome) {
-  let allowed = false;
+  let allowed;
   try {
     allowed = await replyAllowed(db, env, msg.from, nowMs);
   } catch {
@@ -92,6 +93,27 @@ async function maybeReply(env, db, msg, text, nowMs, outcome) {
   }
 }
 
+/**
+ * The sender has no pending row for their own number. Before treating the
+ * message as expired, see whether the code matches a live request for a
+ * DIFFERENT number: that means the member typed a number that does not match
+ * the WhatsApp they are sending from, so the message can never approve it.
+ * Return that row (language only; the number is never echoed back).
+ */
+async function findWrongNumberPending(db, secret, code, sender, nowIso) {
+  let rows;
+  try {
+    rows = await listLivePendingWaVerifications(db, nowIso);
+  } catch {
+    return null;
+  }
+  for (const row of rows) {
+    if (!row || row.phone === sender) continue;
+    if (await verificationCodeMatches(secret, row, code)) return row;
+  }
+  return null;
+}
+
 async function handleMessage(context, env, db, msg) {
   // Ignore ordinary customer messages on the same business number. Only a
   // verification-looking message is claimed, recorded, or answered.
@@ -110,9 +132,29 @@ async function handleMessage(context, env, db, msg) {
   try {
     const pendingRows = await listPendingVerificationsByPhone(db, msg.from, nowIso);
     const code = extractVerificationCode(msg.text);
+    const secret = getVerificationSecret(env);
     const rowLang = pendingRows[0]?.lang;
 
     if (pendingRows.length === 0) {
+      // The message can still carry the code of a request for another number.
+      // That happens when the member typed the number with a different digit
+      // (or another account owns it) but sent from this WhatsApp. Explain the
+      // mismatch instead of leaving them waiting forever.
+      if (code && secret) {
+        const wrongNumber = await findWrongNumberPending(db, secret, code, msg.from, nowIso);
+        if (wrongNumber) {
+          outcome = 'wrong_number';
+          await maybeReply(
+            env,
+            db,
+            msg,
+            whatsappReply('wrongNumber', pickReplyLanguage(wrongNumber.lang, msg.text)),
+            nowMs,
+            outcome
+          );
+          return;
+        }
+      }
       const approved = await findValidVerificationByPhone(db, msg.from, nowMs);
       if (approved) {
         // Duplicate/extra message after a successful verification: stay quiet
@@ -145,7 +187,6 @@ async function handleMessage(context, env, db, msg) {
       return;
     }
 
-    const secret = getVerificationSecret(env);
     if (!secret) {
       outcome = 'no_secret';
       return;
@@ -194,11 +235,31 @@ async function handleMessage(context, env, db, msg) {
       return;
     }
 
-    const decided = await decideVerification(db, matched.id, {
-      status: 'approved',
-      decidedBy: 'whatsapp',
-      nowIso,
-    });
+    let decided;
+    try {
+      decided = await decideVerification(db, matched.id, {
+        status: 'approved',
+        decidedBy: 'whatsapp',
+        nowIso,
+      });
+    } catch (err) {
+      const message = err && typeof err.message === 'string' ? err.message : '';
+      // Two approvals raced; the unique owner index let the other member win.
+      // Tell this sender the number is linked instead of failing silently.
+      if (/UNIQUE constraint failed:\s*phone_verifications\.phone/i.test(message)) {
+        outcome = 'phone_linked_other_account';
+        await maybeReply(
+          env,
+          db,
+          msg,
+          whatsappReply('conflict', pickReplyLanguage(matched.lang, msg.text)),
+          nowMs,
+          outcome
+        );
+        return;
+      }
+      throw err;
+    }
     if (!decided) {
       // A race with the manual dashboard button can lose the UPDATE even
       // though the row is now approved. Treat that as success, not expiry.

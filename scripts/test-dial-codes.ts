@@ -54,6 +54,7 @@ function ok(cond: boolean, name: string) {
   ok(odd.iso === OTHER_ISO && odd.national === '999999', 'unknown values preserved under OTHER');
   ok(composeFull('961', '070123456') === '96170123456', 'trunk zero stripped on compose');
   ok(composeFull('961', '70 123-456') === '96170123456', 'formatting stripped on compose');
+  ok(composeFull('961', '96170123456') === '96170123456', 'full international paste is not doubled');
   ok(composeFull('961', '') === '', 'empty national stores empty (no phantom code)');
   ok(composeFull('', '96170123456') === '96170123456', 'OTHER passes digits through');
   // round trip: compose then split restores the parts

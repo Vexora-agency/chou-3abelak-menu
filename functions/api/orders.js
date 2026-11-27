@@ -223,8 +223,9 @@ export async function onRequest(context) {
   // Phone ownership gate: the number that will receive the delivery call must
   // have been proven through reverse WhatsApp verification. This covers EVERY
   // entered number, including the first one and a changed cart number — the
-  // account's saved phone earns no free pass. Fails OPEN only on a DB error
-  // (the insert below would 503 anyway); a missing verification is a hard 403.
+  // account's saved phone earns no free pass. A DB error FAILS CLOSED: an
+  // unreadable ownership/verification state must never let an unverified or
+  // other-owned number through.
   if (customerUserId && (c.paymentMethod || 'cod') === 'cod') {
     // A number already verified by ANOTHER member can never be used here,
     // even if this account kept an old duplicate approval or the number was
@@ -240,14 +241,21 @@ export async function onRequest(context) {
       }
     } catch (err) {
       captureBackendException(context, err, { binding: 'd1', code: 'order_phone_owner_read' });
+      return jsonNoStore({
+        error: 'unavailable',
+        message: {
+          en: 'We could not confirm this phone number right now. Please try again.',
+          ar: 'تعذّر تأكيد رقم الهاتف الآن. يرجى المحاولة مرة أخرى.',
+        },
+      }, 503);
     }
 
     let verified = false;
     try {
       verified = !!(await findValidVerification(db, customerUserId, c.phoneNorm, Date.now()));
     } catch (err) {
+      // Fail closed: an unreadable verification state is not a free pass.
       captureBackendException(context, err, { binding: 'd1', code: 'order_phone_verification_read' });
-      verified = true;
     }
     if (!verified) {
       return jsonNoStore({

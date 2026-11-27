@@ -51,17 +51,28 @@ export function isInternationalInput(raw: string): boolean {
 export function nationalPart(raw: string, dialCode: string): string {
   const digits = phoneDigitsOnly(raw);
   if (!digits) return '';
-  if (dialCode && digits.startsWith(dialCode)) {
-    return digits.slice(dialCode.length).replace(/^0+/, '');
+  let national = dialCode && digits.startsWith(dialCode)
+    ? digits.slice(dialCode.length).replace(/^0+/, '')
+    : digits.replace(/^0+/, '');
+  // Stored legacy values may carry a doubled country code; display the real
+  // national part so editing the field does not keep the duplicate.
+  if (dialCode && national.startsWith(dialCode)) {
+    const collapsed = national.slice(dialCode.length).replace(/^0+/, '');
+    if (collapsed.length >= 4) national = collapsed;
   }
-  return digits.replace(/^0+/, '');
+  return national;
 }
 
 /** Compose the stored full-international value from the national field. */
 export function composeNational(national: string, dialCode: string): string {
   const digits = phoneDigitsOnly(national).replace(/^0+/, '');
   if (!digits) return '';
-  return dialCode ? `${dialCode}${digits}` : digits;
+  if (!dialCode) return digits;
+  // A full international number pasted without the +/00 prefix already starts
+  // with the country code. Prefixing it again would store 970970… / 961961…,
+  // a different value that the WhatsApp webhook can never match.
+  if (digits.startsWith(dialCode) && digits.length > 9) return digits;
+  return `${dialCode}${digits}`;
 }
 
 /**
@@ -101,9 +112,15 @@ export function checkPhone(raw: string, dialCode: string): PhoneCheck {
     }
   }
 
-  const national = digits.startsWith(dialCode)
+  let national = digits.startsWith(dialCode)
     ? digits.slice(dialCode.length).replace(/^0+/, '')
     : digits.replace(/^0+/, '');
+  // A doubled country code (961961… / 970970…) is the same real number; the
+  // webhook only ever sees the single-code form, so collapse it here too.
+  if (national.startsWith(dialCode)) {
+    const collapsed = national.slice(dialCode.length).replace(/^0+/, '');
+    if (collapsed.length >= 4) national = collapsed;
+  }
   // A 3-digit "national number" is never a real phone number, even if the
   // total including the dial code happens to be six digits.
   if (national.length < 4) return { ok: false, normalized: '', national, reason: 'too_short' };

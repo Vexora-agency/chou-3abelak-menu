@@ -135,6 +135,14 @@ check(
   'conflict says the number is linked to another member (EN)',
   /linked to another member account/i.test(whatsappReply('conflict', 'en'))
 );
+check(
+  'wrongNumber explains the number mismatch (AR)',
+  whatsappReply('wrongNumber', 'ar').includes('رقم هاتف آخر')
+);
+check(
+  'wrongNumber explains the number mismatch (EN)',
+  /different phone number/i.test(whatsappReply('wrongNumber', 'en'))
+);
 check('stored Arabic wins over English text', pickReplyLanguage('ar', 'Hello') === 'ar');
 check('stored English wins over Arabic text', pickReplyLanguage('en', 'مرحبا') === 'en');
 check('detects Arabic when the row has no language', pickReplyLanguage(null, 'مرحبًا! يرجى تأكيد رقمي') === 'ar');
@@ -199,6 +207,14 @@ check(
   route.includes('phoneOwnedByAnotherUser') && route.includes("decidedBy: 'ownership_conflict'")
 );
 check('webhook replies in the row language', route.includes("whatsappReply('success'") && route.includes('pickReplyLanguage'));
+check(
+  'webhook explains a code sent from another number',
+  route.includes('listLivePendingWaVerifications') && route.includes("whatsappReply('wrongNumber'")
+);
+check(
+  'webhook maps an approval race to the linked reason',
+  route.includes('UNIQUE constraint failed') && route.includes("whatsappReply('conflict'")
+);
 check('webhook caps replies per phone + month', route.includes('REPLY_HOURLY_PER_PHONE') && route.includes('REPLY_DAILY_PER_PHONE') && route.includes('WHATSAPP_REPLY_MONTHLY_CAP'));
 check('webhook ignores ordinary messages without a reply', route.includes('looksLikeVerificationMessage(msg.text)') && route.includes('return'));
 

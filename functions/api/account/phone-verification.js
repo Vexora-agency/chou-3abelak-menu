@@ -19,6 +19,7 @@ import { checkCustomerApiHeaders, requireCustomer } from '../../_shared/auth-ses
 import {
   buildVerificationMessage,
   buildVerificationWhatsAppUrl,
+  canonicalizeVerificationPhone,
   codeExpiresAt,
   generateVerificationCode,
   getVerificationSecret,
@@ -57,6 +58,7 @@ import {
   sendUnimtxTemplateSms,
   verifyUnimtxOtp,
 } from '../../_shared/unimtx.js';
+import { getStorePhoneSettings } from '../../_shared/store-phone.js';
 
 const SMS_MAX_ATTEMPTS = 5;
 const PHONE_CHANGED_ERROR = 'phone_changed';
@@ -69,10 +71,6 @@ function phoneLinkedResponse() {
   return jsonNoStore({ error: PHONE_LINKED_ERROR, message: PHONE_LINKED_MESSAGE }, 409);
 }
 
-function phoneChangedResponse() {
-  return jsonNoStore({ error: PHONE_CHANGED_ERROR, message: PHONE_CHANGED_MESSAGE }, 409);
-}
-
 function publicPending(row) {
   if (!row) return null;
   return {
@@ -82,24 +80,6 @@ function publicPending(row) {
     createdAt: row.created_at,
     expiresAt: row.expires_at,
   };
-}
-
-/** Store WhatsApp number, best effort (never blocks a code). */
-async function readStoreWhatsApp(env) {
-  // A dedicated Cloud API verification number may differ from the public
-  // restaurant WhatsApp. When set, the member messages the API number so the
-  // webhook can auto-approve and reply from it.
-  const override = env && typeof env.WHATSAPP_VERIFICATION_NUMBER === 'string'
-    ? env.WHATSAPP_VERIFICATION_NUMBER.trim()
-    : '';
-  if (override) return override;
-  try {
-    const menu = await env.MENU_KV.get('menu', { type: 'json' });
-    const settings = menu && menu.settings ? menu.settings : {};
-    return typeof settings.whatsapp === 'string' ? settings.whatsapp : '';
-  } catch {
-    return '';
-  }
 }
 
 /**
@@ -134,7 +114,7 @@ async function verifySmsCode(db, env, userId, phone, rawCode) {
     return { status: 429, body: { error: 'too_many_attempts' } };
   }
 
-  let valid = false;
+  let valid;
   if (pending.code_hash === 'unimtx') {
     // Built-in UniMTX OTP: the provider stores and verifies the code.
     const result = await verifyUnimtxOtp(env, {
@@ -249,7 +229,21 @@ export async function onRequest(context) {
     return jsonNoStore({ error: 'bad_request' }, 400);
   }
 
-  const phone = normalizeVerificationPhone(body && body.phone);
+  // Resolve the store's country first: every equivalent shape of the same
+  // numbers (0120…, 0020…, +20…) must become the one value Meta sends the
+  // webhook. Ownership checks compare exact digits, so without this a second
+  // account could mint a code for an already-verified number in another shape.
+  //
+  // Verifying an SMS code is different: the row was stored canonical when the
+  // code was minted, so use its exact digits. Re-canonicalizing against a
+  // store country that changed after the request would lose the row.
+  const verifyingSms = !!(body && body.action === 'verify');
+  const storePhone = verifyingSms
+    ? { whatsapp: '', dialCode: '' }
+    : await getStorePhoneSettings(env);
+  const phone = verifyingSms
+    ? normalizeVerificationPhone(body.phone)
+    : canonicalizeVerificationPhone(body.phone, storePhone.dialCode);
   if (!phone) return jsonNoStore({ error: 'phone_invalid' }, 400);
 
   const nowMs = Date.now();
@@ -473,9 +467,8 @@ export async function onRequest(context) {
       return jsonNoStore({ error: 'pending_exists', pending: publicPending(live) }, 409);
     }
 
-    const storeWhatsApp = await readStoreWhatsApp(env);
     const message = buildVerificationMessage({ code, reference, lang });
-    const whatsappUrl = buildVerificationWhatsAppUrl(storeWhatsApp, message);
+    const whatsappUrl = buildVerificationWhatsAppUrl(storePhone.whatsapp, message);
 
     return jsonNoStore({
       ok: true,
